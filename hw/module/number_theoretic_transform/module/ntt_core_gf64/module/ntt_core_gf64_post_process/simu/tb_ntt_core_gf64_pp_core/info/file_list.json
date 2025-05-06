@@ -1,0 +1,21 @@
+{    
+    "local_root_path": "${PROJECT_DIR}",
+    "dep_root_path"  : "${PROJECT_DIR}",
+    "rtl_files": [
+        {
+            "name": "hw/module/number_theoretic_transform/module/ntt_core_gf64/module/ntt_core_gf64_post_process/simu/tb_ntt_core_gf64_pp_core/rtl/tb_ntt_core_gf64_pp_core.sv",
+            "library": "work",
+            "env": ["simu"],
+            "target": ["all"],
+            "is_include_file": false
+        }
+    ],
+    "dependency_dir": [
+        "hw/simu_lib/simu_base",
+        "hw/simu_lib/stream_lib",
+        "hw/module/number_theoretic_transform/module/ntt_core_gf64/module/ntt_core_gf64_post_process/simu/tb_ntt_core_gf64_pp_core/gen",
+        "hw/module/pe_pbs/module/pep_common",
+        "hw/module/number_theoretic_transform/module/ntt_core_gf64/module/ntt_core_gf64_post_process"
+    ],
+    "include_dir": []
+}

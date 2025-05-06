@@ -1,0 +1,27 @@
+{
+    "local_root_path": "${PROJECT_DIR}",
+    "dep_root_path"  : "${PROJECT_DIR}",
+    "is_include_dir" : false,
+    "rtl_files": [
+        {
+            "name": "hw/module/regfile/module/regf_common/rtl/REGF_STRUCT/REGF_STRUCT_reg64_coef32_seq4/regf_common_definition_pkg.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false,
+            "REGF_STRUCT": "REGF_STRUCT_reg64_coef32_seq4"
+        },
+        {
+            "name": "hw/module/regfile/module/regf_common/rtl/regf_common_param_pkg.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false
+        }
+    ],
+    "constraint_files": [],
+    "dependency_dir": [
+      "hw/module/param"
+    ],
+    "include_dir": []
+}

@@ -1,0 +1,13 @@
+{
+    "local_root_path": "..",
+    "dep_root_path"  : "",
+    "rtl_files": [
+        {
+            "name": "rtl/mod_arith.sv",
+            "library": "work",
+            "target": "all"
+        }
+    ],
+    "constraint_files": [],
+    "dependency_dir": []
+}

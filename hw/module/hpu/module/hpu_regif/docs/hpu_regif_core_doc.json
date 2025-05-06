@@ -1,0 +1,4033 @@
+{
+  "module_name": "hpu_regif_core",
+  "description": "HPU top-level register interface. Used by the host to retrieve design information, and to configure it.\n\nHPU top-level register interface. Used by the host to retrieve design information, and to configure it.\n\nHPU top-level register interface. Used by the host to retrieve design information, and to configure it.\n\nHPU top-level register interface. Used by the host to retrieve design information, and to configure it.",
+  "word_size_b": 32,
+  "offset": 0,
+  "range": 262144,
+  "ext_pkg": [
+    "axi_if_common_param_pkg",
+    "axi_if_shell_axil_pkg"
+  ],
+  "section": [
+    {
+      "name": "entry_cfg_1in3",
+      "description": "entry_cfg_1in3 section with known value used for debug.",
+      "offset": 0,
+      "bytes_align": 4,
+      "range": 16,
+      "register": [
+        {
+          "name": "dummy_val0",
+          "description": "RTL version",
+          "owner": "Parameter",
+          "read_access": "Read",
+          "write_access": "None",
+          "offset": 0,
+          "default": {
+            "Cst": 16843009
+          },
+          "field": null
+        },
+        {
+          "name": "dummy_val1",
+          "description": "RTL version",
+          "owner": "Parameter",
+          "read_access": "Read",
+          "write_access": "None",
+          "offset": 4,
+          "default": {
+            "Cst": 286331153
+          },
+          "field": null
+        },
+        {
+          "name": "dummy_val2",
+          "description": "RTL version",
+          "owner": "Parameter",
+          "read_access": "Read",
+          "write_access": "None",
+          "offset": 8,
+          "default": {
+            "Cst": 555819297
+          },
+          "field": null
+        },
+        {
+          "name": "dummy_val3",
+          "description": "RTL version",
+          "owner": "Parameter",
+          "read_access": "Read",
+          "write_access": "None",
+          "offset": 12,
+          "default": {
+            "Cst": 825307441
+          },
+          "field": null
+        }
+      ]
+    },
+    {
+      "name": "info",
+      "description": "RTL architecture parameters",
+      "offset": 16,
+      "bytes_align": 4,
+      "range": 76,
+      "register": [
+        {
+          "name": "version",
+          "description": "RTL version",
+          "owner": "Parameter",
+          "read_access": "Read",
+          "write_access": "None",
+          "offset": 16,
+          "default": {
+            "ParamsField": {
+              "params": [
+                "VERSION_MAJOR",
+                "VERSION_MINOR"
+              ],
+              "name_val": [
+                [
+                  "major",
+                  "VERSION_MAJOR"
+                ],
+                [
+                  "minor",
+                  "VERSION_MINOR"
+                ]
+              ]
+            }
+          },
+          "field": [
+            {
+              "name": "major",
+              "description": "RTL major version",
+              "size_b": 4,
+              "offset_b": 0,
+              "default": {
+                "Param": "VERSION_MAJOR"
+              }
+            },
+            {
+              "name": "minor",
+              "description": "RTL minor version",
+              "size_b": 4,
+              "offset_b": 4,
+              "default": {
+                "Param": "VERSION_MINOR"
+              }
+            }
+          ]
+        },
+        {
+          "name": "ntt_architecture",
+          "description": "NTT architecture",
+          "owner": "Parameter",
+          "read_access": "Read",
+          "write_access": "None",
+          "offset": 20,
+          "default": {
+            "Param": "NTT_CORE_ARCH"
+          },
+          "field": null
+        },
+        {
+          "name": "ntt_structure",
+          "description": "NTT structure parameters",
+          "owner": "Parameter",
+          "read_access": "Read",
+          "write_access": "None",
+          "offset": 24,
+          "default": {
+            "ParamsField": {
+              "params": [
+                "R",
+                "PSI",
+                "BWD_PSI_DIV",
+                "DELTA"
+              ],
+              "name_val": [
+                [
+                  "radix",
+                  "R"
+                ],
+                [
+                  "psi",
+                  "PSI"
+                ],
+                [
+                  "div",
+                  "BWD_PSI_DIV"
+                ],
+                [
+                  "delta",
+                  "DELTA"
+                ]
+              ]
+            }
+          },
+          "field": [
+            {
+              "name": "radix",
+              "description": "NTT radix",
+              "size_b": 8,
+              "offset_b": 0,
+              "default": {
+                "Param": "R"
+              }
+            },
+            {
+              "name": "psi",
+              "description": "NTT psi",
+              "size_b": 8,
+              "offset_b": 8,
+              "default": {
+                "Param": "PSI"
+              }
+            },
+            {
+              "name": "div",
+              "description": "NTT backward div",
+              "size_b": 8,
+              "offset_b": 16,
+              "default": {
+                "Param": "BWD_PSI_DIV"
+              }
+            },
+            {
+              "name": "delta",
+              "description": "NTT network delta (for wmm arch)",
+              "size_b": 8,
+              "offset_b": 24,
+              "default": {
+                "Param": "DELTA"
+              }
+            }
+          ]
+        },
+        {
+          "name": "ntt_rdx_cut",
+          "description": "NTT radix cuts, in log2 unit (for gf64 arch)",
+          "owner": "Parameter",
+          "read_access": "Read",
+          "write_access": "None",
+          "offset": 28,
+          "default": {
+            "ParamsField": {
+              "params": [
+                "NTT_RDX_CUT_S_0",
+                "NTT_RDX_CUT_S_1",
+                "NTT_RDX_CUT_S_2",
+                "NTT_RDX_CUT_S_3",
+                "NTT_RDX_CUT_S_4",
+                "NTT_RDX_CUT_S_5",
+                "NTT_RDX_CUT_S_6",
+                "NTT_RDX_CUT_S_7"
+              ],
+              "name_val": [
+                [
+                  "radix_cut0",
+                  "NTT_RDX_CUT_S_0"
+                ],
+                [
+                  "radix_cut1",
+                  "NTT_RDX_CUT_S_1"
+                ],
+                [
+                  "radix_cut2",
+                  "NTT_RDX_CUT_S_2"
+                ],
+                [
+                  "radix_cut3",
+                  "NTT_RDX_CUT_S_3"
+                ],
+                [
+                  "radix_cut4",
+                  "NTT_RDX_CUT_S_4"
+                ],
+                [
+                  "radix_cut5",
+                  "NTT_RDX_CUT_S_5"
+                ],
+                [
+                  "radix_cut6",
+                  "NTT_RDX_CUT_S_6"
+                ],
+                [
+                  "radix_cut7",
+                  "NTT_RDX_CUT_S_7"
+                ]
+              ]
+            }
+          },
+          "field": [
+            {
+              "name": "radix_cut0",
+              "description": "NTT radix cut #0",
+              "size_b": 4,
+              "offset_b": 0,
+              "default": {
+                "Param": "NTT_RDX_CUT_S_0"
+              }
+            },
+            {
+              "name": "radix_cut1",
+              "description": "NTT radix cut #1",
+              "size_b": 4,
+              "offset_b": 4,
+              "default": {
+                "Param": "NTT_RDX_CUT_S_1"
+              }
+            },
+            {
+              "name": "radix_cut2",
+              "description": "NTT radix cut #2",
+              "size_b": 4,
+              "offset_b": 8,
+              "default": {
+                "Param": "NTT_RDX_CUT_S_2"
+              }
+            },
+            {
+              "name": "radix_cut3",
+              "description": "NTT radix cut #3",
+              "size_b": 4,
+              "offset_b": 12,
+              "default": {
+                "Param": "NTT_RDX_CUT_S_3"
+              }
+            },
+            {
+              "name": "radix_cut4",
+              "description": "NTT radix cut #4",
+              "size_b": 4,
+              "offset_b": 16,
+              "default": {
+                "Param": "NTT_RDX_CUT_S_4"
+              }
+            },
+            {
+              "name": "radix_cut5",
+              "description": "NTT radix cut #5",
+              "size_b": 4,
+              "offset_b": 20,
+              "default": {
+                "Param": "NTT_RDX_CUT_S_5"
+              }
+            },
+            {
+              "name": "radix_cut6",
+              "description": "NTT radix cut #6",
+              "size_b": 4,
+              "offset_b": 24,
+              "default": {
+                "Param": "NTT_RDX_CUT_S_6"
+              }
+            },
+            {
+              "name": "radix_cut7",
+              "description": "NTT radix cut #7",
+              "size_b": 4,
+              "offset_b": 28,
+              "default": {
+                "Param": "NTT_RDX_CUT_S_7"
+              }
+            }
+          ]
+        },
+        {
+          "name": "ntt_pbs",
+          "description": "Maximum number of PBS in the NTT pipeline",
+          "owner": "Parameter",
+          "read_access": "Read",
+          "write_access": "None",
+          "offset": 32,
+          "default": {
+            "ParamsField": {
+              "params": [
+                "BATCH_PBS_NB",
+                "TOTAL_PBS_NB"
+              ],
+              "name_val": [
+                [
+                  "batch_pbs_nb",
+                  "BATCH_PBS_NB"
+                ],
+                [
+                  "total_pbs_nb",
+                  "TOTAL_PBS_NB"
+                ]
+              ]
+            }
+          },
+          "field": [
+            {
+              "name": "batch_pbs_nb",
+              "description": "Maximum number of PBS in the NTT pipe",
+              "size_b": 8,
+              "offset_b": 0,
+              "default": {
+                "Param": "BATCH_PBS_NB"
+              }
+            },
+            {
+              "name": "total_pbs_nb",
+              "description": "Maximum number of PBS stored in PEP buffer",
+              "size_b": 8,
+              "offset_b": 8,
+              "default": {
+                "Param": "TOTAL_PBS_NB"
+              }
+            }
+          ]
+        },
+        {
+          "name": "ntt_modulo",
+          "description": "Code associated to the NTT prime",
+          "owner": "Parameter",
+          "read_access": "Read",
+          "write_access": "None",
+          "offset": 36,
+          "default": {
+            "Param": "MOD_NTT_NAME"
+          },
+          "field": null
+        },
+        {
+          "name": "application",
+          "description": "Code associated with the application",
+          "owner": "Parameter",
+          "read_access": "Read",
+          "write_access": "None",
+          "offset": 40,
+          "default": {
+            "Param": "APPLICATION_NAME"
+          },
+          "field": null
+        },
+        {
+          "name": "ks_structure",
+          "description": "Key-switch structure parameters",
+          "owner": "Parameter",
+          "read_access": "Read",
+          "write_access": "None",
+          "offset": 44,
+          "default": {
+            "ParamsField": {
+              "params": [
+                "LBX",
+                "LBY",
+                "LBZ"
+              ],
+              "name_val": [
+                [
+                  "x",
+                  "LBX"
+                ],
+                [
+                  "y",
+                  "LBY"
+                ],
+                [
+                  "z",
+                  "LBZ"
+                ]
+              ]
+            }
+          },
+          "field": [
+            {
+              "name": "x",
+              "description": "Number of coefficients on X dimension",
+              "size_b": 8,
+              "offset_b": 0,
+              "default": {
+                "Param": "LBX"
+              }
+            },
+            {
+              "name": "y",
+              "description": "Number of coefficients on Y dimension",
+              "size_b": 8,
+              "offset_b": 8,
+              "default": {
+                "Param": "LBY"
+              }
+            },
+            {
+              "name": "z",
+              "description": "Number of coefficients on Z dimension",
+              "size_b": 8,
+              "offset_b": 16,
+              "default": {
+                "Param": "LBZ"
+              }
+            }
+          ]
+        },
+        {
+          "name": "ks_crypto_param",
+          "description": "Key-switch crypto parameters",
+          "owner": "Parameter",
+          "read_access": "Read",
+          "write_access": "None",
+          "offset": 48,
+          "default": {
+            "ParamsField": {
+              "params": [
+                "MOD_KSK_W",
+                "KS_L",
+                "KS_B_W"
+              ],
+              "name_val": [
+                [
+                  "mod_ksk_w",
+                  "MOD_KSK_W"
+                ],
+                [
+                  "ks_l",
+                  "KS_L"
+                ],
+                [
+                  "ks_b",
+                  "KS_B_W"
+                ]
+              ]
+            }
+          },
+          "field": [
+            {
+              "name": "mod_ksk_w",
+              "description": "Width of KSK modulo",
+              "size_b": 8,
+              "offset_b": 0,
+              "default": {
+                "Param": "MOD_KSK_W"
+              }
+            },
+            {
+              "name": "ks_l",
+              "description": "Number of KS decomposition level",
+              "size_b": 8,
+              "offset_b": 8,
+              "default": {
+                "Param": "KS_L"
+              }
+            },
+            {
+              "name": "ks_b",
+              "description": "Width of KS decomposition base",
+              "size_b": 8,
+              "offset_b": 16,
+              "default": {
+                "Param": "KS_B_W"
+              }
+            }
+          ]
+        },
+        {
+          "name": "regf_structure",
+          "description": "Register file structure parameters",
+          "owner": "Parameter",
+          "read_access": "Read",
+          "write_access": "None",
+          "offset": 52,
+          "default": {
+            "ParamsField": {
+              "params": [
+                "REGF_REG_NB",
+                "REGF_COEF_NB"
+              ],
+              "name_val": [
+                [
+                  "reg_nb",
+                  "REGF_REG_NB"
+                ],
+                [
+                  "coef_nb",
+                  "REGF_COEF_NB"
+                ]
+              ]
+            }
+          },
+          "field": [
+            {
+              "name": "reg_nb",
+              "description": "Number of registers in regfile",
+              "size_b": 8,
+              "offset_b": 0,
+              "default": {
+                "Param": "REGF_REG_NB"
+              }
+            },
+            {
+              "name": "coef_nb",
+              "description": "Number of coefficients at regfile interface",
+              "size_b": 8,
+              "offset_b": 8,
+              "default": {
+                "Param": "REGF_COEF_NB"
+              }
+            }
+          ]
+        },
+        {
+          "name": "isc_structure",
+          "description": "Instruction scheduler structure parameters",
+          "owner": "Parameter",
+          "read_access": "Read",
+          "write_access": "None",
+          "offset": 56,
+          "default": {
+            "ParamsField": {
+              "params": [
+                "ISC_DEPTH",
+                "MIN_IOP_SIZE"
+              ],
+              "name_val": [
+                [
+                  "depth",
+                  "ISC_DEPTH"
+                ],
+                [
+                  "min_iop_size",
+                  "MIN_IOP_SIZE"
+                ]
+              ]
+            }
+          },
+          "field": [
+            {
+              "name": "depth",
+              "description": "Number of slots in ISC lookahead buffer.",
+              "size_b": 8,
+              "offset_b": 0,
+              "default": {
+                "Param": "ISC_DEPTH"
+              }
+            },
+            {
+              "name": "min_iop_size",
+              "description": "Minimum number of DOp per IOp to prevent sync_id overflow.",
+              "size_b": 8,
+              "offset_b": 8,
+              "default": {
+                "Param": "MIN_IOP_SIZE"
+              }
+            }
+          ]
+        },
+        {
+          "name": "pe_properties",
+          "description": "Processing elements parameters",
+          "owner": "Parameter",
+          "read_access": "Read",
+          "write_access": "None",
+          "offset": 60,
+          "default": {
+            "ParamsField": {
+              "params": [
+                "PEA_REGF_PERIOD",
+                "PEM_REGF_PERIOD",
+                "PEP_REGF_PERIOD",
+                "PEA_ALU_NB"
+              ],
+              "name_val": [
+                [
+                  "pea_regf_period",
+                  "PEA_REGF_PERIOD"
+                ],
+                [
+                  "pem_regf_period",
+                  "PEM_REGF_PERIOD"
+                ],
+                [
+                  "pep_regf_period",
+                  "PEP_REGF_PERIOD"
+                ],
+                [
+                  "alu_nb",
+                  "PEA_ALU_NB"
+                ]
+              ]
+            }
+          },
+          "field": [
+            {
+              "name": "pea_regf_period",
+              "description": "Number of cycles between 2 consecutive data transfert between PEA and regfile",
+              "size_b": 8,
+              "offset_b": 0,
+              "default": {
+                "Param": "PEA_REGF_PERIOD"
+              }
+            },
+            {
+              "name": "pem_regf_period",
+              "description": "Number of cycles between 2 consecutive data transfert between PEM and regfile",
+              "size_b": 8,
+              "offset_b": 8,
+              "default": {
+                "Param": "PEM_REGF_PERIOD"
+              }
+            },
+            {
+              "name": "pep_regf_period",
+              "description": "Number of cycles between 2 consecutive data transfert between PEP and regfile",
+              "size_b": 8,
+              "offset_b": 16,
+              "default": {
+                "Param": "PEP_REGF_PERIOD"
+              }
+            },
+            {
+              "name": "alu_nb",
+              "description": "Number of coefficients processed in parallel in pe_alu",
+              "size_b": 8,
+              "offset_b": 24,
+              "default": {
+                "Param": "PEA_ALU_NB"
+              }
+            }
+          ]
+        },
+        {
+          "name": "bsk_structure",
+          "description": "BSK manager structure parameters",
+          "owner": "Parameter",
+          "read_access": "Read",
+          "write_access": "None",
+          "offset": 64,
+          "default": {
+            "ParamsField": {
+              "params": [
+                "BSK_CUT_NB"
+              ],
+              "name_val": [
+                [
+                  "bsk_cut_nb",
+                  "BSK_CUT_NB"
+                ]
+              ]
+            }
+          },
+          "field": [
+            {
+              "name": "bsk_cut_nb",
+              "description": "BSK cut nb",
+              "size_b": 8,
+              "offset_b": 8,
+              "default": {
+                "Param": "BSK_CUT_NB"
+              }
+            }
+          ]
+        },
+        {
+          "name": "ksk_structure",
+          "description": "KSK manager structure parameters",
+          "owner": "Parameter",
+          "read_access": "Read",
+          "write_access": "None",
+          "offset": 68,
+          "default": {
+            "ParamsField": {
+              "params": [
+                "KSK_CUT_NB"
+              ],
+              "name_val": [
+                [
+                  "ksk_cut_nb",
+                  "KSK_CUT_NB"
+                ]
+              ]
+            }
+          },
+          "field": [
+            {
+              "name": "ksk_cut_nb",
+              "description": "KSK cut nb",
+              "size_b": 8,
+              "offset_b": 8,
+              "default": {
+                "Param": "KSK_CUT_NB"
+              }
+            }
+          ]
+        },
+        {
+          "name": "hbm_axi4_nb",
+          "description": "Number of AXI4 connections to HBM",
+          "owner": "Parameter",
+          "read_access": "Read",
+          "write_access": "None",
+          "offset": 72,
+          "default": {
+            "ParamsField": {
+              "params": [
+                "BSK_PC",
+                "KSK_PC",
+                "PEM_PC",
+                "GLWE_PC"
+              ],
+              "name_val": [
+                [
+                  "bsk_pc",
+                  "BSK_PC"
+                ],
+                [
+                  "ksk_pc",
+                  "KSK_PC"
+                ],
+                [
+                  "pem_pc",
+                  "PEM_PC"
+                ],
+                [
+                  "glwe_pc",
+                  "GLWE_PC"
+                ]
+              ]
+            }
+          },
+          "field": [
+            {
+              "name": "bsk_pc",
+              "description": "Number of HBM connections for BSK",
+              "size_b": 8,
+              "offset_b": 0,
+              "default": {
+                "Param": "BSK_PC"
+              }
+            },
+            {
+              "name": "ksk_pc",
+              "description": "Number of HBM connections for KSK",
+              "size_b": 8,
+              "offset_b": 8,
+              "default": {
+                "Param": "KSK_PC"
+              }
+            },
+            {
+              "name": "pem_pc",
+              "description": "Number of HBM connections for ciphertexts (PEM)",
+              "size_b": 8,
+              "offset_b": 16,
+              "default": {
+                "Param": "PEM_PC"
+              }
+            },
+            {
+              "name": "glwe_pc",
+              "description": "Number of HBM connections for GLWE",
+              "size_b": 8,
+              "offset_b": 24,
+              "default": {
+                "Param": "GLWE_PC"
+              }
+            }
+          ]
+        },
+        {
+          "name": "hbm_axi4_dataw_pem",
+          "description": "Ciphertext HBM AXI4 connection data width",
+          "owner": "Parameter",
+          "read_access": "Read",
+          "write_access": "None",
+          "offset": 76,
+          "default": {
+            "Param": "AXI4_PEM_DATA_W"
+          },
+          "field": null
+        },
+        {
+          "name": "hbm_axi4_dataw_glwe",
+          "description": "GLWE HBM AXI4 connection data width",
+          "owner": "Parameter",
+          "read_access": "Read",
+          "write_access": "None",
+          "offset": 80,
+          "default": {
+            "Param": "AXI4_GLWE_DATA_W"
+          },
+          "field": null
+        },
+        {
+          "name": "hbm_axi4_dataw_bsk",
+          "description": "BSK HBM AXI4 connection data width",
+          "owner": "Parameter",
+          "read_access": "Read",
+          "write_access": "None",
+          "offset": 84,
+          "default": {
+            "Param": "AXI4_BSK_DATA_W"
+          },
+          "field": null
+        },
+        {
+          "name": "hbm_axi4_dataw_ksk",
+          "description": "KSK HBM AXI4 connection data width",
+          "owner": "Parameter",
+          "read_access": "Read",
+          "write_access": "None",
+          "offset": 88,
+          "default": {
+            "Param": "AXI4_KSK_DATA_W"
+          },
+          "field": null
+        }
+      ]
+    },
+    {
+      "name": "hbm_axi4_addr_1in3",
+      "description": "HBM AXI4 connection address offset",
+      "offset": 4096,
+      "bytes_align": 4,
+      "range": 160,
+      "register": [
+        {
+          "name": "ct_pc0_lsb",
+          "description": "Address offset for each ciphertext HBM AXI4 connection",
+          "owner": "User",
+          "read_access": "Read",
+          "write_access": "Write",
+          "offset": 4096,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "ct_pc0_msb",
+          "description": "Address offset for each ciphertext HBM AXI4 connection",
+          "owner": "User",
+          "read_access": "Read",
+          "write_access": "Write",
+          "offset": 4100,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "ct_pc1_lsb",
+          "description": "Address offset for each ciphertext HBM AXI4 connection",
+          "owner": "User",
+          "read_access": "Read",
+          "write_access": "Write",
+          "offset": 4104,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "ct_pc1_msb",
+          "description": "Address offset for each ciphertext HBM AXI4 connection",
+          "owner": "User",
+          "read_access": "Read",
+          "write_access": "Write",
+          "offset": 4108,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "glwe_pc0_lsb",
+          "description": "Address offset for each GLWE HBM AXI4 connection",
+          "owner": "User",
+          "read_access": "Read",
+          "write_access": "Write",
+          "offset": 4112,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "glwe_pc0_msb",
+          "description": "Address offset for each GLWE HBM AXI4 connection",
+          "owner": "User",
+          "read_access": "Read",
+          "write_access": "Write",
+          "offset": 4116,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "ksk_pc0_lsb",
+          "description": "Address offset for each KSK HBM AXI4 connection",
+          "owner": "User",
+          "read_access": "Read",
+          "write_access": "Write",
+          "offset": 4120,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "ksk_pc0_msb",
+          "description": "Address offset for each KSK HBM AXI4 connection",
+          "owner": "User",
+          "read_access": "Read",
+          "write_access": "Write",
+          "offset": 4124,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "ksk_pc1_lsb",
+          "description": "Address offset for each KSK HBM AXI4 connection",
+          "owner": "User",
+          "read_access": "Read",
+          "write_access": "Write",
+          "offset": 4128,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "ksk_pc1_msb",
+          "description": "Address offset for each KSK HBM AXI4 connection",
+          "owner": "User",
+          "read_access": "Read",
+          "write_access": "Write",
+          "offset": 4132,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "ksk_pc2_lsb",
+          "description": "Address offset for each KSK HBM AXI4 connection",
+          "owner": "User",
+          "read_access": "Read",
+          "write_access": "Write",
+          "offset": 4136,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "ksk_pc2_msb",
+          "description": "Address offset for each KSK HBM AXI4 connection",
+          "owner": "User",
+          "read_access": "Read",
+          "write_access": "Write",
+          "offset": 4140,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "ksk_pc3_lsb",
+          "description": "Address offset for each KSK HBM AXI4 connection",
+          "owner": "User",
+          "read_access": "Read",
+          "write_access": "Write",
+          "offset": 4144,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "ksk_pc3_msb",
+          "description": "Address offset for each KSK HBM AXI4 connection",
+          "owner": "User",
+          "read_access": "Read",
+          "write_access": "Write",
+          "offset": 4148,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "ksk_pc4_lsb",
+          "description": "Address offset for each KSK HBM AXI4 connection",
+          "owner": "User",
+          "read_access": "Read",
+          "write_access": "Write",
+          "offset": 4152,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "ksk_pc4_msb",
+          "description": "Address offset for each KSK HBM AXI4 connection",
+          "owner": "User",
+          "read_access": "Read",
+          "write_access": "Write",
+          "offset": 4156,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "ksk_pc5_lsb",
+          "description": "Address offset for each KSK HBM AXI4 connection",
+          "owner": "User",
+          "read_access": "Read",
+          "write_access": "Write",
+          "offset": 4160,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "ksk_pc5_msb",
+          "description": "Address offset for each KSK HBM AXI4 connection",
+          "owner": "User",
+          "read_access": "Read",
+          "write_access": "Write",
+          "offset": 4164,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "ksk_pc6_lsb",
+          "description": "Address offset for each KSK HBM AXI4 connection",
+          "owner": "User",
+          "read_access": "Read",
+          "write_access": "Write",
+          "offset": 4168,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "ksk_pc6_msb",
+          "description": "Address offset for each KSK HBM AXI4 connection",
+          "owner": "User",
+          "read_access": "Read",
+          "write_access": "Write",
+          "offset": 4172,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "ksk_pc7_lsb",
+          "description": "Address offset for each KSK HBM AXI4 connection",
+          "owner": "User",
+          "read_access": "Read",
+          "write_access": "Write",
+          "offset": 4176,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "ksk_pc7_msb",
+          "description": "Address offset for each KSK HBM AXI4 connection",
+          "owner": "User",
+          "read_access": "Read",
+          "write_access": "Write",
+          "offset": 4180,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "ksk_pc8_lsb",
+          "description": "Address offset for each KSK HBM AXI4 connection",
+          "owner": "User",
+          "read_access": "Read",
+          "write_access": "Write",
+          "offset": 4184,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "ksk_pc8_msb",
+          "description": "Address offset for each KSK HBM AXI4 connection",
+          "owner": "User",
+          "read_access": "Read",
+          "write_access": "Write",
+          "offset": 4188,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "ksk_pc9_lsb",
+          "description": "Address offset for each KSK HBM AXI4 connection",
+          "owner": "User",
+          "read_access": "Read",
+          "write_access": "Write",
+          "offset": 4192,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "ksk_pc9_msb",
+          "description": "Address offset for each KSK HBM AXI4 connection",
+          "owner": "User",
+          "read_access": "Read",
+          "write_access": "Write",
+          "offset": 4196,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "ksk_pc10_lsb",
+          "description": "Address offset for each KSK HBM AXI4 connection",
+          "owner": "User",
+          "read_access": "Read",
+          "write_access": "Write",
+          "offset": 4200,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "ksk_pc10_msb",
+          "description": "Address offset for each KSK HBM AXI4 connection",
+          "owner": "User",
+          "read_access": "Read",
+          "write_access": "Write",
+          "offset": 4204,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "ksk_pc11_lsb",
+          "description": "Address offset for each KSK HBM AXI4 connection",
+          "owner": "User",
+          "read_access": "Read",
+          "write_access": "Write",
+          "offset": 4208,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "ksk_pc11_msb",
+          "description": "Address offset for each KSK HBM AXI4 connection",
+          "owner": "User",
+          "read_access": "Read",
+          "write_access": "Write",
+          "offset": 4212,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "ksk_pc12_lsb",
+          "description": "Address offset for each KSK HBM AXI4 connection",
+          "owner": "User",
+          "read_access": "Read",
+          "write_access": "Write",
+          "offset": 4216,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "ksk_pc12_msb",
+          "description": "Address offset for each KSK HBM AXI4 connection",
+          "owner": "User",
+          "read_access": "Read",
+          "write_access": "Write",
+          "offset": 4220,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "ksk_pc13_lsb",
+          "description": "Address offset for each KSK HBM AXI4 connection",
+          "owner": "User",
+          "read_access": "Read",
+          "write_access": "Write",
+          "offset": 4224,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "ksk_pc13_msb",
+          "description": "Address offset for each KSK HBM AXI4 connection",
+          "owner": "User",
+          "read_access": "Read",
+          "write_access": "Write",
+          "offset": 4228,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "ksk_pc14_lsb",
+          "description": "Address offset for each KSK HBM AXI4 connection",
+          "owner": "User",
+          "read_access": "Read",
+          "write_access": "Write",
+          "offset": 4232,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "ksk_pc14_msb",
+          "description": "Address offset for each KSK HBM AXI4 connection",
+          "owner": "User",
+          "read_access": "Read",
+          "write_access": "Write",
+          "offset": 4236,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "ksk_pc15_lsb",
+          "description": "Address offset for each KSK HBM AXI4 connection",
+          "owner": "User",
+          "read_access": "Read",
+          "write_access": "Write",
+          "offset": 4240,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "ksk_pc15_msb",
+          "description": "Address offset for each KSK HBM AXI4 connection",
+          "owner": "User",
+          "read_access": "Read",
+          "write_access": "Write",
+          "offset": 4244,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "trc_pc0_lsb",
+          "description": "Address offset for each trace HBM AXI4 connection",
+          "owner": "User",
+          "read_access": "Read",
+          "write_access": "Write",
+          "offset": 4248,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "trc_pc0_msb",
+          "description": "Address offset for each trace HBM AXI4 connection",
+          "owner": "User",
+          "read_access": "Read",
+          "write_access": "Write",
+          "offset": 4252,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        }
+      ]
+    },
+    {
+      "name": "bpip",
+      "description": "BPIP configuration",
+      "offset": 8192,
+      "bytes_align": 4,
+      "range": 8,
+      "register": [
+        {
+          "name": "use",
+          "description": "(1) Use BPIP mode, (0) use IPIP mode (default)",
+          "owner": "User",
+          "read_access": "Read",
+          "write_access": "Write",
+          "offset": 8192,
+          "default": {
+            "ParamsField": {
+              "params": [],
+              "name_val": [
+                [
+                  "use_bpip",
+                  "'h1"
+                ],
+                [
+                  "use_opportunism",
+                  "'h0"
+                ]
+              ]
+            }
+          },
+          "field": [
+            {
+              "name": "use_bpip",
+              "description": "use",
+              "size_b": 1,
+              "offset_b": 0,
+              "default": {
+                "Cst": 1
+              }
+            },
+            {
+              "name": "use_opportunism",
+              "description": "use opportunistic PBS flush",
+              "size_b": 1,
+              "offset_b": 1,
+              "default": {
+                "Cst": 0
+              }
+            }
+          ]
+        },
+        {
+          "name": "timeout",
+          "description": "Timeout for BPIP mode",
+          "owner": "User",
+          "read_access": "Read",
+          "write_access": "Write",
+          "offset": 8196,
+          "default": {
+            "Cst": 4294967295
+          },
+          "field": null
+        }
+      ]
+    },
+    {
+      "name": "entry_prc_1in3",
+      "description": "entry_prc_1in3 section with known value used for debug.",
+      "offset": 65536,
+      "bytes_align": 4,
+      "range": 16,
+      "register": [
+        {
+          "name": "dummy_val0",
+          "description": "RTL version",
+          "owner": "Parameter",
+          "read_access": "Read",
+          "write_access": "None",
+          "offset": 65536,
+          "default": {
+            "Cst": 33686018
+          },
+          "field": null
+        },
+        {
+          "name": "dummy_val1",
+          "description": "RTL version",
+          "owner": "Parameter",
+          "read_access": "Read",
+          "write_access": "None",
+          "offset": 65540,
+          "default": {
+            "Cst": 303174162
+          },
+          "field": null
+        },
+        {
+          "name": "dummy_val2",
+          "description": "RTL version",
+          "owner": "Parameter",
+          "read_access": "Read",
+          "write_access": "None",
+          "offset": 65544,
+          "default": {
+            "Cst": 572662306
+          },
+          "field": null
+        },
+        {
+          "name": "dummy_val3",
+          "description": "RTL version",
+          "owner": "Parameter",
+          "read_access": "Read",
+          "write_access": "None",
+          "offset": 65548,
+          "default": {
+            "Cst": 842150450
+          },
+          "field": null
+        }
+      ]
+    },
+    {
+      "name": "status_1in3",
+      "description": "HPU status of part 1in3",
+      "offset": 65552,
+      "bytes_align": 4,
+      "range": 4,
+      "register": [
+        {
+          "name": "error",
+          "description": "Error register (Could be reset by user)",
+          "owner": "Kernel",
+          "read_access": "Read",
+          "write_access": "WriteNotify",
+          "offset": 65552,
+          "default": {
+            "ParamsField": {
+              "params": [],
+              "name_val": [
+                [
+                  "pbs",
+                  "'h0"
+                ]
+              ]
+            }
+          },
+          "field": [
+            {
+              "name": "pbs",
+              "description": "HPU error part 1in3",
+              "size_b": 32,
+              "offset_b": 0,
+              "default": {
+                "Cst": 0
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "ksk_avail",
+      "description": "KSK availability configuration",
+      "offset": 69632,
+      "bytes_align": 4,
+      "range": 8,
+      "register": [
+        {
+          "name": "avail",
+          "description": "KSK available bit",
+          "owner": "User",
+          "read_access": "Read",
+          "write_access": "Write",
+          "offset": 69632,
+          "default": {
+            "ParamsField": {
+              "params": [],
+              "name_val": [
+                [
+                  "avail",
+                  "'h0"
+                ]
+              ]
+            }
+          },
+          "field": [
+            {
+              "name": "avail",
+              "description": "avail",
+              "size_b": 1,
+              "offset_b": 0,
+              "default": {
+                "Cst": 0
+              }
+            }
+          ]
+        },
+        {
+          "name": "reset",
+          "description": "KSK reset sequence",
+          "owner": "Kernel",
+          "read_access": "Read",
+          "write_access": "WriteNotify",
+          "offset": 69636,
+          "default": {
+            "ParamsField": {
+              "params": [],
+              "name_val": [
+                [
+                  "request",
+                  "'h0"
+                ],
+                [
+                  "done",
+                  "'h0"
+                ]
+              ]
+            }
+          },
+          "field": [
+            {
+              "name": "request",
+              "description": "request",
+              "size_b": 1,
+              "offset_b": 0,
+              "default": {
+                "Cst": 0
+              }
+            },
+            {
+              "name": "done",
+              "description": "done",
+              "size_b": 1,
+              "offset_b": 31,
+              "default": {
+                "Cst": 0
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "runtime_1in3",
+      "description": "Runtime information",
+      "offset": 73728,
+      "bytes_align": 4,
+      "range": 316,
+      "register": [
+        {
+          "name": "pep_cmux_loop",
+          "description": "PEP: CMUX iteration loop number",
+          "owner": "Kernel",
+          "read_access": "Read",
+          "write_access": "None",
+          "offset": 73728,
+          "default": {
+            "ParamsField": {
+              "params": [],
+              "name_val": [
+                [
+                  "br_loop",
+                  "'h0"
+                ],
+                [
+                  "br_loop_c",
+                  "'h0"
+                ],
+                [
+                  "ks_loop",
+                  "'h0"
+                ],
+                [
+                  "ks_loop_c",
+                  "'h0"
+                ]
+              ]
+            }
+          },
+          "field": [
+            {
+              "name": "br_loop",
+              "description": "PBS current BR-loop",
+              "size_b": 15,
+              "offset_b": 0,
+              "default": {
+                "Cst": 0
+              }
+            },
+            {
+              "name": "br_loop_c",
+              "description": "PBS current BR-loop parity",
+              "size_b": 1,
+              "offset_b": 15,
+              "default": {
+                "Cst": 0
+              }
+            },
+            {
+              "name": "ks_loop",
+              "description": "KS current KS-loop",
+              "size_b": 15,
+              "offset_b": 16,
+              "default": {
+                "Cst": 0
+              }
+            },
+            {
+              "name": "ks_loop_c",
+              "description": "KS current KS-loop parity",
+              "size_b": 1,
+              "offset_b": 31,
+              "default": {
+                "Cst": 0
+              }
+            }
+          ]
+        },
+        {
+          "name": "pep_pointer_0",
+          "description": "PEP: pointers (part 1)",
+          "owner": "Kernel",
+          "read_access": "Read",
+          "write_access": "None",
+          "offset": 73732,
+          "default": {
+            "ParamsField": {
+              "params": [],
+              "name_val": [
+                [
+                  "pool_rp",
+                  "'h0"
+                ],
+                [
+                  "pool_wp",
+                  "'h0"
+                ],
+                [
+                  "ldg_pt",
+                  "'h0"
+                ],
+                [
+                  "ldb_pt",
+                  "'h0"
+                ]
+              ]
+            }
+          },
+          "field": [
+            {
+              "name": "pool_rp",
+              "description": "PEP pool_rp",
+              "size_b": 8,
+              "offset_b": 0,
+              "default": {
+                "Cst": 0
+              }
+            },
+            {
+              "name": "pool_wp",
+              "description": "PEP pool_wp",
+              "size_b": 8,
+              "offset_b": 8,
+              "default": {
+                "Cst": 0
+              }
+            },
+            {
+              "name": "ldg_pt",
+              "description": "PEP ldg_pt",
+              "size_b": 8,
+              "offset_b": 16,
+              "default": {
+                "Cst": 0
+              }
+            },
+            {
+              "name": "ldb_pt",
+              "description": "PEP ldb_pt",
+              "size_b": 8,
+              "offset_b": 24,
+              "default": {
+                "Cst": 0
+              }
+            }
+          ]
+        },
+        {
+          "name": "pep_pointer_1",
+          "description": "PEP: pointers (part 2)",
+          "owner": "Kernel",
+          "read_access": "Read",
+          "write_access": "None",
+          "offset": 73736,
+          "default": {
+            "ParamsField": {
+              "params": [],
+              "name_val": [
+                [
+                  "ks_in_rp",
+                  "'h0"
+                ],
+                [
+                  "ks_in_wp",
+                  "'h0"
+                ],
+                [
+                  "ks_out_rp",
+                  "'h0"
+                ],
+                [
+                  "ks_out_wp",
+                  "'h0"
+                ]
+              ]
+            }
+          },
+          "field": [
+            {
+              "name": "ks_in_rp",
+              "description": "PEP ks_in_rp",
+              "size_b": 8,
+              "offset_b": 0,
+              "default": {
+                "Cst": 0
+              }
+            },
+            {
+              "name": "ks_in_wp",
+              "description": "PEP ks_in_wp",
+              "size_b": 8,
+              "offset_b": 8,
+              "default": {
+                "Cst": 0
+              }
+            },
+            {
+              "name": "ks_out_rp",
+              "description": "PEP ks_out_rp",
+              "size_b": 8,
+              "offset_b": 16,
+              "default": {
+                "Cst": 0
+              }
+            },
+            {
+              "name": "ks_out_wp",
+              "description": "PEP ks_out_wp",
+              "size_b": 8,
+              "offset_b": 24,
+              "default": {
+                "Cst": 0
+              }
+            }
+          ]
+        },
+        {
+          "name": "pep_pointer_2",
+          "description": "PEP: pointers (part 3)",
+          "owner": "Kernel",
+          "read_access": "Read",
+          "write_access": "None",
+          "offset": 73740,
+          "default": {
+            "ParamsField": {
+              "params": [],
+              "name_val": [
+                [
+                  "pbs_in_rp",
+                  "'h0"
+                ],
+                [
+                  "pbs_in_wp",
+                  "'h0"
+                ],
+                [
+                  "ipip_flush_last_pbs_in_loop",
+                  "'h0"
+                ]
+              ]
+            }
+          },
+          "field": [
+            {
+              "name": "pbs_in_rp",
+              "description": "PEP pbs_in_rp",
+              "size_b": 8,
+              "offset_b": 0,
+              "default": {
+                "Cst": 0
+              }
+            },
+            {
+              "name": "pbs_in_wp",
+              "description": "PEP pbs_in_wp",
+              "size_b": 8,
+              "offset_b": 8,
+              "default": {
+                "Cst": 0
+              }
+            },
+            {
+              "name": "ipip_flush_last_pbs_in_loop",
+              "description": "PEP IPIP flush last pbs_in_loop",
+              "size_b": 16,
+              "offset_b": 16,
+              "default": {
+                "Cst": 0
+              }
+            }
+          ]
+        },
+        {
+          "name": "isc_latest_instruction_0",
+          "description": "ISC: 4 latest instructions received ([0] is the most recent)",
+          "owner": "Kernel",
+          "read_access": "Read",
+          "write_access": "None",
+          "offset": 73744,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "isc_latest_instruction_1",
+          "description": "ISC: 4 latest instructions received ([0] is the most recent)",
+          "owner": "Kernel",
+          "read_access": "Read",
+          "write_access": "None",
+          "offset": 73748,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "isc_latest_instruction_2",
+          "description": "ISC: 4 latest instructions received ([0] is the most recent)",
+          "owner": "Kernel",
+          "read_access": "Read",
+          "write_access": "None",
+          "offset": 73752,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "isc_latest_instruction_3",
+          "description": "ISC: 4 latest instructions received ([0] is the most recent)",
+          "owner": "Kernel",
+          "read_access": "Read",
+          "write_access": "None",
+          "offset": 73756,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "pep_seq_bpip_batch_cnt",
+          "description": "PEP: BPIP batch counter (Could be reset by user)",
+          "owner": "Kernel",
+          "read_access": "Read",
+          "write_access": "WriteNotify",
+          "offset": 73760,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "pep_seq_bpip_batch_flush_cnt",
+          "description": "PEP: BPIP batch triggered by a flush counter (Could be reset by user)",
+          "owner": "Kernel",
+          "read_access": "Read",
+          "write_access": "WriteNotify",
+          "offset": 73764,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "pep_seq_bpip_batch_timeout_cnt",
+          "description": "PEP: BPIP batch triggered by a timeout counter (Could be reset by user)",
+          "owner": "Kernel",
+          "read_access": "Read",
+          "write_access": "WriteNotify",
+          "offset": 73768,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "pep_seq_bpip_waiting_batch_cnt",
+          "description": "PEP: BPIP batch that waits the trigger counter (Could be reset by user)",
+          "owner": "Kernel",
+          "read_access": "Read",
+          "write_access": "WriteNotify",
+          "offset": 73772,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "pep_seq_bpip_batch_filling_cnt_1",
+          "description": "PEP: Count batch with filled with a given number of CT (Could be reset by user)",
+          "owner": "Kernel",
+          "read_access": "Read",
+          "write_access": "WriteNotify",
+          "offset": 73776,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "pep_seq_bpip_batch_filling_cnt_2",
+          "description": "PEP: Count batch with filled with a given number of CT (Could be reset by user)",
+          "owner": "Kernel",
+          "read_access": "Read",
+          "write_access": "WriteNotify",
+          "offset": 73780,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "pep_seq_bpip_batch_filling_cnt_3",
+          "description": "PEP: Count batch with filled with a given number of CT (Could be reset by user)",
+          "owner": "Kernel",
+          "read_access": "Read",
+          "write_access": "WriteNotify",
+          "offset": 73784,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "pep_seq_bpip_batch_filling_cnt_4",
+          "description": "PEP: Count batch with filled with a given number of CT (Could be reset by user)",
+          "owner": "Kernel",
+          "read_access": "Read",
+          "write_access": "WriteNotify",
+          "offset": 73788,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "pep_seq_bpip_batch_filling_cnt_5",
+          "description": "PEP: Count batch with filled with a given number of CT (Could be reset by user)",
+          "owner": "Kernel",
+          "read_access": "Read",
+          "write_access": "WriteNotify",
+          "offset": 73792,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "pep_seq_bpip_batch_filling_cnt_6",
+          "description": "PEP: Count batch with filled with a given number of CT (Could be reset by user)",
+          "owner": "Kernel",
+          "read_access": "Read",
+          "write_access": "WriteNotify",
+          "offset": 73796,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "pep_seq_bpip_batch_filling_cnt_7",
+          "description": "PEP: Count batch with filled with a given number of CT (Could be reset by user)",
+          "owner": "Kernel",
+          "read_access": "Read",
+          "write_access": "WriteNotify",
+          "offset": 73800,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "pep_seq_bpip_batch_filling_cnt_8",
+          "description": "PEP: Count batch with filled with a given number of CT (Could be reset by user)",
+          "owner": "Kernel",
+          "read_access": "Read",
+          "write_access": "WriteNotify",
+          "offset": 73804,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "pep_seq_bpip_batch_filling_cnt_9",
+          "description": "PEP: Count batch with filled with a given number of CT (Could be reset by user)",
+          "owner": "Kernel",
+          "read_access": "Read",
+          "write_access": "WriteNotify",
+          "offset": 73808,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "pep_seq_bpip_batch_filling_cnt_10",
+          "description": "PEP: Count batch with filled with a given number of CT (Could be reset by user)",
+          "owner": "Kernel",
+          "read_access": "Read",
+          "write_access": "WriteNotify",
+          "offset": 73812,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "pep_seq_bpip_batch_filling_cnt_11",
+          "description": "PEP: Count batch with filled with a given number of CT (Could be reset by user)",
+          "owner": "Kernel",
+          "read_access": "Read",
+          "write_access": "WriteNotify",
+          "offset": 73816,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "pep_seq_bpip_batch_filling_cnt_12",
+          "description": "PEP: Count batch with filled with a given number of CT (Could be reset by user)",
+          "owner": "Kernel",
+          "read_access": "Read",
+          "write_access": "WriteNotify",
+          "offset": 73820,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "pep_seq_bpip_batch_filling_cnt_13",
+          "description": "PEP: Count batch with filled with a given number of CT (Could be reset by user)",
+          "owner": "Kernel",
+          "read_access": "Read",
+          "write_access": "WriteNotify",
+          "offset": 73824,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "pep_seq_bpip_batch_filling_cnt_14",
+          "description": "PEP: Count batch with filled with a given number of CT (Could be reset by user)",
+          "owner": "Kernel",
+          "read_access": "Read",
+          "write_access": "WriteNotify",
+          "offset": 73828,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "pep_seq_bpip_batch_filling_cnt_15",
+          "description": "PEP: Count batch with filled with a given number of CT (Could be reset by user)",
+          "owner": "Kernel",
+          "read_access": "Read",
+          "write_access": "WriteNotify",
+          "offset": 73832,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "pep_seq_bpip_batch_filling_cnt_16",
+          "description": "PEP: Count batch with filled with a given number of CT (Could be reset by user)",
+          "owner": "Kernel",
+          "read_access": "Read",
+          "write_access": "WriteNotify",
+          "offset": 73836,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "pep_seq_ld_ack_cnt",
+          "description": "PEP: load BLWE ack counter (Could be reset by user)",
+          "owner": "Kernel",
+          "read_access": "Read",
+          "write_access": "WriteNotify",
+          "offset": 73840,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "pep_seq_cmux_not_full_batch_cnt",
+          "description": "PEP: not full batch CMUX counter (Could be reset by user)",
+          "owner": "Kernel",
+          "read_access": "Read",
+          "write_access": "WriteNotify",
+          "offset": 73844,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "pep_seq_ipip_flush_cnt",
+          "description": "PEP: IPIP flush CMUX counter (Could be reset by user)",
+          "owner": "Kernel",
+          "read_access": "Read",
+          "write_access": "WriteNotify",
+          "offset": 73848,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "pep_ldb_rcp_dur",
+          "description": "PEP: load BLWE reception max duration (Could be reset by user)",
+          "owner": "Kernel",
+          "read_access": "Read",
+          "write_access": "WriteNotify",
+          "offset": 73852,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "pep_ldg_req_dur",
+          "description": "PEP: load GLWE request max duration (Could be reset by user)",
+          "owner": "Kernel",
+          "read_access": "Read",
+          "write_access": "WriteNotify",
+          "offset": 73856,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "pep_ldg_rcp_dur",
+          "description": "PEP: load GLWE reception max duration (Could be reset by user)",
+          "owner": "Kernel",
+          "read_access": "Read",
+          "write_access": "WriteNotify",
+          "offset": 73860,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "pep_load_ksk_rcp_dur_pc0",
+          "description": "PEP: load KSK slice reception max duration (Could be reset by user)",
+          "owner": "Kernel",
+          "read_access": "Read",
+          "write_access": "WriteNotify",
+          "offset": 73864,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "pep_load_ksk_rcp_dur_pc1",
+          "description": "PEP: load KSK slice reception max duration (Could be reset by user)",
+          "owner": "Kernel",
+          "read_access": "Read",
+          "write_access": "WriteNotify",
+          "offset": 73868,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "pep_load_ksk_rcp_dur_pc2",
+          "description": "PEP: load KSK slice reception max duration (Could be reset by user)",
+          "owner": "Kernel",
+          "read_access": "Read",
+          "write_access": "WriteNotify",
+          "offset": 73872,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "pep_load_ksk_rcp_dur_pc3",
+          "description": "PEP: load KSK slice reception max duration (Could be reset by user)",
+          "owner": "Kernel",
+          "read_access": "Read",
+          "write_access": "WriteNotify",
+          "offset": 73876,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "pep_load_ksk_rcp_dur_pc4",
+          "description": "PEP: load KSK slice reception max duration (Could be reset by user)",
+          "owner": "Kernel",
+          "read_access": "Read",
+          "write_access": "WriteNotify",
+          "offset": 73880,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "pep_load_ksk_rcp_dur_pc5",
+          "description": "PEP: load KSK slice reception max duration (Could be reset by user)",
+          "owner": "Kernel",
+          "read_access": "Read",
+          "write_access": "WriteNotify",
+          "offset": 73884,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "pep_load_ksk_rcp_dur_pc6",
+          "description": "PEP: load KSK slice reception max duration (Could be reset by user)",
+          "owner": "Kernel",
+          "read_access": "Read",
+          "write_access": "WriteNotify",
+          "offset": 73888,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "pep_load_ksk_rcp_dur_pc7",
+          "description": "PEP: load KSK slice reception max duration (Could be reset by user)",
+          "owner": "Kernel",
+          "read_access": "Read",
+          "write_access": "WriteNotify",
+          "offset": 73892,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "pep_load_ksk_rcp_dur_pc8",
+          "description": "PEP: load KSK slice reception max duration (Could be reset by user)",
+          "owner": "Kernel",
+          "read_access": "Read",
+          "write_access": "WriteNotify",
+          "offset": 73896,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "pep_load_ksk_rcp_dur_pc9",
+          "description": "PEP: load KSK slice reception max duration (Could be reset by user)",
+          "owner": "Kernel",
+          "read_access": "Read",
+          "write_access": "WriteNotify",
+          "offset": 73900,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "pep_load_ksk_rcp_dur_pc10",
+          "description": "PEP: load KSK slice reception max duration (Could be reset by user)",
+          "owner": "Kernel",
+          "read_access": "Read",
+          "write_access": "WriteNotify",
+          "offset": 73904,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "pep_load_ksk_rcp_dur_pc11",
+          "description": "PEP: load KSK slice reception max duration (Could be reset by user)",
+          "owner": "Kernel",
+          "read_access": "Read",
+          "write_access": "WriteNotify",
+          "offset": 73908,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "pep_load_ksk_rcp_dur_pc12",
+          "description": "PEP: load KSK slice reception max duration (Could be reset by user)",
+          "owner": "Kernel",
+          "read_access": "Read",
+          "write_access": "WriteNotify",
+          "offset": 73912,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "pep_load_ksk_rcp_dur_pc13",
+          "description": "PEP: load KSK slice reception max duration (Could be reset by user)",
+          "owner": "Kernel",
+          "read_access": "Read",
+          "write_access": "WriteNotify",
+          "offset": 73916,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "pep_load_ksk_rcp_dur_pc14",
+          "description": "PEP: load KSK slice reception max duration (Could be reset by user)",
+          "owner": "Kernel",
+          "read_access": "Read",
+          "write_access": "WriteNotify",
+          "offset": 73920,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "pep_load_ksk_rcp_dur_pc15",
+          "description": "PEP: load KSK slice reception max duration (Could be reset by user)",
+          "owner": "Kernel",
+          "read_access": "Read",
+          "write_access": "WriteNotify",
+          "offset": 73924,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "pep_mmacc_sxt_rcp_dur",
+          "description": "PEP: MMACC SXT reception duration (Could be reset by user)",
+          "owner": "Kernel",
+          "read_access": "Read",
+          "write_access": "WriteNotify",
+          "offset": 73928,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "pep_mmacc_sxt_req_dur",
+          "description": "PEP: MMACC SXT request duration (Could be reset by user)",
+          "owner": "Kernel",
+          "read_access": "Read",
+          "write_access": "WriteNotify",
+          "offset": 73932,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "pep_mmacc_sxt_cmd_wait_b_dur",
+          "description": "PEP: MMACC SXT command wait for b duration (Could be reset by user)",
+          "owner": "Kernel",
+          "read_access": "Read",
+          "write_access": "WriteNotify",
+          "offset": 73936,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "pep_inst_cnt",
+          "description": "PEP: input instruction counter (Could be reset by user)",
+          "owner": "Kernel",
+          "read_access": "Read",
+          "write_access": "WriteNotify",
+          "offset": 73940,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "pep_ack_cnt",
+          "description": "PEP: instruction acknowledge counter (Could be reset by user)",
+          "owner": "Kernel",
+          "read_access": "Read",
+          "write_access": "WriteNotify",
+          "offset": 73944,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "pem_load_inst_cnt",
+          "description": "PEM: load input instruction counter (Could be reset by user)",
+          "owner": "Kernel",
+          "read_access": "Read",
+          "write_access": "WriteNotify",
+          "offset": 73948,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "pem_load_ack_cnt",
+          "description": "PEM: load instruction acknowledge counter (Could be reset by user)",
+          "owner": "Kernel",
+          "read_access": "Read",
+          "write_access": "WriteNotify",
+          "offset": 73952,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "pem_store_inst_cnt",
+          "description": "PEM: store input instruction counter (Could be reset by user)",
+          "owner": "Kernel",
+          "read_access": "Read",
+          "write_access": "WriteNotify",
+          "offset": 73956,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "pem_store_ack_cnt",
+          "description": "PEM: store instruction acknowledge counter (Could be reset by user)",
+          "owner": "Kernel",
+          "read_access": "Read",
+          "write_access": "WriteNotify",
+          "offset": 73960,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "pea_inst_cnt",
+          "description": "PEA: input instruction counter (Could be reset by user)",
+          "owner": "Kernel",
+          "read_access": "Read",
+          "write_access": "WriteNotify",
+          "offset": 73964,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "pea_ack_cnt",
+          "description": "PEA: instruction acknowledge counter (Could be reset by user)",
+          "owner": "Kernel",
+          "read_access": "Read",
+          "write_access": "WriteNotify",
+          "offset": 73968,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "isc_inst_cnt",
+          "description": "ISC: input instruction counter (Could be reset by user)",
+          "owner": "Kernel",
+          "read_access": "Read",
+          "write_access": "WriteNotify",
+          "offset": 73972,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "isc_ack_cnt",
+          "description": "ISC: instruction acknowledge counter (Could be reset by user)",
+          "owner": "Kernel",
+          "read_access": "Read",
+          "write_access": "WriteNotify",
+          "offset": 73976,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "pem_load_info_0_pc0_0",
+          "description": "PEM: load first data)",
+          "owner": "Kernel",
+          "read_access": "Read",
+          "write_access": "None",
+          "offset": 73980,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "pem_load_info_0_pc0_1",
+          "description": "PEM: load first data)",
+          "owner": "Kernel",
+          "read_access": "Read",
+          "write_access": "None",
+          "offset": 73984,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "pem_load_info_0_pc0_2",
+          "description": "PEM: load first data)",
+          "owner": "Kernel",
+          "read_access": "Read",
+          "write_access": "None",
+          "offset": 73988,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "pem_load_info_0_pc0_3",
+          "description": "PEM: load first data)",
+          "owner": "Kernel",
+          "read_access": "Read",
+          "write_access": "None",
+          "offset": 73992,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "pem_load_info_0_pc1_0",
+          "description": "PEM: load first data)",
+          "owner": "Kernel",
+          "read_access": "Read",
+          "write_access": "None",
+          "offset": 73996,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "pem_load_info_0_pc1_1",
+          "description": "PEM: load first data)",
+          "owner": "Kernel",
+          "read_access": "Read",
+          "write_access": "None",
+          "offset": 74000,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "pem_load_info_0_pc1_2",
+          "description": "PEM: load first data)",
+          "owner": "Kernel",
+          "read_access": "Read",
+          "write_access": "None",
+          "offset": 74004,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "pem_load_info_0_pc1_3",
+          "description": "PEM: load first data)",
+          "owner": "Kernel",
+          "read_access": "Read",
+          "write_access": "None",
+          "offset": 74008,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "pem_load_info_1_pc0_lsb",
+          "description": "PEM: load first address",
+          "owner": "Kernel",
+          "read_access": "Read",
+          "write_access": "None",
+          "offset": 74012,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "pem_load_info_1_pc0_msb",
+          "description": "PEM: load first address",
+          "owner": "Kernel",
+          "read_access": "Read",
+          "write_access": "None",
+          "offset": 74016,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "pem_load_info_1_pc1_lsb",
+          "description": "PEM: load first address",
+          "owner": "Kernel",
+          "read_access": "Read",
+          "write_access": "None",
+          "offset": 74020,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "pem_load_info_1_pc1_msb",
+          "description": "PEM: load first address",
+          "owner": "Kernel",
+          "read_access": "Read",
+          "write_access": "None",
+          "offset": 74024,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "pem_store_info_0",
+          "description": "PEM: store info 0)",
+          "owner": "Kernel",
+          "read_access": "Read",
+          "write_access": "None",
+          "offset": 74028,
+          "default": {
+            "ParamsField": {
+              "params": [],
+              "name_val": [
+                [
+                  "cmd_vld",
+                  "'h0"
+                ],
+                [
+                  "cmd_rdy",
+                  "'h0"
+                ],
+                [
+                  "pem_regf_rd_req_vld",
+                  "'h0"
+                ],
+                [
+                  "pem_regf_rd_req_rdy",
+                  "'h0"
+                ],
+                [
+                  "brsp_fifo_in_vld",
+                  "'h0"
+                ],
+                [
+                  "brsp_fifo_in_rdy",
+                  "'h0"
+                ],
+                [
+                  "rcp_fifo_in_vld",
+                  "'h0"
+                ],
+                [
+                  "rcp_fifo_in_rdy",
+                  "'h0"
+                ],
+                [
+                  "r2_axi_vld",
+                  "'h0"
+                ],
+                [
+                  "r2_axi_rdy",
+                  "'h0"
+                ],
+                [
+                  "c0_enough_location",
+                  "'h0"
+                ]
+              ]
+            }
+          },
+          "field": [
+            {
+              "name": "cmd_vld",
+              "description": "PEM_ST cmd vld",
+              "size_b": 1,
+              "offset_b": 0,
+              "default": {
+                "Cst": 0
+              }
+            },
+            {
+              "name": "cmd_rdy",
+              "description": "PEM_ST cmd rdy",
+              "size_b": 1,
+              "offset_b": 1,
+              "default": {
+                "Cst": 0
+              }
+            },
+            {
+              "name": "pem_regf_rd_req_vld",
+              "description": "PEM_ST pem_regf_rd_req_vld",
+              "size_b": 1,
+              "offset_b": 2,
+              "default": {
+                "Cst": 0
+              }
+            },
+            {
+              "name": "pem_regf_rd_req_rdy",
+              "description": "PEM_ST pem_regf_rd_req_rdy",
+              "size_b": 1,
+              "offset_b": 3,
+              "default": {
+                "Cst": 0
+              }
+            },
+            {
+              "name": "brsp_fifo_in_vld",
+              "description": "PEM_ST brsp_fifo_in_vld",
+              "size_b": 4,
+              "offset_b": 4,
+              "default": {
+                "Cst": 0
+              }
+            },
+            {
+              "name": "brsp_fifo_in_rdy",
+              "description": "PEM_ST brsp_fifo_in_rdy",
+              "size_b": 4,
+              "offset_b": 8,
+              "default": {
+                "Cst": 0
+              }
+            },
+            {
+              "name": "rcp_fifo_in_vld",
+              "description": "PEM_ST rcp_fifo_in_vld",
+              "size_b": 4,
+              "offset_b": 12,
+              "default": {
+                "Cst": 0
+              }
+            },
+            {
+              "name": "rcp_fifo_in_rdy",
+              "description": "PEM_ST rcp_fifo_in_rdy",
+              "size_b": 4,
+              "offset_b": 16,
+              "default": {
+                "Cst": 0
+              }
+            },
+            {
+              "name": "r2_axi_vld",
+              "description": "PEM_ST r2_axi_vld",
+              "size_b": 4,
+              "offset_b": 20,
+              "default": {
+                "Cst": 0
+              }
+            },
+            {
+              "name": "r2_axi_rdy",
+              "description": "PEM_ST r2_axi_rdy",
+              "size_b": 4,
+              "offset_b": 24,
+              "default": {
+                "Cst": 0
+              }
+            },
+            {
+              "name": "c0_enough_location",
+              "description": "PEM_ST c0_enough_location",
+              "size_b": 4,
+              "offset_b": 28,
+              "default": {
+                "Cst": 0
+              }
+            }
+          ]
+        },
+        {
+          "name": "pem_store_info_1",
+          "description": "PEM: store info 1",
+          "owner": "Kernel",
+          "read_access": "Read",
+          "write_access": "None",
+          "offset": 74032,
+          "default": {
+            "ParamsField": {
+              "params": [],
+              "name_val": [
+                [
+                  "s0_cmd_vld",
+                  "'h0"
+                ],
+                [
+                  "s0_cmd_rdy",
+                  "'h0"
+                ],
+                [
+                  "m_axi_bvalid",
+                  "'h0"
+                ],
+                [
+                  "m_axi_bready",
+                  "'h0"
+                ],
+                [
+                  "m_axi_wvalid",
+                  "'h0"
+                ],
+                [
+                  "m_axi_wready",
+                  "'h0"
+                ],
+                [
+                  "m_axi_awvalid",
+                  "'h0"
+                ],
+                [
+                  "m_axi_awready",
+                  "'h0"
+                ]
+              ]
+            }
+          },
+          "field": [
+            {
+              "name": "s0_cmd_vld",
+              "description": "PEM_ST s0_cmd_vld",
+              "size_b": 4,
+              "offset_b": 0,
+              "default": {
+                "Cst": 0
+              }
+            },
+            {
+              "name": "s0_cmd_rdy",
+              "description": "PEM_ST s0_cmd_rdy",
+              "size_b": 4,
+              "offset_b": 4,
+              "default": {
+                "Cst": 0
+              }
+            },
+            {
+              "name": "m_axi_bvalid",
+              "description": "PEM_ST m_axi_bvalid",
+              "size_b": 4,
+              "offset_b": 8,
+              "default": {
+                "Cst": 0
+              }
+            },
+            {
+              "name": "m_axi_bready",
+              "description": "PEM_ST m_axi_bready",
+              "size_b": 4,
+              "offset_b": 12,
+              "default": {
+                "Cst": 0
+              }
+            },
+            {
+              "name": "m_axi_wvalid",
+              "description": "PEM_ST m_axi_wvalid",
+              "size_b": 4,
+              "offset_b": 16,
+              "default": {
+                "Cst": 0
+              }
+            },
+            {
+              "name": "m_axi_wready",
+              "description": "PEM_ST m_axi_wready",
+              "size_b": 4,
+              "offset_b": 20,
+              "default": {
+                "Cst": 0
+              }
+            },
+            {
+              "name": "m_axi_awvalid",
+              "description": "PEM_ST m_axi_awvalid",
+              "size_b": 4,
+              "offset_b": 24,
+              "default": {
+                "Cst": 0
+              }
+            },
+            {
+              "name": "m_axi_awready",
+              "description": "PEM_ST m_axi_awready",
+              "size_b": 4,
+              "offset_b": 28,
+              "default": {
+                "Cst": 0
+              }
+            }
+          ]
+        },
+        {
+          "name": "pem_store_info_2",
+          "description": "PEM: store info 2",
+          "owner": "Kernel",
+          "read_access": "Read",
+          "write_access": "None",
+          "offset": 74036,
+          "default": {
+            "ParamsField": {
+              "params": [],
+              "name_val": [
+                [
+                  "c0_free_loc_cnt",
+                  "'h0"
+                ],
+                [
+                  "brsp_bresp_cnt",
+                  "'h0"
+                ]
+              ]
+            }
+          },
+          "field": [
+            {
+              "name": "c0_free_loc_cnt",
+              "description": "PEM_ST c0_free_loc_cnt",
+              "size_b": 16,
+              "offset_b": 0,
+              "default": {
+                "Cst": 0
+              }
+            },
+            {
+              "name": "brsp_bresp_cnt",
+              "description": "PEM_ST brsp_bresp_cnt",
+              "size_b": 16,
+              "offset_b": 16,
+              "default": {
+                "Cst": 0
+              }
+            }
+          ]
+        },
+        {
+          "name": "pem_store_info_3",
+          "description": "PEM: store info 3",
+          "owner": "Kernel",
+          "read_access": "Read",
+          "write_access": "None",
+          "offset": 74040,
+          "default": {
+            "ParamsField": {
+              "params": [],
+              "name_val": [
+                [
+                  "brsp_ack_seen",
+                  "'h0"
+                ],
+                [
+                  "c0_cmd_cnt",
+                  "'h0"
+                ]
+              ]
+            }
+          },
+          "field": [
+            {
+              "name": "brsp_ack_seen",
+              "description": "PEM_ST brsp_ack_seen",
+              "size_b": 16,
+              "offset_b": 0,
+              "default": {
+                "Cst": 0
+              }
+            },
+            {
+              "name": "c0_cmd_cnt",
+              "description": "PEM_ST c0_cmd_cnt",
+              "size_b": 8,
+              "offset_b": 16,
+              "default": {
+                "Cst": 0
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "entry_cfg_3in3",
+      "description": "entry_cfg_3in3 section with known value used for debug.",
+      "offset": 131072,
+      "bytes_align": 4,
+      "range": 16,
+      "register": [
+        {
+          "name": "dummy_val0",
+          "description": "RTL version",
+          "owner": "Parameter",
+          "read_access": "Read",
+          "write_access": "None",
+          "offset": 131072,
+          "default": {
+            "Cst": 50529027
+          },
+          "field": null
+        },
+        {
+          "name": "dummy_val1",
+          "description": "RTL version",
+          "owner": "Parameter",
+          "read_access": "Read",
+          "write_access": "None",
+          "offset": 131076,
+          "default": {
+            "Cst": 320017171
+          },
+          "field": null
+        },
+        {
+          "name": "dummy_val2",
+          "description": "RTL version",
+          "owner": "Parameter",
+          "read_access": "Read",
+          "write_access": "None",
+          "offset": 131080,
+          "default": {
+            "Cst": 589505315
+          },
+          "field": null
+        },
+        {
+          "name": "dummy_val3",
+          "description": "RTL version",
+          "owner": "Parameter",
+          "read_access": "Read",
+          "write_access": "None",
+          "offset": 131084,
+          "default": {
+            "Cst": 858993459
+          },
+          "field": null
+        }
+      ]
+    },
+    {
+      "name": "hbm_axi4_addr_3in3",
+      "description": "HBM AXI4 connection address offset",
+      "offset": 131088,
+      "bytes_align": 4,
+      "range": 128,
+      "register": [
+        {
+          "name": "bsk_pc0_lsb",
+          "description": "Address offset for each BSK HBM AXI4 connection",
+          "owner": "User",
+          "read_access": "Read",
+          "write_access": "Write",
+          "offset": 131088,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "bsk_pc0_msb",
+          "description": "Address offset for each BSK HBM AXI4 connection",
+          "owner": "User",
+          "read_access": "Read",
+          "write_access": "Write",
+          "offset": 131092,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "bsk_pc1_lsb",
+          "description": "Address offset for each BSK HBM AXI4 connection",
+          "owner": "User",
+          "read_access": "Read",
+          "write_access": "Write",
+          "offset": 131096,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "bsk_pc1_msb",
+          "description": "Address offset for each BSK HBM AXI4 connection",
+          "owner": "User",
+          "read_access": "Read",
+          "write_access": "Write",
+          "offset": 131100,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "bsk_pc2_lsb",
+          "description": "Address offset for each BSK HBM AXI4 connection",
+          "owner": "User",
+          "read_access": "Read",
+          "write_access": "Write",
+          "offset": 131104,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "bsk_pc2_msb",
+          "description": "Address offset for each BSK HBM AXI4 connection",
+          "owner": "User",
+          "read_access": "Read",
+          "write_access": "Write",
+          "offset": 131108,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "bsk_pc3_lsb",
+          "description": "Address offset for each BSK HBM AXI4 connection",
+          "owner": "User",
+          "read_access": "Read",
+          "write_access": "Write",
+          "offset": 131112,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "bsk_pc3_msb",
+          "description": "Address offset for each BSK HBM AXI4 connection",
+          "owner": "User",
+          "read_access": "Read",
+          "write_access": "Write",
+          "offset": 131116,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "bsk_pc4_lsb",
+          "description": "Address offset for each BSK HBM AXI4 connection",
+          "owner": "User",
+          "read_access": "Read",
+          "write_access": "Write",
+          "offset": 131120,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "bsk_pc4_msb",
+          "description": "Address offset for each BSK HBM AXI4 connection",
+          "owner": "User",
+          "read_access": "Read",
+          "write_access": "Write",
+          "offset": 131124,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "bsk_pc5_lsb",
+          "description": "Address offset for each BSK HBM AXI4 connection",
+          "owner": "User",
+          "read_access": "Read",
+          "write_access": "Write",
+          "offset": 131128,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "bsk_pc5_msb",
+          "description": "Address offset for each BSK HBM AXI4 connection",
+          "owner": "User",
+          "read_access": "Read",
+          "write_access": "Write",
+          "offset": 131132,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "bsk_pc6_lsb",
+          "description": "Address offset for each BSK HBM AXI4 connection",
+          "owner": "User",
+          "read_access": "Read",
+          "write_access": "Write",
+          "offset": 131136,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "bsk_pc6_msb",
+          "description": "Address offset for each BSK HBM AXI4 connection",
+          "owner": "User",
+          "read_access": "Read",
+          "write_access": "Write",
+          "offset": 131140,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "bsk_pc7_lsb",
+          "description": "Address offset for each BSK HBM AXI4 connection",
+          "owner": "User",
+          "read_access": "Read",
+          "write_access": "Write",
+          "offset": 131144,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "bsk_pc7_msb",
+          "description": "Address offset for each BSK HBM AXI4 connection",
+          "owner": "User",
+          "read_access": "Read",
+          "write_access": "Write",
+          "offset": 131148,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "bsk_pc8_lsb",
+          "description": "Address offset for each BSK HBM AXI4 connection",
+          "owner": "User",
+          "read_access": "Read",
+          "write_access": "Write",
+          "offset": 131152,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "bsk_pc8_msb",
+          "description": "Address offset for each BSK HBM AXI4 connection",
+          "owner": "User",
+          "read_access": "Read",
+          "write_access": "Write",
+          "offset": 131156,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "bsk_pc9_lsb",
+          "description": "Address offset for each BSK HBM AXI4 connection",
+          "owner": "User",
+          "read_access": "Read",
+          "write_access": "Write",
+          "offset": 131160,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "bsk_pc9_msb",
+          "description": "Address offset for each BSK HBM AXI4 connection",
+          "owner": "User",
+          "read_access": "Read",
+          "write_access": "Write",
+          "offset": 131164,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "bsk_pc10_lsb",
+          "description": "Address offset for each BSK HBM AXI4 connection",
+          "owner": "User",
+          "read_access": "Read",
+          "write_access": "Write",
+          "offset": 131168,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "bsk_pc10_msb",
+          "description": "Address offset for each BSK HBM AXI4 connection",
+          "owner": "User",
+          "read_access": "Read",
+          "write_access": "Write",
+          "offset": 131172,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "bsk_pc11_lsb",
+          "description": "Address offset for each BSK HBM AXI4 connection",
+          "owner": "User",
+          "read_access": "Read",
+          "write_access": "Write",
+          "offset": 131176,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "bsk_pc11_msb",
+          "description": "Address offset for each BSK HBM AXI4 connection",
+          "owner": "User",
+          "read_access": "Read",
+          "write_access": "Write",
+          "offset": 131180,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "bsk_pc12_lsb",
+          "description": "Address offset for each BSK HBM AXI4 connection",
+          "owner": "User",
+          "read_access": "Read",
+          "write_access": "Write",
+          "offset": 131184,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "bsk_pc12_msb",
+          "description": "Address offset for each BSK HBM AXI4 connection",
+          "owner": "User",
+          "read_access": "Read",
+          "write_access": "Write",
+          "offset": 131188,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "bsk_pc13_lsb",
+          "description": "Address offset for each BSK HBM AXI4 connection",
+          "owner": "User",
+          "read_access": "Read",
+          "write_access": "Write",
+          "offset": 131192,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "bsk_pc13_msb",
+          "description": "Address offset for each BSK HBM AXI4 connection",
+          "owner": "User",
+          "read_access": "Read",
+          "write_access": "Write",
+          "offset": 131196,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "bsk_pc14_lsb",
+          "description": "Address offset for each BSK HBM AXI4 connection",
+          "owner": "User",
+          "read_access": "Read",
+          "write_access": "Write",
+          "offset": 131200,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "bsk_pc14_msb",
+          "description": "Address offset for each BSK HBM AXI4 connection",
+          "owner": "User",
+          "read_access": "Read",
+          "write_access": "Write",
+          "offset": 131204,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "bsk_pc15_lsb",
+          "description": "Address offset for each BSK HBM AXI4 connection",
+          "owner": "User",
+          "read_access": "Read",
+          "write_access": "Write",
+          "offset": 131208,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "bsk_pc15_msb",
+          "description": "Address offset for each BSK HBM AXI4 connection",
+          "owner": "User",
+          "read_access": "Read",
+          "write_access": "Write",
+          "offset": 131212,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        }
+      ]
+    },
+    {
+      "name": "entry_prc_3in3",
+      "description": "entry_prc_3in3 section with known value used for debug.",
+      "offset": 196608,
+      "bytes_align": 4,
+      "range": 16,
+      "register": [
+        {
+          "name": "dummy_val0",
+          "description": "RTL version",
+          "owner": "Parameter",
+          "read_access": "Read",
+          "write_access": "None",
+          "offset": 196608,
+          "default": {
+            "Cst": 67372036
+          },
+          "field": null
+        },
+        {
+          "name": "dummy_val1",
+          "description": "RTL version",
+          "owner": "Parameter",
+          "read_access": "Read",
+          "write_access": "None",
+          "offset": 196612,
+          "default": {
+            "Cst": 336860180
+          },
+          "field": null
+        },
+        {
+          "name": "dummy_val2",
+          "description": "RTL version",
+          "owner": "Parameter",
+          "read_access": "Read",
+          "write_access": "None",
+          "offset": 196616,
+          "default": {
+            "Cst": 606348324
+          },
+          "field": null
+        },
+        {
+          "name": "dummy_val3",
+          "description": "RTL version",
+          "owner": "Parameter",
+          "read_access": "Read",
+          "write_access": "None",
+          "offset": 196620,
+          "default": {
+            "Cst": 875836468
+          },
+          "field": null
+        }
+      ]
+    },
+    {
+      "name": "status_3in3",
+      "description": "HPU status of parts 2in3 and 3in3",
+      "offset": 196624,
+      "bytes_align": 4,
+      "range": 4,
+      "register": [
+        {
+          "name": "error",
+          "description": "Error register (Could be reset by user)",
+          "owner": "Kernel",
+          "read_access": "Read",
+          "write_access": "WriteNotify",
+          "offset": 196624,
+          "default": {
+            "ParamsField": {
+              "params": [],
+              "name_val": [
+                [
+                  "pbs",
+                  "'h0"
+                ]
+              ]
+            }
+          },
+          "field": [
+            {
+              "name": "pbs",
+              "description": "HPU error part 3in3",
+              "size_b": 32,
+              "offset_b": 0,
+              "default": {
+                "Cst": 0
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "bsk_avail",
+      "description": "BSK availability configuration",
+      "offset": 200704,
+      "bytes_align": 4,
+      "range": 8,
+      "register": [
+        {
+          "name": "avail",
+          "description": "BSK available bit",
+          "owner": "User",
+          "read_access": "Read",
+          "write_access": "Write",
+          "offset": 200704,
+          "default": {
+            "ParamsField": {
+              "params": [],
+              "name_val": [
+                [
+                  "avail",
+                  "'h0"
+                ]
+              ]
+            }
+          },
+          "field": [
+            {
+              "name": "avail",
+              "description": "avail",
+              "size_b": 1,
+              "offset_b": 0,
+              "default": {
+                "Cst": 0
+              }
+            }
+          ]
+        },
+        {
+          "name": "reset",
+          "description": "BSK reset sequence",
+          "owner": "Kernel",
+          "read_access": "Read",
+          "write_access": "WriteNotify",
+          "offset": 200708,
+          "default": {
+            "ParamsField": {
+              "params": [],
+              "name_val": [
+                [
+                  "request",
+                  "'h0"
+                ],
+                [
+                  "done",
+                  "'h0"
+                ]
+              ]
+            }
+          },
+          "field": [
+            {
+              "name": "request",
+              "description": "request",
+              "size_b": 1,
+              "offset_b": 0,
+              "default": {
+                "Cst": 0
+              }
+            },
+            {
+              "name": "done",
+              "description": "done",
+              "size_b": 1,
+              "offset_b": 31,
+              "default": {
+                "Cst": 0
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "runtime_3in3",
+      "description": "Runtime information",
+      "offset": 204800,
+      "bytes_align": 4,
+      "range": 72,
+      "register": [
+        {
+          "name": "pep_load_bsk_rcp_dur_pc0",
+          "description": "PEP: load BSK slice reception max duration (Could be reset by user)",
+          "owner": "Kernel",
+          "read_access": "Read",
+          "write_access": "WriteNotify",
+          "offset": 204800,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "pep_load_bsk_rcp_dur_pc1",
+          "description": "PEP: load BSK slice reception max duration (Could be reset by user)",
+          "owner": "Kernel",
+          "read_access": "Read",
+          "write_access": "WriteNotify",
+          "offset": 204804,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "pep_load_bsk_rcp_dur_pc2",
+          "description": "PEP: load BSK slice reception max duration (Could be reset by user)",
+          "owner": "Kernel",
+          "read_access": "Read",
+          "write_access": "WriteNotify",
+          "offset": 204808,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "pep_load_bsk_rcp_dur_pc3",
+          "description": "PEP: load BSK slice reception max duration (Could be reset by user)",
+          "owner": "Kernel",
+          "read_access": "Read",
+          "write_access": "WriteNotify",
+          "offset": 204812,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "pep_load_bsk_rcp_dur_pc4",
+          "description": "PEP: load BSK slice reception max duration (Could be reset by user)",
+          "owner": "Kernel",
+          "read_access": "Read",
+          "write_access": "WriteNotify",
+          "offset": 204816,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "pep_load_bsk_rcp_dur_pc5",
+          "description": "PEP: load BSK slice reception max duration (Could be reset by user)",
+          "owner": "Kernel",
+          "read_access": "Read",
+          "write_access": "WriteNotify",
+          "offset": 204820,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "pep_load_bsk_rcp_dur_pc6",
+          "description": "PEP: load BSK slice reception max duration (Could be reset by user)",
+          "owner": "Kernel",
+          "read_access": "Read",
+          "write_access": "WriteNotify",
+          "offset": 204824,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "pep_load_bsk_rcp_dur_pc7",
+          "description": "PEP: load BSK slice reception max duration (Could be reset by user)",
+          "owner": "Kernel",
+          "read_access": "Read",
+          "write_access": "WriteNotify",
+          "offset": 204828,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "pep_load_bsk_rcp_dur_pc8",
+          "description": "PEP: load BSK slice reception max duration (Could be reset by user)",
+          "owner": "Kernel",
+          "read_access": "Read",
+          "write_access": "WriteNotify",
+          "offset": 204832,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "pep_load_bsk_rcp_dur_pc9",
+          "description": "PEP: load BSK slice reception max duration (Could be reset by user)",
+          "owner": "Kernel",
+          "read_access": "Read",
+          "write_access": "WriteNotify",
+          "offset": 204836,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "pep_load_bsk_rcp_dur_pc10",
+          "description": "PEP: load BSK slice reception max duration (Could be reset by user)",
+          "owner": "Kernel",
+          "read_access": "Read",
+          "write_access": "WriteNotify",
+          "offset": 204840,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "pep_load_bsk_rcp_dur_pc11",
+          "description": "PEP: load BSK slice reception max duration (Could be reset by user)",
+          "owner": "Kernel",
+          "read_access": "Read",
+          "write_access": "WriteNotify",
+          "offset": 204844,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "pep_load_bsk_rcp_dur_pc12",
+          "description": "PEP: load BSK slice reception max duration (Could be reset by user)",
+          "owner": "Kernel",
+          "read_access": "Read",
+          "write_access": "WriteNotify",
+          "offset": 204848,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "pep_load_bsk_rcp_dur_pc13",
+          "description": "PEP: load BSK slice reception max duration (Could be reset by user)",
+          "owner": "Kernel",
+          "read_access": "Read",
+          "write_access": "WriteNotify",
+          "offset": 204852,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "pep_load_bsk_rcp_dur_pc14",
+          "description": "PEP: load BSK slice reception max duration (Could be reset by user)",
+          "owner": "Kernel",
+          "read_access": "Read",
+          "write_access": "WriteNotify",
+          "offset": 204856,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "pep_load_bsk_rcp_dur_pc15",
+          "description": "PEP: load BSK slice reception max duration (Could be reset by user)",
+          "owner": "Kernel",
+          "read_access": "Read",
+          "write_access": "WriteNotify",
+          "offset": 204860,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "pep_bskif_req_info_0",
+          "description": "PEP: BSK_IF: requester info 0",
+          "owner": "Kernel",
+          "read_access": "Read",
+          "write_access": "None",
+          "offset": 204864,
+          "default": {
+            "ParamsField": {
+              "params": [],
+              "name_val": [
+                [
+                  "req_br_loop_rp",
+                  "'h0"
+                ],
+                [
+                  "req_br_loop_wp",
+                  "'h0"
+                ]
+              ]
+            }
+          },
+          "field": [
+            {
+              "name": "req_br_loop_rp",
+              "description": "PEP BSK_IF requester BSK read pointer",
+              "size_b": 16,
+              "offset_b": 0,
+              "default": {
+                "Cst": 0
+              }
+            },
+            {
+              "name": "req_br_loop_wp",
+              "description": "PEP BSK_IF requester BSK write pointer",
+              "size_b": 16,
+              "offset_b": 16,
+              "default": {
+                "Cst": 0
+              }
+            }
+          ]
+        },
+        {
+          "name": "pep_bskif_req_info_1",
+          "description": "PEP: BSK_IF: requester info 0",
+          "owner": "Kernel",
+          "read_access": "Read",
+          "write_access": "None",
+          "offset": 204868,
+          "default": {
+            "ParamsField": {
+              "params": [],
+              "name_val": [
+                [
+                  "req_prf_br_loop",
+                  "'h0"
+                ],
+                [
+                  "req_parity",
+                  "'h0"
+                ],
+                [
+                  "req_assigned",
+                  "'h0"
+                ]
+              ]
+            }
+          },
+          "field": [
+            {
+              "name": "req_prf_br_loop",
+              "description": "PEP BSK_IF requester BSK prefetch pointer",
+              "size_b": 16,
+              "offset_b": 0,
+              "default": {
+                "Cst": 0
+              }
+            },
+            {
+              "name": "req_parity",
+              "description": "PEP BSK_IF requester BSK pointer parity",
+              "size_b": 1,
+              "offset_b": 16,
+              "default": {
+                "Cst": 0
+              }
+            },
+            {
+              "name": "req_assigned",
+              "description": "PEP BSK_IF requester assignment",
+              "size_b": 1,
+              "offset_b": 31,
+              "default": {
+                "Cst": 0
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,45 @@
+{
+    "local_root_path": "${PROJECT_DIR}",
+    "dep_root_path"  : "${PROJECT_DIR}",
+    "is_include_dir" : false,
+    "rtl_files": [
+        {
+            "name": "hw/module/bsk/module/bsk_if/rtl/bsk_if_cache_control.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false
+        },
+        {
+            "name": "hw/module/bsk/module/bsk_if/rtl/bsk_if_axi4_read.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false
+        },
+        {
+            "name": "hw/module/bsk/module/bsk_if/rtl/bsk_if.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false
+        }
+    ],
+    "constraint_files": [
+        "hw/module/bsk/module/bsk_if/constraint/bsk_if_timing_constraints_local.xdc"
+    ],
+    "dependency_dir": [
+        "hw/common_lib/common",
+        "hw/common_lib/fifo",
+        "hw/module/param",
+        "hw/module/top_common",
+        "hw/module/pe_pbs/module/pep_common",
+        "hw/module/number_theoretic_transform/module/ntt_core_common",
+        "hw/module/bsk/module/bsk_manager/module/bsk_mgr_common",
+        "hw/module/axi_if/module/axi_if_common",
+        "hw/module/bsk/module/bsk_if/module/bsk_if_common",
+        {"name": "../private/hw/module/bsk/module/bsk_if",
+         "optional": true}
+    ],
+    "include_dir": [] 
+}

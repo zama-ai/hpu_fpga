@@ -1,0 +1,80 @@
+{
+    "local_root_path": "${PROJECT_DIR}",
+    "dep_root_path"  : "${PROJECT_DIR}",
+    "rtl_files": [
+        {
+            "name": "hw/module/number_theoretic_transform/module/ntt_core_with_matrix_multiplication/simu/tb_bsk_ntw_model/rtl/DCOEF/DCOEF48/bsk_ntw_common_definition_pkg.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false,
+            "BSK_NTW_DCOEF": "DCOEF48"
+        },
+        {
+            "name": "hw/module/number_theoretic_transform/module/ntt_core_with_matrix_multiplication/simu/tb_bsk_ntw_model/rtl/bsk_ntw_common_param_pkg.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false
+        },
+        {
+            "name": "hw/module/number_theoretic_transform/module/ntt_core_with_matrix_multiplication/simu/tb_bsk_ntw_model/rtl/bsk_ntw_server.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false
+        },
+        {
+            "name": "hw/module/number_theoretic_transform/module/ntt_core_with_matrix_multiplication/simu/tb_bsk_ntw_model/rtl/bsk_ntw_client_core.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false
+        },
+        {
+            "name": "hw/module/number_theoretic_transform/module/ntt_core_with_matrix_multiplication/simu/tb_bsk_ntw_model/rtl/bsk_ntw_client.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false
+        },
+        {
+            "name": "hw/module/number_theoretic_transform/module/ntt_core_with_matrix_multiplication/simu/tb_bsk_ntw_model/rtl/bsk_ntw_cmd_arbiter.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false
+        },
+        {
+            "name": "hw/module/number_theoretic_transform/module/ntt_core_with_matrix_multiplication/simu/tb_bsk_ntw_model/rtl/bsk_inner_or_tree.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false
+        },
+        {
+            "name": "hw/module/number_theoretic_transform/module/ntt_core_with_matrix_multiplication/simu/tb_bsk_ntw_model/rtl/bsk_side_or_tree.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false
+        },
+        {
+            "name": "hw/module/number_theoretic_transform/module/ntt_core_with_matrix_multiplication/simu/tb_bsk_ntw_model/rtl/tb_bsk_ntw_model.sv",
+            "library": "work",
+            "env": ["simu"],
+            "target": ["all"],
+            "is_include_file": false
+        }
+    ],
+    "dependency_dir": [
+        "hw/common_lib/common_package",
+        "hw/common_lib/common",
+        "hw/common_lib/ram_wrapper",
+        "hw/common_lib/fifo",
+        "hw/module/param",
+        "hw/module/pe_pbs/module/pep_common",
+        "hw/module/number_theoretic_transform/module/ntt_core_common"
+    ],
+    "include_dir": []
+}

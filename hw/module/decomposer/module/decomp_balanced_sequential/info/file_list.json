@@ -1,0 +1,31 @@
+{
+    "local_root_path": "${PROJECT_DIR}",
+    "dep_root_path"  : "${PROJECT_DIR}",
+    "is_include_dir" : false,
+    "rtl_files": [
+        {
+            "name": "hw/module/decomposer/module/decomp_balanced_sequential/rtl/decomp_balseq_core.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false
+        },
+        {
+            "name": "hw/module/decomposer/module/decomp_balanced_sequential/rtl/decomp_balanced_sequential.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false
+        }
+    ],
+    "constraint_files": [
+        "hw/module/decomposer/module/decomp_balanced_sequential/constraint/decomp_balanced_sequential_timing_constraints_local.xdc"
+    ],
+    "dependency_dir": [
+        "hw/common_lib/common_package",
+        "hw/module/param",
+        "hw/module/pe_pbs/module/pep_common",
+        "hw/module/number_theoretic_transform/module/ntt_core_common"
+    ],
+    "include_dir": []
+}

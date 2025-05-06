@@ -1,0 +1,203 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<wave_config>
+   <wave_state>
+   </wave_state>
+   <db_ref_list>
+      <db_ref path="/home/jing-jing/projects/dev/hw/output/xsim/tb_bsk_manager/wave.wdb" id="1">
+         <top_modules>
+            <top_module name="ntt_core_wmm_common_definition_pkg" />
+            <top_module name="ntt_core_wmm_common_param_pkg" />
+            <top_module name="ntt_param_pkg" />
+            <top_module name="pbs_param_pkg" />
+            <top_module name="tb_bsk_manager" />
+         </top_modules>
+      </db_ref>
+   </db_ref_list>
+   <zoom_setting>
+      <ZoomStartTime time="33,112.197 ns"></ZoomStartTime>
+      <ZoomEndTime time="37,502.204 ns"></ZoomEndTime>
+      <Cursor1Time time="33,976.197 ns"></Cursor1Time>
+   </zoom_setting>
+   <column_width_setting>
+      <NameColumnWidth column_width="540"></NameColumnWidth>
+      <ValueColumnWidth column_width="250"></ValueColumnWidth>
+   </column_width_setting>
+   <WVObjectSize size="25" />
+   <wvobject type="logic" fp_name="/tb_bsk_manager/clk">
+      <obj_property name="ElementShortName">clk</obj_property>
+      <obj_property name="ObjectShortName">clk</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/tb_bsk_manager/s_rst_n">
+      <obj_property name="ElementShortName">s_rst_n</obj_property>
+      <obj_property name="ObjectShortName">s_rst_n</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/tb_bsk_manager/error_data">
+      <obj_property name="ElementShortName">error_data</obj_property>
+      <obj_property name="ObjectShortName">error_data</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/tb_bsk_manager/error_valid">
+      <obj_property name="ElementShortName">error_valid</obj_property>
+      <obj_property name="ObjectShortName">error_valid</obj_property>
+   </wvobject>
+   <wvobject type="group" fp_name="group54">
+      <obj_property name="label">bsk</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+      <obj_property name="isExpanded"></obj_property>
+      <wvobject type="array" fp_name="/tb_bsk_manager/bsk">
+         <obj_property name="ElementShortName">bsk[7:0][7:0][2:0][31:0]</obj_property>
+         <obj_property name="ObjectShortName">bsk[7:0][7:0][2:0][31:0]</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/tb_bsk_manager/bsk_rdy">
+         <obj_property name="ElementShortName">bsk_rdy[7:0][7:0]</obj_property>
+         <obj_property name="ObjectShortName">bsk_rdy[7:0][7:0]</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/tb_bsk_manager/bsk_vld">
+         <obj_property name="ElementShortName">bsk_vld[7:0][7:0]</obj_property>
+         <obj_property name="ObjectShortName">bsk_vld[7:0][7:0]</obj_property>
+      </wvobject>
+   </wvobject>
+   <wvobject type="group" fp_name="group55">
+      <obj_property name="label">batch_cmd</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+      <obj_property name="isExpanded"></obj_property>
+      <wvobject type="array" fp_name="/tb_bsk_manager/batch_cmd">
+         <obj_property name="ElementShortName">batch_cmd[8:0]</obj_property>
+         <obj_property name="ObjectShortName">batch_cmd[8:0]</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/tb_bsk_manager/batch_cmd_avail">
+         <obj_property name="ElementShortName">batch_cmd_avail</obj_property>
+         <obj_property name="ObjectShortName">batch_cmd_avail</obj_property>
+      </wvobject>
+   </wvobject>
+   <wvobject type="group" fp_name="group56">
+      <obj_property name="label">write</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+      <obj_property name="isExpanded"></obj_property>
+      <wvobject type="logic" fp_name="/tb_bsk_manager/wr_en">
+         <obj_property name="ElementShortName">wr_en</obj_property>
+         <obj_property name="ObjectShortName">wr_en</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/tb_bsk_manager/wr_data">
+         <obj_property name="ElementShortName">wr_data[7:0][7:0][31:0]</obj_property>
+         <obj_property name="ObjectShortName">wr_data[7:0][7:0][31:0]</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/tb_bsk_manager/wr_add">
+         <obj_property name="ElementShortName">wr_add[11:0]</obj_property>
+         <obj_property name="ObjectShortName">wr_add[11:0]</obj_property>
+         <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/tb_bsk_manager/wr_g_idx">
+         <obj_property name="ElementShortName">wr_g_idx[1:0]</obj_property>
+         <obj_property name="ObjectShortName">wr_g_idx[1:0]</obj_property>
+      </wvobject>
+   </wvobject>
+   <wvobject type="group" fp_name="group57">
+      <obj_property name="label">control</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+      <obj_property name="isExpanded"></obj_property>
+      <wvobject type="array" fp_name="/tb_bsk_manager/state">
+         <obj_property name="ElementShortName">state[31:0]</obj_property>
+         <obj_property name="ObjectShortName">state[31:0]</obj_property>
+         <obj_property name="CustomSignalColor">#00FFFF</obj_property>
+         <obj_property name="UseCustomSignalColor">true</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/tb_bsk_manager/batch_id">
+         <obj_property name="ElementShortName">batch_id[31:0]</obj_property>
+         <obj_property name="ObjectShortName">batch_id[31:0]</obj_property>
+         <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/tb_bsk_manager/cmd_batch_id">
+         <obj_property name="ElementShortName">cmd_batch_id[31:0]</obj_property>
+         <obj_property name="ObjectShortName">cmd_batch_id[31:0]</obj_property>
+         <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/tb_bsk_manager/intl_idx">
+         <obj_property name="ElementShortName">intl_idx[31:0]</obj_property>
+         <obj_property name="ObjectShortName">intl_idx[31:0]</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/tb_bsk_manager/stg_iter">
+         <obj_property name="ElementShortName">stg_iter[31:0]</obj_property>
+         <obj_property name="ObjectShortName">stg_iter[31:0]</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/tb_bsk_manager/pbs_id">
+         <obj_property name="ElementShortName">pbs_id[31:0]</obj_property>
+         <obj_property name="ObjectShortName">pbs_id[31:0]</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/tb_bsk_manager/batch_cmd_a">
+         <obj_property name="ElementShortName">batch_cmd_a[99:0]</obj_property>
+         <obj_property name="ObjectShortName">batch_cmd_a[99:0]</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/tb_bsk_manager/bsk_error">
+         <obj_property name="ElementShortName">bsk_error[1:0]</obj_property>
+         <obj_property name="ObjectShortName">bsk_error[1:0]</obj_property>
+      </wvobject>
+   </wvobject>
+   <wvobject type="array" fp_name="/tb_bsk_manager/dut/s0_batch_cmd_rdy_a">
+      <obj_property name="ElementShortName">s0_batch_cmd_rdy_a[7:0][3:0]</obj_property>
+      <obj_property name="ObjectShortName">s0_batch_cmd_rdy_a[7:0][3:0]</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/tb_bsk_manager/dut/\p_loop_gen[0].r_loop_gen[0].s1_batch_cmd_vld ">
+      <obj_property name="ElementShortName">\p_loop_gen[0].r_loop_gen[0].s1_batch_cmd_vld </obj_property>
+      <obj_property name="ObjectShortName">\p_loop_gen[0].r_loop_gen[0].s1_batch_cmd_vld </obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/tb_bsk_manager/dut/\p_loop_gen[0].r_loop_gen[0].s1_batch_cmd_rdy ">
+      <obj_property name="ElementShortName">\p_loop_gen[0].r_loop_gen[0].s1_batch_cmd_rdy </obj_property>
+      <obj_property name="ObjectShortName">\p_loop_gen[0].r_loop_gen[0].s1_batch_cmd_rdy </obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/tb_bsk_manager/dut/\p_loop_gen[0].r_loop_gen[0].s1_batch_add_ofs ">
+      <obj_property name="ElementShortName">\p_loop_gen[0].r_loop_gen[0].s1_batch_add_ofs [11:0]</obj_property>
+      <obj_property name="ObjectShortName">\p_loop_gen[0].r_loop_gen[0].s1_batch_add_ofs [11:0]</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/tb_bsk_manager/dut/\p_loop_gen[0].r_loop_gen[0].s1_stg_iter ">
+      <obj_property name="ElementShortName">\p_loop_gen[0].r_loop_gen[0].s1_stg_iter [2:0]</obj_property>
+      <obj_property name="ObjectShortName">\p_loop_gen[0].r_loop_gen[0].s1_stg_iter [2:0]</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/tb_bsk_manager/dut/\p_loop_gen[0].r_loop_gen[0].s1_pbs_id ">
+      <obj_property name="ElementShortName">\p_loop_gen[0].r_loop_gen[0].s1_pbs_id [1:0]</obj_property>
+      <obj_property name="ObjectShortName">\p_loop_gen[0].r_loop_gen[0].s1_pbs_id [1:0]</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/tb_bsk_manager/dut/\p_loop_gen[0].r_loop_gen[0].s1_intl_idx ">
+      <obj_property name="ElementShortName">\p_loop_gen[0].r_loop_gen[0].s1_intl_idx [2:0]</obj_property>
+      <obj_property name="ObjectShortName">\p_loop_gen[0].r_loop_gen[0].s1_intl_idx [2:0]</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/tb_bsk_manager/dut/\p_loop_gen[0].r_loop_gen[0].s1_do_read ">
+      <obj_property name="ElementShortName">\p_loop_gen[0].r_loop_gen[0].s1_do_read </obj_property>
+      <obj_property name="ObjectShortName">\p_loop_gen[0].r_loop_gen[0].s1_do_read </obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/tb_bsk_manager/dut/\p_loop_gen[0].r_loop_gen[0].g_loop_gen[0].s1_data_cnt ">
+      <obj_property name="ElementShortName">\p_loop_gen[0].r_loop_gen[0].g_loop_gen[0].s1_data_cnt [2:0]</obj_property>
+      <obj_property name="ObjectShortName">\p_loop_gen[0].r_loop_gen[0].g_loop_gen[0].s1_data_cnt [2:0]</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/tb_bsk_manager/dut/\p_loop_gen[0].r_loop_gen[0].s1_rp ">
+      <obj_property name="ElementShortName">\p_loop_gen[0].r_loop_gen[0].s1_rp [11:0]</obj_property>
+      <obj_property name="ObjectShortName">\p_loop_gen[0].r_loop_gen[0].s1_rp [11:0]</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/tb_bsk_manager/dut/\p_loop_gen[0].r_loop_gen[0].g_loop_gen[0].ram_wr_en ">
+      <obj_property name="ElementShortName">\p_loop_gen[0].r_loop_gen[0].g_loop_gen[0].ram_wr_en [1:0]</obj_property>
+      <obj_property name="ObjectShortName">\p_loop_gen[0].r_loop_gen[0].g_loop_gen[0].ram_wr_en [1:0]</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/tb_bsk_manager/dut/\p_loop_gen[0].r_loop_gen[0].g_loop_gen[0].ram_rd_en ">
+      <obj_property name="ElementShortName">\p_loop_gen[0].r_loop_gen[0].g_loop_gen[0].ram_rd_en [1:0]</obj_property>
+      <obj_property name="ObjectShortName">\p_loop_gen[0].r_loop_gen[0].g_loop_gen[0].ram_rd_en [1:0]</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/tb_bsk_manager/dut/\p_loop_gen[0].r_loop_gen[0].g_loop_gen[0].ram_add ">
+      <obj_property name="ElementShortName">\p_loop_gen[0].r_loop_gen[0].g_loop_gen[0].ram_add [1:0][12:0]</obj_property>
+      <obj_property name="ObjectShortName">\p_loop_gen[0].r_loop_gen[0].g_loop_gen[0].ram_add [1:0][12:0]</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/tb_bsk_manager/dut/\p_loop_gen[0].r_loop_gen[0].g_loop_gen[0].ram_rd_data ">
+      <obj_property name="ElementShortName">\p_loop_gen[0].r_loop_gen[0].g_loop_gen[0].ram_rd_data [1:0][31:0]</obj_property>
+      <obj_property name="ObjectShortName">\p_loop_gen[0].r_loop_gen[0].g_loop_gen[0].ram_rd_data [1:0][31:0]</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/tb_bsk_manager/dut/\p_loop_gen[0].r_loop_gen[0].g_loop_gen[0].ram_rd_add ">
+      <obj_property name="ElementShortName">\p_loop_gen[0].r_loop_gen[0].g_loop_gen[0].ram_rd_add [1:0][12:0]</obj_property>
+      <obj_property name="ObjectShortName">\p_loop_gen[0].r_loop_gen[0].g_loop_gen[0].ram_rd_add [1:0][12:0]</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/tb_bsk_manager/dut/\p_loop_gen[0].r_loop_gen[0].g_loop_gen[0].ram_wr_data ">
+      <obj_property name="ElementShortName">\p_loop_gen[0].r_loop_gen[0].g_loop_gen[0].ram_wr_data [1:0][31:0]</obj_property>
+      <obj_property name="ObjectShortName">\p_loop_gen[0].r_loop_gen[0].g_loop_gen[0].ram_wr_data [1:0][31:0]</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/tb_bsk_manager/dut/\p_loop_gen[0].r_loop_gen[0].g_loop_gen[0].buf_en ">
+      <obj_property name="ElementShortName">\p_loop_gen[0].r_loop_gen[0].g_loop_gen[0].buf_en [3:0]</obj_property>
+      <obj_property name="ObjectShortName">\p_loop_gen[0].r_loop_gen[0].g_loop_gen[0].buf_en [3:0]</obj_property>
+   </wvobject>
+</wave_config>

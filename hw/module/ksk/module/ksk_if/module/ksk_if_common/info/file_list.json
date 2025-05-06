@@ -1,0 +1,21 @@
+{
+    "local_root_path": "${PROJECT_DIR}",
+    "dep_root_path"  : "${PROJECT_DIR}",
+    "is_include_dir" : false,
+    "rtl_files": [
+        {
+            "name": "hw/module/ksk/module/ksk_if/module/ksk_if_common/rtl/ksk_if_common_param_pkg.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false
+        }
+    ],
+    "constraint_files": [],
+    "dependency_dir": [
+        "hw/module/param",
+        "hw/module/pep_key_switch/module/pep_ks_common",
+        "hw/module/axi_if/module/axi_if_common",
+        "hw/module/ksk/module/ksk_manager/module/ksk_mgr_common"],
+    "include_dir": []
+}

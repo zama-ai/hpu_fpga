@@ -1,0 +1,23 @@
+{
+    "local_root_path": "${PROJECT_DIR}",
+    "dep_root_path"  : "${PROJECT_DIR}",
+    "is_include_dir" : false,
+    "rtl_files": [
+        {
+            "name": "hw/module/top/module/top_hpu/rtl/top_hpu.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false
+        }
+    ],
+    "constraint_files": [
+    ],
+    "dependency_dir": [
+        "hw/common_lib/fifo",
+        "hw/module/axi_if/module/axi_if_common",
+        "hw/module/top_common",
+        "hw/module/hpu"
+    ],
+    "include_dir": []
+}

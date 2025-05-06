@@ -1,0 +1,19 @@
+{   
+    "local_root_path": "${PROJECT_DIR}/hw/module/param/module/param_msg2_carry2_gaussian",
+    "dep_root_path"  : "${PROJECT_DIR}",
+    "is_include_dir" : false,
+    "rtl_files": [
+        {
+            "name": "rtl/param_tfhe_definition_pkg.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false
+        }
+    ],
+    "constraint_files": [],
+    "dependency_dir": [
+        "hw/common_lib/common_package"
+    ],
+    "include_dir": [] 
+}

@@ -1,0 +1,33 @@
+{
+    "local_root_path": "${PROJECT_DIR}",
+    "dep_root_path"  : "${PROJECT_DIR}",
+    "is_include_dir" : false,
+    "rtl_files": [
+        {
+            "name": "hw/module/number_theoretic_transform/module/ntt_core_with_matrix_multiplication/module/ntt_core_wmm_cluster_butterfly_unit/rtl/ntt_core_wmm_clbu_pcg_pipe.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false
+        },
+        {
+            "name": "hw/module/number_theoretic_transform/module/ntt_core_with_matrix_multiplication/module/ntt_core_wmm_cluster_butterfly_unit/rtl/ntt_core_wmm_clbu_pcg.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false
+        }
+    ],
+    "constraint_files": [
+        "hw/module/number_theoretic_transform/module/ntt_core_with_matrix_multiplication/module/ntt_core_wmm_cluster_butterfly_unit/constraint/ntt_core_wmm_cluster_butterfly_unit_timing_constraints_local.xdc"
+    ],
+    "dependency_dir": [
+        "hw/common_lib/common_package",
+        "hw/module/number_theoretic_transform/module/ntt_radix/module/ntt_radix_cooley_tukey",
+        "hw/module/param",
+        "hw/module/pe_pbs/module/pep_common",
+        "hw/module/number_theoretic_transform/module/ntt_core_common",
+        "hw/module/number_theoretic_transform/module/ntt_core_with_matrix_multiplication/module/ntt_core_wmm_common"
+    ],
+    "include_dir": []
+}

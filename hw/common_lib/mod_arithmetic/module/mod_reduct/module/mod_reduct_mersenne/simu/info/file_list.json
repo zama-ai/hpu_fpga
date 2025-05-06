@@ -1,0 +1,18 @@
+{    
+    "local_root_path": "${PROJECT_DIR}",
+    "dep_root_path"  : "${PROJECT_DIR}",
+    "rtl_files": [
+        {
+            "name": "hw/common_lib/mod_arithmetic/module/mod_reduct/module/mod_reduct_mersenne/simu/rtl/tb_mod_reduct_mersenne.sv",
+            "library": "work",
+            "env": ["simu"],
+            "target": ["all"],
+            "is_include_file": false
+        }
+    ],
+    "dependency_dir": [
+        "hw/simu_lib/simu_base",
+        "hw/common_lib/mod_arithmetic/module/mod_reduct/module/mod_reduct_mersenne"
+    ],
+    "include_dir": []
+}

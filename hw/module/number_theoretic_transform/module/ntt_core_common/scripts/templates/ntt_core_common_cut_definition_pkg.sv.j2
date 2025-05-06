@@ -1,0 +1,24 @@
+// ==============================================================================================
+// BSD 3-Clause Clear License
+// Copyright © 2025 ZAMA. All rights reserved.
+// ----------------------------------------------------------------------------------------------
+// Description  :
+// ----------------------------------------------------------------------------------------------
+// /!\ Generated file. Do not modify.
+//
+// NTT core (ntt_core) definition package.
+// This package defines the key localparams of ntt_core.
+// It's content is exported by ntt_core_common_param_pkg.
+// Do not use this package directly. Use ntt_core_common_param_pkg.
+// ==============================================================================================
+
+package ntt_core_common_cut_definition_pkg;
+  // Number of Radix columns
+  localparam int                    NTT_RDX_CUT_NB = {{col_nb}};
+  // [0] is the first negacyclic column
+  // Note that for ngc, the radix is in [2,32], so its log in [1,5]
+  // for cyclic : radix in [2,64], and its log in [1,6]
+  localparam [NTT_RDX_CUT_NB-1:0][31:0] NTT_RDX_CUT_S = {{col_l}};
+
+endpackage
+

@@ -1,0 +1,98 @@
+{
+    "local_root_path": "${PROJECT_DIR}",
+    "dep_root_path"  : "${PROJECT_DIR}",
+    "is_include_dir" : false,
+    "rtl_files": [
+        {
+            "name": "hw/module/pe_pbs/module/pep_load/rtl/pep_load_blwe.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false
+        },
+        {
+            "name": "hw/module/pe_pbs/module/pep_load/rtl/pep_load_glwe.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false
+        },
+        {
+            "name": "hw/module/pe_pbs/module/pep_load/rtl/pep_ldg_splitc_dispatch.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false
+        },
+        {
+            "name": "hw/module/pe_pbs/module/pep_load/rtl/pep_ldg_splitc_dispatch_core.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false
+        },
+        {
+            "name": "hw/module/pe_pbs/module/pep_load/rtl/pep_ldg_splitc_entry.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false
+        },
+        {
+            "name": "hw/module/pe_pbs/module/pep_load/rtl/pep_ldg_splitc_write.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false
+        },
+        {
+            "name": "hw/module/pe_pbs/module/pep_load/rtl/pep_ldg_splitc_core.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false
+        },
+        {
+            "name": "hw/module/pe_pbs/module/pep_load/rtl/pep_load_glwe_splitc_main.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false
+        },
+        {
+            "name": "hw/module/pe_pbs/module/pep_load/rtl/pep_load_glwe_splitc_subs.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false
+        },
+        {
+            "name": "hw/module/pe_pbs/module/pep_load/rtl/pep_load_glwe_splitc_assembly.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false
+        }
+    ],
+    "constraint_files": [
+        "hw/module/pe_pbs/module/pep_load/constraint/pep_load_timing_constraints_local.xdc"
+    ],
+    "dependency_dir": [
+        "hw/module/param",
+        "hw/module/top_common",
+        "hw/module/axi_if/module/axi_if_common",
+        "hw/module/regfile/module/regf_common",
+        "hw/module/pep_key_switch/module/pep_ks_common",
+        "hw/module/pe_pbs/module/pep_common",
+        "hw/module/pep_mono_mult_acc/module/pep_mmacc_common",
+        "hw/common_lib/common",
+        "hw/common_lib/common_package",
+        "hw/common_lib/fifo",
+        "hw/common_lib/stream_to_seq",
+        "hw/common_lib/stream_dispatch",
+        "hw/module/number_theoretic_transform/module/ntt_core_common",
+        {"name": "../private/hw/module/pe_pbs/module/pep_load",
+         "optional": true}
+    ],
+    "include_dir": []
+}

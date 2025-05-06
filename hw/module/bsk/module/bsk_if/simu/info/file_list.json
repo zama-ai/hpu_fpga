@@ -1,0 +1,21 @@
+{
+    "local_root_path": "${PROJECT_DIR}",
+    "dep_root_path"  : "${PROJECT_DIR}",
+    "rtl_files": [
+        {
+            "name": "hw/module/bsk/module/bsk_if/simu/rtl/tb_bsk_if.sv",
+            "library": "work",
+            "env": ["simu"],
+            "target": ["all"],
+            "is_include_file": false
+        }
+    ],
+    "dependency_dir": [
+        "hw/simu_lib/simu_base",
+        "hw/simu_lib/stream_lib",
+        "hw/simu_lib/axi4_lib",
+        "hw/module/bsk/module/bsk_if/simu/gen",
+        "hw/module/bsk/module/bsk_if"
+    ],
+    "include_dir": []
+}

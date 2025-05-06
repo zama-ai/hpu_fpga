@@ -1,0 +1,127 @@
+{
+    "local_root_path": "${PROJECT_DIR}",
+    "dep_root_path"  : "${PROJECT_DIR}",
+    "is_include_dir" : false,
+    "rtl_files": [
+        {
+            "name": "hw/module/pe_pbs/rtl/pep_if_pkg.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false
+        },
+        {
+            "name": "hw/module/pe_pbs/rtl/pep_br_mod_switch_to_2powerN.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false
+        },
+        {
+            "name": "hw/module/pe_pbs/rtl/pe_pbs_with_bsk.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false
+        },
+        {
+            "name": "hw/module/pe_pbs/rtl/pe_pbs_with_ksk.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false
+        },
+        {
+            "name": "hw/module/pe_pbs/rtl/pe_pbs_with_ks.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false
+        },
+        {
+            "name": "hw/module/pe_pbs/rtl/pe_pbs_with_entry_main.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false
+        },
+        {
+            "name": "hw/module/pe_pbs/rtl/pe_pbs_with_entry_subsidiary.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false
+        },
+        {
+            "name": "hw/module/pe_pbs/rtl/pe_pbs_with_entry_assembly.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false
+        },
+        {
+            "name": "hw/module/pe_pbs/rtl/pe_pbs_with_modsw.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false
+        },
+        {
+            "name": "hw/module/pe_pbs/rtl/pe_pbs_with_ntt_core_head.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false
+        },
+        {
+            "name": "hw/module/pe_pbs/rtl/pe_pbs_with_ntt_core_middle.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false
+        },
+        {
+            "name": "hw/module/pe_pbs/rtl/pe_pbs_with_ntt_core_tail.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false
+        },
+        {
+            "name": "hw/module/pe_pbs/rtl/pe_pbs.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false
+        }
+    ],
+    "constraint_files": [
+        "hw/module/pe_pbs/constraint/pe_pbs_timing_constraints_local.xdc"
+    ],
+    "dependency_dir": [
+        "hw/module/param",
+        "hw/module/top_common",
+        "hw/module/axi_if/module/axi_if_common",
+        "hw/module/hpu/module/hpu_common_instruction",
+        "hw/module/pep_key_switch/module/pep_ks_common",
+        "hw/module/regfile/module/regf_common",
+        "hw/module/pe_pbs/module/pep_common",
+        "hw/common_lib/common",
+        "hw/common_lib/fifo",
+        "hw/common_lib/stream_to_seq",
+        "hw/common_lib/mod_arithmetic/module/mod_switch/module/mod_switch_to_2powerN",
+        "hw/module/number_theoretic_transform/module/ntt_core_common",
+        "hw/module/bsk/module/bsk_if",
+        "hw/module/bsk/module/bsk_manager",
+        "hw/module/ksk/module/ksk_if",
+        "hw/module/ksk/module/ksk_manager",
+        "hw/module/pep_key_switch",
+        "hw/module/pep_mono_mult_acc",
+        "hw/module/decomposer/module/decomp_balanced_sequential",
+        "hw/module/number_theoretic_transform/module/ntt_core_with_matrix_multiplication",
+        "hw/module/number_theoretic_transform/module/ntt_core_gf64",
+        "hw/module/pe_pbs/module/pep_load",
+        "hw/module/pe_pbs/module/pep_sequencer"
+    ],
+    "include_dir": []
+}

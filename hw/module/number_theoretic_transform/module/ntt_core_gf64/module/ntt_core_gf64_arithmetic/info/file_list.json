@@ -1,0 +1,86 @@
+{
+    "local_root_path": "${PROJECT_DIR}",
+    "dep_root_path"  : "${PROJECT_DIR}",
+    "is_include_dir" : false,
+    "rtl_files": [
+        {
+            "name": "hw/module/number_theoretic_transform/module/ntt_core_gf64/module/ntt_core_gf64_arithmetic/rtl/ntt_core_gf64_pmr_add.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false
+        },
+        {
+            "name": "hw/module/number_theoretic_transform/module/ntt_core_gf64/module/ntt_core_gf64_arithmetic/rtl/ntt_core_gf64_pmr_sub.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false
+        },
+        {
+            "name": "hw/module/number_theoretic_transform/module/ntt_core_gf64/module/ntt_core_gf64_arithmetic/rtl/ntt_core_gf64_pmr_shift_cst.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false
+        },
+        {
+            "name": "hw/module/number_theoretic_transform/module/ntt_core_gf64/module/ntt_core_gf64_arithmetic/rtl/ntt_core_gf64_pmr_shift.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false
+        },
+        {
+            "name": "hw/module/number_theoretic_transform/module/ntt_core_gf64/module/ntt_core_gf64_arithmetic/rtl/ntt_core_gf64_pmr_sign.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false
+        },
+        {
+            "name": "hw/module/number_theoretic_transform/module/ntt_core_gf64/module/ntt_core_gf64_arithmetic/rtl/ntt_core_gf64_pmr_reduction.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false
+        },
+        {
+            "name": "hw/module/number_theoretic_transform/module/ntt_core_gf64/module/ntt_core_gf64_arithmetic/rtl/ntt_core_gf64_sign_reduction.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false
+        },
+        {
+            "name": "hw/module/number_theoretic_transform/module/ntt_core_gf64/module/ntt_core_gf64_arithmetic/rtl/ntt_core_gf64_pmr_mult.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false
+        },
+        {
+            "name": "hw/module/number_theoretic_transform/module/ntt_core_gf64/module/ntt_core_gf64_arithmetic/rtl/ntt_core_gf64_pmr.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false
+        },
+        {
+            "name": "hw/module/number_theoretic_transform/module/ntt_core_gf64/module/ntt_core_gf64_arithmetic/rtl/ntt_core_gf64_pmr_acc.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false
+        }
+    ],
+    "constraint_files": [
+        "hw/module/number_theoretic_transform/module/ntt_core_gf64/module/ntt_core_gf64_arithmetic/constraint/ntt_core_gf64_arithmetic_timing_constraints_local.xdc"
+    ],
+    "dependency_dir": [
+        "hw/common_lib/common",
+        "hw/common_lib/arithmetic/module/arith_mult",
+        "hw/common_lib/common_package"
+    ],
+    "include_dir": []
+}

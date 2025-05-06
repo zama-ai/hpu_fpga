@@ -1,0 +1,20 @@
+{
+    "local_root_path": "${PROJECT_DIR}/hw/module/number_theoretic_transform/module/ntt_core_with_matrix_multiplication/module/ntt_core_wmm_common",
+    "dep_root_path"  : "${PROJECT_DIR}",
+    "is_include_dir" : false,
+    "rtl_files": [
+        {
+            "name": "rtl/ntt_core_wmm_pkg.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false
+        }
+    ],
+    "constraint_files": [],
+    "dependency_dir": [
+        "hw/module/param",
+        "hw/module/pe_pbs/module/pep_common"
+    ],
+    "include_dir": []
+}

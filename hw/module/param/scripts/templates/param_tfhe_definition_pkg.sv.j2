@@ -1,0 +1,45 @@
+// ==============================================================================================
+// BSD 3-Clause Clear License
+// Copyright © 2025 ZAMA. All rights reserved.
+// ----------------------------------------------------------------------------------------------
+// Description  :
+// ----------------------------------------------------------------------------------------------
+// /!\ Generated file : do not modify it /!\
+//
+// Parameters that defines the PBS.
+// Do not use this package directly in modules. Use param_tfhe_pkg instead.
+// This purpose of this package is to ease the tests/synthesis with various localparam sets.
+// ==============================================================================================
+
+package param_tfhe_definition_pkg;
+  import common_definition_pkg::*;
+
+  localparam application_name_e APPLICATION_NAME = {{name}};
+
+  // Number of coefficient in the polynomial
+  localparam int           N       = {{poly_coef_nb}};
+  // The dimension of GLWE.
+  localparam int           GLWE_K  = {{glwe_k}};
+  // Number of decomposition levels.
+  localparam int           PBS_L   = {{pbs_l}};
+  // Decomposition base, in number of bits
+  localparam int           PBS_B_W = {{pbs_b_w}};
+  // Ciphertext size
+  localparam int           LWE_K   = {{lwe_k}};
+  // GLWE coefficient size
+  localparam int           MOD_Q_W = {{mod_q_w}};
+  // GLWE coefficient modulo
+  localparam [MOD_Q_W:0]   MOD_Q   = {{mod_q |replace('"', '') }};
+  // Number of decomposition levels.
+  localparam int           KS_L    = {{ks_l}};
+  // Decomposition base, in number of bits
+  localparam int           KS_B_W  = {{ks_b_w}};
+  // KSK coefficient size
+  localparam int           MOD_KSK_W = {{mod_ksk_w}};
+  // KSK coefficient modulo
+  localparam [MOD_KSK_W:0] MOD_KSK = {{mod_ksk}};
+  // Useful message bit (padding + payload)
+  localparam int           PAYLOAD_BIT = {{payload_bit}};
+  localparam int           PADDING_BIT = {{padding_bit}};
+
+endpackage

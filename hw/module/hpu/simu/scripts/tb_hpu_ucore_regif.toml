@@ -1,0 +1,26 @@
+module_name="tb_hpu_ucore_regif"
+description="Registers needed by testbench ublaze to modelize the communication with the host."
+word_size_b = 32
+offset = 0x00
+ext_pkg = ["axi_if_common_param_pkg", "axi_if_shell_axil_pkg"]
+
+# =====================================================================================================================
+[section.WorkAck]
+description="Purpose of this section"
+offset= 0x00
+align_offset=true
+
+[section.WorkAck.register.workq]
+  description="Insert work in workq and read status"
+  owner="Kernel"
+  read_access="Read"
+  write_access="WriteNotify"
+
+[section.WorkAck.register.ackq]
+  description="Pop ack from in ackq"
+  owner="Kernel"
+  read_access="ReadNotify"
+  write_access="None"
+  field.bsk_pc     = { size_b=8, offset_b=0 , default_val=0, description="Bsk pc"}
+  field.bsk_cut_nb = { size_b=8, offset_b=8 , default_val=0, description="Bsk cut nb"}
+

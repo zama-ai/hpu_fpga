@@ -1,0 +1,5 @@
+connect
+ta 3
+dow build/amc.elf
+rst -proc
+con

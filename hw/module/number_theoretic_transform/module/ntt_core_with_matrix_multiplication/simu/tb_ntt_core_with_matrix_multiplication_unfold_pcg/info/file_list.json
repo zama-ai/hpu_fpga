@@ -1,0 +1,36 @@
+{
+    "local_root_path": "${PROJECT_DIR}/hw/module/number_theoretic_transform/module/ntt_core_with_matrix_multiplication/simu/tb_ntt_core_with_matrix_multiplication_unfold_pcg",
+    "dep_root_path"  : "${PROJECT_DIR}",
+    "use_flag"       : [{"NTT_CORE_ARCH":"NTT_CORE_ARCH_wmm_unfold_pcg"}],
+    "rtl_files": [
+        {
+            "name": "rtl/tb_ntt_core_with_matrix_multiplication_unfold_pcg.sv",
+            "library": "work",
+            "env": ["simu"],
+            "target": ["all"],
+            "is_include_file": false
+        },
+        {
+            "name": "rtl/tb_ntt_core_with_matrix_multiplication_unfold_pcg_assembly.sv",
+            "library": "work",
+            "env": ["simu"],
+            "target": ["all"],
+            "is_include_file": false
+        }
+    ],
+    "dependency_dir": [
+        "hw/common_lib/common_package",
+        "hw/simu_lib/simu_base",
+        "hw/simu_lib/stream_lib",
+        "hw/module/number_theoretic_transform/module/ntt_core_with_matrix_multiplication/simu/tb_ntt_core_with_matrix_multiplication_unfold_pcg/gen",
+        "hw/module/number_theoretic_transform/module/ntt_core_with_matrix_multiplication/simu/tb_bsk_ntw_model",
+        "hw/module/number_theoretic_transform/module/ntt_core_with_matrix_multiplication/simu/tb_batch_cmd_gen_model",
+        "hw/module/twiddle",
+        "hw/module/param",
+        "hw/module/pe_pbs/module/pep_common",
+        "hw/module/number_theoretic_transform/module/ntt_core_common",
+        "hw/module/number_theoretic_transform/module/ntt_core_with_matrix_multiplication/module/ntt_core_wmm_common",
+        "hw/module/number_theoretic_transform/module/ntt_core_with_matrix_multiplication/module/ntt_core_with_matrix_multiplication_unfold_pcg"
+    ],
+    "include_dir": []
+}

@@ -1,0 +1,48 @@
+{   
+    "local_root_path": "${PROJECT_DIR}",
+    "dep_root_path"  : "${PROJECT_DIR}",
+    "is_include_dir" : false,
+    "rtl_files": [
+        {
+            "name": "hw/module/hpu/module/hpu_common/rtl/HPU_PART/HPU_PART_gf64/hpu_part_definition_pkg.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false,
+            "HPU_PART":"HPU_PART_gf64"
+        },
+        {
+            "name": "hw/module/hpu/module/hpu_common/rtl/HPU_PART/HPU_PART_delta/hpu_part_definition_pkg.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false,
+            "HPU_PART":"HPU_PART_delta"
+        },
+        {
+            "name": "hw/module/hpu/module/hpu_common/rtl/HPU_TWDFILE/HPU_TWDFILE_default/hpu_twdfile_definition_pkg.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false,
+            "HPU_TWDFILE":"HPU_TWDFILE_default"
+        },
+        {
+            "name": "hw/module/hpu/module/hpu_common/rtl/hpu_common_param_pkg.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false
+        }
+    ],
+    "constraint_files": [],
+    "dependency_dir": [
+        "hw/common_lib/common_package",
+        "hw/module/regfile/module/regf_common",
+        "hw/module/axi_if/module/axi_if_common",
+        "hw/module/pep_key_switch/module/pep_ks_common",
+        "hw/module/pe_mem/module/pem_common",
+        "hw/module/number_theoretic_transform/module/ntt_core_common"
+    ],
+    "include_dir": [] 
+}

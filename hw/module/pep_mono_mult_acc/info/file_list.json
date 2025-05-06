@@ -1,0 +1,17 @@
+{
+    "local_root_path": "${PROJECT_DIR}",
+    "dep_root_path"  : "${PROJECT_DIR}",
+    "is_include_dir" : false,
+    "rtl_files": [
+    ],
+    "constraint_files": [
+    ],
+    "dependency_dir": [
+        "hw/module/pep_mono_mult_acc/module/pep_mmacc_common",
+        "hw/module/pep_mono_mult_acc/module/pep_mmacc_misc",
+        "hw/module/pep_mono_mult_acc/module/pep_mmacc_glwe_ram",
+        "hw/module/pep_mono_mult_acc/module/pep_mmacc_gram_arb",
+        "hw/module/pep_mono_mult_acc/module/pep_mmacc_splitc"
+    ],
+    "include_dir": [] 
+}

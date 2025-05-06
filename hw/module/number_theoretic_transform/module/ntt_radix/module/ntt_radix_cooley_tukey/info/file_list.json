@@ -1,0 +1,47 @@
+{   
+    "local_root_path": "${PROJECT_DIR}",
+    "dep_root_path"  : "${PROJECT_DIR}",
+    "is_include_dir" : false,
+    "rtl_files": [
+        {
+            "name": "hw/module/number_theoretic_transform/module/ntt_radix/module/ntt_radix_cooley_tukey/rtl/ntt_radix_cooley_tukey_pkg.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false
+        },
+        {
+            "name": "hw/module/number_theoretic_transform/module/ntt_radix/module/ntt_radix_cooley_tukey/rtl/ntt_radix_ct_mult_butterfly.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false
+        },
+        {
+            "name": "hw/module/number_theoretic_transform/module/ntt_radix/module/ntt_radix_cooley_tukey/rtl/ntt_radix_ct_butterfly.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false
+        },
+        {
+            "name": "hw/module/number_theoretic_transform/module/ntt_radix/module/ntt_radix_cooley_tukey/rtl/ntt_radix_cooley_tukey.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false,
+            "NTT_RADIX_COOLEY_TUKEY":"NTT_RADIX_COOLEY_TUKEY_default"
+        }
+    ],
+    "constraint_files": [
+        "hw/module/number_theoretic_transform/module/ntt_radix/module/ntt_radix_cooley_tukey/constraint/ntt_radix_cooley_tukey_timing_constraints_local.xdc"
+    ],
+    "dependency_dir": ["hw/common_lib/common",
+                       "hw/common_lib/common_package",
+                       "hw/common_lib/fifo",
+                       "hw/common_lib/arithmetic/module/arith_mult",
+                       "hw/common_lib/mod_arithmetic/module/mod_add_sub",
+                       "hw/common_lib/mod_arithmetic/module/mod_mult",
+                       "hw/common_lib/mod_arithmetic/module/mod_reduct" ],
+    "include_dir": [] 
+}

@@ -1,0 +1,33 @@
+{   
+    "local_root_path": "${PROJECT_DIR}",
+    "dep_root_path"  : "${PROJECT_DIR}",
+    "is_include_dir" : false,
+    "rtl_files": [
+        {
+            "name": "hw/module/pep_mono_mult_acc/module/pep_mmacc_common/rtl/pep_mmacc_common_permutation_vector.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false
+        },
+        {
+            "name": "hw/module/pep_mono_mult_acc/module/pep_mmacc_common/rtl/pep_mmacc_common_param_pkg.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false
+        }
+    ],
+    "constraint_files": [],
+    "dependency_dir": [
+        "hw/common_lib/ram_wrapper",
+        "hw/common_lib/fifo",
+        "hw/common_lib/ram_rd_rdy_vld",
+        "hw/common_lib/common",
+        "hw/module/param",
+        "hw/module/top_common",
+        "hw/module/pe_pbs/module/pep_common",
+        "hw/module/number_theoretic_transform/module/ntt_core_common"
+    ],
+    "include_dir": [] 
+}

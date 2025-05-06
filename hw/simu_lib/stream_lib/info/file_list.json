@@ -1,0 +1,45 @@
+{   
+    "local_root_path": "${PROJECT_DIR}",
+    "dep_root_path"  : "${PROJECT_DIR}",
+    "is_include_dir" : false,
+    "rtl_files": [
+        {
+            "name": "hw/simu_lib/stream_lib/rtl/random_handler_pkg.sv",
+            "library": "work",
+            "env": ["simu"],
+            "target": ["all"],
+            "is_include_file": false
+        },
+        {
+            "name": "hw/simu_lib/stream_lib/rtl/file_handler_pkg.sv",
+            "library": "work",
+            "env": ["simu"],
+            "target": ["all"],
+            "is_include_file": false
+        },
+        {
+            "name": "hw/simu_lib/stream_lib/rtl/stream_source.sv",
+            "library": "work",
+            "env": ["simu"],
+            "target": ["all"],
+            "is_include_file": false
+        },
+        {
+            "name": "hw/simu_lib/stream_lib/rtl/stream_spy.sv",
+            "library": "work",
+            "env": ["simu"],
+            "target": ["all"],
+            "is_include_file": false
+        },
+        {
+            "name": "hw/simu_lib/stream_lib/rtl/stream_sink.sv",
+            "library": "work",
+            "env": ["simu"],
+            "target": ["all"],
+            "is_include_file": false
+        }
+    ],
+    "constraint_files": [],
+    "dependency_dir": [],
+    "include_dir": [] 
+}

@@ -1,0 +1,25 @@
+{
+    "local_root_path": "${PROJECT_DIR}",
+    "dep_root_path"  : "${PROJECT_DIR}",
+    "is_include_dir" : false,
+    "rtl_files": [
+        {
+            "name": "hw/module/pep_mono_mult_acc/module/pep_mmacc_gram_arb/rtl/pep_mmacc_gram_arb.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false
+        }
+    ],
+    "constraint_files": [
+        "hw/module/pep_mono_mult_acc/module/pep_mmacc_gram_arb/constraint/pep_mmacc_gram_arb_timing_constraints_local.xdc"
+    ],
+    "dependency_dir": [
+        "hw/common_lib/fifo",
+        "hw/module/param",
+        "hw/module/number_theoretic_transform/module/ntt_core_common",
+        "hw/module/pe_pbs/module/pep_common",
+        "hw/module/pep_mono_mult_acc/module/pep_mmacc_common"
+    ],
+    "include_dir": []
+}

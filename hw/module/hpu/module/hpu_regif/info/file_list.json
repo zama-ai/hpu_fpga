@@ -1,0 +1,133 @@
+{   
+    "local_root_path": "${PROJECT_DIR}",
+    "dep_root_path"  : "${PROJECT_DIR}",
+    "is_include_dir" : false,
+    "rtl_files": [
+        {
+            "name": "hw/module/hpu/module/hpu_regif/rtl/hpu_regif_core_cfg_1in3_pkg.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false
+        },
+        {
+            "name": "hw/module/hpu/module/hpu_regif/rtl/hpu_regif_core_cfg_3in3_pkg.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false
+        },
+        {
+            "name": "hw/module/hpu/module/hpu_regif/rtl/hpu_regif_core_prc_1in3_pkg.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false
+        },
+        {
+            "name": "hw/module/hpu/module/hpu_regif/rtl/hpu_regif_core_prc_3in3_pkg.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false
+        },
+        {
+            "name": "hw/module/hpu/module/hpu_regif/rtl/hpu_regif_req_ack.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false
+        },
+        {
+            "name": "hw/module/hpu/module/hpu_regif/rtl/hpu_regif_error_manager.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false
+        },
+        {
+            "name": "hw/module/hpu/module/hpu_regif/rtl/hpu_regif_counter_manager.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false
+        },
+        {
+            "name": "hw/module/hpu/module/hpu_regif/rtl/hpu_regif_core_cfg_1in3.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false
+        },
+        {
+            "name": "hw/module/hpu/module/hpu_regif/rtl/hpu_regif_core_cfg_3in3.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false
+        },
+        {
+            "name": "hw/module/hpu/module/hpu_regif/rtl/hpu_regif_core_prc_1in3.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false
+        },
+        {
+            "name": "hw/module/hpu/module/hpu_regif/rtl/hpu_regif_core_prc_3in3.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false
+        },
+        {
+            "name": "hw/module/hpu/module/hpu_regif/rtl/hpu_regif_cfg_1in3.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false
+        },
+        {
+            "name": "hw/module/hpu/module/hpu_regif/rtl/hpu_regif_cfg_3in3.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false
+        },
+        {
+            "name": "hw/module/hpu/module/hpu_regif/rtl/hpu_regif_prc_1in3.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false
+        },
+        {
+            "name": "hw/module/hpu/module/hpu_regif/rtl/hpu_regif_prc_3in3.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false
+        }
+    ],
+    "constraint_files": [
+        "hw/module/hpu/module/hpu_regif/constraint/hpu_regif_timing_constraints_local.xdc"
+    ],
+    "dependency_dir": [
+        "hw/module/param",
+        "hw/module/top_common",
+        "hw/module/axi_if/module/axi_if_common",
+        "hw/module/hpu/module/hpu_common",
+        "hw/module/hpu/module/hpu_common_instruction",
+        "hw/module/regfile/module/regf_common",
+        "hw/module/pe_mem/module/pem_common",
+        "hw/module/pe_alu/module/pea_common",
+        "hw/module/pe_pbs/module/pep_common",
+        "hw/module/bsk/module/bsk_manager/module/bsk_mgr_common",
+        "hw/module/ksk/module/ksk_manager/module/ksk_mgr_common",
+        "hw/module/number_theoretic_transform/module/ntt_core_common",
+        "hw/module/number_theoretic_transform/module/ntt_core_gf64/module/ntt_core_gf64_common",
+        "hw/module/pep_key_switch/module/pep_ks_common",
+        "hw/module/instruction_scheduler/module/isc_common"
+    ],
+    "include_dir": [] 
+}

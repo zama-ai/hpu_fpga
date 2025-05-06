@@ -1,0 +1,738 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<wave_config>
+   <wave_state>
+   </wave_state>
+   <db_ref_list>
+      <db_ref path="/home/jing-jing/projects/dev/hw/output/xsim/tb_bsk_ntw_server/wave.wdb" id="1">
+         <top_modules>
+            <top_module name="bsk_network_pkg" />
+            <top_module name="ntt_core_wmm_common_definition_pkg" />
+            <top_module name="ntt_core_wmm_common_param_pkg" />
+            <top_module name="ntt_param_pkg" />
+            <top_module name="pbs_param_pkg" />
+            <top_module name="tb_bsk_ntw_server" />
+         </top_modules>
+      </db_ref>
+   </db_ref_list>
+   <zoom_setting>
+      <ZoomStartTime time="17,447.634 ns"></ZoomStartTime>
+      <ZoomEndTime time="21,045.635 ns"></ZoomEndTime>
+      <Cursor1Time time="24,573.205 ns"></Cursor1Time>
+   </zoom_setting>
+   <column_width_setting>
+      <NameColumnWidth column_width="668"></NameColumnWidth>
+      <ValueColumnWidth column_width="229"></ValueColumnWidth>
+   </column_width_setting>
+   <WVObjectSize size="23" />
+   <wave_markers>
+      <marker label="" time="68627732" />
+   </wave_markers>
+   <wvobject type="logic" fp_name="/tb_bsk_ntw_server/clk">
+      <obj_property name="ElementShortName">clk</obj_property>
+      <obj_property name="ObjectShortName">clk</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/tb_bsk_ntw_server/s_rst_n">
+      <obj_property name="ElementShortName">s_rst_n</obj_property>
+      <obj_property name="ObjectShortName">s_rst_n</obj_property>
+   </wvobject>
+   <wvobject type="group" fp_name="group203">
+      <obj_property name="label">error</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+      <wvobject type="array" fp_name="/tb_bsk_ntw_server/error_data">
+         <obj_property name="ElementShortName">error_data[5:0][1:0]</obj_property>
+         <obj_property name="ObjectShortName">error_data[5:0][1:0]</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/tb_bsk_ntw_server/error_server">
+         <obj_property name="ElementShortName">error_server[2:0][0:0]</obj_property>
+         <obj_property name="ObjectShortName">error_server[2:0][0:0]</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/tb_bsk_ntw_server/error_bsk_hit">
+         <obj_property name="ElementShortName">error_bsk_hit</obj_property>
+         <obj_property name="ObjectShortName">error_bsk_hit</obj_property>
+      </wvobject>
+   </wvobject>
+   <wvobject type="array" fp_name="/tb_bsk_ntw_server/cl_bsk_hit">
+      <obj_property name="ElementShortName">cl_bsk_hit[5:0][1:0]</obj_property>
+      <obj_property name="ObjectShortName">cl_bsk_hit[5:0][1:0]</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/tb_bsk_ntw_server/state">
+      <obj_property name="ElementShortName">state[31:0]</obj_property>
+      <obj_property name="ObjectShortName">state[31:0]</obj_property>
+      <obj_property name="CustomSignalColor">#00FFFF</obj_property>
+      <obj_property name="UseCustomSignalColor">true</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/tb_bsk_ntw_server/cmd_cnt">
+      <obj_property name="ElementShortName">cmd_cnt[31:0]</obj_property>
+      <obj_property name="ObjectShortName">cmd_cnt[31:0]</obj_property>
+      <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/tb_bsk_ntw_server/client_all_idle">
+      <obj_property name="ElementShortName">client_all_idle</obj_property>
+      <obj_property name="ObjectShortName">client_all_idle</obj_property>
+   </wvobject>
+   <wvobject type="group" fp_name="group202">
+      <obj_property name="label">bdc_bsk</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+      <wvobject type="array" fp_name="/tb_bsk_ntw_server/bdc_bsk_br_loop">
+         <obj_property name="ElementShortName">bdc_bsk_br_loop[2:0][9:0]</obj_property>
+         <obj_property name="ObjectShortName">bdc_bsk_br_loop[2:0][9:0]</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/tb_bsk_ntw_server/bdc_bsk_avail">
+         <obj_property name="ElementShortName">bdc_bsk_avail[2:0][191:0]</obj_property>
+         <obj_property name="ObjectShortName">bdc_bsk_avail[2:0][191:0]</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/tb_bsk_ntw_server/bdc_bsk_unit">
+         <obj_property name="ElementShortName">bdc_bsk_unit[2:0][0:0]</obj_property>
+         <obj_property name="ObjectShortName">bdc_bsk_unit[2:0][0:0]</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/tb_bsk_ntw_server/bdc_bsk_group">
+         <obj_property name="ElementShortName">bdc_bsk_group[2:0][5:0]</obj_property>
+         <obj_property name="ObjectShortName">bdc_bsk_group[2:0][5:0]</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/tb_bsk_ntw_server/bdc_bsk">
+         <obj_property name="ElementShortName">bdc_bsk[2:0][191:0][31:0]</obj_property>
+         <obj_property name="ObjectShortName">bdc_bsk[2:0][191:0][31:0]</obj_property>
+      </wvobject>
+   </wvobject>
+   <wvobject type="group" fp_name="group200">
+      <obj_property name="label">bdc_merged_bsk</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+      <obj_property name="isExpanded"></obj_property>
+      <wvobject type="array" fp_name="/tb_bsk_ntw_server/bdc_merged_bsk">
+         <obj_property name="ElementShortName">bdc_merged_bsk[191:0][31:0]</obj_property>
+         <obj_property name="ObjectShortName">bdc_merged_bsk[191:0][31:0]</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/tb_bsk_ntw_server/bdc_merged_bsk_avail">
+         <obj_property name="ElementShortName">bdc_merged_bsk_avail[191:0]</obj_property>
+         <obj_property name="ObjectShortName">bdc_merged_bsk_avail[191:0]</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/tb_bsk_ntw_server/bdc_merged_bsk_unit">
+         <obj_property name="ElementShortName">bdc_merged_bsk_unit[0:0]</obj_property>
+         <obj_property name="ObjectShortName">bdc_merged_bsk_unit[0:0]</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/tb_bsk_ntw_server/bdc_merged_bsk_group">
+         <obj_property name="ElementShortName">bdc_merged_bsk_group[5:0]</obj_property>
+         <obj_property name="ObjectShortName">bdc_merged_bsk_group[5:0]</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/tb_bsk_ntw_server/bdc_merged_bsk_br_loop">
+         <obj_property name="ElementShortName">bdc_merged_bsk_br_loop[9:0]</obj_property>
+         <obj_property name="ObjectShortName">bdc_merged_bsk_br_loop[9:0]</obj_property>
+         <obj_property name="CustomSignalColor">#FF00FF</obj_property>
+         <obj_property name="UseCustomSignalColor">true</obj_property>
+      </wvobject>
+   </wvobject>
+   <wvobject type="array" fp_name="/tb_bsk_ntw_server/neigh_bdc_bsk_avail">
+      <obj_property name="ElementShortName">neigh_bdc_bsk_avail[2:0][1:0]</obj_property>
+      <obj_property name="ObjectShortName">neigh_bdc_bsk_avail[2:0][1:0]</obj_property>
+   </wvobject>
+   <wvobject type="group" fp_name="group201">
+      <obj_property name="label">batch_cmd</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+      <obj_property name="isExpanded"></obj_property>
+      <wvobject type="array" fp_name="/tb_bsk_ntw_server/batch_cmd_avail">
+         <obj_property name="ElementShortName">batch_cmd_avail[5:0]</obj_property>
+         <obj_property name="ObjectShortName">batch_cmd_avail[5:0]</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/tb_bsk_ntw_server/batch_cmd">
+         <obj_property name="ElementShortName">batch_cmd[5:0]</obj_property>
+         <obj_property name="ObjectShortName">batch_cmd[5:0]</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/tb_bsk_ntw_server/arb_srv_batch_cmd">
+         <obj_property name="ElementShortName">arb_srv_batch_cmd[12:0]</obj_property>
+         <obj_property name="ObjectShortName">arb_srv_batch_cmd[12:0]</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/tb_bsk_ntw_server/arb_srv_batch_cmd_avail">
+         <obj_property name="ElementShortName">arb_srv_batch_cmd_avail</obj_property>
+         <obj_property name="ObjectShortName">arb_srv_batch_cmd_avail</obj_property>
+      </wvobject>
+   </wvobject>
+   <wvobject type="group" fp_name="group199">
+      <obj_property name="label">wr</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+      <wvobject type="array" fp_name="/tb_bsk_ntw_server/wr_en">
+         <obj_property name="ElementShortName">wr_en[2:0]</obj_property>
+         <obj_property name="ObjectShortName">wr_en[2:0]</obj_property>
+         <obj_property name="isExpanded"></obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/tb_bsk_ntw_server/wr_data">
+         <obj_property name="ElementShortName">wr_data[2:0][191:0][31:0]</obj_property>
+         <obj_property name="ObjectShortName">wr_data[2:0][191:0][31:0]</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/tb_bsk_ntw_server/wr_add">
+         <obj_property name="ElementShortName">wr_add[2:0][8:0]</obj_property>
+         <obj_property name="ObjectShortName">wr_add[2:0][8:0]</obj_property>
+      </wvobject>
+   </wvobject>
+   <wvobject type="array" fp_name="/tb_bsk_ntw_server/cl_bsk_hit">
+      <obj_property name="ElementShortName">cl_bsk_hit[5:0][1:0]</obj_property>
+      <obj_property name="ObjectShortName">cl_bsk_hit[5:0][1:0]</obj_property>
+   </wvobject>
+   <wvobject type="group" fp_name="group193">
+      <obj_property name="label">client_0</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+      <wvobject type="array" fp_name="/tb_bsk_ntw_server/\client_loop_gen[0].batch_loop_gen[0].cl_bsk_cnt ">
+         <obj_property name="ElementShortName">\client_loop_gen[0].batch_loop_gen[0].cl_bsk_cnt [31:0]</obj_property>
+         <obj_property name="ObjectShortName">\client_loop_gen[0].batch_loop_gen[0].cl_bsk_cnt [31:0]</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/tb_bsk_ntw_server/\client_loop_gen[0].batch_loop_gen[1].cl_bsk_cnt ">
+         <obj_property name="ElementShortName">\client_loop_gen[0].batch_loop_gen[1].cl_bsk_cnt [31:0]</obj_property>
+         <obj_property name="ObjectShortName">\client_loop_gen[0].batch_loop_gen[1].cl_bsk_cnt [31:0]</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/tb_bsk_ntw_server/\client_loop_gen[0].client_state ">
+         <obj_property name="ElementShortName">\client_loop_gen[0].client_state [1:0][31:0]</obj_property>
+         <obj_property name="ObjectShortName">\client_loop_gen[0].client_state [1:0][31:0]</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/tb_bsk_ntw_server/\client_loop_gen[0].cl_br_loop ">
+         <obj_property name="ElementShortName">\client_loop_gen[0].cl_br_loop [1:0][9:0]</obj_property>
+         <obj_property name="ObjectShortName">\client_loop_gen[0].cl_br_loop [1:0][9:0]</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/tb_bsk_ntw_server/\client_loop_gen[0].cl_batch_cmd ">
+         <obj_property name="ElementShortName">\client_loop_gen[0].cl_batch_cmd </obj_property>
+         <obj_property name="ObjectShortName">\client_loop_gen[0].cl_batch_cmd </obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/tb_bsk_ntw_server/\client_loop_gen[0].cl_batch_cmd_avail ">
+         <obj_property name="ElementShortName">\client_loop_gen[0].cl_batch_cmd_avail </obj_property>
+         <obj_property name="ObjectShortName">\client_loop_gen[0].cl_batch_cmd_avail </obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/tb_bsk_ntw_server/\client_loop_gen[0].batch_loop_gen[0].cl_bsk_cnt ">
+         <obj_property name="ElementShortName">\client_loop_gen[0].batch_loop_gen[0].cl_bsk_cnt [31:0]</obj_property>
+         <obj_property name="ObjectShortName">\client_loop_gen[0].batch_loop_gen[0].cl_bsk_cnt [31:0]</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/tb_bsk_ntw_server/\client_loop_gen[0].batch_loop_gen[1].cl_bsk_cnt ">
+         <obj_property name="ElementShortName">\client_loop_gen[0].batch_loop_gen[1].cl_bsk_cnt [31:0]</obj_property>
+         <obj_property name="ObjectShortName">\client_loop_gen[0].batch_loop_gen[1].cl_bsk_cnt [31:0]</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/tb_bsk_ntw_server/\client_loop_gen[0].cl_bsk_done ">
+         <obj_property name="ElementShortName">\client_loop_gen[0].cl_bsk_done [1:0]</obj_property>
+         <obj_property name="ObjectShortName">\client_loop_gen[0].cl_bsk_done [1:0]</obj_property>
+      </wvobject>
+   </wvobject>
+   <wvobject type="group" fp_name="group194">
+      <obj_property name="label">client_1</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+      <wvobject type="array" fp_name="/tb_bsk_ntw_server/\client_loop_gen[1].client_state ">
+         <obj_property name="ElementShortName">\client_loop_gen[1].client_state [1:0][31:0]</obj_property>
+         <obj_property name="ObjectShortName">\client_loop_gen[1].client_state [1:0][31:0]</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/tb_bsk_ntw_server/\client_loop_gen[1].cl_br_loop ">
+         <obj_property name="ElementShortName">\client_loop_gen[1].cl_br_loop [1:0][9:0]</obj_property>
+         <obj_property name="ObjectShortName">\client_loop_gen[1].cl_br_loop [1:0][9:0]</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/tb_bsk_ntw_server/\client_loop_gen[1].cl_batch_cmd ">
+         <obj_property name="ElementShortName">\client_loop_gen[1].cl_batch_cmd </obj_property>
+         <obj_property name="ObjectShortName">\client_loop_gen[1].cl_batch_cmd </obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/tb_bsk_ntw_server/\client_loop_gen[1].cl_batch_cmd_avail ">
+         <obj_property name="ElementShortName">\client_loop_gen[1].cl_batch_cmd_avail </obj_property>
+         <obj_property name="ObjectShortName">\client_loop_gen[1].cl_batch_cmd_avail </obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/tb_bsk_ntw_server/\client_loop_gen[1].batch_loop_gen[0].cl_bsk_cnt ">
+         <obj_property name="ElementShortName">\client_loop_gen[1].batch_loop_gen[0].cl_bsk_cnt [31:0]</obj_property>
+         <obj_property name="ObjectShortName">\client_loop_gen[1].batch_loop_gen[0].cl_bsk_cnt [31:0]</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/tb_bsk_ntw_server/\client_loop_gen[1].batch_loop_gen[1].cl_bsk_cnt ">
+         <obj_property name="ElementShortName">\client_loop_gen[1].batch_loop_gen[1].cl_bsk_cnt [31:0]</obj_property>
+         <obj_property name="ObjectShortName">\client_loop_gen[1].batch_loop_gen[1].cl_bsk_cnt [31:0]</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/tb_bsk_ntw_server/\client_loop_gen[1].cl_bsk_done ">
+         <obj_property name="ElementShortName">\client_loop_gen[1].cl_bsk_done [1:0]</obj_property>
+         <obj_property name="ObjectShortName">\client_loop_gen[1].cl_bsk_done [1:0]</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/tb_bsk_ntw_server/\client_loop_gen[1].batch_loop_gen[0].data_a ">
+         <obj_property name="ElementShortName">\client_loop_gen[1].batch_loop_gen[0].data_a [47:0][0:0][191:0][31:0]</obj_property>
+         <obj_property name="ObjectShortName">\client_loop_gen[1].batch_loop_gen[0].data_a [47:0][0:0][191:0][31:0]</obj_property>
+      </wvobject>
+   </wvobject>
+   <wvobject type="group" fp_name="group195">
+      <obj_property name="label">client_2</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+      <wvobject type="array" fp_name="/tb_bsk_ntw_server/\client_loop_gen[2].client_state ">
+         <obj_property name="ElementShortName">\client_loop_gen[2].client_state [1:0][31:0]</obj_property>
+         <obj_property name="ObjectShortName">\client_loop_gen[2].client_state [1:0][31:0]</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/tb_bsk_ntw_server/\client_loop_gen[2].cl_br_loop ">
+         <obj_property name="ElementShortName">\client_loop_gen[2].cl_br_loop [1:0][9:0]</obj_property>
+         <obj_property name="ObjectShortName">\client_loop_gen[2].cl_br_loop [1:0][9:0]</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/tb_bsk_ntw_server/\client_loop_gen[2].cl_batch_cmd ">
+         <obj_property name="ElementShortName">\client_loop_gen[2].cl_batch_cmd </obj_property>
+         <obj_property name="ObjectShortName">\client_loop_gen[2].cl_batch_cmd </obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/tb_bsk_ntw_server/\client_loop_gen[2].cl_batch_cmd_avail ">
+         <obj_property name="ElementShortName">\client_loop_gen[2].cl_batch_cmd_avail </obj_property>
+         <obj_property name="ObjectShortName">\client_loop_gen[2].cl_batch_cmd_avail </obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/tb_bsk_ntw_server/\client_loop_gen[2].batch_loop_gen[0].cl_bsk_cnt ">
+         <obj_property name="ElementShortName">\client_loop_gen[2].batch_loop_gen[0].cl_bsk_cnt [31:0]</obj_property>
+         <obj_property name="ObjectShortName">\client_loop_gen[2].batch_loop_gen[0].cl_bsk_cnt [31:0]</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/tb_bsk_ntw_server/\client_loop_gen[2].batch_loop_gen[1].cl_bsk_cnt ">
+         <obj_property name="ElementShortName">\client_loop_gen[2].batch_loop_gen[1].cl_bsk_cnt [31:0]</obj_property>
+         <obj_property name="ObjectShortName">\client_loop_gen[2].batch_loop_gen[1].cl_bsk_cnt [31:0]</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/tb_bsk_ntw_server/\client_loop_gen[2].cl_bsk_done ">
+         <obj_property name="ElementShortName">\client_loop_gen[2].cl_bsk_done [1:0]</obj_property>
+         <obj_property name="ObjectShortName">\client_loop_gen[2].cl_bsk_done [1:0]</obj_property>
+      </wvobject>
+   </wvobject>
+   <wvobject type="group" fp_name="group196">
+      <obj_property name="label">client_3</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+      <wvobject type="array" fp_name="/tb_bsk_ntw_server/\client_loop_gen[3].client_state ">
+         <obj_property name="ElementShortName">\client_loop_gen[3].client_state [1:0][31:0]</obj_property>
+         <obj_property name="ObjectShortName">\client_loop_gen[3].client_state [1:0][31:0]</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/tb_bsk_ntw_server/\client_loop_gen[3].cl_br_loop ">
+         <obj_property name="ElementShortName">\client_loop_gen[3].cl_br_loop [1:0][9:0]</obj_property>
+         <obj_property name="ObjectShortName">\client_loop_gen[3].cl_br_loop [1:0][9:0]</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/tb_bsk_ntw_server/\client_loop_gen[3].cl_batch_cmd ">
+         <obj_property name="ElementShortName">\client_loop_gen[3].cl_batch_cmd </obj_property>
+         <obj_property name="ObjectShortName">\client_loop_gen[3].cl_batch_cmd </obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/tb_bsk_ntw_server/\client_loop_gen[3].cl_batch_cmd_avail ">
+         <obj_property name="ElementShortName">\client_loop_gen[3].cl_batch_cmd_avail </obj_property>
+         <obj_property name="ObjectShortName">\client_loop_gen[3].cl_batch_cmd_avail </obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/tb_bsk_ntw_server/\client_loop_gen[3].batch_loop_gen[0].cl_bsk_cnt ">
+         <obj_property name="ElementShortName">\client_loop_gen[3].batch_loop_gen[0].cl_bsk_cnt [31:0]</obj_property>
+         <obj_property name="ObjectShortName">\client_loop_gen[3].batch_loop_gen[0].cl_bsk_cnt [31:0]</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/tb_bsk_ntw_server/\client_loop_gen[3].batch_loop_gen[1].cl_bsk_cnt ">
+         <obj_property name="ElementShortName">\client_loop_gen[3].batch_loop_gen[1].cl_bsk_cnt [31:0]</obj_property>
+         <obj_property name="ObjectShortName">\client_loop_gen[3].batch_loop_gen[1].cl_bsk_cnt [31:0]</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/tb_bsk_ntw_server/\client_loop_gen[3].cl_bsk_done ">
+         <obj_property name="ElementShortName">\client_loop_gen[3].cl_bsk_done [1:0]</obj_property>
+         <obj_property name="ObjectShortName">\client_loop_gen[3].cl_bsk_done [1:0]</obj_property>
+      </wvobject>
+   </wvobject>
+   <wvobject type="group" fp_name="group197">
+      <obj_property name="label">client_4</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+      <wvobject type="array" fp_name="/tb_bsk_ntw_server/\client_loop_gen[4].client_state ">
+         <obj_property name="ElementShortName">\client_loop_gen[4].client_state [1:0][31:0]</obj_property>
+         <obj_property name="ObjectShortName">\client_loop_gen[4].client_state [1:0][31:0]</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/tb_bsk_ntw_server/\client_loop_gen[4].cl_br_loop ">
+         <obj_property name="ElementShortName">\client_loop_gen[4].cl_br_loop [1:0][9:0]</obj_property>
+         <obj_property name="ObjectShortName">\client_loop_gen[4].cl_br_loop [1:0][9:0]</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/tb_bsk_ntw_server/\client_loop_gen[4].cl_batch_cmd ">
+         <obj_property name="ElementShortName">\client_loop_gen[4].cl_batch_cmd </obj_property>
+         <obj_property name="ObjectShortName">\client_loop_gen[4].cl_batch_cmd </obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/tb_bsk_ntw_server/\client_loop_gen[4].cl_batch_cmd_avail ">
+         <obj_property name="ElementShortName">\client_loop_gen[4].cl_batch_cmd_avail </obj_property>
+         <obj_property name="ObjectShortName">\client_loop_gen[4].cl_batch_cmd_avail </obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/tb_bsk_ntw_server/\client_loop_gen[4].batch_loop_gen[0].cl_bsk_cnt ">
+         <obj_property name="ElementShortName">\client_loop_gen[4].batch_loop_gen[0].cl_bsk_cnt [31:0]</obj_property>
+         <obj_property name="ObjectShortName">\client_loop_gen[4].batch_loop_gen[0].cl_bsk_cnt [31:0]</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/tb_bsk_ntw_server/\client_loop_gen[4].batch_loop_gen[1].cl_bsk_cnt ">
+         <obj_property name="ElementShortName">\client_loop_gen[4].batch_loop_gen[1].cl_bsk_cnt [31:0]</obj_property>
+         <obj_property name="ObjectShortName">\client_loop_gen[4].batch_loop_gen[1].cl_bsk_cnt [31:0]</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/tb_bsk_ntw_server/\client_loop_gen[4].cl_bsk_done ">
+         <obj_property name="ElementShortName">\client_loop_gen[4].cl_bsk_done [1:0]</obj_property>
+         <obj_property name="ObjectShortName">\client_loop_gen[4].cl_bsk_done [1:0]</obj_property>
+      </wvobject>
+   </wvobject>
+   <wvobject type="group" fp_name="group198">
+      <obj_property name="label">client_5</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+      <wvobject type="array" fp_name="/tb_bsk_ntw_server/\client_loop_gen[5].client_state ">
+         <obj_property name="ElementShortName">\client_loop_gen[5].client_state [1:0][31:0]</obj_property>
+         <obj_property name="ObjectShortName">\client_loop_gen[5].client_state [1:0][31:0]</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/tb_bsk_ntw_server/\client_loop_gen[5].cl_br_loop ">
+         <obj_property name="ElementShortName">\client_loop_gen[5].cl_br_loop [1:0][9:0]</obj_property>
+         <obj_property name="ObjectShortName">\client_loop_gen[5].cl_br_loop [1:0][9:0]</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/tb_bsk_ntw_server/\client_loop_gen[5].cl_batch_cmd ">
+         <obj_property name="ElementShortName">\client_loop_gen[5].cl_batch_cmd </obj_property>
+         <obj_property name="ObjectShortName">\client_loop_gen[5].cl_batch_cmd </obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/tb_bsk_ntw_server/\client_loop_gen[5].cl_batch_cmd_avail ">
+         <obj_property name="ElementShortName">\client_loop_gen[5].cl_batch_cmd_avail </obj_property>
+         <obj_property name="ObjectShortName">\client_loop_gen[5].cl_batch_cmd_avail </obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/tb_bsk_ntw_server/\client_loop_gen[5].batch_loop_gen[0].cl_bsk_cnt ">
+         <obj_property name="ElementShortName">\client_loop_gen[5].batch_loop_gen[0].cl_bsk_cnt [31:0]</obj_property>
+         <obj_property name="ObjectShortName">\client_loop_gen[5].batch_loop_gen[0].cl_bsk_cnt [31:0]</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/tb_bsk_ntw_server/\client_loop_gen[5].batch_loop_gen[1].cl_bsk_cnt ">
+         <obj_property name="ElementShortName">\client_loop_gen[5].batch_loop_gen[1].cl_bsk_cnt [31:0]</obj_property>
+         <obj_property name="ObjectShortName">\client_loop_gen[5].batch_loop_gen[1].cl_bsk_cnt [31:0]</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/tb_bsk_ntw_server/\client_loop_gen[5].cl_bsk_done ">
+         <obj_property name="ElementShortName">\client_loop_gen[5].cl_bsk_done [1:0]</obj_property>
+         <obj_property name="ObjectShortName">\client_loop_gen[5].cl_bsk_done [1:0]</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/tb_bsk_ntw_server/\client_loop_gen[5].batch_loop_gen[0].data_a ">
+         <obj_property name="ElementShortName">\client_loop_gen[5].batch_loop_gen[0].data_a [47:0][0:0][191:0][31:0]</obj_property>
+         <obj_property name="ObjectShortName">\client_loop_gen[5].batch_loop_gen[0].data_a [47:0][0:0][191:0][31:0]</obj_property>
+      </wvobject>
+   </wvobject>
+   <wvobject type="group" fp_name="group213">
+      <obj_property name="label">server_0</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+      <wvobject type="logic" fp_name="/tb_bsk_ntw_server/\inst_loop_gen[0].dut /s2_batch_avail">
+         <obj_property name="ElementShortName">s2_batch_avail</obj_property>
+         <obj_property name="ObjectShortName">s2_batch_avail</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/tb_bsk_ntw_server/\inst_loop_gen[0].dut /s2_batch_rdy">
+         <obj_property name="ElementShortName">s2_batch_rdy</obj_property>
+         <obj_property name="ObjectShortName">s2_batch_rdy</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/tb_bsk_ntw_server/\inst_loop_gen[0].dut /s3_batch_rdy">
+         <obj_property name="ElementShortName">s3_batch_rdy</obj_property>
+         <obj_property name="ObjectShortName">s3_batch_rdy</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/tb_bsk_ntw_server/\inst_loop_gen[0].dut /wr_en">
+         <obj_property name="ElementShortName">wr_en</obj_property>
+         <obj_property name="ObjectShortName">wr_en</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/tb_bsk_ntw_server/\inst_loop_gen[0].dut /wr_data">
+         <obj_property name="ElementShortName">wr_data[191:0][31:0]</obj_property>
+         <obj_property name="ObjectShortName">wr_data[191:0][31:0]</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/tb_bsk_ntw_server/\inst_loop_gen[0].dut /wr_add">
+         <obj_property name="ElementShortName">wr_add[8:0]</obj_property>
+         <obj_property name="ObjectShortName">wr_add[8:0]</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/tb_bsk_ntw_server/\inst_loop_gen[0].dut /\bsk_server_loop[0].ram_wr_en ">
+         <obj_property name="ElementShortName">\bsk_server_loop[0].ram_wr_en </obj_property>
+         <obj_property name="ObjectShortName">\bsk_server_loop[0].ram_wr_en </obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/tb_bsk_ntw_server/\inst_loop_gen[0].dut /\bsk_server_loop[0].ram_wr_add ">
+         <obj_property name="ElementShortName">\bsk_server_loop[0].ram_wr_add [8:0]</obj_property>
+         <obj_property name="ObjectShortName">\bsk_server_loop[0].ram_wr_add [8:0]</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/tb_bsk_ntw_server/\inst_loop_gen[0].dut /\bsk_server_loop[0].ram_wr_data ">
+         <obj_property name="ElementShortName">\bsk_server_loop[0].ram_wr_data [63:0]</obj_property>
+         <obj_property name="ObjectShortName">\bsk_server_loop[0].ram_wr_data [63:0]</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/tb_bsk_ntw_server/\inst_loop_gen[0].dut /\bsk_server_loop[1].ram_wr_en ">
+         <obj_property name="ElementShortName">\bsk_server_loop[1].ram_wr_en </obj_property>
+         <obj_property name="ObjectShortName">\bsk_server_loop[1].ram_wr_en </obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/tb_bsk_ntw_server/\inst_loop_gen[0].dut /\bsk_server_loop[1].ram_wr_add ">
+         <obj_property name="ElementShortName">\bsk_server_loop[1].ram_wr_add [8:0]</obj_property>
+         <obj_property name="ObjectShortName">\bsk_server_loop[1].ram_wr_add [8:0]</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/tb_bsk_ntw_server/\inst_loop_gen[0].dut /\bsk_server_loop[1].ram_wr_data ">
+         <obj_property name="ElementShortName">\bsk_server_loop[1].ram_wr_data [63:0]</obj_property>
+         <obj_property name="ObjectShortName">\bsk_server_loop[1].ram_wr_data [63:0]</obj_property>
+      </wvobject>
+      <wvobject type="group" fp_name="group135">
+         <obj_property name="label">arbiter</obj_property>
+         <obj_property name="DisplayName">label</obj_property>
+      </wvobject>
+      <wvobject type="group" fp_name="group126">
+         <obj_property name="label">cmdp</obj_property>
+         <obj_property name="DisplayName">label</obj_property>
+         <obj_property name="isExpanded"></obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/tb_bsk_ntw_server/\inst_loop_gen[0].dut /s2_batch_cmd">
+         <obj_property name="ElementShortName">s2_batch_cmd</obj_property>
+         <obj_property name="ObjectShortName">s2_batch_cmd</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/tb_bsk_ntw_server/\inst_loop_gen[0].dut /s2_batch_rdy">
+         <obj_property name="ElementShortName">s2_batch_rdy</obj_property>
+         <obj_property name="ObjectShortName">s2_batch_rdy</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/tb_bsk_ntw_server/\inst_loop_gen[0].dut /s3_batch_add_ofs">
+         <obj_property name="ElementShortName">s3_batch_add_ofs[8:0]</obj_property>
+         <obj_property name="ObjectShortName">s3_batch_add_ofs[8:0]</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/tb_bsk_ntw_server/\inst_loop_gen[0].dut /s3_do_read">
+         <obj_property name="ElementShortName">s3_do_read</obj_property>
+         <obj_property name="ObjectShortName">s3_do_read</obj_property>
+         <obj_property name="CustomSignalColor">#FF00FF</obj_property>
+         <obj_property name="UseCustomSignalColor">true</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/tb_bsk_ntw_server/\inst_loop_gen[0].dut /s3_br_loop">
+         <obj_property name="ElementShortName">s3_br_loop[9:0]</obj_property>
+         <obj_property name="ObjectShortName">s3_br_loop[9:0]</obj_property>
+         <obj_property name="CustomSignalColor">#00FFFF</obj_property>
+         <obj_property name="UseCustomSignalColor">true</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/tb_bsk_ntw_server/\inst_loop_gen[0].dut /s3_batch_vld">
+         <obj_property name="ElementShortName">s3_batch_vld</obj_property>
+         <obj_property name="ObjectShortName">s3_batch_vld</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/tb_bsk_ntw_server/\inst_loop_gen[0].dut /s3_batch_rdy">
+         <obj_property name="ElementShortName">s3_batch_rdy</obj_property>
+         <obj_property name="ObjectShortName">s3_batch_rdy</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/tb_bsk_ntw_server/\inst_loop_gen[0].dut /s3_gl_rp">
+         <obj_property name="ElementShortName">s3_gl_rp[5:0]</obj_property>
+         <obj_property name="ObjectShortName">s3_gl_rp[5:0]</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/tb_bsk_ntw_server/\inst_loop_gen[0].dut /s3_last_gl_rp">
+         <obj_property name="ElementShortName">s3_last_gl_rp</obj_property>
+         <obj_property name="ObjectShortName">s3_last_gl_rp</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/tb_bsk_ntw_server/\inst_loop_gen[0].dut /s3_gl_rp_inc">
+         <obj_property name="ElementShortName">s3_gl_rp_inc</obj_property>
+         <obj_property name="ObjectShortName">s3_gl_rp_inc</obj_property>
+      </wvobject>
+   </wvobject>
+   <wvobject type="group" fp_name="group166">
+      <obj_property name="label">server_1</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+      <wvobject type="logic" fp_name="/tb_bsk_ntw_server/\inst_loop_gen[1].dut /s3_do_read">
+         <obj_property name="ElementShortName">s3_do_read</obj_property>
+         <obj_property name="ObjectShortName">s3_do_read</obj_property>
+         <obj_property name="CustomSignalColor">#FF00FF</obj_property>
+         <obj_property name="UseCustomSignalColor">true</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/tb_bsk_ntw_server/\inst_loop_gen[1].dut /s3_br_loop">
+         <obj_property name="ElementShortName">s3_br_loop[9:0]</obj_property>
+         <obj_property name="ObjectShortName">s3_br_loop[9:0]</obj_property>
+         <obj_property name="CustomSignalColor">#00FFFF</obj_property>
+         <obj_property name="UseCustomSignalColor">true</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/tb_bsk_ntw_server/\inst_loop_gen[1].dut /s3_batch_vld">
+         <obj_property name="ElementShortName">s3_batch_vld</obj_property>
+         <obj_property name="ObjectShortName">s3_batch_vld</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/tb_bsk_ntw_server/\inst_loop_gen[1].dut /s3_batch_rdy">
+         <obj_property name="ElementShortName">s3_batch_rdy</obj_property>
+         <obj_property name="ObjectShortName">s3_batch_rdy</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/tb_bsk_ntw_server/\inst_loop_gen[1].dut /s3_gl_rp">
+         <obj_property name="ElementShortName">s3_gl_rp[5:0]</obj_property>
+         <obj_property name="ObjectShortName">s3_gl_rp[5:0]</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/tb_bsk_ntw_server/\inst_loop_gen[1].dut /s3_last_gl_rp">
+         <obj_property name="ElementShortName">s3_last_gl_rp</obj_property>
+         <obj_property name="ObjectShortName">s3_last_gl_rp</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/tb_bsk_ntw_server/\inst_loop_gen[1].dut /s3_gl_rp_inc">
+         <obj_property name="ElementShortName">s3_gl_rp_inc</obj_property>
+         <obj_property name="ObjectShortName">s3_gl_rp_inc</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/tb_bsk_ntw_server/\inst_loop_gen[1].dut /s4_br_loop">
+         <obj_property name="ElementShortName">s4_br_loop[9:0]</obj_property>
+         <obj_property name="ObjectShortName">s4_br_loop[9:0]</obj_property>
+      </wvobject>
+   </wvobject>
+   <wvobject type="group" fp_name="group145">
+      <obj_property name="label">server_2</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+      <wvobject type="array" fp_name="/tb_bsk_ntw_server/\inst_loop_gen[2].dut /neigh_bdc_bsk_avail">
+         <obj_property name="ElementShortName">neigh_bdc_bsk_avail[1:0]</obj_property>
+         <obj_property name="ObjectShortName">neigh_bdc_bsk_avail[1:0]</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/tb_bsk_ntw_server/\inst_loop_gen[2].dut /s3_batch_vld">
+         <obj_property name="ElementShortName">s3_batch_vld</obj_property>
+         <obj_property name="ObjectShortName">s3_batch_vld</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/tb_bsk_ntw_server/\inst_loop_gen[2].dut /s3_batch_rdy">
+         <obj_property name="ElementShortName">s3_batch_rdy</obj_property>
+         <obj_property name="ObjectShortName">s3_batch_rdy</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/tb_bsk_ntw_server/\inst_loop_gen[2].dut /s3_br_loop">
+         <obj_property name="ElementShortName">s3_br_loop[9:0]</obj_property>
+         <obj_property name="ObjectShortName">s3_br_loop[9:0]</obj_property>
+         <obj_property name="CustomSignalColor">#00FFFF</obj_property>
+         <obj_property name="UseCustomSignalColor">true</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/tb_bsk_ntw_server/\inst_loop_gen[2].dut /s3_do_read">
+         <obj_property name="ElementShortName">s3_do_read</obj_property>
+         <obj_property name="ObjectShortName">s3_do_read</obj_property>
+         <obj_property name="CustomSignalColor">#FF00FF</obj_property>
+         <obj_property name="UseCustomSignalColor">true</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/tb_bsk_ntw_server/\inst_loop_gen[2].dut /s3_gl_rp">
+         <obj_property name="ElementShortName">s3_gl_rp[5:0]</obj_property>
+         <obj_property name="ObjectShortName">s3_gl_rp[5:0]</obj_property>
+         <obj_property name="Radix">HEXRADIX</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/tb_bsk_ntw_server/\inst_loop_gen[2].dut /s3_last_gl_rp">
+         <obj_property name="ElementShortName">s3_last_gl_rp</obj_property>
+         <obj_property name="ObjectShortName">s3_last_gl_rp</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/tb_bsk_ntw_server/\inst_loop_gen[2].dut /s3_gl_rp_inc">
+         <obj_property name="ElementShortName">s3_gl_rp_inc</obj_property>
+         <obj_property name="ObjectShortName">s3_gl_rp_inc</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/tb_bsk_ntw_server/\inst_loop_gen[2].dut /\bsk_server_loop[0].bsk_ram /rd_en">
+         <obj_property name="ElementShortName">rd_en</obj_property>
+         <obj_property name="ObjectShortName">rd_en</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/tb_bsk_ntw_server/\inst_loop_gen[2].dut /\bsk_server_loop[0].bsk_ram /rd_add">
+         <obj_property name="ElementShortName">rd_add[8:0]</obj_property>
+         <obj_property name="ObjectShortName">rd_add[8:0]</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/tb_bsk_ntw_server/\inst_loop_gen[2].dut /\bsk_server_loop[0].bsk_ram /rd_data">
+         <obj_property name="ElementShortName">rd_data[63:0]</obj_property>
+         <obj_property name="ObjectShortName">rd_data[63:0]</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/tb_bsk_ntw_server/\inst_loop_gen[2].dut /\bsk_server_loop[0].bsk_ram /wr_en">
+         <obj_property name="ElementShortName">wr_en</obj_property>
+         <obj_property name="ObjectShortName">wr_en</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/tb_bsk_ntw_server/\inst_loop_gen[2].dut /\bsk_server_loop[0].bsk_ram /wr_add">
+         <obj_property name="ElementShortName">wr_add[8:0]</obj_property>
+         <obj_property name="ObjectShortName">wr_add[8:0]</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/tb_bsk_ntw_server/\inst_loop_gen[2].dut /\bsk_server_loop[0].bsk_ram /wr_data">
+         <obj_property name="ElementShortName">wr_data[63:0]</obj_property>
+         <obj_property name="ObjectShortName">wr_data[63:0]</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/tb_bsk_ntw_server/\inst_loop_gen[2].dut /ram_rd_data_avail_dly_a">
+         <obj_property name="ElementShortName">ram_rd_data_avail_dly_a[95:0][1:0]</obj_property>
+         <obj_property name="ObjectShortName">ram_rd_data_avail_dly_a[95:0][1:0]</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/tb_bsk_ntw_server/\inst_loop_gen[2].dut /s4_br_loop">
+         <obj_property name="ElementShortName">s4_br_loop[9:0]</obj_property>
+         <obj_property name="ObjectShortName">s4_br_loop[9:0]</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/tb_bsk_ntw_server/\inst_loop_gen[2].dut /bdc_bsk">
+         <obj_property name="ElementShortName">bdc_bsk[191:0][31:0]</obj_property>
+         <obj_property name="ObjectShortName">bdc_bsk[191:0][31:0]</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/tb_bsk_ntw_server/\inst_loop_gen[2].dut /bdc_bsk_avail">
+         <obj_property name="ElementShortName">bdc_bsk_avail[191:0]</obj_property>
+         <obj_property name="ObjectShortName">bdc_bsk_avail[191:0]</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/tb_bsk_ntw_server/\inst_loop_gen[2].dut /bdc_bsk_br_loop">
+         <obj_property name="ElementShortName">bdc_bsk_br_loop[9:0]</obj_property>
+         <obj_property name="ObjectShortName">bdc_bsk_br_loop[9:0]</obj_property>
+      </wvobject>
+   </wvobject>
+   <wvobject type="group" fp_name="group170">
+      <obj_property name="label">arbiter</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+      <obj_property name="isExpanded"></obj_property>
+      <wvobject type="logic" fp_name="/tb_bsk_ntw_server/bsk_ntw_cmd_arbiter/\arbiter_loop_0_gen[2].arbiter_loop_1_gen[0].s0_same_br_loop ">
+         <obj_property name="ElementShortName">\arbiter_loop_0_gen[2].arbiter_loop_1_gen[0].s0_same_br_loop </obj_property>
+         <obj_property name="ObjectShortName">\arbiter_loop_0_gen[2].arbiter_loop_1_gen[0].s0_same_br_loop </obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/tb_bsk_ntw_server/bsk_ntw_cmd_arbiter/\arbiter_loop_0_gen[2].arbiter_loop_1_gen[0].s0_batch_cmd_in_vld ">
+         <obj_property name="ElementShortName">\arbiter_loop_0_gen[2].arbiter_loop_1_gen[0].s0_batch_cmd_in_vld [1:0]</obj_property>
+         <obj_property name="ObjectShortName">\arbiter_loop_0_gen[2].arbiter_loop_1_gen[0].s0_batch_cmd_in_vld [1:0]</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/tb_bsk_ntw_server/bsk_ntw_cmd_arbiter/\arbiter_loop_0_gen[2].arbiter_loop_1_gen[0].s0_batch_cmd_in_rdy ">
+         <obj_property name="ElementShortName">\arbiter_loop_0_gen[2].arbiter_loop_1_gen[0].s0_batch_cmd_in_rdy [1:0]</obj_property>
+         <obj_property name="ObjectShortName">\arbiter_loop_0_gen[2].arbiter_loop_1_gen[0].s0_batch_cmd_in_rdy [1:0]</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/tb_bsk_ntw_server/bsk_ntw_cmd_arbiter/\arbiter_loop_0_gen[2].arbiter_loop_1_gen[1].s0_same_br_loop ">
+         <obj_property name="ElementShortName">\arbiter_loop_0_gen[2].arbiter_loop_1_gen[1].s0_same_br_loop </obj_property>
+         <obj_property name="ObjectShortName">\arbiter_loop_0_gen[2].arbiter_loop_1_gen[1].s0_same_br_loop </obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/tb_bsk_ntw_server/bsk_ntw_cmd_arbiter/\arbiter_loop_0_gen[2].arbiter_loop_1_gen[1].s0_batch_cmd_in_vld ">
+         <obj_property name="ElementShortName">\arbiter_loop_0_gen[2].arbiter_loop_1_gen[1].s0_batch_cmd_in_vld [1:0]</obj_property>
+         <obj_property name="ObjectShortName">\arbiter_loop_0_gen[2].arbiter_loop_1_gen[1].s0_batch_cmd_in_vld [1:0]</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/tb_bsk_ntw_server/bsk_ntw_cmd_arbiter/\arbiter_loop_0_gen[2].arbiter_loop_1_gen[1].s0_batch_cmd_in_rdy ">
+         <obj_property name="ElementShortName">\arbiter_loop_0_gen[2].arbiter_loop_1_gen[1].s0_batch_cmd_in_rdy [1:0]</obj_property>
+         <obj_property name="ObjectShortName">\arbiter_loop_0_gen[2].arbiter_loop_1_gen[1].s0_batch_cmd_in_rdy [1:0]</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/tb_bsk_ntw_server/bsk_ntw_cmd_arbiter/\arbiter_loop_0_gen[2].arbiter_loop_1_gen[2].s0_same_br_loop ">
+         <obj_property name="ElementShortName">\arbiter_loop_0_gen[2].arbiter_loop_1_gen[2].s0_same_br_loop </obj_property>
+         <obj_property name="ObjectShortName">\arbiter_loop_0_gen[2].arbiter_loop_1_gen[2].s0_same_br_loop </obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/tb_bsk_ntw_server/bsk_ntw_cmd_arbiter/\arbiter_loop_0_gen[2].arbiter_loop_1_gen[2].s0_batch_cmd_in_vld ">
+         <obj_property name="ElementShortName">\arbiter_loop_0_gen[2].arbiter_loop_1_gen[2].s0_batch_cmd_in_vld [1:0]</obj_property>
+         <obj_property name="ObjectShortName">\arbiter_loop_0_gen[2].arbiter_loop_1_gen[2].s0_batch_cmd_in_vld [1:0]</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/tb_bsk_ntw_server/bsk_ntw_cmd_arbiter/\arbiter_loop_0_gen[2].arbiter_loop_1_gen[2].s0_batch_cmd_in_rdy ">
+         <obj_property name="ElementShortName">\arbiter_loop_0_gen[2].arbiter_loop_1_gen[2].s0_batch_cmd_in_rdy [1:0]</obj_property>
+         <obj_property name="ObjectShortName">\arbiter_loop_0_gen[2].arbiter_loop_1_gen[2].s0_batch_cmd_in_rdy [1:0]</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/tb_bsk_ntw_server/bsk_ntw_cmd_arbiter/\arbiter_loop_0_gen[2].arbiter_loop_1_gen[3].s0_same_br_loop ">
+         <obj_property name="ElementShortName">\arbiter_loop_0_gen[2].arbiter_loop_1_gen[3].s0_same_br_loop </obj_property>
+         <obj_property name="ObjectShortName">\arbiter_loop_0_gen[2].arbiter_loop_1_gen[3].s0_same_br_loop </obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/tb_bsk_ntw_server/bsk_ntw_cmd_arbiter/\arbiter_loop_0_gen[2].arbiter_loop_1_gen[3].s0_batch_cmd_in_vld ">
+         <obj_property name="ElementShortName">\arbiter_loop_0_gen[2].arbiter_loop_1_gen[3].s0_batch_cmd_in_vld [1:0]</obj_property>
+         <obj_property name="ObjectShortName">\arbiter_loop_0_gen[2].arbiter_loop_1_gen[3].s0_batch_cmd_in_vld [1:0]</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/tb_bsk_ntw_server/bsk_ntw_cmd_arbiter/\arbiter_loop_0_gen[2].arbiter_loop_1_gen[3].s0_batch_cmd_in_rdy ">
+         <obj_property name="ElementShortName">\arbiter_loop_0_gen[2].arbiter_loop_1_gen[3].s0_batch_cmd_in_rdy [1:0]</obj_property>
+         <obj_property name="ObjectShortName">\arbiter_loop_0_gen[2].arbiter_loop_1_gen[3].s0_batch_cmd_in_rdy [1:0]</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/tb_bsk_ntw_server/bsk_ntw_cmd_arbiter/\arbiter_loop_0_gen[1].arbiter_loop_1_gen[0].s0_same_br_loop ">
+         <obj_property name="ElementShortName">\arbiter_loop_0_gen[1].arbiter_loop_1_gen[0].s0_same_br_loop </obj_property>
+         <obj_property name="ObjectShortName">\arbiter_loop_0_gen[1].arbiter_loop_1_gen[0].s0_same_br_loop </obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/tb_bsk_ntw_server/bsk_ntw_cmd_arbiter/\arbiter_loop_0_gen[1].arbiter_loop_1_gen[0].s0_batch_cmd_in_vld ">
+         <obj_property name="ElementShortName">\arbiter_loop_0_gen[1].arbiter_loop_1_gen[0].s0_batch_cmd_in_vld [1:0]</obj_property>
+         <obj_property name="ObjectShortName">\arbiter_loop_0_gen[1].arbiter_loop_1_gen[0].s0_batch_cmd_in_vld [1:0]</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/tb_bsk_ntw_server/bsk_ntw_cmd_arbiter/\arbiter_loop_0_gen[1].arbiter_loop_1_gen[0].s0_batch_cmd_in_rdy ">
+         <obj_property name="ElementShortName">\arbiter_loop_0_gen[1].arbiter_loop_1_gen[0].s0_batch_cmd_in_rdy [1:0]</obj_property>
+         <obj_property name="ObjectShortName">\arbiter_loop_0_gen[1].arbiter_loop_1_gen[0].s0_batch_cmd_in_rdy [1:0]</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/tb_bsk_ntw_server/bsk_ntw_cmd_arbiter/\arbiter_loop_0_gen[1].arbiter_loop_1_gen[1].s0_same_br_loop ">
+         <obj_property name="ElementShortName">\arbiter_loop_0_gen[1].arbiter_loop_1_gen[1].s0_same_br_loop </obj_property>
+         <obj_property name="ObjectShortName">\arbiter_loop_0_gen[1].arbiter_loop_1_gen[1].s0_same_br_loop </obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/tb_bsk_ntw_server/bsk_ntw_cmd_arbiter/\arbiter_loop_0_gen[1].arbiter_loop_1_gen[1].s0_batch_cmd_in_vld ">
+         <obj_property name="ElementShortName">\arbiter_loop_0_gen[1].arbiter_loop_1_gen[1].s0_batch_cmd_in_vld [1:0]</obj_property>
+         <obj_property name="ObjectShortName">\arbiter_loop_0_gen[1].arbiter_loop_1_gen[1].s0_batch_cmd_in_vld [1:0]</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/tb_bsk_ntw_server/bsk_ntw_cmd_arbiter/\arbiter_loop_0_gen[1].arbiter_loop_1_gen[1].s0_batch_cmd_in_rdy ">
+         <obj_property name="ElementShortName">\arbiter_loop_0_gen[1].arbiter_loop_1_gen[1].s0_batch_cmd_in_rdy [1:0]</obj_property>
+         <obj_property name="ObjectShortName">\arbiter_loop_0_gen[1].arbiter_loop_1_gen[1].s0_batch_cmd_in_rdy [1:0]</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/tb_bsk_ntw_server/bsk_ntw_cmd_arbiter/\arbiter_loop_0_gen[0].arbiter_loop_1_gen[0].s0_same_br_loop ">
+         <obj_property name="ElementShortName">\arbiter_loop_0_gen[0].arbiter_loop_1_gen[0].s0_same_br_loop </obj_property>
+         <obj_property name="ObjectShortName">\arbiter_loop_0_gen[0].arbiter_loop_1_gen[0].s0_same_br_loop </obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/tb_bsk_ntw_server/bsk_ntw_cmd_arbiter/\arbiter_loop_0_gen[0].arbiter_loop_1_gen[0].s0_batch_cmd_in_vld ">
+         <obj_property name="ElementShortName">\arbiter_loop_0_gen[0].arbiter_loop_1_gen[0].s0_batch_cmd_in_vld [1:0]</obj_property>
+         <obj_property name="ObjectShortName">\arbiter_loop_0_gen[0].arbiter_loop_1_gen[0].s0_batch_cmd_in_vld [1:0]</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/tb_bsk_ntw_server/bsk_ntw_cmd_arbiter/\arbiter_loop_0_gen[0].arbiter_loop_1_gen[0].s0_batch_cmd_in_rdy ">
+         <obj_property name="ElementShortName">\arbiter_loop_0_gen[0].arbiter_loop_1_gen[0].s0_batch_cmd_in_rdy [1:0]</obj_property>
+         <obj_property name="ObjectShortName">\arbiter_loop_0_gen[0].arbiter_loop_1_gen[0].s0_batch_cmd_in_rdy [1:0]</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/tb_bsk_ntw_server/bsk_ntw_cmd_arbiter/s1_mux_batch_vld">
+         <obj_property name="ElementShortName">s1_mux_batch_vld</obj_property>
+         <obj_property name="ObjectShortName">s1_mux_batch_vld</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/tb_bsk_ntw_server/bsk_ntw_cmd_arbiter/s1_cmdp_in_avail">
+         <obj_property name="ElementShortName">s1_cmdp_in_avail</obj_property>
+         <obj_property name="ObjectShortName">s1_cmdp_in_avail</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/tb_bsk_ntw_server/bsk_ntw_cmd_arbiter/s1_cmdp_batch_cmd">
+         <obj_property name="ElementShortName">s1_cmdp_batch_cmd[11:0]</obj_property>
+         <obj_property name="ObjectShortName">s1_cmdp_batch_cmd[11:0]</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/tb_bsk_ntw_server/bsk_ntw_cmd_arbiter/s1_cmdp_avail">
+         <obj_property name="ElementShortName">s1_cmdp_avail[11:0]</obj_property>
+         <obj_property name="ObjectShortName">s1_cmdp_avail[11:0]</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/tb_bsk_ntw_server/bsk_ntw_cmd_arbiter/s1_cmdp_compare_in">
+         <obj_property name="ElementShortName">s1_cmdp_compare_in[11:0]</obj_property>
+         <obj_property name="ObjectShortName">s1_cmdp_compare_in[11:0]</obj_property>
+         <obj_property name="isExpanded"></obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/tb_bsk_ntw_server/bsk_ntw_cmd_arbiter/s1_cmdp_batch_cmd_out">
+         <obj_property name="ElementShortName">s1_cmdp_batch_cmd_out</obj_property>
+         <obj_property name="ObjectShortName">s1_cmdp_batch_cmd_out</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/tb_bsk_ntw_server/bsk_ntw_cmd_arbiter/s1_cmdp_out_vld">
+         <obj_property name="ElementShortName">s1_cmdp_out_vld</obj_property>
+         <obj_property name="ObjectShortName">s1_cmdp_out_vld</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/tb_bsk_ntw_server/bsk_ntw_cmd_arbiter/s1_cmdp_out_rdy">
+         <obj_property name="ElementShortName">s1_cmdp_out_rdy</obj_property>
+         <obj_property name="ObjectShortName">s1_cmdp_out_rdy</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/tb_bsk_ntw_server/bsk_ntw_cmd_arbiter/s2_bdc_bsk_cnt">
+         <obj_property name="ElementShortName">s2_bdc_bsk_cnt[5:0]</obj_property>
+         <obj_property name="ObjectShortName">s2_bdc_bsk_cnt[5:0]</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/tb_bsk_ntw_server/bsk_ntw_cmd_arbiter/s2_fifo_full">
+         <obj_property name="ElementShortName">s2_fifo_full</obj_property>
+         <obj_property name="ObjectShortName">s2_fifo_full</obj_property>
+      </wvobject>
+   </wvobject>
+</wave_config>

@@ -1,0 +1,51 @@
+[pbs_params]
+    lwe_dimension= {{LWE_K}}
+    glwe_dimension= {{GLWE_K}}
+    polynomial_size= {{N}}
+    lwe_modular_std_dev= 0.0
+    glwe_modular_std_dev= 0.0
+    pbs_base_log= {{PBS_B_W}}
+    pbs_level= {{PBS_L}}
+    ks_base_log= {{KS_B_W}}
+    ks_level= {{KS_L}}
+    message_width= 2
+    carry_width= 2
+    ciphertext_width= {{MOD_Q_W}}
+    lwe_noise_distribution={GaussianStdDev=0.0}
+    glwe_noise_distribution={GaussianStdDev=0.0}
+
+[ntt_params]
+    core_arch= {{core_arch}}
+    batch_pbs_nb= {{BPBS_NB}}
+    total_pbs_nb= {{TPBS_NB}}
+    ct_width= {{MOD_NTT_W}}
+    radix= {{R}}
+    stg_nb= {{S}}
+    prime_modulus="{{MOD_NTT}}"
+    psi= {{PSI}}
+    delta= {{DELTA}}
+    min_pbs_nb= 6
+
+[ks_params]
+    width= {{MOD_KSK_W}}
+    lbx= {{LBX}}
+    lby= {{LBY}}
+    lbz= {{LBZ}}
+
+[pc_params]
+    ksk_pc= {{ksk_pc}}
+    ksk_bytes_w= {{ksk_bytes_w}}
+    bsk_pc= {{bsk_pc}}
+    bsk_bytes_w= {{bsk_bytes_w}}
+    pem_pc= {{pem_pc}}
+    pem_bytes_w= {{pem_bytes_w}}
+    glwe_pc= {{glwe_pc}}
+    glwe_bytes_w= {{glwe_bytes_w}}
+
+[regf_params]
+    reg_nb= {{REGF_REG_NB}}
+    coef_nb= {{REGF_COEF_NB}}
+
+[isc_params]
+    depth= {{ISC_POOL_SLOT_NB}}
+    min_iop_size= 4

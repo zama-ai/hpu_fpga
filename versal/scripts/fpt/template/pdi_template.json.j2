@@ -1,0 +1,10 @@
+all:
+{
+    image {
+      { type=bootimage, file=^^top_pdi_path^^ }
+    }
+    image {
+        id = 0x1c000000, name=rpu_subsystem, delay_handoff
+        { core=r5-0, file=^^amc_elf_path^^  }
+    }
+}

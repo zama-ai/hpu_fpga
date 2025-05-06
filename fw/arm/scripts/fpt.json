@@ -1,0 +1,19 @@
+{
+    "fpt_header(0)": {
+        "magic_word"        : "0x92F7A516",
+        "fpt_version"       : 1,
+        "fpt_header_size"   : 128,
+        "fpt_entry_size"    : 128,
+        "num_entries"       : 2
+    },
+    "fpt_entry(0, 0)": {
+        "type"              : "PDI",
+        "base_addr"         : "0x00008000",
+        "partition_size"    : "0x07E00000"
+    },
+    "fpt_entry(0, 1)": {
+        "type"              : "PDI",
+        "base_addr"         : "0x07E08000",
+        "partition_size"    : "0x07E00000"
+    }
+}

@@ -1,0 +1,19 @@
+{    
+    "local_root_path": "${PROJECT_DIR}",
+    "dep_root_path"  : "${PROJECT_DIR}",
+    "rtl_files": [
+        {
+            "name": "hw/common_lib/mod_arithmetic/module/mod_add_sub/simu/tb_mod_sub/rtl/tb_mod_sub.sv",
+            "library": "work",
+            "env": ["simu"],
+            "target": ["all"],
+            "is_include_file": false
+        }
+    ],
+    "dependency_dir": [
+        "hw/simu_lib/simu_base",
+        "hw/simu_lib/stream_lib",
+        "hw/common_lib/mod_arithmetic/module/mod_add_sub"
+    ],
+    "include_dir": []
+}

@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<wave_config>
+   <wave_state>
+   </wave_state>
+   <db_ref_list>
+      <db_ref path="/home/jing-jing/projects/dev/hw/output/xsim/tb_fifo_element/wave.wdb" id="1">
+         <top_modules>
+            <top_module name="tb_fifo_element" />
+         </top_modules>
+      </db_ref>
+   </db_ref_list>
+   <zoom_setting>
+      <ZoomStartTime time="203.948 ns"></ZoomStartTime>
+      <ZoomEndTime time="243.593 ns"></ZoomEndTime>
+      <Cursor1Time time="231.953 ns"></Cursor1Time>
+   </zoom_setting>
+   <column_width_setting>
+      <NameColumnWidth column_width="423"></NameColumnWidth>
+      <ValueColumnWidth column_width="330"></ValueColumnWidth>
+   </column_width_setting>
+   <WVObjectSize size="13" />
+   <wvobject type="logic" fp_name="/tb_fifo_element/clk">
+      <obj_property name="ElementShortName">clk</obj_property>
+      <obj_property name="ObjectShortName">clk</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/tb_fifo_element/s_rst_n">
+      <obj_property name="ElementShortName">s_rst_n</obj_property>
+      <obj_property name="ObjectShortName">s_rst_n</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/tb_fifo_element/error">
+      <obj_property name="ElementShortName">error</obj_property>
+      <obj_property name="ObjectShortName">error</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/tb_fifo_element/error_bw">
+      <obj_property name="ElementShortName">error_bw</obj_property>
+      <obj_property name="ObjectShortName">error_bw</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/tb_fifo_element/error_data">
+      <obj_property name="ElementShortName">error_data</obj_property>
+      <obj_property name="ObjectShortName">error_data</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/tb_fifo_element/in_data">
+      <obj_property name="ElementShortName">in_data[7:0]</obj_property>
+      <obj_property name="ObjectShortName">in_data[7:0]</obj_property>
+      <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/tb_fifo_element/in_vld">
+      <obj_property name="ElementShortName">in_vld</obj_property>
+      <obj_property name="ObjectShortName">in_vld</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/tb_fifo_element/in_rdy">
+      <obj_property name="ElementShortName">in_rdy</obj_property>
+      <obj_property name="ObjectShortName">in_rdy</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/tb_fifo_element/out_data">
+      <obj_property name="ElementShortName">out_data[7:0]</obj_property>
+      <obj_property name="ObjectShortName">out_data[7:0]</obj_property>
+      <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/tb_fifo_element/out_vld">
+      <obj_property name="ElementShortName">out_vld</obj_property>
+      <obj_property name="ObjectShortName">out_vld</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/tb_fifo_element/out_rdy">
+      <obj_property name="ElementShortName">out_rdy</obj_property>
+      <obj_property name="ObjectShortName">out_rdy</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/tb_fifo_element/dut/\loop_gen[0].type1_gen.fifo_element /vld">
+      <obj_property name="ElementShortName">vld</obj_property>
+      <obj_property name="ObjectShortName">vld</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/tb_fifo_element/dut/\loop_gen[0].type1_gen.fifo_element /data">
+      <obj_property name="ElementShortName">data[7:0]</obj_property>
+      <obj_property name="ObjectShortName">data[7:0]</obj_property>
+   </wvobject>
+</wave_config>

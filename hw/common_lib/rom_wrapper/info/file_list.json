@@ -1,0 +1,54 @@
+{   
+    "local_root_path": "${PROJECT_DIR}",
+    "dep_root_path"  : "${PROJECT_DIR}",
+    "is_include_dir" : false,
+    "rtl_files": [
+        {
+            "name": "hw/common_lib/rom_wrapper/rtl/rom_1R_behav_core.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false
+        },
+        {
+            "name": "hw/common_lib/rom_wrapper/rtl/rom_1R_behav.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false
+        },
+        {
+            "name": "hw/common_lib/rom_wrapper/rtl/rom_2R_behav_core.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false
+        },
+        {
+            "name": "hw/common_lib/rom_wrapper/rtl/rom_2R_behav.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false
+        },
+        {
+            "name": "hw/common_lib/rom_wrapper/rtl/rom_wrapper_1R.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false
+        },
+        {
+            "name": "hw/common_lib/rom_wrapper/rtl/rom_wrapper_2R.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false
+        }
+    ],
+    "constraint_files": [
+        "hw/common_lib/rom_wrapper/constraint/rom_wrapper_timing_constraints_local.xdc"
+    ],
+    "dependency_dir": [],
+    "include_dir": [] 
+}

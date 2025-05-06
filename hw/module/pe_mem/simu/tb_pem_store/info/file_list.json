@@ -1,0 +1,23 @@
+{
+    "local_root_path": "${PROJECT_DIR}",
+    "dep_root_path"  : "${PROJECT_DIR}",
+    "rtl_files": [
+        {
+            "name": "hw/module/pe_mem/simu/tb_pem_store/rtl/tb_pem_store.sv",
+            "library": "work",
+            "env": ["simu"],
+            "target": ["all"],
+            "is_include_file": false
+        }
+    ],
+    "dependency_dir": [
+        "hw/simu_lib/simu_base",
+        "hw/module/pe_mem/simu/tb_pem_store/gen",
+        "hw/simu_lib/stream_lib",
+        "hw/simu_lib/axi4_lib",
+        "hw/module/top_common",
+        "hw/module/regfile",
+        "hw/module/pe_mem"
+    ],
+    "include_dir": []
+}

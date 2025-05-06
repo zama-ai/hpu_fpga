@@ -1,0 +1,163 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<wave_config>
+   <wave_state>
+   </wave_state>
+   <db_ref_list>
+      <db_ref path="/home/jing-jing/projects/dev/hw/output/xsim/tb_twiddle_intt_final_manager/wave.wdb" id="1">
+         <top_modules>
+            <top_module name="ntt_core_wmm_common_definition_pkg" />
+            <top_module name="ntt_core_wmm_common_param_pkg" />
+            <top_module name="ntt_param_pkg" />
+            <top_module name="pbs_param_pkg" />
+            <top_module name="tb_twiddle_intt_final_manager" />
+            <top_module name="tb_twiddle_pkg" />
+         </top_modules>
+      </db_ref>
+   </db_ref_list>
+   <zoom_setting>
+      <ZoomStartTime time="0.000 ns"></ZoomStartTime>
+      <ZoomEndTime time="125.351 ns"></ZoomEndTime>
+      <Cursor1Time time="59.000 ns"></Cursor1Time>
+   </zoom_setting>
+   <column_width_setting>
+      <NameColumnWidth column_width="309"></NameColumnWidth>
+      <ValueColumnWidth column_width="168"></ValueColumnWidth>
+   </column_width_setting>
+   <WVObjectSize size="8" />
+   <wvobject type="logic" fp_name="/tb_twiddle_intt_final_manager/clk">
+      <obj_property name="ElementShortName">clk</obj_property>
+      <obj_property name="ObjectShortName">clk</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/tb_twiddle_intt_final_manager/s_rst_n">
+      <obj_property name="ElementShortName">s_rst_n</obj_property>
+      <obj_property name="ObjectShortName">s_rst_n</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/tb_twiddle_intt_final_manager/error_data">
+      <obj_property name="ElementShortName">error_data</obj_property>
+      <obj_property name="ObjectShortName">error_data</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/tb_twiddle_intt_final_manager/error_valid">
+      <obj_property name="ElementShortName">error_valid</obj_property>
+      <obj_property name="ObjectShortName">error_valid</obj_property>
+   </wvobject>
+   <wvobject type="group" fp_name="group53">
+      <obj_property name="label">Output</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+      <obj_property name="isExpanded"></obj_property>
+      <wvobject type="array" fp_name="/tb_twiddle_intt_final_manager/twd_intt_final">
+         <obj_property name="ElementShortName">twd_intt_final[7:0][7:0][31:0]</obj_property>
+         <obj_property name="ObjectShortName">twd_intt_final[7:0][7:0][31:0]</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/tb_twiddle_intt_final_manager/twd_intt_final_vld">
+         <obj_property name="ElementShortName">twd_intt_final_vld[7:0]</obj_property>
+         <obj_property name="ObjectShortName">twd_intt_final_vld[7:0]</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/tb_twiddle_intt_final_manager/twd_intt_final_rdy">
+         <obj_property name="ElementShortName">twd_intt_final_rdy[7:0]</obj_property>
+         <obj_property name="ObjectShortName">twd_intt_final_rdy[7:0]</obj_property>
+      </wvobject>
+   </wvobject>
+   <wvobject type="group" fp_name="group54">
+      <obj_property name="label">Wr</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+      <obj_property name="isExpanded"></obj_property>
+      <wvobject type="logic" fp_name="/tb_twiddle_intt_final_manager/wr_en">
+         <obj_property name="ElementShortName">wr_en</obj_property>
+         <obj_property name="ObjectShortName">wr_en</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/tb_twiddle_intt_final_manager/wr_data">
+         <obj_property name="ElementShortName">wr_data[7:0][7:0][31:0]</obj_property>
+         <obj_property name="ObjectShortName">wr_data[7:0][7:0][31:0]</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/tb_twiddle_intt_final_manager/wr_add">
+         <obj_property name="ElementShortName">wr_add[8:0]</obj_property>
+         <obj_property name="ObjectShortName">wr_add[8:0]</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/tb_twiddle_intt_final_manager/wr_done">
+         <obj_property name="ElementShortName">wr_done</obj_property>
+         <obj_property name="ObjectShortName">wr_done</obj_property>
+      </wvobject>
+   </wvobject>
+   <wvobject type="group" fp_name="group55">
+      <obj_property name="label">Control</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+      <obj_property name="isExpanded"></obj_property>
+      <wvobject type="array" fp_name="/tb_twiddle_intt_final_manager/state">
+         <obj_property name="ElementShortName">state[31:0]</obj_property>
+         <obj_property name="ObjectShortName">state[31:0]</obj_property>
+         <obj_property name="CustomSignalColor">#00FFFF</obj_property>
+         <obj_property name="UseCustomSignalColor">true</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/tb_twiddle_intt_final_manager/pbs_nb_a">
+         <obj_property name="ElementShortName">pbs_nb_a[199:0][31:0]</obj_property>
+         <obj_property name="ObjectShortName">pbs_nb_a[199:0][31:0]</obj_property>
+         <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/tb_twiddle_intt_final_manager/start">
+         <obj_property name="ElementShortName">start</obj_property>
+         <obj_property name="ObjectShortName">start</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/tb_twiddle_intt_final_manager/batch_id">
+         <obj_property name="ElementShortName">batch_id[31:0]</obj_property>
+         <obj_property name="ObjectShortName">batch_id[31:0]</obj_property>
+         <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/tb_twiddle_intt_final_manager/wr_last">
+         <obj_property name="ElementShortName">wr_last</obj_property>
+         <obj_property name="ObjectShortName">wr_last</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/tb_twiddle_intt_final_manager/stg_iter">
+         <obj_property name="ElementShortName">stg_iter[31:0]</obj_property>
+         <obj_property name="ObjectShortName">stg_iter[31:0]</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/tb_twiddle_intt_final_manager/pbs_id">
+         <obj_property name="ElementShortName">pbs_id[31:0]</obj_property>
+         <obj_property name="ObjectShortName">pbs_id[31:0]</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/tb_twiddle_intt_final_manager/last_stg_iter">
+         <obj_property name="ElementShortName">last_stg_iter</obj_property>
+         <obj_property name="ObjectShortName">last_stg_iter</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/tb_twiddle_intt_final_manager/last_pbs_id">
+         <obj_property name="ElementShortName">last_pbs_id</obj_property>
+         <obj_property name="ObjectShortName">last_pbs_id</obj_property>
+      </wvobject>
+   </wvobject>
+   <wvobject type="group" fp_name="group32">
+      <obj_property name="label">DUT</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+      <obj_property name="isExpanded"></obj_property>
+      <wvobject type="array" fp_name="/tb_twiddle_intt_final_manager/dut/state">
+         <obj_property name="ElementShortName">state[31:0]</obj_property>
+         <obj_property name="ObjectShortName">state[31:0]</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/tb_twiddle_intt_final_manager/dut/ram_rd_en">
+         <obj_property name="ElementShortName">ram_rd_en[7:0]</obj_property>
+         <obj_property name="ObjectShortName">ram_rd_en[7:0]</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/tb_twiddle_intt_final_manager/dut/ram_wr_en">
+         <obj_property name="ElementShortName">ram_wr_en[7:0]</obj_property>
+         <obj_property name="ObjectShortName">ram_wr_en[7:0]</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/tb_twiddle_intt_final_manager/dut/ram_add">
+         <obj_property name="ElementShortName">ram_add[7:0][7:0][9:0]</obj_property>
+         <obj_property name="ObjectShortName">ram_add[7:0][7:0][9:0]</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/tb_twiddle_intt_final_manager/dut/ram_rd_data">
+         <obj_property name="ElementShortName">ram_rd_data[7:0][7:0][31:0]</obj_property>
+         <obj_property name="ObjectShortName">ram_rd_data[7:0][7:0][31:0]</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/tb_twiddle_intt_final_manager/dut/twd_intt_final_vld">
+         <obj_property name="ElementShortName">twd_intt_final_vld[7:0]</obj_property>
+         <obj_property name="ObjectShortName">twd_intt_final_vld[7:0]</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/tb_twiddle_intt_final_manager/dut/s0_avail_data_cnt">
+         <obj_property name="ElementShortName">s0_avail_data_cnt[1:0]</obj_property>
+         <obj_property name="ObjectShortName">s0_avail_data_cnt[1:0]</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/tb_twiddle_intt_final_manager/dut/s0_stg_iter">
+         <obj_property name="ElementShortName">s0_stg_iter[2:0]</obj_property>
+         <obj_property name="ObjectShortName">s0_stg_iter[2:0]</obj_property>
+      </wvobject>
+   </wvobject>
+</wave_config>

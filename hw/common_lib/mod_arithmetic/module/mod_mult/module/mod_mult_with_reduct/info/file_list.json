@@ -1,0 +1,22 @@
+{   
+    "local_root_path": "${PROJECT_DIR}",
+    "dep_root_path"  : "${PROJECT_DIR}",
+    "is_include_dir" : false,
+    "rtl_files": [
+        {
+            "name": "hw/common_lib/mod_arithmetic/module/mod_mult/module/mod_mult_with_reduct/rtl/mod_mult_with_reduct.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false
+        }
+    ],
+    "constraint_files": [
+        "hw/common_lib/mod_arithmetic/module/mod_mult/module/mod_mult_with_reduct/constraint/mod_mult_with_reduct_timing_constraints_local.xdc"
+    ],
+    "dependency_dir": [
+                       "hw/common_lib/common_package",
+                       "hw/common_lib/arithmetic/module/arith_mult",
+                       "hw/common_lib/mod_arithmetic/module/mod_reduct"],
+    "include_dir": [] 
+}

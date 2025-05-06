@@ -1,0 +1,21 @@
+{    
+    "local_root_path": "${PROJECT_DIR}",
+    "dep_root_path"  : "${PROJECT_DIR}",
+    "rtl_files": [
+        {
+            "name": "hw/module/bsk/module/bsk_manager/simu/rtl/tb_bsk_manager.sv",
+            "library": "work",
+            "env": ["simu"],
+            "target": ["all"],
+            "is_include_file": false
+        }
+    ],
+    "dependency_dir": [
+        "hw/simu_lib/simu_base",
+        "hw/module/bsk/module/bsk_manager/simu/gen",
+        "hw/module/bsk/module/bsk_manager",
+        "hw/module/number_theoretic_transform/module/ntt_core_common",
+        "hw/module/pe_pbs/module/pep_common"
+    ],
+    "include_dir": []
+}

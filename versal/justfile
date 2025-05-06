@@ -1,0 +1,177 @@
+# ==============================================================================================
+# BSD 3-Clause Clear License
+# Copyright © 2025 ZAMA. All rights reserved.
+# ----------------------------------------------------------------------------------------------
+# Define a set of utilities command to help with Versal flow
+# ==============================================================================================
+
+#################################################
+# Common const variables
+#################################################
+PROJECT_TARGET  := env_var('PROJECT_TARGET')
+PROJECT_PART    := env_var('XILINX_PART')
+SHELL_VER       := env_var('SHELL_VER')
+PROJECT_DIR     := env_var('PROJECT_DIR')
+
+#################################################
+# Common path variables
+#################################################
+WORKDIR         := PROJECT_DIR / "versal"
+SCRIPT_DIR      := PROJECT_DIR / "versal/scripts"
+OUTDIR          := PROJECT_DIR / "versal/output"
+
+#################################################
+# Default values
+#################################################
+# RTL related
+DEFAULT_RTL_FLAGS := "-F TOP_BATCH TOP_BATCH_TOPhpu_BPBS16_TPBS32 -F TOP_PCMAX  TOP_PCMAX_pem2_glwe1_bsk16_ksk16 -F TOP_PC TOP_PC_pem2_glwe1_bsk8_ksk16 -F APPLICATION APPLI_msg2_carry2_pfail64_132b_gaussian_1f72dba -F NTT_MOD NTT_MOD_goldilocks -F NTT_CORE_WMM_ARCH NTT_CORE_ARCH_gf64 -F NTT_CORE_R_PSI NTT_CORE_R2_PSI16 -F NTT_CORE_RDX_CUT NTT_CORE_RDX_CUT_n5c5c1 -F NTT_CORE_DIV NTT_CORE_DIV_1 -F BSK_SLOT_CUT BSK_SLOT8_CUT8 -F KSK_SLOT_CUT KSK_SLOT8_CUT16 -F KSLB KSLB_x2y32z3 -F HPU_PART HPU_PART_delta -F AXI_DATA_W AXI_DATA_W_256 -F FPGA FPGA_v80"
+
+# By default we want to build vivado projects from scratch : from project generation
+DEFAULT_STEP := "new"
+
+DEFAULT_VIVADO_OPT := 'D:MEMORY_FILE_PATH=\"${PROJECT_DIR}/hw/\"'
+
+###################################################################################################
+# Recipes
+#
+# - list_rtl
+#     List all the source files via edalize.
+#     Today it supports xdc, verilog, systemVerilog and vhdl
+#
+# - generate_shell
+#     Generate a Vivado project including ONLY the block design
+#
+# - build
+#     Build the TOP_IP up to bitstream generation
+#     optional arguments can be set to avoid rebuilding everything :
+#       * syn:  launches synthesis, if OOM synthesis did not fail we skip it
+#       * impl: launches implementation, skips synthesis
+#
+###################################################################################################
+
+#------------------------------------------------
+### Default command
+#------------------------------------------------
+# List recipes
+default:
+  just --list
+
+#------------------------------------------------
+### List RTL
+#------------------------------------------------
+# List all rtl modules into a dictionnary
+list_rtl TOP_IP RTL_FLAGS=DEFAULT_RTL_FLAGS VIVADO_OPT=DEFAULT_VIVADO_OPT : _out-folder
+  #!/usr/bin/env bash
+  set -euxo pipefail
+  python3 {{WORKDIR}}/scripts/declare_define/declare_define.py -l "{{VIVADO_OPT}}" -d {{OUTDIR}}
+  # Use run_edalize to generate file list in tcl_dict format
+  ${PROJECT_DIR}/hw/script/edalize/run_edalize.py -d {{OUTDIR}} -t tcl_dict -m {{TOP_IP}} {{RTL_FLAGS}} --tcl-dict-out {{OUTDIR}}/{{TOP_IP}}_edalize.tcl || exit 1
+
+#------------------------------------------------
+### Generate shell
+#------------------------------------------------
+# Generate only the shell block design along with its sources and verilog wrapper
+generate_shell : _out-folder
+  #!/usr/bin/env bash
+  set -euxo pipefail
+  vivado -log "{{OUTDIR}}/create_shell.log" -nojournal -mode batch -source {{SCRIPT_DIR}}/create_shell.tcl
+
+#------------------------------------------------
+### Build
+#------------------------------------------------
+# Print user command
+_print_user_cmd TOP_IP STEP RTL_FLAGS VIVADO_OPT:
+  #!/usr/bin/env bash
+  echo "INFO> Running: just build {{TOP_IP}} {{STEP}} \"{{RTL_FLAGS}}\" \"{{VIVADO_OPT}}\""
+
+# Build Vivado project and launch jobs until bitstream generation
+build TOP_IP STEP=DEFAULT_STEP RTL_FLAGS=DEFAULT_RTL_FLAGS VIVADO_OPT=DEFAULT_VIVADO_OPT : (_print_user_cmd TOP_IP STEP RTL_FLAGS VIVADO_OPT) (list_rtl TOP_IP RTL_FLAGS VIVADO_OPT)
+  #!/usr/bin/env bash
+  set -euxo pipefail
+  # these are real exports for inner tcl scripts "build all" and as well "shell" block design generation.
+  # we cannot add arguments in nested scripts inside vivado's project mode (i.e below script that is called here).
+  export DESIGN_NAME={{TOP_IP}}
+  vivado -log {{OUTDIR}}/vivado_integration_{{STEP}}.log -nojournal -mode batch -source {{SCRIPT_DIR}}/build_all.tcl -tclargs {{OUTDIR}} {{STEP}} "{{VIVADO_OPT}}" | tee {{OUTDIR}}/just_build_{{TOP_IP}}.log
+
+#------------------------------------------------
+### Compile FW
+#------------------------------------------------
+# Compile ARM fw
+compile_fw :
+  #!/usr/bin/env bash
+  set -euxo pipefail
+  # file handling -------------------------------------------------------------
+  XSA_PATH={{OUTDIR}}/$SHELL_VER.xsa
+  if [ ! -f $XSA_PATH ]; then
+    echo "[ERROR]: $XSA_PATH not found"
+    exit 1
+  fi
+  # build ---------------------------------------------------------------------
+  cd $PROJECT_DIR/fw/arm/
+  ./scripts/build.sh -os freertos10_xilinx -profile v80 -xsa $XSA_PATH
+  cp $PROJECT_DIR/fw/arm/build/amc.elf {{OUTDIR}}
+
+#------------------------------------------------
+### Merge elf
+#------------------------------------------------
+# Merge elf from firmware via Vitis and Vivado binaries
+merge_elf TOP_IP:
+  #!/usr/bin/env bash
+  set -euxo pipefail
+  # var -----------------------------------------------------------------------
+  XSA_PATH={{OUTDIR}}/$SHELL_VER.xsa
+  PDI_PATH={{OUTDIR}}/{{TOP_IP}}.pdi
+  AMC_PATH={{OUTDIR}}/amc.elf
+
+  TEMPLATE_FILE=$PROJECT_DIR/versal/scripts/fpt/template/pdi_template.json.j2
+  OUTPUT_FILE={{OUTDIR}}/pdi_combine.bif
+
+  # file handling -------------------------------------------------------------
+  if [ ! -f $XSA_PATH ]; then
+    echo "[ERROR]: $XSA_PATH not found"
+    exit 1
+  fi
+
+  if [ ! -f $PDI_PATH ]; then
+    echo "[ERROR]: $PDI_PATH not found"
+    exit 1
+  fi
+
+  # guard-rail ----------------------------------------------------------------
+  # check if an elf is already present
+  bootgen -arch versal -read $PDI_PATH | grep "rpu_subsystem" && { echo "[ERROR]: ELF already present in pdi $PDI_PATH"; exit 1; } || echo "[INFO]: no elf found .. continue"
+
+  # save PDI with only FPGA bistream in a .pdi.noelf file
+  cp $PDI_PATH $PDI_PATH.noelf
+  # merge elf and top pdi -----------------------------------------------------
+  sed -e "s#\^\^top_pdi_path\^\^#$PDI_PATH#g" \
+          -e "s#\^\^amc_elf_path\^\^#$AMC_PATH#g" "$TEMPLATE_FILE" > "$OUTPUT_FILE"
+
+  bootgen -arch versal -image $OUTPUT_FILE -w -o $PDI_PATH
+
+#------------------------------------------------
+### Rewrite flash
+#------------------------------------------------
+# Rewrite flash
+rewrite_flash:
+  #!/usr/bin/env bash
+  set -euxo pipefail
+
+  # Checks that the example folder exists, in tcl script, paths are fixed.
+  EX_PATH=/opt/amd/aved/amd_v80_gen5x8_23.2_exdes_2_xbtest_stress/flash_setup
+  if [ ! -d $EX_PATH ]; then
+    echo "[ERROR]: $EX_PATH not found"
+    exit 1
+  fi
+
+  vivado -log {{OUTDIR}}/rewrite_flash.log -nojournal -mode batch -source {{SCRIPT_DIR}}/fully_rewrite_flash.tcl
+
+#------------------------------------------------
+### Utility commands
+#------------------------------------------------
+_out-folder:
+ #!/usr/bin/env bash
+ echo "===================================="
+ echo "INFO> output directory :" {{OUTDIR}}
+ mkdir -p {{OUTDIR}}
+ echo "===================================="

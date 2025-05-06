@@ -1,0 +1,19 @@
+{    
+    "local_root_path": "${PROJECT_DIR}",
+    "dep_root_path"  : "${PROJECT_DIR}",
+    "rtl_files": [
+        {
+            "name": "hw/module/twiddle/simu/tb_twiddle_phi_ru_manager/rtl/tb_twiddle_phi_ru_manager.sv",
+            "library": "work",
+            "env": ["simu"],
+            "target": ["all"],
+            "is_include_file": false
+        }
+    ],
+    "dependency_dir": [
+        "hw/simu_lib/simu_base",
+        "hw/module/twiddle",
+        "hw/module/number_theoretic_transform/module/ntt_core_common"
+    ],
+    "include_dir": []
+}

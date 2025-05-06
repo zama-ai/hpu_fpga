@@ -1,0 +1,24 @@
+{    
+    "local_root_path": "${PROJECT_DIR}",
+    "dep_root_path"  : "${PROJECT_DIR}",
+    "rtl_files": [
+        {
+            "name": "hw/module/ksk/module/ksk_manager/simu/rtl/tb_ksk_manager.sv",
+            "library": "work",
+            "env": ["simu"],
+            "target": ["all"],
+            "is_include_file": false
+        }
+    ],
+    "dependency_dir": [
+        "hw/module/ksk/module/ksk_manager/simu/gen",
+        "hw/simu_lib/simu_base",
+        "hw/simu_lib/stream_lib",
+        "hw/module/param",
+        "hw/module/pe_pbs/module/pep_common",
+        "hw/module/pep_key_switch/module/pep_ks_common",
+        "hw/module/ksk/module/ksk_manager/module/ksk_mgr_common",
+        "hw/module/ksk/module/ksk_manager"
+    ],
+    "include_dir": []
+}

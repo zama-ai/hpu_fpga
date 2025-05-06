@@ -1,0 +1,52 @@
+{    
+    "local_root_path": "${PROJECT_DIR}",
+    "dep_root_path"  : "${PROJECT_DIR}",
+    "rtl_files": [
+        {
+            "name": "hw/module/hpu/simu/rtl/inc/tb_hpu_macro_inc.sv",
+            "library": "work",
+            "env": ["simu"],
+            "target": ["all"],
+            "is_include_file": true
+        },
+        {
+            "name": "hw/module/hpu/simu/rtl/tb_hpu_ucore_regif_pkg.sv",
+            "library": "work",
+            "env": ["simu"],
+            "target": ["all"],
+            "is_include_file": false
+        },
+        {
+            "name": "hw/module/hpu/simu/rtl/tb_hpu_ucore_regif.sv",
+            "library": "work",
+            "env": ["simu"],
+            "target": ["all"],
+            "is_include_file": false
+        },
+        {
+            "name": "hw/module/hpu/simu/rtl/tb_hpu_ucore.sv",
+            "library": "work",
+            "env": ["simu"],
+            "target": ["all"],
+            "is_include_file": false
+        },
+        {
+            "name": "hw/module/hpu/simu/rtl/tb_hpu.sv",
+            "library": "work",
+            "env": ["simu"],
+            "target": ["all"],
+            "is_include_file": false
+        }
+    ],
+    "dependency_dir": [
+        "hw/common_lib/common_package",
+        "hw/simu_lib/axi4_lib",
+        "hw/simu_lib/simu_base",
+        "hw/simu_lib/stream_lib",
+        "hw/module/hpu/simu/gen",
+        "hw/module/hpu",
+        "hw/module/ucore",
+        "fw/gen/ublaze/simu"
+    ],
+    "include_dir": []
+}

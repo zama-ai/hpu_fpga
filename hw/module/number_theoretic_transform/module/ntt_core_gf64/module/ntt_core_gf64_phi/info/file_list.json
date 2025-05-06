@@ -1,0 +1,75 @@
+{
+    "local_root_path": "${PROJECT_DIR}",
+    "dep_root_path"  : "${PROJECT_DIR}",
+    "is_include_dir" : false,
+    "rtl_files": [
+        {
+            "name": "hw/module/number_theoretic_transform/module/ntt_core_gf64/module/ntt_core_gf64_phi/rtl/ntt_core_gf64_phi_pkg.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false
+        },
+        {
+            "name": "hw/module/number_theoretic_transform/module/ntt_core_gf64/module/ntt_core_gf64_phi/rtl/ntt_core_gf64_phi_phi_pkg.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false
+        },
+        {
+            "name": "hw/module/number_theoretic_transform/module/ntt_core_gf64/module/ntt_core_gf64_phi/rtl/ntt_core_gf64_phi_rom.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false
+        },
+        {
+            "name": "hw/module/number_theoretic_transform/module/ntt_core_gf64/module/ntt_core_gf64_phi/rtl/ntt_core_gf64_phi_reg.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false
+        },
+        {
+            "name": "hw/module/number_theoretic_transform/module/ntt_core_gf64/module/ntt_core_gf64_phi/rtl/ntt_core_gf64_phi_shift_reg.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false
+        },
+        {
+            "name": "hw/module/number_theoretic_transform/module/ntt_core_gf64/module/ntt_core_gf64_phi/rtl/ntt_core_gf64_phi_mult.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false
+        },
+        {
+            "name": "hw/module/number_theoretic_transform/module/ntt_core_gf64/module/ntt_core_gf64_phi/rtl/ntt_core_gf64_phi_shift.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false
+        },
+        {
+            "name": "hw/module/number_theoretic_transform/module/ntt_core_gf64/module/ntt_core_gf64_phi/rtl/ntt_core_gf64_phi.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false
+        }
+    ],
+    "constraint_files": [
+        "hw/module/number_theoretic_transform/module/ntt_core_gf64/module/ntt_core_gf64_phi/constraint/ntt_core_gf64_phi_timing_constraints_local.xdc"
+    ],
+    "dependency_dir": [
+        "hw/common_lib/rom_wrapper",
+        "hw/common_lib/fifo",
+        "hw/common_lib/common",
+        "hw/common_lib/common_package",
+        "hw/module/number_theoretic_transform/module/ntt_core_gf64/module/ntt_core_gf64_common",
+        "hw/module/number_theoretic_transform/module/ntt_core_gf64/module/ntt_core_gf64_arithmetic"
+    ],
+    "include_dir": []
+}

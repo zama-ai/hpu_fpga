@@ -1,0 +1,20 @@
+{    
+    "local_root_path": "${PROJECT_DIR}",
+    "dep_root_path"  : "${PROJECT_DIR}",
+    "rtl_files": [
+        {
+            "name": "hw/common_lib/mod_arithmetic/module/mod_switch/module/mod_switch_to_2powerN/simu/rtl/tb_mod_switch_to_2powerN.sv",
+            "library": "work",
+            "env": ["simu"],
+            "target": ["all"],
+            "is_include_file": false
+        }
+    ],
+    "dependency_dir": [
+        "hw/common_lib/common_package",
+        "hw/simu_lib/simu_base",
+        "hw/simu_lib/stream_lib",
+        "hw/common_lib/mod_arithmetic/module/mod_switch/module/mod_switch_to_2powerN"
+    ],
+    "include_dir": []
+}

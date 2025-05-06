@@ -1,0 +1,41 @@
+// ==============================================================================================
+// BSD 3-Clause Clear License
+// Copyright © 2025 ZAMA. All rights reserved.
+// ----------------------------------------------------------------------------------------------
+// Description  :
+// ----------------------------------------------------------------------------------------------
+// /!\ Generated file : do not modify it /!\
+//
+// Parameters that define the hpu partition.
+// Do not use this package directly in modules. Use hpu_common_param_pkg instead.
+// This purpose of this package is to ease the tests/synthesis with various localparam sets.
+// ==============================================================================================
+
+package hpu_part_definition_pkg;
+
+  //== If splitted in 3 parts
+  // 1in3 outward
+  localparam int HEAD_S_NB   = {{head_s_nb   }};
+  localparam int HEAD_USE_PP = {{head_use_pp }};
+                                             
+  // 2in3 outward                            
+  localparam int MID0_S_NB   = {{mid0_s_nb   }};
+  localparam int MID0_USE_PP = {{mid0_use_pp }};
+  localparam int MID0_S_INIT = {{mid0_s_init }};
+                                             
+  // 2in3 return                             
+  localparam int MID1_S_NB   = {{mid1_s_nb   }};
+  localparam int MID1_USE_PP = {{mid1_use_pp }};
+  localparam int MID1_S_INIT = {{mid1_s_init }};
+                                             
+  // 3in3                                    
+  localparam int MID2_S_NB   = {{mid2_s_nb   }};
+  localparam int MID2_USE_PP = {{mid2_use_pp }};
+  localparam int MID2_S_INIT = {{mid2_s_init }};
+                                             
+  // 1in3 return                             
+  localparam int MID3_S_NB   = {{mid3_s_nb   }};
+  localparam int MID3_USE_PP = {{mid3_use_pp }};
+  localparam int MID3_S_INIT = {{mid3_s_init }};
+
+endpackage

@@ -1,0 +1,61 @@
+{   
+    "local_root_path": "${PROJECT_DIR}",
+    "dep_root_path"  : "${PROJECT_DIR}",
+    "is_include_dir" : false,
+    "rtl_files": [
+        {
+            "name": "hw/common_lib/ram_wrapper/rtl/ram_wrapper_pkg.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false
+        },
+        {
+            "name": "hw/common_lib/ram_wrapper/rtl/ram_1R1W_behav_core.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false
+        },
+        {
+            "name": "hw/common_lib/ram_wrapper/rtl/ram_1R1W_behav.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false
+        },
+        {
+            "name": "hw/common_lib/ram_wrapper/rtl/ram_wrapper_1R1W.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false
+        },
+        {
+            "name": "hw/common_lib/ram_wrapper/rtl/ram_2RW_behav_core.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false
+        },
+        {
+            "name": "hw/common_lib/ram_wrapper/rtl/ram_2RW_behav.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false
+        },
+        {
+            "name": "hw/common_lib/ram_wrapper/rtl/ram_wrapper_2RW.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false
+        }
+    ],
+    "constraint_files": [
+        "hw/common_lib/ram_wrapper/constraint/ram_wrapper_timing_constraints_local.xdc"
+    ],
+    "dependency_dir": [],
+    "include_dir": [] 
+}

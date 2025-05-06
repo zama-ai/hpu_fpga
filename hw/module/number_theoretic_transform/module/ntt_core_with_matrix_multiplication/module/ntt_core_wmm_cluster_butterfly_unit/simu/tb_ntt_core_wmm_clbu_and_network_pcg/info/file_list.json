@@ -1,0 +1,25 @@
+{    
+    "local_root_path": "${PROJECT_DIR}/hw/module/number_theoretic_transform/module/ntt_core_with_matrix_multiplication/module/ntt_core_wmm_cluster_butterfly_unit/simu/tb_ntt_core_wmm_clbu_and_network_pcg",
+    "dep_root_path"  : "${PROJECT_DIR}",
+    "rtl_files": [
+        {
+            "name": "rtl/tb_ntt_core_wmm_clbu_and_network_pcg.sv",
+            "library": "work",
+            "env": ["simu"],
+            "target": ["all"],
+            "is_include_file": false
+        }
+    ],
+    "dependency_dir": [
+        "hw/common_lib/common_package",
+        "hw/simu_lib/simu_base",
+        "hw/module/param",
+        "hw/module/pe_pbs/module/pep_common",
+        "hw/module/number_theoretic_transform/module/ntt_core_common",
+        "hw/module/number_theoretic_transform/module/ntt_core_with_matrix_multiplication/module/ntt_core_wmm_common",
+        "hw/module/number_theoretic_transform/module/ntt_core_with_matrix_multiplication/module/ntt_core_wmm_network",
+        "hw/module/number_theoretic_transform/module/ntt_core_with_matrix_multiplication/module/ntt_core_wmm_cluster_butterfly_unit",
+        "hw/module/number_theoretic_transform/module/ntt_core_with_matrix_multiplication/module/ntt_core_wmm_cluster_butterfly_unit/simu/tb_common"
+    ],
+    "include_dir": []
+}

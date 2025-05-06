@@ -1,0 +1,20 @@
+{
+    "local_root_path": "${PROJECT_DIR}",
+    "dep_root_path"  : "${PROJECT_DIR}",
+    "rtl_files": [
+        {
+            "name": "hw/module/pep_mono_mult_acc/module/pep_mmacc_gram_arb/simu/rtl/tb_pep_mmacc_gram_arb.sv",
+            "library": "work",
+            "env": ["simu"],
+            "target": ["all"],
+            "is_include_file": false
+        }
+    ],
+    "dependency_dir": [
+        "hw/simu_lib/simu_base",
+        "hw/module/pep_mono_mult_acc/module/pep_mmacc_gram_arb/simu/gen",
+        "hw/simu_lib/stream_lib",
+        "hw/module/pep_mono_mult_acc/module/pep_mmacc_gram_arb"
+    ],
+    "include_dir": []
+}

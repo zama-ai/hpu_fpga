@@ -1,0 +1,66 @@
+{   
+    "local_root_path": "${PROJECT_DIR}/hw/module/param",
+    "dep_root_path"  : "${PROJECT_DIR}",
+    "is_include_dir" : false,
+    "rtl_files": [
+        {
+            "name": "rtl/NTT_MOD/NTT_MOD_solinas3_32_17_13/param_ntt_definition_pkg.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false,
+            "NTT_MOD": "NTT_MOD_solinas3_32_17_13"
+        },
+        {
+            "name": "rtl/NTT_MOD/NTT_MOD_solinas2_44_14/param_ntt_definition_pkg.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false,
+            "NTT_MOD": "NTT_MOD_solinas2_44_14"
+        },
+        {
+            "name": "rtl/NTT_MOD/NTT_MOD_goldilocks/param_ntt_definition_pkg.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false,
+            "NTT_MOD": "NTT_MOD_goldilocks"
+        },
+        {
+            "name": "rtl/param_tfhe_pkg.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false
+        },
+        {
+            "name": "rtl/param_ntt_pkg.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false
+        }
+    ],
+    "constraint_files": [],
+    "dependency_dir": [
+        "hw/common_lib/common_package",
+        {
+            "name": "hw/module/param/module/param_msg2_carry2_gaussian",
+            "APPLICATION": "APPLI_msg2_carry2_gaussian"
+        },
+        {
+            "name": "hw/module/param/module/param_msg2_carry2_tuniform",
+            "APPLICATION": "APPLI_msg2_carry2_tuniform"
+        },
+        {
+            "name": "hw/module/param/module/param_msg2_carry2_pfail64_132b_gaussian_1f72dba",
+            "APPLICATION": "APPLI_msg2_carry2_pfail64_132b_gaussian_1f72dba"
+        },
+        {
+            "name": "hw/module/param/module/param_msg2_carry2_pfail64_132b_tuniform_7e47d8c",
+            "APPLICATION": "APPLI_msg2_carry2_pfail64_132b_tuniform_7e47d8c"
+        }
+    ],
+    "include_dir": []
+}

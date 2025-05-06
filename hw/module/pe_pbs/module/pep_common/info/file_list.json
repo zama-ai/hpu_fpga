@@ -1,0 +1,81 @@
+{
+    "local_root_path": "${PROJECT_DIR}",
+    "dep_root_path"  : "${PROJECT_DIR}",
+    "is_include_dir" : false,
+    "rtl_files": [
+        {
+            "name": "hw/module/pe_pbs/module/pep_common/rtl/PEP_MSPLIT/PEP_MSPLIT_main1_subs3/pep_msplit_definition_pkg.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false,
+            "PEP_MSPLIT":"PEP_MSPLIT_main1_subs3"
+        },
+        {
+            "name": "hw/module/pe_pbs/module/pep_common/rtl/PEP_MSPLIT/PEP_MSPLIT_main3_subs1/pep_msplit_definition_pkg.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false,
+            "PEP_MSPLIT":"PEP_MSPLIT_main3_subs1"
+        },
+        {
+            "name": "hw/module/pe_pbs/module/pep_common/rtl/PEP_MSPLIT/PEP_MSPLIT_main2_subs2/pep_msplit_definition_pkg.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false,
+            "PEP_MSPLIT":"PEP_MSPLIT_main2_subs2"
+        },
+        {
+            "name": "hw/module/pe_pbs/module/pep_common/rtl/PEP_BATCH/PEP_BATCH_bpbs16_tpbs32/pep_batch_definition_pkg.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false,
+            "PEP_BATCH":"PEP_BATCH_bpbs16_tpbs32"
+        },
+        {
+            "name": "hw/module/pe_pbs/module/pep_common/rtl/PEP_BATCH/PEP_BATCH_bpbs12_tpbs32/pep_batch_definition_pkg.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false,
+            "PEP_BATCH":"PEP_BATCH_bpbs12_tpbs32"
+        },
+        {
+            "name": "hw/module/pe_pbs/module/pep_common/rtl/PEP_BATCH/PEP_BATCH_bpbs8_tpbs32/pep_batch_definition_pkg.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false,
+            "PEP_BATCH":"PEP_BATCH_bpbs8_tpbs32"
+        },
+        {
+            "name": "hw/module/pe_pbs/module/pep_common/rtl/PEP_BATCH/PEP_BATCH_bpbs8_tpbs16/pep_batch_definition_pkg.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false,
+            "PEP_BATCH":"PEP_BATCH_bpbs8_tpbs16"
+        },
+        {
+            "name": "hw/module/pe_pbs/module/pep_common/rtl/pep_common_param_pkg.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false
+        }
+    ],
+    "constraint_files": [],
+    "dependency_dir": [
+        "hw/common_lib/common_package",
+        "hw/module/param",
+        "hw/module/axi_if/module/axi_if_common",
+        "hw/module/number_theoretic_transform/module/ntt_core_common",
+        "hw/module/bsk/module/bsk_if/module/bsk_if_common",
+        "hw/module/top_common",
+        "hw/module/hpu/module/hpu_common_instruction"
+    ],
+    "include_dir": []
+}

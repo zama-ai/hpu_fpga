@@ -1,0 +1,19 @@
+// ==============================================================================================
+// BSD 3-Clause Clear License
+// Copyright © 2025 ZAMA. All rights reserved.
+// ----------------------------------------------------------------------------------------------
+// Description  :
+// ----------------------------------------------------------------------------------------------
+//
+// This file is only a place to set Verilog `define and it can be updated by package_rtl_xo.tcl
+// based on user commands with syntax "D:DEFINE_NAME=DEFINE_VALUE"
+// ==============================================================================================
+
+`ifndef TOP_DEFINES
+`define TOP_DEFINES
+
+{% for item in defines %}
+`define {{ item[0] }} {{ item[1] }}
+{% endfor %}    
+
+`endif

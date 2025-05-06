@@ -1,0 +1,27 @@
+{    
+    "local_root_path": "${PROJECT_DIR}",
+    "dep_root_path"  : "${PROJECT_DIR}",
+    "rtl_files": [
+        {
+            "name": "hw/module/pe_pbs/module/pep_sequencer/simu/tb_pep_sequencer/rtl/tb_pep_sequencer.sv",
+            "library": "work",
+            "env": ["simu"],
+            "target": ["all"],
+            "is_include_file": false
+        }
+    ],
+    "dependency_dir": [
+        "hw/simu_lib/simu_base",
+        "hw/simu_lib/stream_lib",
+        "hw/module/pe_pbs/module/pep_sequencer/simu/tb_pep_sequencer/gen",
+        "hw/module/param",
+        "hw/module/top_common",
+        "hw/module/hpu/module/hpu_common_instruction",
+        "hw/module/pep_key_switch/module/pep_ks_common",
+        "hw/module/pe_pbs/module/pep_common",
+        "hw/common_lib/common",
+        "hw/common_lib/fifo",
+        "hw/module/pe_pbs/module/pep_sequencer/"
+    ],
+    "include_dir": []
+}

@@ -1,0 +1,148 @@
+{
+    "local_root_path": "${PROJECT_DIR}/hw/module/number_theoretic_transform/module/ntt_core_common",
+    "dep_root_path"  : "${PROJECT_DIR}",
+    "is_include_dir" : false,
+    "rtl_files": [
+        {
+            "name": "rtl/inc/ntt_core_common_macro_inc.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": true
+        },
+        {
+            "name": "rtl/NTT_CORE_ARCH/NTT_CORE_ARCH_wmm_unfold_pcg/ntt_core_common_arch_definition_pkg.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false,
+            "NTT_CORE_ARCH" : "NTT_CORE_ARCH_wmm_unfold_pcg"
+        },
+        {
+            "name": "rtl/NTT_CORE_ARCH/NTT_CORE_ARCH_gf64/ntt_core_common_arch_definition_pkg.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false,
+            "NTT_CORE_ARCH" : "NTT_CORE_ARCH_gf64"
+        },
+        {
+            "name": "rtl/NTT_CORE_R/NTT_CORE_R_2/ntt_core_common_r_definition_pkg.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false,
+            "NTT_CORE_R" : "NTT_CORE_R_2"
+        },
+        {
+            "name": "rtl/NTT_CORE_PSI/NTT_CORE_PSI_64/ntt_core_common_psi_definition_pkg.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false,
+            "NTT_CORE_PSI" : "NTT_CORE_PSI_64"
+        },
+        {
+            "name": "rtl/NTT_CORE_PSI/NTT_CORE_PSI_4/ntt_core_common_psi_definition_pkg.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false,
+            "NTT_CORE_PSI" : "NTT_CORE_PSI_4"
+        },
+        {
+            "name": "rtl/NTT_CORE_PSI/NTT_CORE_PSI_128/ntt_core_common_psi_definition_pkg.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false,
+            "NTT_CORE_PSI" : "NTT_CORE_PSI_128"
+        },
+        {
+            "name": "rtl/NTT_CORE_PSI/NTT_CORE_PSI_32/ntt_core_common_psi_definition_pkg.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false,
+            "NTT_CORE_PSI" : "NTT_CORE_PSI_32"
+        },
+        {
+            "name": "rtl/NTT_CORE_PSI/NTT_CORE_PSI_16/ntt_core_common_psi_definition_pkg.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false,
+            "NTT_CORE_PSI" : "NTT_CORE_PSI_16"
+        },
+        {
+            "name": "rtl/NTT_CORE_PSI/NTT_CORE_PSI_8/ntt_core_common_psi_definition_pkg.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false,
+            "NTT_CORE_PSI" : "NTT_CORE_PSI_8"
+        },
+        {
+            "name": "rtl/NTT_CORE_DIV/NTT_CORE_DIV_1/ntt_core_common_div_definition_pkg.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false,
+            "NTT_CORE_DIV" : "NTT_CORE_DIV_1"
+        },
+        {
+            "name": "rtl/NTT_CORE_DIV/NTT_CORE_DIV_2/ntt_core_common_div_definition_pkg.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false,
+            "NTT_CORE_DIV" : "NTT_CORE_DIV_2"
+        },
+        {
+            "name": "rtl/NTT_CORE_RDX_CUT/NTT_CORE_RDX_CUT_n4c4c3/ntt_core_common_cut_definition_pkg.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false,
+            "NTT_CORE_RDX_CUT" : "NTT_CORE_RDX_CUT_n4c4c3"
+        },
+        {
+            "name": "rtl/NTT_CORE_RDX_CUT/NTT_CORE_RDX_CUT_n5c6/ntt_core_common_cut_definition_pkg.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false,
+            "NTT_CORE_RDX_CUT" : "NTT_CORE_RDX_CUT_n5c6"
+        },
+        {
+            "name": "rtl/NTT_CORE_RDX_CUT/NTT_CORE_RDX_CUT_n5c5c1/ntt_core_common_cut_definition_pkg.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false,
+            "NTT_CORE_RDX_CUT" : "NTT_CORE_RDX_CUT_n5c5c1"
+        },
+        {
+            "name": "rtl/NTT_CORE_RDX_CUT/NTT_CORE_RDX_CUT_n6c5/ntt_core_common_cut_definition_pkg.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false,
+            "NTT_CORE_RDX_CUT" : "NTT_CORE_RDX_CUT_n6c5"
+        },
+        {
+            "name": "rtl/ntt_core_common_param_pkg.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false
+        }
+    ],
+    "constraint_files": [],
+    "dependency_dir": [
+        "hw/common_lib/common_package",
+        "hw/module/param",
+        "hw/module/top_common"
+    ],
+    "include_dir": []
+}

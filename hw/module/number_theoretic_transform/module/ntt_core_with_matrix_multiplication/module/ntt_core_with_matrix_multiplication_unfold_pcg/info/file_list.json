@@ -1,0 +1,61 @@
+{   
+    "local_root_path": "${PROJECT_DIR}",
+    "dep_root_path"  : "${PROJECT_DIR}",
+    "is_include_dir" : false,
+    "use_flag"       : [{"NTT_CORE_ARCH": "NTT_CORE_ARCH_wmm_unfold_pcg"}],
+    "rtl_files": [
+        {
+            "name": "hw/module/number_theoretic_transform/module/ntt_core_with_matrix_multiplication/module/ntt_core_with_matrix_multiplication_unfold_pcg/rtl/ntt_core_with_matrix_multiplication_unfold_pcg_head.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false
+        },
+        {
+            "name": "hw/module/number_theoretic_transform/module/ntt_core_with_matrix_multiplication/module/ntt_core_with_matrix_multiplication_unfold_pcg/rtl/ntt_core_with_matrix_multiplication_unfold_pcg_middle_fwd.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false
+        },
+        {
+            "name": "hw/module/number_theoretic_transform/module/ntt_core_with_matrix_multiplication/module/ntt_core_with_matrix_multiplication_unfold_pcg/rtl/ntt_core_with_matrix_multiplication_unfold_pcg_middle_bwd.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false
+        },
+        {
+            "name": "hw/module/number_theoretic_transform/module/ntt_core_with_matrix_multiplication/module/ntt_core_with_matrix_multiplication_unfold_pcg/rtl/ntt_core_with_matrix_multiplication_unfold_pcg.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false
+        },
+        {
+            "name": "hw/module/number_theoretic_transform/module/ntt_core_with_matrix_multiplication/module/ntt_core_with_matrix_multiplication_unfold_pcg/rtl/ntt_core_with_matrix_multiplication_unfold_pcg_assembly.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false
+        }
+    ],
+    "constraint_files": [
+        "hw/module/number_theoretic_transform/module/ntt_core_with_matrix_multiplication/module/ntt_core_with_matrix_multiplication_unfold_pcg/constraint/ntt_core_with_matrix_multiplication_unfold_pcg_timing_constraints_local.xdc"
+    ],
+    "dependency_dir": [
+        "hw/common_lib/common_package",
+        "hw/module/param",
+        "hw/module/pe_pbs/module/pep_common",
+        "hw/module/number_theoretic_transform/module/ntt_core_common",
+        "hw/module/number_theoretic_transform/module/ntt_core_with_matrix_multiplication/module/ntt_core_wmm_common",
+        "hw/module/number_theoretic_transform/module/ntt_core_with_matrix_multiplication/module/ntt_core_wmm_cluster_butterfly_unit",
+        "hw/module/number_theoretic_transform/module/ntt_core_with_matrix_multiplication/module/ntt_core_wmm_dispatch_rotate",
+        "hw/module/number_theoretic_transform/module/ntt_core_with_matrix_multiplication/module/ntt_core_wmm_infifo",
+        "hw/module/number_theoretic_transform/module/ntt_core_with_matrix_multiplication/module/ntt_core_wmm_network",
+        "hw/module/number_theoretic_transform/module/ntt_core_with_matrix_multiplication/module/ntt_core_wmm_post_process",
+        "hw/module/number_theoretic_transform/module/ntt_core_with_matrix_multiplication/module/ntt_core_wmm_ram_rd",
+        "hw/module/number_theoretic_transform/module/ntt_core_with_matrix_multiplication/module/ntt_core_wmm_sequencer"
+    ],
+    "include_dir": [] 
+}

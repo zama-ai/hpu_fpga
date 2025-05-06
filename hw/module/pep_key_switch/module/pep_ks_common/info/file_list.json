@@ -1,0 +1,68 @@
+{   
+    "local_root_path": "${PROJECT_DIR}",
+    "dep_root_path"  : "${PROJECT_DIR}",
+    "is_include_dir" : false,
+    "rtl_files": [
+        {
+            "name": "hw/module/pep_key_switch/module/pep_ks_common/rtl/KSLB/KSLB_x3y64z3/pep_ks_common_definition_pkg.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false,
+            "KSLB": "KSLB_x3y64z3"
+        },
+        {
+            "name": "hw/module/pep_key_switch/module/pep_ks_common/rtl/KSLB/KSLB_x6y64z3/pep_ks_common_definition_pkg.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false,
+            "KSLB": "KSLB_x6y64z3"
+        },
+        {
+            "name": "hw/module/pep_key_switch/module/pep_ks_common/rtl/KSLB/KSLB_x6y128z3/pep_ks_common_definition_pkg.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false,
+            "KSLB": "KSLB_x6y128z3"
+        },
+        {
+            "name": "hw/module/pep_key_switch/module/pep_ks_common/rtl/KSLB/KSLB_x4y16z3/pep_ks_common_definition_pkg.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false,
+            "KSLB": "KSLB_x4y16z3"
+        },
+        {
+            "name": "hw/module/pep_key_switch/module/pep_ks_common/rtl/KSLB/KSLB_x2y32z3/pep_ks_common_definition_pkg.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false,
+            "KSLB": "KSLB_x2y32z3"
+        },
+        {
+            "name": "hw/module/pep_key_switch/module/pep_ks_common/rtl/KSLB/KSLB_x3y32z3/pep_ks_common_definition_pkg.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false,
+            "KSLB": "KSLB_x3y32z3"
+        },
+        {
+            "name": "hw/module/pep_key_switch/module/pep_ks_common/rtl/pep_ks_common_param_pkg.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false
+        }
+    ],
+    "constraint_files": [],
+    "dependency_dir": [
+        "hw/module/param",
+        "hw/module/pe_pbs/module/pep_common"
+    ],
+    "include_dir": [] 
+}

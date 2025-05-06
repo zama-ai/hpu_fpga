@@ -1,0 +1,34 @@
+{
+    "local_root_path": "${PROJECT_DIR}",
+    "dep_root_path"  : "${PROJECT_DIR}",
+    "rtl_files": [
+        {
+            "name": "hw/module/instruction_scheduler/simu/rtl/pe_fake.sv",
+            "library": "work",
+            "env": ["simu"],
+            "target": ["all"],
+            "is_include_file": false
+        },
+        {
+            "name": "hw/module/instruction_scheduler/simu/rtl/isc_parser_mh.sv",
+            "library": "work",
+            "env": ["simu"],
+            "target": ["all"],
+            "is_include_file": false
+        },
+        {
+            "name": "hw/module/instruction_scheduler/simu/rtl/tb_instruction_scheduler.sv",
+            "library": "work",
+            "env": ["simu"],
+            "target": ["all"],
+            "is_include_file": false
+        }
+    ],
+    "dependency_dir": [
+        "hw/simu_lib/simu_base",
+        "hw/simu_lib/stream_lib",
+        "hw/simu_lib/axi4_lib",
+        "hw/module/instruction_scheduler"
+    ],
+    "include_dir": []
+}

@@ -1,0 +1,11 @@
+{   
+    "local_root_path": "${PROJECT_DIR}",
+    "dep_root_path"  : "${PROJECT_DIR}",
+    "is_include_dir" : false,
+    "rtl_files": [
+    ],
+    "constraint_files": [
+    ],
+    "dependency_dir": [],
+    "include_dir": [] 
+}

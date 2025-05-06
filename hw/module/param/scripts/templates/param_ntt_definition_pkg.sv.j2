@@ -1,0 +1,28 @@
+// ==============================================================================================
+// BSD 3-Clause Clear License
+// Copyright © 2025 ZAMA. All rights reserved.
+// ----------------------------------------------------------------------------------------------
+// Description  :
+// ----------------------------------------------------------------------------------------------
+// /!\ Generated file : do not modify it /!\
+//
+// Parameters that defines the NTT.
+// Do not use this package directly in modules. Use param_ntt_pkg instead.
+// This purpose of this package is to ease the tests/synthesis with various localparam sets.
+// ==============================================================================================
+
+package param_ntt_definition_pkg;
+  import common_definition_pkg::*;
+
+  localparam mod_ntt_name_e MOD_NTT_NAME = {{mod_ntt_name}};
+  localparam string MOD_NTT_NAME_S = "{{mod_ntt_name_s}}";
+
+  // Operand and modulo width
+  localparam int             MOD_NTT_W        = {{mod_w}};
+  localparam [MOD_NTT_W-1:0] MOD_NTT          = {{mod_ntt}};
+  // Declare the type of the modulo to ease the selection for the best operators.
+  // Recognized values are SOLINAS2, SOLINAS3, MERSENNE.
+  // Any other type won't be recognized, and generic operators will be used.
+  localparam int_type_e      MOD_NTT_TYPE     = {{mod_type}};
+  localparam int_type_e      MOD_NTT_INV_TYPE = {{mod_inv_type}};
+endpackage

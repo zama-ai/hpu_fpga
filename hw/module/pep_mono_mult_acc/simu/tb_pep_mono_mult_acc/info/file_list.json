@@ -1,0 +1,29 @@
+{    
+    "local_root_path": "${PROJECT_DIR}",
+    "dep_root_path"  : "${PROJECT_DIR}",
+    "rtl_files": [
+        {
+            "name": "hw/module/pep_mono_mult_acc/simu/tb_pep_mono_mult_acc/rtl/tb_pep_mono_mult_acc.sv",
+            "library": "work",
+            "env": ["simu"],
+            "target": ["all"],
+            "is_include_file": false
+        }
+    ],
+    "dependency_dir": [
+        "hw/common_lib/common_package",
+        "hw/simu_lib/simu_base",
+        "hw/simu_lib/stream_lib",
+        "hw/module/pep_mono_mult_acc/simu/tb_pep_mono_mult_acc/gen",
+        "hw/module/param",
+        "hw/module/top_common",
+        "hw/module/hpu/module/hpu_common_instruction",
+        "hw/module/number_theoretic_transform/module/ntt_core_common",
+        "hw/module/pep_key_switch/module/pep_ks_common",
+        "hw/module/pe_pbs/module/pep_common",
+        "hw/module/pep_mono_mult_acc",
+        "hw/module/regfile",
+        "hw/module/pe_pbs/module/pep_sequencer"
+    ],
+    "include_dir": []
+}

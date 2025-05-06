@@ -1,0 +1,66 @@
+{   
+    "local_root_path": "${PROJECT_DIR}/hw/module/number_theoretic_transform/module/ntt_core_with_matrix_multiplication/module/ntt_core_wmm_dispatch_rotate",
+    "dep_root_path"  : "${PROJECT_DIR}",
+    "is_include_dir" : false,
+    "rtl_files": [
+         {
+            "name": "rtl/ntt_core_wmm_dispatch_rotate_pcg_pkg.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false
+        },
+        {
+            "name": "rtl/ntt_core_wmm_dispatch_rotate_rd_pcg_pkg.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false
+        },
+        {
+            "name": "rtl/ntt_core_wmm_dispatch_rotate_wr_pcg_pkg.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false
+        },
+        {
+            "name": "rtl/ntt_core_wmm_dispatch_rotate_last_stage_wr_pcg_pkg.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false
+        },
+        {
+            "name": "rtl/ntt_core_wmm_dispatch_rotate_wr_pcg.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false
+        },
+        {
+            "name": "rtl/ntt_core_wmm_dispatch_rotate_last_stage_wr_pcg.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false
+        },
+        {
+            "name": "rtl/ntt_core_wmm_dispatch_rotate_rd_pcg.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false
+        }    ],
+    "constraint_files": [
+        "constraint/ntt_core_wmm_dispatch_rotate_timing_constraints_local.xdc"
+    ],
+    "dependency_dir": [
+        "hw/module/param",
+        "hw/module/pe_pbs/module/pep_common",
+        "hw/common_lib/common",
+        "hw/module/number_theoretic_transform/module/ntt_core_common",
+        "hw/module/number_theoretic_transform/module/ntt_core_with_matrix_multiplication/module/ntt_core_wmm_common"
+    ],
+    "include_dir": [] 
+}

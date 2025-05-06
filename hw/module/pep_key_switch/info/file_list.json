@@ -1,0 +1,43 @@
+{   
+    "local_root_path": "${PROJECT_DIR}",
+    "dep_root_path"  : "${PROJECT_DIR}",
+    "is_include_dir" : false,
+    "rtl_files": [
+        {
+            "name": "hw/module/pep_key_switch/rtl/pep_ks_result_format.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false
+        },
+        {
+            "name": "hw/module/pep_key_switch/rtl/pep_ks_body_map.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false
+        },
+        {
+            "name": "hw/module/pep_key_switch/rtl/pep_key_switch.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false
+        }
+    ],
+    "constraint_files": [
+        "hw/module/pep_key_switch/constraint/pep_key_switch_timing_constraints_local.xdc"
+    ],
+    "dependency_dir": [
+        "hw/common_lib/common_package",
+        "hw/common_lib/fifo",
+        "hw/module/param",
+        "hw/module/pe_pbs/module/pep_common",
+        "hw/module/pep_key_switch/module/pep_ks_common",
+        "hw/module/pep_key_switch/module/pep_ks_mult",
+        "hw/module/pep_key_switch/module/pep_ks_out_process",
+        "hw/module/pep_key_switch/module/pep_ks_control",
+        "hw/module/pep_key_switch/module/pep_ks_blwe_ram"
+    ],
+    "include_dir": [] 
+}

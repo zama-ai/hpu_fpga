@@ -1,0 +1,27 @@
+{
+    "local_root_path": "${PROJECT_DIR}",
+    "dep_root_path"  : "${PROJECT_DIR}",
+    "is_include_dir" : false,
+    "rtl_files": [
+        {
+            "name": "hw/module/pe_pbs/module/pep_sequencer/rtl/pep_sequencer.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false
+        }
+    ],
+    "constraint_files": [
+        "hw/module/pe_pbs/module/pep_sequencer/constraint/pep_sequencer_timing_constraints_local.xdc"
+    ],
+    "dependency_dir": [
+        "hw/module/param",
+        "hw/module/top_common",
+        "hw/module/hpu/module/hpu_common_instruction",
+        "hw/module/pep_key_switch/module/pep_ks_common",
+        "hw/module/pe_pbs/module/pep_common",
+        "hw/common_lib/common",
+        "hw/common_lib/fifo"
+    ],
+    "include_dir": []
+}

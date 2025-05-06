@@ -1,0 +1,69 @@
+{   
+    "local_root_path": "${PROJECT_DIR}",
+    "dep_root_path"  : "${PROJECT_DIR}",
+    "is_include_dir" : false,
+    "rtl_files": [
+        {
+            "name": "hw/module/bsk/module/bsk_manager/module/bsk_mgr_common/rtl/BSK_SLOT/BSK_SLOT_8/bsk_mgr_common_slot_definition_pkg.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false,
+            "BSK_SLOT":"BSK_SLOT_8"
+        },
+        {
+            "name": "hw/module/bsk/module/bsk_manager/module/bsk_mgr_common/rtl/BSK_CUT/BSK_CUT_16/bsk_mgr_common_cut_definition_pkg.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false,
+            "BSK_CUT":"BSK_CUT_16"
+        },
+        {
+            "name": "hw/module/bsk/module/bsk_manager/module/bsk_mgr_common/rtl/BSK_CUT/BSK_CUT_8/bsk_mgr_common_cut_definition_pkg.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false,
+            "BSK_CUT":"BSK_CUT_8"
+       },
+       {
+            "name": "hw/module/bsk/module/bsk_manager/module/bsk_mgr_common/rtl/BSK_CUT/BSK_CUT_4/bsk_mgr_common_cut_definition_pkg.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false,
+            "BSK_CUT":"BSK_CUT_4"
+        },
+        {
+            "name": "hw/module/bsk/module/bsk_manager/module/bsk_mgr_common/rtl/BSK_CUT/BSK_CUT_2/bsk_mgr_common_cut_definition_pkg.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false,
+            "BSK_CUT":"BSK_CUT_2"
+        },
+        {
+            "name": "hw/module/bsk/module/bsk_manager/module/bsk_mgr_common/rtl/BSK_CUT/BSK_CUT_1/bsk_mgr_common_cut_definition_pkg.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false,
+            "BSK_CUT":"BSK_CUT_1"
+        },
+        {
+            "name": "hw/module/bsk/module/bsk_manager/module/bsk_mgr_common/rtl/bsk_mgr_common_param_pkg.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false
+        }
+    ],
+    "constraint_files": [],
+    "dependency_dir": [
+        "hw/module/param",
+        "hw/module/top_common",
+        "hw/module/number_theoretic_transform/module/ntt_core_common"
+    ],
+    "include_dir": [] 
+}

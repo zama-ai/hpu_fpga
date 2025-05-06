@@ -1,0 +1,64 @@
+
+[fpga]
+  regmap=["sw/bin/tfhe-rs/latest/config/dflt_regif_core.toml"]
+  polling_us=100000
+[fpga.ffi.Sim]
+  ipc_name="/tmp/${USER}/hpu_mockup_ipc"
+
+[rtl]
+  bpip_use = true
+  bpip_use_opportunism = true
+  bpip_timeout = 100_000
+
+[board]
+  # TODO: Lower ct_mem/heap_size value when runtime configuration is availble on the Fw side
+  ct_mem = 4096
+  ct_pc = [{Hbm={pc=10}}, {Hbm={pc=11}}]
+  heap_size = 3584 
+
+  lut_mem = 256
+  lut_pc = {Hbm={pc=12}}
+
+  fw_size= 65536
+  fw_pc = {Hbm={pc=1}}
+   bsk_pc = [
+    {Hbm={pc=2}},
+    {Hbm={pc=3}},
+    {Hbm={pc=4}},
+    {Hbm={pc=5}},
+    {Hbm={pc=6}},
+    {Hbm={pc=7}},
+    {Hbm={pc=8}},
+    {Hbm={pc=9}},
+  ] 
+  ksk_pc = [
+    {Hbm={pc=24}},
+    {Hbm={pc=25}},
+    {Hbm={pc=26}},
+    {Hbm={pc=27}},
+    {Hbm={pc=28}},
+    {Hbm={pc=29}},
+    {Hbm={pc=30}},
+    {Hbm={pc=31}},
+  ]
+
+trace_pc = {Hbm={pc=0}}
+trace_depth = 32
+
+[firmware]
+  implementation = "Ilp"
+  integer_w=[2,4,6,8,10,12,14,16,32]
+  pbs_batch_w=8
+  use_ipip=false
+  kogge_cfg=""
+  custom_iop = {}
+  op_cfg.by_op = {}
+  min_batch_size = 8
+
+[firmware.op_cfg.default]
+  fill_batch_fifo = true
+  min_batch_size = false
+  use_tiers = false
+  flush_behaviour = "Patient"
+  flush = true
+

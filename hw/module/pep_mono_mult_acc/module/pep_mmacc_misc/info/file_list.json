@@ -1,0 +1,30 @@
+{
+    "local_root_path": "${PROJECT_DIR}",
+    "dep_root_path"  : "${PROJECT_DIR}",
+    "is_include_dir" : false,
+    "rtl_files": [
+        {
+            "name": "hw/module/pep_mono_mult_acc/module/pep_mmacc_misc/rtl/pep_mmacc_infifo.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false
+        },
+        {
+            "name": "hw/module/pep_mono_mult_acc/module/pep_mmacc_misc/rtl/pep_mmacc_body_ram.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false
+        }
+    ],
+    "constraint_files": [
+        "hw/module/pep_mono_mult_acc/module/pep_mmacc_misc/constraint/pep_mmacc_misc_timing_constraints_local.xdc"
+    ],
+    "dependency_dir": [
+        "hw/common_lib/fifo",
+        "hw/module/param",
+        "hw/module/pe_pbs/module/pep_common"
+    ],
+    "include_dir": [] 
+}

@@ -1,0 +1,19 @@
+{   
+    "local_root_path": "${PROJECT_DIR}",
+    "dep_root_path"  : "${PROJECT_DIR}",
+    "is_include_dir" : false,
+    "rtl_files": [
+        {
+            "name": "hw/common_lib/ram_rd_rdy_vld/rtl/ram_rd_rdy_vld.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false
+        }
+    ],
+    "constraint_files": [
+        "hw/common_lib/ram_rd_rdy_vld/constraint/ram_rd_rdy_vld_timing_constraints_local.xdc"
+    ],
+    "dependency_dir": ["hw/common_lib/fifo"],
+    "include_dir": [] 
+}

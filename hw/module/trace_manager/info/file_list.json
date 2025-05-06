@@ -1,0 +1,22 @@
+{
+    "local_root_path": "${PROJECT_DIR}",
+    "dep_root_path"  : "${PROJECT_DIR}",
+    "is_include_dir" : false,
+    "rtl_files": [
+        {
+            "name": "hw/module/trace_manager/rtl/trace_manager.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false
+        }
+    ],
+    "constraint_files": [
+        "hw/module/trace_manager/constraint/trace_manager_timing_constraints_local.xdc"
+    ],
+    "dependency_dir": [
+        "hw/common_lib/fifo",
+        "hw/module/axi_if/module/axi_if_common"
+    ],
+    "include_dir": []
+}

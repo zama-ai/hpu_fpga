@@ -1,0 +1,28 @@
+{   
+    "local_root_path": "${PROJECT_DIR}",
+    "dep_root_path"  : "${PROJECT_DIR}",
+    "is_include_dir" : false,
+    "rtl_files": [
+        {
+            "name": "hw/common_lib/stream_to_seq/rtl/stream_to_seq.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false
+        },
+        {
+            "name": "hw/common_lib/stream_to_seq/rtl/seq_to_stream.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false
+        }
+    ],
+    "constraint_files": [
+        "hw/common_lib/stream_to_seq/constraint/stream_to_seq_timing_constraints_local.xdc"
+    ],
+    "dependency_dir": [
+        "hw/common_lib/fifo"
+    ],
+    "include_dir": [] 
+}

@@ -1,0 +1,19 @@
+{    
+    "local_root_path": "${PROJECT_DIR}",
+    "dep_root_path"  : "${PROJECT_DIR}",
+    "rtl_files": [
+        {
+            "name": "hw/module/number_theoretic_transform/module/ntt_core_gf64/module/ntt_core_gf64_arithmetic/simu/tb_ntt_core_gf64_pmr_reduction/rtl/tb_ntt_core_gf64_pmr_reduction.sv",
+            "library": "work",
+            "env": ["simu"],
+            "target": ["all"],
+            "is_include_file": false
+        }
+    ],
+    "dependency_dir": [
+        "hw/simu_lib/simu_base",
+        "hw/simu_lib/stream_lib",
+        "hw/module/number_theoretic_transform/module/ntt_core_gf64/module/ntt_core_gf64_arithmetic"
+    ],
+    "include_dir": []
+}

@@ -1,0 +1,490 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<wave_config>
+   <wave_state>
+   </wave_state>
+   <db_ref_list>
+      <db_ref path="/home/jing-jing/projects/solinas/hw/output/xsim/tb_ntt_core_wmm_post_process/wave.wdb" id="1">
+         <top_modules>
+            <top_module name="mod_arith" />
+            <top_module name="ntt_core_wmm_arch_pkg" />
+            <top_module name="ntt_core_wmm_common_definition_pkg" />
+            <top_module name="ntt_core_wmm_common_param_pkg" />
+            <top_module name="ntt_param_pkg" />
+            <top_module name="pbs_param_pkg" />
+            <top_module name="tb_ntt_core_wmm_post_process" />
+         </top_modules>
+      </db_ref>
+   </db_ref_list>
+   <zoom_setting>
+      <ZoomStartTime time="0.000 ns"></ZoomStartTime>
+      <ZoomEndTime time="2,222.001 ns"></ZoomEndTime>
+      <Cursor1Time time="1,058.257 ns"></Cursor1Time>
+   </zoom_setting>
+   <column_width_setting>
+      <NameColumnWidth column_width="384"></NameColumnWidth>
+      <ValueColumnWidth column_width="378"></ValueColumnWidth>
+   </column_width_setting>
+   <WVObjectSize size="26" />
+   <wave_markers>
+      <marker label="" time="1058257" />
+   </wave_markers>
+   <wvobject type="logic" fp_name="/tb_ntt_core_wmm_post_process/clk">
+      <obj_property name="ElementShortName">clk</obj_property>
+      <obj_property name="ObjectShortName">clk</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/tb_ntt_core_wmm_post_process/s_rst_n">
+      <obj_property name="ElementShortName">s_rst_n</obj_property>
+      <obj_property name="ObjectShortName">s_rst_n</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/tb_ntt_core_wmm_post_process/pbs_nb_a">
+      <obj_property name="ElementShortName">pbs_nb_a[0:0][31:0]</obj_property>
+      <obj_property name="ObjectShortName">pbs_nb_a[0:0][31:0]</obj_property>
+   </wvobject>
+   <wvobject type="group" fp_name="group86">
+      <obj_property name="label">error</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+      <wvobject type="logic" fp_name="/tb_ntt_core_wmm_post_process/error">
+         <obj_property name="ElementShortName">error</obj_property>
+         <obj_property name="ObjectShortName">error</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/tb_ntt_core_wmm_post_process/error_rs">
+         <obj_property name="ElementShortName">error_rs</obj_property>
+         <obj_property name="ObjectShortName">error_rs</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/tb_ntt_core_wmm_post_process/error_ls_bwd">
+         <obj_property name="ElementShortName">error_ls_bwd</obj_property>
+         <obj_property name="ObjectShortName">error_ls_bwd</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/tb_ntt_core_wmm_post_process/error_ls_fwd">
+         <obj_property name="ElementShortName">error_ls_fwd</obj_property>
+         <obj_property name="ObjectShortName">error_ls_fwd</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/tb_ntt_core_wmm_post_process/error_ls">
+         <obj_property name="ElementShortName">error_ls</obj_property>
+         <obj_property name="ObjectShortName">error_ls</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/tb_ntt_core_wmm_post_process/error_module">
+         <obj_property name="ElementShortName">error_module</obj_property>
+         <obj_property name="ObjectShortName">error_module</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/tb_ntt_core_wmm_post_process/pp_error">
+         <obj_property name="ElementShortName">pp_error</obj_property>
+         <obj_property name="ObjectShortName">pp_error</obj_property>
+      </wvobject>
+   </wvobject>
+   <wvobject type="group" fp_name="group87">
+      <obj_property name="label">clbu_pp</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+      <obj_property name="isExpanded"></obj_property>
+      <wvobject type="array" fp_name="/tb_ntt_core_wmm_post_process/clbu_pp_data">
+         <obj_property name="ElementShortName">clbu_pp_data[32:0]</obj_property>
+         <obj_property name="ObjectShortName">clbu_pp_data[32:0]</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/tb_ntt_core_wmm_post_process/clbu_pp_data_avail">
+         <obj_property name="ElementShortName">clbu_pp_data_avail</obj_property>
+         <obj_property name="ObjectShortName">clbu_pp_data_avail</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/tb_ntt_core_wmm_post_process/clbu_pp_sob">
+         <obj_property name="ElementShortName">clbu_pp_sob</obj_property>
+         <obj_property name="ObjectShortName">clbu_pp_sob</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/tb_ntt_core_wmm_post_process/clbu_pp_eob">
+         <obj_property name="ElementShortName">clbu_pp_eob</obj_property>
+         <obj_property name="ObjectShortName">clbu_pp_eob</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/tb_ntt_core_wmm_post_process/clbu_pp_sol">
+         <obj_property name="ElementShortName">clbu_pp_sol</obj_property>
+         <obj_property name="ObjectShortName">clbu_pp_sol</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/tb_ntt_core_wmm_post_process/clbu_pp_eol">
+         <obj_property name="ElementShortName">clbu_pp_eol</obj_property>
+         <obj_property name="ObjectShortName">clbu_pp_eol</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/tb_ntt_core_wmm_post_process/clbu_pp_sos">
+         <obj_property name="ElementShortName">clbu_pp_sos</obj_property>
+         <obj_property name="ObjectShortName">clbu_pp_sos</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/tb_ntt_core_wmm_post_process/clbu_pp_eos">
+         <obj_property name="ElementShortName">clbu_pp_eos</obj_property>
+         <obj_property name="ObjectShortName">clbu_pp_eos</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/tb_ntt_core_wmm_post_process/clbu_pp_ntt_bwd">
+         <obj_property name="ElementShortName">clbu_pp_ntt_bwd</obj_property>
+         <obj_property name="ObjectShortName">clbu_pp_ntt_bwd</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/tb_ntt_core_wmm_post_process/clbu_pp_pbs_id">
+         <obj_property name="ElementShortName">clbu_pp_pbs_id[1:0]</obj_property>
+         <obj_property name="ObjectShortName">clbu_pp_pbs_id[1:0]</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/tb_ntt_core_wmm_post_process/clbu_pp_ctrl_avail">
+         <obj_property name="ElementShortName">clbu_pp_ctrl_avail</obj_property>
+         <obj_property name="ObjectShortName">clbu_pp_ctrl_avail</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/tb_ntt_core_wmm_post_process/clbu_pp_last_stg">
+         <obj_property name="ElementShortName">clbu_pp_last_stg</obj_property>
+         <obj_property name="ObjectShortName">clbu_pp_last_stg</obj_property>
+      </wvobject>
+   </wvobject>
+   <wvobject type="group" fp_name="group88">
+      <obj_property name="label">pp_rsntw</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+      <wvobject type="array" fp_name="/tb_ntt_core_wmm_post_process/pp_rsntw_data">
+         <obj_property name="ElementShortName">pp_rsntw_data[32:0]</obj_property>
+         <obj_property name="ObjectShortName">pp_rsntw_data[32:0]</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/tb_ntt_core_wmm_post_process/pp_rsntw_sob">
+         <obj_property name="ElementShortName">pp_rsntw_sob</obj_property>
+         <obj_property name="ObjectShortName">pp_rsntw_sob</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/tb_ntt_core_wmm_post_process/pp_rsntw_eob">
+         <obj_property name="ElementShortName">pp_rsntw_eob</obj_property>
+         <obj_property name="ObjectShortName">pp_rsntw_eob</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/tb_ntt_core_wmm_post_process/pp_rsntw_sol">
+         <obj_property name="ElementShortName">pp_rsntw_sol</obj_property>
+         <obj_property name="ObjectShortName">pp_rsntw_sol</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/tb_ntt_core_wmm_post_process/pp_rsntw_eol">
+         <obj_property name="ElementShortName">pp_rsntw_eol</obj_property>
+         <obj_property name="ObjectShortName">pp_rsntw_eol</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/tb_ntt_core_wmm_post_process/pp_rsntw_sos">
+         <obj_property name="ElementShortName">pp_rsntw_sos</obj_property>
+         <obj_property name="ObjectShortName">pp_rsntw_sos</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/tb_ntt_core_wmm_post_process/pp_rsntw_eos">
+         <obj_property name="ElementShortName">pp_rsntw_eos</obj_property>
+         <obj_property name="ObjectShortName">pp_rsntw_eos</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/tb_ntt_core_wmm_post_process/pp_rsntw_ntt_bwd">
+         <obj_property name="ElementShortName">pp_rsntw_ntt_bwd</obj_property>
+         <obj_property name="ObjectShortName">pp_rsntw_ntt_bwd</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/tb_ntt_core_wmm_post_process/pp_rsntw_pbs_id">
+         <obj_property name="ElementShortName">pp_rsntw_pbs_id[1:0]</obj_property>
+         <obj_property name="ObjectShortName">pp_rsntw_pbs_id[1:0]</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/tb_ntt_core_wmm_post_process/pp_rsntw_avail">
+         <obj_property name="ElementShortName">pp_rsntw_avail</obj_property>
+         <obj_property name="ObjectShortName">pp_rsntw_avail</obj_property>
+      </wvobject>
+   </wvobject>
+   <wvobject type="group" fp_name="group89">
+      <obj_property name="label">pp_lsntw_fwd</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+      <wvobject type="array" fp_name="/tb_ntt_core_wmm_post_process/pp_lsntw_fwd_data">
+         <obj_property name="ElementShortName">pp_lsntw_fwd_data[32:0]</obj_property>
+         <obj_property name="ObjectShortName">pp_lsntw_fwd_data[32:0]</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/tb_ntt_core_wmm_post_process/pp_lsntw_fwd_sob">
+         <obj_property name="ElementShortName">pp_lsntw_fwd_sob</obj_property>
+         <obj_property name="ObjectShortName">pp_lsntw_fwd_sob</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/tb_ntt_core_wmm_post_process/pp_lsntw_fwd_eob">
+         <obj_property name="ElementShortName">pp_lsntw_fwd_eob</obj_property>
+         <obj_property name="ObjectShortName">pp_lsntw_fwd_eob</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/tb_ntt_core_wmm_post_process/pp_lsntw_fwd_sol">
+         <obj_property name="ElementShortName">pp_lsntw_fwd_sol</obj_property>
+         <obj_property name="ObjectShortName">pp_lsntw_fwd_sol</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/tb_ntt_core_wmm_post_process/pp_lsntw_fwd_eol">
+         <obj_property name="ElementShortName">pp_lsntw_fwd_eol</obj_property>
+         <obj_property name="ObjectShortName">pp_lsntw_fwd_eol</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/tb_ntt_core_wmm_post_process/pp_lsntw_fwd_sos">
+         <obj_property name="ElementShortName">pp_lsntw_fwd_sos</obj_property>
+         <obj_property name="ObjectShortName">pp_lsntw_fwd_sos</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/tb_ntt_core_wmm_post_process/pp_lsntw_fwd_eos">
+         <obj_property name="ElementShortName">pp_lsntw_fwd_eos</obj_property>
+         <obj_property name="ObjectShortName">pp_lsntw_fwd_eos</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/tb_ntt_core_wmm_post_process/pp_lsntw_fwd_ntt_bwd">
+         <obj_property name="ElementShortName">pp_lsntw_fwd_ntt_bwd</obj_property>
+         <obj_property name="ObjectShortName">pp_lsntw_fwd_ntt_bwd</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/tb_ntt_core_wmm_post_process/pp_lsntw_fwd_pbs_id">
+         <obj_property name="ElementShortName">pp_lsntw_fwd_pbs_id[1:0]</obj_property>
+         <obj_property name="ObjectShortName">pp_lsntw_fwd_pbs_id[1:0]</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/tb_ntt_core_wmm_post_process/pp_lsntw_fwd_avail">
+         <obj_property name="ElementShortName">pp_lsntw_fwd_avail</obj_property>
+         <obj_property name="ObjectShortName">pp_lsntw_fwd_avail</obj_property>
+      </wvobject>
+   </wvobject>
+   <wvobject type="group" fp_name="group90">
+      <obj_property name="label">pp_lsntw_bwd</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+      <wvobject type="array" fp_name="/tb_ntt_core_wmm_post_process/pp_lsntw_bwd_data">
+         <obj_property name="ElementShortName">pp_lsntw_bwd_data[32:0]</obj_property>
+         <obj_property name="ObjectShortName">pp_lsntw_bwd_data[32:0]</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/tb_ntt_core_wmm_post_process/pp_lsntw_bwd_sob">
+         <obj_property name="ElementShortName">pp_lsntw_bwd_sob</obj_property>
+         <obj_property name="ObjectShortName">pp_lsntw_bwd_sob</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/tb_ntt_core_wmm_post_process/pp_lsntw_bwd_eob">
+         <obj_property name="ElementShortName">pp_lsntw_bwd_eob</obj_property>
+         <obj_property name="ObjectShortName">pp_lsntw_bwd_eob</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/tb_ntt_core_wmm_post_process/pp_lsntw_bwd_sol">
+         <obj_property name="ElementShortName">pp_lsntw_bwd_sol</obj_property>
+         <obj_property name="ObjectShortName">pp_lsntw_bwd_sol</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/tb_ntt_core_wmm_post_process/pp_lsntw_bwd_eol">
+         <obj_property name="ElementShortName">pp_lsntw_bwd_eol</obj_property>
+         <obj_property name="ObjectShortName">pp_lsntw_bwd_eol</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/tb_ntt_core_wmm_post_process/pp_lsntw_bwd_sos">
+         <obj_property name="ElementShortName">pp_lsntw_bwd_sos</obj_property>
+         <obj_property name="ObjectShortName">pp_lsntw_bwd_sos</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/tb_ntt_core_wmm_post_process/pp_lsntw_bwd_eos">
+         <obj_property name="ElementShortName">pp_lsntw_bwd_eos</obj_property>
+         <obj_property name="ObjectShortName">pp_lsntw_bwd_eos</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/tb_ntt_core_wmm_post_process/pp_lsntw_bwd_ntt_bwd">
+         <obj_property name="ElementShortName">pp_lsntw_bwd_ntt_bwd</obj_property>
+         <obj_property name="ObjectShortName">pp_lsntw_bwd_ntt_bwd</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/tb_ntt_core_wmm_post_process/pp_lsntw_bwd_pbs_id">
+         <obj_property name="ElementShortName">pp_lsntw_bwd_pbs_id[1:0]</obj_property>
+         <obj_property name="ObjectShortName">pp_lsntw_bwd_pbs_id[1:0]</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/tb_ntt_core_wmm_post_process/pp_lsntw_bwd_avail">
+         <obj_property name="ElementShortName">pp_lsntw_bwd_avail</obj_property>
+         <obj_property name="ObjectShortName">pp_lsntw_bwd_avail</obj_property>
+      </wvobject>
+   </wvobject>
+   <wvobject type="group" fp_name="group91">
+      <obj_property name="label">pp_lsntw</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+      <wvobject type="array" fp_name="/tb_ntt_core_wmm_post_process/pp_lsntw_data">
+         <obj_property name="ElementShortName">pp_lsntw_data[32:0]</obj_property>
+         <obj_property name="ObjectShortName">pp_lsntw_data[32:0]</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/tb_ntt_core_wmm_post_process/pp_lsntw_sob">
+         <obj_property name="ElementShortName">pp_lsntw_sob</obj_property>
+         <obj_property name="ObjectShortName">pp_lsntw_sob</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/tb_ntt_core_wmm_post_process/pp_lsntw_eob">
+         <obj_property name="ElementShortName">pp_lsntw_eob</obj_property>
+         <obj_property name="ObjectShortName">pp_lsntw_eob</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/tb_ntt_core_wmm_post_process/pp_lsntw_sol">
+         <obj_property name="ElementShortName">pp_lsntw_sol</obj_property>
+         <obj_property name="ObjectShortName">pp_lsntw_sol</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/tb_ntt_core_wmm_post_process/pp_lsntw_eol">
+         <obj_property name="ElementShortName">pp_lsntw_eol</obj_property>
+         <obj_property name="ObjectShortName">pp_lsntw_eol</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/tb_ntt_core_wmm_post_process/pp_lsntw_sos">
+         <obj_property name="ElementShortName">pp_lsntw_sos</obj_property>
+         <obj_property name="ObjectShortName">pp_lsntw_sos</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/tb_ntt_core_wmm_post_process/pp_lsntw_eos">
+         <obj_property name="ElementShortName">pp_lsntw_eos</obj_property>
+         <obj_property name="ObjectShortName">pp_lsntw_eos</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/tb_ntt_core_wmm_post_process/pp_lsntw_ntt_bwd">
+         <obj_property name="ElementShortName">pp_lsntw_ntt_bwd</obj_property>
+         <obj_property name="ObjectShortName">pp_lsntw_ntt_bwd</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/tb_ntt_core_wmm_post_process/pp_lsntw_pbs_id">
+         <obj_property name="ElementShortName">pp_lsntw_pbs_id[1:0]</obj_property>
+         <obj_property name="ObjectShortName">pp_lsntw_pbs_id[1:0]</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/tb_ntt_core_wmm_post_process/pp_lsntw_avail">
+         <obj_property name="ElementShortName">pp_lsntw_avail</obj_property>
+         <obj_property name="ObjectShortName">pp_lsntw_avail</obj_property>
+      </wvobject>
+   </wvobject>
+   <wvobject type="group" fp_name="group92">
+      <obj_property name="label">twd_intt_final</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+      <wvobject type="array" fp_name="/tb_ntt_core_wmm_post_process/twd_intt_final">
+         <obj_property name="ElementShortName">twd_intt_final[32:0]</obj_property>
+         <obj_property name="ObjectShortName">twd_intt_final[32:0]</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/tb_ntt_core_wmm_post_process/twd_intt_final_vld">
+         <obj_property name="ElementShortName">twd_intt_final_vld</obj_property>
+         <obj_property name="ObjectShortName">twd_intt_final_vld</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/tb_ntt_core_wmm_post_process/twd_intt_final_rdy">
+         <obj_property name="ElementShortName">twd_intt_final_rdy</obj_property>
+         <obj_property name="ObjectShortName">twd_intt_final_rdy</obj_property>
+      </wvobject>
+   </wvobject>
+   <wvobject type="group" fp_name="group93">
+      <obj_property name="label">bsk</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+      <wvobject type="array" fp_name="/tb_ntt_core_wmm_post_process/bsk">
+         <obj_property name="ElementShortName">bsk[2:0][32:0]</obj_property>
+         <obj_property name="ObjectShortName">bsk[2:0][32:0]</obj_property>
+         <obj_property name="isExpanded"></obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/tb_ntt_core_wmm_post_process/bsk_vld">
+         <obj_property name="ElementShortName">bsk_vld[2:0]</obj_property>
+         <obj_property name="ObjectShortName">bsk_vld[2:0]</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/tb_ntt_core_wmm_post_process/bsk_rdy">
+         <obj_property name="ElementShortName">bsk_rdy[2:0]</obj_property>
+         <obj_property name="ObjectShortName">bsk_rdy[2:0]</obj_property>
+      </wvobject>
+   </wvobject>
+   <wvobject type="array" fp_name="/tb_ntt_core_wmm_post_process/ntt_core_wmm_post_process/s0_mult_factor">
+      <obj_property name="ElementShortName">s0_mult_factor[2:0][32:0]</obj_property>
+      <obj_property name="ObjectShortName">s0_mult_factor[2:0][32:0]</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/tb_ntt_core_wmm_post_process/ntt_core_wmm_post_process/s1_multiplier">
+      <obj_property name="ElementShortName">s1_multiplier[2:0][32:0]</obj_property>
+      <obj_property name="ObjectShortName">s1_multiplier[2:0][32:0]</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/tb_ntt_core_wmm_post_process/ntt_core_wmm_post_process/s0_mult_ctrl">
+      <obj_property name="ElementShortName">s0_mult_ctrl</obj_property>
+      <obj_property name="ObjectShortName">s0_mult_ctrl</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/tb_ntt_core_wmm_post_process/ntt_core_wmm_post_process/s1_mult_ctrl">
+      <obj_property name="ElementShortName">s1_mult_ctrl</obj_property>
+      <obj_property name="ObjectShortName">s1_mult_ctrl</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/tb_ntt_core_wmm_post_process/ntt_core_wmm_post_process/s1_ls_fwd_avail">
+      <obj_property name="ElementShortName">s1_ls_fwd_avail</obj_property>
+      <obj_property name="ObjectShortName">s1_ls_fwd_avail</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/tb_ntt_core_wmm_post_process/ntt_core_wmm_post_process/s1_sob_kept">
+      <obj_property name="ElementShortName">s1_sob_kept</obj_property>
+      <obj_property name="ObjectShortName">s1_sob_kept</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/tb_ntt_core_wmm_post_process/ntt_core_wmm_post_process/s1_sos_kept">
+      <obj_property name="ElementShortName">s1_sos_kept</obj_property>
+      <obj_property name="ObjectShortName">s1_sos_kept</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/tb_ntt_core_wmm_post_process/ntt_core_wmm_post_process/s2_accumulator">
+      <obj_property name="ElementShortName">s2_accumulator[2:0][32:0]</obj_property>
+      <obj_property name="ObjectShortName">s2_accumulator[2:0][32:0]</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/tb_ntt_core_wmm_post_process/ntt_core_wmm_post_process/s1_acc_ctrl">
+      <obj_property name="ElementShortName">s1_acc_ctrl</obj_property>
+      <obj_property name="ObjectShortName">s1_acc_ctrl</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/tb_ntt_core_wmm_post_process/ntt_core_wmm_post_process/s2_acc_ctrl">
+      <obj_property name="ElementShortName">s2_acc_ctrl</obj_property>
+      <obj_property name="ObjectShortName">s2_acc_ctrl</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/tb_ntt_core_wmm_post_process/ntt_core_wmm_post_process/s2_avail_acc">
+      <obj_property name="ElementShortName">s2_avail_acc[2:0]</obj_property>
+      <obj_property name="ObjectShortName">s2_avail_acc[2:0]</obj_property>
+   </wvobject>
+   <wvobject type="group" fp_name="group113">
+      <obj_property name="label">mod_mult_0</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+      <obj_property name="isExpanded"></obj_property>
+      <wvobject type="array" fp_name="/tb_ntt_core_wmm_post_process/ntt_core_wmm_post_process/mod_mult_0/a">
+         <obj_property name="ElementShortName">a[32:0]</obj_property>
+         <obj_property name="ObjectShortName">a[32:0]</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/tb_ntt_core_wmm_post_process/ntt_core_wmm_post_process/mod_mult_0/b">
+         <obj_property name="ElementShortName">b[32:0]</obj_property>
+         <obj_property name="ObjectShortName">b[32:0]</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/tb_ntt_core_wmm_post_process/ntt_core_wmm_post_process/mod_mult_0/in_avail">
+         <obj_property name="ElementShortName">in_avail</obj_property>
+         <obj_property name="ObjectShortName">in_avail</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/tb_ntt_core_wmm_post_process/ntt_core_wmm_post_process/mod_mult_0/z">
+         <obj_property name="ElementShortName">z[32:0]</obj_property>
+         <obj_property name="ObjectShortName">z[32:0]</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/tb_ntt_core_wmm_post_process/ntt_core_wmm_post_process/mod_mult_0/out_avail">
+         <obj_property name="ElementShortName">out_avail</obj_property>
+         <obj_property name="ObjectShortName">out_avail</obj_property>
+      </wvobject>
+   </wvobject>
+   <wvobject type="group" fp_name="group119">
+      <obj_property name="label">mod_acc_0</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+      <wvobject type="logic" fp_name="/tb_ntt_core_wmm_post_process/ntt_core_wmm_post_process/mod_acc_0/in_avail">
+         <obj_property name="ElementShortName">in_avail</obj_property>
+         <obj_property name="ObjectShortName">in_avail</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/tb_ntt_core_wmm_post_process/ntt_core_wmm_post_process/mod_acc_0/in_op">
+         <obj_property name="ElementShortName">in_op[32:0]</obj_property>
+         <obj_property name="ObjectShortName">in_op[32:0]</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/tb_ntt_core_wmm_post_process/ntt_core_wmm_post_process/mod_acc_0/in_sol">
+         <obj_property name="ElementShortName">in_sol</obj_property>
+         <obj_property name="ObjectShortName">in_sol</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/tb_ntt_core_wmm_post_process/ntt_core_wmm_post_process/mod_acc_0/in_eol">
+         <obj_property name="ElementShortName">in_eol</obj_property>
+         <obj_property name="ObjectShortName">in_eol</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/tb_ntt_core_wmm_post_process/ntt_core_wmm_post_process/mod_acc_0/out_avail">
+         <obj_property name="ElementShortName">out_avail</obj_property>
+         <obj_property name="ObjectShortName">out_avail</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/tb_ntt_core_wmm_post_process/ntt_core_wmm_post_process/mod_acc_0/out_op">
+         <obj_property name="ElementShortName">out_op[32:0]</obj_property>
+         <obj_property name="ObjectShortName">out_op[32:0]</obj_property>
+      </wvobject>
+   </wvobject>
+   <wvobject type="group" fp_name="group101">
+      <obj_property name="label">mod_acc_1</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+      <wvobject type="array" fp_name="/tb_ntt_core_wmm_post_process/ntt_core_wmm_post_process/\gen_glwe_accumulator[1].mod_acc_i /in_op">
+         <obj_property name="ElementShortName">in_op[32:0]</obj_property>
+         <obj_property name="ObjectShortName">in_op[32:0]</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/tb_ntt_core_wmm_post_process/ntt_core_wmm_post_process/\gen_glwe_accumulator[1].mod_acc_i /in_sol">
+         <obj_property name="ElementShortName">in_sol</obj_property>
+         <obj_property name="ObjectShortName">in_sol</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/tb_ntt_core_wmm_post_process/ntt_core_wmm_post_process/\gen_glwe_accumulator[1].mod_acc_i /in_eol">
+         <obj_property name="ElementShortName">in_eol</obj_property>
+         <obj_property name="ObjectShortName">in_eol</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/tb_ntt_core_wmm_post_process/ntt_core_wmm_post_process/\gen_glwe_accumulator[1].mod_acc_i /in_avail">
+         <obj_property name="ElementShortName">in_avail</obj_property>
+         <obj_property name="ObjectShortName">in_avail</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/tb_ntt_core_wmm_post_process/ntt_core_wmm_post_process/\gen_glwe_accumulator[1].mod_acc_i /out_op">
+         <obj_property name="ElementShortName">out_op[32:0]</obj_property>
+         <obj_property name="ObjectShortName">out_op[32:0]</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/tb_ntt_core_wmm_post_process/ntt_core_wmm_post_process/\gen_glwe_accumulator[1].mod_acc_i /out_avail">
+         <obj_property name="ElementShortName">out_avail</obj_property>
+         <obj_property name="ObjectShortName">out_avail</obj_property>
+      </wvobject>
+   </wvobject>
+   <wvobject type="group" fp_name="group108">
+      <obj_property name="label">mod_acc_2</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+      <wvobject type="array" fp_name="/tb_ntt_core_wmm_post_process/ntt_core_wmm_post_process/\gen_glwe_accumulator[2].mod_acc_i /in_op">
+         <obj_property name="ElementShortName">in_op[32:0]</obj_property>
+         <obj_property name="ObjectShortName">in_op[32:0]</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/tb_ntt_core_wmm_post_process/ntt_core_wmm_post_process/\gen_glwe_accumulator[2].mod_acc_i /in_sol">
+         <obj_property name="ElementShortName">in_sol</obj_property>
+         <obj_property name="ObjectShortName">in_sol</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/tb_ntt_core_wmm_post_process/ntt_core_wmm_post_process/\gen_glwe_accumulator[2].mod_acc_i /in_eol">
+         <obj_property name="ElementShortName">in_eol</obj_property>
+         <obj_property name="ObjectShortName">in_eol</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/tb_ntt_core_wmm_post_process/ntt_core_wmm_post_process/\gen_glwe_accumulator[2].mod_acc_i /in_avail">
+         <obj_property name="ElementShortName">in_avail</obj_property>
+         <obj_property name="ObjectShortName">in_avail</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/tb_ntt_core_wmm_post_process/ntt_core_wmm_post_process/\gen_glwe_accumulator[2].mod_acc_i /out_op">
+         <obj_property name="ElementShortName">out_op[32:0]</obj_property>
+         <obj_property name="ObjectShortName">out_op[32:0]</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/tb_ntt_core_wmm_post_process/ntt_core_wmm_post_process/\gen_glwe_accumulator[2].mod_acc_i /out_avail">
+         <obj_property name="ElementShortName">out_avail</obj_property>
+         <obj_property name="ObjectShortName">out_avail</obj_property>
+      </wvobject>
+   </wvobject>
+</wave_config>

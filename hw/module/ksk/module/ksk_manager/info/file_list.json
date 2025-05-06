@@ -1,0 +1,35 @@
+{   
+    "local_root_path": "${PROJECT_DIR}",
+    "dep_root_path"  : "${PROJECT_DIR}",
+    "is_include_dir" : false,
+    "rtl_files": [
+        {
+            "name": "hw/module/ksk/module/ksk_manager/rtl/ksk_mgr_node.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false
+        },
+        {
+            "name": "hw/module/ksk/module/ksk_manager/rtl/ksk_manager.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false
+        }
+    ],
+    "constraint_files": [
+        "hw/module/ksk/module/ksk_manager/constraint/ksk_manager_timing_constraints_local.xdc",
+        "hw/module/ksk/module/ksk_manager/constraint/ksk_manager_timing_constraints_hier.xdc"
+    ],
+    "dependency_dir": [
+        "hw/common_lib/common",
+        "hw/common_lib/fifo",
+        "hw/module/param",
+        "hw/module/top_common",
+        "hw/module/pep_key_switch/module/pep_ks_common",
+        "hw/module/ksk/module/ksk_manager/module/ksk_mgr_common",
+        "hw/module/pe_pbs/module/pep_common"
+    ],
+    "include_dir": [] 
+}

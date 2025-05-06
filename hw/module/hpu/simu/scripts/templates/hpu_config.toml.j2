@@ -1,0 +1,88 @@
+
+[fpga]
+  regmap={{regmap_file}}
+  polling_us=100000
+[fpga.ffi.Sim]
+  ipc_name="/tmp/${USER}/hpu_mockup_ipc"
+
+[rtl]
+  bpip_use = true
+  bpip_use_opportunism = true
+  bpip_timeout = 100_000
+
+[board]
+  # TODO: Lower ct_mem/heap_size value when runtime configuration is availble on the Fw side
+  ct_mem = 4096
+  ct_pc = [
+    {Hbm= {pc=32}},
+    {Hbm= {pc=33}},
+  ]
+  heap_size = 3584
+
+  lut_mem = 256
+  lut_pc = {Hbm={pc=34}}
+
+  fw_size= 65536
+  fw_pc = {Ddr= {offset= 0x3900_0000}} # NB: Allocation must take place in the Discret DDR
+
+   bsk_pc = [
+    {Hbm={pc=16}},
+    {Hbm={pc=17}},
+    {Hbm={pc=18}},
+    {Hbm={pc=19}},
+    {Hbm={pc=20}},
+    {Hbm={pc=21}},
+    {Hbm={pc=22}},
+    {Hbm={pc=23}},
+    {Hbm={pc=24}},
+    {Hbm={pc=25}},
+    {Hbm={pc=26}},
+    {Hbm={pc=27}},
+    {Hbm={pc=28}},
+    {Hbm={pc=29}},
+    {Hbm={pc=30}},
+    {Hbm={pc=31}}
+  ] 
+  ksk_pc = [
+    {Hbm={pc=0}},
+    {Hbm={pc=1}},
+    {Hbm={pc=2}},
+    {Hbm={pc=3}},
+    {Hbm={pc=4}},
+    {Hbm={pc=5}},
+    {Hbm={pc=6}},
+    {Hbm={pc=7}},
+    {Hbm={pc=8}},
+    {Hbm={pc=9}},
+    {Hbm={pc=10}},
+    {Hbm={pc=11}},
+    {Hbm={pc=12}},
+    {Hbm={pc=13}},
+    {Hbm={pc=14}},
+    {Hbm={pc=15}}
+  ]
+
+trace_pc = {Hbm={pc=35}}
+trace_depth = 32
+
+[firmware]
+  implementation = "Ilp"
+  integer_w=[{{integer_w}}]
+  fill_batch_fifo=false
+  min_batch_size = 6
+  kogge_cfg=""
+{% if cust_iop|length > 0 %}
+{% for key, value in cust_iop.items() -%}
+custom_iop.'IOP[{{ key }}]' = "{{ value }}"
+{% endfor %}
+{% else %}
+custom_iop = {}
+{% endif %}
+op_cfg.by_op = {}
+
+[firmware.op_cfg.default]
+  fill_batch_fifo = true
+  min_batch_size = false
+  use_tiers = false
+  flush_behaviour = "Patient"
+  flush = true

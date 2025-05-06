@@ -1,0 +1,47 @@
+{
+    "local_root_path": "${PROJECT_DIR}/hw/simu_lib/axi4_lib",
+    "dep_root_path"  : "${PROJECT_DIR}",
+    "rtl_files": [
+        {
+            "name": "rtl/maxi4_if.sv",
+            "library": "work",
+            "env": ["simu"],
+            "target": ["all"]
+        },
+        {
+            "name": "rtl/maxil_if.sv",
+            "library": "work",
+            "env": ["simu"],
+            "target": ["all"]
+        },
+        {
+            "name": "rtl/axis_if.sv",
+            "library": "work",
+            "env": ["simu"],
+            "target": ["all"]
+        },
+        {
+            "name": "rtl/axi4_ram.sv",
+            "library": "work",
+            "env": ["simu"],
+            "target": ["all"]
+        },
+        {
+            "name": "rtl/axi4_mem.sv",
+            "library": "work",
+            "env": ["simu"],
+            "target": ["all"]
+        },
+        {
+            "name": "rtl/axi4_mem_with_select.sv",
+            "library": "work",
+            "env": ["simu"],
+            "target": ["all"]
+        }
+    ],
+    "constraint_files": [],
+    "dependency_dir": [
+        "hw/common_lib/common",
+        "hw/common_lib/fifo"
+    ]
+}

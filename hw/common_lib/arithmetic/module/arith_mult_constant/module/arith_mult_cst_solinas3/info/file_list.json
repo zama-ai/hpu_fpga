@@ -1,0 +1,26 @@
+{   
+    "local_root_path": "${PROJECT_DIR}",
+    "dep_root_path"  : "${PROJECT_DIR}",
+    "is_include_dir" : false,
+    "rtl_files": [
+        {
+            "name": "hw/common_lib/arithmetic/module/arith_mult_constant/module/arith_mult_cst_solinas3/rtl/arith_mult_cst_solinas3_pkg.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false
+        },
+        {
+            "name": "hw/common_lib/arithmetic/module/arith_mult_constant/module/arith_mult_cst_solinas3/rtl/arith_mult_cst_solinas3.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false
+        }
+    ],
+    "constraint_files": [
+        "hw/common_lib/arithmetic/module/arith_mult_constant/module/arith_mult_cst_solinas3/constraint/arith_mult_cst_solinas3_timing_constraints_local.xdc"
+    ],
+    "dependency_dir": ["hw/common_lib/common"],
+    "include_dir": [] 
+}

@@ -1,0 +1,45 @@
+{   
+    "local_root_path": "${PROJECT_DIR}",
+    "dep_root_path"  : "${PROJECT_DIR}",
+    "is_include_dir" : false,
+    "rtl_files": [
+        {
+            "name": "hw/module/regfile/rtl/regf_read_arbiter.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false
+        },
+        {
+            "name": "hw/module/regfile/rtl/regf_write_arbiter.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false
+        },
+        {
+            "name": "hw/module/regfile/rtl/regf_ram_unit.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false
+        },
+        {
+            "name": "hw/module/regfile/rtl/regfile.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false
+        }
+    ],
+    "constraint_files": [
+        "hw/module/regfile/constraint/regfile_timing_constraints_local.xdc",
+        "hw/module/regfile/constraint/regfile_timing_constraints_hier.xdc"
+    ],
+    "dependency_dir": [
+        "hw/module/param",
+        "hw/common_lib/fifo",
+        "hw/module/regfile/module/regf_common"
+    ],
+    "include_dir": [] 
+}

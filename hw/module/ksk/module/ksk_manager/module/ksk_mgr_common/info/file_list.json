@@ -1,0 +1,69 @@
+{
+    "local_root_path": "${PROJECT_DIR}",
+    "dep_root_path"  : "${PROJECT_DIR}",
+    "is_include_dir" : false,
+    "rtl_files": [
+        {
+            "name": "hw/module/ksk/module/ksk_manager/module/ksk_mgr_common/rtl/KSK_SLOT/KSK_SLOT_8/ksk_mgr_common_slot_definition_pkg.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false,
+            "KSK_SLOT":"KSK_SLOT_8"
+        },
+        {
+            "name": "hw/module/ksk/module/ksk_manager/module/ksk_mgr_common/rtl/KSK_CUT/KSK_CUT_16/ksk_mgr_common_cut_definition_pkg.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false,
+            "KSK_CUT":"KSK_CUT_16"
+        },
+        {
+            "name": "hw/module/ksk/module/ksk_manager/module/ksk_mgr_common/rtl/KSK_CUT/KSK_CUT_8/ksk_mgr_common_cut_definition_pkg.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false,
+            "KSK_CUT":"KSK_CUT_8"
+        },
+        {
+            "name": "hw/module/ksk/module/ksk_manager/module/ksk_mgr_common/rtl/KSK_CUT/KSK_CUT_4/ksk_mgr_common_cut_definition_pkg.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false,
+            "KSK_CUT":"KSK_CUT_4"
+        },
+        {
+            "name": "hw/module/ksk/module/ksk_manager/module/ksk_mgr_common/rtl/KSK_CUT/KSK_CUT_2/ksk_mgr_common_cut_definition_pkg.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false,
+            "KSK_CUT":"KSK_CUT_2"
+        },
+        {
+            "name": "hw/module/ksk/module/ksk_manager/module/ksk_mgr_common/rtl/KSK_CUT/KSK_CUT_1/ksk_mgr_common_cut_definition_pkg.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false,
+            "KSK_CUT":"KSK_CUT_1"
+        },
+        {
+            "name": "hw/module/ksk/module/ksk_manager/module/ksk_mgr_common/rtl/ksk_mgr_common_param_pkg.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false
+        }
+    ],
+    "constraint_files": [],
+    "dependency_dir": [
+        "hw/module/param",
+        "hw/module/top_common",
+        "hw/module/pep_key_switch/module/pep_ks_common"
+    ],
+    "include_dir": []
+}

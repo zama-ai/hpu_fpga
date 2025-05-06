@@ -1,0 +1,58 @@
+{
+    "local_root_path": "${PROJECT_DIR}",
+    "dep_root_path"  : "${PROJECT_DIR}",
+    "is_include_dir" : false,
+    "rtl_files": [
+        {
+            "name": "hw/module/number_theoretic_transform/module/ntt_core_gf64/rtl/ntt_core_gf64_reduction.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false
+        },
+        {
+            "name": "hw/module/number_theoretic_transform/module/ntt_core_gf64/rtl/ntt_core_gf64_middle.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false
+        },
+        {
+            "name": "hw/module/number_theoretic_transform/module/ntt_core_gf64/rtl/ntt_core_gf64_head.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false
+        },
+        {
+            "name": "hw/module/number_theoretic_transform/module/ntt_core_gf64/rtl/ntt_core_gf64_tail.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false
+        },
+        {
+            "name": "hw/module/number_theoretic_transform/module/ntt_core_gf64/rtl/ntt_core_gf64.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false
+        }
+    ],
+    "constraint_files": [
+        "hw/module/number_theoretic_transform/module/ntt_core_gf64/constraint/ntt_core_gf64_timing_constraints_local.xdc"
+    ],
+    "dependency_dir": [
+      "hw/common_lib/common_package",
+      "hw/module/param",
+      "hw/module/pe_pbs/module/pep_common",
+      "hw/module/number_theoretic_transform/module/ntt_core_common",
+      "hw/module/number_theoretic_transform/module/ntt_core_gf64/module/ntt_core_gf64_common",
+      "hw/module/number_theoretic_transform/module/ntt_core_gf64/module/ntt_core_gf64_arithmetic",
+      "hw/module/number_theoretic_transform/module/ntt_core_gf64/module/ntt_core_gf64_butterfly_unit",
+      "hw/module/number_theoretic_transform/module/ntt_core_gf64/module/ntt_core_gf64_network",
+      "hw/module/number_theoretic_transform/module/ntt_core_gf64/module/ntt_core_gf64_phi",
+      "hw/module/number_theoretic_transform/module/ntt_core_gf64/module/ntt_core_gf64_post_process"
+    ],
+    "include_dir": []
+}

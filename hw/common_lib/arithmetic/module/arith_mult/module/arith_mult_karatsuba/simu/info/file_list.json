@@ -1,0 +1,26 @@
+{    
+    "local_root_path": "${PROJECT_DIR}",
+    "dep_root_path"  : "${PROJECT_DIR}",
+    "rtl_files": [
+        {
+            "name": "hw/common_lib/arithmetic/module/arith_mult/module/arith_mult_karatsuba/simu/rtl/tb_arith_mult_karatsuba.sv",
+            "library": "work",
+            "env": ["simu"],
+            "target": ["all"],
+            "is_include_file": false
+        },
+        {
+            "name": "hw/common_lib/arithmetic/module/arith_mult/module/arith_mult_karatsuba/simu/rtl/tb_arith_mult_karatsuba_cascade.sv",
+            "library": "work",
+            "env": ["simu"],
+            "target": ["all"],
+            "is_include_file": false
+        }
+    ],
+    "dependency_dir": [
+        "hw/simu_lib/simu_base",
+        "hw/simu_lib/stream_lib",
+        "hw/common_lib/arithmetic/module/arith_mult/module/arith_mult_karatsuba"
+    ],
+    "include_dir": []
+}

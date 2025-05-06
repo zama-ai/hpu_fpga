@@ -1,0 +1,83 @@
+{
+    "local_root_path": "${PROJECT_DIR}",
+    "dep_root_path"  : "${PROJECT_DIR}",
+    "is_include_dir" : false,
+    "rtl_files": [
+        {
+            "name": "hw/module/pep_mono_mult_acc/module/pep_mmacc_splitc/module/pep_mmacc_splitc_feed/rtl/pep_mmacc_splitc_feed_pkg.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false
+        },
+        {
+            "name": "hw/module/pep_mono_mult_acc/module/pep_mmacc_splitc/module/pep_mmacc_splitc_feed/rtl/pep_mmacc_splitc_feed_read.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false
+        },
+        {
+            "name": "hw/module/pep_mono_mult_acc/module/pep_mmacc_splitc/module/pep_mmacc_splitc_feed/rtl/pep_mmacc_splitc_feed_rot.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false
+        },
+        {
+            "name": "hw/module/pep_mono_mult_acc/module/pep_mmacc_splitc/module/pep_mmacc_splitc_feed/rtl/pep_mmacc_splitc_feed_join.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false
+        },
+        {
+            "name": "hw/module/pep_mono_mult_acc/module/pep_mmacc_splitc/module/pep_mmacc_splitc_feed/rtl/pep_mmacc_splitc_feed_final.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false
+        },
+        {
+            "name": "hw/module/pep_mono_mult_acc/module/pep_mmacc_splitc/module/pep_mmacc_splitc_feed/rtl/pep_mmacc_splitc_feed_entry.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false
+        },
+        {
+            "name": "hw/module/pep_mono_mult_acc/module/pep_mmacc_splitc/module/pep_mmacc_splitc_feed/rtl/pep_mmacc_splitc_feed_core.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false
+        },
+        {
+            "name": "hw/module/pep_mono_mult_acc/module/pep_mmacc_splitc/module/pep_mmacc_splitc_feed/rtl/pep_mmacc_splitc_main_feed.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false
+        },
+        {
+            "name": "hw/module/pep_mono_mult_acc/module/pep_mmacc_splitc/module/pep_mmacc_splitc_feed/rtl/pep_mmacc_splitc_subs_feed.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false
+        }
+    ],
+    "constraint_files": [
+        "hw/module/pep_mono_mult_acc/module/pep_mmacc_splitc/module/pep_mmacc_splitc_feed/constraint/pep_mmacc_splitc_feed_timing_constraints_local.xdc"
+    ],
+    "dependency_dir": [
+        "hw/common_lib/fifo",
+        "hw/common_lib/common_package",
+        "hw/module/param",
+        "hw/module/top_common",
+        "hw/module/pe_pbs/module/pep_common",
+        "hw/module/number_theoretic_transform/module/ntt_core_common",
+        "hw/module/pep_mono_mult_acc/module/pep_mmacc_common"
+    ],
+    "include_dir": []
+}

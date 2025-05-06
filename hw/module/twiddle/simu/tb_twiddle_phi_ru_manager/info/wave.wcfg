@@ -1,0 +1,287 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<wave_config>
+   <wave_state>
+   </wave_state>
+   <db_ref_list>
+      <db_ref path="/home/jing-jing/projects/dev/hw/output/xsim/tb_twiddle_phi_ru_manager/wave.wdb" id="1">
+         <top_modules>
+            <top_module name="ntt_core_wmm_common_definition_pkg" />
+            <top_module name="ntt_core_wmm_common_param_pkg" />
+            <top_module name="ntt_param_pkg" />
+            <top_module name="pbs_param_pkg" />
+            <top_module name="tb_twiddle_phi_ru_manager" />
+            <top_module name="tb_twiddle_pkg" />
+         </top_modules>
+      </db_ref>
+   </db_ref_list>
+   <zoom_setting>
+      <ZoomStartTime time="432.684 ns"></ZoomStartTime>
+      <ZoomEndTime time="480.698 ns"></ZoomEndTime>
+      <Cursor1Time time="455.402 ns"></Cursor1Time>
+   </zoom_setting>
+   <column_width_setting>
+      <NameColumnWidth column_width="524"></NameColumnWidth>
+      <ValueColumnWidth column_width="257"></ValueColumnWidth>
+   </column_width_setting>
+   <WVObjectSize size="37" />
+   <wave_markers>
+      <marker label="" time="10500000" />
+   </wave_markers>
+   <wvobject type="logic" fp_name="/tb_twiddle_phi_ru_manager/clk">
+      <obj_property name="ElementShortName">clk</obj_property>
+      <obj_property name="ObjectShortName">clk</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/tb_twiddle_phi_ru_manager/s_rst_n">
+      <obj_property name="ElementShortName">s_rst_n</obj_property>
+      <obj_property name="ObjectShortName">s_rst_n</obj_property>
+   </wvobject>
+   <wvobject type="group" fp_name="group58">
+      <wvobject type="logic" fp_name="/tb_twiddle_phi_ru_manager/error">
+         <obj_property name="ElementShortName">error</obj_property>
+         <obj_property name="ObjectShortName">error</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/tb_twiddle_phi_ru_manager/error_data">
+         <obj_property name="ElementShortName">error_data</obj_property>
+         <obj_property name="ObjectShortName">error_data</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/tb_twiddle_phi_ru_manager/error_valid">
+         <obj_property name="ElementShortName">error_valid</obj_property>
+         <obj_property name="ObjectShortName">error_valid</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/tb_twiddle_phi_ru_manager/start">
+         <obj_property name="ElementShortName">start</obj_property>
+         <obj_property name="ObjectShortName">start</obj_property>
+      </wvobject>
+   </wvobject>
+   <wvobject type="group" fp_name="group55">
+      <obj_property name="label">twd_phi_ru</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+      <obj_property name="isExpanded"></obj_property>
+      <wvobject type="array" fp_name="/tb_twiddle_phi_ru_manager/twd_phi_ru">
+         <obj_property name="ElementShortName">twd_phi_ru[1:0][1:1][31:0]</obj_property>
+         <obj_property name="ObjectShortName">twd_phi_ru[1:0][1:1][31:0]</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/tb_twiddle_phi_ru_manager/twd_phi_ru_vld">
+         <obj_property name="ElementShortName">twd_phi_ru_vld[1:0]</obj_property>
+         <obj_property name="ObjectShortName">twd_phi_ru_vld[1:0]</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/tb_twiddle_phi_ru_manager/twd_phi_ru_rdy">
+         <obj_property name="ElementShortName">twd_phi_ru_rdy[1:0]</obj_property>
+         <obj_property name="ObjectShortName">twd_phi_ru_rdy[1:0]</obj_property>
+      </wvobject>
+   </wvobject>
+   <wvobject type="group" fp_name="group56">
+      <obj_property name="label">write</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+      <obj_property name="isExpanded"></obj_property>
+      <wvobject type="logic" fp_name="/tb_twiddle_phi_ru_manager/wr_en">
+         <obj_property name="ElementShortName">wr_en</obj_property>
+         <obj_property name="ObjectShortName">wr_en</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/tb_twiddle_phi_ru_manager/wr_data">
+         <obj_property name="ElementShortName">wr_data[1:0][0:0][1:0][31:0]</obj_property>
+         <obj_property name="ObjectShortName">wr_data[1:0][0:0][1:0][31:0]</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/tb_twiddle_phi_ru_manager/wr_add">
+         <obj_property name="ElementShortName">wr_add[1:0]</obj_property>
+         <obj_property name="ObjectShortName">wr_add[1:0]</obj_property>
+         <obj_property name="WaveformStyle">STYLE_DIGITAL</obj_property>
+      </wvobject>
+   </wvobject>
+   <wvobject type="group" fp_name="group60">
+      <obj_property name="label">batch_cmd</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+      <obj_property name="isExpanded"></obj_property>
+      <wvobject type="array" fp_name="/tb_twiddle_phi_ru_manager/dut/batch_cmd">
+         <obj_property name="ElementShortName">batch_cmd[12:0]</obj_property>
+         <obj_property name="ObjectShortName">batch_cmd[12:0]</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/tb_twiddle_phi_ru_manager/dut/batch_cmd_avail">
+         <obj_property name="ElementShortName">batch_cmd_avail</obj_property>
+         <obj_property name="ObjectShortName">batch_cmd_avail</obj_property>
+      </wvobject>
+   </wvobject>
+   <wvobject type="group" fp_name="group57">
+      <obj_property name="label">control</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+      <obj_property name="isExpanded"></obj_property>
+      <wvobject type="array" fp_name="/tb_twiddle_phi_ru_manager/state">
+         <obj_property name="ElementShortName">state[31:0]</obj_property>
+         <obj_property name="ObjectShortName">state[31:0]</obj_property>
+         <obj_property name="CustomSignalColor">#FF00FF</obj_property>
+         <obj_property name="UseCustomSignalColor">true</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/tb_twiddle_phi_ru_manager/pbs_nb_a">
+         <obj_property name="ElementShortName">pbs_nb_a[199:0][31:0]</obj_property>
+         <obj_property name="ObjectShortName">pbs_nb_a[199:0][31:0]</obj_property>
+         <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/tb_twiddle_phi_ru_manager/proc_batch_last">
+         <obj_property name="ElementShortName">proc_batch_last</obj_property>
+         <obj_property name="ObjectShortName">proc_batch_last</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/tb_twiddle_phi_ru_manager/batch_id">
+         <obj_property name="ElementShortName">batch_id[31:0]</obj_property>
+         <obj_property name="ObjectShortName">batch_id[31:0]</obj_property>
+         <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/tb_twiddle_phi_ru_manager/cmd_batch_id">
+         <obj_property name="ElementShortName">cmd_batch_id[31:0]</obj_property>
+         <obj_property name="ObjectShortName">cmd_batch_id[31:0]</obj_property>
+         <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/tb_twiddle_phi_ru_manager/cmd_batch_id_dly">
+         <obj_property name="ElementShortName">cmd_batch_id_dly[5:0][31:0]</obj_property>
+         <obj_property name="ObjectShortName">cmd_batch_id_dly[5:0][31:0]</obj_property>
+         <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/tb_twiddle_phi_ru_manager/wr_last">
+         <obj_property name="ElementShortName">wr_last</obj_property>
+         <obj_property name="ObjectShortName">wr_last</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/tb_twiddle_phi_ru_manager/proc_batch_last">
+         <obj_property name="ElementShortName">proc_batch_last</obj_property>
+         <obj_property name="ObjectShortName">proc_batch_last</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/tb_twiddle_phi_ru_manager/stg">
+         <obj_property name="ElementShortName">stg[31:0]</obj_property>
+         <obj_property name="ObjectShortName">stg[31:0]</obj_property>
+         <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
+         <obj_property name="CustomSignalColor">#00FF7F</obj_property>
+         <obj_property name="UseCustomSignalColor">true</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/tb_twiddle_phi_ru_manager/stg_iter">
+         <obj_property name="ElementShortName">stg_iter[31:0]</obj_property>
+         <obj_property name="ObjectShortName">stg_iter[31:0]</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/tb_twiddle_phi_ru_manager/ntt_bwd">
+         <obj_property name="ElementShortName">ntt_bwd[31:0]</obj_property>
+         <obj_property name="ObjectShortName">ntt_bwd[31:0]</obj_property>
+         <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
+      </wvobject>
+   </wvobject>
+   <wvobject type="group" fp_name="group53">
+      <obj_property name="label">ram</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+      <obj_property name="isExpanded"></obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/tb_twiddle_phi_ru_manager/dut/twd_phi_ru_vld">
+      <obj_property name="ElementShortName">twd_phi_ru_vld[1:0]</obj_property>
+      <obj_property name="ObjectShortName">twd_phi_ru_vld[1:0]</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/tb_twiddle_phi_ru_manager/dut/twd_phi_ru_rdy">
+      <obj_property name="ElementShortName">twd_phi_ru_rdy[1:0]</obj_property>
+      <obj_property name="ObjectShortName">twd_phi_ru_rdy[1:0]</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/tb_twiddle_phi_ru_manager/dut/s0_batch_cmd_rdy_a">
+      <obj_property name="ElementShortName">s0_batch_cmd_rdy_a[1:0][0:0]</obj_property>
+      <obj_property name="ObjectShortName">s0_batch_cmd_rdy_a[1:0][0:0]</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/tb_twiddle_phi_ru_manager/dut/\p_loop_gen[0].r_loop_gen[0].s1_batch_pbs_id_max ">
+      <obj_property name="ElementShortName">\p_loop_gen[0].r_loop_gen[0].s1_batch_pbs_id_max [1:0]</obj_property>
+      <obj_property name="ObjectShortName">\p_loop_gen[0].r_loop_gen[0].s1_batch_pbs_id_max [1:0]</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/tb_twiddle_phi_ru_manager/dut/\p_loop_gen[0].r_loop_gen[0].s1_batch_cmd_vld ">
+      <obj_property name="ElementShortName">\p_loop_gen[0].r_loop_gen[0].s1_batch_cmd_vld </obj_property>
+      <obj_property name="ObjectShortName">\p_loop_gen[0].r_loop_gen[0].s1_batch_cmd_vld </obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/tb_twiddle_phi_ru_manager/dut/\p_loop_gen[0].r_loop_gen[0].s1_batch_cmd_rdy ">
+      <obj_property name="ElementShortName">\p_loop_gen[0].r_loop_gen[0].s1_batch_cmd_rdy </obj_property>
+      <obj_property name="ObjectShortName">\p_loop_gen[0].r_loop_gen[0].s1_batch_cmd_rdy </obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/tb_twiddle_phi_ru_manager/dut/\p_loop_gen[0].r_loop_gen[0].s1_ntt_bwd ">
+      <obj_property name="ElementShortName">\p_loop_gen[0].r_loop_gen[0].s1_ntt_bwd </obj_property>
+      <obj_property name="ObjectShortName">\p_loop_gen[0].r_loop_gen[0].s1_ntt_bwd </obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/tb_twiddle_phi_ru_manager/dut/\p_loop_gen[0].r_loop_gen[0].s1_stg ">
+      <obj_property name="ElementShortName">\p_loop_gen[0].r_loop_gen[0].s1_stg [0:0]</obj_property>
+      <obj_property name="ObjectShortName">\p_loop_gen[0].r_loop_gen[0].s1_stg [0:0]</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/tb_twiddle_phi_ru_manager/dut/\p_loop_gen[0].r_loop_gen[0].s1_pbs_id ">
+      <obj_property name="ElementShortName">\p_loop_gen[0].r_loop_gen[0].s1_pbs_id [1:0]</obj_property>
+      <obj_property name="ObjectShortName">\p_loop_gen[0].r_loop_gen[0].s1_pbs_id [1:0]</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/tb_twiddle_phi_ru_manager/dut/\p_loop_gen[0].r_loop_gen[0].s1_stg_iter ">
+      <obj_property name="ElementShortName">\p_loop_gen[0].r_loop_gen[0].s1_stg_iter [0:0]</obj_property>
+      <obj_property name="ObjectShortName">\p_loop_gen[0].r_loop_gen[0].s1_stg_iter [0:0]</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/tb_twiddle_phi_ru_manager/dut/\p_loop_gen[0].r_loop_gen[0].s1_rd_cnt ">
+      <obj_property name="ElementShortName">\p_loop_gen[0].r_loop_gen[0].s1_rd_cnt [0:0]</obj_property>
+      <obj_property name="ObjectShortName">\p_loop_gen[0].r_loop_gen[0].s1_rd_cnt [0:0]</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/tb_twiddle_phi_ru_manager/dut/\p_loop_gen[0].r_loop_gen[0].s1_rp ">
+      <obj_property name="ElementShortName">\p_loop_gen[0].r_loop_gen[0].s1_rp [2:0]</obj_property>
+      <obj_property name="ObjectShortName">\p_loop_gen[0].r_loop_gen[0].s1_rp [2:0]</obj_property>
+      <obj_property name="CustomSignalColor">#00FFFF</obj_property>
+      <obj_property name="UseCustomSignalColor">true</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/tb_twiddle_phi_ru_manager/dut/\p_loop_gen[0].r_loop_gen[0].s1_rp_restart ">
+      <obj_property name="ElementShortName">\p_loop_gen[0].r_loop_gen[0].s1_rp_restart [2:0]</obj_property>
+      <obj_property name="ObjectShortName">\p_loop_gen[0].r_loop_gen[0].s1_rp_restart [2:0]</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/tb_twiddle_phi_ru_manager/dut/\p_loop_gen[0].r_loop_gen[0].s1_first_stg_iter ">
+      <obj_property name="ElementShortName">\p_loop_gen[0].r_loop_gen[0].s1_first_stg_iter </obj_property>
+      <obj_property name="ObjectShortName">\p_loop_gen[0].r_loop_gen[0].s1_first_stg_iter </obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/tb_twiddle_phi_ru_manager/dut/\p_loop_gen[0].r_loop_gen[0].s1_first_pbs_id ">
+      <obj_property name="ElementShortName">\p_loop_gen[0].r_loop_gen[0].s1_first_pbs_id </obj_property>
+      <obj_property name="ObjectShortName">\p_loop_gen[0].r_loop_gen[0].s1_first_pbs_id </obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/tb_twiddle_phi_ru_manager/dut/\p_loop_gen[0].r_loop_gen[0].s1_first_rd_cnt ">
+      <obj_property name="ElementShortName">\p_loop_gen[0].r_loop_gen[0].s1_first_rd_cnt </obj_property>
+      <obj_property name="ObjectShortName">\p_loop_gen[0].r_loop_gen[0].s1_first_rd_cnt </obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/tb_twiddle_phi_ru_manager/dut/\p_loop_gen[0].r_loop_gen[0].s1_last_stg_iter ">
+      <obj_property name="ElementShortName">\p_loop_gen[0].r_loop_gen[0].s1_last_stg_iter </obj_property>
+      <obj_property name="ObjectShortName">\p_loop_gen[0].r_loop_gen[0].s1_last_stg_iter </obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/tb_twiddle_phi_ru_manager/dut/\p_loop_gen[0].r_loop_gen[0].s1_last_pbs_id ">
+      <obj_property name="ElementShortName">\p_loop_gen[0].r_loop_gen[0].s1_last_pbs_id </obj_property>
+      <obj_property name="ObjectShortName">\p_loop_gen[0].r_loop_gen[0].s1_last_pbs_id </obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/tb_twiddle_phi_ru_manager/dut/\p_loop_gen[0].r_loop_gen[0].s1_last_rd_cnt ">
+      <obj_property name="ElementShortName">\p_loop_gen[0].r_loop_gen[0].s1_last_rd_cnt </obj_property>
+      <obj_property name="ObjectShortName">\p_loop_gen[0].r_loop_gen[0].s1_last_rd_cnt </obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/tb_twiddle_phi_ru_manager/dut/\p_loop_gen[0].r_loop_gen[0].ram_data_avail_dly ">
+      <obj_property name="ElementShortName">\p_loop_gen[0].r_loop_gen[0].ram_data_avail_dly [0:0][0:0]</obj_property>
+      <obj_property name="ObjectShortName">\p_loop_gen[0].r_loop_gen[0].ram_data_avail_dly [0:0][0:0]</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/tb_twiddle_phi_ru_manager/dut/\p_loop_gen[0].r_loop_gen[0].buf_data ">
+      <obj_property name="ElementShortName">\p_loop_gen[0].r_loop_gen[0].buf_data [1:0][0:0][2:0][31:0]</obj_property>
+      <obj_property name="ObjectShortName">\p_loop_gen[0].r_loop_gen[0].buf_data [1:0][0:0][2:0][31:0]</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/tb_twiddle_phi_ru_manager/dut/\p_loop_gen[0].r_loop_gen[0].buf_en ">
+      <obj_property name="ElementShortName">\p_loop_gen[0].r_loop_gen[0].buf_en [0:0][2:0]</obj_property>
+      <obj_property name="ObjectShortName">\p_loop_gen[0].r_loop_gen[0].buf_en [0:0][2:0]</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/tb_twiddle_phi_ru_manager/dut/\p_loop_gen[0].r_loop_gen[0].j_loop_gen[0].s1_data_cnt ">
+      <obj_property name="ElementShortName">\p_loop_gen[0].r_loop_gen[0].j_loop_gen[0].s1_data_cnt [1:0]</obj_property>
+      <obj_property name="ObjectShortName">\p_loop_gen[0].r_loop_gen[0].j_loop_gen[0].s1_data_cnt [1:0]</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/tb_twiddle_phi_ru_manager/dut/\p_loop_gen[0].r_loop_gen[0].ram_rd_en ">
+      <obj_property name="ElementShortName">\p_loop_gen[0].r_loop_gen[0].ram_rd_en [1:0]</obj_property>
+      <obj_property name="ObjectShortName">\p_loop_gen[0].r_loop_gen[0].ram_rd_en [1:0]</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/tb_twiddle_phi_ru_manager/dut/\p_loop_gen[0].r_loop_gen[0].ram_rd_add ">
+      <obj_property name="ElementShortName">\p_loop_gen[0].r_loop_gen[0].ram_rd_add [1:0][2:0]</obj_property>
+      <obj_property name="ObjectShortName">\p_loop_gen[0].r_loop_gen[0].ram_rd_add [1:0][2:0]</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/tb_twiddle_phi_ru_manager/dut/\p_loop_gen[0].r_loop_gen[0].ram_rd_data ">
+      <obj_property name="ElementShortName">\p_loop_gen[0].r_loop_gen[0].ram_rd_data [1:0][31:0]</obj_property>
+      <obj_property name="ObjectShortName">\p_loop_gen[0].r_loop_gen[0].ram_rd_data [1:0][31:0]</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/tb_twiddle_phi_ru_manager/dut/\p_loop_gen[0].r_loop_gen[0].ram_wr_en ">
+      <obj_property name="ElementShortName">\p_loop_gen[0].r_loop_gen[0].ram_wr_en [1:0]</obj_property>
+      <obj_property name="ObjectShortName">\p_loop_gen[0].r_loop_gen[0].ram_wr_en [1:0]</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/tb_twiddle_phi_ru_manager/dut/\p_loop_gen[0].r_loop_gen[0].ram_wr_add ">
+      <obj_property name="ElementShortName">\p_loop_gen[0].r_loop_gen[0].ram_wr_add [1:0][2:0]</obj_property>
+      <obj_property name="ObjectShortName">\p_loop_gen[0].r_loop_gen[0].ram_wr_add [1:0][2:0]</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/tb_twiddle_phi_ru_manager/dut/\p_loop_gen[0].r_loop_gen[0].ram_wr_data ">
+      <obj_property name="ElementShortName">\p_loop_gen[0].r_loop_gen[0].ram_wr_data [1:0][31:0]</obj_property>
+      <obj_property name="ObjectShortName">\p_loop_gen[0].r_loop_gen[0].ram_wr_data [1:0][31:0]</obj_property>
+      <obj_property name="isExpanded"></obj_property>
+   </wvobject>
+</wave_config>

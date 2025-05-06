@@ -1,0 +1,33 @@
+{   
+    "local_root_path": "${PROJECT_DIR}",
+    "dep_root_path"  : "${PROJECT_DIR}",
+    "is_include_dir" : false,
+    "rtl_files": [
+        {
+            "name": "hw/common_lib/mod_arithmetic/module/mod_add_sub/rtl/mod_add_sub_pkg.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false
+        },
+        {
+            "name": "hw/common_lib/mod_arithmetic/module/mod_add_sub/rtl/mod_add.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false
+        },
+        {
+            "name": "hw/common_lib/mod_arithmetic/module/mod_add_sub/rtl/mod_sub.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false
+        }
+    ],
+    "constraint_files": [
+        "hw/common_lib/mod_arithmetic/module/mod_add_sub/constraint/mod_add_sub_timing_constraints_local.xdc"
+    ],
+    "dependency_dir": ["hw/common_lib/common"],
+    "include_dir": [] 
+}

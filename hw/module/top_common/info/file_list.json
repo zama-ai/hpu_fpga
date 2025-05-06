@@ -1,0 +1,129 @@
+{
+    "local_root_path": "${PROJECT_DIR}",
+    "dep_root_path"  : "${PROJECT_DIR}",
+    "is_include_dir" : false,
+    "rtl_files": [
+        {
+            "name": "hw/module/top_common/rtl/inc/top_defines_inc.sv",
+            "library": "work",
+            "env": ["simu" , "synth"],
+            "target": ["all"],
+            "is_include_file": true
+        },
+        {
+            "name": "${xrt_output_dir}/top_defines_inc.sv",
+            "library": "work",
+            "env": ["synth_xrt"],
+            "target": ["all"],
+            "is_include_file": true
+        },
+        {
+            "name": "hw/module/top_common/rtl/TOP_TOP/TOP_TOP_hpu/top_common_top_definition_pkg.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false,
+            "TOP_TOP": "TOP_TOP_hpu"
+        },
+        {
+            "name": "hw/module/top_common/rtl/TOP_PC/TOP_PC_pem2_glwe1_bsk8_ksk16/top_common_pc_definition_pkg.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false,
+            "TOP_PC": "TOP_PC_pem2_glwe1_bsk8_ksk16"
+        },
+        {
+            "name": "hw/module/top_common/rtl/TOP_PC/TOP_PC_pem2_glwe1_bsk16_ksk16/top_common_pc_definition_pkg.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false,
+            "TOP_PC": "TOP_PC_pem2_glwe1_bsk16_ksk16"
+        },
+        {
+            "name": "hw/module/top_common/rtl/TOP_PC/TOP_PC_pem1_glwe1_bsk1_ksk1/top_common_pc_definition_pkg.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false,
+            "TOP_PC": "TOP_PC_pem1_glwe1_bsk1_ksk1"
+        },
+        {
+            "name": "hw/module/top_common/rtl/TOP_PC/TOP_PC_pem1_glwe1_bsk2_ksk3/top_common_pc_definition_pkg.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false,
+            "TOP_PC": "TOP_PC_pem1_glwe1_bsk2_ksk3"
+        },
+        {
+            "name": "hw/module/top_common/rtl/TOP_PC/TOP_PC_pem2_glwe1_bsk4_ksk4/top_common_pc_definition_pkg.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false,
+            "TOP_PC": "TOP_PC_pem2_glwe1_bsk4_ksk4"
+        },
+        {
+            "name": "hw/module/top_common/rtl/TOP_PC/TOP_PC_pem1_glwe1_bsk4_ksk4/top_common_pc_definition_pkg.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false,
+            "TOP_PC": "TOP_PC_pem1_glwe1_bsk4_ksk4"
+        },
+        {
+            "name": "hw/module/top_common/rtl/TOP_PC/TOP_PC_pem2_glwe1_bsk8_ksk8/top_common_pc_definition_pkg.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false,
+            "TOP_PC": "TOP_PC_pem2_glwe1_bsk8_ksk8"
+        },
+        {
+            "name": "hw/module/top_common/rtl/TOP_PC/TOP_PC_pem1_glwe1_bsk2_ksk2/top_common_pc_definition_pkg.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false,
+            "TOP_PC": "TOP_PC_pem1_glwe1_bsk2_ksk2"
+        },
+        {
+            "name": "hw/module/top_common/rtl/TOP_PCMAX/TOP_PCMAX_pem2_glwe1_bsk16_ksk16/top_common_pcmax_definition_pkg.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false,
+            "TOP_PCMAX": "TOP_PCMAX_pem2_glwe1_bsk16_ksk16"
+        },
+        {
+            "name": "hw/module/top_common/rtl/TOP_PCMAX/TOP_PCMAX_pem1_glwe1_bsk4_ksk4/top_common_pcmax_definition_pkg.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false,
+            "TOP_PCMAX": "TOP_PCMAX_pem1_glwe1_bsk4_ksk4"
+        },
+        {
+            "name": "hw/module/top_common/rtl/TOP_PCMAX/TOP_PCMAX_pem2_glwe1_bsk8_ksk8/top_common_pcmax_definition_pkg.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false,
+            "TOP_PCMAX": "TOP_PCMAX_pem2_glwe1_bsk8_ksk8"
+        },
+        {
+            "name": "hw/module/top_common/rtl/top_common_param_pkg.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false
+        }
+    ],
+    "constraint_files": [],
+    "dependency_dir": [
+        "hw/common_lib/common_package"
+    ],
+    "include_dir": []
+}

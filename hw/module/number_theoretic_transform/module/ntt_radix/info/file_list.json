@@ -1,0 +1,22 @@
+{   
+    "local_root_path": "${PROJECT_DIR}/hw/module/number_theoretic_transform/module/ntt_radix",
+    "dep_root_path"  : "${PROJECT_DIR}",
+    "is_include_dir" : false,
+    "rtl_files": [
+        {
+            "name": "rtl/ntt_radix_gentleman_sande.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false
+        }
+    ],
+    "constraint_files": [
+    ],
+    "dependency_dir": ["hw/module/number_theoretic_transform/module/ntt_radix/module/ntt_radix_cooley_tukey",
+                       "hw/module/number_theoretic_transform/module/ntt_radix/module/ntt_radix_2_gentleman_sande",
+                       "hw/module/number_theoretic_transform/module/ntt_radix/module/ntt_radix_4_gentleman_sande",
+                       "hw/module/number_theoretic_transform/module/ntt_radix/module/ntt_radix_8_gentleman_sande"
+                       ],
+    "include_dir": [] 
+}

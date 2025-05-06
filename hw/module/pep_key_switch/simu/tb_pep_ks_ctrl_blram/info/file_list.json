@@ -1,0 +1,22 @@
+{    
+    "local_root_path": "${PROJECT_DIR}",
+    "dep_root_path"  : "${PROJECT_DIR}",
+    "rtl_files": [
+        {
+            "name": "hw/module/pep_key_switch/simu/tb_pep_ks_ctrl_blram/rtl/tb_pep_ks_ctrl_blram.sv",
+            "library": "work",
+            "env": ["simu"],
+            "target": ["all"],
+            "is_include_file": false
+        }
+    ],
+    "dependency_dir": [
+        "hw/module/pep_key_switch/simu/tb_pep_ks_ctrl_blram/gen",
+        "hw/common_lib/common",
+        "hw/module/param",
+        "hw/common_lib/stream_to_seq",
+        "hw/module/pe_pbs/module/pep_common",
+        "hw/module/pep_key_switch"
+    ],
+    "include_dir": []
+}
