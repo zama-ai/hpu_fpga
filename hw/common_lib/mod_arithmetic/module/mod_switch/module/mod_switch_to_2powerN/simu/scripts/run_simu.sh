@@ -5,7 +5,7 @@
 # aliases are not expanded when the shell is not interactive.
 # Redefine here for more clarity
 
-run_edalize=${PROJECT_DIR}/hw/script/edalize/run_edalize.py
+run_edalize=${PROJECT_DIR}/hw/scripts/edalize/run_edalize.py
 
 RED='\033[1;31m'
 GREEN='\033[1;32m'

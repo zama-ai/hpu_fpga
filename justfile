@@ -2,8 +2,8 @@
 # Copyright © 2025 ZAMA. All rights reserved.
 
 relicense:
-  hw/script/relicense/relicense.py \
-    -t 'hw/script/relicense/templates' \
+  hw/scripts/relicense/relicense.py \
+    -t 'hw/scripts/relicense/templates' \
     -d 'hw' \
        'fw' \
        'sw' \

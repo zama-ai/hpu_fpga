@@ -12,7 +12,7 @@ echo " -------------------------------------------------------------------------
 CURRENTDIR=$PWD
 
 WORK_DIR=${PROJECT_DIR}/fw/gen/${MICROBLAZE_CONF}
-SCRIPT_DIR=${PROJECT_DIR}/fw/ublaze/script
+SCRIPT_DIR=${PROJECT_DIR}/fw/ublaze/scripts
 CONF_DIR=${PROJECT_DIR}/fw/ublaze/core_config/${MICROBLAZE_CONF}
 RTL_DIR=${WORK_DIR}/rtl
 SIMU_DIR=${WORK_DIR}/simu
@@ -106,6 +106,6 @@ mkdir -p ${SIMU_DIR}/info
 
 # Then let's Launch parser : must be launched with relative path
 cd ${PROJECT_DIR}
-python3 fw/ublaze/script/parser.py
+python3 ${SCRIPT_DIR}/parser.py
 
 cd ${CURRENTDIR}

@@ -16,7 +16,7 @@ cli="$*"
 
 # aliases are not expanded when the shell is not interactive.
 # Redefine here for more clarity
-run_edalize=${PROJECT_DIR}/hw/script/edalize/run_edalize.py
+run_edalize=${PROJECT_DIR}/hw/scripts/edalize/run_edalize.py
 
 module="tb_decomp_balanced_sequential"
 
@@ -202,7 +202,7 @@ if [ $GEN_STIMULI -eq 1 ] ; then
 
     # Create the associated file_list.json
     echo ""
-    file_list_cmd="${PROJECT_DIR}/hw/script/create_module/create_file_list.py\
+    file_list_cmd="${PROJECT_DIR}/hw/scripts/create_module/create_file_list.py\
                   -o ${INFO_DIR}/file_list.json \
                   -p ${RTL_DIR} \
                   -R param_tfhe_definition_pkg.sv simu 0 1 \

@@ -25,8 +25,8 @@ BLOCK_DIR = "fw/gen/" + os.environ["MICROBLAZE_CONF"] + "/rtl"
 SIM_DIR_A = "fw/gen/" + os.environ["MICROBLAZE_CONF"] + "/ip_" + os.environ["MICROBLAZE_CONF"] + "/prj/project_microblaze.gen/sources_1/bd/ublaze/ip"
 SIM_DIR_B = "fw/gen/" + os.environ["MICROBLAZE_CONF"] + "/ip_" + os.environ["MICROBLAZE_CONF"] + "/prj/project_microblaze.gen/sources_1/bd/ublaze/ipshared"
 
-TEMPLATE_SIM_PATH = "fw/ublaze/script/simu_file_list.j2"
-TEMPLATE_RTL_PATH = os.environ["PROJECT_DIR"] + "/hw/script/create_module/templates/ip_file_list_fw.j2"
+TEMPLATE_SIM_PATH = "fw/ublaze/scripts/simu_file_list.j2"
+TEMPLATE_RTL_PATH = os.environ["PROJECT_DIR"] + "/hw/scripts/create_module/templates/ip_file_list_fw.j2"
 
 FILELIST_SIM_PATH = os.environ["PROJECT_DIR"] + "/fw/gen/" + os.environ["MICROBLAZE_CONF"] + "/simu/info/file_list.json"
 FILELIST_RTL_PATH = os.environ["PROJECT_DIR"] + "/fw/gen/" + os.environ["MICROBLAZE_CONF"] + "/info/file_list.json"
