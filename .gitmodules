@@ -1,0 +1,6 @@
+[submodule "sw/regmap"]
+	path = sw/regmap
+	url = git@github.com:zama-ai/hw_regmap.git
+[submodule "edalize"]
+	path = edalize
+	url = git@github.com:zama-ai/edalize.git
