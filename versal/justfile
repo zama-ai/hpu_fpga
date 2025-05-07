@@ -65,7 +65,7 @@ list_rtl TOP_IP RTL_FLAGS=DEFAULT_RTL_FLAGS VIVADO_OPT=DEFAULT_VIVADO_OPT : _out
   set -euxo pipefail
   python3 {{WORKDIR}}/scripts/declare_define/declare_define.py -l "{{VIVADO_OPT}}" -d {{OUTDIR}}
   # Use run_edalize to generate file list in tcl_dict format
-  ${PROJECT_DIR}/hw/script/edalize/run_edalize.py -d {{OUTDIR}} -t tcl_dict -m {{TOP_IP}} {{RTL_FLAGS}} --tcl-dict-out {{OUTDIR}}/{{TOP_IP}}_edalize.tcl || exit 1
+  ${PROJECT_DIR}/hw/scripts/edalize/run_edalize.py -d {{OUTDIR}} -t tcl_dict -m {{TOP_IP}} {{RTL_FLAGS}} --tcl-dict-out {{OUTDIR}}/{{TOP_IP}}_edalize.tcl || exit 1
 
 #------------------------------------------------
 ### Generate shell

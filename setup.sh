@@ -134,11 +134,11 @@ echo -e "$export_str"
 # TODO
 
 # alias
-alias run_edalize=${PROJECT_DIR}/hw/script/edalize/run_edalize.py
+alias run_edalize=${PROJECT_DIR}/hw/scripts/edalize/run_edalize.py
 echo "#################################################"
 echo "# Create alias"
 echo "#################################################"
-echo "  run_edalize=${PROJECT_DIR}/hw/script/edalize/run_edalize.py"
+echo "  run_edalize=${PROJECT_DIR}/hw/scripts/edalize/run_edalize.py"
 
 # link
 rm -f ${PROJECT_DIR}/sw/bin/tv_hw/latest

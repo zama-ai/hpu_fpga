@@ -13,7 +13,7 @@ set -e
 
 # aliases are not expanded when the shell is not interactive.
 # Redefine here for more clarity
-run_edalize=${PROJECT_DIR}/hw/script/edalize/run_edalize.py
+run_edalize=${PROJECT_DIR}/hw/scripts/edalize/run_edalize.py
 
 module="tb_instruction_scheduler"
 

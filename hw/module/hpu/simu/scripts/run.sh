@@ -20,7 +20,7 @@ trap 'if [[ ! -z ${hpu_mockup_pid+x} ]]; then kill ${hpu_mockup_pid}; fi; exit' 
 
 # aliases are not expanded when the shell is not interactive.
 # Redefine here for more clarity
-run_edalize=${PROJECT_DIR}/hw/script/edalize/run_edalize.py
+run_edalize=${PROJECT_DIR}/hw/scripts/edalize/run_edalize.py
 
 module="tb_hpu"
 
@@ -377,7 +377,7 @@ fi
 # Check if an NTT_MOD has been defined with run_edalize flags
 if [[ ${args} =~ .*-F( +)NTT_MOD( +)([a-zA-Z_0-9]+) ]]; then
   flag=${BASH_REMATCH[3]}
-  L=(`${PROJECT_DIR}/hw/script/simu/parse_flag_NTT_MOD.sh -f $flag`)
+  L=(`${PROJECT_DIR}/hw/scripts/simu/parse_flag_NTT_MOD.sh -f $flag`)
   MOD_NTT_W_TMP=${L[0]}
   MOD_NTT_TMP=${L[1]}
   MOD_NTT_TYPE_TMP=${L[2]}
@@ -731,7 +731,7 @@ if [ $GEN_STIMULI -eq 1 ] ; then
 
   # Create the associated file_list.json
   echo ""
-  file_list_cmd="${PROJECT_DIR}/hw/script/create_module/create_file_list.py\
+  file_list_cmd="${PROJECT_DIR}/hw/scripts/create_module/create_file_list.py\
                 -o ${INFO_DIR}/file_list.json \
                 -p ${RTL_DIR} \
                 -R param_tfhe_definition_pkg.sv simu 0 1 \

@@ -331,7 +331,7 @@ module ksk_if_axi4_read
       );
 
       fifo_element #(
-        .WIDTH          (KSK_READ_CMD_W+2*AXI4_ADD_W),
+        .WIDTH          (KSK_READ_CMD_W+AXI4_ADD_W),
         .DEPTH          (PENDING_SLOT_NB), // Depth 2, to enable the other paths to start the next command, when possible.
         .TYPE_ARRAY     (8'h12),// If PENDING_SLOT_NB!=2, update this.
         .DO_RESET_DATA  (1'b0),
