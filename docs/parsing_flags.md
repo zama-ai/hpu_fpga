@@ -80,7 +80,7 @@ In the HPU there are several flags available.
 |BSK_SLOT |BSK cache number of slots|BSK_SLOT_8 (\*)|BSK_SLOT_NB||
 |AXI_DATA_W |AXI4 bus data width|AXI_DATA_W_128<br>AXI_DATA_W_256 (\*)<br>AXI_DATA_W_512|AXI4_DATA_W||
 |TOP_PCMAX|System maximum number of AXI connections to HBM|TOP_PCMAX_pem2_glwe1_bsk8_ksk8 (\*)<br>TOP_PCMAX_pem1_glwe1_bsk4_ksk4<br>TOP_PCMAX_pem2_glwe1_bsk16_ksk16|PEM_PC_MAX,GLWE_PC_MAX,BSK_PC_MAX,KSK_PC_MAX||
-|TOP_PC|Number of AXI connexions to HBM|TOP_PC_pem2_glwe1_bsk4_ksk4<br>TOP_PC_pem1_glwe1_bsk4_ksk4<br>TOP_PC_pem2_glwe1_bsk8_ksk8<br>TOP_PC_pem2_glwe1_bsk8_ksk16<br>TOP_PC_pem1_glwe1_bsk2_ksk3<br>TOP_PC_pem1_glwe1_bsk1_ksk1<br>TOP_PC_pem1_glwe1_bsk2_ksk2 (\*)<br>TOP_PC_bsk2_ksk4_pem1<br>TOP_PC_pem2_glwe1_bsk16_ksk16|PEM_PC,GLWE_PC,BSK_PC,KSK_PC||
+|TOP_PC|Number of AXI connections to HBM|TOP_PC_pem2_glwe1_bsk4_ksk4<br>TOP_PC_pem1_glwe1_bsk4_ksk4<br>TOP_PC_pem2_glwe1_bsk8_ksk8<br>TOP_PC_pem2_glwe1_bsk8_ksk16<br>TOP_PC_pem1_glwe1_bsk2_ksk3<br>TOP_PC_pem1_glwe1_bsk1_ksk1<br>TOP_PC_pem1_glwe1_bsk2_ksk2 (\*)<br>TOP_PC_bsk2_ksk4_pem1<br>TOP_PC_pem2_glwe1_bsk16_ksk16|PEM_PC,GLWE_PC,BSK_PC,KSK_PC||
 |<br>PEP_BATCH|PEP batch info : number of CT per batch, and total number of ct stored in PEP|PEP_BATCH_bpbs16_tpbs32<br>PEP_BATCH_bpbs8_tpbs32 (\*)<br>PEP_BATCH_bpbs12_tpbs32<br>PEP_BATCH_bpbs8_tpbs16|BATCH_NB, TOTAL_BATCH_NB, BATCH_PBS_NB, TOTAL_PBS_NB||
 |PEP_MSPLIT|PEP monomult acc split type|PEP_MSPLIT_main2_subs2 (\*)<br>PEP_MSPLIT_main1_subs3<br>PEP_MSPLIT_main3_subs1|MSPLIT_TYPE, MSPLIT_DIV, MSPLIT_MAIN_FACTOR, MSPLIT_SUBS_FACTOR||
 |REGF_STRUCT |Regfile structure|REGF_STRUCT_reg64_coef32_seq4<br>REGF_STRUCT_reg16_coef8_seq4|REGF_REG_NB, REGF_COEF_NB, REGF_SEQ||

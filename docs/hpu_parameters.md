@@ -4,7 +4,7 @@ SystemVerilog parameters are used to configure the HPU. This document describes 
 
 Some supported and verified values of these parameters are available in **definition** packages.
 
-Parsing flags are used to select them. See the [parsing flags documentation](parsing_flag.md).
+Parsing flags are used to select them. See the [parsing flags documentation](parsing_flags.md).
 
 Some parameters have special types. They can be found in **common_definition_pkg.sv**.
 

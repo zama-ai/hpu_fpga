@@ -12,8 +12,8 @@ The main components of an HPU are:
  - a large memory containing the cryptographic keys and the encrypted operands or ciphertexts (it is nice when this memory is an HBM).
  - a register file containing a set of ciphertexts.
  - a load/store unit in charge of reading/writing ciphertexts from/into the register file and into/from the large memory.
- - an ALU (arithmetic logic unit) which executes arithmetic operations on the ciphertexts.
- - a PBS (Programmable Bootstrapping) processing element which reduces the noise contained in a ciphertext to allow a process to continue. And in the case of TFHE, it also applies a LUT function to the ciphertext (programmable aspect).
+ - an ALU (Arithmetic Logic Unit) which executes arithmetic operations on the ciphertexts.
+ - a PBS (Programmable Bootstrapping) processing element which reduces the noise contained in a ciphertext to allow a process to continue. And in the case of TFHE, it also applies a LUT function to the ciphertext (programmable property).
  - a key-switching processing element associated with the PBS processing element to maintain ciphertext encrypted with the same key through the whole process on the HPU.
  - a controller receiving the input instructions, generating the micro-code corresponding to these instructions and scheduling execution of this micro-code.
 
@@ -35,7 +35,7 @@ This is a, typically 64-entry, array of ciphertexts which is used to store local
 #### PBS & KS processing element
 In the current HPU version, PBS and KS are gathered inside the same processing element.<br>
 This is the most complex PE of the HPU. It uses most of the logic inside the FPGA matrix.<br>
-It instanciates a cache to load slices of the key-switching key (KSK) and bootstrapping key (BSK). It executes key-switch and blind-rotation in parallel on a set of ciphertexts called a batch. During an iteration, the whole batch uses the same slice of key. The batch is sized so that the next key slice is entirely loaded while processing the current one. On the FPGA and with current TFHE parameter sets, the batches are typically composed of 8 or 12 ciphertexts.<br>
+It instantiates a cache to load slices of the key-switching key (KSK) and bootstrapping key (BSK). It executes key-switch and blind-rotation in parallel on a set of ciphertexts called a batch. During an iteration, the whole batch uses the same slice of key. The batch is sized so that the next key slice is entirely loaded while processing the current one. On the FPGA and with current TFHE parameter sets, the batches are typically composed of 8 or 12 ciphertexts.<br>
 TFHE PBS is implemented in the HPU using a blind-rotation as described in this [blog-post](https://www.zama.ai/post/tfhe-deep-dive-part-1) and the external product between the LUT accumulator and the BSK is implemented using a NTT.
 
 ## How does it work?

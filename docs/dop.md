@@ -1,4 +1,4 @@
-# Digit Opcode (IOp)
+# Digit Operation (DOp)
 
 Current version is **HIS v2.0** (HPU Instruction Syntax).
 
@@ -9,7 +9,7 @@ There are 2 levels of HPU programming.
 * The high level one handles the *integers*.
 * The second one is low level. This code is the equivalent of assembly code for traditional CPU, but processing on elementary ciphertexts encoding *digits*.
 
-This document describes the low level code syntax. The targeted elements are digits. The opcodes are named **Digit Opcode** (DOp).
+This document describes the low level code syntax. The targeted elements are digits. The instructions are named **Digit Operation** (DOp).
 
 ## Integer / Digit
 See [IOp documentation](iop.md) for more details.
@@ -18,7 +18,7 @@ At this level, integers are already decomposed into digits. Each digit is a *b*-
 
 The basic elements that are manipulated in DOp code are elementary ciphertexts. Each ciphertext can encode a payload up to *p*-bits, with *p* > *b*.
 
-In current version, *p* = 4 bits.
+In current version, *p* = 4 bits and *b* = 2 bits.
 
 ## TFHE
 The user has to keep in mind that he/she is manipulating TFHE ciphertexts. Therefore some rules have to be followed.
@@ -28,7 +28,7 @@ Each ciphertext can encode up to *p* bits. This corresponds to the computation r
 In FHE, noise is used to hide the message. The noise grows with the number of successive operations. Therefore, there is a limit number of operations that can be done on the ciphertext before the need of cleaning the noise with a bootstrap. If this bootstrap is not done, the message could be altered by the noise with an additional operation. In TFHE the bootstrap is affordable and can be done regularly. See [Zama's blogpost](https://www.zama.ai/post/tfhe-deep-dive-part-1) for more information.
 
 > [!NOTE]
-> In TFHE, programmable bootstraping is used. This means that while cleaning the noise, a 2^*p*-input LUT can be applied to the message at the same time.
+> In TFHE, Programmable BootStrap (or PBS) is used. This means that while cleaning the noise, a 2^*p*-input LUT can be applied to the message at the same time.
 
 
 ## Syntax
@@ -113,7 +113,7 @@ There are 4 categories of DOp:
 ### Many LUT
 A LUT encodes any function with *p*-bit input, and *p*-bit output.
 
-If the input range does not occupy all the 2^*p* possible values, but only 2^*k*, with *k* < *p*, the LUT has enough room to actually encode several functions for this input. More precisely, it can encode 2^(*p-k*) different functions.
+If the input range does not occupy all the 2^*p* possible values, but only 2^*k*, with *k* < *p*, the LUT has enough room to actually encode several functions for this input. More precisely, it can encode 2^(*p-k*) different functions. Running a Many-LUT PBS produces several elementary ciphertexts.
 
 For example, with *p*=4. If we know that the input is in range [0..1], it uses 1-bit over the 4 available. We could define a LUT that is able to compute 8 (2^3) functions for this same input.
 
@@ -123,7 +123,7 @@ This is useful, since a single PBS is run for this Many-LUT, instead of 8 for ou
 ### Padding bit
 Actually, the ciphertexts used in the HPU encode *p*+1 bits. The additional bit is called **padding bit**. It is at the MSB position of the payload. Most of the time, we keep this bit constant equal to 0. The computation range is kept at *p* bits.
 
-A constant padding bit equal to 0 is necessary for the good functioning of the LUT, i.e. representing any function *f* with *p*-bit input, and *p*-bit output.
+A constant padding bit equal to 0 is necessary for the LUT to properly operate, i.e. representing any function *f* with *p*-bit input, and *p*-bit output.
 
 If the padding bit is used, and so can be 0 or 1, the LUT behavior is the following:
 
@@ -132,15 +132,16 @@ If the padding bit is used, and so can be 0 or 1, the LUT behavior is the follow
 
 It could occur that it is necessary for the computation range to overflow in *p*+1 bit, and so to use the padding bit. The associated LUT should therefore be chosen carefully, with the behavior described above in mind.
 
-The details of such usage is not described here. Please refer to the [tfhe-rs handbook](https://github.com/zama-ai/tfhe-rs-handbook/blob/main/tfhe-rs-handbook.pdf).
+The details of such usage is not described here. Please refer to the [TFHE-rs handbook](https://github.com/zama-ai/tfhe-rs-handbook/blob/main/tfhe-rs-handbook.pdf).
 
 Below, a non-exhaustive list of LUT aliases.
 
-Let's name the payload in the ciphertext :
+Let's name the 2 parts of payload in the ciphertext:
 ```
 v[*p*-1:0] = {v[*p-b*-1:*b*],v[*b*-1:0]}
            = {vc, vm}
 ```
+These names come from the words message (vm) and carry (vc).
 
 |LUT|Description|
 |---|-----------|
@@ -154,7 +155,7 @@ v[*p*-1:0] = {v[*p-b*-1:*b*],v[*b*-1:0]}
 |BwAnd|bitwise operation : vm & vc|
 |BwOr|bitwise operation : vm \| vc|
 |BwXor|bitwise operation : vm ^ vc|
-|CmpSign|Use the padding bit.<br>if v[*p*-1:0] == 0 -> 0<br>else -> 1<br>This LUT is usually followed by a +1 to obtain positive values, that are afterwards used.|
+|CmpSign|Use the padding bit.<br>if v[*p*-1:0] == 0 -> 0<br>else -> 1 (if padding bit equals 0) or -1 (if padding bit equals 1)<br>This LUT is usually followed by a +1 to obtain positive values, that are afterwards used as you can see in [Debugging IOps](./debug.md).|
 |ManyCarryMsg|ManuLUT2<br>func1: Extract the vm in LSB.<br>func2: Extract vc[0] in LSB.|
 
 

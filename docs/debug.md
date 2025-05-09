@@ -1,7 +1,7 @@
 <h1 style="text-align: center;">Debugging IOps</h1>
 
 So, you've just found an excellent application for _TFHE_ and decided to use the _HPU_ to accelerate
-it, however, using the high level _tfhe-rs_ API you don't get the performance you want. As with a
+it, however, using the high level _TFHE-rs_ API you don't get the performance you want. As with a
 normal CPU, you can lower to the instruction set level (aka. assembly level) to try and speed up
 your specific use case. The act of doing that is what we call writing a specialized IOp. To do that,
 you need to know more about the _HPU_ architecture and its instruction set [here](./dop.md). This page
@@ -15,7 +15,7 @@ wrong and/or performance is not as good as you expected. If this resembles your 
 On the quest for the perfect IOp, you normally work on two main fronts: correctness and performance.
 Debugging IOp correctness is usually done using the mockup - a software version of the _HPU_ that
 gives you access to intermediate results without any _HPU_ hardware. It is much slower than the real
-_HPU_ and even slower than running _tFHE_ for the CPU, but it provides observability at the
+_HPU_ and even slower than running _TFHE_ for the CPU, but it provides observability at the
 instruction set level, allowing you to figure out the exact point of discordance between the _HPU_
 and you. The mockup also tries to be a faithful predictor of _HPU_ performance, so it can also be
 used to optimize performance. However, the real _HPU_ has other factors that influence performance,
@@ -27,8 +27,8 @@ all three options in the subsequent sections.
 
 ## The _HPU_ mockup
 
-The _HPU_ mockup is included in the _tfhe-rs_ _HPU_ backend. It is basically a standalone rust
-program that connects to the _HPU_ backend via unix sockets and responds to register reads, IOp
+The _HPU_ mockup is included in the _TFHE-rs_ _HPU_ backend. It is basically a standalone rust
+program that connects to the _HPU_ backend via Unix sockets and responds to register reads, IOp
 requests, etc. instead of the real _HPU_ in the most faithful way we could find, effectively
 emulating a _HPU_. It is also useful to test other _HPU_ parameter sets and/or architectural what-if
 scenarios without actually having to write RTL (which you run away from probably as fast we do).
@@ -36,7 +36,7 @@ With that said, we'll leave that to the next episodes and focus only on debuggin
 feel the rare urge to learn more, read the mockup's readme
 [file](https://github.com/zama-ai/tfhe-rs/blob/main/mockups/tfhe-hpu-mockup/Readme.md). If that
 doesn't satisfy your knowledge thirst, you can always read the code. To start the mockup, you clone
-the _tfhe-rs_ repository, compile the mockup and launch it using:
+the _TFHE-rs_ repository, compile the mockup and launch it using:
 
 ```bash
 cargo build --release --bin hpu_mockup --features isc-order-check
@@ -62,7 +62,7 @@ emulated _HPU_ parameter set and architecture. The provided one is simply an exa
 is only needed to convert cycles to time and is only used while reporting instruction latency
 statistics, so don't obsess too much over it.
 
-Now, any _tfhe-rs_ code needs to be compiled with the feature _hpu_ and by sourcing `setup_hpu.sh`
+Now, any _TFHE-rs_ code needs to be compiled with the feature _hpu_ and by sourcing `setup_hpu.sh`
 with the sim configuration flavor:
 
 ```
@@ -70,13 +70,13 @@ cd tfhe-rs
 source setup_hpu.sh -c sim
 ```
 
-If you do this right, all your _HPU_ _tfhe-rs_ code will now use the mockup instead of the real
+If you do this right, all your _HPU_ _TFHE-rs_ code will now use the mockup instead of the real
 _HPU_. Just keep it running on a different terminal and forget about it.
 
 ## Debugging correctness
 
 Once you write an IOp, you'll want to test it standalone, before actually creating hooks to
-_tfhe-rs_. To that effect, we provide a simple program called `hpu_bench`, that you can use to
+_TFHE-rs_. To that effect, we provide a simple program called `hpu_bench`, that you can use to
 benchmark and verify whether your IOp runs correctly. This bench also works with the mockup,
 although the latency report will be wrong, as it will measure _CPU_ time, not _HPU_ time. For
 example, the following will benchmark multiplying, homomorphically, clear text 64 bit values _1_ and
@@ -141,7 +141,7 @@ Now that your IOp works as expected, you are puzzled by its performance. Before 
 towel and blaming the _HPU_ team, you have other options. One of them is to look at other
 information produced by the mockup to learn what is wrong.
 
-As you've learned from the other documentation pages on the _HPU_[^1], the main bottleneck to _tFHE_
+As you've learned from the other documentation pages on the _HPU_[^1], the main bottleneck to _TFHE_
 and _HPU_ processing time is the programmable bootstrapping (PBS). On the _HPU_, PBSs take almost
 100 times more to process than linear/leveled or IO operations. This all means that performance will
 be mostly given by the number of PBS batches your IOp has to execute. With this in mind, the mockup
@@ -199,7 +199,7 @@ queued to the same memory in the order they are seen while the mockup actually s
 IOp. This means that before debugging a hardware trace, you'll have to find out where your IOp is in
 the event stream. This is not so hard because all DOp streams come tagged with a synchronization ID,
 which can be used to separate events from multiple IOps, so you'll only have to search your IOp
-amongst many DOp groups. Still, it is a nuisance and if the mockup reproduces _HPU_ performance,
+among many DOp groups. Still, it is a nuisance and if the mockup reproduces _HPU_ performance,
 you're better off using it, as it records more information than the hardware. Again, all this is a
 moving target, and we'll probably add that information to the trace in future iterations.
 
@@ -231,9 +231,9 @@ with your IOp.
 
 Once you have a trace file you want to look into, independently of it being a hardware or mockup
 trace, you can use a python library specifically written for this purpose. You can find it in the
-[_tfhe-rs_](https://github.com/zama-ai/tfhe-rs/tree/main/backends/tfhe-hpu-backend/python) code
+[_TFHE-rs_](https://github.com/zama-ai/tfhe-rs/tree/main/backends/tfhe-hpu-backend/python) code
 base. The library's main purpose is mainly to separate the trace into independent traces from
-different IOps and help you analyse a trace by filtering for events of different types while
+different IOps and help you analyze a trace by filtering for events of different types while
 collecting statistics regarding those. First, you import the library:
 
 ```python
@@ -267,7 +267,7 @@ retired.pbs_latency_table(freq_mhz=freq_mhz)
 ```
 
 This will give you a batch size vs batch latency information table. This will be useful for you to
-find non-full batches executed in your stream, if any, and the actual latencies of each batch size.
+find non-full batches executed in your stream, if any, and the actual latency of each batch size.
 Latencies here are measured from batch to batch, so they will include latency of any kind of
 linear/IO operations that were executed as dependencies to batches. However, those latencies are
 often very small and the instruction scheduler can usually interleave linear operations that share
@@ -315,7 +315,7 @@ comparison by simply subtracting every digit of every pair of ciphertexts, runni
 PBS** on the result, adding one to get the order value of each digit and merging the order values
 recursively, using the **order merge PBS**, from most significant to least significant digit.
 The end result would be the result of converting the final order value to a boolean by the
-**comparison PBS** (pink). Note that _tFHE-rs_ and our own IOps make some further
+**comparison PBS** (pink). Note that _TFHE-rs_ and our own IOps make some further
 simplifications and use more FHE tricks to try to reduce the number of PBSs used, but we'll not use
 them here for the sake of simplicity. Also, note that the end result of this example will end up by
 being comparable to the actual implementation, but I'll leave understanding that as an exercise to
@@ -333,9 +333,9 @@ pub fn cmp_gt(prog: &mut Program) {
     let src_b = prog.iop_template_var(OperandKind::Src, 1);
 
     // Get the index of the required PBSs
-    let sgn_pbs = new_pbs!(prog, "CmpSign");
-    let red_pbs = new_pbs!(prog, "CmpReduce");
-    let gt_pbs = new_pbs!(prog, "CmpGt");
+    let sgn_pbs = new_pbs!(prog, "CmpSign");   // gray   diamond
+    let red_pbs = new_pbs!(prog, "CmpReduce"); // yellow diamond
+    let gt_pbs = new_pbs!(prog, "CmpGt");      // pink   diamond
 
     dst[0] <<= std::iter::zip(src_a, src_b)
         .rev()
@@ -422,7 +422,7 @@ batch size
 ```
 
 The first thing you might note is that we mainly have two different batch sizes, one batch of four,
-and five with five PBSs. Although we didn't describe the IOp in any parallel fashion, the
+and five with one PBS. Although we didn't describe the IOp in any parallel fashion, the
 instruction scheduler correctly identified that the **sign PBSs** (gray) could all run in parallel,
 as they share no dependency. For eight bits, we use four ciphertexts and four **sign PBSs**, and so
 the scheduler created a single batch of four PBSs. For sixty four bits, it could actually launch

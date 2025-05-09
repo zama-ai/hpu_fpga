@@ -6,20 +6,20 @@ SystemVerilog implementation of the [Homomorphic Processing Unit (HPU)](/docs/hp
 
 This repository includes:
 
-* the RTL sources in SystemVerilog
+* the RTL sources in SystemVerilog.
 * the block design necessary for AMD FPGA designs.
     * The block design, defining the CIPS and the card management configuration, is partly derived from AVED. See [block design code](versal/scripts/bd)).
-* the flow for the FPGA V80 bitstream generation
-* the flow for the simulation
-* the firmware code for the Real-Time Processing Unit (RPU)
+* the flow for the FPGA V80 bitstream generation.
+* the flow for the simulation.
+* the firmware code for the Real-Time Processing Unit (RPU).
     * The firmware is derived from [Xilinx's AVED](https://github.com/Xilinx/AVED). See [firmware documentation](fw/arm/README.md).
 
 > [!Tip]
 > HPU also needs the following piece of software:
 >
 > * AMI driver can be found [here](https://github.com/zama-ai/AVED).
-> * The high level API can be found [here](https://github.com/zama-ai/tfhe-rs)
-> * The HPU register interface is generated using the tool [regmap](https://github.com/zama-ai/hw_regmap). It is loaded in HPU FPGA project as a git submodule.
+> * The high level API can be found [here](https://github.com/zama-ai/tfhe-rs).
+> * The HPU register interface is generated using the tool [hw_regmap](https://github.com/zama-ai/hw_regmap). It is loaded in HPU FPGA project as a git submodule.
 
 
 
@@ -35,7 +35,8 @@ At the root of HPU FPGA project, you will find the following directories:
     * RTL code and the simulation flow.
 * sw
     * Python models for some algorithms.
-    * register map generator: regmap.
+    * SW binaries for testbench stimuli and reference generation.
+    * Register map generator: hw_regmap.
 * versal
     * Flow for block design and bitstream generation.
 
@@ -60,7 +61,7 @@ In **hw** the general directory hierarchy is the following:
 
 
 <br>
-An **RTL module** directory has the following general hierarchy.<br>
+An **<RTL module\>** directory has the following general hierarchy.<br>
 Note that if any directory is not needed, it won't be present.
 
 * <module_name\>
@@ -71,9 +72,9 @@ Note that if any directory is not needed, it won't be present.
     * constraints
         * Synthesis files for local ooc synthesis (with ***_local*** suffix), and hierarchical synthesis if needed (with ***_hier*** suffix).
     * simu
-        * Simulation files. Is organized as a regular "RTL module" structure. See [below](#simulation).
+        * Simulation files. Is organized as a regular <RTL module\> structure. See [below](#simulation).
     * module
-        * If the module's submodules need to be placed in a "RTL module" structure, it is done under the *module* directory.
+        * If the module's submodules need to be placed in a <RTL module\> structure, it is done under the *module* directory.
     * scripts
         * Scripts necessary to generate the module.
 
@@ -113,7 +114,7 @@ source my_venv/bin/activate
 
 # install dependencies
 
-# jinja2 is used to use file templates
+# jinja2 is used for file templates
 pip install jinja2
 
 # constrainedrandom is used to generate random parameters in simulation
@@ -172,6 +173,9 @@ cd ${PROJECT_DIR}/versal
 >     * HPU in which blind rotation processes 32 polynomial coefficients per cycle.
 >     * Fastest to compile.
 
+The documentation about [HPU parameters](./docs/hpu_parameters.md) and [parsing flags](./docs/parsing_flags.md) can help you understand the content of these 3 scripts and change some of these parameters to adapt the HPU to your needs.
+
+A tested bitstream of the HPU compiled using run_syn_hpu_3parts_psi64.sh is available in directory *versal/bitstreams*.
 
 ### Simulation
 
@@ -228,7 +232,7 @@ The third line, created by run_simu.sh, indicates the status of the test : SUCCE
 
 
 #### Simulation with firmware
-The V80 FPGA has on-board a dual-core Arm Cortex-R5F (RPU) that executes the firmware code. To accelerate the simulation, we use a microblaze model to run a similar verson of this firmware.
+The V80 FPGA has on-board a dual-core Arm Cortex-R5F (RPU) that executes the firmware code. To accelerate the simulation, we use a microblaze model to run a similar version of this firmware.
 
 In some simulations, like the top level one, the generation of the microblaze model is needed. So before these simulations, do the following:
 ```
@@ -319,14 +323,22 @@ make install-mods
 ### FPGA loading
 
 #### Loading through OSPI flash
-Here we use 2 files resulting from the bitstream generation, in directory ${PROJECT_DIR}/versal/output_psi64 for example: **top_hpu.pdi** and **hpu_plug.xsa**.
+Here we use 2 files resulting from *run_syn_hpu_3parts_psi64.sh* bitstream generation, in directory ${PROJECT_DIR}/versal/output_psi64: **top_hpu.pdi** and **hpu_plug.xsa**.
+
+Note that if you use another given script (for another HPU size), the output directory will be ${PROJECT_DIR}/versal/output_psi<size\>.
 
 First associate a pre-compiled elf for the ARM processor into the pdi.
 ```
+# We assume that hpu_fpga project has already been set-up.
+# Return to hpu_fpga directory.
+cd ${PROJECT_DIR}/versal
+
 # Compile elf
 just --set OUTDIR $PWD/output_psi64 compile_fw
+
 # Merge elf and pdi
 just --set OUTDIR $PWD/output_psi64 merge_elf top_hpu
+# /!\ At this point top_hpu.pdi has been modified and now contains the firmware. The original pdi has been moved into top_hpu.pdi.noelf.
 ```
 
 Then program the FPGA.
@@ -337,6 +349,10 @@ DEVICE="${PCIE_CARD%% *}"
 
 # The following task will take a couple of minutes ...
 sudo -E ami_tool cfgmem_program -d $DEVICE -t primary -i ${PROJECT_DIR}/versal/output_psi64/top_hpu.pdi -p 1
+```
+You can also load the bitstream provided in *versal/bitstreams* directory:
+```
+sudo -E ami_tool cfgmem_program -d $DEVICE -t primary -i ${PROJECT_DIR}/versal/bitstreams/top_hpu_psi64_350_tuniform.00000b715273035020521e2505071329.pdi -p 1
 ```
 
 ### Card diagnostics
