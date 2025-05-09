@@ -381,7 +381,7 @@ def search_file_list(top_name):
             for i in extentions:
                 if (file_name == top_name + i):
                     file_list.append(os.path.join(root, file_name))
-    
+
     for root, directories, files in os.walk(path_fw, topdown=True):
         for file_name in files:
             for i in extentions:
@@ -401,7 +401,7 @@ def search_file_list(top_name):
     return work_path[0] + "/info/file_list.json"
 
 #=====================================================
-# Dump files list in a preformated tcl dictionnary.
+# Dump files list in a preformated tcl dictionary.
 #=====================================================
 def dump_config_as_tcl_dict(args):
     # Open tcl environnement file
@@ -474,7 +474,7 @@ if __name__ == '__main__':
     parser.add_argument('-sva', dest='sva_l', type=str, help='List of sva to activate. Less priority than flag, if any.', action='append', default = [])
     parser.add_argument('-v', dest='verbose', help="Run in verbose mode.", action="store_true", default=False)
 
-    parser.add_argument('--tcl-dict-out', dest='tcl_dict_out', type=str, help="File path of the outputed tcl dictionnary", default='edalize_file_list.tcl')
+    parser.add_argument('--tcl-dict-out', dest='tcl_dict_out', type=str, help="File path of the outputed tcl dictionary", default='edalize_file_list.tcl')
 
     args = parser.parse_args()
 
@@ -865,7 +865,7 @@ if __name__ == '__main__':
     if (tool == "tcl_dict"):
         dump_config_as_tcl_dict(args)
         print("EARLY_EXIT> Configuration dump as tcl dict")
-        sys.exit(0) 
+        sys.exit(0)
 
     if (tool == "vivado"):
         # Modify <my_module>.tcl
@@ -1034,4 +1034,3 @@ if __name__ == '__main__':
         tool_args = {}
         # Run
         backend.run(tool_args)
-

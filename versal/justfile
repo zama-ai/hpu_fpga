@@ -59,7 +59,7 @@ default:
 #------------------------------------------------
 ### List RTL
 #------------------------------------------------
-# List all rtl modules into a dictionnary
+# List all rtl modules into a dictionary
 list_rtl TOP_IP RTL_FLAGS=DEFAULT_RTL_FLAGS VIVADO_OPT=DEFAULT_VIVADO_OPT : _out-folder
   #!/usr/bin/env bash
   set -euxo pipefail

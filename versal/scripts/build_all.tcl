@@ -108,7 +108,7 @@ proc import_all { } {
       exit
   }
   # RTL sources ---------------------------------------------------------------------------------------
-  # Loading-up files from tcl dictionnary
+  # Loading-up files from tcl dictionary
   # Retrieve EDAlize configuration and load associated files
   # -> ip_name_edalize contains:
   #   * design_top: name of the top level module
