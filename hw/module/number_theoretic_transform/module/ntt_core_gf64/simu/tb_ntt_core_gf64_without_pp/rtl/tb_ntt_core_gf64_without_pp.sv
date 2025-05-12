@@ -398,8 +398,14 @@ module tb_ntt_core_gf64_without_pp;
   logic [PSI*R-1:0][MOD_NTT_W+1:0] ref_data_q[$];
 
   always_ff @(posedge clk)
-    if (in_avail[0])
-      ref_data_q.push_back(ntt_data[0]); // check that the 2 MSB bits are 0
+    if (in_avail[0]) begin
+      var [PSI*R-1:0][MOD_NTT_W+1:0] v;
+      var [PSI*R-1:0][MOD_NTT_W+1:0] in;
+      in = ntt_data[0];
+      for (int i=0; i<PSI*R; i=i+1)
+        v[i] = in[i] % MOD_NTT;
+      ref_data_q.push_back(v);
+    end
 
 // ---------------------------------------------------------------------------------------------- --
 // Output ref
