@@ -396,7 +396,7 @@ if __name__ == "__main__":
     if (args.find > 0):
         MOD_W = args.find
         POS_MAX = args.pos_max
-        if (POS_MAX < 0): #Retrieve default value
+        if (POS_MAX < 0): # Retrieve default value
             POS_MAX = 2*MOD_W + 1
         if (POS_MAX > 2*MOD_W + 1):
             sys.exit("ERROR> Unsupported POS_MAX. Must be in [0, {:0d}]".format(2*MOD_W + 1))
@@ -436,7 +436,7 @@ if __name__ == "__main__":
     elif (args.data != 0 or args.reduce_all):
         MOD_W = args.mod_w
         POS_MAX = args.pos_max
-        if (POS_MAX < 0): #Retrieve default value
+        if (POS_MAX < 0): # Retrieve default value
             POS_MAX = 2*MOD_W + 1
         if (POS_MAX > 2*MOD_W + 1):
             sys.exit("ERROR> Unsupported POS_MAX. Must be in [0, {:0d}]".format(2*MOD_W + 1))

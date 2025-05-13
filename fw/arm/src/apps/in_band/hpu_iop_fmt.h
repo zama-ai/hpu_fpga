@@ -54,7 +54,7 @@ typedef union {
 #define KIND_SRC 0x0
 #define KIND_DST 0x1
 #define KIND_IMM 0x2
-#define KIND_UNKNOW 0x3
+#define KIND_UNKNOWN 0x3
 
 struct iop_imm_header_t  {
   uint16_t lsb_msg: 16;

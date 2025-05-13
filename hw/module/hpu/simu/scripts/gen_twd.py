@@ -97,7 +97,7 @@ if __name__ == '__main__':
                                default=False, action="store_true")
     parser.add_argument('-B',  dest='batch_nb',              type=int, help="BATCH_NB: Number of interleved batches. Default : 2",
                                default=BATCH_NB)
-    parser.add_argument('-lw', dest='lwe_acs_w',             type=int, help="LWE_ACS_W: LWE transfert size.",
+    parser.add_argument('-lw', dest='lwe_acs_w',             type=int, help="LWE_ACS_W: LWE transfer size.",
                                default=LWE_ACS_W)
     parser.add_argument('-delta', dest='delta',              type=int, help="DELTA: PCG CLBU delta parameter.",
                                default=DELTA)

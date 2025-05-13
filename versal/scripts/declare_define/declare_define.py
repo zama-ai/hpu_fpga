@@ -45,19 +45,19 @@ if __name__ == '__main__':
     if not(os.getenv("PROJECT_DIR")):
         sys.exit("ERROR> Environment variable $PROJECT_DIR not defined.")
 
-    splitted_define_list = args.define_list.split(' ')
-    formated_define_list = []
+    split_define_list = args.define_list.split(' ')
+    formatted_define_list = []
 
     p = re.compile("[DP]:([A-Za-z0-9_]*)=(.*)")
-    for i in splitted_define_list:
+    for i in split_define_list:
         if len(i) > 0:
             if not p.match(i):
                 sys.exit("ERROR> Unsupported element {} in list of parameters & defines which should only contain <D:DEFINE_NAME=VALUE> or <P:PARAM_NAME=VALUE>".format(i))
             elif i[0] == 'D':
                 define_tuple = i[2:].split('=')
-                formated_define_list.append((define_tuple[0], define_tuple[1]))
+                formatted_define_list.append((define_tuple[0], define_tuple[1]))
 
-    config = {"defines" : formated_define_list}    
+    config = {"defines" : formatted_define_list}
 
     template = template_env.get_template("top_defines_inc.sv.j2")
     

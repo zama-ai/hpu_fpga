@@ -311,7 +311,7 @@ module mod_reduct_solinas3 #(
   // e[i]  = c[i][STRIDE[i]-1:0] + wrap        for INT_POW != 0 (i<INT_POW_NB)
   // f     = c[2] + wrap
   //
-  // To save some logic, the processed calulation is the following one:
+  // To save some logic, the processed calculation is the following one:
   // c_part[0]  = a[46:32] + a[61:47] + a[64:51] + a[64:62] - a[64] // stride = 15
   // c_part[1]  = a[50:47] + a[64:62]                               // stride = 19
   // c_part[2]  = a[63:51]                                          // stride = MOD_W
@@ -366,7 +366,7 @@ module mod_reduct_solinas3 #(
 // The following process is the computation to be done.
 // Due to a need of acceleration, the final part of the computation
 // is done in the next cycle.
-// Therefore the expression of this computation has been explicited for
+// Therefore the expression of this computation has been explicitly written for
 // our particular case of INT_POW_NB=2
   always_comb begin
     s0_c[0] = s0_c_part[0] - s0_a_ext[PROC_W-1];

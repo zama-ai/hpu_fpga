@@ -19,7 +19,7 @@ set MAX_THREADS 10
 
 # Initial project setup ---------------------------------------------------------------------------
 # Create the project if only we are in standalone shell project:
-# if we are not, this means that this scipt is called from a parent project.
+# if we are not, this means that this script is called from a parent project.
 if {![info exists SKIP_PRJ_SHELL] || !$SKIP_PRJ_SHELL} {
     puts "Creating project $SHELL_VER at ${VIVADO_PRJ_DIR}/$SHELL_VER"
     create_project prj "${VIVADO_PRJ_DIR}/$SHELL_VER" -part $XIL_PART -force

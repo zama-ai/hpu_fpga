@@ -5,7 +5,7 @@
 // Description  :
 // ----------------------------------------------------------------------------------------------
 //
-// This module synchronizes input pulses. It proposes an output when all pulses from
+// This module deals synchronizes input pulses. It proposes an output when all pulses from
 // the inputs have been received.
 // ==============================================================================================
 

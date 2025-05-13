@@ -1,7 +1,7 @@
 # BSD 3-Clause Clear License
 # Copyright © 2025 ZAMA. All rights reserved.
 #
-# Let's Generate files we need with Vitis project mode and quitt
+# Let's Generate files we need with Vitis project mode and quit
 
 setws .
 platform create -name fw_platform -hw $::env(PROJECT_DIR)/fw/gen/$::env(MICROBLAZE_CONF)/ip_$::env(MICROBLAZE_CONF)/shell/ublaze_wrapper.xsa -no-boot-bsp

@@ -401,7 +401,7 @@ def search_file_list(top_name):
     return work_path[0] + "/info/file_list.json"
 
 #=====================================================
-# Dump files list in a preformated tcl dictionary.
+# Dump files list in a preformatted tcl dictionary.
 #=====================================================
 def dump_config_as_tcl_dict(args):
     # Open tcl environment file
@@ -649,7 +649,7 @@ if __name__ == '__main__':
             print ("INFO> Previous work directory found : {:s}. Keep it.".format(work_dir))
             print ("INFO> Config phase will not be run.")
             print ("INFO> Same seed will be used.")
-            # Retrieve previous seed.
+            # retrieve previous seed.
             with open(os.path.join(work_dir,"seed.txt")) as f:
               args.seed = int(f.readline().rstrip())
 

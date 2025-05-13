@@ -110,7 +110,7 @@ def lvl2karatsuba_64bmult(a, b):
 
 
 def toomcook4_64bmult(a, b):
-    # Toom Cook 4-way Multiplier.
+    # Toom-Cook 4-way Multiplier.
     # Algorithm from: https://en.wikipedia.org/wiki/Toom%E2%80%93Cook_multiplication
     # Split inputs into 16-bit chunks
     u3 = (a >> 48) & (2**16-1)
@@ -258,7 +258,7 @@ def ulvetanna_modmul(a, b):
 
     c = ((c1+c2) << 32) + c0 - c2 - c3
 
-    ## Final corrrection
+    ## Final correction
     if c >= goldilocks_prime: 
         c = c-goldilocks_prime
 
@@ -275,7 +275,7 @@ def ulvetanna_modred(a):
 
     c = ((c1+c2) << 32) + c0 - c2 - c3
 
-    ## Final corrrection
+    ## Final correction
     if c >= goldilocks_prime: 
         c = c-goldilocks_prime
 

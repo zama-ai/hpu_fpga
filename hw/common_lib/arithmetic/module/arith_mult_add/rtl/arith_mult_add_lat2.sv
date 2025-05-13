@@ -55,7 +55,6 @@ module arith_mult_add_lat2 #(
 
   assign s1_result = s1_mult_result + s1_c;
 
-
   // -- Delay line. Will be inferred by synthesizer as cycles usable in the multiplication computation.
   logic [LATENCY-1:1][OP_A_W + OP_B_W:0] result_dly;
 

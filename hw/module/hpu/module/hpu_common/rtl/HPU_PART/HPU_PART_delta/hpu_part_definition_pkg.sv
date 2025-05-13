@@ -13,7 +13,7 @@ package hpu_part_definition_pkg;
   import param_tfhe_pkg::*;
   import ntt_core_common_param_pkg::*;
 
-  //== If splitted in 3 parts
+  //== If split in 3 parts
   // 1in3 outward
   localparam int HEAD_S_NB    = 0;
   localparam int HEAD_USE_PP  = 0;

@@ -54,7 +54,7 @@ typedef union {
 #define KIND_SRC 0x0
 #define KIND_DST 0x1
 #define KIND_IMM 0x2
-#define KIND_UNKNOW 0x3
+#define KIND_UNKNOWN 0x3
 
 struct iop_imm_header_t  {
   uint16_t lsb_msg: 16;
@@ -74,7 +74,7 @@ typedef union {
 // ============================================================================================= //
 // To prevent the need of allocation at runtime maximum bundle size is fixed at compile time
 // TODO Temporary defines
-// Fw must retrived those value from configuration structure. Then two solutions:
+// Fw must retrieved those value from configuration structure. Then two solutions:
 // * Dynamic allocation if Rtos is capable
 // * Runtime check that user configuration don't overflow with static allocation
 #define OPERAND_BUNDLE_MAX_SLOT 4

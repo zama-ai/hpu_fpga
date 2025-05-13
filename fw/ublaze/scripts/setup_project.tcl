@@ -2,7 +2,7 @@
 # BSD 3-Clause Clear License
 # Copyright © 2025 ZAMA. All rights reserved.
 # ----------------------------------------------------------------------------------------------
-# Poject script for microblaze.
+# Project script for microblaze.
 # ----------------------------------------------------------------------------------------------
 # Names are hardcoded here for simplicity.
 # We should avoid calling the wrapper with a name including "microblaze"
@@ -19,7 +19,7 @@ create_project $prj_name .
 #set_property PART $::env(XILINX_PART) [current_project]
 set_property PART $local_xilinx_part [current_project]
 
-# We call the microblaze configuation here
+# We call the microblaze configuration here
 source $::env(PROJECT_DIR)/fw/ublaze/core_config/$::env(MICROBLAZE_CONF)/build_microblaze.tcl
 
 # Generation of needed extra files for simulation

@@ -74,7 +74,7 @@ if [ $PROJECT_SIMU_TOOL = "vcs" ] ; then
       #  echo "INFO > source $VG_GNU_PACKAGE/source_me.sh"
       #  source $VG_GNU_PACKAGE/source_me.sh
 
-      # Add synopsys in path
+      # Add Synopsys in path
       export PATH="$VCS_HOME/bin:$PATH"
       # export_str="${export_str}\n  VG_GNU_PACKAGE=$VG_GNU_PACKAGE"
       export_str="${export_str}\n  VCS_HOME=$VCS_HOME"

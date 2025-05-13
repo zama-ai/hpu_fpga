@@ -42,7 +42,6 @@ module arith_mult_add_lat1 #(
   //-- Step 0 : multiplication followed by addition
   assign s0_result = s0_a * s0_b + s0_c;
 
-
   // -- Delay line. Will be inferred by synthesizer as cycles usable in the multiplication computation.
   logic [LATENCY-1:0][OP_A_W + OP_B_W:0] result_dly;
 

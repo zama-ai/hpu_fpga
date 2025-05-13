@@ -694,7 +694,7 @@ assign query_ack_vld = pool_ack_vld && (refill_insert || rdunlock_rd_lock || ret
       r_sync_id <= nxt_sync_id;
     end
 
-  // Inc Sync counter on successfull SYNC insertion
+  // Inc Sync counter on successful SYNC insertion
   assign nxt_sync_id = (pool_ack_vld && refill_insert && (refill_req_info.insn.kind == SYNC))? $bits(r_sync_id)'(r_sync_id +1) : r_sync_id;
 
 // ============================================================================================== //

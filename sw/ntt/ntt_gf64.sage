@@ -256,7 +256,7 @@ def ntt_twd(R,bwd,ngc):
                     v = (i%(gp//2)) * 64//gp
                 else:
                     v = (1+2*(i % (gp//2))) * 64//(2*gp)
-                # If bwd use the opposite exponant
+                # If bwd use the opposite exponent
                 if bwd:
                     v = 64 - v
                 omg_64_power_l[-1].append(v)
@@ -384,9 +384,9 @@ def ntt(N,p,cut_l,coef,fwd_omg_64_power_l,fwd_twd_pow_2_l,fwd_twd_sign_l,fwd_phi
         if (i==0):
             in_l = p
         else:
-            # need to reoder and multiply by phi.
+            # need to reorder and multiply by phi.
             # Define a block, as the set containing previous cut, and all the following ones.
-            # Define a sub-block, as the set containg the current cut and all the following ones.
+            # Define a sub-block, as the set contain the current cut and all the following ones.
             # Distribute within this block, according to the sub-blocks.
             # All first coef of each sub-block, then all 2nd coef, then third etc
             ss = 0
@@ -469,9 +469,9 @@ def intt(N,p,cut_l,coef,bwd_omg_64_power_l,bwd_twd_pow_2_l,bwd_twd_sign_l,bwd_ph
         if (i == 0):
             in_l = p
         else:
-            # need to reoder and multiply by phi
+            # need to reorder and multiply by phi
             # Define a block, as the set containing previous cut, and all the following ones.
-            # Define a sub-block, as the set containg the current cut and all the following ones.
+            # Define a sub-block, as the set contain the current cut and all the following ones.
             # Distribute within this block, according to the sub-blocks.
             # All first coef of each sub-block, then all 2nd coef, then third etc
             s = 0

@@ -78,7 +78,7 @@ module tb_ntt_radix_cooley_tukey;
         int g_ofs;
         int g_elt;
         g_elt = R/(2**(s-1)); // Number of coef in the group
-        g_ofs = g*g_elt;      // Offset to go to antoher group
+        g_ofs = g*g_elt;      // Offset to go to another group
 
         for (int i=0; i<g_elt/2; i=i+1) begin
           s_mult[s+1][g_ofs+i] = s_x[s][g_ofs+i];

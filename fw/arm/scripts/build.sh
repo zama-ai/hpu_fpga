@@ -191,7 +191,7 @@ done
 # Check setupWorkspace.sh script has run, and that uncrustify is installed.
 # check_workspace_setup
 
-# Remake build direcory
+# Remake build directory
 if [ -d "$BUILD_DIR" ]; then
     rm -r $BUILD_DIR/
 fi

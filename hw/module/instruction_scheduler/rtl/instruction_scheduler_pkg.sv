@@ -14,7 +14,7 @@ package instruction_scheduler_pkg;
 //==================================================
   // NB: PnR is tight with large pool_nb.
   // From experiment vivado is able to place 16 slot with ease but struggle with higher value.
-  // The implementation spread the filtering on INNER_PIPE reduce the Pnr constraintes
+  // The implementation spread the filtering on INNER_PIPE reduce the Pnr constraints
   // -> Filtering is done on INNER_PIPE stage
   // -> Update is done on INNER_PIPE stage
   // -> Ack/Idle stay on one cycle

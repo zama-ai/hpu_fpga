@@ -17,7 +17,7 @@ else
         echo "Usage: `basename $0` [-h] [-a <level>] [-c <compiler>] -d <directory> -b <build command>"
         echo
         echo "-h    Display usage instructions and exit"
-        echo "-a    Analysis agressiveness level <low | medium | high> (default is low)"
+        echo "-a    Analysis aggressiveness level <low | medium | high> (default is low)"
         echo "-c    Compiler e.g. gcc (default is armr5-none-eabi-gcc)"
         echo "-d    Analysis output directory (default is ./coverity)"
         echo "-b    Build command to invoke e.g. \"make firmware_libs\""

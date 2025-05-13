@@ -11,7 +11,7 @@
 // *  If DOp src/dst match template pattern, patch Opcode with real IOps args
 // *  Send patched DOps to HW
 //
-// Behind the scene, an interrput handler wait on Hw DOps ack and forward them to host throught
+// Behind the scene, an interrupt handler wait on Hw DOps ack and forward them to host through
 // the ack queue.
 // ==============================================================================================
 
