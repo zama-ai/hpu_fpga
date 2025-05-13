@@ -6,7 +6,7 @@
 // ----------------------------------------------------------------------------------------------
 //
 // Testbench to check the NTT and INTT.
-// The post_process is not instanciated here.
+// The post_process is not instantiated here.
 //
 // We use different split of ntt_core_gf64.
 // The DUTs will do an NTT followed by an INTT

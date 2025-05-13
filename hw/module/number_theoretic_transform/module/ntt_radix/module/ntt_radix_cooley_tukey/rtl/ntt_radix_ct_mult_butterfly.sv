@@ -9,7 +9,7 @@
 // the NTT.
 // It deals with:
 //   a multiplication
-//   an addition/substraction according to the butterfly architecture
+//   an addition/subtraction according to the butterfly architecture
 //   a modular reduction.
 // ==============================================================================================
 
@@ -33,7 +33,7 @@ module ntt_radix_ct_mult_butterfly
   // System interface
   input  logic                   clk,
   input  logic                   s_rst_n,
-  // Data inteface
+  // Data interface
   input  logic [R-1:0][OP_W-1:0] in_x,
   output logic [R-1:0][OP_W-1:0] out_x,
   input  logic [R-1:1][OP_W-1:0] in_omg,
@@ -50,7 +50,7 @@ module ntt_radix_ct_mult_butterfly
   // ============================================================================================ //
   // localparam
   // ============================================================================================ //
-  // If substraction gives a negative value, add this constant to get a positive value in
+  // If subtraction gives a negative value, add this constant to get a positive value in
   // [0,2**(2*OP_W+1)-1], which can be reduce.
   localparam [2*OP_W:0] MOD_CORR = ((2**(2*OP_W)-1+(MOD_M-1))/MOD_M)*MOD_M;
   // Check parameters
@@ -139,9 +139,9 @@ module ntt_radix_ct_mult_butterfly
         // Addition
         assign s2_add_sub[gen_i]     = s1_mult[gen_i] + s1_mult[gen_i+R/2];
 
-        // Substraction
+        // subtraction
         assign s2_sub[gen_i+R/2]     = {1'b0,s1_mult[gen_i]} - {1'b0,s1_mult[gen_i+R/2]};
-        // If the substraction is negative, correct it with MOD_CORR to retreive a positive
+        // If the subtraction is negative, correct it with MOD_CORR to retrieve a positive
         // value.
         assign s2_add_sub[gen_i+R/2] = s2_sub[gen_i+R/2][2*OP_W] ?
                                               s2_sub[gen_i+R/2] + MOD_CORR : s2_sub[gen_i+R/2];
@@ -221,7 +221,7 @@ module ntt_radix_ct_mult_butterfly
       assign out_x       = s3_x;
       assign out_avail   = s3_avail;
       assign out_side    = s3_side;
-  
+
     end
     else begin : gen_use_mod_mult
       //============================================================================================ //
@@ -307,7 +307,7 @@ module ntt_radix_ct_mult_butterfly
         .in_x       (s1_mult  ),
         .out_x      (out_x    ),
         .in_avail   (s1_avail ),
-        .out_avail  (out_avail), 
+        .out_avail  (out_avail),
         .in_side    (s1_side  ),
         .out_side   (out_side )
       );

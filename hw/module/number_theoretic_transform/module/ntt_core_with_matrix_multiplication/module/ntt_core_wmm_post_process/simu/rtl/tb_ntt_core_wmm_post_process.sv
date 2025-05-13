@@ -27,13 +27,13 @@ module tb_ntt_core_wmm_post_process
   `timescale 1ns/10ps
 
   import mod_arith::*;
-  
+
   // ============================================================================================ //
   // localparam
   // ============================================================================================ //
   `NTT_CORE_LOCALPARAM(R,S,PSI)
-  
-  // system 
+
+  // system
   localparam int CLK_HALF_PERIOD   = 1;
   localparam int ARST_ACTIVATION   = 17;
   // testbench
@@ -174,7 +174,7 @@ module tb_ntt_core_wmm_post_process
   logic                           pp_lsntw_eos;
   logic [ BPBS_ID_W-1:0]           pp_lsntw_pbs_id;
   logic                           pp_lsntw_avail;
-  // Error trigger 
+  // Error trigger
   logic                           pp_error;
   // Twiddles for final multiplication
   logic [     OP_W-1:0]           twd_intt_final;
@@ -221,7 +221,7 @@ module tb_ntt_core_wmm_post_process
     .pp_rsntw_eos        (pp_rsntw_eos),
     .pp_rsntw_pbs_id     (pp_rsntw_pbs_id),
     .pp_rsntw_avail      (pp_rsntw_avail),
-    // output last stage network 
+    // output last stage network
     .pp_lsntw_data       (pp_lsntw_data),
     .pp_lsntw_sob        (pp_lsntw_sob),
     .pp_lsntw_eob        (pp_lsntw_eob),
@@ -231,7 +231,7 @@ module tb_ntt_core_wmm_post_process
     .pp_lsntw_eos        (pp_lsntw_eos),
     .pp_lsntw_pbs_id     (pp_lsntw_pbs_id),
     .pp_lsntw_avail      (pp_lsntw_avail),
-    // output last stage network 
+    // output last stage network
     .pp_lsntw_fwd_data   (pp_lsntw_fwd_data),
     .pp_lsntw_fwd_sob    (pp_lsntw_fwd_sob),
     .pp_lsntw_fwd_eob    (pp_lsntw_fwd_eob),
@@ -241,7 +241,7 @@ module tb_ntt_core_wmm_post_process
     .pp_lsntw_fwd_eos    (pp_lsntw_fwd_eos),
     .pp_lsntw_fwd_pbs_id (pp_lsntw_fwd_pbs_id),
     .pp_lsntw_fwd_avail  (pp_lsntw_fwd_avail),
-    // output last stage network 
+    // output last stage network
     .pp_lsntw_bwd_data   (pp_lsntw_bwd_data),
     .pp_lsntw_bwd_sob    (pp_lsntw_bwd_sob),
     .pp_lsntw_bwd_eob    (pp_lsntw_bwd_eob),
@@ -257,7 +257,7 @@ module tb_ntt_core_wmm_post_process
     .twd_intt_final      (twd_intt_final),
     .twd_intt_final_vld  (twd_intt_final_vld),
     .twd_intt_final_rdy  (twd_intt_final_rdy),
-    // bootstraping key
+    // bootstrapping key
     .bsk                 (bsk),
     .bsk_vld             (bsk_vld),
     .bsk_rdy             (bsk_rdy)
@@ -275,7 +275,7 @@ module tb_ntt_core_wmm_post_process
   logic     [OP_W-1:0] data_ls_bwd_q [$];
   logic     [OP_W-1:0] data_ls_fwd_q [$];
   logic     [OP_W-1:0] data_rs_q     [$];
-  
+
   int                  pbs_nb_a     [BATCH_NB-1:0];
 
   // control
@@ -297,7 +297,7 @@ module tb_ntt_core_wmm_post_process
         for (int stg = S - 1; stg >= 0; stg--) begin
 
           for (int pbs_id = 0; pbs_id < pbs_nb; pbs_id++) begin
-            // interleaving 
+            // interleaving
             int intl_nb;
             intl_nb = (!ntt_bwd && (stg == 0)) ? INTL_L : GLWE_K_P1;
 
@@ -364,12 +364,12 @@ module tb_ntt_core_wmm_post_process
                     data_ls_fwd[intl_idx][bsk_i] = mod_red(data * data_bsk[bsk_i], MOD_NTT);
                   end
                 end  // forward last stage
-                
+
                 // REGULAR STAGE ------------------------------------------------------------------
                 if (stg > 0) begin
                   data_rs_q.push_back(data);
                   ctrl_rs_q.push_back(c);
-                end 
+                end
               end  // intl_idx
 
               // Do accumulation and control for FWD LAST STAGE
@@ -451,7 +451,7 @@ module tb_ntt_core_wmm_post_process
   assign clbu_pp_data_avail = in_vld;
   assign clbu_pp_ctrl_avail = in_vld;
   always_ff @(posedge clk) begin
-    if (!s_rst_n) begin 
+    if (!s_rst_n) begin
       clbu_pp_data       <= 'x;
       clbu_pp_sob        <= 'x;
       clbu_pp_eob        <= 'x;
@@ -487,7 +487,7 @@ module tb_ntt_core_wmm_post_process
   // Do not test the unavailability of BSK here
   assign bsk_vld = '1;
   always_ff @(posedge clk) begin
-    if (!s_rst_n) begin 
+    if (!s_rst_n) begin
       bsk <= 'x;
     end
     else begin
@@ -507,7 +507,7 @@ module tb_ntt_core_wmm_post_process
   // Do not test the unavailability of twiddles here
   assign twd_intt_final_vld = 1'b1;
   always_ff @(posedge clk) begin
-    if (!s_rst_n) begin 
+    if (!s_rst_n) begin
       twd_intt_final <= 'x;
     end
     else begin
@@ -730,7 +730,7 @@ module tb_ntt_core_wmm_post_process
     wait (ctrl_ls_fwd_q.size() == 0);
     wait (data_ls_q.size() == 0);
     wait (ctrl_ls_q.size() == 0);
- 
+
     $display("%t > INFO: ---------------------------------------------------------------------------------", $time);
     $display("%t > INFO: %4d chunk of last stage bwd tested are valid", $time, valid_ls_bwd_cnt);
     $display("%t > INFO: %4d chunk of last stage fwd tested are valid", $time, valid_ls_fwd_cnt);

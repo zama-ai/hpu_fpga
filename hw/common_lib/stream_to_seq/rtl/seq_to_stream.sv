@@ -5,7 +5,7 @@
 // Description  :
 // ----------------------------------------------------------------------------------------------
 //
-// This module deals with the convertion of sequential bus type into a stream rdy/vld type bus.
+// This module deals with the conversion of sequential bus type into a stream rdy/vld type bus.
 //
 //
 //

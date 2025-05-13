@@ -6,7 +6,7 @@
 // ----------------------------------------------------------------------------------------------
 //
 // Bench that checks ram_wrapper_1R1W.
-// The sceanrio is split into the following parts:
+// The scenario is split into the following parts:
 // ST_WRITE : fill the RAM with write accesses
 // ST_READ  : read the RAM content
 // ST_READ_AND_WRITE : read and write access at the same time without conflict
@@ -120,7 +120,7 @@ module tb_ram_wrapper_1R1W;
                 ST_DONE} state_e;
   state_e state;
   state_e next_state;
- 
+
   logic start;
   logic wr_done;
   logic rd_done;
@@ -362,7 +362,7 @@ module tb_ram_wrapper_1R1W;
           error_datar <= 1'b1;
           $error("> ERROR: Datar mismatches: exp=0x%0x seen=0x%0x",rd_data_ref_dly[RAM_LATENCY-1][DEPTH_W-1:0],rd_data[DEPTH_W-1:0]);
         end
-      
+
         if (rd_data_ref_dly[RAM_LATENCY-1][DEPTH_W+:2] !== 2'bxx)
           assert(rd_data[DEPTH_W+:2] === rd_data_ref_dly[RAM_LATENCY-1][DEPTH_W+:2])
           else begin

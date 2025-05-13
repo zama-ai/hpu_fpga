@@ -12,7 +12,7 @@
 // DEPTH             : RAM depth (number of words in RAM)
 // RD_WR_ACCESS_TYPE : Behavior when there is a read and write access conflict.
 //                     0 : output 'X'
-//                     1 : Read old value - BRAM default bahaviour
+//                     1 : Read old value - BRAM default behaviour
 //                     2 : Read new value
 // KEEP_RD_DATA      : Read data is kept until the next read request.
 // RAM_LATENCY       : RAM read latency. Should be at least 1
@@ -305,4 +305,3 @@ module ram_2RW_behav #(
   endgenerate
 
 endmodule
-

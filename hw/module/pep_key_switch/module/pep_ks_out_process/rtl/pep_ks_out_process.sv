@@ -65,7 +65,7 @@ module pep_ks_out_process
   // Check parameters
   generate
     if (OP_W <= LWE_COEF_W) begin : __UNSUPPORTED__OP_W
-      $fatal(1,"> ERROR: Upsupported OP_W value. It should be >= LWE_COEF_W!");
+      $fatal(1,"> ERROR: Unsupported OP_W value. It should be >= LWE_COEF_W!");
     end
 
     if (COLUMN_PROC_CYCLE_MIN < READ_PIPE_CYCLE_MAX) begin : __UNSUPPORTED__LBX_LBY

@@ -82,7 +82,7 @@ package pep_mmacc_splitc_feed_pkg;
 
     pos_rev          = rev_order_n(pos);
     pos_rev_plus_rot = pos_rev + rot_factor;
-    // Back to natural index to retreive the address
+    // Back to natural index to retrieve the address
     get_rot_add      = rev_order_stgiter(pos_rev_plus_rot[STG_ITER_W-1:0]);
 
   endfunction

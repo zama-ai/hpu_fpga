@@ -18,7 +18,7 @@ import pprint
 import datetime
 
 import random
-from constrainedrandom import RandObj, RandomizationError # For contrained random
+from constrainedrandom import RandObj, RandomizationError # For constrained random
 from gen_tb_hpu_param_global import *
 
 #=====================================================
@@ -34,7 +34,7 @@ def cstr_pbs_level_div (bwd_psi_div, pbs_l, ntt_arch, psi):
     """
     PBS_L > 1 is only supported for unfold_pcg.
     If PBS_L > 1 and ntt_arch = wmm_unfold_pcg, the randomization on bwd_psi_div is possible, and psi/bwd_psi_div >= 2.
-            Moreover, considering the SLR crossing is done with 4 channels, psi/bwd_psi_div >= 4,  
+            Moreover, considering the SLR crossing is done with 4 channels, psi/bwd_psi_div >= 4,
     """
     if (ntt_arch == "NTT_CORE_ARCH_wmm_unfold_pcg"):
         return (bwd_psi_div <= pbs_l) and (psi/bwd_psi_div >= 4)
@@ -275,4 +275,3 @@ if __name__ == '__main__':
           b_fp.write(f"{k}={v}\n")
         for (k,v) in extra_d.items():
           b_fp.write(f"{k}={v}\n")
-

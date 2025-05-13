@@ -6,7 +6,7 @@
 // ----------------------------------------------------------------------------------------------
 //
 // Event counter.
-// Buffer event occurence and expose a rdy/vld interface to handle them at a custom pace
+// Buffer event occurrence and expose a rdy/vld interface to handle them at a custom pace
 // Ready/valid interface is used.
 // out_vld = 0 : Event counter is empty.
 //

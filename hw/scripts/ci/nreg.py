@@ -93,7 +93,7 @@ def expand_tests(nreg_list, args):
     Expand the Seed field to convert a Dataframe into a list of test to execute.
     Seed meaning is as follow:
      * Positive value -> run the test with the given seed
-     * Negative value -> run the test multilpe time with a random seed
+     * Negative value -> run the test multiple time with a random seed
      """
     test_list = []
     for row in nreg_list.iterrows():
@@ -185,7 +185,7 @@ def as_junit(exec_log):
 def add_testcase(junit_testsuite, exec_log):
     # Extract junit testcase
     junit_tc = as_junit(exec_log)
-    # Appent to junit TestSuite
+    # Append to junit TestSuite
     junit_testsuite.test_cases.append(junit_tc)
 
 def create_junit_testsuite(args):
@@ -223,7 +223,7 @@ if __name__ == '__main__':
     for t in nreg_tests:
         print(f'\t {t}')
 
-    # Handle Environnement variables
+    # Handle Environment variables
     # TODO move this elsewhere
     if 'PROJECT_DIR' in os.environ.keys():
         pdir = os.environ['PROJECT_DIR']
@@ -253,4 +253,3 @@ if __name__ == '__main__':
                         junit_ts.to_file(rf, [junit_ts])
             except Exception as exc:
                 print('ERROR: test {} generated an exception: {}'.format(fut, exc))
-

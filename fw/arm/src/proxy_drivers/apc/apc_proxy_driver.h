@@ -106,11 +106,11 @@ typedef struct APC_PROXY_DRIVER_FPT_PARTITION
  *
  * @return  OK          Proxy driver initialised correctly
  *          ERROR       Proxy driver not initialised, or was already initialised
- * 
- * @note    A Primary Firmware Interface handle must be passed to iAPC_Initialise, 
- *          the secondary Firmware Interface handle however is optional 
+ *
+ * @note    A Primary Firmware Interface handle must be passed to iAPC_Initialise,
+ *          the secondary Firmware Interface handle however is optional
  *          and can be set to NULL.
- * 
+ *
  */
 int iAPC_Initialise( uint8_t ucProxyId, FW_IF_CFG *pxPrimaryFwIf, FW_IF_CFG *pxSecondaryFwIf,
                      uint32_t ulTaskPrio, uint32_t ulTaskStack );
@@ -122,14 +122,14 @@ int iAPC_Initialise( uint8_t ucProxyId, FW_IF_CFG *pxPrimaryFwIf, FW_IF_CFG *pxS
  *
  * @return  OK          Callback successfully bound
  *          ERROR       Callback not bound
- * 
+ *
  */
 int iAPC_BindCallback( EVL_CALLBACK *pxCallback );
 
 /**
  * @brief   Download an image to a location in NV memory
  *
- * @param   pxSignal     Current event occurance (used for tracking)
+ * @param   pxSignal     Current event occurrence (used for tracking)
  * @param   xBootDevice  Target boot device
  * @param   iPartition   The partition in the FPT to store this image in
  * @param   ulSrcAddr    Address (in RAM) to read the image from
@@ -139,7 +139,7 @@ int iAPC_BindCallback( EVL_CALLBACK *pxCallback );
  *
  * @return  OK           Image downloaded successfully
  *          ERROR        Image not downloaded successfully
- * 
+ *
  */
 int iAPC_DownloadImage( EVL_SIGNAL *pxSignal, APC_BOOT_DEVICES xBootDevice, int iPartition, uint32_t ulSrcAddr,
                         uint32_t ulImageSize, uint16_t usPacketNum, uint16_t usPacketSize );
@@ -147,7 +147,7 @@ int iAPC_DownloadImage( EVL_SIGNAL *pxSignal, APC_BOOT_DEVICES xBootDevice, int 
 /**
  * @brief   Download an image with an FPT to a location in NV memory
  *
- * @param   pxSignal     Current event occurance (used for tracking)
+ * @param   pxSignal     Current event occurrence (used for tracking)
  * @param   xBootDevice  Target boot device
  * @param   ulSrcAddr    Address (in RAM) to read the image from
  * @param   ulImageSize  Size of image (in bytes)
@@ -157,7 +157,7 @@ int iAPC_DownloadImage( EVL_SIGNAL *pxSignal, APC_BOOT_DEVICES xBootDevice, int 
  *
  * @return  OK           Image downloaded successfully
  *          ERROR        Image not downloaded successfully
- * 
+ *
  */
 int iAPC_UpdateFpt( EVL_SIGNAL *pxSignal, APC_BOOT_DEVICES xBootDevice, uint32_t ulSrcAddr, uint32_t ulImageSize,
                     uint16_t usPacketNum, uint16_t usPacketSize, int iLastPacket );
@@ -165,7 +165,7 @@ int iAPC_UpdateFpt( EVL_SIGNAL *pxSignal, APC_BOOT_DEVICES xBootDevice, uint32_t
 /**
  * @brief   Copy an image from one partition to another
  *
- * @param   pxSignal        Current event occurance (used for tracking)
+ * @param   pxSignal        Current event occurrence (used for tracking)
  * @param   xSrcBootDevice  Target boot device to copy from
  * @param   iSrcPartition   The partition in the FPT to copy this image from
  * @param   xDestBootDevice Target boot device to copy to
@@ -175,15 +175,15 @@ int iAPC_UpdateFpt( EVL_SIGNAL *pxSignal, APC_BOOT_DEVICES xBootDevice, uint32_t
  *
  * @return  OK          Image copied successfully
  *          ERROR       Image not copied successfully
- * 
+ *
  */
-int iAPC_CopyImage( EVL_SIGNAL *pxSignal, APC_BOOT_DEVICES xSrcBootDevice, int iSrcPartition, 
+int iAPC_CopyImage( EVL_SIGNAL *pxSignal, APC_BOOT_DEVICES xSrcBootDevice, int iSrcPartition,
                     APC_BOOT_DEVICES xDestBootDevice, int iDestPartition, uint32_t ulCpyAddr, uint32_t ulAllocatedSize );
 
 /**
  * @brief   Select which partition (from primary boot device) to boot from
  *
- * @param   pxSignal    Current event occurance (used for tracking)
+ * @param   pxSignal    Current event occurrence (used for tracking)
  * @param   iPartition  The partition to boot from on the next reset
  *
  * @return  OK          Partition successfully selected
@@ -194,7 +194,7 @@ int iAPC_SetNextPartition( EVL_SIGNAL *pxSignal, int iPartition );
 /**
  * @brief   Enable the hot reset capability (from primary boot device)
  *
- * @param   pxSignal    Current event occurance (used for tracking)
+ * @param   pxSignal    Current event occurrence (used for tracking)
  *
  * @return  OK          Hot reset successfully enabled
  *          ERROR       Hot reset not enabled
@@ -209,7 +209,7 @@ int iAPC_EnableHotReset( EVL_SIGNAL *pxSignal );
  *
  * @return  OK              FPT header retrieved successfully
  *          ERROR           FPT header not retrieved successfully
- * 
+ *
  */
 int iAPC_GetFptHeader( APC_BOOT_DEVICES xBootDevice, APC_PROXY_DRIVER_FPT_HEADER *pxFptHeader );
 
@@ -222,7 +222,7 @@ int iAPC_GetFptHeader( APC_BOOT_DEVICES xBootDevice, APC_PROXY_DRIVER_FPT_HEADER
  *
  * @return  OK              FPT partition retrieved successfully
  *          ERROR           FPT partition not retrieved successfully
- * 
+ *
  */
 int iAPC_GetFptPartition( APC_BOOT_DEVICES xBootDevice, int iPartition, APC_PROXY_DRIVER_FPT_PARTITION *pxFptPartition );
 
@@ -231,7 +231,7 @@ int iAPC_GetFptPartition( APC_BOOT_DEVICES xBootDevice, int iPartition, APC_PROX
  *
  * @return  OK          Stats retrieved from proxy driver successfully
  *          ERROR       Stats not retrieved successfully
- * 
+ *
  */
 int iAPC_PrintStatistics( void );
 
@@ -240,7 +240,7 @@ int iAPC_PrintStatistics( void );
  *
  * @return  OK          Stats cleared successfully
  *          ERROR       Stats not cleared successfully
- * 
+ *
  */
 int iAPC_ClearStatistics( void );
 

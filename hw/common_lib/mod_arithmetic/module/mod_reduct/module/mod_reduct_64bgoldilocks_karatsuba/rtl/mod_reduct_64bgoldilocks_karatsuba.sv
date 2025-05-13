@@ -18,7 +18,7 @@
 
 module mod_reduct_64bgoldilocks_karatsuba #(
   parameter int          OP_W       = 98, // Uses Multiplier with Goldilocks specific optimisations
-                                          // is compatible with reducing sum of 2 64-bit products 
+                                          // is compatible with reducing sum of 2 64-bit products
                                           // from the Goldilocks-specific multiplier
   parameter bit          IN_PIPE    = 1,
   parameter int          SIDE_W     = 0, // Side data size. Set to 0 if not used
@@ -51,9 +51,9 @@ module mod_reduct_64bgoldilocks_karatsuba #(
   localparam int          MOD_W      = 64;
   localparam [MOD_W-1:0]  MOD_M      = 2**MOD_W - 2**(MOD_W/2) + 1;
 
-  // Since MOD_M has the following form: 
+  // Since MOD_M has the following form:
   // MOD_M = 2**MOD_W - 2**INT_POW + 1
-  // We can retreive INT_POW
+  // We can retrieve INT_POW
   localparam int         INT_POW   = $clog2(2**MOD_W+1 - MOD_M);
   localparam int         PROC_W    = 2*MOD_W+1;
   localparam int         INT_W     = MOD_W - INT_POW; // INT stands for intermediate
@@ -93,10 +93,10 @@ module mod_reduct_64bgoldilocks_karatsuba #(
   ) in_delay_side (
     .clk      (clk      ),
     .s_rst_n  (s_rst_n  ),
-                        
+
     .in_avail (in_avail ),
     .out_avail(s0_avail ),
-                        
+
     .in_side  (in_a_data),
     .out_side (s0_a_data)
   );
@@ -105,7 +105,7 @@ module mod_reduct_64bgoldilocks_karatsuba #(
   // s0 : Partial additions
   // ============================================================================================ //
   logic [MOD_W/2:0] s0_msb;     // Sum of two MOD_W/2-bit words
-  logic [MOD_W/2:0] s0_lsb_int; // Intermediate sum for calculating the LSBs of result. 
+  logic [MOD_W/2:0] s0_lsb_int; // Intermediate sum for calculating the LSBs of result.
                                 // Sum of MOD_W/2-bit word and 2-bit word
   logic [MOD_W/2+1:0] s0_lsb;   // Sub of two (MOD_W/2+1)-bit words
 
@@ -142,10 +142,10 @@ module mod_reduct_64bgoldilocks_karatsuba #(
   ) s0_delay_side (
     .clk      (clk      ),
     .s_rst_n  (s_rst_n  ),
-                        
+
     .in_avail (s0_avail ),
     .out_avail(s1_avail ),
-                        
+
     .in_side  (s0_side  ),
     .out_side (s1_side  )
   );
@@ -179,15 +179,15 @@ module mod_reduct_64bgoldilocks_karatsuba #(
   ) s1_delay_side (
     .clk      (clk      ),
     .s_rst_n  (s_rst_n  ),
-                        
+
     .in_avail (s1_avail ),
     .out_avail(s2_avail ),
-                        
+
     .in_side  (s1_side  ),
     .out_side (s2_side  )
   );
 
-  
+
   logic [MOD_W:0] s2_sum_minus_mod;
 
   assign s2_sum_minus_mod = s2_sum - MOD_M;
@@ -222,10 +222,10 @@ module mod_reduct_64bgoldilocks_karatsuba #(
   ) s2_delay_side (
     .clk      (clk      ),
     .s_rst_n  (s_rst_n  ),
-                        
+
     .in_avail (s2_avail ),
     .out_avail(s3_avail ),
-                        
+
     .in_side  (s2_side  ),
     .out_side (s3_side  )
   );
@@ -234,4 +234,3 @@ module mod_reduct_64bgoldilocks_karatsuba #(
   assign out_avail = s3_avail;
   assign out_side  = s3_side;
 endmodule
-

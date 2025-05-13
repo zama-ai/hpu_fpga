@@ -153,7 +153,7 @@ typedef struct AMI_PROXY_PDI_DOWNLOAD_REQUEST
     uint64_t ullAddress;
     uint32_t ulLength;
     uint32_t ulPartitionSel;
-    uint16_t usPacketNum; 
+    uint16_t usPacketNum;
     uint16_t usPacketSize;
 
 } AMI_PROXY_PDI_DOWNLOAD_REQUEST;
@@ -231,7 +231,7 @@ typedef struct AMI_PROXY_IDENTITY_RESPONSE
     uint8_t  ucVerPatch;        /* patch number */
     uint8_t  ucLocalChanges;    /* 0 for no changes, 1 for changes */
     uint16_t usDevCommits;      /* number of commits since the version tag */
-    
+
     uint8_t  ucLinkVerMajor;    /* major version number of the comms link */
     uint8_t  ucLinkVerMinor;    /* minor version number of the comms link */
 
@@ -286,7 +286,7 @@ int iAMI_BindCallback( EVL_CALLBACK *pxCallback );
 /**
  * @brief   Set the response after the PDI download has completed
  *
- * @param   pxSignal    Current event occurance (used for tracking)
+ * @param   pxSignal    Current event occurrence (used for tracking)
  * @param   xResult     The result of the pdi download request
  *
  * @return  OK          Data passed to proxy driver successfully
@@ -297,7 +297,7 @@ int iAMI_SetPdiDownloadCompleteResponse( EVL_SIGNAL *pxSignal, AMI_PROXY_RESULT 
 /**
  * @brief   Set the response after the PDI copy has completed
  *
- * @param   pxSignal    Current event occurance (used for tracking)
+ * @param   pxSignal    Current event occurrence (used for tracking)
  * @param   xResult     The result of the pdi copy request
  *
  * @return  OK          Data passed to proxy driver successfully
@@ -308,7 +308,7 @@ int iAMI_SetPdiCopyCompleteResponse( EVL_SIGNAL *pxSignal, AMI_PROXY_RESULT xRes
 /**
  * @brief   Set the response after the sensor request has completed
  *
- * @param   pxSignal    Current event occurance (used for tracking)
+ * @param   pxSignal    Current event occurrence (used for tracking)
  * @param   xResult     The result of the sensor request
  *
  * @return  OK          Data passed to proxy driver successfully
@@ -319,7 +319,7 @@ int iAMI_SetSensorCompleteResponse( EVL_SIGNAL *pxSignal, AMI_PROXY_RESULT xResu
 /**
  * @brief   Set the identity response
  *
- * @param   pxSignal                Current event occurance (used for tracking)
+ * @param   pxSignal                Current event occurrence (used for tracking)
  * @param   xResult                 The result of the identity request
  * @param   pxIdentityResponse      The structure containing the version information
  *
@@ -333,7 +333,7 @@ int iAMI_SetIdentityResponse( EVL_SIGNAL *pxSignal,
 /**
  * @brief   Set the response after the Boot select has completed
  *
- * @param   pxSignal    Current event occurance (used for tracking)
+ * @param   pxSignal    Current event occurrence (used for tracking)
  * @param   xResult     The result of the boot select request
  *
  * @return  OK          Data passed to proxy driver successfully
@@ -344,7 +344,7 @@ int iAMI_SetBootSelectCompleteResponse( EVL_SIGNAL *pxSignal, AMI_PROXY_RESULT x
 /**
  * @brief   Set the response after the EEPROM read/write has completed
  *
- * @param   pxSignal    Current event occurance (used for tracking)
+ * @param   pxSignal    Current event occurrence (used for tracking)
  * @param   xResult     The result of the EEPROM rd/wr request
  *
  * @return  OK          Data passed to proxy driver successfully
@@ -355,7 +355,7 @@ int iAMI_SetEepromReadWriteCompleteResponse( EVL_SIGNAL *pxSignal, AMI_PROXY_RES
 /**
  * @brief   Set the response after the peek/poke has completed
  *
- * @param   pxSignal    Current event occurance (used for tracking)
+ * @param   pxSignal    Current event occurrence (used for tracking)
  * @param   xResult     The result of the rd/wr request in registers
  *
  * @return  OK          Data passed to proxy driver successfully
@@ -366,7 +366,7 @@ int iAMI_SetPeekPokeReadWriteCompleteResponse( EVL_SIGNAL *pxSignal, AMI_PROXY_R
 /**
  * @brief   Set the response after get ucore version has completed
  *
- * @param   pxSignal    Current event occurance (used for tracking)
+ * @param   pxSignal    Current event occurrence (used for tracking)
  * @param   xResult     The result of the rd/wr request in registers
  *
  * @return  OK          Data passed to proxy driver successfully
@@ -377,7 +377,7 @@ int iAMI_SetUcoreVersionCompleteResponse( EVL_SIGNAL *pxSignal, AMI_PROXY_RESULT
 /**
  * @brief   Set the response after the module read/write has completed
  *
- * @param   pxSignal    Current event occurance (used for tracking)
+ * @param   pxSignal    Current event occurrence (used for tracking)
  * @param   xResult     The result of the module rd/wr request
  *
  * @return  OK          Data passed to proxy driver successfully
@@ -388,7 +388,7 @@ int iAMI_SetModuleReadWriteCompleteResponse( EVL_SIGNAL *pxSignal, AMI_PROXY_RES
 /**
  * @brief   Set the response after the debug verbosity request has completed
  *
- * @param   pxSignal    Current event occurance (used for tracking)
+ * @param   pxSignal    Current event occurrence (used for tracking)
  * @param   xResult     The result of the debug verbosity request
  *
  * @return  OK          Data passed to proxy driver successfully
@@ -401,7 +401,7 @@ int iAMI_SetDebugVerbosityResponse( EVL_SIGNAL *pxSignal, AMI_PROXY_RESULT xResu
 /**
  * @brief   Get the PDI download request
  *
- * @param   pxSignal                Current event occurance (used for tracking)
+ * @param   pxSignal                Current event occurrence (used for tracking)
  * @param   pxDownloadRequest       Pointer to download pdi structure
  *
  * @return  OK                      Data retrieved from proxy driver successfully
@@ -413,7 +413,7 @@ int iAMI_GetPdiDownloadRequest( EVL_SIGNAL *pxSignal,
 /**
  * @brief   Get the PDI copy request
  *
- * @param   pxSignal                Current event occurance (used for tracking)
+ * @param   pxSignal                Current event occurrence (used for tracking)
  * @param   pxCopyRequest           Pointer to copy pdi structure
  *
  * @return  OK                      Data retrieved from proxy driver successfully
@@ -424,7 +424,7 @@ int iAMI_GetPdiCopyRequest( EVL_SIGNAL *pxSignal,
 /**
  * @brief   Get the Sensor request
  *
- * @param   pxSignal                Current event occurance (used for tracking)
+ * @param   pxSignal                Current event occurrence (used for tracking)
  * @param   pxSensorRequest         Pointer sensor request structure
  *
  * @return  OK                      Data retrieved from proxy driver successfully
@@ -436,7 +436,7 @@ int iAMI_GetSensorRequest( EVL_SIGNAL *pxSignal, AMI_PROXY_SENSOR_REQUEST *pxSen
 /**
  * @brief   Get the Boot Select request
  *
- * @param   pxSignal                Current event occurance (used for tracking)
+ * @param   pxSignal                Current event occurrence (used for tracking)
  * @param   pxBootSelectRequest     Pointer boot select request structure
  *
  * @return  OK                      Data retrieved from proxy driver successfully
@@ -448,7 +448,7 @@ int iAMI_GetBootSelectRequest( EVL_SIGNAL *pxSignal, AMI_PROXY_BOOT_SELECT_REQUE
 /**
  * @brief   Get the eeprom read write request
  *
- * @param   pxSignal                    Current event occurance (used for tracking)
+ * @param   pxSignal                    Current event occurrence (used for tracking)
  * @param   pxEepromReadWriteRequest    Pointer sensor request structure
  *
  * @return  OK                          Data retrieved from proxy driver successfully
@@ -461,7 +461,7 @@ int iAMI_GetEepromReadWriteRequest( EVL_SIGNAL *pxSignal,
 /**
  * @brief   Get the HPU register read write request
  *
- * @param   pxSignal                    Current event occurance (used for tracking)
+ * @param   pxSignal                    Current event occurrence (used for tracking)
  * @param   pxEepromReadWriteRequest    Pointer sensor request structure
  *
  * @return  OK                          Data retrieved from proxy driver successfully
@@ -474,7 +474,7 @@ int iAMI_GetPeekPokeRequest( EVL_SIGNAL *pxSignal,
 /**
  * @brief   Get the module read write request
  *
- * @param   pxSignal                    Current event occurance (used for tracking)
+ * @param   pxSignal                    Current event occurrence (used for tracking)
  * @param   pxModuleReadWriteRequest    Pointer sensor request structure
  *
  * @return  OK                          Data retrieved from proxy driver successfully
@@ -487,7 +487,7 @@ int iAMI_GetModuleReadWriteRequest( EVL_SIGNAL *pxSignal,
 /**
  * @brief   Get the debug verbosity request
  *
- * @param   pxSignal                    Current event occurance (used for tracking)
+ * @param   pxSignal                    Current event occurrence (used for tracking)
  * @param   pucDebugVerbosityRequest    Pointer to store requested debug verbosity
  *
  * @return  OK                          Data retrieved from proxy driver successfully
@@ -502,7 +502,7 @@ int iAMI_GetDebugVerbosityRequest( EVL_SIGNAL *pxSignal,
  *
  * @return  OK          Stats retrieved from proxy driver successfully
  *          ERROR       Stats not retrieved successfully
- * 
+ *
  */
 int iAMI_PrintStatistics( void );
 
@@ -511,7 +511,7 @@ int iAMI_PrintStatistics( void );
  *
  * @return  OK          Stats cleared successfully
  *          ERROR       Stats not cleared successfully
- * 
+ *
  */
 int iAMI_ClearStatistics( void );
 

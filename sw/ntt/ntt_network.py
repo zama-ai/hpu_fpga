@@ -179,7 +179,7 @@ def dispatch_rot_shift(R, S, PSI):
     # Number of bits of psi_w rounded to an entire number of r_w bits
     psi_w_round_up = (psi_w + r_w - 1) // r_w * r_w
 
-    # In the index some bits expressed the next_cl_bu_id. Somes bits corresponding to the current
+    # In the index some bits expressed the next_cl_bu_id. Some bits corresponding to the current
     # cl_bu_id toggles.
     # Look if these bits overlap.
     overlap = r_w * (S - 1) - 2 * psi_w_round_up
@@ -323,7 +323,7 @@ def ram_write(out_l, RAM, R, S, PSI, stg, stg_iter, intl_idx, ntt_bwd):
     if stage is not the last stage (stg!= 0):
       Stage-BUs with ID from b*R^(S-2) to (b+1)*R^(S-2)-1 are all outputting next stage input
       position <b>.
-      Within this set of R^(S-2) * R outputs, output <i> is targetting stage-BU #<i>.
+      Within this set of R^(S-2) * R outputs, output <i> is targeting stage-BU #<i>.
 
       Therefore at stage iteration stg_iter, we are computing the next stage input position:
       (stg_iter * PSI)/(R^(S-2)).
@@ -695,7 +695,7 @@ if __name__ == "__main__":
                 for l in range(0, PBS_L * GLWE_K_plus_1):  # level
                     RAM[-1][-1][-1].append([])
                     for add in range(0, STG_ITER_NB):
-                        RAM[-1][-1][-1][-1].append(-1)  # Initilalize with -1 for debug
+                        RAM[-1][-1][-1][-1].append(-1)  # Initialize with -1 for debug
 
     # ==============================================================================
     # Build input

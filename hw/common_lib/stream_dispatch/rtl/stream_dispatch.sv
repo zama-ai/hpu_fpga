@@ -66,7 +66,7 @@ module stream_dispatch
 
     if (IN_COEF < DISP_COEF && DISP_COEF < OUT_COEF) begin : _UNSUPPORTED_IN_DISP_OUT_COEF
       $fatal(1,"> ERROR: Unsupported IN_COEF < DISP_COEF < OUT_COEF");
-      // The module does not support this case, because only a single format core is instanciated here.
+      // The module does not support this case, because only a single format core is instantiated here.
     end
 
     if (FMT_CORE_NB < OUT_NB) begin : _check_fmt_core_nb_lt_out_nb

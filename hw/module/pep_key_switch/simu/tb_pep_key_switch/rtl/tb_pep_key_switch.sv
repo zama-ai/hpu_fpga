@@ -223,30 +223,30 @@ module tb_pep_key_switch;
     .ks_seq_cmd_enquiry    (ks_seq_cmd_enquiry),
     .seq_ks_cmd            (seq_ks_cmd),
     .seq_ks_cmd_avail      (seq_ks_cmd_avail),
-    
+
     .inc_ksk_wr_ptr        (inc_ksk_wr_ptr),
     .inc_ksk_rd_ptr        (inc_ksk_rd_ptr),
 
-    
+
     .batch_cmd             (batch_cmd),
     .batch_cmd_avail       (batch_cmd_avail),
-    
+
     .ldb_blram_wr_en       (ldb_blram_wr_en),
     .ldb_blram_wr_pid      (ldb_blram_wr_pid),
     .ldb_blram_wr_data     (ldb_blram_wr_data),
     .ldb_blram_wr_pbs_last (ldb_blram_wr_pbs_last),
 
-    
+
     .ksk                   (ksk),
     .ksk_vld               (ksk_vld),
     .ksk_rdy               (ksk_rdy),
 
-    
+
     .ks_seq_result         (ks_seq_result),
     .ks_seq_result_vld     (ks_seq_result_vld),
     .ks_seq_result_rdy     (ks_seq_result_rdy),
 
-    
+
     .boram_wr_en           (boram_wr_en),
     .boram_data            (boram_data),
     .boram_pid             (boram_pid),
@@ -339,7 +339,7 @@ module tb_pep_key_switch;
   logic [KS_BLOCK_LINE_NB:0][LBY-1:0][MOD_Q_W-1:0] in_data;
   logic [KS_IF_SUBW_NB-1:0][KS_IF_COEF_NB-1:0][MOD_Q_W-1:0]    fb_wr_in_data;
   logic [KS_IF_SUBW_NB-1:0][KS_IF_COEF_NB*MOD_Q_W+1+1+PID_W-1:0] fb_wr_in_elt;
-  
+
   logic [KS_IF_SUBW_NB-1:0]                                    fb_out_wr_vld;
   logic [KS_IF_SUBW_NB-1:0]                                    fb_out_wr_rdy;
   logic [KS_IF_SUBW_NB-1:0]                                    fb_out_wr_pbs_last;
@@ -416,7 +416,7 @@ module tb_pep_key_switch;
       if (BLWE_K%LBY == 0) begin
         in_data[KS_BLOCK_LINE_NB][0] <= {$urandom,$urandom}; // Add body
         for (int y=1; y<LBY; y=y+1)
-          in_data[KS_BLOCK_LINE_NB][y] <= '1;// identifyable dummy values
+          in_data[KS_BLOCK_LINE_NB][y] <= '1;// identifiable dummy values
       end
     end
 
@@ -437,7 +437,7 @@ module tb_pep_key_switch;
   logic ks_seq_cmd_enquiry_rdy;
 
   common_lib_pulse_to_rdy_vld
-  #( 
+  #(
     .FIFO_DEPTH(1)
   ) common_lib_pulse_to_rdy_vld  (
     .clk     (clk),
@@ -472,7 +472,7 @@ module tb_pep_key_switch;
   always_ff @(posedge clk)
     if (!s_rst_n) proc_ks_koop <= '0;
     else          proc_ks_koop <= proc_ks_koopD;
- 
+
   ks_cmd_t               proc_cmd;
   logic [PID_W-1:0]      proc_rp;
   logic [BPBS_NB_WW-1:0] proc_ct_nb;
@@ -490,7 +490,7 @@ module tb_pep_key_switch;
     proc_ct_nb     <= $urandom_range(1,BATCH_PBS_NB);
     rand_cmd_avail <= $urandom();
   end
-    
+
   assign proc_cmd.ks_loop = proc_ks_koop * LBX;
   assign proc_cmd.rp      = proc_rp; // Extend with 0
   assign proc_cmd.wp      = proc_wp;
@@ -509,7 +509,7 @@ module tb_pep_key_switch;
   // Fake loading of the KSK in the ksk_mgr
   integer inc_ksk_wr_ptr_cnt ;
   integer inc_ksk_wr_ptr_cntD;
-  
+
   assign inc_ksk_wr_ptr_cntD = seq_ks_cmd_avail ? 1 :
                                inc_ksk_wr_ptr_cnt > 0 ? inc_ksk_wr_ptr_cnt - 1 : inc_ksk_wr_ptr_cnt;
   always_ff @(posedge clk)
@@ -522,7 +522,7 @@ module tb_pep_key_switch;
       inc_ksk_wr_ptr_cnt  <= inc_ksk_wr_ptr_cntD;
     end
 
-  
+
   // KSK mgr interface
   generate
     for (genvar gen_x=0; gen_x<LBX; gen_x=gen_x+1) begin : gen_ksk_x
@@ -605,7 +605,7 @@ module tb_pep_key_switch;
   integer proc_cmd_cnt;
   integer result_cnt;
   integer body_cnt;
-  
+
   always_ff @(posedge clk)
     if (!s_rst_n) begin
       proc_cmd_cnt <= '0;

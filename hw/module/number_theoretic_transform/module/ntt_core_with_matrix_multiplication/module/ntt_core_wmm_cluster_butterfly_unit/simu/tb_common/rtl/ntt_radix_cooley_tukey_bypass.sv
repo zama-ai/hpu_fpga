@@ -32,7 +32,7 @@ module ntt_radix_cooley_tukey
   // System interface
   input  logic                                     clk,
   input  logic                                     s_rst_n,
-  // Data inteface
+  // Data interface
   input  logic [R-1:0][OP_W-1:0]                   xt_a,
   output logic [R-1:0][OP_W-1:0]                   xf_a,
   input  logic [R-1:1][OP_W-1:0]                   phi_a,   // Phi root of unity
@@ -61,4 +61,3 @@ module ntt_radix_cooley_tukey
   end
 
 endmodule
-

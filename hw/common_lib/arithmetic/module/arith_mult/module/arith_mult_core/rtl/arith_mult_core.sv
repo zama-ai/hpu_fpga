@@ -18,12 +18,12 @@
 //
 // ==============================================================================================
 
-module arith_mult_core 
+module arith_mult_core
 #(
   parameter bit IN_PIPE  = 0, // Additional input pipe if needed.
   parameter int OP_A_W   = 16,
   parameter int OP_B_W   = 16
-  
+
 )
 (
     input  logic                       clk,        // clock
@@ -39,7 +39,7 @@ module arith_mult_core
 // ============================================================================================== //
   generate
     if (LATENCY < 1) begin : __UNSUPPORTED_LATENCY__
-      $fatal(1, "> ERROR: Unsupposed LATENCY value for arith_mult_core : should be >= 1.");
+      $fatal(1, "> ERROR: Unsupported LATENCY value for arith_mult_core : should be >= 1.");
     end
 
     if (get_latency() != LATENCY) begin : __FUNCTION_OUT_OF_DATE__

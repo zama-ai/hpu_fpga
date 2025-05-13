@@ -35,7 +35,7 @@ module ntt_core_gf64_tail
                                                       // BWD part : 2S-1 -> S
   parameter  int               S_NB             = 2*S, // Number of NTT stages.
   parameter  bit               USE_PP           = 1, // If this partition contains the entire FWD NTT,
-                                                     // this parameter indicates if the PP is instanciated.
+                                                     // this parameter indicates if the PP is instantiated.
   parameter  arith_mult_type_e PHI_MULT_TYPE    = MULT_KARATSUBA, // PHI multiplier, when needed
   parameter  arith_mult_type_e PP_MULT_TYPE     = MULT_KARATSUBA, // Multiplier used in PP
   parameter  int               RAM_LATENCY      = 1,
@@ -171,5 +171,3 @@ module ntt_core_gf64_tail
   );
 
 endmodule
-
-

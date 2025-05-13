@@ -49,9 +49,9 @@ module mod_reduct_solinas2 #(
   // ============================================================================================ //
   // Localparam
   // ============================================================================================ //
-  // Since MOD_M has the following form: 
+  // Since MOD_M has the following form:
   // MOD_M = 2**MOD_W - 2**INT_POW + 1
-  // We can retreive INT_POW
+  // We can retrieve INT_POW
 
   localparam int INT_POW   = $clog2(2**MOD_W+1 - MOD_M);
   localparam bit USE_HALF  = 1'b0; // (INT_POW <= MOD_W/2) && (OP_W <= 2*MOD_W);

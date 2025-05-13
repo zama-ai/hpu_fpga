@@ -2,10 +2,10 @@
 // BSD 3-Clause Clear License
 // Copyright © 2025 ZAMA. All rights reserved.
 // ----------------------------------------------------------------------------------------------
-// Description  : Performs a modular substraction
+// Description  : Performs a modular subtraction
 // ----------------------------------------------------------------------------------------------
 //
-// Performs an substraction z = a - b modulo MOD_M.
+// Performs an subtraction z = a - b modulo MOD_M.
 // MOD_M is a OP_W word, with bit [OP_W-1] = 1.
 //
 // Prerequisite : a and b are in [0:MOD_M-1]
@@ -70,10 +70,10 @@ module mod_sub #(
   ) in_delay_side (
     .clk      (clk      ),
     .s_rst_n  (s_rst_n  ),
-                        
+
     .in_avail (in_avail ),
     .out_avail(s0_avail ),
-                        
+
     .in_side  (in_side  ),
     .out_side (s0_side  )
   );
@@ -111,10 +111,10 @@ module mod_sub #(
   ) s0_delay_side (
     .clk      (clk      ),
     .s_rst_n  (s_rst_n  ),
-                        
+
     .in_avail (s0_avail ),
     .out_avail(s1_avail ),
-                        
+
     .in_side  (s0_side  ),
     .out_side (s1_side  )
   );

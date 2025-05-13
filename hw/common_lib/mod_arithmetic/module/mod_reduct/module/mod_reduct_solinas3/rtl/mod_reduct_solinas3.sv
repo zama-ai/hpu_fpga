@@ -112,7 +112,7 @@ module mod_reduct_solinas3 #(
 // ============================================================================================== --
   // Since MOD_M has the following form:
   // MOD_M = 2**MOD_W - 2**INT_POW0 - 2**INT_POW1 + 1
-  // We can retreive INT_POW0 and INT_POW1
+  // We can retrieve INT_POW0 and INT_POW1
   function automatic [INT_POW_NB-1:0][31:0] get_int_pow();
     bit   [INT_POW_NB-1:0][  31:0] pow;
     logic [INT_POW_NB-1:0][MOD_W:0] temp;
@@ -297,7 +297,7 @@ module mod_reduct_solinas3 #(
   // In the stage, partial additions are done.
   // Sub-words of the input are added. The size of the subwords depend on STRIDE.
   //
-  // A the end of the computation of the partial sums, the bit a[2*MOD_W] is substracted.
+  // A the end of the computation of the partial sums, the bit a[2*MOD_W] is subtracted.
   //
   // For example, with MOD_W=32, and INT_POW=[17, 13, 0], the partial addition is:
   // POS = [32, 47, 51, 62]

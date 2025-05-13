@@ -20,7 +20,7 @@ import datetime
 from gen_tb_hpu_param_global import *
 
 import random
-from constrainedrandom import RandObj, RandomizationError # For contrained random
+from constrainedrandom import RandObj, RandomizationError # For constrained random
 
 #==================================================================================================
 # Constraints
@@ -178,4 +178,3 @@ if __name__ == '__main__':
           b_fp.write(f"{k}={v}\n")
         for (k,v) in extra_d.items():
           b_fp.write(f"{k}={v}\n")
-

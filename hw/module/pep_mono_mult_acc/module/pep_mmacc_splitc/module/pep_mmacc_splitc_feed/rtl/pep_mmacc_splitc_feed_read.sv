@@ -558,7 +558,7 @@ module pep_mmacc_splitc_feed_read
 
 // Since we need to wait for the arbiter green light, we
 // also regulate the chunk command frequency here, to ensure
-// a regular rythm for the decomposer.
+// a regular rhythm for the decomposer.
 
   logic                               f1_avail;
 

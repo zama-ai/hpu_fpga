@@ -54,7 +54,7 @@ module mod_reduct_solinas2_general #(
   // ============================================================================================ //
   // Since MOD_M has the following form:
   // MOD_M = 2**MOD_W - 2**INT_POW + 1
-  // We can retreive INT_POW
+  // We can retrieve INT_POW
 
   localparam int         INT_POW   = $clog2(2**MOD_W+1 - MOD_M);
   localparam int         PROC_W    = MOD_W*2+1;
@@ -125,7 +125,7 @@ module mod_reduct_solinas2_general #(
   // In the stage, partial additions are done.
   // The first one d, is the accumulation of MOD_W sub-word, at INT_W intervals.
   // The second one c, is the accumulation of INT_W sub-word, at INT_W intervals.
-  // For both the bit [2*MOD_W] is substracted.
+  // For both the bit [2*MOD_W] is subtracted.
   //
   // For example, with MOD_W=33, and INT_POW=20, the partial addition is:
   // d = a[65:33] + a[66:46] + a[66:59]- a[66]
@@ -319,6 +319,3 @@ module mod_reduct_solinas2_general #(
   assign out_avail = s3_avail;
   assign out_side  = s3_side;
 endmodule
-
-
-

@@ -20,7 +20,7 @@ module pe_alu
   import pea_common_param_pkg::*;
 #(
   parameter int INST_FIFO_DEPTH = 8, // Should be >= 5
-  parameter int ALU_NB          = 1, // Number of ALU that worked in parallel. Should devide REGF_SEQ_COEF_NB
+  parameter int ALU_NB          = 1, // Number of ALU that worked in parallel. Should divide REGF_SEQ_COEF_NB
   // /!\ Review the following parameters whenever regfile architecture is updated.
   //     OUT_FIFO_DEPTH : The depth depends on the regfile maximum latency, between the sampling of the write command
   //                    and the actual writing of the first data.
@@ -408,7 +408,7 @@ module pe_alu
       acc_infoD_tmp[i] = acc_in_avail[0] && (acc_wp[0] == i) ? acc_in_info : acc_info_ext[i];
 
   assign acc_infoD = acc_shift[0] ? acc_infoD_tmp[ACC_DEPTH:1] : acc_infoD_tmp[ACC_DEPTH-1:0];
-  
+
   always_comb
     for (int i=0; i<2; i=i+1)
       accD[i] = acc_shift[i] ? accD_tmp[i][ACC_DEPTH:1] : accD_tmp[i][ACC_DEPTH-1:0];

@@ -60,7 +60,7 @@ module ntt_core_with_matrix_multiplication_middle
   parameter  int           S_NB                  = S, // Number of NTT stages
   parameter  bit           USE_PP                = 1, // If this part has the PP as border, indicates if the PP is included.
                                                       // Note that if the FWD and BWD NTT are both present, the PP
-                                                      // is instanciated
+                                                      // is instantiated
   parameter  string        TWD_IFNL_FILE_PREFIX  = NTT_CORE_ARCH == NTT_CORE_ARCH_WMM_UNFOLD ?
                                                         "memory_file/twiddle/NTT_CORE_ARCH_WMM/R8_PSI8_S3/SOLINAS3_32_17_13/twd_ifnl_bwd"    :
                                                         "memory_file/twiddle/NTT_CORE_ARCH_WMM/R8_PSI8_S3/SOLINAS3_32_17_13/twd_ifnl",

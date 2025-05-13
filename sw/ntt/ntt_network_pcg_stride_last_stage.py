@@ -320,7 +320,7 @@ if __name__ == "__main__":
         group_size = N
         group_nb   = (PSI*R) // group_size
         total_group_nb = N // group_size
-        group_bu   = group_size // R # also = group_pos_occurence
+        group_bu   = group_size // R # also = group_pos_occurrence
         group_bu_w =  int(log(group_bu,2))//R_W
         stg_iter_nb_per_group = STG_ITER_NB // total_group_nb
         max_stg_iter_nb_per_bu_pos = STG_ITER_NB // (PSI*R)

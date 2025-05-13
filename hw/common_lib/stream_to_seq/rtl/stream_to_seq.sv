@@ -5,7 +5,7 @@
 // Description  :
 // ----------------------------------------------------------------------------------------------
 //
-// This module deals with the convertion of a stream rdy/vld type bus into a sequential type bus.
+// This module deals with the conversion of a stream rdy/vld type bus into a sequential type bus.
 //
 //
 //
@@ -87,7 +87,7 @@ module stream_to_seq #(
 
       assign out_data_a[gen_i] = sr[SR_DEPTH-1];
       assign out_vld_a[gen_i]  = {SEQ_COEF_NB{sr_vld[SR_DEPTH-1]}};
-    
+
 // pragma translate_off
       always_ff @(posedge clk)
         if (!s_rst_n) begin

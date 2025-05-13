@@ -116,7 +116,7 @@ module ntt_core_wmm_ram_rd_pcg
   //   stg_iter : current stage iteration (taking into account OUT_PSI_DIV)
   //   intl_idx : current interleaved level
   //   ntt_bwd  : current forward or backward NTT process
-  //   lpb_cnt  : current loopback occurence
+  //   lpb_cnt  : current loopback occurrence
   logic [  INTL_L_W-1:0]    s0_intl_idx;
   logic [STG_ITER_W_L-1:0]  s0_stg_iter;
   logic [     STG_W-1:0]    s0_stg;
@@ -215,7 +215,7 @@ module ntt_core_wmm_ram_rd_pcg
       ST_WAIT :
         next_state = s0_rden ? ST_READ : state;
       ST_READ :
-        next_state = (s0_cmd_vld && s0_cmd_rdy && s0_cmd_eob) ? 
+        next_state = (s0_cmd_vld && s0_cmd_rdy && s0_cmd_eob) ?
                           s0_rden ? ST_READ : ST_WAIT : state;
     endcase
   end

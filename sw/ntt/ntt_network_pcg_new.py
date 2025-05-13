@@ -96,7 +96,7 @@ def pseudo_inverse_order(v, R, S, step):
 def network_whole_group(l, R, PSI, group_size, use_bu):
     """
     l is a list containing the output of the BUs : R*PSI elements
-    This function reoders the data for the next stage.
+    This function reorders the data for the next stage.
     """
 
     # group_size is a power of R
@@ -166,7 +166,7 @@ def network_whole_group(l, R, PSI, group_size, use_bu):
 def network_part_group(l, R, PSI,group_size):
     """
     l is a list containing the output of the BUs.
-    This function reoders the data for the next stage.
+    This function reorders the data for the next stage.
     len(l) < group_size
     """
 
@@ -180,7 +180,7 @@ def network_part_group(l, R, PSI,group_size):
         sys.exit("ERROR> Wrong l size {:0d}. Should be R*PSI {:0d}x{:0d}".format(len(l),R,PSI))
 
     # Do nothing
-    
+
 
 # ==============================================================================
 # reference
@@ -191,7 +191,7 @@ def reference(ref_l, dest_l, ram_l):
     """
 
     step = 0
-    for stg in range(S-1): 
+    for stg in range(S-1):
         if (VERBOSE):
             print("# REF stg={:0d}".format(stg))
 
@@ -218,7 +218,7 @@ def reference(ref_l, dest_l, ram_l):
 
             node_idx_0 = stg_iter * PSI
             node_id_0 = pseudo_reverse_order(node_idx_0, R, S-1, step)
-            
+
             if (VERBOSE):
                 print("# stg_iter={:0d} node_id_0={:06b}".format(stg_iter, node_id_0))
 
@@ -388,7 +388,7 @@ if __name__ == "__main__":
         group_size = R**(delta + 2)
         group_nb   = (PSI*R) // group_size
         total_group_nb = N // group_size
-        group_bu   = group_size // R # also = group_pos_occurence
+        group_bu   = group_size // R # also = group_pos_occurrence
         stg_iter_nb_per_group = STG_ITER_NB // total_group_nb
         stg_iter_nb_per_bu_pos = STG_ITER_NB // (PSI*R)
         next_delta = delta + 1
@@ -454,7 +454,7 @@ if __name__ == "__main__":
                 for p in range(PSI):
                     for r in range(R):
                         print("wr_ntw_l[{:0d}][{:0d}] = {:s}".format(p,r,str(in_l[p*R+r])))
-            
+
             # Rot R
             # To place according to pos_id
             if (pos_nb == 1):
@@ -471,7 +471,7 @@ if __name__ == "__main__":
                     print("# wr_rot_r_factor={:0d}".format(rot_r_factor))
                 for p in range(PSI):
                     in_l[p*R:(p+1)*R] = [in_l[p*R+(r-rot_r_factor)%R] for r in range(R)]
-                
+
             if (VERBOSE):
                 print("#---------")
                 for p in range(PSI):
@@ -494,7 +494,7 @@ if __name__ == "__main__":
                 pos_iter_nb = PSI // group_bu
                 rot_bu_factor = (stg_iter * pos_iter_nb)%PSI
                 rot_bu_factor = pseudo_reverse_order(rot_bu_factor,R,PSI_W,0)
-            
+
             if (VERBOSE):
                 print("# wr_rot_bu_factor={:0d}".format(rot_bu_factor))
             in_l = [in_l[((p-rot_bu_factor)%PSI)*R+r] for p in range(PSI) for r in range(R)]
@@ -516,7 +516,7 @@ if __name__ == "__main__":
             for p in range(PSI):
                 for r in range(R):
                     rd_l.append(buf_l[p][r][next_stg_iter])
- 
+
             if (VERBOSE):
                 print("## Proc RD next_stg_iter={:d}".format(next_stg_iter))
 
@@ -533,7 +533,7 @@ if __name__ == "__main__":
             else:
                 stg_iter_ofs  = ((N // (PSI*R)) // PSI)
                 rot_bu_factor = next_stg_iter // stg_iter_ofs
-                
+
                 print("# stg_iter_ofs={:0d} rot_bu_factor={:0d}".format(stg_iter_ofs,rot_bu_factor))
             rd_l = [rd_l[(p+rot_bu_factor)%PSI * R + r] for p in range(PSI) for r in range(R)]
 
@@ -559,7 +559,7 @@ if __name__ == "__main__":
                 for p in range(PSI):
                     for r in range(R):
                         print("rd_rotr_l[{:0d}][{:0d}] = {:s}".format(p,r,str(rd_l[p*R+r])))
- 
+
             for p in range(PSI):
                 for r in range(R):
                     out_l[p][r][next_stg_iter] = rd_l[p*R+r]

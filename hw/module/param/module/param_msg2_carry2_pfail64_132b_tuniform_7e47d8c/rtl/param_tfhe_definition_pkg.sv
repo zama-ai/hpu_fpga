@@ -6,7 +6,7 @@
 // ----------------------------------------------------------------------------------------------
 //
 // Parameters produced by optimizer from wip/fpga_poc branch commit 1f72dba
-// requirements: pfail 2^-64, 132b security, guassian distribution, correct HW BR & KS formulas
+// requirements: pfail 2^-64, 132b security, gaussian distribution, correct HW BR & KS formulas
 // matching noise measurements done in tfhe-rs-internal lwe_hpu_noise test
 //
 // ----------------------------------------------------------------------------------------------
@@ -26,7 +26,7 @@ package param_tfhe_definition_pkg;
   import common_definition_pkg::*;
 
   localparam application_name_e APPLICATION_NAME = APPLICATION_NAME_MSG2_CARRY2_PFAIL64_132B_TUNIFORM_7E47D8C;
-  
+
   // Number of coefficient in the polynomial
   localparam int           N       = 2048;
   // The dimension of GLWE.

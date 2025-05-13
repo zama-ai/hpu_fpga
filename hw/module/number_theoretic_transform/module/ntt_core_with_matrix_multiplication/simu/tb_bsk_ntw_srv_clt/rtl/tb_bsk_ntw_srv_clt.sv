@@ -305,7 +305,7 @@ module tb_bsk_ntw_srv_clt;
 // ============================================================================================= --
 // Here the clients are the command generators
 // Each client can generate up to BATCH_NB pending commands.
-// To ease the bench, we instanciate BSK_CLT_NB*BATCH_NB clients,
+// To ease the bench, we instantiate BSK_CLT_NB*BATCH_NB clients,
 // each is able to handle a single command.
 // The only constraint is that 2 "bench_client" cannot generate a command at the same time.
   typedef enum { ST_WAIT_CMD,
@@ -580,7 +580,7 @@ module tb_bsk_ntw_srv_clt;
         end
         else begin
           if (cl_ntt_rdy_tmp == 0 && cl_cur_cmd_en == 1 && (cl_st_wait_proc & cl_cur_cmd.batch_id_1h) != 0) begin
-          // All the key has been recieved.
+          // All the key has been received.
             rdy_tmp = $urandom_range(1);
             cl_ntt_rdy_tmp <= rdy_tmp;
           end

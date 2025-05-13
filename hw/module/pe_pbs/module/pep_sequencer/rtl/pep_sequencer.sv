@@ -842,7 +842,7 @@ module pep_sequencer
     end
 // pragma translate_on
 
-  // Keep track of the pointers sent in the lastest seq_ks command.
+  // Keep track of the pointers sent in the latest seq_ks command.
   // This is used to check that the KS is flushed.
   pointer_t              seq_ks_latest_in_wp;
   pointer_t              seq_ks_latest_in_rp;

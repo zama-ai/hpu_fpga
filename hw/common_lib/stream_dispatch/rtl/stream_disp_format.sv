@@ -5,7 +5,7 @@
 // Description  :
 // ----------------------------------------------------------------------------------------------
 //
-// This sub_module of stream_dispatch does the data formating between input and output
+// This sub_module of stream_dispatch does the data formatting between input and output
 // that does not have the same data size.
 // ==============================================================================================
 

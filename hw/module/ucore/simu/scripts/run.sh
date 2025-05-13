@@ -79,7 +79,7 @@ while getopts "hzCn:x:a:s:" opt; do
       INT_SIZE=$OPTARG
       ;;
     x)
-      echo "INFO> Embeded Software top file $OPTARG"
+      echo "INFO> Embedded Software top file $OPTARG"
       SOFT_NAME=$OPTARG
       ;;
     a)

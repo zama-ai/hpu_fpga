@@ -28,7 +28,7 @@ module pep_mmacc_splitc_feed_join
   import pep_mmacc_splitc_feed_pkg::*;
 #(
   parameter int HPSI_SET_ID = 0,// Indicates which of the two R*PSI/2 coef sets is processed here
-  parameter int CMD_ID      = 1 // Data to which the cmd are synchonized.
+  parameter int CMD_ID      = 1 // Data to which the cmd are synchronized.
                                 // If 0 : we need to delay them, to use them ar the correct moment.
 )
 (

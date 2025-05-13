@@ -2,7 +2,7 @@
  * Copyright (c) 2024 Advanced Micro Devices, Inc. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
- * This file contains the main entry point for the Alveo Managment Controller
+ * This file contains the main entry point for the Alveo Management Controller
  *
  * @file amc.c
  *
@@ -481,7 +481,7 @@ static void vTaskFuncMain( void )
                 PLL_INF("AMC", "One IOp processed [head 0x%x, tail 0x%x]", iopq_head, iopq_tail);
 
 
-                // Retrived DOp stream, patch it and send it to Isc
+                // Retrieved DOp stream, patch it and send it to Isc
                 get_lookup(header, &dop_entry);
                 PLL_DBG("UCORE", "Translation will patch and push %d dops @0x%x", dop_entry.len, dop_entry.ptr);
                 // Patch and stream DOps to HW

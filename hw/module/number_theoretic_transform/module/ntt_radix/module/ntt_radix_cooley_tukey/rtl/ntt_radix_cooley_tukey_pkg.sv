@@ -36,7 +36,7 @@ package ntt_radix_cooley_tukey_pkg;
     int mod_mult_lat;
     int additional_input_pipe;
 
-    // When infering goldilock cascade, every clock cycle is already accounted for and hardcoded
+    // When inferring goldilock cascade, every clock cycle is already accounted for and hardcoded
     additional_input_pipe = (MULT_TYPE == MULT_GOLDILOCKS_CASCADE) ? 0 : 1; // TODO
 
     mult_reduct_lat = MULT_BUTTERFLY_IN_PIPE

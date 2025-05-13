@@ -565,7 +565,7 @@ module bsk_if_cache_control
   // Use several cycles to update the cache info.
   // Indeed there is no need to rush here.
   // During the first state identify the hit/miss status of the command.
-  // During the second state retreive the slot
+  // During the second state retrieve the slot
   // During the third state, update the slot.
   // Note that if the output FIFO is not ready, the process is stalled.
 

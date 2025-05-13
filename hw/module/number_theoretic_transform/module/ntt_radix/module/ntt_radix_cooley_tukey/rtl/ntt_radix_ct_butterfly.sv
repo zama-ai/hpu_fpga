@@ -8,7 +8,7 @@
 // This module performs a step of a Radix-R Decimation-in-Time Cooley-Tukey Butterfly to be used in
 // the NTT.
 // It deals with:
-//   a modular addition/substraction according to the butterfly architecture
+//   a modular addition/subtraction according to the butterfly architecture
 // ==============================================================================================
 
 module ntt_radix_ct_butterfly
@@ -28,7 +28,7 @@ module ntt_radix_ct_butterfly
   // System interface
   input  logic                                   clk,
   input  logic                                   s_rst_n,
-  // Data inteface
+  // Data interface
   input  logic [R-1:0][OP_W-1:0]                 in_x,
   output logic [R-1:0][OP_W-1:0]                 out_x,
   // Control
@@ -51,7 +51,7 @@ module ntt_radix_ct_butterfly
   endgenerate
 
   // ============================================================================================ //
-  // s0 : Modular addition and substraction
+  // s0 : Modular addition and subtraction
   // ============================================================================================ //
   logic [R-1:0][OP_W-1:0]         s1_x;
   logic [R-1:0]                   s1_avail;
@@ -101,7 +101,7 @@ module ntt_radix_ct_butterfly
         );
       end
 
-      // Modular substraction
+      // Modular subtraction
       mod_sub #(
         .OP_W     (OP_W),
         .MOD_M    (MOD_M),

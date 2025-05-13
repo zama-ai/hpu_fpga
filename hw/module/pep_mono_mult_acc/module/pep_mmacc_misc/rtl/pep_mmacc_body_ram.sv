@@ -6,7 +6,7 @@
 // ----------------------------------------------------------------------------------------------
 //
 // This module stores the body "b" of the small LWE.
-// They are used by the sample extact module to do the rotation with b.
+// They are used by the sample extract module to do the rotation with b.
 // ==============================================================================================
 
 module pep_mmacc_body_ram

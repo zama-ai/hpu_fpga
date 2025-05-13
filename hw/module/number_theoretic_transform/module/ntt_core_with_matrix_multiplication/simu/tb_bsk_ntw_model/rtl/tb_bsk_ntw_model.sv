@@ -6,7 +6,7 @@
 // ----------------------------------------------------------------------------------------------
 //
 // Model for the bsk network.
-// This model is a basic instanciation of the BSK network.
+// This model is a basic instantiation of the BSK network.
 // To be used in testbench where the bsk network is needed.
 // ==============================================================================================
 
@@ -304,4 +304,3 @@ module tb_bsk_ntw_model
 
 
 endmodule
-

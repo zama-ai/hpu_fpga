@@ -287,7 +287,7 @@ while getopts "Chzg:l:R:P:S:w:t:m:c:H:K:s:e:b:q:W:A:J:I:L:B:r:V:X:Y:Z:G:o:u:f:O:
       INT_SIZE=$OPTARG
       ;;
     x)
-      echo "INFO> Embeded Software top file $OPTARG"
+      echo "INFO> Embedded Software top file $OPTARG"
       SOFT_NAME=$OPTARG
       ;;
     y)
@@ -475,7 +475,7 @@ for i in "${NTT_RDX_CUT_S_L[@]}" ; do
     ntt_cut_arg="$ntt_cut_arg -J $i"
     ntt_cut_flag="${ntt_cut_flag}c${i}"
 done
-#replace first occurance of c with n (cyclic -> negacyclic"
+#replace first occurrence of c with n (cyclic -> negacyclic"
 ntt_cut_flag=`echo $ntt_cut_flag | sed 's/c/n/'`
 echo "INFO> NTT rdx cut : ${NTT_RDX_CUT_S_TMP[@]}"
 
@@ -822,7 +822,7 @@ if [ $GEN_STIMULI -eq 1 ] ; then
     if [ -d $INPUT_DIR/ucode ] ; then rm -rf $INPUT_DIR/ucode ; fi
     cp -r $UCODE_DIR $INPUT_DIR/ucode
   fi
-else 
+else
   if [ $UCODE_DIR = "default" ] ; then
     echo "INFO> Using existing ucode directory $INPUT_DIR/ucode."
   else

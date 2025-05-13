@@ -1,12 +1,12 @@
 ###
-# Embeded software development
+# Embedded software development
 # -------------------------------------------------------------------------------------------------
-# 
+#
 # This makefile generates needed outputs for Micorblaze compilation
-# 
-# Usage : 
+#
+# Usage :
 #		>  make target={TargetName} srcf={FileName}
-# 
+#
 ###################################################################################################
 SHELL = /bin/sh
 
@@ -22,11 +22,11 @@ sgr0 := $(shell tput sgr0)
 
 # ----------------------------------------------------------------------------------------------- #
 # > Targets
-# 
+#
 # TargetCompile builds the c code and generates output products '.o' .'d'
-# 
+#
 # TargetLink links compiled code with the address map '.ld' and generates ".elf"
-# 
+#
 # TargetMemory transforms elf into memory file for standalone simualtion
 # ----------------------------------------------------------------------------------------------- #
 
@@ -56,4 +56,3 @@ TargetCompile: $(compiled)
 $(compiled):
 	@echo "Folder $(compiled) does not exist"
 	mkdir -p $@
-

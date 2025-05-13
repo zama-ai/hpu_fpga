@@ -5,8 +5,8 @@
 // Description  :
 // ----------------------------------------------------------------------------------------------
 //
-// This module deals with the convertion of a stream rdy/vld type bus into a pipe type bus.
-// It is also able to synchonize the input paths. To do that, it needs a small buffer.
+// This module deals with the conversion of a stream rdy/vld type bus into a pipe type bus.
+// It is also able to synchronize the input paths. To do that, it needs a small buffer.
 // An error is triggered if the buffer is full.
 // In this latter case data are lost, and the inputs are desynchronized.
 //
@@ -60,7 +60,7 @@ module stream_to_pipe #(
       logic                        buf_shift;
 
       assign buf_shift          = buf_out_vld[gen_i] & buf_out_rdy[gen_i];
-      assign buf_out_vld[gen_i] = buf_en[0]; 
+      assign buf_out_vld[gen_i] = buf_en[0];
       assign out_d_data[gen_i]  = buf_data[0];
       assign buf_in_avail       = in_vld[gen_i];
       assign buf_in_data        = in_data[gen_i];
@@ -109,7 +109,7 @@ module stream_to_pipe #(
 // Synchronization
 // ============================================================================================== --
   assign out_d_avail = &buf_out_vld;
-  
+
   always_comb begin
     var [IN_NB-1:0] mask;
     for (int i=0; i<IN_NB; i=i+1) begin

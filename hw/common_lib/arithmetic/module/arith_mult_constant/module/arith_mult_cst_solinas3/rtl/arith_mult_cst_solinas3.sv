@@ -53,7 +53,7 @@ module arith_mult_cst_solinas3
 // ============================================================================================== --
   // Since CST has the following form:
   // CST = 2**CST_W - 2**INT_POW0 - 2**INT_POW1 + 1
-  // We can retreive INT_POW0 and INT_POW1
+  // We can retrieve INT_POW0 and INT_POW1
   function automatic [INT_POW_NB-1:0][31:0] get_int_pow();
     bit   [INT_POW_NB-1:0][  31:0]  pow;
     logic [INT_POW_NB-1:0][CST_W:0] temp;
@@ -92,10 +92,10 @@ module arith_mult_cst_solinas3
   ) s0_delay_side (
     .clk      (clk      ),
     .s_rst_n  (s_rst_n  ),
-                        
+
     .in_avail (in_avail ),
     .out_avail(s0_avail ),
-                        
+
     .in_side  (in_side  ),
     .out_side (s0_side  )
   );
@@ -127,7 +127,7 @@ module arith_mult_cst_solinas3
     .clk      (clk          ),
     .s_rst_n  (s_rst_n      ),
     .in_avail (s0_avail     ),
-    .out_avail(s1_avail     ),           
+    .out_avail(s1_avail     ),
     .in_side  (s0_side      ),
     .out_side (s1_side      )
   );

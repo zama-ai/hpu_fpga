@@ -23,7 +23,7 @@
 //  D_INIT : first value of delta index
 //  D_NB   : Number of stages
 //  USE_PP : Taken into account when IS_LS=1.
-//           If 1, instanciate the PP and the last stage NTW
+//           If 1, instantiate the PP and the last stage NTW
 //           If 0, outputs data at the input of the PP
 //
 //  if D_INIT + D_NB = DELTA
@@ -562,4 +562,3 @@ module ntt_core_with_matrix_multiplication_unfold_pcg_middle_fwd
   endgenerate
 
 endmodule
-

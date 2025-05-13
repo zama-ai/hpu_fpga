@@ -6,7 +6,7 @@
 // ----------------------------------------------------------------------------------------------
 //
 // Bench that checks ram_wrapper_1R1W.
-// The sceanrio is split into the following parts:
+// The scenario is split into the following parts:
 // ST_WRITE_A : fill the RAM with write accesses from port A
 // ST_READ_B  : read the RAM content from port B
 // ST_WRITE_B : fill the RAM with write accesses from port A
@@ -137,7 +137,7 @@ module tb_ram_wrapper_2RW;
                 ST_DONE} state_e;
   state_e state;
   state_e next_state;
- 
+
   logic start;
   logic [1:0] wr_done;
   logic [1:0] rd_done;
@@ -470,7 +470,7 @@ module tb_ram_wrapper_2RW;
       assign rd_data_ref_tmp[DEPTH_W+:WR_ID_W] = st_read[gen_i]           ? wr_id + 1 - (gen_i%2):
                                                 st_read_and_write[gen_i] ? (parity_a[0]!= parity_a[1]) ? wr_id + 1 - (gen_i%2) : wr_id - (gen_i%2):
                                                 st_conflict_access[gen_i] ? rd_data_ref_lsb:
-                                                st_random_access ? 'x : 'x; 
+                                                st_random_access ? 'x : 'x;
 
       assign rd_data_ref_dlyD[0] = rd_data_ref_tmp;
       assign rd_avail_dlyD[0]    = en_a[gen_i] & ~wen_a[gen_i];
@@ -507,7 +507,7 @@ module tb_ram_wrapper_2RW;
               error_d <= 1'b1;
               $error("> ERROR: Datar mismatches [%d]: exp=0x%0x seen=0x%0x",gen_i, rd_data_ref_dly[RAM_LATENCY-1][DEPTH_W-1:0],rd_data_a[gen_i][DEPTH_W-1:0]);
             end
-          
+
             if (rd_data_ref_dly[RAM_LATENCY-1][DEPTH_W+:2] !== 2'bxx)
               assert(rd_data_a[gen_i][DEPTH_W+:2] === rd_data_ref_dly[RAM_LATENCY-1][DEPTH_W+:2])
               else begin

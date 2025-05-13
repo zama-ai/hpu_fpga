@@ -26,7 +26,7 @@ module tb_stream_source
   //  /!\ Does not work with xsim
   //localparam string PROJECT_DIR = $sformatf("%s", getenv("PROJECT_DIR"));
   //localparam string PWD = $sformatf("%s", getenv("PWD"));
-  
+
   localparam string  FILENAME      = "input/rdata.dat";
   localparam string  FILENAME_REF  = "input/ref.dat";
   localparam string  FILENAME_WR   = "output/stream_spy.dat";
@@ -48,7 +48,7 @@ module tb_stream_source
 // ============================================================================================== --
 // class
 // ============================================================================================== --
-// To define some random contraints.
+// To define some random constraints.
   class rand_d_mod #(parameter int DATA_W = DATA_W) extends random_data#(DATA_W);
     constraint data_mod {data inside {[DATA_MIN:DATA_MAX]};}
   endclass
@@ -196,7 +196,7 @@ module tb_stream_source
     $display("%t > INFO: Running==1",$time);
     wait (!stream_source.running);
     $display("%t > INFO: Running==0",$time);
- 
+
     assert(data_cnt == DATA_START_NB)
     else begin
       $display("%t > ERROR: Total number of data mismatches. exp=%0d seen=%0d",$time, DATA_START_NB, data_cnt);
@@ -224,7 +224,7 @@ module tb_stream_source
     $display("%t > INFO: Running==1",$time);
     wait (!stream_source.running);
     $display("%t > INFO: Running==0",$time);
- 
+
     assert(data_cnt == data_cnt_ofs + DATA_START_NB)
     else begin
       $display("%t > ERROR: Total number of data mismatches. exp=%0d seen=%0d",$time, data_cnt_ofs + DATA_START_NB, data_cnt);
@@ -270,7 +270,7 @@ module tb_stream_source
 // Check
 // ============================================================================================== --
   // check counter
-  always_ff @(posedge clk) begin 
+  always_ff @(posedge clk) begin
     logic [DATA_W-1:0] data_ref;
     if (!s_rst_n)
       error_data <= 1'b0;

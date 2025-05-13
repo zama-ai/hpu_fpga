@@ -339,7 +339,7 @@ module ntt_core_gf64_ntw_core_wr
     end
 
   // ------------------------------------------------------------------------------------------- --
-  // Comamnd FIFO
+  // Command FIFO
   // ------------------------------------------------------------------------------------------- --
   // Prepare command FIFO during this cycle (2 cycles before RAM write), to loose as less cycles as possible.
   assign cmd_fifo_avail    = s1_avail[0] & s1_ctrl.last_iter; // write a command for each interleaved level

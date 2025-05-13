@@ -86,7 +86,7 @@ module pem_store
   localparam int DATA_FIFO_DEPTH     = 2*DATA_THRESHOLD;
   localparam int DATA_CNT_W          = $clog2(DATA_FIFO_DEPTH+1)==0 ? 1 : $clog2(DATA_FIFO_DEPTH+1); // Counts from 0 to DATA_FIFO_DEPTH included
 
-  localparam int AXI_BURST_NB_MAX    = ((AXI4_WORD_PER_PC0 + PAGE_AXI4_DATA-1) / PAGE_AXI4_DATA) + 1; // +1 in case of address non alignement
+  localparam int AXI_BURST_NB_MAX    = ((AXI4_WORD_PER_PC0 + PAGE_AXI4_DATA-1) / PAGE_AXI4_DATA) + 1; // +1 in case of address non alignment
   localparam int AXI_BURST_NB_MAX_W  = $clog2(AXI_BURST_NB_MAX) == 0 ? 1 : $clog2(AXI_BURST_NB_MAX);
   localparam int AXI_BURST_NB_MAX_WW = $clog2(AXI_BURST_NB_MAX+1) == 0 ? 1 : $clog2(AXI_BURST_NB_MAX+1);
 
@@ -576,7 +576,7 @@ module pem_store
             buf_last <= buf_lastD;
           end
 // pragma translate_off
-        // Check that the sr is ready to reveive the input data
+        // Check that the sr is ready to receive the input data
         always_ff @(posedge clk)
           if (!s_rst_n) begin
             // do nothing
@@ -597,7 +597,7 @@ module pem_store
           assign buf_data_l_avail = r0_data_avail[gen_p];
           assign buf_data_l_last  = r0_data_last[gen_p];
 // pragma translate_off
-        // Check that the sr is ready to reveive the input data
+        // Check that the sr is ready to receive the input data
         always_ff @(posedge clk)
           if (!s_rst_n) begin
             // do nothing
@@ -667,7 +667,7 @@ module pem_store
         else begin
           assign acc_dataD   = r0_data_avail[gen_p] ? {r0_data[gen_p]} : acc_data;
         end
-        // gen_p==0, we deal with the body. This latter is the last AXI word to be transfered, and it is alone in its AXI word.
+        // gen_p==0, we deal with the body. This latter is the last AXI word to be transferred, and it is alone in its AXI word.
         assign r1_axi_data = (r0_data_last[gen_p] && (gen_p == 0)) ? {CHK_NB{r0_data[gen_p]}} : {r0_data[gen_p], acc_data};
         assign r1_axi_vld  = r0_data_avail[gen_p] & acc_last_in_cnt;
 

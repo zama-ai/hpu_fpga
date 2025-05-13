@@ -14,7 +14,7 @@ package arith_mult_core_pkg;
 
   localparam int LATENCY  = 6; // Should be >= 1
                               // Number of cycles used for the multiplication.
-                              // These cycles will be used by the synthesizer for infering the
+                              // These cycles will be used by the synthesizer for inferring the
                               // best implementation of this operation.
                               // Default value 5 chosen, for Xilinx DSP @ 400MHz, DSP48E2
                               // to support multiplication with operands >= 32b.

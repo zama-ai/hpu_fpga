@@ -16,7 +16,7 @@
 # The reduction is composed of the following steps:
 # - decompose input v according to MOD_M into SN+2 parts:
 #     v[MOD_W-1:0]
-#     d : part to be substracted
+#     d : part to be subtracted
 #     c[0..SN-1] : part to be multiplied by 2**Ei
 # - reduce c[0..SN-1], by decomposing each term into c[i][s-1:0] and c[i][max:s]
 #   where s = MOD_W-Ei
@@ -50,12 +50,12 @@ MAX_POS_CORR_NB=2 # up to +2mod
 def get_exponent(m):
     '''
     Return a list containing the exponents of the Solinas Modulo.
-    We assume that the 
+    We assume that
     2^m0-2^m1-2^m2...+1
     '''
     l = []
     e = int(log(m,2))
-    e = e+1 # because of the substraction of the other terms.
+    e = e+1 # because of the subtraction of the other terms.
     l.append(e)
     v = (2**e+1) - m
     while (v > 0):
@@ -109,21 +109,21 @@ def get_position(e_l, POS_MAX):
     l = []
     e = e_l[0]
     l.append(e)
-    
+
     pos_d = {}
     stride_l = []
     for i in range(1,len(e_l)):
         stride = e - e_l[i]
         stride_l.append(stride)
         pos_d[stride] = [e]
-    
+
     get_position_core(e, POS_MAX, stride_l, pos_d)
 
     l = pos_d[stride_l[0]]
     for k in pos_d.keys():
       if (l != pos_d[k]):
         sys.exit("ERROR> Position list differs: "+str(l)+" [{:0d}]=".format(k)+str(pos_d[k]))
- 
+
     return pos_d
 
 # ==============================================================================
@@ -163,7 +163,7 @@ def check_modulo_supported(MOD, POS_MAX, MOD_W):
 
         b_max[s] = 0
         for p in pos_d[s]:
-            # Retreive the number of bits of each contribution.
+            # Retrieve the number of bits of each contribution.
             b = s
             if (p+s > POS_MAX):
                 b = POS_MAX - p
@@ -224,7 +224,7 @@ def compute_modulo(v, MOD,POS_MAX, e_l, pos_d):
     d = 0
     v_msb = get_sub_part(v, 2*mod_w, 2*mod_w)
     stride_l = list(pos_d.keys())
-    
+
     for p in pos_d[stride_l[0]]:
         a = mod_w
         if (p+a > POS_MAX):
@@ -268,7 +268,7 @@ def compute_modulo(v, MOD,POS_MAX, e_l, pos_d):
         b[s] = b[s] + compl
         if (VERBOSE):
             print("v=0x{:0x} b'[{:0d}]=0x{:0x}".format(v, s, b[s]))
-        
+
     d = d + compl
     if (VERBOSE):
         print("v=0x{:0x} d'=0x{:0x}".format(v, d))
@@ -396,7 +396,7 @@ if __name__ == "__main__":
     if (args.find > 0):
         MOD_W = args.find
         POS_MAX = args.pos_max
-        if (POS_MAX < 0): #Retreive default value
+        if (POS_MAX < 0): #Retrieve default value
             POS_MAX = 2*MOD_W + 1
         if (POS_MAX > 2*MOD_W + 1):
             sys.exit("ERROR> Unsupported POS_MAX. Must be in [0, {:0d}]".format(2*MOD_W + 1))
@@ -436,7 +436,7 @@ if __name__ == "__main__":
     elif (args.data != 0 or args.reduce_all):
         MOD_W = args.mod_w
         POS_MAX = args.pos_max
-        if (POS_MAX < 0): #Retreive default value
+        if (POS_MAX < 0): #Retrieve default value
             POS_MAX = 2*MOD_W + 1
         if (POS_MAX > 2*MOD_W + 1):
             sys.exit("ERROR> Unsupported POS_MAX. Must be in [0, {:0d}]".format(2*MOD_W + 1))
@@ -464,7 +464,7 @@ if __name__ == "__main__":
         if not(args.bypass_check):
             if not(ok):
                 sys.exit("ERROR> HW does not support this modulo 0x{:0x}".format(MOD))
-       
+
         if (args.data == 0):
             msb_max = 2**POS_MAX-1 >> MOD_W
             msb_min = -1
@@ -472,7 +472,7 @@ if __name__ == "__main__":
             i = 0;
             for msb in range(msb_max, -1, -1):
                 # Reduce the number of computing, in order to test more values.
-                # In the computation, 
+                # In the computation,
                 for step in range(4):
                     if (step == 0):
                         v = 0
@@ -498,7 +498,7 @@ if __name__ == "__main__":
                 print("data=0x"+hex(args.data))
             if (v > 2**POS_MAX-1):
                 sys.exit("ERROR> Unsupported data 0x{:0x} to reduced. Must be in [1,2**{:0d}-1]".format(v,POS_MAX))
-            
+
             r = compute_modulo(v, MOD, POS_MAX, exp_l, pos_d)
             ref = v % MOD
             if (r != ref):

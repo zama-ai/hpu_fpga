@@ -4,7 +4,7 @@
 CUR_SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" &> /dev/null && pwd)
 export PROJECT_DIR=$CUR_SCRIPT_DIR
 
-# There are two Optionnal arguments available
+# There are two Optional arguments available
 # 1 - Argument CONFIG will load the corresponding configuration. By default = base
 # 2 - Argument AWS_ZAMA_USER, for CONFIG=aws will set S3 bucket username
 CONFIG=${1:-"base"}
@@ -130,7 +130,7 @@ echo "  TFHERS_VERSION=${TFHERS_VERSION}"
 echo "  SNPS_VCS_UFE_KDB=${SNPS_VCS_UFE_KDB}"
 echo -e "$export_str"
 
-# Check external ressources are available
+# Check external resources are available
 # TODO
 
 # alias

@@ -258,7 +258,7 @@ module tb_bsk_ntw_server;
 // ============================================================================================= --
 // Here the clients are the command generators
 // Each client can generate up to BATCH_NB pending commands.
-// To ease the bench, we instanciate BSK_CLT_NB*BATCH_NB clients,
+// To ease the bench, we instantiate BSK_CLT_NB*BATCH_NB clients,
 // each is able to handle a single command.
 // The only constraint is that 2 "bench_client" cannot generate a command at the same time.
 //

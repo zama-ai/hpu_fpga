@@ -42,7 +42,7 @@ module ntt_radix_cooley_tukey
   // System interface
   input  logic                                     clk,
   input  logic                                     s_rst_n,
-  // Data inteface
+  // Data interface
   input  logic [R-1:0][OP_W-1:0]                   xt_a,
   output logic [R-1:0][OP_W-1:0]                   xf_a,
   input  logic [R-1:1][OP_W-1:0]                   phi_a,   // Phi root of unity
@@ -249,13 +249,13 @@ module ntt_radix_cooley_tukey
           .RST_SIDE    (2'b00)
 
         ) sn_ntt_radix_ct_butterfly (
-          
+
           .clk        (clk                                  ),
           .s_rst_n    (s_rst_n                              ),
           .in_x       (sn_x[gen_s  ][2*gen_g*R_NB+:R_NB]    ),
           .out_x      (sn_x[gen_s+1][2*gen_g*R_NB+:R_NB]    ),
           .in_avail   (sn_avail[gen_s  ][2*gen_g*R_NB+:R_NB]),
-          .out_avail  (sn_avail[gen_s+1][2*gen_g*R_NB+:R_NB]), 
+          .out_avail  (sn_avail[gen_s+1][2*gen_g*R_NB+:R_NB]),
           .in_side    (sn_omg_sel[gen_s  ][gen_g]           ),
           .out_side   (sn_omg_sel[gen_s+1][2*gen_g]         )
         );
@@ -291,7 +291,7 @@ module ntt_radix_cooley_tukey
         .RST_SIDE   (RST_SIDE)
       ) sn_delay_side (
         .clk      (clk             ),
-        .s_rst_n  (s_rst_n         ),                  
+        .s_rst_n  (s_rst_n         ),
         .in_avail ('x              ),
         .out_avail(/*UNUSED*/      ),
         .in_side  (sn_side[gen_s  ]),
@@ -300,7 +300,7 @@ module ntt_radix_cooley_tukey
 
     end // for gen_s
   endgenerate
- 
+
   // ============================================================================================ //
   // sl
   // ============================================================================================ //
@@ -353,7 +353,7 @@ module ntt_radix_cooley_tukey
                 $fatal(1, "%t > ERROR: Fifo[%0d] underflow!", $time, gen_i);
               end
             end
-          end 
+          end
   // pragma translate_on
       end
     end // gen_out_fifo
@@ -394,7 +394,7 @@ module ntt_radix_cooley_tukey
 // pragma translate_on
     end // gen_out_sr
   endgenerate
- 
+
   // ============================================================================================ //
   // Output
   // ============================================================================================ //

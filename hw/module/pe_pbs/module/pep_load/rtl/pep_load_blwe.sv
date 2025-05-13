@@ -285,7 +285,7 @@ module pep_load_blwe
   //    The FIFO is sized so that it is big enough to received all the input while the
   //    sending is on.
   //    There are enough location therefore means that after REGF_RD_LATENCY cycles the FIFO is empty
-  //    to reveive the new data.
+  //    to receive the new data.
 
   logic [KS_IF_SUBW_NB-1:0]                                 blram_wr_en;
   logic [KS_IF_SUBW_NB-1:0][PID_W-1:0]                      blram_wr_pid;

@@ -536,7 +536,7 @@ endtask
     dop_q = {};
     do begin
       axis_dop_ep.pop(dop, is_last);
-      // $display("%t > INFO: DOp poped %x doq_q size %03d", $time, dop, dop_q.size());
+      // $display("%t > INFO: DOp popped %x doq_q size %03d", $time, dop, dop_q.size());
       dop_q[$+1] = dop;
     end
     while (dop != SYNC_DOP_WORD);
@@ -581,7 +581,7 @@ endtask
   // Scenario
   // ============================================================================================== --
   initial begin
-    int iop_ack; 
+    int iop_ack;
     int iop_id;
 
     logic [AXI4_DATA_W-1:0]  work_q[$];

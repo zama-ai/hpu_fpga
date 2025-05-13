@@ -69,7 +69,7 @@ package ntt_core_wmm_dispatch_rotate_pcg_pkg;
     GROUP_NB       = (PSI*R) / GROUP_SIZE;   /* Number of groups within the implemented BUs */
     TOTAL_GROUP_NB = N / GROUP_SIZE == 0 ? 1 : N / GROUP_SIZE;
     GROUP_NB_L     = GROUP_NB == 0 ? 1 : GROUP_NB; /* Used in for loop */
-    GROUP_NODE     = GROUP_SIZE / R; /* Number of BU within a group. Is also the number of occurence of a position. */
+    GROUP_NODE     = GROUP_SIZE / R; /* Number of BU within a group. Is also the number of occurrence of a position. */
 
     //== Step info
     POS_NB_TMP  = (PSI*R) / GROUP_NODE;

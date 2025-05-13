@@ -2,7 +2,7 @@
 // BSD 3-Clause Clear License
 // Copyright © 2025 ZAMA. All rights reserved.
 // ----------------------------------------------------------------------------------------------
-// Description  : post-procesing
+// Description  : post-processing
 // ----------------------------------------------------------------------------------------------
 //
 // Post-processing module has three objectives :
@@ -175,7 +175,7 @@ module ntt_core_wmm_post_process
   // s0
   // ============================================================================================ //
   // ============================================================================================ //
-  // Stage 0 : 
+  // Stage 0 :
   //  - Regular stage network redirection
   //  - Modular multiplier
   //  - Control delay
@@ -191,7 +191,7 @@ module ntt_core_wmm_post_process
   assign s0_ls_bwd_avail = s0_ls_avail & s0_ntt_bwd ;
   assign s0_ls_fwd_avail = s0_ls_avail & ~s0_ntt_bwd;
 
-  // Error managment ------------------------------------------------------------------------------- 
+  // Error management -------------------------------------------------------------------------------
   // BSK and twiddle INTT final must be valid when the data are available
   logic s0_error;
   logic s0_errorD;
@@ -209,7 +209,7 @@ module ntt_core_wmm_post_process
   // The twiddle INTT factors are independent from the level.
   assign twd_intt_final_rdy = s0_ls_bwd_avail & s0_eol;
 
-  // Bootstraping key ------------------------------------------------------------------------------
+  // Bootstrapping key ------------------------------------------------------------------------------
   // GLWE_K_P1 keys are consumed per input, 1 per cycle.
   logic [GLWE_K_P1-1:0] s0_ls_fwd_avail_sr;
   assign bsk_rdy = s0_ls_fwd_avail_sr;
@@ -560,9 +560,9 @@ module ntt_core_wmm_post_process
     end
   endgenerate
 
-  // Last stage output configuration for compact architecture --------------------------------------  
+  // Last stage output configuration for compact architecture --------------------------------------
   // In compact architecture, a last stage is never followed by another last stage.
-  // Therefore, in this architecture, the 2 last stages should not conflict. 
+  // Therefore, in this architecture, the 2 last stages should not conflict.
   logic [     OP_W-1:0] s2_ls_data;
   logic                 s2_ls_sob;
   logic                 s2_ls_eob;

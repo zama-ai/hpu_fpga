@@ -47,7 +47,7 @@ module  mod_reduct_solinas2_half
   // ============================================================================================ //
   // Since MOD_M has the following form:
   // MOD_M = 2**MOD_W - 2**INT_POW + 1
-  // We can retreive INT_POW
+  // We can retrieve INT_POW
 
   localparam int         INT_POW   = $clog2(2**MOD_W+1 - MOD_M);
   localparam int         PROC_W    = MOD_W*2;

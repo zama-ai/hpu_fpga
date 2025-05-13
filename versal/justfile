@@ -141,7 +141,7 @@ merge_elf TOP_IP:
   # check if an elf is already present
   bootgen -arch versal -read $PDI_PATH | grep "rpu_subsystem" && { echo "[ERROR]: ELF already present in pdi $PDI_PATH"; exit 1; } || echo "[INFO]: no elf found .. continue"
 
-  # save PDI with only FPGA bistream in a .pdi.noelf file
+  # save PDI with only FPGA bitstream in a .pdi.noelf file
   cp $PDI_PATH $PDI_PATH.noelf
   # merge elf and top pdi -----------------------------------------------------
   sed -e "s#\^\^top_pdi_path\^\^#$PDI_PATH#g" \

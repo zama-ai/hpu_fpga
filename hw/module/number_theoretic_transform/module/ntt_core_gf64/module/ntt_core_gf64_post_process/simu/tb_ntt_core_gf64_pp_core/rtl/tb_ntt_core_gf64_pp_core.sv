@@ -348,7 +348,7 @@ module tb_ntt_core_gf64_pp_core;
           sign           = a_val[OP_W-1];
           a_abs          = sign ? (1 << OP_W) - a_val[OP_W-1:0] : a_val[OP_W-1:0];
 
-          mult_abs       = a_abs * ((b[j]+i)%MOD_M); // retreive the bsk from the 1rst one
+          mult_abs       = a_abs * ((b[j]+i)%MOD_M); // retrieve the bsk from the 1rst one
           mult_abs_reduc = mult_abs - (mult_abs/MOD_M)*MOD_M;
           mult_reduc     = (sign && (mult_abs_reduc!=0)) ? MOD_M - mult_abs_reduc : mult_abs_reduc;
 

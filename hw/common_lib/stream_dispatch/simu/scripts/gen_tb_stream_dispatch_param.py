@@ -15,7 +15,7 @@ import pprint
 import datetime
 
 import random
-from constrainedrandom import RandObj, RandomizationError # For contrained random
+from constrainedrandom import RandObj, RandomizationError # For constrained random
 
 #==================================================================================================
 # Constraints
@@ -133,4 +133,3 @@ if __name__ == '__main__':
     with open(bfile_path, 'w') as b_fp:
         for (k,v) in r1.get_results().items():
           b_fp.write(f"{k}={v}\n")
-

@@ -79,7 +79,7 @@ package pep_mmacc_splitc_sxt_pkg;
   endfunction
 
   function int gunit_depth(int d);
-    // Additional localtions to compensation the FIFO output pipe
+    // Additional locations to compensation the FIFO output pipe
     gunit_depth = DO_ACC ? d * CHUNK_GRAM_NB + CHUNK_GRAM_NB: (d + GRAM_CHUNK_NB-1)/ GRAM_CHUNK_NB + 1;
   endfunction
 

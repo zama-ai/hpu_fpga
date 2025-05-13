@@ -14,7 +14,7 @@
 // Prerequisites : None
 //
 // ----------------------------------------------------------------------------------------------
-// NB: Modport isn't used in assignement analysis.
+// NB: Modport isn't used in assignment analysis.
 // Duplicate the interface to have drv/ep implementation.
 // In a real verification env, interface must be define only once and the logic must go in the driver and the monitory
 // (Not in the interface itself)
@@ -130,7 +130,7 @@ output bit [(AXIS_DATA_W-1):0]   data_q[$];
 bit is_last;
 bit [(AXIS_DATA_W-1):0]   data;
 begin
-  do begin 
+  do begin
     pop(data, is_last);
     data_q[$+1] = tdata;
     end

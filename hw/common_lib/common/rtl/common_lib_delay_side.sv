@@ -50,7 +50,7 @@ module common_lib_delay_side #(
 // ============================================================================================== //
 // Delay line
 // ============================================================================================== //
-// -- Delay line. Will be infered by synthesizer as cycles usable in the multiplication computation.
+// -- Delay line. Will be inferred by synthesizer as cycles usable in the multiplication computation.
   generate
     //----------------- LATENCY = 0 -----------------------
     if (LATENCY == 0) begin

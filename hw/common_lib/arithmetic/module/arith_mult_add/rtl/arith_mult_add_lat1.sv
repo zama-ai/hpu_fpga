@@ -14,13 +14,13 @@
 module arith_mult_add_lat1 #(
   parameter LATENCY = 1,   // Should be >= 1
                            // Number of cycles used for the multiplication + addition.
-                           // These cycles will be used by the synthesizer for infering the
+                           // These cycles will be used by the synthesizer for inferring the
                            // best implementation of this operation.
   parameter OP_A_W  = 32,
   parameter OP_B_W  = 32,
   parameter OP_C_W  = 32   // Should be less or equal to OP_A_W + OP_B_W
 
-  
+
 )
 (
     input  logic                       clk,        // clock
@@ -41,9 +41,9 @@ module arith_mult_add_lat1 #(
 
   //-- Step 0 : multiplication followed by addition
   assign s0_result = s0_a * s0_b + s0_c;
-  
 
-  // -- Delay line. Will be infered by synthesizer as cycles usable in the multiplication computation.
+
+  // -- Delay line. Will be inferred by synthesizer as cycles usable in the multiplication computation.
   logic [LATENCY-1:0][OP_A_W + OP_B_W:0] result_dly;
 
   generate
@@ -63,4 +63,3 @@ module arith_mult_add_lat1 #(
   assign z = result_dly[LATENCY-1];
 
 endmodule
-

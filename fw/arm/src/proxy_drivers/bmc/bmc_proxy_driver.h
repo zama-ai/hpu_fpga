@@ -165,7 +165,7 @@ int iBMC_BindCallback( EVL_CALLBACK *pxCallback );
 /**
  * @brief   Response to a Sensor Info request
  *
- * @param   pxSignal        Current event occurence (used for tracking)
+ * @param   pxSignal        Current event occurrence (used for tracking)
  * @param   usSensorId      Sensor Id
  * @param   ssSensorInfo    Sensor Value
  * @param   ucSensorState   Sensor Operational State
@@ -182,7 +182,7 @@ int iBMC_SendResponseForGetSensor( EVL_SIGNAL *pxSignal,
 /**
  * @brief   Response to an enable sensor request
  *
- * @param   pxSignal      Current event occurence (used for tracking)
+ * @param   pxSignal      Current event occurrence (used for tracking)
  * @param   xBmcResponse  Enable sensor response
  *
  * @return  OK          Command was successful

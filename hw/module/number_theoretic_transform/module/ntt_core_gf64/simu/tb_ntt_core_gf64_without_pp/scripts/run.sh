@@ -123,7 +123,7 @@ for i in "${NTT_RDX_CUT_S_L[@]}" ; do
     ntt_cut_arg="$ntt_cut_arg -J $i"
     ntt_cut_flag="${ntt_cut_flag}c${i}"
 done
-#replace first occurance of c with n (cyclic -> negacyclic"
+#replace first occurrence of c with n (cyclic -> negacyclic"
 ntt_cut_flag=`echo $ntt_cut_flag | sed 's/c/n/'`
 
 # Process NTT_SPLIT_S

@@ -16,7 +16,7 @@ package random_handler_pkg;
 // class rand_data
 // ============================================================================================== --
 // Basic class to handle random data.
-// User should redefine it to add contraints on the randomization.
+// User should redefine it to add constraints on the randomization.
   class random_data #(parameter int DATA_W = 8);
     //--------------------------------------------
     // Data members
@@ -39,7 +39,7 @@ package random_handler_pkg;
     function [DATA_W-1:0] get_data;
       return data;
     endfunction
-    
+
     //----------------------
     // get_next_data
     //----------------------

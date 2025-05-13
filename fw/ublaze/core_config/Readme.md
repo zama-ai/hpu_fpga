@@ -12,6 +12,6 @@ The block design contains the following:
 * ublaze_0_xlconcat
 * ublaze_0_axi_periph
 * rst_clock_100 Mhz (to trigger)
-* memory units (infered)
+* memory units (inferred)
 
 Core clock is configured @250MHz

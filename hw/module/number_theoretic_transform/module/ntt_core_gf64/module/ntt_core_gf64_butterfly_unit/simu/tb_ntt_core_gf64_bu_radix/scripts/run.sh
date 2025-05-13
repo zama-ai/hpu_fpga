@@ -91,7 +91,7 @@ for i in "${NTT_RDX_CUT_S[@]}" ; do
     ntt_cut_arg="$ntt_cut_arg -J $i"
     ntt_cut_flag="${ntt_cut_flag}c${i}"
 done
-#replace first occurance of c with n (cyclic -> negacyclic"
+#replace first occurrence of c with n (cyclic -> negacyclic"
 ntt_cut_flag=`echo $ntt_cut_flag | sed 's/c/n/'`
 
 ###################################################################################################
@@ -186,4 +186,3 @@ echo $cli > ${work_dir}/cli.log
 # Run phase : simulation
 #################################################
 $run_edalize -m ${module} -t ${PROJECT_SIMU_TOOL} -k keep $eda_args $args
-

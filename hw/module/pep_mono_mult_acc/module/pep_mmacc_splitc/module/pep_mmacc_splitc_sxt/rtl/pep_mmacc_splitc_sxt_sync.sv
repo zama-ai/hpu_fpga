@@ -5,7 +5,7 @@
 // Description  :
 // ----------------------------------------------------------------------------------------------
 //
-// This module deals synchonizes input pulses. It proposes an output when all pulses from
+// This module synchronizes input pulses. It proposes an output when all pulses from
 // the inputs have been received.
 // ==============================================================================================
 
@@ -52,7 +52,7 @@ module pep_mmacc_splitc_sxt_sync
                           !in_pulse[i] && out_pulseD ? pulse_cnt[i] - 1 : pulse_cnt[i];
           pulse_cnt_seen[i] = pulse_cnt[i] > 0;
         end
-      
+
       always_ff @(posedge clk)
         if (!s_rst_n) pulse_cnt <= '0;
         else          pulse_cnt <= pulse_cntD;
@@ -90,4 +90,3 @@ module pep_mmacc_splitc_sxt_sync
   endgenerate
 
 endmodule
-

@@ -86,7 +86,7 @@ if __name__ == '__main__':
     except FileExistsError:
         warnings.warn("WARNING> Directory {:s} already exists".format(rtl_path))
 
-    # contraint directory
+    # constraint directory
     constraint_path = os.path.join(module_path, "constraint")
     try:
         os.mkdir(constraint_path)

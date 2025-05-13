@@ -107,7 +107,7 @@ module ntt_core_gf64_bu_stage_column_bwd
 // ============================================================================================== //
 // Use Gentleman-Sande, since the order is Nat->Rev
 // Note that here the omegas are negative values. Therefore, if there is a multiplication to be done,
-// the subtraction that preceeds is inversed.
+// the subtraction that precedes is inversed.
   logic [BU_NB-1:0][1:0][OP_W-1:0] s0_data;
   logic [BU_NB-1:0][1:0]           s0_avail;
   logic [BU_NB-1:0][1:0][OP_W-1:0] s1_data;

@@ -13,7 +13,7 @@
 // DEPTH             : RAM depth (number of words in RAM)
 // RD_WR_ACCESS_TYPE : Behavior when there is a read and write access conflict.
 //                     0 : output 'X'
-//                     1 : Read old value - not recommanded by Xilinx
+//                     1 : Read old value - not recommended by Xilinx
 //                     2 : Read new value
 // KEEP_RD_DATA      : 0 : Read data is not kept at the output
 //                     1 : Read data is kept at the output until next reading.

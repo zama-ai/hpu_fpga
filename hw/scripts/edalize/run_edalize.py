@@ -155,7 +155,7 @@ def get_file_type(file_name):
 #=====================================================
 def parse_files(file_list_path, files_d, recursive, tool_env, parse_flag_d, is_top, sva_l):
     '''
-    Parse the json file_list, extract the file names of "rtl_files", and recursively retreive the rtl_files
+    Parse the json file_list, extract the file names of "rtl_files", and recursively retrieve the rtl_files
     of the dependencies.
     If tool_env is not empty, it is a list of string used to filter out rtl files with env different from tool_env
     If parse_flag_d is given, parse according to the given flags.
@@ -369,7 +369,7 @@ def parse_files(file_list_path, files_d, recursive, tool_env, parse_flag_d, is_t
 def search_file_list(top_name):
 
     file_list = []
-    extentions = ['.v', '.sv']
+    extensions = ['.v', '.sv']
 
     ## Search for the file list from two directory above
     path_hw = os.getenv("PROJECT_DIR") + '/hw'
@@ -378,13 +378,13 @@ def search_file_list(top_name):
     # Fill the list with all the /info/ directories
     for root, directories, files in os.walk(path_hw, topdown=True):
         for file_name in files:
-            for i in extentions:
+            for i in extensions:
                 if (file_name == top_name + i):
                     file_list.append(os.path.join(root, file_name))
 
     for root, directories, files in os.walk(path_fw, topdown=True):
         for file_name in files:
-            for i in extentions:
+            for i in extensions:
                 if (file_name == top_name + i):
                     file_list.append(os.path.join(root, file_name))
 
@@ -404,7 +404,7 @@ def search_file_list(top_name):
 # Dump files list in a preformated tcl dictionary.
 #=====================================================
 def dump_config_as_tcl_dict(args):
-    # Open tcl environnement file
+    # Open tcl environment file
     tcl_path = Path(args.tcl_dict_out) if Path(args.tcl_dict_out).is_absolute() else Path.cwd() / args.tcl_dict_out
     tcl_dict = "Edalize_Dict"
     SEP_WoEol  = '\\\n\t'
@@ -474,7 +474,7 @@ if __name__ == '__main__':
     parser.add_argument('-sva', dest='sva_l', type=str, help='List of sva to activate. Less priority than flag, if any.', action='append', default = [])
     parser.add_argument('-v', dest='verbose', help="Run in verbose mode.", action="store_true", default=False)
 
-    parser.add_argument('--tcl-dict-out', dest='tcl_dict_out', type=str, help="File path of the outputed tcl dictionary", default='edalize_file_list.tcl')
+    parser.add_argument('--tcl-dict-out', dest='tcl_dict_out', type=str, help="File path of the outputted tcl dictionary", default='edalize_file_list.tcl')
 
     args = parser.parse_args()
 
@@ -649,7 +649,7 @@ if __name__ == '__main__':
             print ("INFO> Previous work directory found : {:s}. Keep it.".format(work_dir))
             print ("INFO> Config phase will not be run.")
             print ("INFO> Same seed will be used.")
-            # retreive previous seed.
+            # Retrieve previous seed.
             with open(os.path.join(work_dir,"seed.txt")) as f:
               args.seed = int(f.readline().rstrip())
 
@@ -724,7 +724,7 @@ if __name__ == '__main__':
     elif (tool == "vcs"):
         # other options tried:
         # -timescale=1ns/10ps' : set timescale but does not force it
-        # -override_timescale=1ps/1ps : set same timescale on everyting (not possible when using xilinx lib)
+        # -override_timescale=1ps/1ps : set same timescale on everything (not possible when using xilinx lib)
         # -noinherit_timescale=1ns/10ps : works along with `resetall in testbench file
         # -fgp (vcs_options) to get multi-thread simulation along with -fgp=num_threads:6 (run_options)
         tool_options_d[tool]["vcs_options"]=['-licwait 10 -diag timescale -noinherit_timescale=1ns/10ps -deraceclockdata +rad -Xkeyopt=rtopt -ntb_opts sensitive_dyn']
@@ -743,7 +743,7 @@ if __name__ == '__main__':
 
     elif (tool == "veribleformat"):
         tool_options_d[tool]["inplace"] = True
-        tool_options_d[tool]["rec"] = False # Stay at file_list explicitely listed files
+        tool_options_d[tool]["rec"] = False # Stay at file_list explicitly listed files
         # Verible-verilog-format rules
         tool_options_d[tool]["verible_format_args"] = VERIBLE_FORMAT_ARGS + ['--inplace']
 

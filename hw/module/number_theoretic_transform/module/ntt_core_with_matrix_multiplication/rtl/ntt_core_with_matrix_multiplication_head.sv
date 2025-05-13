@@ -58,7 +58,7 @@ module ntt_core_with_matrix_multiplication_head
   parameter  int           ROM_LATENCY           = 1,
   parameter  int           S_NB                  = 2, // Number of NTT stages.
   parameter  bit           USE_PP                = 1, // If this partition contains the entire FWD NTT,
-                                                      // this parameter indicates if the PP is instanciated.
+                                                      // this parameter indicates if the PP is instantiated.
   parameter  string        TWD_IFNL_FILE_PREFIX  = NTT_CORE_ARCH == NTT_CORE_ARCH_WMM_UNFOLD ?
                                                         "memory_file/twiddle/NTT_CORE_ARCH_WMM/R8_PSI8_S3/SOLINAS3_32_17_13/twd_ifnl_bwd"    :
                                                         "memory_file/twiddle/NTT_CORE_ARCH_WMM/R8_PSI8_S3/SOLINAS3_32_17_13/twd_ifnl",

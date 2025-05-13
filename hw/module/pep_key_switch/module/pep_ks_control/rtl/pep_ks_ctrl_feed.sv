@@ -267,7 +267,7 @@ module pep_ks_ctrl_feed
 //-----------------------------------------
 // Shift register
 //-----------------------------------------
-// To mimick the RAM reading latency
+// To mimic the RAM reading latency
 // Put it here in common, to save some logic
   side_t  f0_side;
 

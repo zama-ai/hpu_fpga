@@ -61,7 +61,7 @@ module arith_mult_cst_goldilocks_inv
 // ============================================================================================== --
   // Since CST has the following form:
   // CST = 2**CST_W - 2**INT_POW0 + 2
-  // We can retreive INT_POW0
+  // We can retrieve INT_POW0
   function automatic [INT_POW_NB-1:0][31:0] get_int_pow();
     bit [INT_POW_NB-1:0][31:0] pow;
     logic [CST_W:0]            tmp;
@@ -96,10 +96,10 @@ module arith_mult_cst_goldilocks_inv
   ) s0_delay_side (
     .clk      (clk      ),
     .s_rst_n  (s_rst_n  ),
-                        
+
     .in_avail (in_avail ),
     .out_avail(s0_avail ),
-                        
+
     .in_side  (in_side  ),
     .out_side (s0_side  )
   );
@@ -130,7 +130,7 @@ module arith_mult_cst_goldilocks_inv
     .clk      (clk          ),
     .s_rst_n  (s_rst_n      ),
     .in_avail (s0_avail     ),
-    .out_avail(s1_avail     ),           
+    .out_avail(s1_avail     ),
     .in_side  (s0_side      ),
     .out_side (s1_side      )
   );

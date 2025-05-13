@@ -56,7 +56,7 @@ module tb_pem_store;
 
   // Number of consecutive AXI4 words within a PC
   localparam int CONS_AXI4_WORD_IN_PC = REGF_COEF_PER_PC / BLWE_COEF_PER_AXI4_WORD;
-  // AXI4 word partitionning
+  // AXI4 word partitioning
   localparam int AXI4_WORD_PART_NB = BLWE_COEF_PER_AXI4_WORD / REGF_COEF_PER_PC;
 
   initial begin
