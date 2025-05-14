@@ -25,17 +25,17 @@ if __name__ == '__main__':
 #=====================================================
     parser = argparse.ArgumentParser(description = "Create a module directory structure.")
     parser.add_argument('-head_s_nb',   dest='head_s_nb',  type=int, help="HEAD_S_NB", default=0)
-    parser.add_argument('-head_use_pp', dest='head_use_pp',type=int, help="HEAD_USE_PP",default=0) 
-    parser.add_argument('-mid0_s_nb',   dest='mid0_s_nb',type=int, help="MID0_S_NB",default=5)  
+    parser.add_argument('-head_use_pp', dest='head_use_pp',type=int, help="HEAD_USE_PP",default=0)
+    parser.add_argument('-mid0_s_nb',   dest='mid0_s_nb',type=int, help="MID0_S_NB",default=5)
     parser.add_argument('-mid0_use_pp', dest='mid0_use_pp',type=int, help="MID0_USE_PP",default=0)
     parser.add_argument('-mid0_s_init', dest='mid0_s_init',type=int, help="MID0_S_INIT",default=9)
-    parser.add_argument('-mid1_s_nb',   dest='mid1_s_nb',type=int, help="MID1_S_NB",default=10)  
+    parser.add_argument('-mid1_s_nb',   dest='mid1_s_nb',type=int, help="MID1_S_NB",default=10)
     parser.add_argument('-mid1_use_pp', dest='mid1_use_pp',type=int, help="MID1_USE_PP",default=1)
     parser.add_argument('-mid1_s_init', dest='mid1_s_init',type=int, help="MID1_S_INIT",default=4)
-    parser.add_argument('-mid2_s_nb',   dest='mid2_s_nb',type=int, help="MID2_S_NB",default=5)  
+    parser.add_argument('-mid2_s_nb',   dest='mid2_s_nb',type=int, help="MID2_S_NB",default=5)
     parser.add_argument('-mid2_use_pp', dest='mid2_use_pp',type=int, help="MID2_USE_PP",default=0)
     parser.add_argument('-mid2_s_init', dest='mid2_s_init',type=int, help="MID2_S_INIT",default=14)
-    parser.add_argument('-mid3_s_nb',   dest='mid3_s_nb',type=int, help="MID3_S_NB",default=0)  
+    parser.add_argument('-mid3_s_nb',   dest='mid3_s_nb',type=int, help="MID3_S_NB",default=0)
     parser.add_argument('-mid3_use_pp', dest='mid3_use_pp',type=int, help="MID3_USE_PP",default=0)
     parser.add_argument('-mid3_s_init', dest='mid3_s_init',type=int, help="MID3_S_INIT",default=0)
 
@@ -76,4 +76,4 @@ if __name__ == '__main__':
             print("INFO> File {:s} already exists. Overwrite it.".format(file_path))
         with open(file_path, 'w') as fp:
             fp.write(template.render(config))
-    
+

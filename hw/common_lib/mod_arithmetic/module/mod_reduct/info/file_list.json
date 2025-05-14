@@ -1,4 +1,4 @@
-{   
+{
     "local_root_path": "${PROJECT_DIR}",
     "dep_root_path"  : "${PROJECT_DIR}",
     "is_include_dir" : false,
@@ -28,5 +28,5 @@
                        "hw/common_lib/mod_arithmetic/module/mod_reduct/module/mod_reduct_solinas2",
                        "hw/common_lib/mod_arithmetic/module/mod_reduct/module/mod_reduct_solinas3",
                        "hw/common_lib/mod_arithmetic/module/mod_reduct/module/mod_reduct_64bgoldilocks_karatsuba"],
-    "include_dir": [] 
+    "include_dir": []
 }

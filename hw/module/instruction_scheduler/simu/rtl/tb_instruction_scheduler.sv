@@ -181,7 +181,7 @@ module tb_instruction_scheduler;
     // However, the current order checker is not aware of the early rd_release
     // and thus generate false RAW violation.
     // Currently use the pep_wr_ack to circumvent the issue.
-    // TODO FIXME 
+    // TODO FIXME
     .pep_rd_ack(pep_wr_ack),
     .pep_wr_ack(pep_wr_ack),
     .pep_ack_pld(pep_ack_pld),
@@ -359,7 +359,7 @@ begin
     info_q.delete();
     foreach(insn_q[i]) begin
       ip_insn = insn_q[i];
-      @(posedge clk)     
+      @(posedge clk)
       info.insn = insn_q[i];
       info.kind = ip_kind_1h;
       info.wr_lock_mh = ip_wr_reg_mh;
@@ -367,7 +367,7 @@ begin
       info.flush = ip_flush;
       info_q.push_back(info);
     end
-    
+
 end
 endtask
 
@@ -403,7 +403,7 @@ begin
       if (info_q[match_pos].insn == retire_q[i]) match_found = 1'b1;
       else match_pos += 1;
     end while (!match_found);
-    // Try to replace with 
+    // Try to replace with
     // At first glance this doesn't seems to work and always return 0
     // match_pos = info_q.find_first_index(x) with (x.insn == retire_q[i]);
 
@@ -461,9 +461,9 @@ endtask
 
   initial begin
   // Init axis
-  axis_insn_drv.init(); 
-  axis_insn_ack_ep.init(); 
-  axis_insn_spy.init(); 
+  axis_insn_drv.init();
+  axis_insn_ack_ep.init();
+  axis_insn_spy.init();
 
   // Read insn from file
   read_insn_stream(insn_q, insn_cnt);

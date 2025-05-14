@@ -128,8 +128,8 @@ module tb_trace_manager;
     .wr_en         (wr_en),
     .wr_data       (wr_data),
 
-    .addr_ofs      (addr_ofs),  
-    
+    .addr_ofs      (addr_ofs),
+
     .m_axi4_awid    (m_axi4_awid),
     .m_axi4_awaddr  (m_axi4_awaddr),
     .m_axi4_awlen   (m_axi4_awlen),
@@ -284,7 +284,7 @@ module tb_trace_manager;
         if (last_idx)
           data_ref_q.pop_front();
       end
-  
+
   logic [AXI4_ADD_W-1:0] ref_add;
   logic [AXI4_ADD_W-1:0] ref_addD;
   logic [AXI4_ADD_W-1:0] ref_addD_tmp;

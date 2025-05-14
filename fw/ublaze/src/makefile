@@ -26,7 +26,7 @@ sgr0 := $(shell tput sgr0)
 # TargetCompile builds the c code and generates output products '.o' .'d'
 #
 # TargetLink links compiled code with the address map '.ld' and generates ".elf"
-# 
+#
 # TargetMemory transforms elf into memory file for standalone simulation
 # ----------------------------------------------------------------------------------------------- #
 

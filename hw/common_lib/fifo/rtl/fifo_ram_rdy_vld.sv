@@ -155,7 +155,7 @@ module fifo_ram_rdy_vld #(
     .rd_en   (ram_rd_en),
     .rd_add  (ram_rd_add),
     .rd_data (ram_rd_data),
-    
+
     .wr_en   (ram_wr_en),
     .wr_add  (ram_wr_add),
     .wr_data (ram_wr_data)

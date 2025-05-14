@@ -1,5 +1,5 @@
-{    
-    "local_root_path": "${PROJECT_DIR}",    
+{
+    "local_root_path": "${PROJECT_DIR}",
     "dep_root_path"  : "${PROJECT_DIR}",
     "rtl_files": [
         {

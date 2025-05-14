@@ -11,7 +11,7 @@
 // ==============================================================================================
 
 module common_lib_pulse_to_rdy_vld
-#( 
+#(
   parameter int FIFO_DEPTH = 8 // Should be at least 1
 )
 (

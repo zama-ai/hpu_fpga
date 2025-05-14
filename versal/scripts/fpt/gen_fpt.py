@@ -80,7 +80,7 @@ def main():
 
     # Step3: Parse the FPT header from the JSON
     try:
-        fpt_entry_size = data['fpt_header(0)']['fpt_entry_size'] 
+        fpt_entry_size = data['fpt_header(0)']['fpt_entry_size']
         fpt_header_size = data['fpt_header(0)']['fpt_header_size']
         fpt_version = data['fpt_header(0)']['fpt_version']
         magic_word = data['fpt_header(0)']['magic_word']

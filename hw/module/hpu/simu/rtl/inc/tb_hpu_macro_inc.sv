@@ -38,7 +38,7 @@
   .``port_prefix``_rdata  (``signal_prefix``_rdata``signal_suffix``), \
   .``port_prefix``_rresp  (``signal_prefix``_rresp``signal_suffix``), \
   .``port_prefix``_rvalid (``signal_prefix``_rvalid``signal_suffix``), \
-  .``port_prefix``_rready (``signal_prefix``_rready``signal_suffix``), 
+  .``port_prefix``_rready (``signal_prefix``_rready``signal_suffix``),
 
 //===============================
 // AXI4 WR port connection
@@ -131,5 +131,5 @@
   .``port_prefix``_arprot  (), /*UNUSED*/ \
   .``port_prefix``_arqos   (), /*UNUSED*/ \
   .``port_prefix``_arregion(), /*UNUSED*/ \
- 
+
 `endif // TB_HPU_MACRO

@@ -28,7 +28,7 @@ then
     echo "      - Creating directory ..."
     mkdir -p ${WORK_DIR}
 else
-    echo "  > Directory corresponding to the microblaze configuration already exists" 
+    echo "  > Directory corresponding to the microblaze configuration already exists"
     echo "      - Deleting and re-creating it"
     rm -rf ${WORK_DIR}
     mkdir ${WORK_DIR}
@@ -80,10 +80,10 @@ mv -b ${PRJ_DIR}/fw_platform/ublaze_0/fw_domain/bsp/ublaze_0/lib ${BSP_DIR}
 # cd ${PROJECT_DIR}
 
 # Sed the output path for xilinx core instances that we just created
-#   without it we would generate output files outside this directory. 
+#   without it we would generate output files outside this directory.
 find ${RTL_DIR}/ -type f -name '*.xci' -exec sed -i 's/RUNTIME_PARAM.OUTPUTDIR">..\/..\/..\/..\/..\/..\//RUNTIME_PARAM.OUTPUTDIR">..\/..\/..\/..\/output\/vivado\//' {} \;
 
-# Let's change memory file path 
+# Let's change memory file path
 find ${PRJ_DIR} -type f -name 'ublaze_lmb_bram_0.v' -exec sed -i "s|ublaze_lmb_bram_0.mem|input/micro_code/ublaze_lmb_bram_0.mem|g" {} \;
 
 # We need to add full path in order to include axi_infrastructure verilog header

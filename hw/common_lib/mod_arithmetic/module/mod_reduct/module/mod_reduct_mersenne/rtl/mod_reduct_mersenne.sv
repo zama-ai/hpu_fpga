@@ -85,10 +85,10 @@ module mod_reduct_mersenne #(
   ) in_delay_side (
     .clk      (clk      ),
     .s_rst_n  (s_rst_n  ),
-                        
+
     .in_avail (in_avail ),
     .out_avail(s0_avail ),
-                        
+
     .in_side  (in_a_data),
     .out_side (s0_a_data)
   );
@@ -129,7 +129,7 @@ module mod_reduct_mersenne #(
   logic [C_DATA_W-1:0] s1_c_data;
   logic                s1_avail;
   logic [SIDE_W-1:0]   s1_side;
-  
+
   generate
     if (SIDE_W > 0) begin
       assign s0_c_data       = {s0_side, s0_c};
@@ -148,10 +148,10 @@ module mod_reduct_mersenne #(
   ) s0_delay_side (
     .clk      (clk      ),
     .s_rst_n  (s_rst_n  ),
-                        
+
     .in_avail (s0_avail ),
     .out_avail(s1_avail ),
-                        
+
     .in_side  (s0_c_data),
     .out_side (s1_c_data)
   );

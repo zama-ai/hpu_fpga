@@ -76,7 +76,7 @@ for i in {1..5}; do
     -P DISP_COEF int $DISP_COEF \
     -P OUT_NB int $OUT_NB \
     $args"
-  
+
   echo "==========================================================="
   echo "INFO> Running : $cmd"
   echo "==========================================================="

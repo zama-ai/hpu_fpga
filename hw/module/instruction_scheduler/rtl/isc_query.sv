@@ -57,7 +57,7 @@ module isc_query
   logic             refill_req_vld   , rdunlock_req_vld   , retire_req_vld   , issue_req_vld;
   isc_query_ack_t   refill_query_ack , rdunlock_query_ack , retire_query_ack , issue_query_ack;
 
-// Store command 
+// Store command
   isc_query_cmd_e r_query_cmd, nxt_query_cmd;
   always_ff @(posedge clk)
     if (!s_rst_n) begin
@@ -292,25 +292,25 @@ always_comb begin
   case (r_rdunlock)
     // ------------------------------------------------------------------------
     RDUNLOCK_IDLE: begin
-    if (query_rdy && query_vld && (query_cmd == RDUNLOCK)) 
+    if (query_rdy && query_vld && (query_cmd == RDUNLOCK))
       nxt_rdunlock = RDUNLOCK_SLOT;
-    else 
+    else
       nxt_rdunlock = r_rdunlock;
     end
 
     // ------------------------------------------------------------------------
     RDUNLOCK_SLOT: begin
-    if (pool_ack_vld) 
+    if (pool_ack_vld)
       nxt_rdunlock = RDUNLOCK_RD_LOCK;
-    else 
+    else
       nxt_rdunlock = r_rdunlock;
     end
 
     // ------------------------------------------------------------------------
     RDUNLOCK_RD_LOCK: begin
-    if (pool_ack_vld) 
+    if (pool_ack_vld)
       nxt_rdunlock = RDUNLOCK_IDLE;
-    else 
+    else
       nxt_rdunlock = r_rdunlock;
     end
     default: nxt_rdunlock = RDUNLOCK_XXX;
@@ -335,7 +335,7 @@ always_comb begin
     rdunlock_req_info.state.vld = 1'b1;
     rdunlock_req_info.state.rd_pdg = 1'b1;
     rdunlock_req_info.state.pdg = 1'b1;
-    rdunlock_req_info.insn.kind = query_pe_rd_ack; 
+    rdunlock_req_info.insn.kind = query_pe_rd_ack;
 
     rdunlock_req_filter.match_vld = 1'b1;
     rdunlock_req_filter.match_rd_pdg = 1'b1;
@@ -413,33 +413,33 @@ always_comb begin
   case (r_retire)
     // ------------------------------------------------------------------------
     RETIRE_IDLE: begin
-    if (query_rdy && query_vld && (query_cmd == RETIRE)) 
+    if (query_rdy && query_vld && (query_cmd == RETIRE))
       nxt_retire = RETIRE_SLOT;
-    else 
+    else
       nxt_retire = r_retire;
     end
 
     // ------------------------------------------------------------------------
     RETIRE_SLOT: begin
-    if (pool_ack_vld) 
+    if (pool_ack_vld)
       nxt_retire = RETIRE_WR_LOCK;
-    else 
+    else
       nxt_retire = r_retire;
     end
 
     // ------------------------------------------------------------------------
     RETIRE_WR_LOCK: begin
-    if (pool_ack_vld) 
+    if (pool_ack_vld)
       nxt_retire = RETIRE_SYNC_LOCK;
-    else 
+    else
       nxt_retire = r_retire;
     end
 
     // ------------------------------------------------------------------------
     RETIRE_SYNC_LOCK: begin
-    if (pool_ack_vld) 
+    if (pool_ack_vld)
       nxt_retire = RETIRE_IDLE;
-    else 
+    else
       nxt_retire = r_retire;
     end
     default: nxt_retire = RETIRE_XXX;
@@ -464,7 +464,7 @@ always_comb begin
     retire_req_info.state.vld = 1'b1;
     retire_req_info.state.rd_pdg = 1'b0;
     retire_req_info.state.pdg = 1'b1;
-    retire_req_info.insn.kind = query_pe_wr_ack; 
+    retire_req_info.insn.kind = query_pe_wr_ack;
 
     retire_req_filter.match_vld = 1'b1;
     retire_req_filter.match_rd_pdg = 1'b1;
@@ -555,25 +555,25 @@ always_comb begin
   case (r_issue)
     // ------------------------------------------------------------------------
     ISSUE_IDLE: begin
-    if (query_rdy && query_vld && (query_cmd == ISSUE)) 
+    if (query_rdy && query_vld && (query_cmd == ISSUE))
       nxt_issue = ISSUE_SLOT;
-    else 
+    else
       nxt_issue = r_issue;
     end
 
     // ------------------------------------------------------------------------
     ISSUE_SLOT: begin
-    if (pool_ack_vld) 
+    if (pool_ack_vld)
       nxt_issue = ISSUE_UNLOCK;
-    else 
+    else
       nxt_issue = r_issue;
     end
 
     // ------------------------------------------------------------------------
     ISSUE_UNLOCK: begin
-    if (pool_ack_vld) 
+    if (pool_ack_vld)
       nxt_issue = ISSUE_IDLE;
-    else 
+    else
       nxt_issue = r_issue;
     end
     default: nxt_issue = ISSUE_XXX;

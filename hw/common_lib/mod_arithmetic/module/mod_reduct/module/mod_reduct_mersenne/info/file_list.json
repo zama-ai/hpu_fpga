@@ -1,4 +1,4 @@
-{   
+{
     "local_root_path": "${PROJECT_DIR}",
     "dep_root_path"  : "${PROJECT_DIR}",
     "is_include_dir" : false,
@@ -22,5 +22,5 @@
         "hw/common_lib/mod_arithmetic/module/mod_reduct/module/mod_reduct_mersenne/constraint/mod_reduct_mersenne_timing_constraints_local.xdc"
     ],
     "dependency_dir": ["hw/common_lib/common"],
-    "include_dir": [] 
+    "include_dir": []
 }

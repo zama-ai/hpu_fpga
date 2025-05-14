@@ -93,7 +93,7 @@ modport mon_mp( clocking mon_cb, input rst_n, input clk);
 
 task init;
 begin
-  arvalid <= '0; 
+  arvalid <= '0;
   rready  <= '0;
   awvalid <= '0;
   awaddr  <= '0;

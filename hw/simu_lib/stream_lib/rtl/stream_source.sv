@@ -26,7 +26,7 @@
 //    MASK_DATA : data value when vld = 0. Supports "none" (next data), "x" and "random"
 // ==============================================================================================
 
-module stream_source 
+module stream_source
   import file_handler_pkg::*;
   import random_handler_pkg::*;
 #(

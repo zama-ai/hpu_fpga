@@ -225,7 +225,7 @@ module pep_ks_control
 
   assign s0_last_ks_loop = s0_ks_loop == KS_BLOCK_COL_NB-1;
   assign s0_ks_loopD = (ffifo_in_vld && ffifo_in_rdy) ? s0_last_ks_loop ? '0 : s0_ks_loop + 1 : s0_ks_loop;
-  
+
   always_ff @(posedge clk)
     if (!s_rst_n || reset_loop) s0_ks_loop <= '0;
     else                        s0_ks_loop <= s0_ks_loopD;

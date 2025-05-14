@@ -24,7 +24,7 @@ module tb_arith_mult_cst_mersenne;
   parameter  int   IN_W           = 32;
   parameter  int   CST_W          = 33;
   parameter  [CST_W-1:0] CST      = 2**CST_W-1; // Should be a mersenne
-  
+
   localparam bit   IN_PIPE        = 1;
   localparam int   SIDE_W         = 8;
   localparam [1:0] RST_SIDE       = 2'b01;

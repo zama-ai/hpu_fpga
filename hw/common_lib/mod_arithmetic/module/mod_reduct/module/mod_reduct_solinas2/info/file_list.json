@@ -36,5 +36,5 @@
         "hw/common_lib/mod_arithmetic/module/mod_reduct/module/mod_reduct_solinas2/constraint/mod_reduct_solinas2_timing_constraints_local.xdc"
     ],
     "dependency_dir": ["hw/common_lib/common"],
-    "include_dir": [] 
+    "include_dir": []
 }

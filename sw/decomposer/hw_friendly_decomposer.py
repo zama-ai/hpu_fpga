@@ -13,11 +13,11 @@ def org_decomposer(k,b,n):
     half_c = math.ceil(b/2)
     if (k >= max):
         sys.exit("ERROR> k is greater than b^n : k={:d}, b={:d}, n={:d}".format(k,b,n))
-    
+
     if (k > max_half_f) or ((k == max_half_c) and (random.randrange(2) == 0)):
         k = k - max
 
-    r = [] 
+    r = []
     while (k != 0):
         ki = k % b
         k = int((k-ki)/b)
@@ -25,7 +25,7 @@ def org_decomposer(k,b,n):
             ki = ki - b
             k = k + 1
         r.append(ki)
-    
+
     for i in range(len(r),n):
         r.append(0)
     return r
@@ -38,7 +38,7 @@ def jj_decomposer(k,b,n):
 
     b_w = int(math.log(b,2))
     mask = (1 << b_w) -1
-    half_mask = 1 << (b_w-1)     
+    half_mask = 1 << (b_w-1)
     sign_mask = 1 << b_w
     core_mask = mask >> 1
 
@@ -53,14 +53,14 @@ def jj_decomposer(k,b,n):
         k_a.append(k & mask)
         k = k >> b_w
 
-    carry = 0        
+    carry = 0
     for i in range (0,n):
         k_a[i] = (k_a[i] + carry)
         try:
             if (((k_a[i] & sign_mask)!= 0) # propagate a carry, if current digit is already negative
                 or (((k_a[i] & half_mask)!= 0) and ((k_a[i] & core_mask)!= 0 or (k_a[i+1] & half_mask)!= 0))):
                 # propagate a carry if the digit is > b/2.
-                # In the case = b/2, propagate only if a propagation analysis is done on the next stage. 
+                # In the case = b/2, propagate only if a propagation analysis is done on the next stage.
                 carry = 1
                 k_a[i] = k_a[i] ^ sign_mask # inverse sign
             else:
@@ -77,7 +77,7 @@ def into_int(k_a,b):
     mask = (1 << b_w) -1
     sign_mask = (1 << b_w)
 
-    r = []     
+    r = []
     for ki in k_a:
         if ((ki & sign_mask) != 0):
             v = (~ki + 1) & mask
@@ -123,4 +123,4 @@ for base_w in range (1, 5):
             w_b = weight(b)
             if not((a[:-1] == b[:-1]) and (r_a == r_b) and (r_a == k) and (w_a == w_b)):
                 sys.exit("ERROR> org={:s} jj={:s} rec(org)={:d} rec(jj)={:d} weight(org)={:d} weight(jj)={:d} with base={:d} digit_nb={:d} k={:d}".format(str(a), str(b), r_a, r_b, w_a, w_b, base,digit_nb,k))
-                
+

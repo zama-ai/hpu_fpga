@@ -58,7 +58,7 @@ module mod_reduct
         .a        (a        ),
         .z        (z        ),
         .in_avail (in_avail ),
-        .out_avail(out_avail),               
+        .out_avail(out_avail),
         .in_side  (in_side  ),
         .out_side (out_side )
       );

@@ -1,4 +1,4 @@
-{   
+{
     "local_root_path": "${PROJECT_DIR}",
     "dep_root_path"  : "${PROJECT_DIR}",
     "is_include_dir" : false,
@@ -30,5 +30,5 @@
         "hw/common_lib/arithmetic/module/arith_mult_constant/module/arith_mult_cst_solinas2_44_14_inv",
         "hw/common_lib/arithmetic/module/arith_mult"
         ],
-    "include_dir": [] 
+    "include_dir": []
 }

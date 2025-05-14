@@ -71,9 +71,9 @@ if __name__ == '__main__':
         except KeyError:
             None
         json_d["rtl_files"].append(d)
-    
+
     json_formatted_str = json.dumps(json_d, indent=4)
 
     with open(OUTFILE, 'w') as json_file:
         json_file.write(json_formatted_str)
-    
+

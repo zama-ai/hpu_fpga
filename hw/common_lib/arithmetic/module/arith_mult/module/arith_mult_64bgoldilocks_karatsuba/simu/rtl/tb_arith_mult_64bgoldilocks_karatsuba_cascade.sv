@@ -186,10 +186,10 @@ module tb_arith_mult_64bgoldilocks_karatsuba_cascade;
     end
     else begin
       if (in_avail) begin
-        tmp_res = (a[31:0]*b[31:0]-a[63:32]*b[63:32]) 
+        tmp_res = (a[31:0]*b[31:0]-a[63:32]*b[63:32])
                   + (((a[31:0]+a[63:32])*(b[31:0]+b[63:32])-a[31:0]*b[31:0]) << 32);
         result_q.push_back(tmp_res);
-        side_q.push_back(in_side);        
+        side_q.push_back(in_side);
       end
       if (out_avail) begin
         logic [OP_A_W+OP_B_W-1:0] ref_result;

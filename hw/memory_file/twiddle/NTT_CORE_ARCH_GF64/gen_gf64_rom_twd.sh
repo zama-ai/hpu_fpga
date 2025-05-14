@@ -16,7 +16,7 @@ for i in `seq 2 5`; do
 
     for s in `seq 10 11`; do
         N=$((2**$s))
- 
+
         sage ${PROJECT_DIR}/sw/ntt/ntt_gf64.sage -dir ${PROJECT_DIR}/hw/memory_file/twiddle/NTT_CORE_ARCH_GF64/R2_PSI${psi} -coef $coef -gen_rom  -N $N -J $ngc_rdx_log -J $(($s - $ngc_rdx_log))
     done
 done

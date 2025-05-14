@@ -20,6 +20,6 @@ bsp setlib xilfpga
 bsp setlib xilmailbox
 bsp getlibs
 
-platform generate 
+platform generate
 
 

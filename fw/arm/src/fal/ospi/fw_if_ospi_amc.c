@@ -63,7 +63,7 @@
     DO( FW_IF_OSPI_ERRORS_INVALID_PROFILE_COUNT )      \
     DO( FW_IF_OSPI_ERRORS_NOT_SUPPORTED_COUNT )        \
     DO( FW_IF_OSPI_ERRORS_INVALID_STATE_COUNT )        \
-    DO( FW_IF_OSPI_ERRORS_MAX_COUNT )                          
+    DO( FW_IF_OSPI_ERRORS_MAX_COUNT )
 
 #define PRINT_STAT_COUNTER( x )             PLL_INF( FW_IF_OSPI_NAME, "%50s . . . . %d\r\n",          \
                                                      FW_IF_OSPI_STAT_COUNTS_STR[ x ],       \
@@ -127,7 +127,7 @@ static const char* const pcOspiStateModeStr[ ] = { FAL_OSPI_STATE_ENTRY( INIT ),
 
 static FW_IF_OSPI_PRIVATE_DATA xLocalData =
 {
-    OSPI_UPPER_FIREWALL,    /* ulUpperFirewall */   
+    OSPI_UPPER_FIREWALL,    /* ulUpperFirewall */
 
     { 0 },                  /* xLocalCfg */
     FALSE,                  /* iInitialised */
@@ -244,7 +244,7 @@ uint32_t ulFW_IF_OSPI_Init( FW_IF_OSPI_INIT_CFG *xInitCfg )
     if( ( OSPI_UPPER_FIREWALL == pxThis->ulUpperFirewall ) &&
         ( OSPI_LOWER_FIREWALL == pxThis->ulLowerFirewall ) &&
         ( FALSE == pxThis->iInitialised ) )
-    {  
+    {
         xRet = FW_IF_ERRORS_NONE;
 
         if( FW_IF_FALSE != pxThis->iInitialised )
@@ -302,7 +302,7 @@ uint32_t ulFW_IF_OSPI_Create( FW_IF_CFG *pxFwIf, FW_IF_OSPI_CFG *pxOspiCfg )
     if( ( OSPI_UPPER_FIREWALL == pxThis->ulUpperFirewall ) &&
         ( OSPI_LOWER_FIREWALL == pxThis->ulLowerFirewall ) &&
         ( TRUE == pxThis->iInitialised ) )
-    { 
+    {
         xRet = FW_IF_ERRORS_NONE;
 
         if( CHECK_DRIVER )
@@ -544,7 +544,7 @@ static uint32_t ulOspiWrite( void *pvFwIf,
             xRet = FW_IF_ERRORS_PARAMS;
         }
     }
-    
+
     return xRet;
 }
 

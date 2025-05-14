@@ -84,7 +84,7 @@ def jj_decomposer(k,base,level,q):
     b_w = ceil(log(base,2))
     q_w = ceil(log(q,2))
     mask = (1 << b_w) -1
-    half_mask = 1 << (b_w-1)     
+    half_mask = 1 << (b_w-1)
     sign_mask = 1 << b_w
     core_mask = mask >> 1
     trash_bit = (q_w - level * b_w)
@@ -100,7 +100,7 @@ def jj_decomposer(k,base,level,q):
     if (k > half_q):
         k = q - k
         do_final_inverse = 1
-    
+
     # Closest representation
     closest_k = (k >> trash_bit) + ((k >> (trash_bit - 1)) % 2)
 
@@ -115,14 +115,14 @@ def jj_decomposer(k,base,level,q):
         digit_l.append(closest_k & mask)
         closest_k = closest_k >> b_w
 
-    carry = 0        
+    carry = 0
     for i in range (0,level):
         digit_l[i] = (digit_l[i] + carry)
         try:
             if (((digit_l[i] & sign_mask)!= 0) # propagate a carry, if current digit is already negative
                 or (((digit_l[i] & half_mask)!= 0) and ((digit_l[i] & core_mask)!= 0 or (digit_l[i+1] & half_mask)!= 0))):
                 # propagate a carry if the digit is > base/2.
-                # In the case = base/2, propagate only if a propagation analysis is done on the next stage. 
+                # In the case = base/2, propagate only if a propagation analysis is done on the next stage.
                 carry = 1
                 digit_l[i] = digit_l[i] ^ sign_mask # inverse sign
             else:
@@ -167,14 +167,14 @@ if __name__ == "__main__":
     print("b_w= {:0d}".format(b_w))
     print("q  = 0x{:08x}".format(q))
     print("q/2= 0x{:08x}".format(floor(q/2)))
-    
+
     random.seed(5)
-    
+
     for i in range(10000):
         v = random.randrange(1,q)
         digit_l = decompose_pos(v,b,lvl_nb,q)
         jj_digit_l = jj_decomposer(v,b,lvl_nb,q)
-        
+
         match_l=[]
         match_all = True
         diff=0

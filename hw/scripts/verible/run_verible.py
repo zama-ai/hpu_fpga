@@ -57,7 +57,7 @@ def recursive_core(name, use_recursion, in_place):
        - apply verible formatter on each files inside (see previous point).
        - if recursion is on, does the same in sub-directories, of current one.
     '''
- 
+
     if os.path.exists(name):
        if os.path.isfile(name):
            # Check that it is a verilog or SystemVerilog file
@@ -73,7 +73,7 @@ def recursive_core(name, use_recursion, in_place):
                if (VERBOSE):
                    print(">> Processing file {:s}".format(name), file=sys.stdout)
                verible_proc = subprocess.run(cmd, capture_output=True, text=True)
- 
+
                if not(in_place):
                    print(verible_proc.stdout, file=sys.stdout)
        elif os.path.isdir(name):
@@ -89,7 +89,7 @@ def recursive_core(name, use_recursion, in_place):
                    recursive_core(f_name, use_recursion, in_place)
        else:
            sys.exit("ERROR> Unrecognized type: {:s}".format(name))
- 
+
     else:
        sys.exit("ERROR> Unknown input : {:s}".format(name))
 
@@ -108,7 +108,7 @@ if __name__ == '__main__':
     parser.add_argument('names', metavar='file_or_dir', type=str, nargs='+', help='list of files or directories to be processed.')
 
     args = parser.parse_args()
- 
+
     VERBOSE = args.verbose
 
 

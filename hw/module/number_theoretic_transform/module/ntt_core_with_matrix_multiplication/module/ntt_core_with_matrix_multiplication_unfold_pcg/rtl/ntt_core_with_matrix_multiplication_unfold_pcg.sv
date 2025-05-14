@@ -156,7 +156,7 @@ module ntt_core_with_matrix_multiplication_unfold_pcg
   logic                                                  seq_clbu_eos;
   logic [BPBS_ID_W-1:0]                                   seq_clbu_pbs_id;
   logic                                                  seq_clbu_ntt_bwd;
-  logic                                                  seq_clbu_ctrl_avail; 
+  logic                                                  seq_clbu_ctrl_avail;
   //== pipeline signals
   // CLBU
   logic [FWD_CLBU_NB-1:0][     PSI-1:0][   R-1:0][OP_W-1:0]  out_clbu_fwd_data;
@@ -552,7 +552,7 @@ module ntt_core_with_matrix_multiplication_unfold_pcg
       assign in_clbu_fwd_ctrl_avail[gen_c+1] = out_ntw_fwd_ctrl_avail[gen_c];
     end
   endgenerate
-  
+
   //== LS
   // ---------------------------------------------------------------------------------------- //
   // Cluster Butterfly Unit
@@ -936,7 +936,7 @@ module ntt_core_with_matrix_multiplication_unfold_pcg
       assign in_clbu_bwd_ctrl_avail[gen_c+1] = out_ntw_bwd_ctrl_avail[gen_c];
     end
   endgenerate
-  
+
   //== LS
   // ---------------------------------------------------------------------------------------- //
   // Cluster Butterfly Unit
@@ -1154,7 +1154,7 @@ module ntt_core_with_matrix_multiplication_unfold_pcg
     .ntw_acc_ctrl_avail(out_ntw_acc_ctrl_avail)
   );
 
-  
+
   assign ntt_error[CLBU_ERR_OFS] = (|fwd_clbu_error) | (|bwd_clbu_error);
   assign ntt_error[PP_ERR_OFS]   = |pp_error;
 
@@ -1253,7 +1253,7 @@ module ntt_core_with_matrix_multiplication_unfold_pcg
       assign ntt_acc_eog             = out_ntw_acc_eog;
       assign ntt_acc_pbs_id          = out_ntw_acc_pbs_id;
       assign ntt_acc_ctrl_avail      = out_ntw_acc_ctrl_avail & last_out_cnt;
-      
+
     end // gen_bwd_psi_div_gt_1
   endgenerate
 

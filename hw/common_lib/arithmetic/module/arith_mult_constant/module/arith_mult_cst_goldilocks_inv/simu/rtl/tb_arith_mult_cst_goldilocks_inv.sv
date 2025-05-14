@@ -24,7 +24,7 @@ module tb_arith_mult_cst_goldilocks_inv;
   parameter  int   IN_W           = 8;
   parameter  int   CST_W          = 97;
   parameter  [CST_W-1:0] CST      = 2**96+2**64-2; // Should be an inverse of goldilocks
-  
+
   localparam bit   IN_PIPE        = 1;
   localparam int   SIDE_W         = 8;
   localparam [1:0] RST_SIDE       = 2'b01;

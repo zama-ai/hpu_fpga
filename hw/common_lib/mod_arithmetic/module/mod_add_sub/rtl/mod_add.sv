@@ -68,10 +68,10 @@ module mod_add #(
   ) in_delay_side (
     .clk      (clk      ),
     .s_rst_n  (s_rst_n  ),
-                        
+
     .in_avail (in_avail ),
     .out_avail(s0_avail ),
-                        
+
     .in_side  (in_side  ),
     .out_side (s0_side  )
   );
@@ -109,10 +109,10 @@ module mod_add #(
   ) s0_delay_side (
     .clk      (clk      ),
     .s_rst_n  (s_rst_n  ),
-                        
+
     .in_avail (s0_avail ),
     .out_avail(s1_avail ),
-                        
+
     .in_side  (s0_side  ),
     .out_side (s1_side  )
   );

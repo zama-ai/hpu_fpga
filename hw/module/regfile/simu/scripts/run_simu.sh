@@ -64,7 +64,7 @@ R=2
 for i in `seq 1 5`; do
     GLWE_K=$((1+$RANDOM % 3))
     S=$((6+$RANDOM % 5))
-    
+
     REGF_REG_NB=$((1+$RANDOM % 9))
     REGF_REG_NB=$((8*REGF_REG_NB))
 

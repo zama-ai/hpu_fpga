@@ -76,7 +76,7 @@ for i in `seq 1 5`; do
 
     GLWE_K=$((1+$RANDOM % 3))
     S=$((6+$RANDOM % 5))
- 
+
     # Maximum value supported by the instruction
     REGF_REG_NB=128
 

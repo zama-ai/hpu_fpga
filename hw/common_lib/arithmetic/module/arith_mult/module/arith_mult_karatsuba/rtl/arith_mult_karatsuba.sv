@@ -92,10 +92,10 @@ module arith_mult_karatsuba #(
   ) s0_delay_side (
     .clk      (clk      ),
     .s_rst_n  (s_rst_n  ),
-                        
+
     .in_avail (in_avail ),
     .out_avail(s0_avail ),
-                        
+
     .in_side  (in_side  ),
     .out_side (s0_side  )
   );
@@ -183,7 +183,7 @@ module arith_mult_karatsuba #(
     .clk      (clk          ),
     .s_rst_n  (s_rst_n      ),
     .in_avail (s0_avail     ),
-    .out_avail(s0_avail_dly ),           
+    .out_avail(s0_avail_dly ),
     .in_side  (s0_side      ),
     .out_side (s0_side_dly  )
   );
@@ -202,7 +202,7 @@ module arith_mult_karatsuba #(
     .z        (s1_product_of_sum    ),
 
     .in_avail (s0_avail_dly         ),
-    .out_avail(s1_avail             ),                        
+    .out_avail(s1_avail             ),
     .in_side  (s0_side_dly          ),
     .out_side (s1_side              )
 
@@ -213,8 +213,8 @@ module arith_mult_karatsuba #(
   // -------------------------------------------------------------------------------------------- //
   logic [OP_A_W + OP_B_W-1:0] s1_result;
 
-  assign s1_result = (s1_a_hi_x_b_hi << (2 * LSB_W)) 
-                      + s1_a_lo_x_b_lo 
+  assign s1_result = (s1_a_hi_x_b_hi << (2 * LSB_W))
+                      + s1_a_lo_x_b_lo
                       + ((s1_product_of_sum - s1_sum_of_product) << LSB_W);
 
   // -------------------------------------------------------------------------------------------- //
@@ -238,7 +238,7 @@ module arith_mult_karatsuba #(
     .clk      (clk          ),
     .s_rst_n  (s_rst_n      ),
     .in_avail (s1_avail     ),
-    .out_avail(s2_avail     ),           
+    .out_avail(s2_avail     ),
     .in_side  (s1_side      ),
     .out_side (s2_side      )
   );

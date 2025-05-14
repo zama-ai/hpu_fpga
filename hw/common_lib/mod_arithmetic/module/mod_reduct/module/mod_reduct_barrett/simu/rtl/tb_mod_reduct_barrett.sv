@@ -19,7 +19,7 @@ module tb_mod_reduct_barrett;
   localparam int           ARST_ACTIVATION = 17;
 
   parameter  int           MOD_W     = 12;
-  parameter  int           MULT_TYPE_INT = MULT_CORE; // Workaround - so that we can pass the MULT_TYPE in the command line 
+  parameter  int           MULT_TYPE_INT = MULT_CORE; // Workaround - so that we can pass the MULT_TYPE in the command line
   parameter  arith_mult_type_e MULT_TYPE = arith_mult_type_e'(MULT_TYPE_INT);
   parameter [MOD_W-1:0]    MOD_M     = 2**MOD_W - 2**(MOD_W/2) - 2**(MOD_W/4) + 1;
   parameter int            OP_W      = 2*MOD_W+1;
@@ -84,7 +84,7 @@ module tb_mod_reduct_barrett;
 // ============================================================================================== --
   logic [OP_W-1:0]    a;
   logic [MOD_W-1:0]   z;
-  
+
   logic               in_avail;
   logic               out_avail;
 
@@ -137,7 +137,7 @@ module tb_mod_reduct_barrett;
     else
       if (in_avail)
         // If not too big, check all the possible values
-        a <= BIG_MOD_M ? MOD_M + {$urandom, $urandom, $urandom} : a-1; 
+        a <= BIG_MOD_M ? MOD_M + {$urandom, $urandom, $urandom} : a-1;
   end
 
   always_ff @(posedge clk)

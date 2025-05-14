@@ -87,7 +87,7 @@ module ntt_core_with_matrix_multiplication_unfold_pcg_head
   logic                                                  infifo_seq_last_pbs;
   logic                                                  infifo_seq_full_throughput;
   logic                                                  infifo_seq_ctrl_vld;
-  logic                                                  infifo_seq_ctrl_rdy; 
+  logic                                                  infifo_seq_ctrl_rdy;
 
   // ============================================================================================ //
   // Infifo

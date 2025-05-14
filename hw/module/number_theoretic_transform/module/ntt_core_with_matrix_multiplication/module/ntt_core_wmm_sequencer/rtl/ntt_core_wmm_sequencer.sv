@@ -66,7 +66,7 @@ module ntt_core_wmm_sequencer
   input  logic                                ntw_seq_eos,
   input  logic                 [BPBS_ID_W-1:0] ntw_seq_pbs_id,
   input  logic                                ntw_seq_ctrl_avail,
-  
+
   // Data to CLBU
   output logic [PSI-1:0][R-1:0][   OP_W-1:0] seq_clbu_data,
   output logic [PSI-1:0]                     seq_clbu_data_avail,
@@ -80,7 +80,7 @@ module ntt_core_wmm_sequencer
   output logic                [BPBS_ID_W-1:0] seq_clbu_pbs_id,
   output logic                               seq_clbu_ntt_bwd,
   output logic                               seq_clbu_ctrl_avail,
-  
+
   // Read enable for ramrd
   output logic                               seq_ntw_fwd_rden, // pulse
   output logic                               seq_ntw_bwd_rden  // pulse
@@ -187,14 +187,14 @@ module ntt_core_wmm_sequencer
   assign s0_stgD         = (DO_LOOPBACK && s0_in_eob_avail) ? s0_wrap_stg ? s0_start_stg : s0_stg - S_DEC_L : s0_stg;
   assign s0_ntt_bwdD     = (DO_LOOPBACK && s0_in_eob_avail && s0_wrap_stg) ? ~s0_ntt_bwd : s0_ntt_bwd;
 
-  // Keep the total 
+  // Keep the total
   assign s0_pbs_idx_maxD  = (infifo_seq_ctrl_vld && infifo_seq_ctrl_rdy && infifo_seq_sob) ? 0 :
                            (infifo_seq_ctrl_vld && infifo_seq_ctrl_rdy && infifo_seq_eog && !infifo_seq_eob) ? s0_pbs_idx_max + 1 : s0_pbs_idx_max;
   assign s0_pbs_idxD      = s0_in_eos_avail ? s0_in_eob_avail ? 0 : s0_pbs_idx + 1 : s0_pbs_idx;
 
-  assign s0_in_eob_avail = (infifo_seq_ctrl_vld & infifo_seq_ctrl_rdy & infifo_seq_eob) 
+  assign s0_in_eob_avail = (infifo_seq_ctrl_vld & infifo_seq_ctrl_rdy & infifo_seq_eob)
                         | (ntw_seq_eob & ntw_seq_ctrl_avail);
-  assign s0_in_eos_avail = (infifo_seq_ctrl_vld & infifo_seq_ctrl_rdy & infifo_seq_eog) 
+  assign s0_in_eos_avail = (infifo_seq_ctrl_vld & infifo_seq_ctrl_rdy & infifo_seq_eog)
                         | (ntw_seq_eos & ntw_seq_ctrl_avail);
 
   always_ff @(posedge clk) begin

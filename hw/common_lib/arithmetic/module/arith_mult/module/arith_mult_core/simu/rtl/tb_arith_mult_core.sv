@@ -23,7 +23,7 @@ module tb_arith_mult_core;
   parameter  int   RESULT_NB      = 100000;
   parameter  int   OP_A_W         = 33;
   parameter  int   OP_B_W         = 33;
-  
+
   localparam bit   IN_PIPE        = 1;
   localparam int   SIDE_W         = 8;
   localparam [1:0] RST_SIDE       = 2'b01;

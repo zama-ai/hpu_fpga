@@ -44,9 +44,9 @@ typedef enum FW_IF_EMMC_IOCTRL
 {
     FW_IF_EMMC_IOCTRL_PRINT_INSTANCE_DETAILS = MAX_FW_IF_COMMON_IOCTRL_OPTION,
     FW_IF_EMMC_IOCTRL_ERASE_ALL,
-                            
+
     MAX_FW_IF_EMMC_IOCTRL_OPTION
-                                    
+
 } FW_IF_EMMC_IOCTRL;
 
 /**

@@ -1,4 +1,4 @@
-{   
+{
     "local_root_path": "${PROJECT_DIR}",
     "dep_root_path"  : "${PROJECT_DIR}",
     "is_include_dir" : false,
@@ -41,5 +41,5 @@
          "optional": true}
 
     ],
-    "include_dir": [] 
+    "include_dir": []
 }

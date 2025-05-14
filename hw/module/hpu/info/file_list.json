@@ -87,5 +87,5 @@
         "hw/module/regfile",
         "hw/module/hpu/module/hpu_regif"
     ],
-    "include_dir": [] 
+    "include_dir": []
 }

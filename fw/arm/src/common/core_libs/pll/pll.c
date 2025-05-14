@@ -703,7 +703,7 @@ int iPLL_SendBootRecords( void )
 
             pcCurrentMessage = strtok( pcFsblLogBuffer, "\r\n" );
             pcNextMessage    = strtok( NULL, "\r\n" );
-            
+
             while( NULL != pcNextMessage )
             {
                 iLogCollect( pcCurrentMessage );
@@ -715,7 +715,7 @@ int iPLL_SendBootRecords( void )
             vOSAL_MemFree( ( void** )&pcFsblLogBuffer );
             INC_STAT_COUNTER( PLL_STATS_FREE )
         }
-                
+
         /* Sleep is needed to allow the first chunk to be read fully before we overwrite the ring buffer */
         iOSAL_Task_SleepMs( PLL_SLEEP_INTERVAL_MS );
 
@@ -723,7 +723,7 @@ int iPLL_SendBootRecords( void )
         for( i = 0; i < PLL_LOG_MAX_RECS; i++ )
         {
             if( '\0' != pxThis->pcBootLogs[ i ][ 0 ] )
-            {                
+            {
                 iLogCollect( pxThis->pcBootLogs[ i ] );
             }
         }

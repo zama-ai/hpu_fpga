@@ -13,7 +13,7 @@ if {[llength $local_constraint_files]} {
     # Process *_local.xdc file first
     set non_local_constraint_files [get_files -regexp .*(!_local)\.xdc -quiet]
     if {[llength $non_local_constraint_files]} {
-        set_property PROCESSING_ORDER LATE $non_local_constraint_files 
+        set_property PROCESSING_ORDER LATE $non_local_constraint_files
     }
 }
 

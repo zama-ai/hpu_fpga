@@ -26,7 +26,7 @@ class CLineComment(CommentStyle):
     @classmethod
     def unindent(cls, txt) -> str:
         lines = txt.splitlines()
-        ind = reduce(lambda acc, x: min(acc, len(cls.indent_re.match(x)[0])), 
+        ind = reduce(lambda acc, x: min(acc, len(cls.indent_re.match(x)[0])),
                      filter(len, map(lambda x: x.rstrip(), txt.splitlines())),
                      len(txt))
         return "\n".join(x[ind:] for x in lines)

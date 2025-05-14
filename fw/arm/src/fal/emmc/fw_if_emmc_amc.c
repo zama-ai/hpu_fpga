@@ -69,7 +69,7 @@
 
 #define INC_STAT_COUNTER( x )               { if( x < FW_IF_EMMC_STATS_MAX )pxThis->pulStatCounters[ x ]++; }
 #define INC_ERROR_COUNTER( x )              { if( x < FW_IF_EMMC_ERRORS_MAX )pxThis->pulErrorCounters[ x ]++; }
-                                                    
+
 
 /******************************************************************************/
 /* Enums                                                                      */
@@ -115,7 +115,7 @@ typedef struct FW_IF_EMMC_PRIVATE_DATA
 /* local variables                                                           */
 /*****************************************************************************/
 
-static FW_IF_EMMC_PRIVATE_DATA xLocalData = 
+static FW_IF_EMMC_PRIVATE_DATA xLocalData =
 {
     EMMC_UPPER_FIREWALL,    /* ulUpperFirewall */
 
@@ -234,7 +234,7 @@ static uint32_t ulEmmcOpen( void *pvFwIf )
     FW_IF_CFG *pxThisIf = ( FW_IF_CFG* )pvFwIf;
     CHECK_HDL( pxThisIf );
     CHECK_CFG( pxThisIf );
-    CHECK_FIREWALLS( pxThisIf );    
+    CHECK_FIREWALLS( pxThisIf );
     CHECK_DRIVER;
 
     FW_IF_EMMC_CFG *pxCfg = ( FW_IF_EMMC_CFG* )pxThisIf->cfg;
@@ -264,7 +264,7 @@ static uint32_t ulEmmcClose( void *pvFwIf )
     FW_IF_CFG *pxThisIf = ( FW_IF_CFG* )pvFwIf;
     CHECK_HDL( pxThisIf );
     CHECK_CFG( pxThisIf );
-    CHECK_FIREWALLS( pxThisIf );    
+    CHECK_FIREWALLS( pxThisIf );
     CHECK_DRIVER;
 
     FW_IF_EMMC_CFG *pxCfg = ( FW_IF_EMMC_CFG* )pxThisIf->cfg;
@@ -298,11 +298,11 @@ static uint32_t ulEmmcWrite( void *pvFwIf,
     FW_IF_CFG *pxThisIf = ( FW_IF_CFG* )pvFwIf;
     CHECK_HDL( pxThisIf );
     CHECK_CFG( pxThisIf );
-    CHECK_FIREWALLS( pxThisIf );    
+    CHECK_FIREWALLS( pxThisIf );
     CHECK_DRIVER;
 
     if( NULL != pucData )
-    {   
+    {
         FW_IF_EMMC_CFG *pxCfg = ( FW_IF_EMMC_CFG* )pxThisIf->cfg;
 
         if( FW_IF_EMMC_STATE_OPENED == pxCfg->xState )
@@ -325,8 +325,8 @@ static uint32_t ulEmmcWrite( void *pvFwIf,
 
                 /*
                  * Step 1: Handle the address offset, if not block aligned.
-                 *         This will require reading the first full eMMC block into a temp array, 
-                 *         copying the required data from the address offset into this array, 
+                 *         This will require reading the first full eMMC block into a temp array,
+                 *         copying the required data from the address offset into this array,
                  *         and re-writting this first full block.
                  */
                 if( 0 != ullAddrBlockOffset )
@@ -354,7 +354,7 @@ static uint32_t ulEmmcWrite( void *pvFwIf,
                         {
                             /* update counts */
                             ulTotalBytesWritten += ulBytesToWrite;
-                            ulBytesToWrite = ulLength - ulTotalBytesWritten;   
+                            ulBytesToWrite = ulLength - ulTotalBytesWritten;
 
                             /* set addr to start of next block */
                             ullAddr = ullAddr + HAL_EMMC_BLOCK_SIZE;
@@ -370,12 +370,12 @@ static uint32_t ulEmmcWrite( void *pvFwIf,
                 {
                     uint32_t ulCurrentBytesWritten = 0;
                     uint32_t ulBlockCount = ( ulBytesToWrite / HAL_EMMC_BLOCK_SIZE ); /* calc minimum eMMC block count */
-                    
+
                     /*
                      * Step 2: Write as many full blocks as possible, directly from pucData
                      */
                     if( 0 < ulBlockCount )
-                    {   
+                    {
                         iWriteStatus = iEMMC_Write( ullAddr, ulBlockCount, &pucData[ ulTotalBytesWritten ] );
 
                         if( OK == iWriteStatus )
@@ -388,12 +388,12 @@ static uint32_t ulEmmcWrite( void *pvFwIf,
                     }
 
                     /*
-                     * Step 3: Handle any remaining bytes (not block aligned) 
-                     *         This will require reading a final full eMMC block into a temp array, 
-                     *         copying the required data for the last block into this array, 
+                     * Step 3: Handle any remaining bytes (not block aligned)
+                     *         This will require reading a final full eMMC block into a temp array,
+                     *         copying the required data for the last block into this array,
                      *         and re-writting this final full block.
                      */
-                    if( ( OK == iWriteStatus ) && 
+                    if( ( OK == iWriteStatus ) &&
                         ( 0 != ulBytesToWrite % HAL_EMMC_BLOCK_SIZE ) )
                     {
                         /* create temp buffer for final block */
@@ -457,11 +457,11 @@ static uint32_t ulEmmcRead( void *pvFwIf,
     FW_IF_CFG *pxThisIf = ( FW_IF_CFG* )pvFwIf;
     CHECK_HDL( pxThisIf );
     CHECK_CFG( pxThisIf );
-    CHECK_FIREWALLS( pxThisIf );    
+    CHECK_FIREWALLS( pxThisIf );
     CHECK_DRIVER;
 
     if( ( NULL != pucData ) && ( NULL != pulLength ) && ( 0 != *pulLength ) )
-    {   
+    {
         FW_IF_EMMC_CFG *pxCfg = ( FW_IF_EMMC_CFG* )pxThisIf->cfg;
 
         if( FW_IF_EMMC_STATE_OPENED == pxCfg->xState )
@@ -483,7 +483,7 @@ static uint32_t ulEmmcRead( void *pvFwIf,
 
                 /*
                  * Step 1: Handle the address offset, if not block aligned.
-                 *         This will require reading the first full eMMC block into a temp array, 
+                 *         This will require reading the first full eMMC block into a temp array,
                  *         and copying back only the required data.
                  */
                 if( 0 != ullAddrBlockOffset )
@@ -538,8 +538,8 @@ static uint32_t ulEmmcRead( void *pvFwIf,
                     }
 
                     /*
-                     * Step 3: Handle any remaining bytes (not block aligned) 
-                     *         This will require reading a final full eMMC block into a temp array, 
+                     * Step 3: Handle any remaining bytes (not block aligned)
+                     *         This will require reading a final full eMMC block into a temp array,
                      *         and copying back the required final bytes.
                      */
                     if( ( OK == iReadStatus ) &&
@@ -598,7 +598,7 @@ static uint32_t ulEmmcIoCtrl( void *pvFwIf, uint32_t ulOption, void *pvValue )
     FW_IF_CFG *pxThisIf = ( FW_IF_CFG* )pvFwIf;
     CHECK_HDL( pxThisIf );
     CHECK_CFG( pxThisIf );
-    CHECK_FIREWALLS( pxThisIf );    
+    CHECK_FIREWALLS( pxThisIf );
     CHECK_DRIVER;
 
     FW_IF_EMMC_CFG *pxCfg = ( FW_IF_EMMC_CFG* )pxThisIf->cfg;
@@ -634,7 +634,7 @@ static uint32_t ulEmmcIoCtrl( void *pvFwIf, uint32_t ulOption, void *pvValue )
                 }
                 break;
             }
-            
+
             default:
                 ulStatus = FW_IF_ERRORS_UNRECOGNISED_OPTION;
                 break;
@@ -669,18 +669,18 @@ static uint32_t ulEmmcBindCallback( void *pvFwIf, FW_IF_callback *pxNewFunc )
     FW_IF_CFG *pxThisIf = ( FW_IF_CFG* )pvFwIf;
     CHECK_HDL( pxThisIf );
     CHECK_CFG( pxThisIf );
-    CHECK_FIREWALLS( pxThisIf );    
+    CHECK_FIREWALLS( pxThisIf );
     CHECK_DRIVER;
 
     if( NULL != pxNewFunc )
-    {   
+    {
         /*
          * Binds in callback provided to the FW_IF.
          * Callback will be invoked when by the driver when event occurs.
          */
         FW_IF_EMMC_CFG *pxCfg = ( FW_IF_EMMC_CFG* )pxThisIf->cfg;
         pxThisIf->raiseEvent = pxNewFunc;
-    
+
         PLL_DBG( FW_IF_EMMC_NAME, "FW_IF_bindCallback called for if.%u (%s)\r\n",
                  ( unsigned int )pxCfg->ulIfId,
                  pxCfg->pcIfName );
@@ -810,7 +810,7 @@ uint32_t ulFW_IF_EMMC_Create( FW_IF_CFG *pxFwIf, FW_IF_EMMC_CFG *pxEmmcCfg )
         ulStatus = FW_IF_ERRORS_PARAMS;
         INC_ERROR_COUNTER( FW_IF_EMMC_ERRORS_INSTANCE_CREATE_FAILED )
     }
-        
+
     return ulStatus;
 }
 

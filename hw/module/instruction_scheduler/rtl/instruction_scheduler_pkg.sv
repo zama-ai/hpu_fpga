@@ -119,12 +119,12 @@ package instruction_scheduler_pkg;
     logic match_insn_kind;
     // Crossed match for lock_cnt extraction
     // req_info.dst == (pool_info.srcA || pool_info.srcB)
-    logic match_dst_on_srcs; 
+    logic match_dst_on_srcs;
     // (req_info.srcA || req_info.srcB) == pool_info.dst
     logic match_srcs_on_dst;
     // req_info.dst == pool_info.dst
-    logic match_dst_on_dst; 
-    logic match_flush; 
+    logic match_dst_on_dst;
+    logic match_flush;
   } isc_pool_filter_t;
 
   // Pool update command

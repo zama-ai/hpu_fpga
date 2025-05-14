@@ -49,7 +49,7 @@ package hpu_common_instruction_pkg;
     DOP_SUBS    = 6'b00_1010,
     DOP_SSUB    = 6'b00_1011,
     DOP_MULS    = 6'b00_1100,
-    // --> Sync 
+    // --> Sync
     // NB: Only viewed by the scheduler, never reach PE
     DOP_SYNC    = 6'b01_0000,
     // --> load store in mem
@@ -70,7 +70,7 @@ package hpu_common_instruction_pkg;
   typedef enum bit [DOPT_W-1:0]{
     // --> Arith
     DOPT_ARITH = 2'b00,
-    // --> Sync 
+    // --> Sync
     // NB: Only viewed by the scheduler, never reach PE
     DOPT_SYNC = 2'b01,
     // --> load store in mem
@@ -80,7 +80,7 @@ package hpu_common_instruction_pkg;
   } dopt_e;
 
   typedef struct packed {
-    logic [DOPT_W-1:0]  kind;     // Kind 
+    logic [DOPT_W-1:0]  kind;     // Kind
     logic [DOPST_W-1:0] sub_kind; // Sub Kind
   } dop_t;
 

@@ -113,7 +113,7 @@ class Relicense:
                 split.header.license = self.license
             else: # If we cannot remove a license do nothing
                 split = None
-        
+
         if split is not None:
             with open(path, 'w') as fd:
                 print(split, file=fd, end="")

@@ -26,7 +26,7 @@
  * @param    pxGCQIOAccess is the bound in memory/register access functions
  *
  * @return   See GCQ_ERRORS_TYPE for possible return values
- * 
+ *
  */
 GCQ_ERRORS_TYPE xGCQHWInit( GCQ_MODE_TYPE xMode,
                             uint64_t ullBaseAddr,
@@ -43,7 +43,7 @@ GCQ_ERRORS_TYPE xGCQHWInit( GCQ_MODE_TYPE xMode,
  * @param    pxGCQIOAccess is the bound in memory/register access functions
  *
  * @return   See GCQ_ERRORS_TYPE for possible return values
- * 
+ *
  */
 GCQ_ERRORS_TYPE xGCQHWConfigureInterruptMode( GCQ_MODE_TYPE xMode,
                                               GCQ_INTERRUPT_MODE_TYPE xIntMode,
@@ -59,7 +59,7 @@ GCQ_ERRORS_TYPE xGCQHWConfigureInterruptMode( GCQ_MODE_TYPE xMode,
  * @param    pxGCQIOAccess is the bound in memory/register access functions
  *
  * @return   See GCQ_ERRORS_TYPE for possible return values
- * 
+ *
  */
 GCQ_ERRORS_TYPE xGCQHWTriggerInterrupt( GCQ_MODE_TYPE xMode,
                                         uint64_t ullBaseAddr,
@@ -74,7 +74,7 @@ GCQ_ERRORS_TYPE xGCQHWTriggerInterrupt( GCQ_MODE_TYPE xMode,
  * @param    pxGCQIOAccess is the bound in memory/register access functions
  *
  * @return   See GCQ_ERRORS_TYPE for possible return values
- * 
+ *
  */
 GCQ_ERRORS_TYPE xGCQHWClearInterrupt( GCQ_MODE_TYPE xMode,
                                       uint64_t ullBaseAddr,

@@ -26,7 +26,7 @@
 //    DATA_W   : Data width
 // ==============================================================================================
 
-module stream_spy 
+module stream_spy
   import file_handler_pkg::*;
 #(
   parameter string  FILENAME       = "",

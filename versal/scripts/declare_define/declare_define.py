@@ -60,11 +60,11 @@ if __name__ == '__main__':
     config = {"defines" : formatted_define_list}
 
     template = template_env.get_template("top_defines_inc.sv.j2")
-    
+
     file_path = os.path.join(args.output_dir, "rtl/inc")
     pathlib.Path(file_path).mkdir(parents=True, exist_ok=True)
     file_path = os.path.join(file_path,args.output_file)
-    
+
     with open(file_path, 'w') as fp:
         fp.write(template.render(config))
 

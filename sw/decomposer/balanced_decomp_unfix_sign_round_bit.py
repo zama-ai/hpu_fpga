@@ -21,7 +21,7 @@ def org_decompose(val,base,level,q):
 
     if state > base**level/2 or (state == base**level/2 and bit == 1):
         state = state - base**level    # Careful how this is done as it will be negative!
-    
+
     if (VERBOSE):
         print("INFO> state={:d}=0x{:x}".format(state,state))
 

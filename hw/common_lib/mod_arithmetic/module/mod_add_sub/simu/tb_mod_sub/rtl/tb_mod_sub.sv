@@ -27,7 +27,7 @@ module tb_mod_sub
   parameter  [OP_W-1:0]   MOD_M      = 2**OP_W - 2**(OP_W/2) + 1;
   localparam bit          IN_PIPE    = 1;
   localparam bit          OUT_PIPE   = 1;
-  
+
   localparam int          SIDE_W     = 8;
   localparam [1:0]        RST_SIDE   = 2'b01;
 

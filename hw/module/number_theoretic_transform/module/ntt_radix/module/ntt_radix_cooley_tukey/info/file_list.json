@@ -1,4 +1,4 @@
-{   
+{
     "local_root_path": "${PROJECT_DIR}",
     "dep_root_path"  : "${PROJECT_DIR}",
     "is_include_dir" : false,
@@ -43,5 +43,5 @@
                        "hw/common_lib/mod_arithmetic/module/mod_add_sub",
                        "hw/common_lib/mod_arithmetic/module/mod_mult",
                        "hw/common_lib/mod_arithmetic/module/mod_reduct" ],
-    "include_dir": [] 
+    "include_dir": []
 }

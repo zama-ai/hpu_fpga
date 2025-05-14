@@ -1,4 +1,4 @@
-{   
+{
     "local_root_path": "${PROJECT_DIR}",
     "dep_root_path"  : "${PROJECT_DIR}",
     "is_include_dir" : false,
@@ -26,5 +26,5 @@
         "hw/module/pe_pbs/module/pep_common",
         "hw/common_lib/rom_wrapper",
         "hw/common_lib/fifo"],
-    "include_dir": [] 
+    "include_dir": []
 }

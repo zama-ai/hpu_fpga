@@ -1,4 +1,4 @@
-{   
+{
     "local_root_path": "${PROJECT_DIR}/hw/module/param",
     "dep_root_path"  : "${PROJECT_DIR}",
     "is_include_dir" : false,

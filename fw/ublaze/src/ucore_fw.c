@@ -158,7 +158,7 @@ void parse_iop(
 
   // Fill bundle length
   dst->len = dst_pos;
-  
+
 
   //3. Get list of source operands
   uint32_t src_pos = 0;
@@ -173,7 +173,7 @@ void parse_iop(
 
   // Fill bundle length
   src->len = src_pos;
-  
+
   //4. Get list of immediat operands (if needed)
   if (header->header.has_imm) {
     uint32_t imm_pos = 0;
@@ -205,7 +205,7 @@ void parse_iop(
 }
 
 void get_lookup(IOpHeader_t header, Lookup_t* lookup){
-  
+
   // Read translation offset for the given entry
   // Offset is computed based on max blk_width to correctly handle asym IOp such as Cmp
   uint8_t max_align = (header.header.dst_align > header.header.src_align)? header.header.dst_align: header.header.src_align;

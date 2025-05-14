@@ -25,7 +25,7 @@
 
 // Memory layaut
 // -------------------------------------------------------
-// cid_0 
+// cid_0
 // cid_1
 //  |   User memory goes downside
 // \/
@@ -34,7 +34,7 @@
 //  |
 // cid_max
 // -------------------------------------------------------
-// NB: No check for heap overflow is done at runtime. This is enforce by the backend during 
+// NB: No check for heap overflow is done at runtime. This is enforce by the backend during
 //     translation table generation
 // ============================================================================================= //
 // TODO: Add RTL register for heap_start.

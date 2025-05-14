@@ -1,4 +1,4 @@
-{   
+{
     "local_root_path": "${PROJECT_DIR}",
     "dep_root_path"  : "${PROJECT_DIR}",
     "is_include_dir" : false,
@@ -31,5 +31,5 @@
         "hw/module/number_theoretic_transform/module/ntt_core_with_matrix_multiplication/module/ntt_core_wmm_dispatch_rotate",
         "hw/module/number_theoretic_transform/module/ntt_core_with_matrix_multiplication/module/ntt_core_wmm_ram_rd"
     ],
-    "include_dir": [] 
+    "include_dir": []
 }

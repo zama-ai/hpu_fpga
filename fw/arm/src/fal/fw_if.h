@@ -137,14 +137,14 @@ typedef enum _FW_IF_ERRORS
     FW_IF_ERRORS_WRITE,                     /* this should cause a driver-specific event to be raised to the bound callback */
     FW_IF_ERRORS_READ,                      /* this should cause a driver-specific event to be raised to the bound callback */
     FW_IF_ERRORS_IOCTRL,                    /* this should cause a driver-specific event to be raised to the bound callback */
-                                            
+
     MAX_FW_IF_ERROR,
-                                                    
+
 } FW_IF_ERRORS;
 
 /**
  * @enum    FW_IF_COMMON_IOCTRL_OPTIONS
- * 
+ *
  * @brief   IO ctrl options common to all fw_ifs
  */
 typedef enum _FW_IF_COMMON_IOCTRL_OPTIONS
@@ -152,16 +152,16 @@ typedef enum _FW_IF_COMMON_IOCTRL_OPTIONS
     FW_IF_COMMON_IOCTRL_FLUSH_TX = 0,
     FW_IF_COMMON_IOCTRL_FLUSH_RX,
     FW_IF_COMMON_IOCTRL_GET_RX_MODE,
-    FW_IF_COMMON_IOCTRL_ENABLE_DEBUG_PRINT, 
+    FW_IF_COMMON_IOCTRL_ENABLE_DEBUG_PRINT,
     FW_IF_COMMON_IOCTRL_DISABLE_DEBUG_PRINT,
-                
+
     MAX_FW_IF_COMMON_IOCTRL_OPTION
-                        
+
 } FW_IF_COMMON_IOCTRL_OPTIONS;
 
 /**
  * @enum    FW_IF_COMMON_EVENTS
- * 
+ *
  * @brief   common events raised in the callback (generic across all interfaces)
  */
 typedef enum _FW_IF_COMMON_EVENTS
@@ -172,12 +172,12 @@ typedef enum _FW_IF_COMMON_EVENTS
     FW_IF_COMMON_EVENT_ERROR,
 
     MAX_FW_IF_COMMON_EVENT
-                            
+
 } FW_IF_COMMON_EVENTS;
 
 /**
  *  @enum   FW_IF_RX_MODE
- * 
+ *
  *  @brief  Mode of Rx operation
  */
 typedef enum _FW_IF_RX_MODE
@@ -193,7 +193,7 @@ typedef enum _FW_IF_RX_MODE
 
 /**
  * @struct  FW_IF_CFG
- * 
+ *
  * @brief   Structure to hold a fw_if instance
  */
 typedef struct _FW_IF_CFG

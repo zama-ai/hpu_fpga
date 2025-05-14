@@ -157,7 +157,7 @@ module tb_rom_wrapper_2R;
 
   // ============================================================================================ //
   // Checker
-  // ============================================================================================ //  
+  // ============================================================================================ //
   logic [WIDTH-1:0]                               mem              [DEPTH-1:0];
   logic [      1:0][DEPTH_W-1:0]                  rd_add_a;
   logic [      1:0][ROM_LATENCY-1:0][  DEPTH-1:0] rd_data_ref_a;
@@ -219,7 +219,7 @@ module tb_rom_wrapper_2R;
             error_d <= 1;
           end  // assert line b
         end // line B
-    end  // s_rst_n      
+    end  // s_rst_n
   end  // end process
 
   // check KEEP_RD_DATA ----------------------------------------------------------------------------
@@ -253,7 +253,7 @@ module tb_rom_wrapper_2R;
         logic             start_check_keep_datar;
 
         always_ff @(posedge clk) begin
-          if (!s_rst_n) begin 
+          if (!s_rst_n) begin
             start_check_keep_datar <= 1'b0;
           end else begin
             start_check_keep_datar <= rd_avail_dly[ROM_LATENCY-1] ? 1'b1 : start_check_keep_datar;
@@ -282,7 +282,7 @@ module tb_rom_wrapper_2R;
         end
       end
 
-    end 
+    end
   endgenerate
 
 endmodule

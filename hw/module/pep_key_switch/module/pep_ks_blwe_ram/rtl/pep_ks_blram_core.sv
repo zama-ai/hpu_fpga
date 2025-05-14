@@ -74,11 +74,11 @@ module pep_ks_blram_core
   logic                 s0_rd_vld;
   logic                 s0_rd_rdy;
   logic [RAM_ADD_W-1:0] s0_rd_add;
-                        
+
   logic                 s1_rd_data_vld;
   logic                 s1_rd_data_rdy;
   logic [OP_W-1:0]      s1_rd_data;
-                        
+
   logic                 ram_ren;
   logic[RAM_ADD_W-1:0]  ram_add;
 

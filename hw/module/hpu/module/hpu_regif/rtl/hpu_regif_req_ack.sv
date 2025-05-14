@@ -58,7 +58,7 @@ module hpu_regif_req_ack
         end
 
       assign req_cmd[gen_i] = req;
-      
+
       always_comb begin
         r_req_ack_l = '0;
         r_req_ack_l[REQ_OFS] = req;

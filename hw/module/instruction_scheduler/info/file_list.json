@@ -66,5 +66,5 @@
         "hw/module/instruction_scheduler/module/isc_common",
         "hw/module/hpu/module/hpu_common_instruction"
     ],
-    "include_dir": [] 
+    "include_dir": []
 }

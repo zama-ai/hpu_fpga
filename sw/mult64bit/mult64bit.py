@@ -1,7 +1,7 @@
 # BSD 3-Clause Clear License
 # Copyright © 2025 ZAMA. All rights reserved.
 
-import math 
+import math
 import random
 import numpy as np
 from fractions import Fraction # For Toom-Cook Multiplication
@@ -11,7 +11,7 @@ goldilocks_prime = 2**64-2**32+1
 
 
 def naive_64bmult(a, b):
-    # Naive 64-bit Multiplication. 
+    # Naive 64-bit Multiplication.
     # Split into 16-bit chunks, and do naive crossproducts & additions
     a3 = (a >> 48) & (2**16-1)
     a2 = (a >> 32) & (2**16-1)
@@ -46,7 +46,7 @@ def naive_64bmult(a, b):
     return c
 
 def lvl1karatsuba_64bmult(a, b):
-    # Level-1 Karatsuba. 
+    # Level-1 Karatsuba.
     # Split into 32-bit chunks, multiply using Karatsuba
     a1 = (a >> 32) & (2**32-1)
     a0 = (a      ) & (2**32-1)
@@ -62,7 +62,7 @@ def lvl1karatsuba_64bmult(a, b):
 
 
 def lvl2karatsuba_64bmult(a, b):
-    # Level-2 Karatsuba. 
+    # Level-2 Karatsuba.
     # Split into 32-bit chunks, then in 16-bit chunks
     a1 = (a >> 32) & (2**32-1)
     a0 = (a      ) & (2**32-1)
@@ -124,7 +124,7 @@ def toomcook4_64bmult(a, b):
 
     # Expected number of multipliers is d = 2k-1 = 7
     d = 7
-    
+
 
     ## P and Q matrices from evaluation points
     P = np.matrix([[1, 0, 0, 0], [1, 1, 1, 1], [1, -1, 1, -1], [1, 2, 4, 8], [1, -2, 4, -8], [1, -3, 9, -27], [0, 0, 0, 1]])
@@ -135,7 +135,7 @@ def toomcook4_64bmult(a, b):
     q_vec = Q*np.matrix([[v0], [v1], [v2], [v3]])
 
     r_vec = np.zeros((d, 1))
-    
+
     ## Pointwise multiplications
     for i in range(d):
         r_vec[i][0] = p_vec[i]*q_vec[i]
@@ -145,22 +145,22 @@ def toomcook4_64bmult(a, b):
     R_inv = np.zeros((d, d)) # contains fractions instead of floats
 
     for i in range(d):
-        for j in range(d): 
+        for j in range(d):
             res = Fraction(R_inv_int[i, j].item()).limit_denominator(100000)
             R_inv[i, j] = res.numerator/res.denominator
 
-    ## Check if R and R_inv are ok                     
+    ## Check if R and R_inv are ok
     #print(np.round(R*R_inv))
 
     r = np.matmul(R_inv, r_vec)
-    
+
     ## Reconstruct
     c = (round(r[6].item()) << 96) + (round(r[5].item()) << 80) + (round(r[4].item()) << 64) + (round(r[3].item()) << 48) + (round(r[2].item()) << 32) + (round(r[1].item()) << 16) + round(r[0].item())
     return c
 
 
 def supranational_64bmult(a, b):
-    # Supranational Multiplier. 
+    # Supranational Multiplier.
     # Algorithm from: https://github.com/supranational/zprize-fpga-ntt/blob/main/rtl/dsp48e2/mul64x64.sv
     # Split inputs
     a2 = (a >> 52) & (2**26-1)
@@ -172,14 +172,14 @@ def supranational_64bmult(a, b):
     b1 = (b >> 17) & (2**17-1)
     b0 = (b      ) & (2**17-1)
 
-    ## Test reconstruction 
+    ## Test reconstruction
     #a_rec = (a2 << 52) | (a1 << 26) | (a0 << 0)
     #b_rec = (b3 << 51) | (b2 << 34) | (b1 << 17) | (b0 << 0)
     #print("Reconstruction of a ok? ", a_rec==a)
     #print("Reconstruction of b ok? ", b_rec==b)
     #print()
 
-    ## Functionality of the 12 DSPs 
+    ## Functionality of the 12 DSPs
     dsp_00 = a0*b0                   # Contributions in x^0
     dsp_01 = a0*b1 + (dsp_00 >> 17)  # Contributions in x^17
     dsp_02 = a0*b2 + (dsp_01 >> 17)  # Contributions in x^34
@@ -212,18 +212,18 @@ def supranational_64bmult(a, b):
 def mod_red(a):
     # Modular reduction for modular multiplication with Golidlocks prime as modulus
     # Algorithm from: https://www.craig-wood.com/nick/armprime/math/
-    
+
     ## Split input: x3 * 2^96 + x2 * 2^64 + x1 * 2^32 + x0 mod p
     x3 = a >> 96
     x2 = (a >> 64) & (2**32-1)
     x1 = (a >> 32) & (2**32-1)
     x0 = a & (2**32-1)
-    
-    ## Check that reconstruction is ok 
+
+    ## Check that reconstruction is ok
     recons = x3*2**96 + x2*2**64 + x1*2**32 + x0
     if (recons != a):
         print("ERROR - Recons NOT OK")
-    
+
     ## Calculate modular reduction
     a_mod = x2*2**64+x1*2**32+(x0-x3)
     y2 = (a_mod >> 64) & (2**32-1)
@@ -232,10 +232,10 @@ def mod_red(a):
     a_mod = y2*2**64 + y1*2**32 + y0
     a_mod = (y1+y2)*2**32 + (y0-y2)
 
-    ## Final correction    
+    ## Final correction
     if a_mod >= goldilocks_prime:
         a_mod = a_mod-goldilocks_prime
-    
+
     return a_mod
 
 def ulvetanna_modmul(a, b):
@@ -259,7 +259,7 @@ def ulvetanna_modmul(a, b):
     c = ((c1+c2) << 32) + c0 - c2 - c3
 
     ## Final correction
-    if c >= goldilocks_prime: 
+    if c >= goldilocks_prime:
         c = c-goldilocks_prime
 
     return c
@@ -276,7 +276,7 @@ def ulvetanna_modred(a):
     c = ((c1+c2) << 32) + c0 - c2 - c3
 
     ## Final correction
-    if c >= goldilocks_prime: 
+    if c >= goldilocks_prime:
         c = c-goldilocks_prime
 
     return c

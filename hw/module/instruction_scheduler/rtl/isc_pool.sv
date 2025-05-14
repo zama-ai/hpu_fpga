@@ -144,9 +144,9 @@ module isc_pool
                                  : ((req.info.insn.dst_id.isc.mode != UNUSED)
                                  && dest_within_dest(req.info.insn.dst_id, r_pinfo[i].insn.dst_id));
       srcs_on_dst_match_mh[i] = (!req.filter.match_srcs_on_dst)? 1'b1
-                                 : (((req.info.insn.srcA_id.mode != UNUSED) 
+                                 : (((req.info.insn.srcA_id.mode != UNUSED)
                                  && dest_within(r_pinfo[i].insn.dst_id, req.info.insn.srcA_id))
-                                 || ((req.info.insn.srcB_id.mode != UNUSED) 
+                                 || ((req.info.insn.srcB_id.mode != UNUSED)
                                  && dest_within(r_pinfo[i].insn.dst_id, req.info.insn.srcB_id)));
   end
 
@@ -303,12 +303,12 @@ module isc_pool
     end
     extend_pinfo[POOL_SLOT_NB] = (req.updt.cmd == POOL_UPDATE) ? updt_pinfo[c2_data.match_oldest_id]: updt_req_info;
   end
-  
+
   // Apply reorder
   always_comb begin
     for (int i=0; i< POOL_SLOT_NB; i=i+1) begin
       ordered_pinfo[i] = (req.updt.reorder && c2_data.has_match
-                      && (c2_data.match_oldest_id <= POOL_SLOT_W'(i))) ? 
+                      && (c2_data.match_oldest_id <= POOL_SLOT_W'(i))) ?
                          extend_pinfo[i+1]: extend_pinfo[i];
     end
   end

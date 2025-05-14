@@ -20,7 +20,7 @@
  * @brief   Initialise the in band telemetry application layer
  *          used to handle events and communication between the host
  *          and the sensors
- * 
+ *
  * @param   ullSharedMemBaseAddr  The base address of the shared memory
  *
  * @return  OK          Success
@@ -48,7 +48,7 @@ int iIN_BAND_TELEMETRY_ClearStatistics( void );
 
 /**
  * @brief   Activating/Deactivating Test Mode
- * 
+ *
  * @param   iActivate   Setting test mode activated or deactivated
  *                      TRUE for activating
  *                      FALSE for deactivating

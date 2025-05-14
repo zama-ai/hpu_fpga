@@ -6,7 +6,7 @@
 # It handles the tool setup and export the files at the right place
 # #
 
-set -e 
+set -e
 
  ORIG_DIR=$(pwd)
  REGMAP_DIR=${PROJECT_DIR}/sw/regmap

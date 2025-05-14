@@ -178,7 +178,7 @@ if [ $GEN_STIMULI -eq 1 ] ; then
   link_cmd="ln -s -T $(ls ${INPUT_DIR}/*.dop.hex) ${INPUT_DIR}/dop_stream.hex"
   echo "INFO> Running : $link_cmd"
   echo $link_cmd | sh
-  
+
 fi
 
 ###################################################################################################

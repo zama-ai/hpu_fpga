@@ -19,7 +19,7 @@ module bsk_inner_or_tree
   )(
     // System interface
     input                                               clk,
-    // Servers interface 
+    // Servers interface
     input  [     SRV_NB-1:0][BSK_DIST_COEF_NB-1:0][OP_W-1:0] bsk_srv_bdc_bsk_in,
     input  [     SRV_NB-1:0][BSK_DIST_COEF_NB-1:0]           bsk_srv_bdc_avail_in,
     input  [     SRV_NB-1:0][ BSK_UNIT_W-1:0]                bsk_srv_bdc_unit_in,
@@ -63,7 +63,7 @@ module bsk_inner_or_tree
   logic [     SRV_NB-1:0][ BSK_UNIT_W-1:0]                 bsk_srv_bdc_unit;
   logic [     SRV_NB-1:0][BSK_GROUP_W-1:0]                 bsk_srv_bdc_group;
   logic [     SRV_NB-1:0][    LWE_K_W-1:0]                 bsk_srv_bdc_br_loop;
-  
+
   logic [BSK_DIST_COEF_NB-1:0][       OP_W-1:0]            bsk_srv_bdc_bsk_2;
   logic [BSK_DIST_COEF_NB-1:0]                             bsk_srv_bdc_avail_2;
   logic [ BSK_UNIT_W-1:0]                                  bsk_srv_bdc_unit_2;
@@ -89,7 +89,7 @@ module bsk_inner_or_tree
     end
   endgenerate
 
-  // from side SLR 
+  // from side SLR
   always_ff @(posedge clk) begin
     bsk_srv_bdc_bsk_2     <= bsk_srv_bdc_bsk_2_in;
     bsk_srv_bdc_avail_2   <= bsk_srv_bdc_avail_2_in;
@@ -208,7 +208,7 @@ module bsk_inner_or_tree
   assign bsk_srv_bdc_unit_3_out     = bsk_srv_bdc_unit_3_D;
   assign bsk_srv_bdc_group_3_out    = bsk_srv_bdc_group_3_D;
   assign bsk_srv_bdc_br_loop_3_out  = bsk_srv_bdc_br_loop_3_D;
-  
+
   assign  bsk_srv_bdc_bsk_4_out     = bsk_srv_bdc_bsk_4_D;
   assign  bsk_srv_bdc_avail_4_out   = bsk_srv_bdc_avail_4_D;
   assign  bsk_srv_bdc_unit_4_out    = bsk_srv_bdc_unit_4_D;
