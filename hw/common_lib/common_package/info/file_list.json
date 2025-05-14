@@ -1,4 +1,4 @@
-{   
+{
     "local_root_path": "${PROJECT_DIR}",
     "dep_root_path"  : "${PROJECT_DIR}",
     "is_include_dir" : false,
@@ -13,5 +13,5 @@
     ],
     "constraint_files": [],
     "dependency_dir": [],
-    "include_dir": [] 
+    "include_dir": []
 }

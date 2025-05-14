@@ -24,36 +24,36 @@ import hpu_common_instruction_pkg::*;
 
   //== Axi4 Interface
   // Write channel
-  output logic [AXI4_ID_W-1:0]       m_axi_awid, 
-  output logic [AXI4_ADD_W-1:0]      m_axi_awaddr, 
-  output logic [AXI4_LEN_W-1:0]      m_axi_awlen, 
-  output logic [AXI4_SIZE_W-1:0]     m_axi_awsize, 
-  output logic [AXI4_BURST_W-1:0]    m_axi_awburst, 
-  output logic                       m_axi_awvalid, 
-  input  logic                       m_axi_awready, 
-  output logic [AXI4_DATA_W-1:0]     m_axi_wdata, 
-  output logic [(AXI4_DATA_W/8)-1:0] m_axi_wstrb, 
-  output logic                       m_axi_wlast, 
-  output logic                       m_axi_wvalid, 
-  input  logic                       m_axi_wready, 
-  input  logic [AXI4_ID_W-1:0]       m_axi_bid, 
-  input  logic [AXI4_RESP_W-1:0]     m_axi_bresp, 
-  input  logic                       m_axi_bvalid, 
-  output logic                       m_axi_bready, 
-  // Read channel 
-  output logic [AXI4_ID_W-1:0]       m_axi_arid, 
-  output logic [AXI4_ADD_W-1:0]      m_axi_araddr, 
-  output logic [AXI4_LEN_W-1:0]      m_axi_arlen, 
-  output logic [AXI4_SIZE_W-1:0]     m_axi_arsize, 
-  output logic [AXI4_BURST_W-1:0]    m_axi_arburst, 
-  output logic                       m_axi_arvalid, 
-  input  logic                       m_axi_arready, 
-  input  logic [AXI4_ID_W-1:0]       m_axi_rid, 
-  input  logic [AXI4_DATA_W-1:0]     m_axi_rdata, 
-  input  logic [AXI4_RESP_W-1:0]     m_axi_rresp, 
-  input  logic                       m_axi_rlast, 
-  input  logic                       m_axi_rvalid, 
-  output logic                       m_axi_rready, 
+  output logic [AXI4_ID_W-1:0]       m_axi_awid,
+  output logic [AXI4_ADD_W-1:0]      m_axi_awaddr,
+  output logic [AXI4_LEN_W-1:0]      m_axi_awlen,
+  output logic [AXI4_SIZE_W-1:0]     m_axi_awsize,
+  output logic [AXI4_BURST_W-1:0]    m_axi_awburst,
+  output logic                       m_axi_awvalid,
+  input  logic                       m_axi_awready,
+  output logic [AXI4_DATA_W-1:0]     m_axi_wdata,
+  output logic [(AXI4_DATA_W/8)-1:0] m_axi_wstrb,
+  output logic                       m_axi_wlast,
+  output logic                       m_axi_wvalid,
+  input  logic                       m_axi_wready,
+  input  logic [AXI4_ID_W-1:0]       m_axi_bid,
+  input  logic [AXI4_RESP_W-1:0]     m_axi_bresp,
+  input  logic                       m_axi_bvalid,
+  output logic                       m_axi_bready,
+  // Read channel
+  output logic [AXI4_ID_W-1:0]       m_axi_arid,
+  output logic [AXI4_ADD_W-1:0]      m_axi_araddr,
+  output logic [AXI4_LEN_W-1:0]      m_axi_arlen,
+  output logic [AXI4_SIZE_W-1:0]     m_axi_arsize,
+  output logic [AXI4_BURST_W-1:0]    m_axi_arburst,
+  output logic                       m_axi_arvalid,
+  input  logic                       m_axi_arready,
+  input  logic [AXI4_ID_W-1:0]       m_axi_rid,
+  input  logic [AXI4_DATA_W-1:0]     m_axi_rdata,
+  input  logic [AXI4_RESP_W-1:0]     m_axi_rresp,
+  input  logic                       m_axi_rlast,
+  input  logic                       m_axi_rvalid,
+  output logic                       m_axi_rready,
 
   //== Work_queue
   // Interface with a eR.Wa register
@@ -201,7 +201,7 @@ import hpu_common_instruction_pkg::*;
     // System interface
     .ublaze_clk    (clk                ),
     .ublaze_rst    (s_rst_n            ),
-   
+
     // axis workq
     .axis_sp0_tdata   (workq_tdata_out),
     .axis_sp0_tlast   (workq_tlast_out),
@@ -215,7 +215,7 @@ import hpu_common_instruction_pkg::*;
     .axis_mp0_tvalid  (ackq_tvalid_in),
 
     // Master Axi -> lookup/translation memory [ucore_reg]
-    // NB: internally ublaze only support axi4-lite thus the lookup/translation 
+    // NB: internally ublaze only support axi4-lite thus the lookup/translation
     // memory use axi4-lite
     // write path
     .axi_mp_awaddr  (m_axi_awaddr_tmp),
@@ -255,7 +255,7 @@ import hpu_common_instruction_pkg::*;
     .axi_mp_rready  (m_axi_rready  ),
     .axi_mp_rlast   (m_axi_rlast   ),
     .axi_mp_arregion(/*UNUSED*/    ),
-  
+
     // axis dop
     .axis_mp1_tdata   (dop_tdata_in),
     .axis_mp1_tlast   (dop_tlast_in),
@@ -267,7 +267,7 @@ import hpu_common_instruction_pkg::*;
     .axis_sp1_tlast   ('0),
     .axis_sp1_tready  (ack_rdy),
     .axis_sp1_tvalid  (ack_vld),
-    
+
     // Interrupt
     .irq_0(ack_vld)
   );

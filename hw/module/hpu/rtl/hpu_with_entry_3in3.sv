@@ -161,7 +161,7 @@ module hpu_with_entry_3in3
     .reset_bsk_cache           (reset_bsk_cache),
     .reset_bsk_cache_done      (reset_bsk_cache_done),
     .reset_cache               (reset_cache),
-   
+
     .error                     (error),
     .pep_info                  (pep_rif_info),
     .pep_counter_inc           (pep_rif_counter_inc)

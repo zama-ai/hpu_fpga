@@ -28,7 +28,7 @@ module arith_mult_core_with_side #(
                                 // [0] (1) reset them to 0.
                                 // [1] (1) reset them to 1.
 
-  
+
 )
 (
     input  logic                       clk,        // clock
@@ -75,10 +75,10 @@ module arith_mult_core_with_side #(
   ) delay_side (
     .clk      (clk      ),
     .s_rst_n  (s_rst_n  ),
-                        
+
     .in_avail (in_avail ),
     .out_avail(out_avail),
-                        
+
     .in_side  (in_side  ),
     .out_side (out_side )
   );

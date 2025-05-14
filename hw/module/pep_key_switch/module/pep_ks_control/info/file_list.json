@@ -1,4 +1,4 @@
-{   
+{
     "local_root_path": "${PROJECT_DIR}",
     "dep_root_path"  : "${PROJECT_DIR}",
     "is_include_dir" : false,
@@ -34,5 +34,5 @@
         "hw/module/pep_key_switch/module/pep_ks_common",
         "hw/common_lib/fifo"
     ],
-    "include_dir": [] 
+    "include_dir": []
 }

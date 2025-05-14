@@ -24,7 +24,7 @@ module tb_arith_mult_cst_solinas2;
   parameter  int   IN_W           = 17;
   parameter  int   CST_W          = 35;
   parameter  [CST_W-1:0] CST      = 2**CST_W-2**(3*CST_W/4)+1; // Should be a solinas2
-  
+
   localparam bit   IN_PIPE        = 1;
   localparam int   SIDE_W         = 8;
   localparam [1:0] RST_SIDE       = 2'b01;

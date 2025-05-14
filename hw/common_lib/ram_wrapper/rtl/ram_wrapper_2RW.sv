@@ -43,7 +43,7 @@ module ram_wrapper_2RW #(
   input  logic                     b_wen,
   input  logic [$clog2(DEPTH)-1:0] b_add,
   input  logic [WIDTH-1:0]         b_wr_data,
-  output logic [WIDTH-1:0]         b_rd_data  
+  output logic [WIDTH-1:0]         b_rd_data
 );
 
   import ram_wrapper_pkg::*;

@@ -25,7 +25,7 @@ module tb_stream_to_pipe;
   parameter int SAMPLE_NB = 100_000;
 
   localparam int RAND_RANGE = 128;
-  
+
   function [31:0] max_desync  (input [IN_NB-1:0][31:0] D);
     var [31:0] tmp;
     tmp = D[0];
@@ -128,7 +128,7 @@ module tb_stream_to_pipe;
   logic                        in_rdy_tmp;
   logic [IN_NB-1:0]            in_rdy_tmp_a;
 
-  stream_source 
+  stream_source
   #(
     .FILENAME   ("random"),
     .DATA_TYPE  ("ascii_hex"),
@@ -183,7 +183,7 @@ module tb_stream_to_pipe;
 
     wait (stream_source.running);
     wait (!stream_source.running);
- 
+
     end_of_test = 1'b1;
   end
 

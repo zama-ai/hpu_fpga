@@ -283,7 +283,7 @@ module pep_mmacc_splitc_sxt_read
                         s0_stg_iter;
   assign s0_poly_idD  = s0_do_read && s0_last_stg_iter ? s0_last_poly_id ? '0 : s0_poly_id + 1 :
                         s0_poly_id;
-  assign s0_lut_idD   = s0_do_read && s0_last_stg_iter && s0_last_poly_id ? 
+  assign s0_lut_idD   = s0_do_read && s0_last_stg_iter && s0_last_poly_id ?
                         s0_last_lut ? '0 : s0_lut_id + 1 : s0_lut_id;
 
   always_ff @(posedge clk)
@@ -305,7 +305,7 @@ module pep_mmacc_splitc_sxt_read
 
   assign s0_s1_vld   = s0_vld & s0_free_loc;
   assign s0_do_read  = s0_s1_vld & s0_s1_rdy;
-  assign s0_rdy      = s0_s1_rdy & s0_free_loc & s0_last_stg_iter 
+  assign s0_rdy      = s0_s1_rdy & s0_free_loc & s0_last_stg_iter
                      & s0_last_poly_id & s0_last_lut;
 
 // --------------------------------------------------------------------------------------------- --
@@ -332,14 +332,14 @@ module pep_mmacc_splitc_sxt_read
   // Each LUT extraction will write to a consecutive register ID
   // The output register index should always start aligned to a power of
   // two.
-  assign s0_dst_rid = REGF_REGID_W'(s0_icmd.map_elt.dst_rid) | REGF_REGID_W'(s0_lut_id); 
+  assign s0_dst_rid = REGF_REGID_W'(s0_icmd.map_elt.dst_rid) | REGF_REGID_W'(s0_lut_id);
 
 // pragma translate_off
   always @(posedge clk) begin
     if (s_rst_n & s0_rdy & s0_vld) begin
       logic [REGF_REGID_W-1:0] _dst_masked;
       assign _dst_masked = s0_icmd.map_elt.dst_rid & s0_last_lut_id;
-  
+
       many_assert: assert(~|_dst_masked) else begin
         $fatal(1, {"%t > ERROR: ManyLUT destination RID doesn't align to the ",
                   "number of PBS outputs. Destination RID: 0x%0x, ",

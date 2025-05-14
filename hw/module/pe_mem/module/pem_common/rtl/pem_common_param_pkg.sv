@@ -95,7 +95,7 @@ package pem_common_param_pkg;
     logic [PEM_PC_MAX-1:0] m_axi4_bready;
     logic [PEM_PC_MAX-1:0] m_axi4_bvalid;
     logic [PEM_PC_MAX:0] s0_cmd_rdy;
-    logic [PEM_PC_MAX:0] s0_cmd_vld; 
+    logic [PEM_PC_MAX:0] s0_cmd_vld;
     logic [PEM_PC_MAX-1:0] r2_axi_vld;
     logic [PEM_PC_MAX-1:0] r2_axi_rdy;
     logic [PEM_PC_MAX-1:0] rcp_fifo_in_rdy;

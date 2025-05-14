@@ -85,7 +85,7 @@ uint32_t parse_iop(
 
   // Fill bundle length
   src->len = src_pos;
-  
+
   //4. Get list of immediat operands (if needed)
   if (header->header.has_imm) {
     uint32_t imm_pos = 0;

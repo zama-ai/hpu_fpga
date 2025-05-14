@@ -33,7 +33,7 @@ package param_tfhe_definition_pkg;
   import common_definition_pkg::*;
 
   localparam application_name_e APPLICATION_NAME = APPLICATION_NAME_MSG2_CARRY2_TUNIFORM;
-  
+
   // Number of coefficient in the polynomial
   localparam int           N       = 2048;
   // The dimension of GLWE.

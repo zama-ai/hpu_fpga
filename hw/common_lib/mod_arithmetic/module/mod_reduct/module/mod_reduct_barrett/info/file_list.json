@@ -1,4 +1,4 @@
-{   
+{
     "local_root_path": "${PROJECT_DIR}/hw/common_lib/mod_arithmetic/module/mod_reduct/module/mod_reduct_barrett",
     "dep_root_path"  : "${PROJECT_DIR}",
     "is_include_dir" : false,
@@ -32,5 +32,5 @@
                        "hw/common_lib/common_package",
                        "hw/common_lib/common",
                        "hw/common_lib/arithmetic/module/arith_mult"],
-    "include_dir": [] 
+    "include_dir": []
 }

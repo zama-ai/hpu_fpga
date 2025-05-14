@@ -62,8 +62,8 @@ module tb_ntt_radix_cooley_tukey;
     for (int i=0; i<R; i=i+1)
       s_mult[1][i] = mod_red((xt_a[i] * phi_a[i]), MOD_M);
     for (int i=0; i<R/2; i=i+1) begin
-      s_x[1][i]     = mod_add(s_mult[1][i],s_mult[1][i+R/2], MOD_M); 
-      s_x[1][i+R/2] = mod_sub(s_mult[1][i],s_mult[1][i+R/2], MOD_M); 
+      s_x[1][i]     = mod_add(s_mult[1][i],s_mult[1][i+R/2], MOD_M);
+      s_x[1][i+R/2] = mod_sub(s_mult[1][i],s_mult[1][i+R/2], MOD_M);
     end
 
 //    for (int i=0; i<R; i=i+1)
@@ -90,12 +90,12 @@ module tb_ntt_radix_cooley_tukey;
         end
 
         for (int i=0; i<g_elt/4; i=i+1) begin
-          s_x[s+1][g_ofs+i]         = mod_add(s_mult[s+1][g_ofs+i],s_mult[s+1][g_ofs+i+g_elt/4], MOD_M); 
-          s_x[s+1][g_ofs+i+g_elt/4] = mod_sub(s_mult[s+1][g_ofs+i],s_mult[s+1][g_ofs+i+g_elt/4], MOD_M); 
+          s_x[s+1][g_ofs+i]         = mod_add(s_mult[s+1][g_ofs+i],s_mult[s+1][g_ofs+i+g_elt/4], MOD_M);
+          s_x[s+1][g_ofs+i+g_elt/4] = mod_sub(s_mult[s+1][g_ofs+i],s_mult[s+1][g_ofs+i+g_elt/4], MOD_M);
         end
         for (int i=g_elt/2; i<3*g_elt/4; i=i+1) begin
-          s_x[s+1][g_ofs+i]         = mod_add(s_mult[s+1][g_ofs+i],s_mult[s+1][g_ofs+i+g_elt/4], MOD_M); 
-          s_x[s+1][g_ofs+i+g_elt/4] = mod_sub(s_mult[s+1][g_ofs+i],s_mult[s+1][g_ofs+i+g_elt/4], MOD_M); 
+          s_x[s+1][g_ofs+i]         = mod_add(s_mult[s+1][g_ofs+i],s_mult[s+1][g_ofs+i+g_elt/4], MOD_M);
+          s_x[s+1][g_ofs+i+g_elt/4] = mod_sub(s_mult[s+1][g_ofs+i],s_mult[s+1][g_ofs+i+g_elt/4], MOD_M);
         end
 
       end // for g
@@ -201,7 +201,7 @@ module tb_ntt_radix_cooley_tukey;
 
   ) dut (
     .clk      (clk),
-    .s_rst_n  (s_rst_n), 
+    .s_rst_n  (s_rst_n),
     .xt_a     (xt_a),
     .xf_a     (xf_a),
     .phi_a    (phi_a[R-1:1]),

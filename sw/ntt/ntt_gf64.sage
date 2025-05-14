@@ -641,7 +641,7 @@ def gen_all_phi_core(n_l,bwd,with_div):
             pretty_w = pretty_w + "\n"
         pretty_p = pretty_w + pretty_p
     pretty_p = "{\n"+pretty_p+"}"
-    
+
     return pretty_p
 
 

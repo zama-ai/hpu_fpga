@@ -16,7 +16,7 @@ def bsk_order (cut_l):
         n_l = 2**cut_l[0]
 
         return [i for i in range(n_l)]
- 
+
     else:
         s_l = 0;
         for c in (cut_l):

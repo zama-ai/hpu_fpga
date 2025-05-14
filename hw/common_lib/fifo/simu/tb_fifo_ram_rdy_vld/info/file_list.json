@@ -1,4 +1,4 @@
-{    
+{
     "local_root_path": "${PROJECT_DIR}/hw/common_lib/fifo/simu/tb_fifo_ram_rdy_vld",
     "dep_root_path"  : "${PROJECT_DIR}",
     "rtl_files": [

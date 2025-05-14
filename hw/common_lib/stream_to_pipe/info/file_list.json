@@ -1,4 +1,4 @@
-{   
+{
     "local_root_path": "${PROJECT_DIR}",
     "dep_root_path"  : "${PROJECT_DIR}",
     "is_include_dir" : false,
@@ -15,5 +15,5 @@
         "hw/common_lib/stream_to_pipe/constraint/stream_to_pipe_timing_constraints_local.xdc"
     ],
     "dependency_dir": [],
-    "include_dir": [] 
+    "include_dir": []
 }

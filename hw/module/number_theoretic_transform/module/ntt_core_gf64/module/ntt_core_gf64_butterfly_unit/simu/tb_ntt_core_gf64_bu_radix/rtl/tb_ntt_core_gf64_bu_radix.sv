@@ -101,7 +101,7 @@ module tb_ntt_core_gf64_bu_radix;
   logic [PSI*R-1:0]                out_avail;
   logic [SIDE_W-1:0]               in_side;
   logic [SIDE_W-1:0]               out_side;
-  
+
   logic [STG:0][PSI*R-1:0][MOD_NTT_W+1:0] ntt_data;
   logic [STG:0][PSI*R-1:0]                ntt_avail;
   logic [STG:0][SIDE_W-1:0]               ntt_side;

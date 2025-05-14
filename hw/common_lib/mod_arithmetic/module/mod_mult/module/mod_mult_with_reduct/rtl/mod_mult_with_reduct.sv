@@ -88,7 +88,7 @@ module mod_mult_with_reduct
     .IN_PIPE     (1),
     .SIDE_W      (SIDE_W),
     .RST_SIDE    (RST_SIDE)
-  ) mod_reduct ( 
+  ) mod_reduct (
     .clk       (clk),
     .s_rst_n   (s_rst_n),
     .a         (s0_mult_result),

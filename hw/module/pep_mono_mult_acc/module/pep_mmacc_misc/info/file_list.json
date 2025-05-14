@@ -26,5 +26,5 @@
         "hw/module/param",
         "hw/module/pe_pbs/module/pep_common"
     ],
-    "include_dir": [] 
+    "include_dir": []
 }

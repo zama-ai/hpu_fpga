@@ -39,20 +39,20 @@
 #define EEPROM_TWO_BYTES                         ( 2 )
 #define UPPER_FIREWALL                           ( 0xBABECAFE )
 #define LOWER_FIREWALL                           ( 0xDEADFACE )
-     
+
 #define EEPROM_MAX_MAC                           ( 40 )
 #define EEPROM_PAGE_SIZE_MAX                     ( 255 )
 #define EEPROM_ADDRESS_SIZE_MAX                  ( 255 )
 #define EEPROM_WRITE_MULTI_BYTE_SIZE_MAX         ( 255 )
 #define EEPROM_WRITE_BYTE_SIZE_MAX               ( 255 )
-     
+
 /* Default register content in EEPROM if a particular register has not been programmed */
 #define EEPROM_DEFAULT_VAL                       ( 0xFF )
 #define EEPROM_VERSION_SIZE                      ( 4 )
 #define EEPROM_BUF_SIZE                          ( 128 )
 #define EEPROM_FIELD_NA_SIZE                     ( 0 )  /* For non-existent fields */
 #define EEPROM_DEVICE_ID_CHECK_TRY_COUNT         ( 3 )
-     
+
 /* Version 4.0 field positions */
 #define EEPROM_V4_0_ALVEO_PRODUCT_NAME_SIZE      ( 36 )
 #define EEPROM_V4_0_ALVEO_PART_NUM_SIZE          ( 24 )

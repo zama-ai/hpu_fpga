@@ -1,4 +1,4 @@
-{   
+{
     "local_root_path": "${PROJECT_DIR}",
     "dep_root_path"  : "${PROJECT_DIR}",
     "is_include_dir" : false,
@@ -29,5 +29,5 @@
         "hw/module/pe_pbs/module/pep_common",
         "hw/module/number_theoretic_transform/module/ntt_core_common"
     ],
-    "include_dir": [] 
+    "include_dir": []
 }

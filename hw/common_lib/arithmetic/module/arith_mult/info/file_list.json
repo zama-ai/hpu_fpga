@@ -1,4 +1,4 @@
-{   
+{
     "local_root_path": "${PROJECT_DIR}",
     "dep_root_path"  : "${PROJECT_DIR}",
     "is_include_dir" : false,
@@ -25,5 +25,5 @@
                        "hw/common_lib/arithmetic/module/arith_mult/module/arith_mult_core",
                        "hw/common_lib/arithmetic/module/arith_mult/module/arith_mult_karatsuba",
                        "hw/common_lib/arithmetic/module/arith_mult/module/arith_mult_64bgoldilocks_karatsuba"],
-    "include_dir": [] 
+    "include_dir": []
 }

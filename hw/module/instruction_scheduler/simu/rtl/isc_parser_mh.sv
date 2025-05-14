@@ -58,7 +58,7 @@ assign is_sync_insn = insn_as_pea_mac.dop == DOP_SYNC;
 // Extract Destination RID and convert it in 1h
 // NB: dst_rid is a field shared by all instructions format and its always at the same position
 // -> Don't care of the current opcode
-assign dst_range = (insn_as_pep.dop.kind == DOPT_PBS) ? 
+assign dst_range = (insn_as_pep.dop.kind == DOPT_PBS) ?
                       REGF_REGID_W'(1) << insn_as_pep.dop.log_lut_nb :
                       REGF_REGID_W'(1);
 assign dst_rid_mh = (~({REGF_REG_NB{1'b1}} << dst_range)) << insn_as_pep.dst_rid;
@@ -122,7 +122,7 @@ end
 // Extract Flush
 // ============================================================================================== //
 // Extract Destination RID of MID based on kind
-always_comb begin 
+always_comb begin
   case (kind_e)
      PBS    : flush = insn_as_pep.dop.flush_pbs;
      default: flush = 1'b0;

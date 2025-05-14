@@ -41,7 +41,7 @@ module arith_mult_64bgoldilocks_karatsuba_cascade #(
   input  logic [SIDE_W-1:0] in_side,
   output logic [SIDE_W-1:0] out_side
   );
-  
+
   import arith_mult_64bgoldilocks_karatsuba_pkg::*;
 
   // ============================================================================================ //
@@ -57,7 +57,7 @@ module arith_mult_64bgoldilocks_karatsuba_cascade #(
   localparam int     MAX_SB_W       = 32; // LSB_W > MAX_MSB_W ? LSB_W : MAX_MSB_W;
 
   // -------------------------------------------------------------------------------------------- //
-  // S0 : Input and CLB pre adder 
+  // S0 : Input and CLB pre adder
   // -------------------------------------------------------------------------------------------- //
   logic [OP_A_W-1:0] s0_a;
   logic [OP_B_W-1:0] s0_b;
@@ -67,7 +67,7 @@ module arith_mult_64bgoldilocks_karatsuba_cascade #(
   always_ff @(posedge clk) begin
     s0_a <= a;
     s0_b <= b;
-  end 
+  end
 
   assign s0_a_lo_plus_a_hi = s0_a[0+:LSB_W] + s0_a[LSB_W+:MSB_A_W];
   assign s0_b_lo_plus_b_hi = s0_b[0+:LSB_W] + s0_b[LSB_W+:MSB_B_W];
@@ -102,7 +102,7 @@ module arith_mult_64bgoldilocks_karatsuba_cascade #(
     .in_side  ('x                  ),/*UNUSED*/
     .out_side (/*UNUSED*/          )
   );
-  
+
   arith_mult_karatsuba_cascade #(
     .OP_A_W   (LSB_W    ),
     .OP_B_W   (LSB_W    ),
@@ -159,10 +159,10 @@ module arith_mult_64bgoldilocks_karatsuba_cascade #(
     s2_sub_of_product <= s1_sub_of_product;
     s2_product_of_sum <= s1_product_of_sum;
   end
-  
-  assign s2_result = s2_sub_of_product[2*MAX_SB_W] ? 
+
+  assign s2_result = s2_sub_of_product[2*MAX_SB_W] ?
                       ((s2_product_of_sum - s2_a_lo_x_b_lo) << LSB_W) - ({1'b0, ~s2_sub_of_product[2*MAX_SB_W-1:0]} + 1)
-                    : ((s2_product_of_sum - s2_a_lo_x_b_lo) << LSB_W) + s2_sub_of_product; 
+                    : ((s2_product_of_sum - s2_a_lo_x_b_lo) << LSB_W) + s2_sub_of_product;
 
   // -------------------------------------------------------------------------------------------- //
   // S3 : result

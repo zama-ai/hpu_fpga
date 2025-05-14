@@ -44,7 +44,7 @@ class SecHeader(Header):
 
     @classmethod
     def _iter_sections(cls, txt):
-        return map(lambda x: "\n".join(x), 
+        return map(lambda x: "\n".join(x),
                    group_delim(txt.splitlines(), lambda x: cls.delim_re.match(x)))
 
     @classmethod
@@ -59,7 +59,7 @@ class SecHeader(Header):
 
     def __str__(self) -> str:
         parts = (
-            self.start, 
+            self.start,
             self.delim.join(filter(self.valid_section, map(str, self._sections))),
             self.end
         )

@@ -49,7 +49,7 @@ if __name__ == '__main__':
     PSI = args.P
     S = args.S
     OUTPUT_DIR = args.o
-    GEN_DIR = os.path.join(OUTPUT_DIR) 
+    GEN_DIR = os.path.join(OUTPUT_DIR)
     STG_ITER_NB = int((R ** (S-1)) / PSI)
 
     DO_LOOPBACK  = 1
@@ -100,7 +100,7 @@ if __name__ == '__main__':
     for i in range(0, NTT_BWD_NB):
         ntt_bwd = (NTT_BWD_INIT + i)%2
         if ntt_bwd != NTT_BWD_INIT:
-            s_init = (stg - S_DEC + S) 
+            s_init = (stg - S_DEC + S)
         else:
             s_init = S_INIT_L
         if (S_DEC_L == 0):
@@ -144,7 +144,7 @@ if __name__ == '__main__':
         u[p][r].write("{:0x}\n".format(listFile[j]))
         u[p][r].write("{:0x}\n".format(listFile[j+1]))
         r = r + 1
-        if RL == r : 
+        if RL == r :
             r = 0
             p = p + 1
             if (p == PSI) :

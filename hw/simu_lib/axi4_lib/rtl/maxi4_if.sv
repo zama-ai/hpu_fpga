@@ -134,7 +134,7 @@ interface maxi4_if
 
 task init;
 begin
-  arvalid <= '0; 
+  arvalid <= '0;
   rready  <= '0;
   awvalid <= '0;
   wvalid  <= '0;

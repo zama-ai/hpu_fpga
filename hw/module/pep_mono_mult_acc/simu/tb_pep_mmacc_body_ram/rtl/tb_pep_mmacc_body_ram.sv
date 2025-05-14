@@ -262,7 +262,7 @@ module tb_pep_mmacc_body_ram;
   end
 
   bit rd_mask;
-  
+
   always @(*) begin
     rd_mask = (rd_pid_q.size() > 0);
     rd_add  = rd_pid_q[0];

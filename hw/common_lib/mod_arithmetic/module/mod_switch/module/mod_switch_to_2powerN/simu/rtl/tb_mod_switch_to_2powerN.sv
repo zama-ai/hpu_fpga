@@ -58,14 +58,14 @@ function logic [MOD_Q_W-1:0] mod_switch_to_pow_of_2(logic [MOD_P_W-1:0] a);
 
   res = a_x_mult_cst >> PRECISION_W;
   //$display("Res value: %h", res);
-  
+
   if ((a_x_mult_cst >> (PRECISION_W-1)) & 1) begin
     res = res + 1;
-  end 
+  end
   //$display("Res value: %h", res);
-      
+
   return res;
-endfunction  
+endfunction
 
 // ============================================================================================== --
 // clock, reset

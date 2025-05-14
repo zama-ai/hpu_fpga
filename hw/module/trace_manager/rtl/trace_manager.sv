@@ -99,7 +99,7 @@ module trace_manager
   logic [INFO_W-1:0] dfifo_out_data;
 
   logic error_fifo_ovf;
-  
+
   assign dfifo_in_vld  = s0_wr_en;
   assign dfifo_in_data = s0_wr_data;
 
@@ -240,7 +240,7 @@ module trace_manager
   assign m_axi4_wlast  = m_axi4_data.wlast;
 
   assign dfifo_out_rdy  = send_data_done;
-  
+
   generate
     if (AXI_WORD_PER_INFO == 1) begin : gen_axi_word_per_info_eq_1
       assign axi_data.wdata = dfifo_out_data; // Complete MSB with 0s, if needed.

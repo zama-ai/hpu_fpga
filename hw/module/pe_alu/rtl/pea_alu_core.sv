@@ -55,7 +55,7 @@ module pea_alu_core
   logic [MUL_FACTOR_W-1:0] in_mul_op1;
 
   // Set the msg at the correct place in the body coefficient.
-  // Note that if the coefficient is not the body, in_msg_cst should be null. 
+  // Note that if the coefficient is not the body, in_msg_cst should be null.
   assign in_msg_cst_ext = in_msg_cst[USEFUL_BIT-1:0] << (MOD_Q_W-USEFUL_BIT);
   assign in_mul_op0 = (in_dop == DOP_SSUB) ? in_msg_cst_ext : in_a0;
   assign in_mul_op1 = (in_dop == DOP_MAC || in_dop == DOP_MULS) ? in_mul_factor : 1;
@@ -156,7 +156,7 @@ module pea_alu_core
   logic [MOD_Q_W-1:0] s2_result_reduct;
 
   assign s2_result = (s2_dop == DOP_SUBS || s2_dop == DOP_SSUB || s2_dop == DOP_SUB) ? s2_sub_res : s2_add_res;
-  
+
   // Since MOD_Q is a power of 2, the modular reduction is straight forward
   assign s2_result_reduct = s2_result[MOD_Q_W-1:0];
 

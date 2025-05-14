@@ -145,7 +145,7 @@ module pep_mmacc_splitc_acc_assembly
     for (int i=0; i<MSPLIT_DIV; i=i+1)
       for (int g=0; g<GRAM_NB; g=g+1)
         for (int p=0; p<QPSI; p=p+1) begin
-          acc_gram_rd_en[g][i*QPSI+p]      = acc_gram_rd_en_l[i][g][p]; 
+          acc_gram_rd_en[g][i*QPSI+p]      = acc_gram_rd_en_l[i][g][p];
           acc_gram_rd_add[g][i*QPSI+p]     = acc_gram_rd_add_l[i][g][p];
           gram_acc_rd_data_l[i][g][p]       = gram_acc_rd_data[g][i*QPSI+p];
           gram_acc_rd_data_avail_l[i][g][p] = gram_acc_rd_data_avail[g][i*QPSI+p];
@@ -200,28 +200,28 @@ module pep_mmacc_splitc_acc_assembly
   generate
     if (OUTWARD_SLR_LATENCY > 1) begin
       assign subs_main_ntt_acc_data_avail_srD[OUTWARD_SLR_LATENCY-1:1] = subs_main_ntt_acc_data_avail_sr[OUTWARD_SLR_LATENCY-2:0];
-      assign subs_main_ntt_acc_ctrl_avail_srD[OUTWARD_SLR_LATENCY-1:1] = subs_main_ntt_acc_ctrl_avail_sr[OUTWARD_SLR_LATENCY-2:0]; 
-      assign subs_main_ntt_acc_data_srD[OUTWARD_SLR_LATENCY-1:1]       = subs_main_ntt_acc_data_sr[OUTWARD_SLR_LATENCY-2:0];       
-      assign subs_main_ntt_acc_sob_srD[OUTWARD_SLR_LATENCY-1:1]        = subs_main_ntt_acc_sob_sr[OUTWARD_SLR_LATENCY-2:0];        
-      assign subs_main_ntt_acc_eob_srD[OUTWARD_SLR_LATENCY-1:1]        = subs_main_ntt_acc_eob_sr[OUTWARD_SLR_LATENCY-2:0];        
-      assign subs_main_ntt_acc_sol_srD[OUTWARD_SLR_LATENCY-1:1]        = subs_main_ntt_acc_sol_sr[OUTWARD_SLR_LATENCY-2:0];        
-      assign subs_main_ntt_acc_eol_srD[OUTWARD_SLR_LATENCY-1:1]        = subs_main_ntt_acc_eol_sr[OUTWARD_SLR_LATENCY-2:0];        
-      assign subs_main_ntt_acc_sog_srD[OUTWARD_SLR_LATENCY-1:1]        = subs_main_ntt_acc_sog_sr[OUTWARD_SLR_LATENCY-2:0];        
-      assign subs_main_ntt_acc_eog_srD[OUTWARD_SLR_LATENCY-1:1]        = subs_main_ntt_acc_eog_sr[OUTWARD_SLR_LATENCY-2:0];        
+      assign subs_main_ntt_acc_ctrl_avail_srD[OUTWARD_SLR_LATENCY-1:1] = subs_main_ntt_acc_ctrl_avail_sr[OUTWARD_SLR_LATENCY-2:0];
+      assign subs_main_ntt_acc_data_srD[OUTWARD_SLR_LATENCY-1:1]       = subs_main_ntt_acc_data_sr[OUTWARD_SLR_LATENCY-2:0];
+      assign subs_main_ntt_acc_sob_srD[OUTWARD_SLR_LATENCY-1:1]        = subs_main_ntt_acc_sob_sr[OUTWARD_SLR_LATENCY-2:0];
+      assign subs_main_ntt_acc_eob_srD[OUTWARD_SLR_LATENCY-1:1]        = subs_main_ntt_acc_eob_sr[OUTWARD_SLR_LATENCY-2:0];
+      assign subs_main_ntt_acc_sol_srD[OUTWARD_SLR_LATENCY-1:1]        = subs_main_ntt_acc_sol_sr[OUTWARD_SLR_LATENCY-2:0];
+      assign subs_main_ntt_acc_eol_srD[OUTWARD_SLR_LATENCY-1:1]        = subs_main_ntt_acc_eol_sr[OUTWARD_SLR_LATENCY-2:0];
+      assign subs_main_ntt_acc_sog_srD[OUTWARD_SLR_LATENCY-1:1]        = subs_main_ntt_acc_sog_sr[OUTWARD_SLR_LATENCY-2:0];
+      assign subs_main_ntt_acc_eog_srD[OUTWARD_SLR_LATENCY-1:1]        = subs_main_ntt_acc_eog_sr[OUTWARD_SLR_LATENCY-2:0];
       assign subs_main_ntt_acc_pbs_id_srD[OUTWARD_SLR_LATENCY-1:1]     = subs_main_ntt_acc_pbs_id_sr[OUTWARD_SLR_LATENCY-2:0];
     end
   endgenerate
 
   assign out_subs_main_ntt_acc_data_avail = subs_main_ntt_acc_data_avail_sr[OUTWARD_SLR_LATENCY-1];
   assign out_subs_main_ntt_acc_ctrl_avail = subs_main_ntt_acc_ctrl_avail_sr[OUTWARD_SLR_LATENCY-1];
-  assign out_subs_main_ntt_acc_data       = subs_main_ntt_acc_data_sr[OUTWARD_SLR_LATENCY-1];      
-  assign out_subs_main_ntt_acc_sob        = subs_main_ntt_acc_sob_sr[OUTWARD_SLR_LATENCY-1];       
-  assign out_subs_main_ntt_acc_eob        = subs_main_ntt_acc_eob_sr[OUTWARD_SLR_LATENCY-1];       
-  assign out_subs_main_ntt_acc_sol        = subs_main_ntt_acc_sol_sr[OUTWARD_SLR_LATENCY-1];       
-  assign out_subs_main_ntt_acc_eol        = subs_main_ntt_acc_eol_sr[OUTWARD_SLR_LATENCY-1];       
-  assign out_subs_main_ntt_acc_sog        = subs_main_ntt_acc_sog_sr[OUTWARD_SLR_LATENCY-1];       
-  assign out_subs_main_ntt_acc_eog        = subs_main_ntt_acc_eog_sr[OUTWARD_SLR_LATENCY-1];       
-  assign out_subs_main_ntt_acc_pbs_id     = subs_main_ntt_acc_pbs_id_sr[OUTWARD_SLR_LATENCY-1];    
+  assign out_subs_main_ntt_acc_data       = subs_main_ntt_acc_data_sr[OUTWARD_SLR_LATENCY-1];
+  assign out_subs_main_ntt_acc_sob        = subs_main_ntt_acc_sob_sr[OUTWARD_SLR_LATENCY-1];
+  assign out_subs_main_ntt_acc_eob        = subs_main_ntt_acc_eob_sr[OUTWARD_SLR_LATENCY-1];
+  assign out_subs_main_ntt_acc_sol        = subs_main_ntt_acc_sol_sr[OUTWARD_SLR_LATENCY-1];
+  assign out_subs_main_ntt_acc_eol        = subs_main_ntt_acc_eol_sr[OUTWARD_SLR_LATENCY-1];
+  assign out_subs_main_ntt_acc_sog        = subs_main_ntt_acc_sog_sr[OUTWARD_SLR_LATENCY-1];
+  assign out_subs_main_ntt_acc_eog        = subs_main_ntt_acc_eog_sr[OUTWARD_SLR_LATENCY-1];
+  assign out_subs_main_ntt_acc_pbs_id     = subs_main_ntt_acc_pbs_id_sr[OUTWARD_SLR_LATENCY-1];
 
   assign main_subs_garb_acc_avail_1h_srD[0] = {in_main_subs_garb_acc_rd_avail_1h, in_main_subs_garb_acc_wr_avail_1h};
   assign {out_main_subs_garb_acc_rd_avail_1h,
@@ -287,7 +287,7 @@ module pep_mmacc_splitc_acc_assembly
     .main_ntt_acc_sog        (out_subs_main_ntt_acc_sog),
     .main_ntt_acc_eog        (out_subs_main_ntt_acc_eog),
     .main_ntt_acc_pbs_id     (out_subs_main_ntt_acc_pbs_id),
-    
+
     .acc_garb_req            (acc_garb_req),
     .acc_garb_req_vld        (acc_garb_req_vld),
     .acc_garb_req_rdy        (acc_garb_req_rdy),
@@ -303,14 +303,14 @@ module pep_mmacc_splitc_acc_assembly
     .acc_gram_wr_en          (acc_gram_wr_en_l[MSPLIT_SUBS_FACTOR+:MSPLIT_MAIN_FACTOR]),
     .acc_gram_wr_add         (acc_gram_wr_add_l[MSPLIT_SUBS_FACTOR+:MSPLIT_MAIN_FACTOR]),
     .acc_gram_wr_data        (acc_gram_wr_data_l[MSPLIT_SUBS_FACTOR+:MSPLIT_MAIN_FACTOR]),
-    
+
     .afifo_acc_icmd          (main_afifo_acc_icmd),
     .afifo_acc_vld           (main_afifo_acc_vld),
     .afifo_acc_rdy           (main_afifo_acc_rdy),
-    
+
     .acc_sfifo_icmd          (main_acc_sfifo_icmd),
     .acc_sfifo_avail         (main_acc_sfifo_avail),
-    
+
     .acc_feed_done           (main_acc_feed_done),
     .acc_feed_done_map_idx   (main_acc_feed_done_map_idx),
     .br_loop_proc_done       (main_br_loop_proc_done),
@@ -330,7 +330,7 @@ module pep_mmacc_splitc_acc_assembly
   ) pep_mmacc_splitc_subs_acc (
     .clk                       (clk),
     .s_rst_n                   (s_rst_n),
-    
+
     .ntt_acc_data_avail        (ntt_acc_data_avail),
     .ntt_acc_ctrl_avail        (ntt_acc_ctrl_avail),
     .ntt_acc_data              (ntt_acc_data),

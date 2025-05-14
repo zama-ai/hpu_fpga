@@ -2,7 +2,7 @@
  * Copyright (c) 2023 Advanced Micro Devices, Inc. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
- * This header file contains the Operating System Abstraction Layer (OSAL) 
+ * This header file contains the Operating System Abstraction Layer (OSAL)
  * API for AMC.
  *
  * @file osal.h
@@ -48,9 +48,9 @@ typedef enum _OSAL_ERRORS
     OSAL_ERRORS_OS_IMPLEMENTATION,  /* error code returned from os implementation */
     OSAL_ERRORS_OS_NOT_STARTED,     /* OS has not been started */
     OSAL_ERRORS_INSUFFICIENT_MEM,   /* insufficient memory to complete call */
-                                 
+
     MAX_OSAL_ERROR,
-                                                    
+
 } OSAL_ERRORS;
 
 /**
@@ -61,9 +61,9 @@ typedef enum _OSAL_TIMER_CONFIG
 {
     OSAL_TIMER_CONFIG_ONE_SHOT = 0,     /* timer will be a one-shot, entering dormant state after it expires */
     OSAL_TIMER_CONFIG_PERIODIC,         /* timer will expire repeatedly */
-                                 
+
     MAX_OSAL_TIMER_CONFIG,
-                                                    
+
 } OSAL_TIMER_CONFIG;
 
 /**
@@ -105,7 +105,7 @@ typedef enum _OSAL_STATS_TYPE
 /*****************************************************************************/
 
 /**
- * @brief   This function will return OS type and version information for the OSAL 
+ * @brief   This function will return OS type and version information for the OSAL
  *          implementation being used.
  *
  * @param   pcOs            Pointer to OS Name buffer.
@@ -114,13 +114,13 @@ typedef enum _OSAL_STATS_TYPE
  * @param   ucVersionBuild  Pointer to uint8_t holding OS version build.
  *
  * @return  OSAL_ERRORS_NONE                no errors, call was successful
- *          OSAL_ERRORS_PARAMS              invalid parameters passed in to function 
+ *          OSAL_ERRORS_PARAMS              invalid parameters passed in to function
  *          OSAL_ERRORS_OS_IMPLEMENTATION   error code returned from os implementation
- * 
+ *
  */
-int iOSAL_GetOsVersion( char pcOs[ OSAL_OS_NAME_LEN ], 
-                        uint8_t* pucVersionMajor, 
-                        uint8_t* pucVersionMinor, 
+int iOSAL_GetOsVersion( char pcOs[ OSAL_OS_NAME_LEN ],
+                        uint8_t* pucVersionMajor,
+                        uint8_t* pucVersionMinor,
                         uint8_t* pucVersionBuild );
 
 /*****************************************************************************/
@@ -128,7 +128,7 @@ int iOSAL_GetOsVersion( char pcOs[ OSAL_OS_NAME_LEN ],
 /*****************************************************************************/
 
 /**
- * @brief   This function will create an initial task, and then start the RTOS Scheduler. 
+ * @brief   This function will create an initial task, and then start the RTOS Scheduler.
  *
  * @param   iRoundRobinEnabled   Flag indicating if round robin scheduling should be used.
  *                               If TRUE, Round-Robin is enabled. If FALSE, Round-Robin is disabled.
@@ -138,7 +138,7 @@ int iOSAL_GetOsVersion( char pcOs[ OSAL_OS_NAME_LEN ],
  * @param   ulStartTaskPriority  The priority at which the the created start task will execute
  *
  * @return  OSAL_ERRORS_NONE                no errors, call was successful
- *          OSAL_ERRORS_PARAMS              invalid parameters passed in to function 
+ *          OSAL_ERRORS_PARAMS              invalid parameters passed in to function
  *          OSAL_ERRORS_INVALID_HANDLE      invalid / un-initialised handle passed into to function
  *          OSAL_ERRORS_OS_IMPLEMENTATION   error code returned from os implementation
  *
@@ -146,7 +146,7 @@ int iOSAL_GetOsVersion( char pcOs[ OSAL_OS_NAME_LEN ],
  */
 int iOSAL_StartOS( int         iRoundRobinEnabled,
                    void**      ppvTaskHandle,
-                   void        ( *pvStartTask )( void ), 
+                   void        ( *pvStartTask )( void ),
                    uint16_t    usStartTaskStackSize,
                    uint32_t    ulStartTaskPriority );
 
@@ -208,10 +208,10 @@ uint32_t ulOSAL_GetUptimeMsFromISR( void );
  * @note    The Task Handle must be initialised as NULL.
  */
 int iOSAL_Task_Create( void**      ppvTaskHandle,
-                       void        ( *pvTaskFunction )( void* pvTaskParam ),  
+                       void        ( *pvTaskFunction )( void* pvTaskParam ),
                        uint16_t    usTaskStackSize,
-                       void*       pvTaskParam, 
-                       uint32_t    ulTaskPriority, 
+                       void*       pvTaskParam,
+                       uint32_t    ulTaskPriority,
                        const char* pcTaskName );
 
 /**
@@ -260,10 +260,10 @@ int iOSAL_Task_Resume( void* pvTaskHandle );
  * @param   ulSleepTicks  The amount of time, in tick periods, that the calling task should block.
  *
  * @return  OSAL_ERRORS_NONE                no errors, call was successful
- *          OSAL_ERRORS_PARAMS              invalid parameters passed in to function 
+ *          OSAL_ERRORS_PARAMS              invalid parameters passed in to function
  *          OSAL_ERRORS_OS_IMPLEMENTATION   error code returned from os implementation
  *          OSAL_ERRORS_OS_NOT_STARTED      OS has not been started
- * 
+ *
  */
 int iOSAL_Task_SleepTicks( uint32_t ulSleepTicks );
 
@@ -273,10 +273,10 @@ int iOSAL_Task_SleepTicks( uint32_t ulSleepTicks );
  * @param   ulSleepMs  The amount of time, in ms, that the calling task should block.
  *
  * @return  OSAL_ERRORS_NONE                no errors, call was successful
- *          OSAL_ERRORS_PARAMS              invalid parameters passed in to function 
+ *          OSAL_ERRORS_PARAMS              invalid parameters passed in to function
  *          OSAL_ERRORS_OS_IMPLEMENTATION   error code returned from os implementation
  *          OSAL_ERRORS_OS_NOT_STARTED      OS has not been started
- * 
+ *
  */
 int iOSAL_Task_SleepMs( uint32_t ulSleepMs );
 
@@ -299,12 +299,12 @@ int iOSAL_Task_SleepMs( uint32_t ulSleepMs );
  *          To create a binary semaphore, set ullBucket to 1.
  */
 int iOSAL_Semaphore_Create( void** ppvSemHandle,
-                            uint32_t ullCount, 
-                            uint32_t ullBucket, 
+                            uint32_t ullCount,
+                            uint32_t ullBucket,
                             const char* pcSemName );
 
 /**
- * @brief   Deletes the binary or counting semaphore, to which the handle refers. 
+ * @brief   Deletes the binary or counting semaphore, to which the handle refers.
  *
  * @param   ppvSemHandle Pointer-to-pointer that will be cast to appropriate OS Semaphore Handle data type.
  *
@@ -316,7 +316,7 @@ int iOSAL_Semaphore_Create( void** ppvSemHandle,
 int iOSAL_Semaphore_Destroy( void** ppvSemHandle );
 
 /**
- * @brief   Pends to / obtains a previously created semaphore, to which the handle refers. 
+ * @brief   Pends to / obtains a previously created semaphore, to which the handle refers.
  *
  * @param   pvSemHandle Pointer that will be cast to appropriate OS Semaphore Handle data type.
  * @param   ulTimeoutMs Timeout in ms to wait for a semaphore to become available.
@@ -325,12 +325,12 @@ int iOSAL_Semaphore_Destroy( void** ppvSemHandle );
  *          OSAL_ERRORS_PARAMS              invalid parameters passed in to function
  *          OSAL_ERRORS_INVALID_HANDLE      invalid / un-initialised handle passed into to function
  *          OSAL_ERRORS_OS_IMPLEMENTATION   error code returned from os implementation
- * 
+ *
  */
 int iOSAL_Semaphore_Pend( void* pvSemHandle, uint32_t ulTimeoutMs );
 
 /**
- * @brief   Posts / Releases a previously created semaphore, to which the handle refers. 
+ * @brief   Posts / Releases a previously created semaphore, to which the handle refers.
  *
  * @param   pvSemHandle Pointer that will be cast to appropriate OS Semaphore Handle data type
  *
@@ -350,7 +350,7 @@ int iOSAL_Semaphore_Post( void* pvSemHandle );
  * @return  OSAL_ERRORS_NONE                no errors, call was successful
  *          OSAL_ERRORS_INVALID_HANDLE      invalid / un-initialised handle passed into to function
  *          OSAL_ERRORS_OS_IMPLEMENTATION   error code returned from os implementation
- * 
+ *
  */
 int iOSAL_Semaphore_PostFromISR( void* pvSemHandle );
 
@@ -369,11 +369,11 @@ int iOSAL_Semaphore_PostFromISR( void* pvSemHandle );
  *
  * @note    The Mutex Handle must be initialised as NULL.
  */
-int iOSAL_Mutex_Create( void**      ppvMutexHandle, 
+int iOSAL_Mutex_Create( void**      ppvMutexHandle,
                         const char* pcMutexName );
 
 /**
- * @brief   Deletes a Mutex, to which the handle refers. 
+ * @brief   Deletes a Mutex, to which the handle refers.
  *
  * @param   ppvMutexHandle Pointer-to-pointer that will be cast to appropriate OS Mutex Handle data type
  *
@@ -386,7 +386,7 @@ int iOSAL_Mutex_Create( void**      ppvMutexHandle,
 int iOSAL_Mutex_Destroy( void** ppvMutexHandle );
 
 /**
- * @brief   Obtains a previously created Mutex, to which the handle refers. 
+ * @brief   Obtains a previously created Mutex, to which the handle refers.
  *
  * @param   pvMutexHandle Pointer that will be cast to appropriate OS Mutex Handle data type.
  * @param   ulTimeoutMs Timeout in ms to wait for a Mutex to become available.
@@ -395,20 +395,20 @@ int iOSAL_Mutex_Destroy( void** ppvMutexHandle );
  *          OSAL_ERRORS_PARAMS              invalid parameters passed in to function
  *          OSAL_ERRORS_INVALID_HANDLE      invalid / un-initialised handle passed into to function
  *          OSAL_ERRORS_OS_IMPLEMENTATION   error code returned from os implementation
- * 
+ *
  */
-int iOSAL_Mutex_Take( void*    pvMutexHandle, 
+int iOSAL_Mutex_Take( void*    pvMutexHandle,
                       uint32_t ulTimeoutMs );
 
 /**
- * @brief   Releases a previously created Mutex, to which the handle refers. 
+ * @brief   Releases a previously created Mutex, to which the handle refers.
  *
  * @param   pvMutexHandle Pointer that will be cast to appropriate OS Mutex Handle data type.
  *
  * @return  OSAL_ERRORS_NONE                no errors, call was successful
  *          OSAL_ERRORS_INVALID_HANDLE      invalid / un-initialised handle passed into to function
  *          OSAL_ERRORS_OS_IMPLEMENTATION   error code returned from os implementation
- * 
+ *
  */
 int iOSAL_Mutex_Release( void* pvMutexHandle );
 
@@ -429,13 +429,13 @@ int iOSAL_Mutex_Release( void* pvMutexHandle );
  *
  * @note    The MailBox Handle must be initialised as NULL.
  */
-int iOSAL_MBox_Create( void**      ppvMBoxHandle, 
-                       uint32_t    ulMBoxLength, 
-                       uint32_t    ulItemSize, 
+int iOSAL_MBox_Create( void**      ppvMBoxHandle,
+                       uint32_t    ulMBoxLength,
+                       uint32_t    ulItemSize,
                        const char* pcMBoxName );
 
 /**
- * @brief   Resets a MailBox, to which the handle refers. 
+ * @brief   Resets a MailBox, to which the handle refers.
  *
  * @param   ppvMBoxHandle Pointer-to-pointer that will be cast to appropriate OS MailBox Handle data type.
  *
@@ -448,7 +448,7 @@ int iOSAL_MBox_Create( void**      ppvMBoxHandle,
 int iOSAL_MBox_Destroy( void** ppvMBoxHandle );
 
 /**
- * @brief   Recieve an item from a message Mailbox, to which the handle refers. 
+ * @brief   Recieve an item from a message Mailbox, to which the handle refers.
  *
  * @param   pvMBoxHandle   Pointer that will be cast to appropriate OS Mailbox Handle data type.
  * @param   pvMBoxBuffer   A pointer to the buffer into which the received item will be copied.
@@ -458,17 +458,17 @@ int iOSAL_MBox_Destroy( void** ppvMBoxHandle );
  *          OSAL_ERRORS_PARAMS              invalid parameters passed in to function
  *          OSAL_ERRORS_INVALID_HANDLE      invalid / un-initialised handle passed into to function
  *          OSAL_ERRORS_OS_IMPLEMENTATION   error code returned from os implementation
- * 
+ *
  */
-int iOSAL_MBox_Pend( void*    pvMBoxHandle, 
-                     void*    pvMBoxBuffer, 
+int iOSAL_MBox_Pend( void*    pvMBoxHandle,
+                     void*    pvMBoxBuffer,
                      uint32_t ulTimeoutMs );
 
 /**
- * @brief   Posts an item onto a MailBox, to which the handle refers. 
+ * @brief   Posts an item onto a MailBox, to which the handle refers.
  *
  * @param   pvMBoxHandle Pointer that will be cast to appropriate OS MailBox Handle data type.
- * @param   pvMBoxItem   A pointer to the item that is to be placed on the mailBox. 
+ * @param   pvMBoxItem   A pointer to the item that is to be placed on the mailBox.
  * @param   ulTimeoutMs  The maximum amount of time (ms) the task should block waiting for space to become available on the mailBox.
  *
  * @return  OSAL_ERRORS_NONE                no errors, call was successful
@@ -478,21 +478,21 @@ int iOSAL_MBox_Pend( void*    pvMBoxHandle,
  *
  * @note    If calling from an ISR, iOSAL_MBox_PostFromISR is recommended.
  */
-int iOSAL_MBox_Post( void*    pvMBoxHandle, 
-                     void*    pvMBoxItem, 
+int iOSAL_MBox_Post( void*    pvMBoxHandle,
+                     void*    pvMBoxItem,
                      uint32_t ulTimeoutMs );
 
 /**
  * @brief   A version of iOSAL_MBox_Post() that can be called from an ISR.
  *
  * @param   pvMBoxHandle Pointer that will be cast to appropriate OS MailBox Handle data type.
- * @param   pvMBoxItem   A pointer to the item that is to be placed on the mailBox. 
+ * @param   pvMBoxItem   A pointer to the item that is to be placed on the mailBox.
  *
  * @return  OSAL_ERRORS_NONE                no errors, call was successful
  *          OSAL_ERRORS_PARAMS              invalid parameters passed in to function
  *          OSAL_ERRORS_INVALID_HANDLE      invalid / un-initialised handle passed into to function
  *          OSAL_ERRORS_OS_IMPLEMENTATION   error code returned from os implementation
- * 
+ *
  */
 int iOSAL_MBox_PostFromISR( void* pvMBoxHandle, void* pvMBoxItem );
 
@@ -514,7 +514,7 @@ int iOSAL_MBox_PostFromISR( void* pvMBoxHandle, void* pvMBoxItem );
 int iOSAL_EventFlag_Create( void** ppvEventFlagHandle, const char* pcEventFlagName );
 
 /**
- * @brief   Deletes an Event Flag group, to which the handle refers. 
+ * @brief   Deletes an Event Flag group, to which the handle refers.
  *
  * @param   pvEventFlagHandle Pointer that will be cast to appropriate OS Event Flag Handle data type.
  *
@@ -543,7 +543,7 @@ int iOSAL_EventFlag_Destroy( void** ppvEventFlagHandle );
 int iOSAL_EventFlag_Pend( void* pvEventFlagHandle, uint32_t ulFlagWait, uint32_t ulTimeoutMs );
 
 /**
- * @brief   Sets or clears event flag bits, to which the handle refers. 
+ * @brief   Sets or clears event flag bits, to which the handle refers.
  *
  * @param   pvEventFlagHandle Pointer that will be cast to appropriate OS Event Flag Handle data type.
  * @param   ulFlagSet Bitwise value to specify the bits to be set or cleared.
@@ -567,7 +567,7 @@ int iOSAL_EventFlag_Post( void* pvEventFlagHandle, uint32_t ulFlagSet );
  *          OSAL_ERRORS_PARAMS              invalid parameters passed in to function
  *          OSAL_ERRORS_INVALID_HANDLE      invalid / un-initialised handle passed into to function
  *          OSAL_ERRORS_OS_IMPLEMENTATION   error code returned from os implementation
- * 
+ *
  */
 int iOSAL_EventFlag_PostFromISR( void* pvEventFlagHandle, uint32_t ulFlagSet );
 
@@ -580,7 +580,7 @@ int iOSAL_EventFlag_PostFromISR( void* pvEventFlagHandle, uint32_t ulFlagSet );
  *
  * @param   ppvTimerHandle   Pointer-to-pointer that will be cast to appropriate OS Timer Handle data type.
  * @param   xTimerConfig     Timer config defining if timer is one-shot or periodic
- * @param   pvTimerCallback  The function to call when the timer expires. 
+ * @param   pvTimerCallback  The function to call when the timer expires.
  * @param   pcTimerName      A human readable text name assigned to the timer.
  *
  * @return  OSAL_ERRORS_NONE                no errors, call was successful
@@ -591,7 +591,7 @@ int iOSAL_EventFlag_PostFromISR( void* pvEventFlagHandle, uint32_t ulFlagSet );
  */
 int iOSAL_Timer_Create( void** ppvTimerHandle,
                         OSAL_TIMER_CONFIG xTimerConfig,
-                        void ( *pvTimerCallback )( void* pvTimerHandle ), 
+                        void ( *pvTimerCallback )( void* pvTimerHandle ),
                         const char* pcTimerName );
 
 /**
@@ -618,7 +618,7 @@ int iOSAL_Timer_Destroy( void** ppvTimerHandle );
  *          OSAL_ERRORS_PARAMS              invalid parameters passed in to function
  *          OSAL_ERRORS_INVALID_HANDLE      invalid / un-initialised handle passed into to function
  *          OSAL_ERRORS_OS_IMPLEMENTATION   error code returned from os implementation
- * 
+ *
  */
 int iOSAL_Timer_Start( void* pvTimerHandle, uint32_t ulDurationMs );
 
@@ -631,7 +631,7 @@ int iOSAL_Timer_Start( void* pvTimerHandle, uint32_t ulDurationMs );
  *          OSAL_ERRORS_PARAMS              invalid parameters passed in to function
  *          OSAL_ERRORS_INVALID_HANDLE      invalid / un-initialised handle passed into to function
  *          OSAL_ERRORS_OS_IMPLEMENTATION   error code returned from os implementation
- * 
+ *
  */
 int iOSAL_Timer_Stop( void* pvTimerHandle );
 
@@ -645,7 +645,7 @@ int iOSAL_Timer_Stop( void* pvTimerHandle );
  *          OSAL_ERRORS_PARAMS              invalid parameters passed in to function
  *          OSAL_ERRORS_INVALID_HANDLE      invalid / un-initialised handle passed into to function
  *          OSAL_ERRORS_OS_IMPLEMENTATION   error code returned from os implementation
- * 
+ *
  */
 int iOSAL_Timer_Reset( void* pvTimerHandle, uint32_t ulDurationMs );
 
@@ -658,38 +658,38 @@ int iOSAL_Timer_Reset( void* pvTimerHandle, uint32_t ulDurationMs );
  *
  * @param   ucInterruptID       Interrupt ID (defined in BSP)
  * @param   pvInterruptHandler  Pointer to interrupt handler callback function.
- * @param   pvCallBackRef       Param to be passed into interrupt handler callback function  
+ * @param   pvCallBackRef       Param to be passed into interrupt handler callback function
  *
  * @return  OSAL_ERRORS_NONE                no errors, call was successful
  *          OSAL_ERRORS_PARAMS              invalid parameters passed in to function
  *          OSAL_ERRORS_OS_IMPLEMENTATION   error code returned from os implementation
- * 
+ *
  */
-int iOSAL_Interrupt_Setup( uint8_t ucInterruptID, 
+int iOSAL_Interrupt_Setup( uint8_t ucInterruptID,
                            void    ( *pvInterruptHandler )( void* pvCallBackRef ),
                            void*   pvCallBackRef );
 
 /**
  * @brief   Enable OSAL interrupts
  *
- * @param   ucInterruptID       Interrupt ID (defined in BSP)  
+ * @param   ucInterruptID       Interrupt ID (defined in BSP)
  *
  * @return  OSAL_ERRORS_NONE                no errors, call was successful
  *          OSAL_ERRORS_PARAMS              invalid parameters passed in to function
  *          OSAL_ERRORS_OS_IMPLEMENTATION   error code returned from os implementation
- * 
+ *
  */
 int iOSAL_Interrupt_Enable( uint8_t ucInterruptID );
 
 /**
  * @brief   Disable OSAL interrupts
  *
- * @param   ucInterruptID       Interrupt ID (defined in BSP)  
+ * @param   ucInterruptID       Interrupt ID (defined in BSP)
  *
  * @return  OSAL_ERRORS_NONE                no errors, call was successful
  *          OSAL_ERRORS_PARAMS              invalid parameters passed in to function
  *          OSAL_ERRORS_OS_IMPLEMENTATION   error code returned from os implementation
- * 
+ *
  */
 int iOSAL_Interrupt_Disable( uint8_t ucInterruptID );
 
@@ -701,7 +701,7 @@ int iOSAL_Interrupt_Disable( uint8_t ucInterruptID );
  * @brief   Mark the start of critical code region.
  *
  * @return  N/A.
- * 
+ *
  */
 void vOSAL_EnterCritical( void );
 
@@ -709,7 +709,7 @@ void vOSAL_EnterCritical( void );
  * @brief   Mark the end of critical code region.
  *
  * @return  N/A.
- * 
+ *
  */
 void vOSAL_ExitCritical( void );
 
@@ -720,7 +720,7 @@ void vOSAL_ExitCritical( void );
  *
  * @return  Pointer to the beginning of newly allocated memory.
  *          NULL if unsuccessful.
- * 
+ *
  */
 void* pvOSAL_MemAlloc( uint16_t xSize );
 
@@ -733,7 +733,7 @@ void* pvOSAL_MemAlloc( uint16_t xSize );
  *
  * @return  Pointer to the beginning of newly set memory.
  *          NULL if unsuccessful.
- * 
+ *
  */
 void* pvOSAL_MemSet( void* pvDestination, int iValue, uint16_t usSize );
 
@@ -746,7 +746,7 @@ void* pvOSAL_MemSet( void* pvDestination, int iValue, uint16_t usSize );
  *
  * @return  Pointer to the destination where the content is copied.
  *          NULL if unsuccessful.
- * 
+ *
  */
 void* pvOSAL_MemCpy( void* pvDestination, const void* pvSource, uint16_t usSize );
 
@@ -757,7 +757,7 @@ void* pvOSAL_MemCpy( void* pvDestination, const void* pvSource, uint16_t usSize 
  *
  * @return  N/A.
  *
- * @note    After free'ing the allocated memory, this function will also 
+ * @note    After free'ing the allocated memory, this function will also
  *          nullify the pointer to the deallocated memory.
  */
 void vOSAL_MemFree( void** ppv );
@@ -765,7 +765,7 @@ void vOSAL_MemFree( void** ppv );
 /**
  * @brief   OSAL wrapper for task/thread safe memory movement.
  *
- * @param   pvDestination  Pointer to the destination array where the content is to be copied, 
+ * @param   pvDestination  Pointer to the destination array where the content is to be copied,
  *                         type-casted to a pointer of type void*.
  * @param   pvSource       Pointer to the source of data to be copied, type-casted to a pointer of type const void*.
  * @param   usPayload_size Number of bytes to copy.
@@ -781,7 +781,7 @@ void vOSAL_MemMove( void *pvDestination, void *pvSource, uint16_t usPayload_size
  * @param   pcFormat  C string that contains the text to be written.
  *
  * @return  N/A.
- * 
+ *
  */
 void vOSAL_Printf( const char* pcFormat, ... );
 
@@ -789,7 +789,7 @@ void vOSAL_Printf( const char* pcFormat, ... );
  * @brief   OSAL wrapper for task/thread safe char reading.
  *
  * @return  character read from STDIN.
- * 
+ *
  */
 char cOSAL_GetChar( void );
 
@@ -802,18 +802,18 @@ char cOSAL_GetChar( void );
  *
  * @return  Pointer to the destination where the string is copied.
  *          NULL if unsuccessful.
- * 
+ *
  */
 char* pcOSAL_StrNCpy( char *pcDestination, const char *pcSource, uint16_t usSize );
 
 /**
  * @brief   OSAL wrapper for task/thread safe memory compare.
- * 
+ *
  * @param   pvMemoryOne Pointer to the first memory block.
  * @param   pvMemoryTwo Pointer to the second memory block.
  * @param   usSize      Number of bytes to compare.
- * 
- * @return  0 if the the contents of both memory blocks are equal, non 0 if not. 
+ *
+ * @return  0 if the the contents of both memory blocks are equal, non 0 if not.
  *
  */
 int iOSAL_MemCmp( const void  *pvMemoryOne, const void *pvMemoryTwo, uint16_t usSize );
@@ -829,13 +829,13 @@ int iOSAL_MemCmp( const void  *pvMemoryOne, const void *pvMemoryTwo, uint16_t us
  *
  * @param   eVerbosity  Verbosity level for the debug data.
  * @param   eStatType   Type of stat to print.
- * 
+ *
  */
 void vOSAL_PrintAllStats( OSAL_STATS_VERBOSITY eVerbosity, OSAL_STATS_TYPE eStatType );
 
 /**
  * @brief   Clears debug stats and frees associated memory.
- * 
+ *
  */
 void vOSAL_ClearAllStats( void );
 

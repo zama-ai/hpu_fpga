@@ -85,7 +85,7 @@ module instruction_scheduler
   logic [PE_NB-1:0][PE_INST_W-1: 0] pe_insn_out;
   isc_pool_ack_t                pool_ack;
 
-  // Pool Query 
+  // Pool Query
   logic                    query_rdy;
   isc_query_cmd_e              query_cmd;
   isc_insn_t               query_refill;
@@ -418,7 +418,7 @@ assign query_vld = !query_ack_vld;
       isc_counter_inc <= isc_counter_incD;
       isc_rif_info    <= isc_rif_infoD;
     end
-    
+
 // ============================================================================================== //
 // Timestamp and Trace generation
 // ============================================================================================== //
@@ -426,7 +426,7 @@ assign query_vld = !query_ack_vld;
 
   // Timestamp is a free running counter
   assign nxt_timestamp = trace_data.timestamp + 1;
-  
+
   // Flop all trace data
   always_ff @(posedge clk)
     if(!s_rst_n) begin
@@ -463,7 +463,7 @@ assign query_vld = !query_ack_vld;
 
       // Check correct update of pinfo in case of retire
       if (query_ack_vld && (query_ack.status == SUCCESS) && (query_ack.cmd == RETIRE)) begin
-        assert ( !isc_pool.r_pinfo[POOL_SLOT_NB-1].state.rd_pdg && !isc_pool.r_pinfo[POOL_SLOT_NB-1].state.pdg && !isc_pool.r_pinfo[POOL_SLOT_NB-1].state.vld) 
+        assert ( !isc_pool.r_pinfo[POOL_SLOT_NB-1].state.rd_pdg && !isc_pool.r_pinfo[POOL_SLOT_NB-1].state.pdg && !isc_pool.r_pinfo[POOL_SLOT_NB-1].state.vld)
         else begin
           $fatal(1,"%t > ERROR: Instruction RETIRED but slot not properly released.", $time);
         end
@@ -471,7 +471,7 @@ assign query_vld = !query_ack_vld;
 
       // Check correct update of pinfo in case of RDUNLOCK
       if (query_ack_vld && (query_ack.status == SUCCESS) && (query_ack.cmd == RDUNLOCK)) begin
-        assert ( !isc_pool.r_pinfo[POOL_SLOT_NB-1].state.rd_pdg && isc_pool.r_pinfo[POOL_SLOT_NB-1].state.pdg && isc_pool.r_pinfo[POOL_SLOT_NB-1].state.vld) 
+        assert ( !isc_pool.r_pinfo[POOL_SLOT_NB-1].state.rd_pdg && isc_pool.r_pinfo[POOL_SLOT_NB-1].state.pdg && isc_pool.r_pinfo[POOL_SLOT_NB-1].state.vld)
         else begin
           $fatal(1,"%t > ERROR: Instruction %x RDUNLOCK but slot state not properly updated.", $time, query_ack.info.insn.raw_insn);
         end
@@ -480,7 +480,7 @@ assign query_vld = !query_ack_vld;
       // Check correct update of pinfo in case of issue
       if (query_ack_vld && (query_ack.status == SUCCESS) && (query_ack.cmd == ISSUE)
          && query_ack.info.insn.kind != SYNC /*SYNC have particular handling */) begin
-        assert ( isc_pool.r_pinfo[POOL_SLOT_NB-1].state.rd_pdg && isc_pool.r_pinfo[POOL_SLOT_NB-1].state.pdg && isc_pool.r_pinfo[POOL_SLOT_NB-1].state.vld) 
+        assert ( isc_pool.r_pinfo[POOL_SLOT_NB-1].state.rd_pdg && isc_pool.r_pinfo[POOL_SLOT_NB-1].state.pdg && isc_pool.r_pinfo[POOL_SLOT_NB-1].state.vld)
         else begin
           $fatal(1,"%t > ERROR: Instruction %x ISSUED but slot state not properly updated.", $time, query_ack.info.insn.raw_insn);
         end
@@ -489,7 +489,7 @@ assign query_vld = !query_ack_vld;
       // Check correct update of pinfo in case of refill
       if (query_ack_vld && (query_ack.status == SUCCESS) && (query_ack.cmd == REFILL)
          && query_ack.info.insn.kind != SYNC /*SYNC have particular handling */) begin
-        assert ( isc_pool.r_pinfo[POOL_SLOT_NB-1].state.rd_pdg && !isc_pool.r_pinfo[POOL_SLOT_NB-1].state.pdg && isc_pool.r_pinfo[POOL_SLOT_NB-1].state.vld) 
+        assert ( isc_pool.r_pinfo[POOL_SLOT_NB-1].state.rd_pdg && !isc_pool.r_pinfo[POOL_SLOT_NB-1].state.pdg && isc_pool.r_pinfo[POOL_SLOT_NB-1].state.vld)
         else begin
           $fatal(1,"%t > ERROR: Instruction REFILLED but slot state not properly updated.", $time);
         end

@@ -23,14 +23,14 @@ set bd_top [get_bd_cells ${bd_name}_0]
 
 # Note : always put debug_module as {None} for integration
 apply_bd_automation -rule xilinx.com:bd_rule:microblaze -config {
-  axi_intc {1} 
-  axi_periph {Disabled} 
-  cache {16KB} 
-  clk {New External Port} 
-  cores {1} 
-  debug_module {None} 
-  ecc {None} 
-  local_mem {64KB} 
+  axi_intc {1}
+  axi_periph {Disabled}
+  cache {16KB}
+  clk {New External Port}
+  cores {1}
+  debug_module {None}
+  ecc {None}
+  local_mem {64KB}
   preset {None}
 } ${bd_top}
 
@@ -107,7 +107,7 @@ set_property range 64K  [get_bd_addr_segs {ublaze_0/Data/SEG_ublaze_0_axi_intc_R
 set_property offset 0x00000000 [get_bd_addr_segs {ublaze_0/Instruction/SEG_ilmb_bram_if_cntlr_Mem}]
 set_property range 64K [get_bd_addr_segs {ublaze_0/Instruction/SEG_ilmb_bram_if_cntlr_Mem}]
 
-# Renaming some of the IO pins for clarity 
+# Renaming some of the IO pins for clarity
 startgroup
   set_property name axis_sp0 [get_bd_intf_ports S0_AXIS_0]
   set_property name axis_mp0 [get_bd_intf_ports M0_AXIS_0]

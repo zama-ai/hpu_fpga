@@ -23,7 +23,7 @@
 //    KEEP_RDY : (1) ; when rdy=1, and vld=0, the ready is maintained to 1.
 // ==============================================================================================
 
-module stream_sink 
+module stream_sink
   import file_handler_pkg::*;
   import random_handler_pkg::*;
 #(
@@ -81,7 +81,7 @@ module stream_sink
 // ============================================================================================== --
 // Stream spy instance
 // ============================================================================================== --
-  stream_spy 
+  stream_spy
   #(
     .FILENAME      (FILENAME),
     .DATA_TYPE     (DATA_TYPE),

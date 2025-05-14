@@ -178,7 +178,7 @@ package file_handler_pkg;
         end
         else begin
           if (r != (DATA_W / 8))
-            $display ("%t > WARNING: Truncated data in %0s at data_cnt %0d", $time, filename, data_cnt);  
+            $display ("%t > WARNING: Truncated data in %0s at data_cnt %0d", $time, filename, data_cnt);
         end
       end
       else begin // ascii

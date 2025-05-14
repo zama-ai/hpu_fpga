@@ -41,5 +41,5 @@
         {"name": "../private/hw/module/bsk/module/bsk_if",
          "optional": true}
     ],
-    "include_dir": [] 
+    "include_dir": []
 }

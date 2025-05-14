@@ -1,23 +1,23 @@
 #!/usr/bin/env python3
 
 # (c) Copyright 2024, Advanced Micro Devices, Inc.
-# 
-# Permission is hereby granted, free of charge, to any person obtaining a 
-# copy of this software and associated documentation files (the "Software"), 
-# to deal in the Software without restriction, including without limitation 
-# the rights to use, copy, modify, merge, publish, distribute, sublicense, 
-# and/or sell copies of the Software, and to permit persons to whom the 
+#
+# Permission is hereby granted, free of charge, to any person obtaining a
+# copy of this software and associated documentation files (the "Software"),
+# to deal in the Software without restriction, including without limitation
+# the rights to use, copy, modify, merge, publish, distribute, sublicense,
+# and/or sell copies of the Software, and to permit persons to whom the
 # Software is furnished to do so, subject to the following conditions:
-# 
-# The above copyright notice and this permission notice shall be included in 
+#
+# The above copyright notice and this permission notice shall be included in
 # all copies or substantial portions of the Software.
-# 
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR 
-# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, 
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL 
-# THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER 
-# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING 
-# FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER 
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
+# THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+# FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 ############################################################
 
@@ -68,7 +68,7 @@ def do_fpt_pdi_generation(fpt_file, pdi_file, output_file_name):
     # FPT already binary, just read
     if fpt_file.endswith('.bin'):
         fpt_bin_data = bytearray(read_data_from_file(fpt_file, 'rb'))
-    
+
     # only bin supported for FPT
     else:
         doomed("FPT file must be either be *.bin suffix - {}".format(
@@ -78,7 +78,7 @@ def do_fpt_pdi_generation(fpt_file, pdi_file, output_file_name):
     fpt_bin_data = fpt_bin_data.ljust(0x8000, b'\xff')
 
     # open the PDI and create FPT + PDI structure
-    # 
+    #
     if fpt_file.endswith(('.json','.bin')):
         pdi_bin_data = bytearray(read_data_from_file(pdi_file, 'rb'))
     else:
@@ -98,9 +98,9 @@ def do_fpt_pdi_generation(fpt_file, pdi_file, output_file_name):
     #pdi_meta.extend(b'\x00\x00\x00\x00') # checksum TODO
     # pad to 32KB (PDI must be on 32KB boundary
     #pdi_meta = pdi_meta.ljust(0x8000, b'\xff')
-    
+
     combined_bin_data = fpt_bin_data + pdi_bin_data
-    
+
     dump_data_to_file(output_file_name, combined_bin_data, 'wb')
 
     return
@@ -127,18 +127,18 @@ if __name__ == '__main__':
         parser.exit()
 
     args = parser.parse_args()
-    
- 
-  
+
+
+
     ################################################################
     # Generate FPT Setup PDI
     ################################################################
 
-        
+
     # Both a PDI and FPT is required for this option
     if not args.fpt_file or not args.pdi_file :
         doomed("FPT Setup PDI Generation requires --fpt and --pdi to be specified")
-            
+
     if args.outfile == '-':
         out_file_local = "fpt_setup.pdi"
     elif False == args.outfile.lower().endswith('.pdi'):
@@ -147,7 +147,7 @@ if __name__ == '__main__':
         out_file_local = args.outfile
 
 
-    print("Generating FPT Setup PDI :\t\t{}".format(out_file_local))       
+    print("Generating FPT Setup PDI :\t\t{}".format(out_file_local))
     do_fpt_pdi_generation(args.fpt_file, args.pdi_file, out_file_local)
     print("FPT Setup PDI Generated ****************************************")
     sys.exit()

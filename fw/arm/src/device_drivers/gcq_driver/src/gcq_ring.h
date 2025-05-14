@@ -18,11 +18,11 @@
 
 /**
  * @struct  GCQ_HEADER_TYPE
- * 
+ *
  * @brief   The internal header format which is sent by the producer first
  *          to allow syncing with the consumer. Note the format is kept the
  *          same as original implementation to allow backwards compatability.
- * 
+ *
  */
 struct GCQ_HEADER_TYPE
 {
@@ -55,9 +55,9 @@ struct GCQ_HEADER_TYPE
 
 /**
  * @struct  GCQ_RING_TYPE
- * 
+ *
  * @brief   Instance of an GCQ_RING_TYPE, used to model the ring buffer
- * 
+ *
  */
 struct GCQ_RING_TYPE
 {
@@ -90,7 +90,7 @@ struct GCQ_RING_TYPE
  * @param    ulSlotSize is the slot size
  *
  * @return   N/A
- * 
+ *
  */
 static inline void prvvGCQInitRing( const struct GCQ_INSTANCE_TYPE *pxGCQInstance,
                                     struct GCQ_RING_TYPE *pxRing,
@@ -127,7 +127,7 @@ static inline void prvvGCQInitRing( const struct GCQ_INSTANCE_TYPE *pxGCQInstanc
  * @param    ulCQSlotSize is the CQ slot size
  *
  * @return   The calculated ring length based on number of slots & CQ/SQ slot size
- * 
+ *
  */
 static inline uint32_t prvulGCQRingLen( uint32_t ulNumSlots, uint32_t ulSQSlotSize, uint32_t ulCQSlotSize )
 {
@@ -146,7 +146,7 @@ static inline uint32_t prvulGCQRingLen( uint32_t ulNumSlots, uint32_t ulSQSlotSi
  * @return   N/A
  *
  * @note     Ring buffer accesses are memory only
- * 
+ *
  */
 static inline void prvvGCQCopyToRing( const GCQ_IO_ACCESS_TYPE *pxGCQIOAccess, uint8_t *pucBuffer, uint64_t ullDestAddr, uint32_t ulLen )
 {
@@ -175,7 +175,7 @@ static inline void prvvGCQCopyToRing( const GCQ_IO_ACCESS_TYPE *pxGCQIOAccess, u
  * @return   N/A
  *
  * @note     Ring buffer accesses are memory only
- * 
+ *
  */
 static inline void prvvGCQCopyFromRing( const GCQ_IO_ACCESS_TYPE *pxGCQIOAccess, uint8_t *pucBuffer, uint64_t ullSrcAddr, uint32_t ulLen )
 {
@@ -203,7 +203,7 @@ static inline void prvvGCQCopyFromRing( const GCQ_IO_ACCESS_TYPE *pxGCQIOAccess,
  * @return   N/A
  *
  * @note     Supports double read and in memory feature flags
- * 
+ *
  */
 static inline void prvvGCQRingReadProduced( const GCQ_IO_ACCESS_TYPE *pxGCQIOAccess, GCQ_FLAGS_TYPE xGCQFlags, struct GCQ_RING_TYPE *pxRing )
 {
@@ -253,7 +253,7 @@ static inline void prvvGCQRingWriteProduced( const GCQ_IO_ACCESS_TYPE *pxGCQIOAc
  * @return   N/A
  *
  * @note     Supports double read and in memory feature flags
- * 
+ *
  */
 static inline void prvvGCQRingReadConsumed( const GCQ_IO_ACCESS_TYPE *pxGCQIOAccess, GCQ_FLAGS_TYPE xGCQFlags, struct GCQ_RING_TYPE *pxRing )
 {
@@ -283,7 +283,7 @@ static inline void prvvGCQRingReadConsumed( const GCQ_IO_ACCESS_TYPE *pxGCQIOAcc
  * @return   N/A
  *
  * @note     Supports in memory feature flags
- * 
+ *
  */
 static inline void prvvGCQRingWriteConsumed( const GCQ_IO_ACCESS_TYPE *pxGCQIOAccess, GCQ_FLAGS_TYPE xGCQFlags, const struct GCQ_RING_TYPE *pxRing )
 {
@@ -301,7 +301,7 @@ static inline void prvvGCQRingWriteConsumed( const GCQ_IO_ACCESS_TYPE *pxGCQIOAc
  * @param    pxRing is the ring buffer instance
  *
  * @return   Returns 0 is buffer is not full
- * 
+ *
  */
 static inline uint32_t prvucGCQRingIsFull( const struct GCQ_RING_TYPE *pxRing )
 {
@@ -316,7 +316,7 @@ static inline uint32_t prvucGCQRingIsFull( const struct GCQ_RING_TYPE *pxRing )
  * @param    pxRing is the ring buffer instance
  *
  * @return   Returns 0 is buffer is empty
- * 
+ *
  */
 static inline uint32_t prvucGCQRingIsEmpty( const struct GCQ_RING_TYPE *pxRing )
 {
@@ -331,7 +331,7 @@ static inline uint32_t prvucGCQRingIsEmpty( const struct GCQ_RING_TYPE *pxRing )
  * @param    pxRing is the ring buffer instance
  *
  * @return   The slot address
- * 
+ *
  */
 static inline uint64_t prvullGCQRingGetSlotPtrProduced(const struct GCQ_RING_TYPE *pxRing)
 {
@@ -347,7 +347,7 @@ static inline uint64_t prvullGCQRingGetSlotPtrProduced(const struct GCQ_RING_TYP
  * @param    pxRing is the ring buffer instance
  *
  * @return   The slot address
- * 
+ *
  */
 static inline uint64_t prvullGCQRingGetSlotPtrConsumed(const struct GCQ_RING_TYPE *pxRing)
 {

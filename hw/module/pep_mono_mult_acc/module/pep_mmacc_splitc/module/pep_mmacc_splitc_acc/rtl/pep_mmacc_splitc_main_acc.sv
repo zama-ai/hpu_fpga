@@ -96,7 +96,7 @@ module pep_mmacc_splitc_main_acc
   ) pep_mmacc_splitc_acc_core (
     .clk                    (clk),        // clock
     .s_rst_n                (s_rst_n),    // synchronous reset
-    
+
     .ntt_acc_avail          (main_ntt_acc_avail),
     .ntt_acc_data           (main_ntt_acc_data),
     .ntt_acc_sob            (main_ntt_acc_sob),
@@ -126,7 +126,7 @@ module pep_mmacc_splitc_main_acc
     .afifo_acc_icmd         (afifo_acc_icmd),
     .afifo_acc_vld          (afifo_acc_vld),
     .afifo_acc_rdy          (afifo_acc_rdy),
-    
+
     .acc_sfifo_icmd         (acc_sfifo_icmd),
     .acc_sfifo_avail        (acc_sfifo_avail),
 

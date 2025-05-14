@@ -45,7 +45,7 @@ module pep_ldg_splitc_core
   output logic [GRAM_NB-1:0][HPSI-1:0][R-1:0][MOD_Q_W-1:0]         glwe_ram_wr_data,
 
   output logic [MSPLIT_FACTOR-1:0]                                 ldg_rif_rcp_dur,
-  
+
   output logic                                                     error
 );
 

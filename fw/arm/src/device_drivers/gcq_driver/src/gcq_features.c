@@ -36,7 +36,7 @@ uint32_t ulGCQFeaturesHandleDoubleRead32( const GCQ_IO_ACCESS_TYPE *pxGCQIOAcces
         {
             ulValue[ i++ & 0x1 ] = pxGCQIOAccess->xGCQReadMem32( ullAddr );
 
-            if( GCQ_FEATURES_DOUBLE_MEM_READ_RETRY_COUNT < i ) 
+            if( GCQ_FEATURES_DOUBLE_MEM_READ_RETRY_COUNT < i )
             {
                 gcq_assert( 0 );
                 break;

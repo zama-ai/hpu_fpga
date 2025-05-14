@@ -1,4 +1,4 @@
-{   
+{
     "local_root_path": "${PROJECT_DIR}",
     "dep_root_path"  : "${PROJECT_DIR}",
     "is_include_dir" : false,
@@ -31,5 +31,5 @@
         "hw/module/ksk/module/ksk_manager/module/ksk_mgr_common",
         "hw/module/pe_pbs/module/pep_common"
     ],
-    "include_dir": [] 
+    "include_dir": []
 }

@@ -88,10 +88,10 @@ module arith_mult_64bgoldilocks_karatsuba #(
   ) s0_delay_side (
     .clk      (clk      ),
     .s_rst_n  (s_rst_n  ),
-                        
+
     .in_avail (in_avail ),
     .out_avail(s0_avail ),
-                        
+
     .in_side  (in_side  ),
     .out_side (s0_side  )
   );
@@ -192,7 +192,7 @@ module arith_mult_64bgoldilocks_karatsuba #(
     .clk      (clk          ),
     .s_rst_n  (s_rst_n      ),
     .in_avail (s0_avail     ),
-    .out_avail(s0_avail_dly ),           
+    .out_avail(s0_avail_dly ),
     .in_side  (s0_side      ),
     .out_side (s0_side_dly  )
   );
@@ -220,9 +220,9 @@ module arith_mult_64bgoldilocks_karatsuba #(
   // -------------------------------------------------------------------------------------------- //
   logic [OP_A_W + OP_B_W-1:0] s1_result;
 
-  assign s1_result = s1_sub_of_product[2*MAX_SB_W] ? 
+  assign s1_result = s1_sub_of_product[2*MAX_SB_W] ?
                       ((s1_product_of_sum - s1_a_lo_x_b_lo) << LSB_W) - ({1'b0, ~s1_sub_of_product[2*MAX_SB_W-1:0]} + 1)
-                    : ((s1_product_of_sum - s1_a_lo_x_b_lo) << LSB_W) + s1_sub_of_product; 
+                    : ((s1_product_of_sum - s1_a_lo_x_b_lo) << LSB_W) + s1_sub_of_product;
 
   // -------------------------------------------------------------------------------------------- //
   // S2 : result

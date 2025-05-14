@@ -63,7 +63,7 @@ package mod_arith;
 
   function logic [127:0] mod_red(logic [127:0] a, logic [127:0] m);
     /*
-    . Returns a modulo m 
+    . Returns a modulo m
     . using the naive method by division
     */
 

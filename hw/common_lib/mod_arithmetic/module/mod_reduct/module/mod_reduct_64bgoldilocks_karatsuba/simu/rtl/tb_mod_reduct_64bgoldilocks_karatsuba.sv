@@ -82,7 +82,7 @@ module tb_mod_reduct_64bgoldilocks_karatsuba;
 // ============================================================================================== --
   logic [OP_W-1:0]    a;
   logic [MOD_W-1:0]   z;
-  
+
   logic               in_avail;
   logic               out_avail;
 
@@ -132,7 +132,7 @@ module tb_mod_reduct_64bgoldilocks_karatsuba;
     else
       if (in_avail)
         // If not too big, check all the possible values
-        a <= BIG_MOD_M ? ({$urandom, $urandom, $urandom, $urandom} & (2**(OP_W+1)-1)): a-1; 
+        a <= BIG_MOD_M ? ({$urandom, $urandom, $urandom, $urandom} & (2**(OP_W+1)-1)): a-1;
   end
 
   always_ff @(posedge clk)

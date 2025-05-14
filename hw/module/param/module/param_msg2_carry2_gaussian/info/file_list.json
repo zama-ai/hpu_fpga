@@ -1,4 +1,4 @@
-{   
+{
     "local_root_path": "${PROJECT_DIR}/hw/module/param/module/param_msg2_carry2_gaussian",
     "dep_root_path"  : "${PROJECT_DIR}",
     "is_include_dir" : false,
@@ -15,5 +15,5 @@
     "dependency_dir": [
         "hw/common_lib/common_package"
     ],
-    "include_dir": [] 
+    "include_dir": []
 }

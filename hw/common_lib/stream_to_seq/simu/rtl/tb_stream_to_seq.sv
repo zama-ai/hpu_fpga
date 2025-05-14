@@ -113,7 +113,7 @@ module tb_stream_to_seq;
 // ============================================================================================== --
 // Scenario
 // ============================================================================================== --
-  stream_source 
+  stream_source
   #(
     .FILENAME   ("random"),
     .DATA_TYPE  ("ascii_hex"),
@@ -135,7 +135,7 @@ module tb_stream_to_seq;
   logic out_rdy_tmp;
   logic [SEQ-1:0] sr_out_rdy;
   logic [SEQ-1:0] sr_out_rdyD;
-  stream_sink 
+  stream_sink
   #(
     .FILENAME   (""),
     .DATA_TYPE  ("ascii_hex"),
@@ -226,7 +226,7 @@ module tb_stream_to_seq;
 
     wait (stream_source.running);
     wait (!stream_source.running);
- 
+
     end_of_test = 1'b1;
   end
 

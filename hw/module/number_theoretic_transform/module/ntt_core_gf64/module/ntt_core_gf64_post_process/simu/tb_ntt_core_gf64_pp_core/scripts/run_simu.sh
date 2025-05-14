@@ -70,7 +70,7 @@ for i in `seq 1 5`; do
     LOGG2_PBS_L_x_GLWE_K_P1=`echo $PBS_L_x_GLWE_K_P1 | awk '{printf("%d\n",(log($1)/log(2)) > int(log($1)/log(2)) ? int(log($1)/log(2))+1: int(log($1)/log(2)))}'`
     MID_MOD_NTT_W=$(($LOGG2_PBS_L_x_GLWE_K_P1 + 1 + 2 + $RANDOM % 28))
     MOD_NTT_W=$(($MID_MOD_NTT_W * 2))
- 
+
     cmd="${SCRIPT_DIR}/run.sh -l $PBS_L -g $GLWE_K -- -P MOD_NTT_W int $MOD_NTT_W $args"
     echo "==========================================================="
     echo "INFO> Running : $cmd"

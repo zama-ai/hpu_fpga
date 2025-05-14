@@ -285,7 +285,7 @@ if __name__ == "__main__":
                             rot_stg_iter_0_inc = add_keep_msb(rot_stg_iter_0,1,STG_ITER_LSB_W)
                             #rot_stg_iter_0_lsb_inc = (rot_stg_iter_0 + 1) & STG_ITER_LSB_MASK
                             #rot_stg_iter_0_inc = (rot_stg_iter_0 & ~STG_ITER_LSB_MASK) | rot_stg_iter_0_lsb_inc
-                            
+
                             rot_stg_iter = rot_stg_iter_0_inc
                         res_l[-1].append([r,p,rot_stg_iter])
 
@@ -307,8 +307,8 @@ if __name__ == "__main__":
 #
 #                (rot_r_00,rot_p_00,rot_stg_iter_00) = get_r_psi_stgiter(v_rot_00, R, PSI, STG_ITER_NB, "R")
 #                rot_p_00_l.append(rot_p_00)
-#            
-#            
+#
+#
 #            if (VERBOSE):
 #                print("PROC : rot={:d} stg_iter={:d} rot_p_00_l={:s}".format(rot,stg_iter,str(rot_p_00_l)))
 #

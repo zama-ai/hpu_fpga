@@ -12,10 +12,10 @@
 // ============================================================================================= //
 #include <stdio.h>
 
-// Mandatory : enable/disable cache functions 
+// Mandatory : enable/disable cache functions
 #include "../../gen/ublaze/ip_ublaze/bsp/include/xil_cache.h"
 
-// All parameters of the ublaze 
+// All parameters of the ublaze
 #include "../../gen/ublaze/ip_ublaze/bsp/include/xparameters.h"
 
 // Read/write for AXIDP

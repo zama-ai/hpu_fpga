@@ -103,7 +103,7 @@ module bsk_mgr_cut
   logic                  s1_last_intl_idx;
   logic                  s1_last_pbs_id;
   logic                  s1_do_read;
-  
+
   assign s1_intl_idxD = s1_do_read ? s1_last_intl_idx ? '0 : s1_intl_idx + 1 : s1_intl_idx;
   assign s1_stg_iterD = (s1_do_read && s1_last_intl_idx) ? s1_last_stg_iter ?
                             '0 : s1_stg_iter + 1 : s1_stg_iter;

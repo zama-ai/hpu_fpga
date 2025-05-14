@@ -78,7 +78,7 @@ module rom_1R_behav #(
       end
 
       assign datar = rd_en_dly ? data_tmp : datar_kept;
-      
+
     end else begin : no_keep_rd_data_gen
       assign datar = data_tmp;
     end

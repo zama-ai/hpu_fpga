@@ -109,7 +109,7 @@ module tb_ntt_core_gf64_pmr_mult;
     .s_rst_n   (s_rst_n),
     .a         (a),
     .z         (z),
-    
+
     .m         (m),
     .m_vld     (m_vld),
     .m_rdy     (m_rdy),

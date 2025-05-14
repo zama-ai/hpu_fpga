@@ -1,4 +1,4 @@
-{   
+{
     "local_root_path": "${PROJECT_DIR}",
     "dep_root_path"  : "${PROJECT_DIR}",
     "is_include_dir" : false,
@@ -19,5 +19,5 @@
         "hw/module/hpu/module/hpu_common_instruction",
         "hw/module/top_common"
     ],
-    "include_dir": [] 
+    "include_dir": []
 }

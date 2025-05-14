@@ -13,5 +13,5 @@
         "hw/module/pep_mono_mult_acc/module/pep_mmacc_gram_arb",
         "hw/module/pep_mono_mult_acc/module/pep_mmacc_splitc"
     ],
-    "include_dir": [] 
+    "include_dir": []
 }

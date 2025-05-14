@@ -80,8 +80,8 @@ typedef union {
 #define OPERAND_BUNDLE_MAX_SLOT 4
 #define IMMEDIAT_BUNDLE_MAX_SLOT 4
 #define IMMEDIAT_MSG_MAX_SLOT 6
-#define IOP_MAX_WORDS (2 + 2*OPERAND_BUNDLE_MAX_SLOT + IMMEDIAT_BUNDLE_MAX_SLOT*(IMMEDIAT_MSG_MAX_SLOT/2)) 
-#define IOP_MAX_BYTES (IOP_MAX_WORDS * sizeof(uint32_t)) 
+#define IOP_MAX_WORDS (2 + 2*OPERAND_BUNDLE_MAX_SLOT + IMMEDIAT_BUNDLE_MAX_SLOT*(IMMEDIAT_MSG_MAX_SLOT/2))
+#define IOP_MAX_BYTES (IOP_MAX_WORDS * sizeof(uint32_t))
 // Operand are depict as vector starting from cid_ofst
 typedef struct {
   uint8_t len;

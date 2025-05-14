@@ -27,7 +27,7 @@ module tb_ntt_core_wmm_clbu_pp_model
   parameter int CLBU_LAT = 30,
   parameter int PP_LAT   = 15
 )
-(  
+(
   input                                     clk, // clock
   input                                     s_rst_n, // synchronous reset
 
@@ -142,7 +142,7 @@ module tb_ntt_core_wmm_clbu_pp_model
 // Data process
 //-------------------------------------
   logic [PSI-1:0][R-1:0][OP_W-1:0] clbu_data;
-  
+
   always_comb begin
     for (int p=0; p<PSI; p=p+1) begin
       for (int r=0; r<R; r=r+1) begin
@@ -223,7 +223,7 @@ module tb_ntt_core_wmm_clbu_pp_model
   assign out_lsntw_avail   = sel_bwd_ls ? set_dly_ls_bwd.ls_avail & set_dly_ls_bwd.ntt_bwd :
                                          set_dly_ls_fwd.ls_avail & ~set_dly_ls_fwd.ntt_bwd;
   // logic data from post-process for last stage
-  assign out_bwd_lsntw_data    = set_dly_ls_bwd.data    ; 
+  assign out_bwd_lsntw_data    = set_dly_ls_bwd.data    ;
   assign out_bwd_lsntw_sob     = set_dly_ls_bwd.sob     ;
   assign out_bwd_lsntw_eob     = set_dly_ls_bwd.eob     ;
   assign out_bwd_lsntw_sol     = set_dly_ls_bwd.sol     ;

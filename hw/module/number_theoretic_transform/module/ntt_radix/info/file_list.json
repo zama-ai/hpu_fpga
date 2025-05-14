@@ -1,4 +1,4 @@
-{   
+{
     "local_root_path": "${PROJECT_DIR}/hw/module/number_theoretic_transform/module/ntt_radix",
     "dep_root_path"  : "${PROJECT_DIR}",
     "is_include_dir" : false,
@@ -18,5 +18,5 @@
                        "hw/module/number_theoretic_transform/module/ntt_radix/module/ntt_radix_4_gentleman_sande",
                        "hw/module/number_theoretic_transform/module/ntt_radix/module/ntt_radix_8_gentleman_sande"
                        ],
-    "include_dir": [] 
+    "include_dir": []
 }

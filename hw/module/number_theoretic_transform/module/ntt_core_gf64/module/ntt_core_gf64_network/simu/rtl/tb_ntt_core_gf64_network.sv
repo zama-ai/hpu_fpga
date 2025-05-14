@@ -33,7 +33,7 @@ module tb_ntt_core_gf64_network;
 
   localparam int LVL_NB     = BWD ? GLWE_K_P1 : INTL_L;
   localparam int LVL_W      = $clog2(LVL_NB)==0 ? 1 : $clog2(LVL_NB);
-  
+
   localparam int DATA_W     = 16;
   localparam int OP_W       = DATA_W + LVL_W;
 
@@ -305,7 +305,7 @@ module tb_ntt_core_gf64_network;
   always_comb
     for (int i=0; i<PSI*R; i=i+1) begin
       elt_t d;
-      d.data     = ref_in_data_a[in_stg_iter][i]; 
+      d.data     = ref_in_data_a[in_stg_iter][i];
       d.intl_idx = in_intl_idx;
       in_data[i] = d;
     end
@@ -346,7 +346,7 @@ module tb_ntt_core_gf64_network;
   always_comb
     for (int i=0; i<PSI*R; i=i+1) begin
       elt_t d;
-      d.data     = ref_out_data_a[out_stg_iter][i]; 
+      d.data     = ref_out_data_a[out_stg_iter][i];
       d.intl_idx = out_intl_idx;
       ref_out_elt[i] = d;
     end

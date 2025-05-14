@@ -78,11 +78,11 @@ module rom_2R_behav #(
       rd_en_dly <= {b_rd_en, a_rd_en};
     end
   end
-  
+
   generate
     if (KEEP_RD_DATA != 0) begin : keep_rd_data_gen
       logic [1:0][WIDTH-1:0] datar_kept;
-      
+
       always_ff @(posedge clk) begin
         for (int i = 0; i < 2; i = i + 1) begin
           if (rd_en_dly[i]) begin

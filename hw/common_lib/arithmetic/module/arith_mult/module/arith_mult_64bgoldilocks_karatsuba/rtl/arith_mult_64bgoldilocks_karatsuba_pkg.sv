@@ -21,5 +21,5 @@ package arith_mult_64bgoldilocks_karatsuba_pkg;
   function int get_latency();
     return arith_mult_karatsuba_pkg::get_latency()  + INTERNAL_PIPE;
   endfunction
-  
+
 endpackage

@@ -222,7 +222,7 @@ module tb_pep_mmacc_gram_arb;
   initial begin
     end_of_test <= 1'b0;
     error_grant <= 1'b0;
-    
+
     wait (req_cnt[0] == SAMPLE_NB);
     wait (req_cnt[1] == SAMPLE_NB);
 
@@ -349,7 +349,7 @@ module tb_pep_mmacc_gram_arb;
       else begin
         $display("%t > ERROR: garb_mmfeed_rot_avail_1h is not a 1-hot", $time);
         error_attribution <= 1'b1;
-      end 
+      end
       assert($countones(garb_mmacc_rd_avail_1h) <= 1)
       else begin
         $display("%t > ERROR: garb_mmacc_rd_avail_1h is not a 1-hot", $time);

@@ -65,7 +65,7 @@ import tb_hpu_ucore_regif_pkg::*;
     , output logic r_WorkAck_workq_wr_en
   // Register IO: WorkAck_ackq
     , output WorkAck_ackq_t r_WorkAck_ackq
-        , input WorkAck_ackq_t r_WorkAck_ackq_upd 
+        , input WorkAck_ackq_t r_WorkAck_ackq_upd
         , output logic r_WorkAck_ackq_rd_en
 );
 // ============================================================================================== --

@@ -146,10 +146,10 @@ module mod_reduct_barrett
   ) in_delay_side (
     .clk      (clk      ),
     .s_rst_n  (s_rst_n  ),
-                        
+
     .in_avail (in_avail ),
     .out_avail(s0_avail ),
-                        
+
     .in_side  (in_a_data),
     .out_side (s0_a_data)
   );
@@ -281,10 +281,10 @@ module mod_reduct_barrett
   ) s2_delay_side (
     .clk      (clk      ),
     .s_rst_n  (s_rst_n  ),
-                        
+
     .in_avail (s2_avail ),
     .out_avail(s3_avail ),
-                        
+
     .in_side  (s2_f_data),
     .out_side (s3_f_data)
   );
@@ -332,10 +332,10 @@ module mod_reduct_barrett
   ) s3_delay_side (
     .clk      (clk      ),
     .s_rst_n  (s_rst_n  ),
-                        
+
     .in_avail (s3_avail ),
     .out_avail(s4_avail ),
-                        
+
     .in_side  (s3_z_data),
     .out_side (s4_z_data)
   );
@@ -347,5 +347,5 @@ module mod_reduct_barrett
 // pragma translate_off
   `include "cov_mod_reduct_barrett.sv"
 // pragma translate_on
- 
+
 endmodule

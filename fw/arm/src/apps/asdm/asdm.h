@@ -92,7 +92,7 @@ typedef enum ASDM_SDR_COMPLETION_CODE
  * @brief   Initialise the ASDM application layer
  *
  * @param   ucNumSensors          Number of sensors in the profile
- * 
+ *
  * @return  OK          Successfully initilaised the layer
  *          ERROR       Failed to initialise
  */
@@ -103,7 +103,7 @@ int iASDM_Initialise( uint8_t ucNumSensors );
  *
  * @param   xApiType          The associated API type
  * @param   xAsdmRepo         The repo type
- * @param   ucSensorId        The sensor ID, if applicable 
+ * @param   ucSensorId        The sensor ID, if applicable
  * @param   pucRespBuff       The buffer to be populated with the response
  * @param   pusRespSizeBytes  Max buffer size passed in, number of bytes populated returned
  *
@@ -124,7 +124,7 @@ int iASDM_PopulateResponse( ASDM_API_ID_TYPE xApiType,
  *
  */
 int iASDM_PrintStatistics( void );
- 
+
 /**
  * @brief   Clear all the stats in the application
  *

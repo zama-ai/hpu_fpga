@@ -1,4 +1,4 @@
-{   
+{
     "local_root_path": "${PROJECT_DIR}",
     "dep_root_path"  : "${PROJECT_DIR}",
     "is_include_dir" : false,
@@ -57,5 +57,5 @@
         "hw/common_lib/ram_wrapper/constraint/ram_wrapper_timing_constraints_local.xdc"
     ],
     "dependency_dir": [],
-    "include_dir": [] 
+    "include_dir": []
 }

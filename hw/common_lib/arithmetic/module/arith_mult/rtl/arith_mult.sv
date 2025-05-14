@@ -121,7 +121,7 @@ module arith_mult
           .out_side (out_side )
         );
         assign z = {30'b0, z_int};
-      end 
+      end
       else if (MULT_TYPE == MULT_GOLDILOCKS_CASCADE) begin : gen_goldilocks_cascade
         logic [97:0] z_int;
         arith_mult_64bgoldilocks_karatsuba_cascade #(

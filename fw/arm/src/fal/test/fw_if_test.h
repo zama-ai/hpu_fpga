@@ -40,11 +40,11 @@ typedef enum _FW_IF_TEST_IOCTRL_OPTIONS
 
     FW_IF_TEST_IOCTRL_SET_NEXT_RX_DATA,
     FW_IF_TEST_IOCTRL_SET_NEXT_RX_SIZE,
-    
+
     FW_IF_TEST_IOCTRL_TRIGGER_EVENT,
-                            
+
     MAX_FW_IF_TEST_IOCTRL_OPTION
-                                    
+
 } FW_IF_TEST_IOCTRL_OPTIONS;
 
 

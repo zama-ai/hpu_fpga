@@ -61,10 +61,10 @@ module arith_mult_karatsuba_cascade #(
     if ((OP_A_W <= KARATSUBA_OP_W) || (OP_B_W <= KARATSUBA_OP_W)) begin: __UNSUPPORTED_KARATSUBA_OP_W__
       $fatal(1, "> ERROR: Unsupported KARATSUBA_OP_W (%0d) and OP_A_W (%0d), OP_B_W (%0d). The operands size are too small.",KARATSUBA_OP_W, OP_A_W, OP_B_W);
     end
-    
+
     if ( (!((OP_A_W == 32 || OP_A_W==33) && (OP_B_W == 32 || OP_B_W==33) && (KARATSUBA_OP_W == 16 || KARATSUBA_OP_W == 17)))) begin: __UNSUPPORTED_KARATSUBA_CASCADE_PARAM__
       $fatal(1, "> ERROR: Unsupported KARATSUBA_OP_W (%0d) and OP_A_W (%0d), OP_B_W (%0d) for cascading.", KARATSUBA_OP_W, OP_A_W, OP_B_W);
-    end 
+    end
   endgenerate
 
   // -------------------------------------------------------------------------------------------- //
@@ -107,7 +107,7 @@ module arith_mult_karatsuba_cascade #(
   // Write the following way, so that vivado does not optimize this into a DSP.
   (* USE_DSP = "no" *) logic [2*LSB_W-1:0]  s1_a_lo_x_b_lo;
   assign s1_a_lo_x_b_lo = s1_sum_of_product - s1_a_hi_x_b_hi;
-  assign s1_result_part1 = {s1_a_hi_x_b_hi,s1_a_lo_x_b_lo}; 
+  assign s1_result_part1 = {s1_a_hi_x_b_hi,s1_a_lo_x_b_lo};
   // If the flag "USE_DSP" does not work : write the following way, so that vivado does not optimize this into a DSP.
   // But the adder used will be larger.
   // assign s1_result_part1 = (s1_a_hi_x_b_hi << (2*LSB_W)) + s1_sum_of_product - s1_a_hi_x_b_hi;

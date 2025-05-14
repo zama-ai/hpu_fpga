@@ -701,7 +701,7 @@ module tb_pep_sequencer;
     $display("%t > INFO: All instructions sent",$time);
     wait (sxt_cnt == SAMPLE_NB);
     $display("%t > INFO: All ciphertexts processed",$time);
-  
+
     repeat(100) @(posedge clk);
 
     assert(inst_ack_cnt == SAMPLE_NB)

@@ -64,7 +64,7 @@ assign kind = kind_e;
 // Destination ID
 // ============================================================================================== //
 // Extract Destination RID of MID based on kind
-always_comb begin 
+always_comb begin
   case (kind_e)
      SYNC   : dst_id = '{isc: '{mode: UNUSED, id: '0}, mask: {MAX_RID_MID{1'b1}}};
      MEM_ST : dst_id = '{isc: '{mode: MEMORY, id: insn_as_pem.cid}, mask: {MAX_RID_MID{1'b1}}};
@@ -79,7 +79,7 @@ end
 // Source RID
 // ============================================================================================== //
 // Extract Destination RID of MID based on kind
-always_comb begin 
+always_comb begin
   case (kind_e)
      SYNC   : srcA_id = '{mode: UNUSED, id: '0};
      MEM_ST : srcA_id = '{mode: REGISTER, id: insn_as_pem.rid};
@@ -88,7 +88,7 @@ always_comb begin
   endcase
 end
 
-always_comb begin 
+always_comb begin
   if ((insn_as_pea_mac.dop == DOP_ADD)
    || (insn_as_pea_mac.dop == DOP_SUB)
    || (insn_as_pea_mac.dop == DOP_MAC)) begin
@@ -102,7 +102,7 @@ end
 // Extract Flush
 // ============================================================================================== //
 // Extract Destination RID of MID based on kind
-always_comb begin 
+always_comb begin
   case (kind_e)
      PBS    : flush = insn_as_pep.dop.flush_pbs;
      default: flush = 1'b0;

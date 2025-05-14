@@ -24,7 +24,7 @@ module tb_arith_mult_cst_solinas2_44_14_inv;
   parameter  int   IN_W           = 8;
   parameter  int   CST_W          = 77;
   parameter  [CST_W-1:0] CST      = 2**76+2**46-2**32+2**16-2**3; // Should be an inverse of solinas2_44_14
-  
+
   localparam bit   IN_PIPE        = 1;
   localparam int   SIDE_W         = 8;
   localparam [1:0] RST_SIDE       = 2'b01;
