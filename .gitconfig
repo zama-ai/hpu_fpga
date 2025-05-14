@@ -1,0 +1,6 @@
+# This is a recommended git config addon
+# You can include it by adding the following to .git/config:
+# [include]
+#   path = ../.gitshared
+[filter "trailing-spaces"]
+    clean = sed -re 's/[ \t]+$//'
