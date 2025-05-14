@@ -55,7 +55,7 @@ def main():
     parser.add_argument('-v', '--verbose', help="increase output verbosity")
     args = parser.parse_args()
     if args.file is None:
-        print('Error: Please specifiy a valid FPT JSON file')
+        print('Error: Please specify a valid FPT JSON file')
         parser.print_help()
         raise SystemExit(1)
 
@@ -91,7 +91,7 @@ def main():
         print('Error: FPT header not as expected: ' + str(e))
         raise SystemExit(1)
 
-    # Step4: Parse the FPT enteries from the JSON
+    # Step4: Parse the FPT entries from the JSON
     try:
         fpt_entry = namedtuple('fpt_entry', 'type base_addr partition_size')
         fpt_entry_list = []
@@ -109,7 +109,7 @@ def main():
             for fpt_tuple in fpt_entry_list:
                 print(fpt_tuple)
     except Exception as e:
-        print('Error: Failed to parse the FPT enteries: ' + str(e))
+        print('Error: Failed to parse the FPT entries: ' + str(e))
         raise SystemExit(1)
 
     # Step5: Create an empty byte array of fixed size & populate

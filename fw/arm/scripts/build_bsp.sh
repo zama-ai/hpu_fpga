@@ -74,7 +74,7 @@ function clean() {
 
 ################################################################################
 #
-# This function sets additinal debug parameters in the FreeRTOSConfig.h file
+# This function sets additional debug parameters in the FreeRTOSConfig.h file
 #
 ################################################################################
 function set_freertos_config() {
@@ -243,7 +243,7 @@ while [ $# -gt 0 ]; do
 
 	    if [ "x$1" = x  ]
             then
-		    echo "Error: Invaild option"
+		    echo "Error: Invalid option"
 	    	    help
 		    exit
 	    else

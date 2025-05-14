@@ -64,7 +64,7 @@ assign dst_range = (insn_as_pep.dop.kind == DOPT_PBS) ?
 assign dst_rid_mh = (~({REGF_REG_NB{1'b1}} << dst_range)) << insn_as_pep.dst_rid;
 
 //NB: dst_rid is always a wr_reg except with Store in which case its a read_reg
-// -> filter out wr_reg whith ST insn
+// -> filter out wr_reg with ST insn
 assign wr_reg_mh = {REGF_REG_NB{!is_st_insn & !is_sync_insn}} & dst_rid_mh;
 
 // ============================================================================================== //

@@ -11,7 +11,7 @@
   bpip_timeout = 100_000
 
 [board]
-  # TODO: Lower ct_mem/heap_size value when runtime configuration is availble on the Fw side
+  # TODO: Lower ct_mem/heap_size value when runtime configuration is available on the Fw side
   ct_mem = 4096
   ct_pc = [{Hbm={pc=10}}, {Hbm={pc=11}}]
   heap_size = 3584 

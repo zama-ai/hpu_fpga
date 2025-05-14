@@ -17,7 +17,7 @@
 # clock skew.
 # For hold analysis, this is usually dominated by the clock skew, since both the
 # launching and capture clocks have the same edge, so jitter is dominated by very high frequency
-# PSIJ and is negligible. The only meaningfull source of error is any path mismatch in the path
+# PSIJ and is negligible. The only meaningful source of error is any path mismatch in the path
 # divergence between launching and capturing cells.
 # For setup, jitter will be significant and might dominate.
 # ----------------------------------------------------------------------------------------------

@@ -57,7 +57,7 @@ def print_hex(l, w):
     l is a list containing n values of w bit width.
     w is the size in bits of each element of the list.
     This function output the string corresponding to the concatenation of these data.
-    In hexa representation 1 caracter is 4 bits.
+    In hexa representation 1 character is 4 bits.
     '''
 
     w_remain  = w % 4;
@@ -98,7 +98,7 @@ def reshape_w(TO_W, FROM_W, values):
     from itertools import islice
     pack_w = TO_W // FROM_W
     shape_2d = [pack_w for _ in range(len(values)//pack_w)]
-    if (0 != (len(values)%pack_w)): # Finish with uncomplete word
+    if (0 != (len(values)%pack_w)): # Finish with incomplete word
         shape_2d.append(len(values)%pack_w)
 
     val_iter = iter(values)
@@ -1344,7 +1344,7 @@ if __name__ == '__main__':
                                default=False, action="store_true")
     parser.add_argument('-B',  dest='batch_nb',              type=int, help="BATCH_NB: Number of interleved batches. Default : 2",
                                default=BATCH_NB)
-    parser.add_argument('-lw', dest='lwe_acs_w',             type=int, help="LWE_ACS_W: LWE transfert size.",
+    parser.add_argument('-lw', dest='lwe_acs_w',             type=int, help="LWE_ACS_W: LWE transfer size.",
                                default=LWE_ACS_W)
     parser.add_argument('-delta', dest='delta',              type=int, help="DELTA: PCG CLBU delta parameter.",
                                default=DELTA)

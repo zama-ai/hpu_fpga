@@ -19,7 +19,7 @@ package hpu_common_param_pkg;
   import top_common_param_pkg::*;
   import pem_common_param_pkg::*;
 
-  // Used when hpu is splitted into 3 parts.
+  // Used when hpu is split into 3 parts.
   export hpu_part_definition_pkg::HEAD_S_NB;
   export hpu_part_definition_pkg::HEAD_USE_PP;
   export hpu_part_definition_pkg::MID0_S_NB;

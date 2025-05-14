@@ -13,7 +13,7 @@
 // Headers
 // ============================================================================================= //
 #include <stdint.h>
-// Retrived Hpu IOp fmt header for use of Operands/Immediats
+// Retrieved Hpu IOp fmt header for use of Operands/Immediats
 #include "hpu_iop_fmt.h"
 
 // Constants

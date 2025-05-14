@@ -219,7 +219,7 @@ proc synthesis { } {
   # trying to set a parameter P
   # Define handling should be done before using declare_define.py
   foreach a $USER_UPDATES {
-    puts "INFO> user_udpates: $a"
+    puts "INFO> user_updates: $a"
     if {![regexp {([DP]+):([A-Za-z0-9_]*)=(.*)} $a fm_dummy type name val]} {
       puts "ERROR> Unsupported user updates arguments in $a. Must be <D:DEFINE_NAME=VALUE> or <P:PARAM_NAME=VALUE>"
       exit
@@ -321,7 +321,7 @@ proc main { } {
     reset_run impl_1
     implementation $ntt_psi
   } else {
-    puts "ERROR: unkown step have been choosen by user"
+    puts "ERROR: unknown step have been chosen by user"
     exit 1
   }
 }

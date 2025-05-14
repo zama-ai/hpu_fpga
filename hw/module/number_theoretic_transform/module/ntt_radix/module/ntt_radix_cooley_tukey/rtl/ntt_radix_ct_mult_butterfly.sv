@@ -139,7 +139,7 @@ module ntt_radix_ct_mult_butterfly
         // Addition
         assign s2_add_sub[gen_i]     = s1_mult[gen_i] + s1_mult[gen_i+R/2];
 
-        // subtraction
+        // Subtraction
         assign s2_sub[gen_i+R/2]     = {1'b0,s1_mult[gen_i]} - {1'b0,s1_mult[gen_i+R/2]};
         // If the subtraction is negative, correct it with MOD_CORR to retrieve a positive
         // value.

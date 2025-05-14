@@ -1,0 +1,39 @@
+[default]
+extend-ignore-identifiers-re = [
+    # EDA and other common name
+    "Synopsys", "vcs", "xsim",
+
+    # V80 Ip name and accronym
+    "(CIPS|cips)", "(fpt|Fpt|FPT)",
+    # Commonly used Rtl naming
+    "interm", "(dout|DOUT|Dout)",
+    "(Pnr|PnR|PNR)",
+    "(DELTA|delta)",
+    "2nd",
+    "_DDR4_[0-9]_[0-9]_*",
+]
+
+extend-ignore-re = [
+    # Hexadecimal value with Sw and Rtl syntax
+    "0x[0-9a-fA-F]+",
+    "[0-9]*h[0-9a-fA-F]+",
+    # proper noun
+    "Toom-Cook",
+]
+
+[files]
+extend-exclude = [
+    "*.mem",
+    "*.ld",
+    "hw/module/hpu/module/hpu_regif/docs",
+    "fw/arm/src/device_drivers",
+    "fw/arm/src/apps",
+    "fw/arm/src/proxy_drivers",
+    "fw/arm/src/profiles",
+    "fw/arm/src/common",
+    "fw/arm/src/fal",
+    "fw/arm/src/osal",
+    "versal/iprepo",
+    "versal/scripts/bd",
+    "edalize",
+]

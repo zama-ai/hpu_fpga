@@ -371,7 +371,7 @@ assign pe_vld[PEM_OFS] = (query_ack_vld && (query_ack.status == SUCCESS) && (que
 assign pe_vld[PEA_OFS] = (query_ack_vld && (query_ack.status == SUCCESS) && (query_ack.cmd == ISSUE) && (query_ack.info.insn.kind == ARITH));
 assign pe_vld[PEP_OFS] = (query_ack_vld && (query_ack.status == SUCCESS) && (query_ack.cmd == ISSUE) && (query_ack.info.insn.kind == PBS));
 
-// NB: PE_sync slighly differ from other pe
+// NB: PE_sync slightly differ from other pe
 // Indeed no need to issue then retire sync instruction
 // Thus the sync ack is directly generated at the issue stage.
 // Internally pool that issue a SYNC directly release the slot
@@ -387,7 +387,7 @@ assign query_cmd = |rd_ack_vld ? RDUNLOCK
                  : (|pe_rdy) ? ISSUE
                  : NONE;
 
-// TODO fixme completly useless vld signal ...
+// TODO fixme completely useless vld signal ...
 assign query_vld = !query_ack_vld;
 
 
@@ -432,7 +432,7 @@ assign query_vld = !query_ack_vld;
     if(!s_rst_n) begin
       trace_wr_en <= 1'b0;
     end else begin
-      // Write trace for each successfull query
+      // Write trace for each successful query
       trace_wr_en <= (query_ack.status == SUCCESS) && query_ack_vld;
     end
 

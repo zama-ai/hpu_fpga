@@ -1938,8 +1938,8 @@ endtask
     //===============================
     // Init load phase
     //===============================
-    // Updload bsk and init bsk registers
-    // Updload ksk and init ksk registers
+    // Upload bsk and init bsk registers
+    // Upload ksk and init ksk registers
     write_unset_bsk_add();
     write_unset_ksk_add();
     fork

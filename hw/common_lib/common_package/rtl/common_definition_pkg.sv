@@ -62,7 +62,7 @@ package common_definition_pkg;
 //=======================================
 // Modular multipliers
   typedef enum int {
-                     MOD_MULT_UNKNWON    = 0,
+                     MOD_MULT_UNKNOWN    = 0,
                      MOD_MULT_SIMU       = 1,
                      MOD_MULT_SOLINAS2   = MOD_MULT_TYPE_OFS + 0,
                      MOD_MULT_SOLINAS3   = MOD_MULT_TYPE_OFS + 1,
@@ -71,7 +71,7 @@ package common_definition_pkg;
                      MOD_MULT_BARRETT    = MOD_MULT_TYPE_OFS + 4
                    } mod_mult_type_e;
 // Modular reduction
-  typedef enum int { MOD_REDUCT_UNKNWON    = 0,
+  typedef enum int { MOD_REDUCT_UNKNOWN    = 0,
                      MOD_REDUCT_SIMU       = 1,
                      MOD_REDUCT_SOLINAS2   = MOD_REDUCT_TYPE_OFS + 0,
                      MOD_REDUCT_SOLINAS3   = MOD_REDUCT_TYPE_OFS + 1,

@@ -18,7 +18,7 @@ shift
 shift
 
 # Modify <my_module>_run.tcl
-# When ooc, do not ask launch_runs impl_1 to do step write bitstream (indeed there is no bitstream)
+# When ooc, do not ask launch_runs impl_1 to do step write bitstream (indeed there is no bitsream)
 sed -e 's/launch_runs impl_1 -to_step write_bitstream/\
   set mode_ooc [expr {[string compare [get_property {STEPS.SYNTH_DESIGN.ARGS.MORE OPTIONS}  [get_runs synth_1] -quiet] "-mode out_of_context"]==0}]\n\
   if {$mode_ooc} {\
