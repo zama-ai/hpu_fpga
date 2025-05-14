@@ -230,7 +230,6 @@ The second line is an edalize output, indicating that an "xdc" files has been gi
 
 The third line, created by run_simu.sh, indicates the status of the test : SUCCEED or FAILURE.
 
-
 #### Simulation with firmware
 The V80 FPGA has on-board a dual-core Arm Cortex-R5F (RPU) that executes the firmware code. To accelerate the simulation, we use a microblaze model to run a similar version of this firmware.
 
@@ -238,8 +237,6 @@ In some simulations, like the top level one, the generation of the microblaze mo
 ```
 ${PROJECT_DIR}/fw/ublaze/script/generate_core.sh
 ```
-
-
 
 ## Bring-up
 
@@ -355,31 +352,10 @@ You can also load the bitstream provided in *versal/bitstreams* directory:
 sudo -E ami_tool cfgmem_program -d $DEVICE -t primary -i ${PROJECT_DIR}/versal/bitstreams/top_hpu_psi64_350_tuniform.00000b715273035020521e2505071329.pdi -p 1
 ```
 
-### Card diagnostics
-In order to run card diagnostics, you must install [xbtest](https://xilinx.github.io/AVED/amd_v80_gen5x8_exdes_2_20240408/xbtest/user-guide/source/docs/introduction/installation.html) and have an example AVED bitstream loaded into FPGA.
+*Now, you can run TFHE-rs code with the HPU you just loaded! In order to do so, have a look at [this document](https://docs.zama.ai/tfhe-rs/configuration/run_on_hpu) in order to find the next commands!*
 
-> [!TIP]
-> Depending on your hardware's AMC version, you should checkout original AVED repository, git tag ```7497599``` for version 2.3 and ```b580f84``` for 2.2.
-
-Once done, compile the driver and load the ami module.
-
-```
-git clone git@github.com:Xilinx/AVED.git
-cd AVED
-git checkout b580f84 #AMC version 2.2
-cd sw/AMI/driver/
-make clean && make
-sudo modprobe -r ami && sudo insmod ami.ko
-```
-
-If you want to launch memory diagnostics you can do :
-```
-# Get pcie device number
-PCIE_CARD=$(lspci -d 10ee:50b4)
-DEVICE="${PCIE_CARD%% *}"
-
-xbtest -d $DEVICE -c memory
-```
+---
+### Got questions ? Have a look at [docs/faq.md](docs/faq.md).
 
 ### License
 

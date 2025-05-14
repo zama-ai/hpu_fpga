@@ -20,9 +20,8 @@ The main components of an HPU are:
 <p align="center">
 <!-- HPU schematic -->
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="./img/hpu_schematic_dark.png">
-  <source media="(prefers-color-scheme: light)" srcset="./img/hpu_schematic.png">
-  <img width=1000 alt="Zama HPU Schematic">
+  <source srcset="./img/hpu_schematic.png">
+  <img width=1000 alt="Zama HPU on FPGA">
 </picture>
 </p>
 
