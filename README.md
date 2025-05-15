@@ -1,104 +1,145 @@
-# HPU FPGA
+<p align="center">
+<!-- product name logo -->
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="https://github.com/zama-ai/hpu_fpga_internal/blob/update-readme/docs/img/hpu-header-d.png">
+  <source media="(prefers-color-scheme: light)" srcset="https://github.com/zama-ai/hpu_fpga_internal/blob/update-readme/docs/img/hpu-header-l.png">
+  <img width=600 alt="Zama HPU FPGA">
+</picture>
+</p>
 
-## Introduction
+<hr/>
 
-SystemVerilog implementation of the [Homomorphic Processing Unit (HPU)](/docs/hpu.md) targeting [AMD Alveo V80](https://www.amd.com/en/products/accelerators/alveo/v80.html) FPGA board.
+<p align="center">
+<a href="https://docs.zama.ai/tfhe-rs/configuration/hpu_acceleration"> 📒 Documentation</a> | <a href="https://zama.ai/community"> 💛 Community support</a> | <a href="https://github.com/zama-ai/awesome-zama"> 📚 FHE resources by Zama</a>
+</p>
 
-This repository includes:
 
-* the RTL sources in SystemVerilog.
-* the block design necessary for AMD FPGA designs.
-    * The block design, defining the CIPS and the card management configuration, is partly derived from AVED. See [block design code](versal/scripts/bd)).
-* the flow for the FPGA V80 bitstream generation.
-* the flow for the simulation.
-* the firmware code for the Real-Time Processing Unit (RPU).
-    * The firmware is derived from [Xilinx's AVED](https://github.com/Xilinx/AVED). See [firmware documentation](fw/arm/README.md).
+<p align="center">
+  <a href="https://github.com/zama-ai/tfhe-rs/releases"><img src="https://img.shields.io/github/v/release/zama-ai/tfhe-rs?style=flat-square"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-BSD--3--Clause--Clear-%23ffb243?style=flat-square"></a>
+</p>
 
-> [!Tip]
-> HPU also needs the following piece of software:
+
+## About
+
+### What is Zama's HPU on FPGA
+
+Zama's Homomorphic Processing Unit (HPU) is a SystemVerilog-based hardware implementation targeting [AMD Alveo V80](https://www.amd.com/en/products/accelerators/alveo/v80.html) FPGA board. It is the first open-source processor capable of executing homomorphic operations directly on encrypted data, designed specifically to accelerate [TFHE-rs](https://github.com/zama-ai/tfhe-rs) workloads.
+
+This repository provides everything needed to deploy and experiment with the HPU, including:
+* SystemVerilog RTL source code
+* Block design for AMD Versal FPGAs, partially derived from AVED – see [block design code](versal/scripts/bd).
+* Bitstream generation flow for the Alveo V80
+* Simulation flow and testbenches
+* Firmware for the Real-Time Processing Unit (RPU), derived from [Xilinx's AVED](https://github.com/Xilinx/AVED) – see [firmware docs](versal/scripts/bd).
+
+> [!Note]
+> HPU also needs the following softwares:
 >
-> * AMI driver can be found [here](https://github.com/zama-ai/AVED).
-> * The high level API can be found [here](https://github.com/zama-ai/tfhe-rs).
-> * The HPU register interface is generated using the tool [hw_regmap](https://github.com/zama-ai/hw_regmap). It is loaded in HPU FPGA project as a git submodule.
+> * The [QDMA driver](https://github.com/zama-ai/dma_ip_drivers)
+> * The [AMI driver](https://github.com/zama-ai/AVED)
+> * The [high-level API](https://github.com/zama-ai/tfhe-rs)
+> * The HPU register interface generator [hw_regmap](https://github.com/zama-ai/hw_regmap), loaded in HPU FPGA project as a git submodule
 
+</br>
 
-
-## Directory structure
-At the root of HPU FPGA project, you will find the following directories:
-
-* docs
-    * Markdown documentation.
-* fw
+### Directory structure
+The directories of this repository are organized in the following way:
+#### Root
+* `docs/`
+    * Markdown documentations.
+* `fw/`
     * Firmware code for the RPU or microblaze.
     * Flow necessary for the ublaze generation.
-* hw
+* `hw/`
     * RTL code and the simulation flow.
-* sw
+* `sw/`
     * Python models for some algorithms.
     * SW binaries for testbench stimuli and reference generation.
     * Register map generator: hw_regmap.
-* versal
+* `versal/`
     * Flow for block design and bitstream generation.
 
-<br>
-In **hw** the general directory hierarchy is the following:
+#### `hw/`
 
-* common_lib
+* `common_lib/`
     * Shared RTL library, organized in <RTL module\> hierarchy.
-* memory_file
+* `memory_file/`
     * ROM content files.
-* module
+* `module/`
     * HPU RTL, organized in <RTL module\> hierarchy.
-* syn
+* `syn/`
     * Scripts for synthesis.
-* scripts
+* `scripts/`
     * Miscellaneous scripts.
-* simu_lib
+* `simu_lib/`
     * Shared RTL library for simulation.
-* output
+* `output/`
     * Generated directory.
     * Simulation and out-of-context (ooc) synthesis results.
 
-
-<br>
-An **<RTL module\>** directory has the following general hierarchy.<br>
-Note that if any directory is not needed, it won't be present.
-
+#### <RTL module\>
+>[!Note]
+> If any directory is not needed, it won't be present.
 * <module_name\>
-    * info
+    * `info/`
         * Mainly contains ***file_list.json***, which lists the RTL files of this directory, the RTL dependencies and synthesis constraints of this module.
-    * rtl
+    * `rtl/`
         * RTL files. The file name corresponds to the module name.
-    * constraints
+    * `constraints/`
         * Synthesis files for local ooc synthesis (with ***_local*** suffix), and hierarchical synthesis if needed (with ***_hier*** suffix).
-    * simu
+    * `simu/`
         * Simulation files. Is organized as a regular <RTL module\> structure. See [below](#simulation).
-    * module
+    * `module/`
         * If the module's submodules need to be placed in a <RTL module\> structure, it is done under the *module* directory.
-    * scripts
+    * `scripts/`
         * Scripts necessary to generate the module.
+</br>
 
+## Table of Contents
+- [About](#about)
+  - [What is Zama's HPU on FPGA](#what-is-zamas-hpu-on-fpga)
+  - [Directory structure](#directory-structure)
+- [Getting Started](#getting-started)
+  - [Installation](#installation)
+  - [Setup](#setup)
+  - [Build bitstream](#build-bitstream)
+  - [Simulation](#simulation)
+- [Bring-up](#bring-up)
+  - [AMI driver](#ami-driver)
+  - [QDMA](#qdma)
+  - [FPGA loading](#fpga-loading)
+- [Resources](#resources)
+  - [High-level API](#high-level-api)
+  - [Low-level implementations](#low-level-implementations)
+- [Working with HPU FPGA](#working-with-hpu-fpga)
+  - [Citations](#citations)
+  - [Contributing](#contributing)
+  - [License](#license)
+  - [FAQ](#faq)
+- [Support](#support)
+</br>
 
 ## Getting started
 
 ### Installation
 
-HPU FPGA project needs the following:
+To use the HPU FPGA project, ensure the following tools and dependencies are installed:
 
-- bash : All the commands are run in a **bash** terminal. If not it would be specified.
-- [tfhe-rs](https://github.com/zama-ai/tfhe-rs/) >= 1.2.0.
-- host linux driver: [AVED fork](https://github.com/zama-ai/AVED).
-- DMA linux driver: [QDMA fork](https://github.com/zama-ai/dma_ip_drivers).
-- [Vivado/Vitis](https://www.xilinx.com/support/download/index.html/content/xilinx/en/downloadNav/vivado-design-tools/2024-2.html) = **2024.2**.
-- [just](https://github.com/casey/just) >= 1.37.0.
-- *(simulation only)* [Sage](https://sagemanifolds.obspm.fr/install_ubuntu.html) = 10.4.
-- Python = 3.12.
-    - edalize = [ZAMA fork] used as a submodule (https://github.com/zama-ai/edalize).
-    - jinja2.
-    - *(simulation only)* constrainedrandom.
+- **bash** : All the commands are run in a bash terminal. If not it would be specified.
+- [**tfhe-rs**](https://github.com/zama-ai/tfhe-rs/) >= 1.2.0.
+- **Host linux driver**: [AVED fork](https://github.com/zama-ai/AVED).
+- **DMA linux driver**: [QDMA fork](https://github.com/zama-ai/dma_ip_drivers).
+- [**Vivado/Vitis**](https://www.xilinx.com/support/download/index.html/content/xilinx/en/downloadNav/vivado-design-tools/2024-2.html) = **2024.2**.
+- [**just**](https://github.com/casey/just) >= 1.37.0.
+- *(simulation only)* [**Sage**](https://sagemanifolds.obspm.fr/install_ubuntu.html) = 10.4.
+- **Python** = 3.12 with:
+    - `edalize` from the [ZAMA fork] used as a submodule (https://github.com/zama-ai/edalize).
+    - `jinja2`
+    - *(simulation only)* `constrainedrandom`
 
 > [!CAUTION]
-> Linux with kernel version 5.15.0-* is required to compile the host software. ([ami driver](https://github.com/zama-ai/AVED)).
+> Linux with kernel version 5.15.0-* is required to compile the host software. (See [Ami driver](https://github.com/zama-ai/AVED)).
 
 
 #### Python dependencies
@@ -128,13 +169,10 @@ source my_venv/bin/activate
 ```
 
 ### Setup
-Prepare your environment.
+To prepare your environment, set the bash variables **XILINX_VIVADO_PATH** and **XILINX_VITIS_PATH** with your vivado and vitis installation path.
 
 
-Set the bash variables **XILINX_VIVADO_PATH** and **XILINX_VITIS_PATH** with your vivado and vitis installation path.
-
-
-Clone the HPU repository
+Clone the HPU repository:
 ```
 git clone git@github.com:zama-ai/hpu_fpga
 
@@ -149,7 +187,7 @@ source setup.sh
 ```
 
 > [!Tip]
-> A useful variable that is created: **$PROJECT_DIR**. Its value is the path to the root directory of the current project.
+> A useful variable `$PROJECT_DIR` will be set to direct to the root of the current project.
 
 
 ### Build bitstream
@@ -179,12 +217,14 @@ A tested bitstream of the HPU compiled using run_syn_hpu_3parts_psi64.sh is avai
 
 ### Simulation
 
-The flow supports 2 simulation tools : ```xsim``` from AMD and ```vcs``` from Synopsys.
+The flow supports 2 simulation tools :
+- ```xsim``` from AMD
+- ```vcs``` from Synopsys.
 
 Set the variable ```$PROJECT_SIMU_TOOL``` in ```setup.sh``` to "xsim" or "vcs" according to the tool you want to use.
 
 > [!NOTE]
-> "vcs" is set by default.
+> `vcs` is set by default.
 
 A design under test (DUT) simulation material is in ```simu``` directory. If several testbenches exist, they are stored in separate directories. If a single testbench is present, this directory level does not exist.
 
@@ -206,10 +246,10 @@ It is recommended to use run_simu.sh when the testbench is run for the very firs
 
 The output gives the details of the advanced command to launch, if ever you want to play with the parameters.
 
-Note that if run_simu.sh is not present, the corresponding testbench is not fully supported.
+Note that if `run_simu.sh` is not present, the corresponding testbench is not fully supported.
 
 
-Example: Run pe_alu testbench, pe_alu is the ALU processing element
+Example: Run `pe_alu` testbench. `pe_alu` is the ALU processing element
 ```
 ${PROJECT_DIR}/hw/module/pe_alu/simu/scripts/run_simu.sh
 ```
@@ -237,6 +277,9 @@ In some simulations, like the top level one, the generation of the microblaze mo
 ```
 ${PROJECT_DIR}/fw/ublaze/script/generate_core.sh
 ```
+<p align="right">
+  <a href="#table-of-contents" > ↑ Back to top </a>
+</p>
 
 ## Bring-up
 
@@ -278,7 +321,7 @@ Now ```ami_tool``` is available.
 
 #### How to use ami_tool
 
-Through few examples:
+Through a few examples:
 ```
 # Get pcie device number
 PCIE_CARD=$(lspci -d 10ee:50b4)
@@ -320,7 +363,7 @@ make install-mods
 ### FPGA loading
 
 #### Loading through OSPI flash
-Here we use 2 files resulting from *run_syn_hpu_3parts_psi64.sh* bitstream generation, in directory ${PROJECT_DIR}/versal/output_psi64: **top_hpu.pdi** and **hpu_plug.xsa**.
+Here we use 2 files resulting from `run_syn_hpu_3parts_psi64.sh` bitstream generation, in directory ${PROJECT_DIR}/versal/output_psi64: `top_hpu.pdi` and `hpu_plug.xsa`.
 
 Note that if you use another given script (for another HPU size), the output directory will be ${PROJECT_DIR}/versal/output_psi<size\>.
 
@@ -347,16 +390,91 @@ DEVICE="${PCIE_CARD%% *}"
 # The following task will take a couple of minutes ...
 sudo -E ami_tool cfgmem_program -d $DEVICE -t primary -i ${PROJECT_DIR}/versal/output_psi64/top_hpu.pdi -p 1
 ```
-You can also load the bitstream provided in *versal/bitstreams* directory:
+You can also load the bitstream provided in `versal/bitstreams/` directory:
 ```
 sudo -E ami_tool cfgmem_program -d $DEVICE -t primary -i ${PROJECT_DIR}/versal/bitstreams/top_hpu_psi64_350_tuniform.00000b715273035020521e2505071329.pdi -p 1
 ```
 
 *Now, you can run TFHE-rs code with the HPU you just loaded! In order to do so, have a look at [this document](https://docs.zama.ai/tfhe-rs/configuration/run_on_hpu) in order to find the next commands!*
 
----
-### Got questions ? Have a look at [docs/faq.md](docs/faq.md).
+<p align="right">
+  <a href="#table-of-contents" > ↑ Back to top </a>
+</p>
+
+## Resources
+
+### High-level API
+Use the HPU with the TFHE-rs high-level API:
+- [HPU configuration documentation](https://docs.zama.ai/tfhe-rs/configuration/hpu_acceleration)
+- [Video tutorial] Introducing HPU HFPA](Coming soon)
+- [HPU benchmarks](https://docs.zama.ai/tfhe-rs/get-started/benchmarks/hpu)
+### Low-level implementations
+Understand the HPU architecture in depth and make your own implementation:
+- [HPU components](docs/hpu.md)
+- [HPU parameters](docs/hpu_parameters.md)
+- [Integer Operation (IOp)](docs/iop.md)
+- [Digit Operation (DOp)](docs/dop.md)
+- [Parsing flags](docs/parsing_flags.md)
+- [Debugging IOps](docs/debug.md)
+- [HPU FAQ](docs/faq.md)
+
+</br>
+
+## Working with HPU FPGA
+
+### Citations
+To cite HPU FPGA in academic papers, please use the following entry:
+
+```text
+@Misc{HPU FPGA,
+  title={{A systemVerilog implementation of the Homomorphic Processing Unit (HPU) targeting AMD Alveo V80 FPGA board}},
+  author={Zama},
+  year={2025},
+  note={\url{https://github.com/zama-ai/hpu_fpga}},
+}
+```
+
+### Contributing
+
+There are two ways to contribute to HPU FPGA:
+
+- [Open issues](https://github.com/zama-ai/hpu_fpga/issues/new) to report bugs and typos, or to suggest new ideas
+- Request to become an official contributor by emailing [hello@zama.ai](mailto:hello@zama.ai).
+
+Becoming an approved contributor involves signing our Contributor License Agreement (CLA). Only approved contributors can send pull requests, so please make sure to get in touch before you do!
+<br></br>
 
 ### License
+This software is distributed under the **BSD-3-Clause-Clear** license. Read [this](LICENSE) for more details.
 
-All the Zama code in this repository is distributed under the **BSD-3-Clause-Clear** license. Read [this](LICENSE) for more details.
+#### FAQ
+**Is Zama’s technology free to use?**
+>Zama’s libraries are free to use under the BSD 3-Clause Clear license only for development, research, prototyping, and experimentation purposes. However, for any commercial use of Zama's open source code, companies must purchase Zama’s commercial patent license.
+>
+>Everything we do is open source and we are very transparent on what it means for our users, you can read more about how we monetize our open source products at Zama in [this blogpost](https://www.zama.ai/post/open-source).
+
+**What do I need to do if I want to use Zama’s technology for commercial purposes?**
+>To commercially use Zama’s technology you need to be granted Zama’s patent license. Please contact us hello@zama.ai for more information.
+
+**Do you file IP on your technology?**
+>Yes, all Zama’s technologies are patented.
+
+**Can you customize a solution for my specific use case?**
+>We are open to collaborating and advancing the FHE space with our partners. If you have specific needs, please email us at hello@zama.ai.
+
+<p align="right">
+  <a href="#table-of-contents" > ↑ Back to top </a>
+</p>
+
+## Support
+
+<a target="_blank" href="https://community.zama.ai">
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="https://github.com/zama-ai/tfhe-rs/assets/157474013/08656d0a-3f44-4126-b8b6-8c601dff5380">
+  <source media="(prefers-color-scheme: light)" srcset="https://github.com/zama-ai/tfhe-rs/assets/157474013/1c9c9308-50ac-4aab-a4b9-469bb8c536a4">
+  <img alt="Support">
+</picture>
+</a>
+
+🌟 If you find this project helpful or interesting, please consider giving it a star on GitHub! Your support helps to grow the community and motivates further development.
+
