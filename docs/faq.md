@@ -13,7 +13,7 @@
   - [How can I read internal HPU registers?](#hpu-register)
   - [How can I change the debug level of the firmware?](#debug-level)
   - [How do I reset the board?](#reset)
-- [Common issued](#common-issues)
+- [Common issues](#common-issues)
   - [My board seems inaccessible. What should I do?](#board-away)
     - [check if the device is correctly listed on the PCIe bus](#pcie-check)
     - [Use xsdb](#xsdb)
@@ -109,6 +109,9 @@ DEVICE="${PCIE_CARD%% *}"
 
 xbtest -d $DEVICE -c memory
 ```
+<p align="right">
+  <a href="#table-of-contents" > ↑ Back to top </a>
+</p>
 
 ## Debug
 
@@ -156,6 +159,9 @@ We currently don't have a general reset. To circumvent this you can do a "reload
 ```
 sudo ami_tool reload -d $DEVICE -t sbr
 ```
+<p align="right">
+  <a href="#table-of-contents" > ↑ Back to top </a>
+</p>
 
 ## Common issues
 <a id="board-away"></a>
@@ -273,3 +279,7 @@ You can circumvent this by using the relative path of the application. Make sure
 
 We noticed that on V80, the board's communication with I2C bus can get stuck, leading to being unable to boot the system.\
 The solution for now is simple: you need to turn off your machine and unplug it, wait enough for all the power to dissipate and only then replug/reboot your machine ;-)
+
+<p align="right">
+  <a href="#table-of-contents" > ↑ Back to top </a>
+</p>
