@@ -31,7 +31,7 @@ This repository provides everything needed to deploy and experiment with the HPU
 * Block design for AMD Versal FPGAs, partially derived from AVED – see [block design code](versal/scripts/bd).
 * Bitstream generation flow for the Alveo V80
 * Simulation flow and testbenches
-* Firmware for the Real-Time Processing Unit (RPU), derived from [Xilinx's AVED](https://github.com/Xilinx/AVED) – see [firmware docs](versal/scripts/bd).
+* Firmware for the Real-Time Processing Unit (RPU), derived from [Xilinx's AVED](https://github.com/Xilinx/AVED) – see [firmware docs](fw/arm/README.md).
 
 > [!Note]
 > HPU also needs the following softwares:
@@ -133,6 +133,7 @@ To use the HPU FPGA project, ensure the following tools and dependencies are ins
 - [**Vivado/Vitis**](https://www.xilinx.com/support/download/index.html/content/xilinx/en/downloadNav/vivado-design-tools/2024-2.html) = **2024.2**.
 - [**just**](https://github.com/casey/just) >= 1.37.0.
 - *(simulation only)* [**Sage**](https://sagemanifolds.obspm.fr/install_ubuntu.html) = 10.4.
+- *(firmware compilation)* [**CMake**](https://cmake.org/download/) >= 3.3.0.
 - **Python** = 3.12 with:
     - `edalize` from the [ZAMA fork] used as a submodule (https://github.com/zama-ai/edalize).
     - `jinja2`
@@ -477,4 +478,3 @@ This software is distributed under the **BSD-3-Clause-Clear** license. Read [thi
 </a>
 
 🌟 If you find this project helpful or interesting, please consider giving it a star on GitHub! Your support helps to grow the community and motivates further development.
-
