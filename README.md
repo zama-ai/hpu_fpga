@@ -1,9 +1,9 @@
 <p align="center">
 <!-- product name logo -->
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="https://github.com/zama-ai/hpu_fpga/blob/main/docs/img/hpu-header-d.png">
-  <source media="(prefers-color-scheme: light)" srcset="https://github.com/zama-ai/hpu_fpga/blob/main/docs/img/hpu-header-l.png">
-  
+  <source media="(prefers-color-scheme: dark)" srcset="./docs/img/hpu-header-d.png">
+  <source media="(prefers-color-scheme: light)" srcset="./docs/img/hpu-header-l.png">
+
   <img width=600 alt="Zama HPU FPGA">
 </picture>
 </p>
