@@ -11,7 +11,7 @@
 <hr/>
 
 <p align="center">
-<a href="https://docs.zama.ai/tfhe-rs/configuration/hpu_acceleration"> 📒 Documentation</a> | <a href="https://zama.ai/community"> 💛 Community support</a> | <a href="https://github.com/zama-ai/awesome-zama"> 📚 FHE resources by Zama</a>
+<a href="https://docs.zama.ai/tfhe-rs/configuration/run_on_hpu"> 📒 Documentation</a> | <a href="https://zama.ai/community"> 💛 Community support</a> | <a href="https://github.com/zama-ai/awesome-zama"> 📚 FHE resources by Zama</a>
 </p>
 
 
@@ -407,7 +407,7 @@ sudo -E ami_tool cfgmem_program -d $DEVICE -t primary -i ${PROJECT_DIR}/versal/b
 
 ### High-level API
 Use the HPU with the TFHE-rs high-level API:
-- [HPU configuration documentation](https://docs.zama.ai/tfhe-rs/configuration/hpu_acceleration)
+- [HPU configuration documentation](https://docs.zama.ai/tfhe-rs/configuration/run_on_hpu)
 - [Video tutorial] Introducing HPU HFPA](Coming soon)
 - [HPU benchmarks](https://docs.zama.ai/tfhe-rs/get-started/benchmarks/hpu)
 ### Low-level implementations
