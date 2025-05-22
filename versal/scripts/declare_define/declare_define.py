@@ -65,6 +65,6 @@ if __name__ == '__main__':
     pathlib.Path(file_path).mkdir(parents=True, exist_ok=True)
     file_path = os.path.join(file_path,args.output_file)
 
-    with open(file_path, 'w') as fp:
+    with open(file_path, 'w', encoding="utf-8") as fp:
         fp.write(template.render(config))
 
