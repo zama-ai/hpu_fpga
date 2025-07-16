@@ -349,6 +349,12 @@ proc create_root_design { parentCell ntt_psi } {
   create_hier_cell_noc_wrapper [current_bd_instance .] noc_wrapper $ntt_psi
 
   ####################################
+  # Create ethernet
+  ####################################
+  create_hier_cell_eth_wrapper [current_bd_instance .] eth_wrapper
+  save_bd_design
+
+  ####################################
   # Port Connections
   ####################################
   # == Clocks

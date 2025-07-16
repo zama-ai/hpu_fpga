@@ -14,6 +14,7 @@ source ${BD_SCRIPTS_DIR}/bd_base_logic.tcl
 source ${BD_SCRIPTS_DIR}/bd_ddr_noc.tcl
 source ${BD_SCRIPTS_DIR}/bd_shell_wrapper.tcl
 source ${BD_SCRIPTS_DIR}/bd_noc_wrapper.tcl
+source ${BD_SCRIPTS_DIR}/bd_eth_wrapper.tcl
 source ${BD_SCRIPTS_DIR}/bd_main.tcl
 
 ################################################################
