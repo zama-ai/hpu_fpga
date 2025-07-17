@@ -92,6 +92,7 @@ proc create_root_design { parentCell ntt_psi } {
   set clk_usr_0_0 [ create_bd_port -dir O -type clk clk_usr_0_0 ]
   set clk_usr_1_0 [ create_bd_port -dir O -type clk clk_usr_1_0 ]
   set pl0_ref_clk_0 [ create_bd_port -dir O -type clk pl0_ref_clk_0 ]
+  set gtm_refclkp0_209 [ create_bd_port -dir I -type gt_usrclk gtm_refclkp0_209 ]
 
   # Association properties
   set prop_clk(clk_usr_0_0) ""
@@ -415,6 +416,9 @@ proc create_root_design { parentCell ntt_psi } {
 
   connect_bd_intf_net -intf_net S_REGIF_AXI_0 [get_bd_intf_ports /S_REGIF_AXI_0] [get_bd_intf_pins noc_wrapper/S_REGIF_AXI_0]
 
+  # == Ethernet
+  connect_bd_net -net gtm_refclk [get_bd_ports /gtm_refclkp0_209] [get_bd_pins eth_wrapper/clk_qsfp_ref]
+
   ####################################
   # Internal Connections
   ####################################
@@ -449,6 +453,11 @@ proc create_root_design { parentCell ntt_psi } {
   # LPD AXI NOC
   connect_bd_intf_net -intf_net lpd_axi_noc_0 [get_bd_intf_pins shell_wrapper/lpd_axi_noc_0] [get_bd_intf_pins noc_wrapper/lpd_axi_noc_0]
   connect_bd_net -net lpd_axi_noc_clk [get_bd_pins noc_wrapper/lpd_axi_noc_clk] [get_bd_pins shell_wrapper/lpd_axi_noc_clk]
+
+  # Ethernet
+  connect_bd_net [get_bd_pins eth_wrapper/clk_eth_qsfp] [get_bd_pins shell_wrapper/clk_eth_qsfp_0]
+  connect_bd_net [get_bd_pins eth_wrapper/clk_eth_freerun] [get_bd_pins shell_wrapper/clk_eth_freerun_0]
+  connect_bd_net [get_bd_pins eth_wrapper/resetn_eth_freerun] [get_bd_pins shell_wrapper/resetn_eth_freerun_ic_0] -boundary_type upper
 
   ####################################
   # Address

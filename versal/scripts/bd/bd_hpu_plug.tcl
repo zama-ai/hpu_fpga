@@ -56,6 +56,10 @@ namespace eval _nsp_hpu {
     variable USER_0_FREQ $freq
     variable USER_1_FREQ 100.000
 
+    # Ethernet
+    variable ETH_FREERUN_FREQ 100
+    variable ETH_QSFP_FREQ 156.25
+
     #========================
     # AXI
     #========================

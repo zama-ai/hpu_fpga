@@ -43,23 +43,29 @@ proc create_hier_cell_eth_wrapper { parentCell nameHier } {
   set axis_s_eth [ create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:axis_rtl:1.0 axis_s_eth ]
 
   # reference clock for GTM
-  set qsfp0_clk_p [ create_bd_pin -dir I -type CLK qsfp0_clk_p ]
+  set clk_eth_qsfp [ create_bd_pin -dir I -type CLK clk_eth_qsfp ]
 
   set tx_ref_clk [ create_bd_pin -dir O -type CLK tx_ref_clk ]
   set rx_ref_clk [ create_bd_pin -dir O -type CLK rx_ref_clk ]
 
-  set pl_ref_clk [ create_bd_pin -dir I -type CLK pl_ref_clk ]
-  set pl0_resetn [ create_bd_pin -dir I -type rst pl0_resetn ]
+  set clk_eth_freerun  [ create_bd_pin -dir I -type CLK clk_eth_freerun ]
+  set resetn_eth_freerun [ create_bd_pin -dir I -type rst resetn_eth_freerun ]
 
+  set clk_qsfp_ref  [ create_bd_pin -dir I -type gt_usrclk clk_qsfp_ref ]
   # qsfp0_4x_grx_p
   # qsfp0_4x_gtx_p
+  set Quad0_GT_Serial_0 [create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:gt_rtl:1.0 Quad0_GT_Serial]
+
+  set clk_qsfp_ref  [ create_bd_pin -dir O INTF0_TX_clr_out ]
+  set clk_qsfp_ref  [ create_bd_pin -dir O INTF0_TX_clrb_leaf_out ]
+  set clk_qsfp_ref  [ create_bd_pin -dir O INTF0_RX_clr_out ]
+  set clk_qsfp_ref  [ create_bd_pin -dir O INTF0_RX_clrb_leaf_out ]
+  set clk_qsfp_ref  [ create_bd_pin -dir O INTF0_rst_tx_done_out ]
+  set clk_qsfp_ref  [ create_bd_pin -dir O INTF0_rst_rx_done_out ]
 
   ####################################
   # Clocking
   ####################################
-  # set_property -dict [ list \
-  #  CONFIG.FREQ_HZ {156250000} \
-  #  ] $qsfp0_clk_p
 
   ####################################
   # Create XXV IP
@@ -117,6 +123,7 @@ proc create_hier_cell_eth_wrapper { parentCell nameHier } {
   ####################################
   # Connection
   ####################################
+  # ---- ---- ---- ---- XXV ---- ---- ---- ---- #
   # AXI-lite interface
   connect_bd_intf_net -boundary_type upper [get_bd_intf_pins axil_eth] [get_bd_intf_pins xxv_ethernet/s_axi_0]
   connect_bd_net [get_bd_pins axil_eth_clk] [get_bd_pins xxv_ethernet/s_axi_aclk_0]
@@ -136,21 +143,17 @@ proc create_hier_cell_eth_wrapper { parentCell nameHier } {
   connect_bd_net [get_bd_pins xxv_ethernet/rx_core_clk_0] [get_bd_pins xxv_ethernet/rx_clk_out_0]
 
   # GT user clock signals
-  connect_bd_net [get_bd_pins qsfp0_clk_p] [get_bd_pins xxv_ethernet/gtm_txusrclk2_0]
-  connect_bd_net [get_bd_pins qsfp0_clk_p] [get_bd_pins xxv_ethernet/gtm_rxusrclk2_0]
 
-  connect_bd_net [get_bd_pins qsfp0_clk_p] [get_bd_pins xxv_ethernet/rxoutclk_out_0]
-  connect_bd_net [get_bd_pins qsfp0_clk_p] [get_bd_pins xxv_ethernet/txoutclk_out_0]
+  connect_bd_net [get_bd_pins clk_eth_qsfp] [get_bd_pins xxv_ethernet/rxoutclk_out_0]
+  connect_bd_net [get_bd_pins clk_eth_qsfp] [get_bd_pins xxv_ethernet/txoutclk_out_0]
 
   # reset
   # lcpll is shared between transmitter and reciever datapath: this can be used for both rx and tx
   connect_bd_net [get_bd_pins gt_0/QUAD0_hsclk0_lcplllock] [get_bd_pins xxv_ethernet/tx_locked_0]
   connect_bd_net [get_bd_pins gt_0/QUAD0_hsclk0_lcplllock] [get_bd_pins xxv_ethernet/rx_locked_0]
   # due to inverse polarity we need to connect
-  connect_bd_net [get_bd_pins pl0_resetn] [get_bd_pins not_pl_rst/Op1]
-  connect_bd_net [get_bd_pins not_pl_rst/Res] [get_bd_pins xxv_ethernet/tx_reset_0]
-  connect_bd_net [get_bd_pins not_pl_rst/Res] [get_bd_pins xxv_ethernet/rx_reset_0]
-  connect_bd_net [get_bd_pins pl_ref_clk] [get_bd_pins xxv_ethernet/gtwiz_reset_clk_freerun_in_0]
+  connect_bd_net [get_bd_pins resetn_eth_freerun] [get_bd_pins not_pl_rst/Op1]
+  connect_bd_net [get_bd_pins clk_eth_freerun] [get_bd_pins xxv_ethernet/gtwiz_reset_clk_freerun_in_0]
 
   # control
   connect_bd_net [get_bd_pins gt_0/gtpowergood] [get_bd_pins xxv_ethernet/gtpowergood_in_0]
@@ -177,7 +180,39 @@ proc create_hier_cell_eth_wrapper { parentCell nameHier } {
   #  * stat_rx_0: no statistics for now
   #  * stat_rx_status_0: no statistics for now
   #  * rx_resetdone_out_0: Optional
-  #
+
+  # ---- ---- ---- ---- GT ---- ---- ---- ---- #
+  # == clocks
+  # freerun clock is supposedly running always at 100Mhz
+  # Quad ref clock is 100Mhz according to IP pin property
+  # connect_bd_net [get_bd_pins eth_wrapper/clk_eth_freerun] [get_bd_pins eth_wrapper/gt_0/gtwiz_freerun_clk]
+  connect_bd_net [get_bd_pins gt_0/QUAD0_GTREFCLK0] [get_bd_pins clk_eth_qsfp]
+  connect_bd_net [get_bd_pins gt_0/gtwiz_freerun_clk] [get_bd_pins clk_eth_freerun]
+
+  connect_bd_net [get_bd_pins gt_0/QUAD0_TX0_usrclk] [get_bd_pins clk_qsfp_ref]
+  connect_bd_net [get_bd_pins gt_0/QUAD0_RX0_usrclk] [get_bd_pins clk_qsfp_ref]
+
+  connect_bd_net [get_bd_pins gt_0/QUAD0_TX0_outclk] [get_bd_pins xxv_ethernet/gtm_txusrclk2_0]
+  connect_bd_net [get_bd_pins gt_0/QUAD0_RX0_outclk] [get_bd_pins xxv_ethernet/gtm_rxusrclk2_0]
+
+  # == control
+  connect_bd_net [get_bd_pins gt_0/INTF0_TX_clr_out] [get_bd_pins INTF0_TX_clr_out]
+  connect_bd_net [get_bd_pins gt_0/INTF0_TX_clrb_leaf_out] [get_bd_pins INTF0_TX_clrb_leaf_out]
+  connect_bd_net [get_bd_pins gt_0/INTF0_RX_clr_out] [get_bd_pins INTF0_RX_clr_out]
+  connect_bd_net [get_bd_pins gt_0/INTF0_RX_clrb_leaf_out] [get_bd_pins INTF0_RX_clrb_leaf_out]
+  connect_bd_net [get_bd_pins gt_0/INTF0_rst_tx_done_out] [get_bd_pins INTF0_rst_tx_done_out]
+  connect_bd_net [get_bd_pins gt_0/INTF0_rst_rx_done_out] [get_bd_pins INTF0_rst_rx_done_out]
+
+  # ---- ---- ---- ---- reset ---- ---- ---- ---- #
+  connect_bd_net [get_bd_pins not_pl_rst/Res] [get_bd_pins gt_0/INTF0_rst_all_in]
+  connect_bd_net [get_bd_pins not_pl_rst/Res] [get_bd_pins gt_0/INTF0_rst_tx_pll_and_datapath_in]
+  connect_bd_net [get_bd_pins not_pl_rst/Res] [get_bd_pins gt_0/INTF0_rst_tx_datapath_in]
+  connect_bd_net [get_bd_pins not_pl_rst/Res] [get_bd_pins gt_0/INTF0_rst_rx_pll_and_datapath_in]
+  connect_bd_net [get_bd_pins not_pl_rst/Res] [get_bd_pins gt_0/INTF0_rst_rx_datapath_in]
+  connect_bd_net [get_bd_pins not_pl_rst/Res] [get_bd_pins xxv_ethernet/tx_reset_0]
+  connect_bd_net [get_bd_pins not_pl_rst/Res] [get_bd_pins xxv_ethernet/rx_reset_0]
+
+  connect_bd_intf_net -boundary_type upper [get_bd_intf_pins Quad0_GT_Serial] [get_bd_intf_pins gt_0/Quad0_GT_Serial]
 
   ####################################
   # Restore instance
