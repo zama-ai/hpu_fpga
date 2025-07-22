@@ -219,7 +219,7 @@ proc create_hier_cell_clock_reset { parentCell nameHier } {
   connect_bd_net -net usr_clk_wiz_clk_out2 [get_bd_pins usr_clk_wiz/clk_out2] [get_bd_pins clk_usr_1] [get_bd_pins usr_1_psr/slowest_sync_clk]
   connect_bd_net -net usr_clk_wiz_locked [get_bd_pins usr_clk_wiz/locked] [get_bd_pins usr_0_psr/dcm_locked] [get_bd_pins usr_1_psr/dcm_locked]
   connect_bd_net -net eth_clk_wiz_clk_out1 [get_bd_pins eth_clk_wiz/clk_out1] [get_bd_pins clk_eth_freerun] [get_bd_pins eth_freerun_psr/slowest_sync_clk]
-  connect_bd_net -net eth_clk_wiz_clk_out2 [get_bd_pins eth_clk_wiz/clk_out2] [get_bd_pins clk_eth_qsfp] [get_bd_pins eth_qsfp/slowest_sync_clk]
+  connect_bd_net -net eth_clk_wiz_clk_out2 [get_bd_pins eth_clk_wiz/clk_out2] [get_bd_pins clk_eth_qsfp] [get_bd_pins eth_qsfp_psr/slowest_sync_clk]
   connect_bd_net -net eth_clk_wiz_locked   [get_bd_pins eth_clk_wiz/locked] [get_bd_pins eth_freerun_psr/dcm_locked] [get_bd_pins eth_qsfp_psr/dcm_locked]
 
   ####################################
