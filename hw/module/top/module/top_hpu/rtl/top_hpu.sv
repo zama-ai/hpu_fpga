@@ -57,11 +57,23 @@ module top_hpu #(
   input  logic        top_sys_clk0_0_clk_p,
   input  logic        top_sys_clk0_1_clk_n,
   input  logic        top_sys_clk0_1_clk_p,
+
+  input  logic        gt_ref_clk_n,
+  input  logic        gt_ref_clk_p,
+
   // HBM ----------------------------------------------------------------------
   input  logic [0:0]  top_hbm_ref_clk_0_clk_n,
   input  logic [0:0]  top_hbm_ref_clk_0_clk_p,
   input  logic [0:0]  top_hbm_ref_clk_1_clk_p,
-  input  logic [0:0]  top_hbm_ref_clk_1_clk_n
+  input  logic [0:0]  top_hbm_ref_clk_1_clk_n,
+
+  // Tranceivers --------------------------------------------------------------
+  input  logic [3:0] gt_rxn_in,
+  input  logic [3:0] gt_rxp_in,
+  output logic [3:0] gt_txn_out,
+  output logic [3:0] gt_txp_out,
+
+  input  logic [2:0] gt_loopback
 );
 
 // ----------------------------------------------------------------------------------------- //
@@ -97,6 +109,10 @@ module top_hpu #(
   localparam int AXI4_KSK_DATA_BYTES  = axi_if_ksk_axi_pkg::AXI4_DATA_BYTES;
   localparam int AXI4_KSK_ID_W        = axi_if_ksk_axi_pkg::AXI4_ID_W;
 
+  localparam [55:0] tx_preamblein_0   = 56'h555555555555d5;
+  localparam [55:0] tx_preamblein_1   = 56'h555555555555d5;
+  localparam [55:0] tx_preamblein_2   = 56'h555555555555d5;
+  localparam [55:0] tx_preamblein_3   = 56'h555555555555d5;
 
   // ----------------------------------------------------------------------------------------- //
   // Signals
@@ -141,6 +157,40 @@ module top_hpu #(
   // Configuration clock (slow)
   logic cfg_clk;
   logic cfg_srst_n;
+  // Ethernet configuration clock
+  logic eth_cfg_clk;
+  logic eth_cfg_srst_n;
+
+  logic ch0_tx_usr_clk;
+  logic ch1_tx_usr_clk;
+  logic ch2_tx_usr_clk;
+  logic ch3_tx_usr_clk;
+
+  logic ch0_rx_usr_clk;
+  logic ch1_rx_usr_clk;
+  logic ch2_rx_usr_clk;
+  logic ch3_rx_usr_clk;
+
+  logic ch0_tx_usr_clk2;
+  logic ch1_tx_usr_clk2;
+  logic ch2_tx_usr_clk2;
+  logic ch3_tx_usr_clk2;
+  logic ch0_rx_usr_clk2;
+  logic ch1_rx_usr_clk2;
+  logic ch2_rx_usr_clk2;
+  logic ch3_rx_usr_clk2;
+
+  logic [3:0] rx_core_clk;
+  logic [3:0] rx_serdes_clk;
+  logic [3:0] tx_core_clk;
+  logic [3:0] rx_alt_serdes_clk;
+  logic [3:0] tx_alt_serdes_clk;
+
+  assign rx_core_clk       = {ch3_rx_usr_clk, ch2_rx_usr_clk, ch1_rx_usr_clk, ch0_rx_usr_clk};
+  assign rx_serdes_clk     = {ch3_rx_usr_clk, ch2_rx_usr_clk, ch1_rx_usr_clk, ch0_rx_usr_clk};
+  assign tx_core_clk       = {ch0_tx_usr_clk, ch0_tx_usr_clk, ch0_tx_usr_clk, ch0_tx_usr_clk};
+  assign rx_alt_serdes_clk = {ch3_rx_usr_clk2, ch2_rx_usr_clk2, ch1_rx_usr_clk2, ch0_rx_usr_clk2};
+  assign tx_alt_serdes_clk = {ch0_tx_usr_clk2, ch0_tx_usr_clk2, ch0_tx_usr_clk2, ch0_tx_usr_clk2};
 
   /* AXI4 ---------------------------------------------------------------------
   * in direction to RTL register interface, size is fixed.
@@ -453,6 +503,223 @@ module top_hpu #(
   logic [KSK_PC_MAX-1:0][AXI4_ARQOS_W-1:0]          m_axi4_ksk_arqos;
   logic [KSK_PC_MAX-1:0][AXI4_ARREGION_W-1:0]       m_axi4_ksk_arregion;
 
+  // DMA
+  logic [7:0]  gt_line_rate;
+  logic [31:0] SW_REG_GT_LINE_RATE;
+
+  // Ethernet
+  logic [3:0] pm_rdy; // hanging
+
+  logic [3:0] rx_core_reset;
+  logic [3:0] rx_serdes_reset;
+  logic [3:0] tx_core_reset;
+  logic [3:0] tx_serdes_reset;
+
+  logic [3:0] gt_tx_reset_done_out;
+  logic [3:0] gt_rx_reset_done_out;
+  logic [3:0] mst_tx_dp_reset_out;
+  logic [3:0] mst_rx_dp_reset_out;
+
+  logic [3:0] rx_flexif_reset;
+
+  // TODO: define what to do with statistics
+  logic         stat_rx_aligned_0;
+  logic         stat_rx_aligned_2;
+  logic         stat_rx_aligned_err_0;
+  logic         stat_rx_aligned_err_2;
+  logic         stat_rx_axis_err_0;
+  logic         stat_rx_axis_err_1;
+  logic         stat_rx_axis_err_2;
+  logic         stat_rx_axis_err_3;
+  logic         stat_rx_axis_fifo_overflow_0;
+  logic         stat_rx_axis_fifo_overflow_1;
+  logic         stat_rx_axis_fifo_overflow_2;
+  logic         stat_rx_axis_fifo_overflow_3;
+  logic         stat_rx_bad_code_0;
+  logic         stat_rx_bad_code_1;
+  logic         stat_rx_bad_code_2;
+  logic         stat_rx_bad_code_3;
+  logic         stat_rx_bad_fcs_0;
+  logic         stat_rx_bad_fcs_1;
+  logic         stat_rx_bad_fcs_2;
+  logic         stat_rx_bad_fcs_3;
+  logic         stat_rx_bad_preamble_0;
+  logic         stat_rx_bad_preamble_1;
+  logic         stat_rx_bad_preamble_2;
+  logic         stat_rx_bad_preamble_3;
+  logic         stat_rx_bad_sfd_0;
+  logic         stat_rx_bad_sfd_1;
+  logic         stat_rx_bad_sfd_2;
+  logic         stat_rx_bad_sfd_3;
+  logic [19:0]  stat_rx_bip_err_0;
+  logic [3:0]   stat_rx_bip_err_2;
+  logic [19:0]  stat_rx_block_lock_0;
+  logic         stat_rx_block_lock_1;
+  logic [3:0]   stat_rx_block_lock_2;
+  logic         stat_rx_block_lock_3;
+  logic         stat_rx_cl49_82_convert_err_0;
+  logic         stat_rx_cl49_82_convert_err_1;
+  logic         stat_rx_cl49_82_convert_err_2;
+  logic         stat_rx_cl49_82_convert_err_3;
+  logic [1:0]   stat_rx_ecc_err_0;
+  logic [1:0]   stat_rx_ecc_err_1;
+  logic [1:0]   stat_rx_ecc_err_2;
+  logic [1:0]   stat_rx_ecc_err_3;
+  logic         stat_rx_flexif_err_0;
+  logic         stat_rx_flexif_err_1;
+  logic         stat_rx_flexif_err_2;
+  logic         stat_rx_flexif_err_3;
+  logic         stat_rx_flex_fifo_ovf_0;
+  logic         stat_rx_flex_fifo_ovf_1;
+  logic         stat_rx_flex_fifo_ovf_2;
+  logic         stat_rx_flex_fifo_ovf_3;
+  logic         stat_rx_flex_fifo_udf_0;
+  logic         stat_rx_flex_fifo_udf_1;
+  logic         stat_rx_flex_fifo_udf_2;
+  logic         stat_rx_flex_fifo_udf_3;
+  logic         stat_rx_flex_mon_fifo_ovf_0;
+  logic         stat_rx_flex_mon_fifo_ovf_1;
+  logic         stat_rx_flex_mon_fifo_ovf_2;
+  logic         stat_rx_flex_mon_fifo_ovf_3;
+  logic         stat_rx_flex_mon_fifo_udf_0;
+  logic         stat_rx_flex_mon_fifo_udf_1;
+  logic         stat_rx_flex_mon_fifo_udf_2;
+  logic         stat_rx_flex_mon_fifo_udf_3;
+  logic [19:0]  stat_rx_framing_err_0;
+  logic         stat_rx_framing_err_1;
+  logic [3:0]   stat_rx_framing_err_2;
+  logic         stat_rx_framing_err_3;
+  logic         stat_rx_got_signal_os_0;
+  logic         stat_rx_got_signal_os_1;
+  logic         stat_rx_got_signal_os_2;
+  logic         stat_rx_got_signal_os_3;
+  logic         stat_rx_hi_ber_0;
+  logic         stat_rx_hi_ber_1;
+  logic         stat_rx_hi_ber_2;
+  logic         stat_rx_hi_ber_3;
+  logic         stat_rx_internal_local_fault_0;
+  logic         stat_rx_internal_local_fault_1;
+  logic         stat_rx_internal_local_fault_2;
+  logic         stat_rx_internal_local_fault_3;
+  logic         stat_rx_invalid_start_0;
+  logic         stat_rx_invalid_start_1;
+  logic         stat_rx_invalid_start_2;
+  logic         stat_rx_invalid_start_3;
+  logic [7:0]   stat_rx_lane0_vlm_bip7_0;
+  logic [7:0]   stat_rx_lane0_vlm_bip7_2;
+  logic         stat_rx_lane0_vlm_bip7_valid_0;
+  logic         stat_rx_lane0_vlm_bip7_valid_2;
+  logic         stat_rx_local_fault_0;
+  logic         stat_rx_local_fault_1;
+  logic         stat_rx_local_fault_2;
+  logic         stat_rx_local_fault_3;
+  logic [19:0]  stat_rx_mf_err_0;
+  logic [3:0]   stat_rx_mf_err_2;
+  logic         stat_rx_misaligned_0;
+  logic         stat_rx_misaligned_2;
+  logic         stat_rx_pcs_bad_code_0;
+  logic         stat_rx_pcs_bad_code_1;
+  logic         stat_rx_pcs_bad_code_2;
+  logic         stat_rx_pcs_bad_code_3;
+  logic         stat_rx_received_local_fault_0;
+  logic         stat_rx_received_local_fault_1;
+  logic         stat_rx_received_local_fault_2;
+  logic         stat_rx_received_local_fault_3;
+  logic         stat_rx_remote_fault_0;
+  logic         stat_rx_remote_fault_1;
+  logic         stat_rx_remote_fault_2;
+  logic         stat_rx_remote_fault_3;
+  logic         stat_rx_status_0;
+  logic         stat_rx_status_1;
+  logic         stat_rx_status_2;
+  logic         stat_rx_status_3;
+  logic [19:0]  stat_rx_synced_0;
+  logic [3:0]   stat_rx_synced_2;
+  logic [19:0]  stat_rx_synced_err_0;
+  logic [3:0]   stat_rx_synced_err_2;
+  logic         stat_rx_test_pattern_mismatch_0;
+  logic         stat_rx_test_pattern_mismatch_1;
+  logic         stat_rx_test_pattern_mismatch_2;
+  logic         stat_rx_test_pattern_mismatch_3;
+  logic         stat_rx_truncated_0;
+  logic         stat_rx_truncated_1;
+  logic         stat_rx_truncated_2;
+  logic         stat_rx_truncated_3;
+  logic         stat_rx_valid_ctrl_code_0;
+  logic         stat_rx_valid_ctrl_code_1;
+  logic         stat_rx_valid_ctrl_code_2;
+  logic         stat_rx_valid_ctrl_code_3;
+  logic         stat_rx_vl_demuxed_0;
+  logic         stat_rx_vl_demuxed_2;
+  logic         stat_tx_axis_err_0;
+  logic         stat_tx_axis_err_1;
+  logic         stat_tx_axis_err_2;
+  logic         stat_tx_axis_err_3;
+  logic         stat_tx_axis_unf_0;
+  logic         stat_tx_axis_unf_1;
+  logic         stat_tx_axis_unf_2;
+  logic         stat_tx_axis_unf_3;
+  logic         stat_tx_bad_fcs_0;
+  logic         stat_tx_bad_fcs_1;
+  logic         stat_tx_bad_fcs_2;
+  logic         stat_tx_bad_fcs_3;
+  logic         stat_tx_cl82_49_convert_err_0;
+  logic         stat_tx_cl82_49_convert_err_1;
+  logic         stat_tx_cl82_49_convert_err_2;
+  logic         stat_tx_cl82_49_convert_err_3;
+  logic [1:0]   stat_tx_ecc_err_0;
+  logic [1:0]   stat_tx_ecc_err_1;
+  logic [1:0]   stat_tx_ecc_err_2;
+  logic [1:0]   stat_tx_ecc_err_3;
+  logic         stat_tx_flexif_err_0;
+  logic         stat_tx_flexif_err_1;
+  logic         stat_tx_flexif_err_2;
+  logic         stat_tx_flexif_err_3;
+  logic         stat_tx_flex_fifo_ovf_0;
+  logic         stat_tx_flex_fifo_ovf_1;
+  logic         stat_tx_flex_fifo_ovf_2;
+  logic         stat_tx_flex_fifo_ovf_3;
+  logic         stat_tx_flex_fifo_udf_0;
+  logic         stat_tx_flex_fifo_udf_1;
+  logic         stat_tx_flex_fifo_udf_2;
+  logic         stat_tx_flex_fifo_udf_3;
+  logic         stat_tx_frame_error_0;
+  logic         stat_tx_frame_error_1;
+  logic         stat_tx_frame_error_2;
+  logic         stat_tx_frame_error_3;
+  logic         stat_tx_local_fault_0;
+  logic         stat_tx_local_fault_1;
+  logic         stat_tx_local_fault_2;
+  logic         stat_tx_local_fault_3;
+  logic [2:0]   stat_tx_pcs_bad_code_0;
+  logic [2:0]   stat_tx_pcs_bad_code_1;
+  logic [2:0]   stat_tx_pcs_bad_code_2;
+  logic [2:0]   stat_tx_pcs_bad_code_3;
+
+  //TODO: TBD
+  logic [63:0] rx_axis_tdata0;
+  logic [63:0] rx_axis_tdata1;
+  logic [63:0] rx_axis_tdata2;
+  logic [63:0] rx_axis_tdata3;
+  logic [63:0] rx_axis_tdata4;
+  logic [63:0] rx_axis_tdata5;
+  logic [63:0] rx_axis_tdata6;
+  logic [63:0] rx_axis_tdata7;
+  logic [10:0] rx_axis_tkeep_user0;
+  logic [10:0] rx_axis_tkeep_user1;
+  logic [10:0] rx_axis_tkeep_user2;
+  logic [10:0] rx_axis_tkeep_user3;
+  logic [10:0] rx_axis_tkeep_user4;
+  logic [10:0] rx_axis_tkeep_user5;
+  logic [10:0] rx_axis_tkeep_user6;
+  logic [10:0] rx_axis_tkeep_user7;
+
+  logic [3:0]       axis_buffer_tx_tready;
+  logic [3:0]       axis_buffer_tx_tvalid;
+  logic [7:0][63:0] axis_buffer_tx_tdata;
+  logic [7:0][10:0] axis_buffer_tx_tkeep;
+  logic [3:0]       axis_buffer_tx_tlast;
+
   // =========================================================================================== //
   // Connections
   // =========================================================================================== //
@@ -467,6 +734,14 @@ module top_hpu #(
   assign axis_s_tx_tdata_tmp = axis_s_tx_tdata[31:0];
   assign axis_m_rx_tdata     = {{128-32{1'b0}},axis_m_rx_tdata_tmp};
   assign axis_m_tx_tdata_tmp = axis_m_tx_tdata[31:0];
+
+  // core and Serdes Resets
+  assign rx_core_reset   = {~gt_rx_reset_done_out[3],~gt_rx_reset_done_out[2],~gt_rx_reset_done_out[1],~gt_rx_reset_done_out[0]};
+  assign rx_serdes_reset = {~gt_rx_reset_done_out[3],~gt_rx_reset_done_out[2],~gt_rx_reset_done_out[1],~gt_rx_reset_done_out[0]};
+  assign tx_core_reset   = {~gt_tx_reset_done_out[3],~gt_tx_reset_done_out[2],~gt_tx_reset_done_out[1],~gt_tx_reset_done_out[0]};
+  assign tx_serdes_reset = {~gt_tx_reset_done_out[3],~gt_tx_reset_done_out[2],~gt_tx_reset_done_out[1],~gt_tx_reset_done_out[0]};
+
+  assign rx_flexif_reset = {4{~eth_cfg_srst_n}};
 
   // =========================================================================================== //
   // SHELL
@@ -524,6 +799,7 @@ module top_hpu #(
      * low power domain coming from RPU through NoC
      * axi_lpd is coming out from block design with address space >= x8000'0000
      * S_REGIF_AXI_* is targeting NSU, address must be over 0x201'0000'0000
+     * S_ETH_AXI_* is targeting NSU, address must be over 0x201'0000'0000
      * M_REGF_AXI_* going to NMU
      */
     .axi_lpd_araddr  (axi_lpd_araddr  ),
@@ -599,6 +875,42 @@ module top_hpu #(
     .S_REGIF_AXI_0_wready   (axi_lpd_wready),
     .S_REGIF_AXI_0_wstrb    (axi_lpd_wstrb),
     .S_REGIF_AXI_0_wvalid   (axi_lpd_wvalid),
+    // as register file, ethernet is driven by the same bus
+    .S_ETH_AXI_0_araddr     ({'h00000201, axi_lpd_araddr}),
+    .S_ETH_AXI_0_arburst    (axi_lpd_arburst),
+    .S_ETH_AXI_0_arcache    (axi_lpd_arcache),
+    .S_ETH_AXI_0_arlen      (axi_lpd_arlen),
+    .S_ETH_AXI_0_arlock     (axi_lpd_arlock),
+    .S_ETH_AXI_0_arprot     (axi_lpd_arprot),
+    .S_ETH_AXI_0_arqos      (axi_lpd_arqos),
+    .S_ETH_AXI_0_arready    (axi_lpd_arready),
+    .S_ETH_AXI_0_arregion   (axi_lpd_arregion),
+    .S_ETH_AXI_0_arsize     (axi_lpd_arsize),
+    .S_ETH_AXI_0_arvalid    (axi_lpd_arvalid),
+    .S_ETH_AXI_0_awaddr     ({'h00000201, axi_lpd_awaddr}),
+    .S_ETH_AXI_0_awburst    (axi_lpd_awburst),
+    .S_ETH_AXI_0_awcache    (axi_lpd_awcache),
+    .S_ETH_AXI_0_awlen      (axi_lpd_awlen),
+    .S_ETH_AXI_0_awlock     (axi_lpd_awlock),
+    .S_ETH_AXI_0_awprot     (axi_lpd_awprot),
+    .S_ETH_AXI_0_awqos      (axi_lpd_awqos),
+    .S_ETH_AXI_0_awready    (axi_lpd_awready),
+    .S_ETH_AXI_0_awregion   (axi_lpd_awregion),
+    .S_ETH_AXI_0_awsize     (axi_lpd_awsize),
+    .S_ETH_AXI_0_awvalid    (axi_lpd_awvalid),
+    .S_ETH_AXI_0_bready     (axi_lpd_bready),
+    .S_ETH_AXI_0_bresp      (axi_lpd_bresp),
+    .S_ETH_AXI_0_bvalid     (axi_lpd_bvalid),
+    .S_ETH_AXI_0_rdata      (axi_lpd_rdata),
+    .S_ETH_AXI_0_rlast      (axi_lpd_rlast),
+    .S_ETH_AXI_0_rready     (axi_lpd_rready),
+    .S_ETH_AXI_0_rresp      (axi_lpd_rresp),
+    .S_ETH_AXI_0_rvalid     (axi_lpd_rvalid),
+    .S_ETH_AXI_0_wdata      (axi_lpd_wdata),
+    .S_ETH_AXI_0_wlast      (axi_lpd_wlast),
+    .S_ETH_AXI_0_wready     (axi_lpd_wready),
+    .S_ETH_AXI_0_wstrb      (axi_lpd_wstrb),
+    .S_ETH_AXI_0_wvalid     (axi_lpd_wvalid),
 
     // axi4-lite going to regfile
     .REGIF_AXI_0_0_araddr   (axi_regif_prc_araddr[0]),
@@ -1802,6 +2114,327 @@ module top_hpu #(
     .hbm_ref_clk_1_clk_n(top_hbm_ref_clk_1_clk_n),
     .hbm_ref_clk_1_clk_p(top_hbm_ref_clk_1_clk_p),
 
+    /* Tranceivers
+     * -> GTM for one QSFP port
+     * -> NRZ modulation
+     * -> four lanes
+     */
+    .gt_rxn_in_0  (gt_rxn_in),
+    .gt_rxp_in_0  (gt_rxp_in),
+    .gt_txn_out_0 (gt_txn_out),
+    .gt_txp_out_0 (gt_txp_out),
+    // input clocks
+    .CLK_IN_D_clk_n  (gt_ref_clk_n), // TODO: check that is correclty infered by Vivado
+    .CLK_IN_D_clk_p  (gt_ref_clk_p), // defined in the hook pre-synthesis
+    // output clocks
+    .ch0_txusrclk    (ch0_tx_usr_clk2),
+    .ch1_txusrclk    (ch0_tx_usr_clk2),
+    .ch2_txusrclk    (ch0_tx_usr_clk2),
+    .ch3_txusrclk    (ch0_tx_usr_clk2),
+    .ch0_rxusrclk    (ch0_rx_usr_clk2),
+    .ch1_rxusrclk    (ch1_rx_usr_clk2),
+    .ch2_rxusrclk    (ch2_rx_usr_clk2),
+    .ch3_rxusrclk    (ch3_rx_usr_clk2),
+    // oputput clocks from bufg
+    .ch0_tx_usr_clk  (ch0_tx_usr_clk),
+    .ch0_tx_usr_clk2 (ch0_tx_usr_clk2),
+    .ch0_rx_usr_clk  (ch0_rx_usr_clk),
+    .ch0_rx_usr_clk2 (ch0_rx_usr_clk2),
+    .ch1_rx_usr_clk  (ch1_rx_usr_clk),
+    .ch1_rx_usr_clk2 (ch1_rx_usr_clk2),
+    .ch3_rx_usr_clk  (ch3_rx_usr_clk),
+    .ch3_rx_usr_clk2 (ch3_rx_usr_clk2),
+    .ch2_rx_usr_clk2 (ch2_rx_usr_clk2),
+    .ch2_rx_usr_clk  (ch2_rx_usr_clk),
+    // APB3 interface is not used
+    .APB3_INTF_paddr    (16'd0),
+    .APB3_INTF_penable  (1'b0),
+    .APB3_INTF_prdata   (),
+    .APB3_INTF_pready   (),
+    .APB3_INTF_psel     (1'b0),
+    .APB3_INTF_pslverr  (),
+    .APB3_INTF_pwdata   (32'd0),
+    .APB3_INTF_pwrite   (1'b0),
+    .apb3clk_quad       (1'b0), // TODO
+    // control signals
+    .gtpowergood  (gtpowergood_in),
+    .ch0_loopback (gt_loopback),
+    .ch0_rxrate   (SW_REG_GT_LINE_RATE[7:0]),
+    .ch0_txrate   (SW_REG_GT_LINE_RATE[7:0]),
+    .ch1_loopback (gt_loopback),
+    .ch1_rxrate   (SW_REG_GT_LINE_RATE[15:8]),
+    .ch1_txrate   (SW_REG_GT_LINE_RATE[15:8]),
+    .ch2_loopback (gt_loopback),
+    .ch2_rxrate   (SW_REG_GT_LINE_RATE[23:16]),
+    .ch2_txrate   (SW_REG_GT_LINE_RATE[23:16]),
+    .ch3_loopback (gt_loopback),
+    .ch3_rxrate   (SW_REG_GT_LINE_RATE[31:24]),
+    .ch3_txrate   (SW_REG_GT_LINE_RATE[31:24]),
+
+    /* MRMAC: MultiRate MAC subsystem
+     * -> includes MAC + PCS
+     * -> Site is chosen by a loc in bd
+     * -> 1 x 100 G non segregated
+     */
+    // RX datapath
+    .rx_axis_tdata0      (rx_axis_tdata0[63:0]),
+    .rx_axis_tkeep_user0 (rx_axis_tkeep_user0[10:0]),
+    .rx_axis_tdata1      (rx_axis_tdata1[63:0]),
+    .rx_axis_tkeep_user1 (rx_axis_tkeep_user1[10:0]),
+    .rx_axis_tdata2      (rx_axis_tdata2[63:0]),
+    .rx_axis_tkeep_user2 (rx_axis_tkeep_user2[10:0]),
+    .rx_axis_tdata3      (rx_axis_tdata3[63:0]),
+    .rx_axis_tkeep_user3 (rx_axis_tkeep_user3[10:0]),
+    .rx_axis_tdata4      (rx_axis_tdata4[63:0]),
+    .rx_axis_tkeep_user4 (rx_axis_tkeep_user4[10:0]),
+    .rx_axis_tdata5      (rx_axis_tdata5[63:0]),
+    .rx_axis_tkeep_user5 (rx_axis_tkeep_user5[10:0]),
+    .rx_axis_tlast_0     (rx_axis_tlast_0),
+    .rx_axis_tvalid_0    (rx_axis_tvalid_0),
+    // TX datapath
+    .tx_axis_tdata0      (axis_buffer_tx_tdata[0][63:0]),
+    .tx_axis_tkeep_user0 (axis_buffer_tx_tkeep[0][10:0]),
+    .tx_axis_tdata1      (axis_buffer_tx_tdata[1][63:0]),
+    .tx_axis_tkeep_user1 (axis_buffer_tx_tkeep[1][10:0]),
+    .tx_axis_tdata2      (axis_buffer_tx_tdata[2][63:0]),
+    .tx_axis_tkeep_user2 (axis_buffer_tx_tkeep[2][10:0]),
+    .tx_axis_tdata3      (axis_buffer_tx_tdata[3][63:0]),
+    .tx_axis_tkeep_user3 (axis_buffer_tx_tkeep[3][10:0]),
+    .tx_axis_tdata4      (axis_buffer_tx_tdata[4][63:0]),
+    .tx_axis_tkeep_user4 (axis_buffer_tx_tkeep[4][10:0]),
+    .tx_axis_tdata5      (axis_buffer_tx_tdata[5][63:0]),
+    .tx_axis_tkeep_user5 (axis_buffer_tx_tkeep[5][10:0]),
+    .tx_axis_tlast_0     (axis_buffer_tx_tlast[0]),
+    .tx_axis_tready_0    (tx_axis_tready_0),
+    .tx_axis_tvalid_0    (axis_buffer_tx_tvalid[0]),
+    // control signals
+    .gtpowergood_in          (gtpowergood_in),
+    .pm_rdy            (pm_rdy),
+    .pm_tick           (4'b0),
+    .gt_tx_reset_done_out    (gt_tx_reset_done_out),
+    .gt_rx_reset_done_out    (gt_rx_reset_done_out),
+    .gt_reset_all_in         (gt_reset_all_in),
+    .gt_reset_tx_datapath_in (gt_reset_tx_datapath_in),
+    .gt_reset_rx_datapath_in (gt_reset_rx_datapath_in),
+    // clock
+    .tx_core_clk       (tx_core_clk),
+    .rx_core_clk       (rx_core_clk),
+    .tx_alt_serdes_clk (tx_alt_serdes_clk),
+    .rx_alt_serdes_clk (rx_alt_serdes_clk),
+    .rx_serdes_clk     (rx_serdes_clk),
+    .tx_axi_clk        (tx_axi_clk),
+    .rx_axi_clk        (rx_axi_clk),
+    .tx_flexif_clk     (tx_flexif_clk),
+    .rx_flexif_clk     (rx_flexif_clk),
+    .tx_ts_clk         (tx_ts_clk),
+    .rx_ts_clk         (rx_ts_clk),
+    // reset
+    .tx_core_reset    (tx_core_reset),
+    .rx_core_reset    (rx_core_reset),
+    .tx_serdes_reset  (tx_serdes_reset),
+    .rx_serdes_reset  (rx_serdes_reset),
+    .rx_flexif_reset  (rx_flexif_reset),
+    // Control tx
+    .ctl_tx_port0_ctl_tx_lane0_vlm_bip7_override       (1'b0),
+    .ctl_tx_port0_ctl_tx_lane0_vlm_bip7_override_value (8'd0),
+    .ctl_tx_port0_ctl_tx_send_idle_in                  (1'b0),
+    .ctl_tx_port0_ctl_tx_send_lfi_in                   (1'b0),
+    .ctl_tx_port0_ctl_tx_send_rfi_in                   (1'b0),
+    .ctl_tx_port1_ctl_tx_send_idle_in                  (1'b0),
+    .ctl_tx_port1_ctl_tx_send_lfi_in                   (1'b0),
+    .ctl_tx_port1_ctl_tx_send_rfi_in                   (1'b0),
+    .ctl_tx_port2_ctl_tx_lane0_vlm_bip7_override       (1'b0),
+    .ctl_tx_port2_ctl_tx_lane0_vlm_bip7_override_value (8'd0),
+    .ctl_tx_port2_ctl_tx_send_idle_in                  (1'b0),
+    .ctl_tx_port2_ctl_tx_send_lfi_in                   (1'b0),
+    .ctl_tx_port2_ctl_tx_send_rfi_in                   (1'b0),
+    .ctl_tx_port3_ctl_tx_send_idle_in                  (1'b0),
+    .ctl_tx_port3_ctl_tx_send_lfi_in                   (1'b0),
+    .ctl_tx_port3_ctl_tx_send_rfi_in                   (1'b0),
+    // preamble
+    .rx_preambleout_rx_preambleout_0 (rx_preambleout_0),
+    .rx_preambleout_rx_preambleout_1 (rx_preambleout_1),
+    .rx_preambleout_rx_preambleout_2 (rx_preambleout_2),
+    .rx_preambleout_rx_preambleout_3 (rx_preambleout_3),
+    //
+    .tx_preamblein_tx_preamblein_0 (tx_preamblein_0),
+    .tx_preamblein_tx_preamblein_1 (tx_preamblein_1),
+    .tx_preamblein_tx_preamblein_2 (tx_preamblein_2),
+    .tx_preamblein_tx_preamblein_3 (tx_preamblein_3),
+    // Statistics
+    .stat_rx_port0_stat_rx_aligned               (stat_rx_aligned_0),
+    .stat_rx_port0_stat_rx_aligned_err           (stat_rx_aligned_err_0),
+    .stat_rx_port0_stat_rx_axis_err              (),
+    .stat_rx_port0_stat_rx_axis_fifo_overflow    (),
+    .stat_rx_port0_stat_rx_bad_code              (),
+    .stat_rx_port0_stat_rx_bad_fcs               (),
+    .stat_rx_port0_stat_rx_bad_preamble          (),
+    .stat_rx_port0_stat_rx_bad_sfd               (),
+    .stat_rx_port0_stat_rx_bip_err               (),
+    .stat_rx_port0_stat_rx_block_lock            (stat_rx_block_lock_0),
+    .stat_rx_port0_stat_rx_cl49_82_convert_err   (),
+    .stat_rx_port0_stat_rx_ecc_err               (),
+    .stat_rx_port0_stat_rx_flex_fifo_ovf         (),
+    .stat_rx_port0_stat_rx_flex_fifo_udf         (),
+    .stat_rx_port0_stat_rx_flex_mon_fifo_ovf     (),
+    .stat_rx_port0_stat_rx_flex_mon_fifo_udf     (),
+    .stat_rx_port0_stat_rx_flexif_err            (),
+    .stat_rx_port1_stat_rx_flex_fifo_ovf         (),
+    .stat_rx_port1_stat_rx_flex_fifo_udf         (),
+    .stat_rx_port1_stat_rx_flex_mon_fifo_ovf     (),
+    .stat_rx_port1_stat_rx_flex_mon_fifo_udf     (),
+    .stat_rx_port1_stat_rx_flexif_err            (),
+    .stat_rx_port2_stat_rx_flex_fifo_ovf         (),
+    .stat_rx_port2_stat_rx_flex_fifo_udf         (),
+    .stat_rx_port2_stat_rx_flex_mon_fifo_ovf     (),
+    .stat_rx_port2_stat_rx_flex_mon_fifo_udf     (),
+    .stat_rx_port2_stat_rx_flexif_err            (),
+    .stat_rx_port3_stat_rx_flex_fifo_ovf         (),
+    .stat_rx_port3_stat_rx_flex_fifo_udf         (),
+    .stat_rx_port3_stat_rx_flex_mon_fifo_ovf     (),
+    .stat_rx_port3_stat_rx_flex_mon_fifo_udf     (),
+    .stat_rx_port3_stat_rx_flexif_err            (),
+    .stat_rx_port0_stat_rx_framing_err_0         (),
+    .stat_rx_port0_stat_rx_got_signal_os         (),
+    .stat_rx_port0_stat_rx_hi_ber                (),
+    .stat_rx_port0_stat_rx_internal_local_fault  (),
+    .stat_rx_port0_stat_rx_invalid_start         (),
+    .stat_rx_port0_stat_rx_lane0_vlm_bip7        (),
+    .stat_rx_port0_stat_rx_lane0_vlm_bip7_valid  (),
+    .stat_rx_port0_stat_rx_local_fault           (),
+    .stat_rx_port0_stat_rx_mf_err_0              (),
+    .stat_rx_port0_stat_rx_misaligned            (),
+    .stat_rx_port0_stat_rx_pcs_bad_code          (),
+    .stat_rx_port0_stat_rx_received_local_fault  (),
+    .stat_rx_port0_stat_rx_remote_fault          (),
+    .stat_rx_port0_stat_rx_status                (stat_rx_status_0),
+    .stat_rx_port0_stat_rx_synced                (),
+    .stat_rx_port0_stat_rx_synced_err            (),
+    .stat_rx_port0_stat_rx_test_pattern_mismatch (),
+    .stat_rx_port0_stat_rx_truncated             (),
+    .stat_rx_port0_stat_rx_valid_ctrl_code       (),
+    .stat_rx_port0_stat_rx_vl_demuxed            (),
+    .stat_rx_port1_stat_rx_axis_err              (),
+    .stat_rx_port1_stat_rx_axis_fifo_overflow    (),
+    .stat_rx_port1_stat_rx_bad_code              (),
+    .stat_rx_port1_stat_rx_bad_fcs               (),
+    .stat_rx_port1_stat_rx_bad_preamble          (),
+    .stat_rx_port1_stat_rx_bad_sfd               (),
+    .stat_rx_port1_stat_rx_block_lock            (stat_rx_block_lock_1),
+    .stat_rx_port1_stat_rx_cl49_82_convert_err   (),
+    .stat_rx_port1_stat_rx_ecc_err               (),
+    .stat_rx_port1_stat_rx_framing_err_1         (),
+    .stat_rx_port1_stat_rx_got_signal_os         (),
+    .stat_rx_port1_stat_rx_hi_ber                (),
+    .stat_rx_port1_stat_rx_internal_local_fault  (),
+    .stat_rx_port1_stat_rx_invalid_start         (),
+    .stat_rx_port1_stat_rx_local_fault           (),
+    .stat_rx_port1_stat_rx_pcs_bad_code          (),
+    .stat_rx_port1_stat_rx_received_local_fault  (),
+    .stat_rx_port1_stat_rx_remote_fault          (),
+    .stat_rx_port1_stat_rx_status                (stat_rx_status_1),
+    .stat_rx_port1_stat_rx_test_pattern_mismatch (),
+    .stat_rx_port1_stat_rx_truncated             (),
+    .stat_rx_port1_stat_rx_valid_ctrl_code       (),
+    .stat_rx_port2_stat_rx_aligned               (stat_rx_aligned_2),
+    .stat_rx_port2_stat_rx_aligned_err           (stat_rx_aligned_err_2),
+    .stat_rx_port2_stat_rx_axis_err              (),
+    .stat_rx_port2_stat_rx_axis_fifo_overflow    (),
+    .stat_rx_port2_stat_rx_bad_code              (),
+    .stat_rx_port2_stat_rx_bad_fcs               (),
+    .stat_rx_port2_stat_rx_bad_preamble          (),
+    .stat_rx_port2_stat_rx_bad_sfd               (),
+    .stat_rx_port2_stat_rx_bip_err               (),
+    .stat_rx_port2_stat_rx_block_lock            (stat_rx_block_lock_2),
+    .stat_rx_port2_stat_rx_cl49_82_convert_err   (),
+    .stat_rx_port2_stat_rx_ecc_err               (),
+    .stat_rx_port2_stat_rx_framing_err_2         (),
+    .stat_rx_port2_stat_rx_got_signal_os         (),
+    .stat_rx_port2_stat_rx_hi_ber                (),
+    .stat_rx_port2_stat_rx_internal_local_fault  (),
+    .stat_rx_port2_stat_rx_invalid_start         (),
+    .stat_rx_port2_stat_rx_lane0_vlm_bip7        (),
+    .stat_rx_port2_stat_rx_lane0_vlm_bip7_valid  (),
+    .stat_rx_port2_stat_rx_local_fault           (),
+    .stat_rx_port2_stat_rx_mf_err_2              (),
+    .stat_rx_port2_stat_rx_misaligned            (),
+    .stat_rx_port2_stat_rx_pcs_bad_code          (),
+    .stat_rx_port2_stat_rx_received_local_fault  (),
+    .stat_rx_port2_stat_rx_remote_fault          (),
+    .stat_rx_port2_stat_rx_status                (stat_rx_status_2),
+    .stat_rx_port2_stat_rx_synced                (),
+    .stat_rx_port2_stat_rx_synced_err            (),
+    .stat_rx_port2_stat_rx_test_pattern_mismatch (),
+    .stat_rx_port2_stat_rx_truncated             (),
+    .stat_rx_port2_stat_rx_valid_ctrl_code       (),
+    .stat_rx_port2_stat_rx_vl_demuxed            (),
+    .stat_rx_port3_stat_rx_axis_err              (),
+    .stat_rx_port3_stat_rx_axis_fifo_overflow    (),
+    .stat_rx_port3_stat_rx_bad_code              (),
+    .stat_rx_port3_stat_rx_bad_fcs               (),
+    .stat_rx_port3_stat_rx_bad_preamble          (),
+    .stat_rx_port3_stat_rx_bad_sfd               (),
+    .stat_rx_port3_stat_rx_block_lock            (stat_rx_block_lock_3),
+    .stat_rx_port3_stat_rx_cl49_82_convert_err   (),
+    .stat_rx_port3_stat_rx_ecc_err               (),
+    .stat_rx_port3_stat_rx_framing_err_3         (),
+    .stat_rx_port3_stat_rx_got_signal_os         (),
+    .stat_rx_port3_stat_rx_hi_ber                (),
+    .stat_rx_port3_stat_rx_internal_local_fault  (),
+    .stat_rx_port3_stat_rx_invalid_start         (),
+    .stat_rx_port3_stat_rx_local_fault           (),
+    .stat_rx_port3_stat_rx_pcs_bad_code          (),
+    .stat_rx_port3_stat_rx_received_local_fault  (),
+    .stat_rx_port3_stat_rx_remote_fault          (),
+    .stat_rx_port3_stat_rx_status                (stat_rx_status_3),
+    .stat_rx_port3_stat_rx_test_pattern_mismatch (),
+    .stat_rx_port3_stat_rx_truncated             (),
+    .stat_rx_port3_stat_rx_valid_ctrl_code       (),
+    .stat_tx_port0_stat_tx_axis_err              (),
+    .stat_tx_port0_stat_tx_axis_unf              (),
+    .stat_tx_port0_stat_tx_bad_fcs               (),
+    .stat_tx_port0_stat_tx_cl82_49_convert_err   (),
+    .stat_tx_port0_stat_tx_ecc_err               (),
+    .stat_tx_port0_stat_tx_flex_fifo_ovf         (),
+    .stat_tx_port0_stat_tx_flex_fifo_udf         (),
+    .stat_tx_port0_stat_tx_flexif_err            (),
+    .stat_tx_port1_stat_tx_flex_fifo_ovf         (),
+    .stat_tx_port1_stat_tx_flex_fifo_udf         (),
+    .stat_tx_port1_stat_tx_flexif_err            (),
+    .stat_tx_port2_stat_tx_flex_fifo_ovf         (),
+    .stat_tx_port2_stat_tx_flex_fifo_udf         (),
+    .stat_tx_port2_stat_tx_flexif_err            (),
+    .stat_tx_port3_stat_tx_flex_fifo_ovf         (),
+    .stat_tx_port3_stat_tx_flex_fifo_udf         (),
+    .stat_tx_port3_stat_tx_flexif_err            (),
+    .stat_tx_port0_stat_tx_frame_error           (),
+    .stat_tx_port0_stat_tx_local_fault           (),
+    .stat_tx_port0_stat_tx_pcs_bad_code          (),
+    .stat_tx_port1_stat_tx_axis_err              (),
+    .stat_tx_port1_stat_tx_axis_unf              (),
+    .stat_tx_port1_stat_tx_bad_fcs               (),
+    .stat_tx_port1_stat_tx_cl82_49_convert_err   (),
+    .stat_tx_port1_stat_tx_ecc_err               (),
+    .stat_tx_port1_stat_tx_frame_error           (),
+    .stat_tx_port1_stat_tx_local_fault           (),
+    .stat_tx_port1_stat_tx_pcs_bad_code          (),
+    .stat_tx_port2_stat_tx_axis_err              (),
+    .stat_tx_port2_stat_tx_axis_unf              (),
+    .stat_tx_port2_stat_tx_bad_fcs               (),
+    .stat_tx_port2_stat_tx_cl82_49_convert_err   (),
+    .stat_tx_port2_stat_tx_ecc_err               (),
+    .stat_tx_port2_stat_tx_frame_error           (),
+    .stat_tx_port2_stat_tx_local_fault           (),
+    .stat_tx_port2_stat_tx_pcs_bad_code          (),
+    .stat_tx_port3_stat_tx_axis_err              (),
+    .stat_tx_port3_stat_tx_axis_unf              (),
+    .stat_tx_port3_stat_tx_bad_fcs               (),
+    .stat_tx_port3_stat_tx_cl82_49_convert_err   (),
+    .stat_tx_port3_stat_tx_ecc_err               (),
+    .stat_tx_port3_stat_tx_frame_error           (),
+    .stat_tx_port3_stat_tx_local_fault           (),
+    .stat_tx_port3_stat_tx_pcs_bad_code          (),
+
     /* Clocks
      */
     .pl0_ref_clk_0  (),
@@ -1813,11 +2446,20 @@ module top_hpu #(
     .clk_usr_0_0(prc_clk),
     .clk_usr_1_0(cfg_clk),
 
+    .clk_eth_cfg_0(eth_cfg_clk),
+    .resetn_eth_cfg_ic_0(eth_cfg_srst_n),
+
     .sys_clk0_0_clk_n(top_sys_clk0_0_clk_n),
     .sys_clk0_0_clk_p(top_sys_clk0_0_clk_p),
     .sys_clk0_1_clk_n(top_sys_clk0_1_clk_n),
     .sys_clk0_1_clk_p(top_sys_clk0_1_clk_p)
   );
+
+//=====================================
+// DMA
+//=====================================
+  // GTM line rate is defined from RPU using axi-lite
+  assign SW_REG_GT_LINE_RATE = {gt_line_rate, gt_line_rate, gt_line_rate, gt_line_rate};
 
 //=====================================
 // Fifo element
