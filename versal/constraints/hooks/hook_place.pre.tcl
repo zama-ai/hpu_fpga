@@ -69,3 +69,8 @@ if { [expr $::ntt_psi == 64] && [expr [string first "INTER_PART_PIPE=2" $generic
   add_cells_to_pblock -quiet [get_pblocks pblock_SLR0] [get_cells -hier -regexp -filter {NAME =~ ".*gen_inter_part_pipe.in_p3_p2_ntt_proc_.*_dly.*"}]
   add_cells_to_pblock -quiet [get_pblocks pblock_SLR1] [get_cells -hier -regexp -filter {NAME =~ ".*gen_inter_part_pipe.in_p2_p3_ntt_proc_.*_dly.*"}]
 }
+
+# Ethernet placement
+# top right SL1, bank 111 - port 4. Meant for MRMAC_X0Y3, one clock region away from this transceiver.
+set_property LOC GTM_QUAD_X0Y9    [get_cells -hier -filter {name =~ */gt_quad_base*/inst/quad_inst}]
+set_property LOC GTM_REFCLK_X0Y18 [get_cells -hier -filter {name =~ */util_ds_buf*/U0/USE_IBUFDS_GTME5.GEN_IBUFDS_GTME5[0].IBUFDS_GTME5_U}]
