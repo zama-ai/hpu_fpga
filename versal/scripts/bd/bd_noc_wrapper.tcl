@@ -896,6 +896,9 @@ proc create_hier_cell_noc_wrapper { parentCell nameHier ntt_psi } {
   # MGMT (to UUID, GCQ...)
   set_property CONFIG.PHYSICAL_LOC NOC_NSU512_X2Y0 [get_bd_intf_pins axi_noc_cips/M00_AXI]
 
+  # Axi-lite for MRMAC_X0Y3
+  set_property CONFIG.PHYSICAL_LOC NOC_NSU512_X0Y10 [get_bd_intf_pins axi_noc_cips/M06_AXI]
+
   #  AXIS
   if { $ntt_psi == 64 } {
     set_property CONFIG.PHYSICAL_LOC NOC_NMU512_X0Y0  [get_bd_intf_pins axis_noc/S00_AXIS]

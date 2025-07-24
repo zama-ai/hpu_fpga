@@ -1,6 +1,12 @@
 # ==============================================================================================
 # BSD 3-Clause Clear License
 # Copyright © 2025 ZAMA. All rights reserved.
+# ----------------------------------------------------------------------------------------------
+# Contains procedure to generate block designs that handle ethernet connexion.
+# Part of it is derived from the example design and adapted to our needs.
+#
+# We needed an MRMAC MAC + PCS driving GTM for QSFPs.
+#
 # ==============================================================================================
 
 ###############################################################################
@@ -101,8 +107,8 @@ mrmac_0_exdes_support_mrmac_0_core_0_0./mrmac_0_core/gt_tx_serdes_interface_1.1 
 /mrmac_0_gt_wrapper/gt_quad_base/TX3_GT_IP_Interface mrmac_0_exdes_support_mrmac_0_core_0_0./mrmac_0_core/gt_tx_serdes_interface_3.3 /mrmac_0_gt_wrapper/gt_quad_base/RX0_GT_IP_Interface mrmac_0_exdes_support_mrmac_0_core_0_0./mrmac_0_core/gt_rx_serdes_interface_0.0\
 /mrmac_0_gt_wrapper/gt_quad_base/RX1_GT_IP_Interface mrmac_0_exdes_support_mrmac_0_core_0_0./mrmac_0_core/gt_rx_serdes_interface_1.1 /mrmac_0_gt_wrapper/gt_quad_base/RX2_GT_IP_Interface mrmac_0_exdes_support_mrmac_0_core_0_0./mrmac_0_core/gt_rx_serdes_interface_2.2\
 /mrmac_0_gt_wrapper/gt_quad_base/RX3_GT_IP_Interface mrmac_0_exdes_support_mrmac_0_core_0_0./mrmac_0_core/gt_rx_serdes_interface_3.3} \
-    CONFIG.GT_TYPE {GTYP} \
-    CONFIG.PORTS_INFO_DICT {LANE_SEL_DICT {PROT0 {RX0 RX1 RX2 RX3 TX0 TX1 TX2 TX3}} GT_TYPE GTYP REG_CONF_INTF APB3_INTF BOARD_PARAMETER { }} \
+    CONFIG.GT_TYPE {GTM} \
+    CONFIG.PORTS_INFO_DICT {LANE_SEL_DICT {PROT0 {RX0 RX1 RX2 RX3 TX0 TX1 TX2 TX3}} GT_TYPE GTM REG_CONF_INTF APB3_INTF BOARD_PARAMETER { }} \
     CONFIG.PROT0_ENABLE {true} \
     CONFIG.PROT0_GT_DIRECTION {DUPLEX} \
     CONFIG.PROT0_LR0_SETTINGS {GT_DIRECTION DUPLEX TX_PAM_SEL NRZ TX_HD_EN 0 TX_GRAY_BYP true TX_GRAY_LITTLEENDIAN true TX_PRECODE_BYP true TX_PRECODE_LITTLEENDIAN false TX_LINE_RATE 25.78125 TX_PLL_TYPE\
@@ -124,7 +130,7 @@ RX_CC_MASK_0_1 false RX_CC_VAL_0_1 0000000000 RX_CC_K_0_1 false RX_CC_DISP_0_1 f
 0000000000 RX_CC_K_0_3 false RX_CC_DISP_0_3 false RX_CC_MASK_1_0 false RX_CC_VAL_1_0 0000000000 RX_CC_K_1_0 false RX_CC_DISP_1_0 false RX_CC_MASK_1_1 false RX_CC_VAL_1_1 0000000000 RX_CC_K_1_1 false RX_CC_DISP_1_1\
 false RX_CC_MASK_1_2 false RX_CC_VAL_1_2 0000000000 RX_CC_K_1_2 false RX_CC_DISP_1_2 false RX_CC_MASK_1_3 false RX_CC_VAL_1_3 0000000000 RX_CC_K_1_3 false RX_CC_DISP_1_3 false PCIE_USERCLK2_FREQ 250 PCIE_USERCLK_FREQ\
 250 RX_JTOL_FC 10 RX_JTOL_LF_SLOPE -20 RX_BUFFER_BYPASS_MODE Fast_Sync RX_BUFFER_BYPASS_MODE_LANE MULTI RX_BUFFER_RESET_ON_CB_CHANGE ENABLE RX_BUFFER_RESET_ON_COMMAALIGN DISABLE RX_BUFFER_RESET_ON_RATE_CHANGE\
-ENABLE RESET_SEQUENCE_INTERVAL 0 RX_COMMA_PRESET NONE RX_COMMA_VALID_ONLY 0 GT_TYPE GTYP} \
+ENABLE RESET_SEQUENCE_INTERVAL 0 RX_COMMA_PRESET NONE RX_COMMA_VALID_ONLY 0 GT_TYPE GTM} \
     CONFIG.PROT0_LR10_SETTINGS {NA NA} \
     CONFIG.PROT0_LR11_SETTINGS {NA NA} \
     CONFIG.PROT0_LR12_SETTINGS {NA NA} \
@@ -150,7 +156,7 @@ RX_CC_MASK_0_1 false RX_CC_VAL_0_1 0000000000 RX_CC_K_0_1 false RX_CC_DISP_0_1 f
 0000000000 RX_CC_K_0_3 false RX_CC_DISP_0_3 false RX_CC_MASK_1_0 false RX_CC_VAL_1_0 0000000000 RX_CC_K_1_0 false RX_CC_DISP_1_0 false RX_CC_MASK_1_1 false RX_CC_VAL_1_1 0000000000 RX_CC_K_1_1 false RX_CC_DISP_1_1\
 false RX_CC_MASK_1_2 false RX_CC_VAL_1_2 0000000000 RX_CC_K_1_2 false RX_CC_DISP_1_2 false RX_CC_MASK_1_3 false RX_CC_VAL_1_3 0000000000 RX_CC_K_1_3 false RX_CC_DISP_1_3 false PCIE_USERCLK2_FREQ 250 PCIE_USERCLK_FREQ\
 250 RX_JTOL_FC 10 RX_JTOL_LF_SLOPE -20 RX_BUFFER_BYPASS_MODE Fast_Sync RX_BUFFER_BYPASS_MODE_LANE MULTI RX_BUFFER_RESET_ON_CB_CHANGE ENABLE RX_BUFFER_RESET_ON_COMMAALIGN DISABLE RX_BUFFER_RESET_ON_RATE_CHANGE\
-ENABLE RESET_SEQUENCE_INTERVAL 0 RX_COMMA_PRESET NONE RX_COMMA_VALID_ONLY 0 GT_TYPE GTYP} \
+ENABLE RESET_SEQUENCE_INTERVAL 0 RX_COMMA_PRESET NONE RX_COMMA_VALID_ONLY 0 GT_TYPE GTM} \
     CONFIG.PROT0_LR2_SETTINGS {GT_DIRECTION DUPLEX TX_PAM_SEL NRZ TX_HD_EN 0 TX_GRAY_BYP true TX_GRAY_LITTLEENDIAN true TX_PRECODE_BYP true TX_PRECODE_LITTLEENDIAN false TX_LINE_RATE 25.78125 TX_PLL_TYPE\
 LCPLL TX_REFCLK_FREQUENCY 322.265625 TX_ACTUAL_REFCLK_FREQUENCY 322.265625000000 TX_FRACN_ENABLED false TX_FRACN_OVRD false TX_FRACN_NUMERATOR 0 TX_REFCLK_SOURCE R0 TX_DATA_ENCODING RAW TX_USER_DATA_WIDTH\
 80 TX_INT_DATA_WIDTH 80 TX_BUFFER_MODE 1 TX_BUFFER_BYPASS_MODE Fast_Sync TX_PIPM_ENABLE false TX_OUTCLK_SOURCE TXPROGDIVCLK TXPROGDIV_FREQ_ENABLE true TXPROGDIV_FREQ_SOURCE LCPLL TXPROGDIV_FREQ_VAL 644.531\
@@ -170,7 +176,7 @@ RX_CC_MASK_0_1 false RX_CC_VAL_0_1 0000000000 RX_CC_K_0_1 false RX_CC_DISP_0_1 f
 0000000000 RX_CC_K_0_3 false RX_CC_DISP_0_3 false RX_CC_MASK_1_0 false RX_CC_VAL_1_0 0000000000 RX_CC_K_1_0 false RX_CC_DISP_1_0 false RX_CC_MASK_1_1 false RX_CC_VAL_1_1 0000000000 RX_CC_K_1_1 false RX_CC_DISP_1_1\
 false RX_CC_MASK_1_2 false RX_CC_VAL_1_2 0000000000 RX_CC_K_1_2 false RX_CC_DISP_1_2 false RX_CC_MASK_1_3 false RX_CC_VAL_1_3 0000000000 RX_CC_K_1_3 false RX_CC_DISP_1_3 false PCIE_USERCLK2_FREQ 250 PCIE_USERCLK_FREQ\
 250 RX_JTOL_FC 10 RX_JTOL_LF_SLOPE -20 RX_BUFFER_BYPASS_MODE Fast_Sync RX_BUFFER_BYPASS_MODE_LANE MULTI RX_BUFFER_RESET_ON_CB_CHANGE ENABLE RX_BUFFER_RESET_ON_COMMAALIGN DISABLE RX_BUFFER_RESET_ON_RATE_CHANGE\
-ENABLE RESET_SEQUENCE_INTERVAL 0 RX_COMMA_PRESET NONE RX_COMMA_VALID_ONLY 0 GT_TYPE GTYP} \
+ENABLE RESET_SEQUENCE_INTERVAL 0 RX_COMMA_PRESET NONE RX_COMMA_VALID_ONLY 0 GT_TYPE GTM} \
     CONFIG.PROT0_LR3_SETTINGS {NA NA} \
     CONFIG.PROT0_LR4_SETTINGS {NA NA} \
     CONFIG.PROT0_LR5_SETTINGS {NA NA} \
@@ -513,7 +519,7 @@ proc create_hier_cell_eth_wrapper  { parentCell nameHier } {
     CONFIG.FLEX_PORT3_DATA_RATE_C0 {N/A} \
     CONFIG.GT_PIPELINE_STAGES {0} \
     CONFIG.GT_REF_CLK_FREQ_C0 {322.265625} \
-    CONFIG.GT_TYPE_C0 {GTYP} \
+    CONFIG.GT_TYPE_C0 {GTM} \
     CONFIG.MAC_PORT0_ENABLE_TIME_STAMPING_C0 {0} \
     CONFIG.MAC_PORT0_PREEMPTION_C0 {0} \
     CONFIG.MAC_PORT0_RATE_C0 {100GE} \
@@ -528,7 +534,7 @@ proc create_hier_cell_eth_wrapper  { parentCell nameHier } {
     CONFIG.MRMAC_DATA_PATH_INTERFACE_PORT1_C0 {N/A} \
     CONFIG.MRMAC_DATA_PATH_INTERFACE_PORT2_C0 {N/A} \
     CONFIG.MRMAC_DATA_PATH_INTERFACE_PORT3_C0 {N/A} \
-    CONFIG.MRMAC_LOCATION_C0 {MRMAC_X1Y0} \
+    CONFIG.MRMAC_LOCATION_C0 {MRMAC_X0Y3} \
     CONFIG.MRMAC_MODE_C0 {MAC+PCS} \
     CONFIG.MRMAC_PRESET_C0 {1x100GE CAUI-4 Wide} \
     CONFIG.MRMAC_SPEED_C0 {1x100GE} \
@@ -555,14 +561,14 @@ proc create_hier_cell_eth_wrapper  { parentCell nameHier } {
   connect_bd_intf_net -intf_net ctl_tx_pin2_1 [get_bd_intf_pins ctl_tx_port2] [get_bd_intf_pins mrmac_0_core/ctl_tx_port2]
   connect_bd_intf_net -intf_net ctl_tx_pin3_1 [get_bd_intf_pins ctl_tx_port3] [get_bd_intf_pins mrmac_0_core/ctl_tx_port3]
   connect_bd_intf_net -intf_net gt_quad_base_GT_Serial [get_bd_intf_pins mrmac_0_gt_wrapper/GT_Serial] [get_bd_intf_pins GT_Serial]
-  connect_bd_intf_net -intf_net mrmac_0_core_gt_rx_serdes_interface_0 [get_bd_intf_pins mrmac_0_core/gt_rx_serdes_interface_0] [get_bd_intf_pins mrmac_0_gt_wrapper/RX0_GT_IP_Interface]
-  connect_bd_intf_net -intf_net mrmac_0_core_gt_rx_serdes_interface_1 [get_bd_intf_pins mrmac_0_core/gt_rx_serdes_interface_1] [get_bd_intf_pins mrmac_0_gt_wrapper/RX1_GT_IP_Interface]
-  connect_bd_intf_net -intf_net mrmac_0_core_gt_rx_serdes_interface_2 [get_bd_intf_pins mrmac_0_core/gt_rx_serdes_interface_2] [get_bd_intf_pins mrmac_0_gt_wrapper/RX2_GT_IP_Interface]
-  connect_bd_intf_net -intf_net mrmac_0_core_gt_rx_serdes_interface_3 [get_bd_intf_pins mrmac_0_core/gt_rx_serdes_interface_3] [get_bd_intf_pins mrmac_0_gt_wrapper/RX3_GT_IP_Interface]
-  connect_bd_intf_net -intf_net mrmac_0_core_gt_tx_serdes_interface_0 [get_bd_intf_pins mrmac_0_core/gt_tx_serdes_interface_0] [get_bd_intf_pins mrmac_0_gt_wrapper/TX0_GT_IP_Interface]
-  connect_bd_intf_net -intf_net mrmac_0_core_gt_tx_serdes_interface_1 [get_bd_intf_pins mrmac_0_core/gt_tx_serdes_interface_1] [get_bd_intf_pins mrmac_0_gt_wrapper/TX1_GT_IP_Interface]
-  connect_bd_intf_net -intf_net mrmac_0_core_gt_tx_serdes_interface_2 [get_bd_intf_pins mrmac_0_core/gt_tx_serdes_interface_2] [get_bd_intf_pins mrmac_0_gt_wrapper/TX2_GT_IP_Interface]
-  connect_bd_intf_net -intf_net mrmac_0_core_gt_tx_serdes_interface_3 [get_bd_intf_pins mrmac_0_core/gt_tx_serdes_interface_3] [get_bd_intf_pins mrmac_0_gt_wrapper/TX3_GT_IP_Interface]
+  connect_bd_intf_net -intf_net mrmac_0_core_gt_rx_serdes_interface_0 [get_bd_intf_pins mrmac_0_core/gtm_rx_serdes_interface_0] [get_bd_intf_pins mrmac_0_gt_wrapper/RX0_GT_IP_Interface]
+  connect_bd_intf_net -intf_net mrmac_0_core_gt_rx_serdes_interface_1 [get_bd_intf_pins mrmac_0_core/gtm_rx_serdes_interface_1] [get_bd_intf_pins mrmac_0_gt_wrapper/RX1_GT_IP_Interface]
+  connect_bd_intf_net -intf_net mrmac_0_core_gt_rx_serdes_interface_2 [get_bd_intf_pins mrmac_0_core/gtm_rx_serdes_interface_2] [get_bd_intf_pins mrmac_0_gt_wrapper/RX2_GT_IP_Interface]
+  connect_bd_intf_net -intf_net mrmac_0_core_gt_rx_serdes_interface_3 [get_bd_intf_pins mrmac_0_core/gtm_rx_serdes_interface_3] [get_bd_intf_pins mrmac_0_gt_wrapper/RX3_GT_IP_Interface]
+  connect_bd_intf_net -intf_net mrmac_0_core_gt_tx_serdes_interface_0 [get_bd_intf_pins mrmac_0_core/gtm_tx_serdes_interface_0] [get_bd_intf_pins mrmac_0_gt_wrapper/TX0_GT_IP_Interface]
+  connect_bd_intf_net -intf_net mrmac_0_core_gt_tx_serdes_interface_1 [get_bd_intf_pins mrmac_0_core/gtm_tx_serdes_interface_1] [get_bd_intf_pins mrmac_0_gt_wrapper/TX1_GT_IP_Interface]
+  connect_bd_intf_net -intf_net mrmac_0_core_gt_tx_serdes_interface_2 [get_bd_intf_pins mrmac_0_core/gtm_tx_serdes_interface_2] [get_bd_intf_pins mrmac_0_gt_wrapper/TX2_GT_IP_Interface]
+  connect_bd_intf_net -intf_net mrmac_0_core_gt_tx_serdes_interface_3 [get_bd_intf_pins mrmac_0_core/gtm_tx_serdes_interface_3] [get_bd_intf_pins mrmac_0_gt_wrapper/TX3_GT_IP_Interface]
   connect_bd_intf_net -intf_net mrmac_0_core_rx_preambleout [get_bd_intf_pins rx_preambleout] [get_bd_intf_pins mrmac_0_core/rx_preambleout]
   connect_bd_intf_net -intf_net mrmac_0_core_stat_rx_pin0 [get_bd_intf_pins stat_rx_port0] [get_bd_intf_pins mrmac_0_core/stat_rx_port0]
   connect_bd_intf_net -intf_net mrmac_0_core_stat_rx_pin1 [get_bd_intf_pins stat_rx_port1] [get_bd_intf_pins mrmac_0_core/stat_rx_port1]
@@ -677,10 +683,6 @@ proc create_hier_cell_eth_wrapper  { parentCell nameHier } {
   connect_bd_net -net tx_flexif_clk_1  [get_bd_pins tx_flexif_clk] [get_bd_pins mrmac_0_core/tx_flexif_clk]
   connect_bd_net -net tx_serdes_reset_1  [get_bd_pins tx_serdes_reset] [get_bd_pins mrmac_0_core/tx_serdes_reset]
   connect_bd_net -net tx_ts_clk_1  [get_bd_pins tx_ts_clk] [get_bd_pins mrmac_0_core/tx_ts_clk]
-
-  # Create address segments
-  assign_bd_address -offset 0xA4080000 -range 0x00010000 -target_address_space [get_bd_addr_spaces APB3_INTF] [get_bd_addr_segs mrmac_0_gt_wrapper/gt_quad_base/APB3_INTF/Reg] -force
-  assign_bd_address -offset 0xA4090000 -range 0x00010000 -target_address_space [get_bd_addr_spaces s_axi] [get_bd_addr_segs mrmac_0_core/s_axi/Reg] -force
 
   # Restore current instance
   current_bd_instance $oldCurInst

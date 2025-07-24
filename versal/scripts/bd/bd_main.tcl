@@ -94,6 +94,7 @@ proc create_root_design { parentCell ntt_psi } {
   set clk_usr_0_0 [ create_bd_port -dir O -type clk clk_usr_0_0 ]
   set clk_usr_1_0 [ create_bd_port -dir O -type clk clk_usr_1_0 ]
   set pl0_ref_clk_0 [ create_bd_port -dir O -type clk pl0_ref_clk_0 ]
+  set clk_eth_cfg_0 [ create_bd_port -dir O -type clk clk_eth_cfg_0 ]
 
   # Association properties
   set prop_clk(clk_usr_0_0) ""
@@ -104,6 +105,7 @@ proc create_root_design { parentCell ntt_psi } {
   set resetn_usr_0_ic_0 [ create_bd_port -dir O -type rst resetn_usr_0_ic_0 ]
   set resetn_usr_1_ic_0 [ create_bd_port -dir O -type rst resetn_usr_1_ic_0 ]
   set pl0_resetn_0 [ create_bd_port -dir O -type rst pl0_resetn_0 ]
+  set resetn_eth_cfg_ic_0 [ create_bd_port -dir O -from 0 -to 0 -type rst resetn_eth_cfg_ic_0 ]
 
   # == PCIe
   set gt_pciea1 [ create_bd_intf_port -mode Master -vlnv xilinx.com:interface:gt_rtl:1.0 gt_pciea1 ]
@@ -769,8 +771,8 @@ proc create_root_design { parentCell ntt_psi } {
   connect_bd_net [get_bd_pins noc_wrapper/mregif_1_rst_n] \
                                         [get_bd_pins shell_wrapper/resetn_usr_1_ic_0] -boundary_type upper
 
-  connect_bd_net [get_bd_pins noc_wrapper/eth_clk]   [get_bd_pins shell_wrapper/clk_eth_freerun_0] -boundary_type upper
-  connect_bd_net [get_bd_pins noc_wrapper/eth_rst_n] [get_bd_pins shell_wrapper/resetn_eth_freerun_ic_0] -boundary_type upper
+  connect_bd_net [get_bd_pins noc_wrapper/eth_clk]   [get_bd_pins shell_wrapper/clk_eth_cfg_0] [get_bd_ports clk_eth_cfg_0] -boundary_type upper
+  connect_bd_net [get_bd_pins noc_wrapper/eth_rst_n] [get_bd_pins shell_wrapper/resetn_eth_cfg_ic_0] [get_bd_ports resetn_eth_cfg_ic_0] -boundary_type upper
 
   # MGMT
   connect_bd_intf_net -intf_net s_axi_pcie_mgmt_slr0 [get_bd_intf_pins shell_wrapper/s_axi_pcie_mgmt_slr0] [get_bd_intf_pins noc_wrapper/s_axi_pcie_mgmt_slr0]
@@ -792,8 +794,8 @@ proc create_root_design { parentCell ntt_psi } {
   connect_bd_net -net lpd_axi_noc_clk [get_bd_pins noc_wrapper/lpd_axi_noc_clk] [get_bd_pins shell_wrapper/lpd_axi_noc_clk]
 
   # Ethernet
-  connect_bd_net      [get_bd_pins eth_wrapper/s_axi_aclk]    [get_bd_pins shell_wrapper/clk_eth_freerun_0]
-  connect_bd_net      [get_bd_pins eth_wrapper/s_axi_aresetn] [get_bd_pins shell_wrapper/resetn_eth_freerun_ic_0]
+  connect_bd_net      [get_bd_pins eth_wrapper/s_axi_aclk]    [get_bd_pins shell_wrapper/clk_eth_cfg_0]
+  connect_bd_net      [get_bd_pins eth_wrapper/s_axi_aresetn] [get_bd_pins shell_wrapper/resetn_eth_cfg_ic_0]
   connect_bd_intf_net [get_bd_intf_pins eth_wrapper/s_axi]    [get_bd_intf_pins noc_wrapper/ETH_AXI_0]
 
   ####################################
@@ -912,6 +914,11 @@ proc create_root_design { parentCell ntt_psi } {
   assign_bd_address -offset 0x000101220000 -range 0x00010000 -target_address_space [get_bd_addr_spaces shell_wrapper/cips/CPM_PCIE_NOC_0] [get_bd_addr_segs shell_wrapper/cips/NOC_PMC_AXI_0/pspmc_0_psv_pmc_slave_boot] -force
   assign_bd_address -offset 0x000101220000 -range 0x00010000 -target_address_space [get_bd_addr_spaces shell_wrapper/cips/CPM_PCIE_NOC_1] [get_bd_addr_segs shell_wrapper/cips/NOC_PMC_AXI_0/pspmc_0_psv_pmc_slave_boot] -force
   assign_bd_address -offset 0x000102100000 -range 0x00010000 -target_address_space [get_bd_addr_spaces shell_wrapper/cips/CPM_PCIE_NOC_1] [get_bd_addr_segs shell_wrapper/cips/NOC_PMC_AXI_0/pspmc_0_psv_pmc_slave_boot_stream] -force
+
+  # Ethernet
+  # set_property offset 0x20180040000 [get_bd_addr_segs {eth_wrapper/S_ETH_AXI_0/SEG_mrmac_0_core_Reg}]
+  assign_bd_address -offset 0xA4080000 -range 0x00010000 -target_address_space [get_bd_addr_spaces APB3_INTF] [get_bd_addr_segs eth_wrapper/mrmac_0_gt_wrapper/gt_quad_base/APB3_INTF/Reg] -force
+  assign_bd_address -offset 0x20180040000 -range 0x00010000 -target_address_space [get_bd_addr_spaces s_axi] [get_bd_addr_segs eth_wrapper/mrmac_0_core/s_axi/Reg] -force
 
   ####################################
   # Address exclusion

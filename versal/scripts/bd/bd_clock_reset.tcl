@@ -122,8 +122,8 @@ proc create_hier_cell_clock_reset { parentCell nameHier } {
   create_bd_pin -dir O -type clk clk_usr_1
   create_bd_pin -dir O -from 0 -to 0 -type rst resetn_usr_1_ic
   create_bd_pin -dir O -from 0 -to 0 -type rst resetn_usr_1_periph
-  create_bd_pin -dir O -type clk clk_eth_freerun
-  create_bd_pin -dir O -from 0 -to 0 -type rst resetn_eth_freerun_ic
+  create_bd_pin -dir O -type clk clk_eth_cfg
+  create_bd_pin -dir O -from 0 -to 0 -type rst resetn_eth_cfg_ic
   create_bd_pin -dir O -from 0 -to 0 -type rst resetn_eth_freerun_periph
   create_bd_pin -dir O -type clk clk_eth_qsfp
   create_bd_pin -dir O -from 0 -to 0 -type rst resetn_eth_qsfp_ic
@@ -211,14 +211,14 @@ proc create_hier_cell_clock_reset { parentCell nameHier } {
   connect_bd_net -net usr_0_psr_peripheral_aresetn [get_bd_pins usr_0_psr/peripheral_aresetn] [get_bd_pins resetn_usr_0_periph]
   connect_bd_net -net usr_1_psr_interconnect_aresetn [get_bd_pins usr_1_psr/interconnect_aresetn] [get_bd_pins resetn_usr_1_ic]
   connect_bd_net -net usr_1_psr_peripheral_aresetn [get_bd_pins usr_1_psr/peripheral_aresetn] [get_bd_pins resetn_usr_1_periph]
-  connect_bd_net -net eth_freerun_psr_interconnect_aresetn [get_bd_pins eth_freerun_psr/interconnect_aresetn] [get_bd_pins resetn_eth_freerun_ic]
+  connect_bd_net -net eth_freerun_psr_interconnect_aresetn [get_bd_pins eth_freerun_psr/interconnect_aresetn] [get_bd_pins resetn_eth_cfg_ic]
   connect_bd_net -net eth_freerun_psr_peripheral_aresetn [get_bd_pins eth_freerun_psr/peripheral_aresetn] [get_bd_pins resetn_eth_freerun_periph]
   connect_bd_net -net eth_qsfp_psr_interconnect_aresetn [get_bd_pins eth_qsfp_psr/interconnect_aresetn] [get_bd_pins resetn_eth_qsfp_ic]
   connect_bd_net -net eth_qsfp_psr_peripheral_aresetn [get_bd_pins eth_qsfp_psr/peripheral_aresetn] [get_bd_pins resetn_eth_qsfp_periph]
   connect_bd_net -net usr_clk_wiz_clk_out1 [get_bd_pins usr_clk_wiz/clk_out1] [get_bd_pins clk_usr_0] [get_bd_pins usr_0_psr/slowest_sync_clk]
   connect_bd_net -net usr_clk_wiz_clk_out2 [get_bd_pins usr_clk_wiz/clk_out2] [get_bd_pins clk_usr_1] [get_bd_pins usr_1_psr/slowest_sync_clk]
   connect_bd_net -net usr_clk_wiz_locked [get_bd_pins usr_clk_wiz/locked] [get_bd_pins usr_0_psr/dcm_locked] [get_bd_pins usr_1_psr/dcm_locked]
-  connect_bd_net -net eth_clk_wiz_clk_out1 [get_bd_pins eth_clk_wiz/clk_out1] [get_bd_pins clk_eth_freerun] [get_bd_pins eth_freerun_psr/slowest_sync_clk]
+  connect_bd_net -net eth_clk_wiz_clk_out1 [get_bd_pins eth_clk_wiz/clk_out1] [get_bd_pins clk_eth_cfg] [get_bd_pins eth_freerun_psr/slowest_sync_clk]
   connect_bd_net -net eth_clk_wiz_clk_out2 [get_bd_pins eth_clk_wiz/clk_out2] [get_bd_pins clk_eth_qsfp] [get_bd_pins eth_qsfp_psr/slowest_sync_clk]
   connect_bd_net -net eth_clk_wiz_locked   [get_bd_pins eth_clk_wiz/locked] [get_bd_pins eth_freerun_psr/dcm_locked] [get_bd_pins eth_qsfp_psr/dcm_locked]
 
