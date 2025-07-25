@@ -3591,6 +3591,58 @@
       ]
     },
     {
+      "name": "hpu_reset",
+      "description": "Used to control the HPU soft reset",
+      "offset": 131328,
+      "bytes_align": 4,
+      "range": 4,
+      "register": [
+        {
+          "name": "trigger",
+          "description": "A soft reset for the whole HPU reconfigurable logic",
+          "owner": "Kernel",
+          "read_access": "ReadNotify",
+          "write_access": "WriteNotify",
+          "offset": 131328,
+          "default": {
+            "ParamsField": {
+              "params": [],
+              "name_val": [
+                [
+                  "request",
+                  "'h0"
+                ],
+                [
+                  "done",
+                  "'h0"
+                ]
+              ]
+            }
+          },
+          "field": [
+            {
+              "name": "request",
+              "description": "request",
+              "size_b": 1,
+              "offset_b": 0,
+              "default": {
+                "Cst": 0
+              }
+            },
+            {
+              "name": "done",
+              "description": "done",
+              "size_b": 1,
+              "offset_b": 31,
+              "default": {
+                "Cst": 0
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
       "name": "entry_prc_3in3",
       "description": "entry_prc_3in3 section with known value used for debug.",
       "offset": 196608,

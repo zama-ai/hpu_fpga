@@ -151,9 +151,15 @@ module top_hpu #(
 
   /* Clock Reset --------------------------------------------------------------
   */
-  // Process clock (fast)
+  // Process clock (fast, free running)
+  logic prc_free_clk;
+  logic prc_free_srst_n;
+
+  // Process clock (fast, gated)
   logic prc_clk;
+  logic prc_ce;
   logic prc_srst_n;
+
   // Configuration clock (slow)
   logic cfg_clk;
   logic cfg_srst_n;
@@ -734,6 +740,22 @@ module top_hpu #(
   assign axis_s_tx_tdata_tmp = axis_s_tx_tdata[31:0];
   assign axis_m_rx_tdata     = {{128-32{1'b0}},axis_m_rx_tdata_tmp};
   assign axis_m_tx_tdata_tmp = axis_m_tx_tdata[31:0];
+
+  logic [31:0] isc_dop;
+  logic        isc_dop_vld;
+  logic        isc_dop_rdy;
+
+  logic [31:0] isc_ack;
+  logic        isc_ack_vld;
+  logic        isc_ack_rdy;
+
+  assign isc_dop          = axis_m_tx_tdata_tmp;
+  assign isc_dop_vld      = axis_m_tx_tvalid;
+  assign axis_m_tx_tready = isc_dop_rdy;
+
+  assign axis_s_rx_tdata_tmp = isc_ack;
+  assign axis_s_rx_tvalid    = isc_ack_vld;
+  assign isc_ack_rdy         = axis_s_rx_tready;
 
   // core and Serdes Resets
   assign rx_core_reset   = {~gt_rx_reset_done_out[3],~gt_rx_reset_done_out[2],~gt_rx_reset_done_out[1],~gt_rx_reset_done_out[0]};
@@ -2440,11 +2462,14 @@ module top_hpu #(
     .pl0_ref_clk_0  (),
     .pl0_resetn_0   (),
 
-    .resetn_usr_0_ic_0(prc_srst_n),
+    .resetn_usr_0_ic_0(prc_free_srst_n),
+    .resetn_usr_0_ic_0_gated(prc_srst_n),
     .resetn_usr_1_ic_0(cfg_srst_n),
 
     .clk_usr_0_0(prc_clk),
+    .clk_usr_0_0_fr(prc_free_clk),
     .clk_usr_1_0(cfg_clk),
+    .clk_usr_0_0_ce(prc_ce),
 
     .clk_eth_cfg_0(eth_cfg_clk),
     .resetn_eth_cfg_ic_0(eth_cfg_srst_n),
@@ -2462,54 +2487,6 @@ module top_hpu #(
   assign SW_REG_GT_LINE_RATE = {gt_line_rate, gt_line_rate, gt_line_rate, gt_line_rate};
 
 //=====================================
-// Fifo element
-//=====================================
-  // To ease timing. These fifo element can be placed anywhere.
-  logic [31:0] isc_dop;
-  logic        isc_dop_vld;
-  logic        isc_dop_rdy;
-  fifo_element #(
-  .WIDTH          (32),
-  .DEPTH          (1),
-  .TYPE_ARRAY     (4'h3),
-  .DO_RESET_DATA  (0),
-  .RESET_DATA_VAL (0)
-  ) fifo_element_isc_dop (
-    .clk     (prc_clk),
-    .s_rst_n (prc_srst_n),
-
-    .in_data (axis_m_tx_tdata_tmp),
-    .in_vld  (axis_m_tx_tvalid),
-    .in_rdy  (axis_m_tx_tready),
-
-    .out_data(isc_dop),
-    .out_vld (isc_dop_vld),
-    .out_rdy (isc_dop_rdy)
-  );
-
-  logic [31:0] isc_ack;
-  logic        isc_ack_vld;
-  logic        isc_ack_rdy;
-  fifo_element #(
-  .WIDTH          (32),
-  .DEPTH          (1),
-  .TYPE_ARRAY     (4'h3),
-  .DO_RESET_DATA  (0),
-  .RESET_DATA_VAL (0)
-  ) fifo_element_isc_ack (
-    .clk     (prc_clk),
-    .s_rst_n (prc_srst_n),
-
-    .in_data (isc_ack),
-    .in_vld  (isc_ack_vld),
-    .in_rdy  (isc_ack_rdy),
-
-    .out_data(axis_s_rx_tdata_tmp),
-    .out_vld (axis_s_rx_tvalid),
-    .out_rdy (axis_s_rx_tready)
-  );
-
-//=====================================
 // HPU
 //=====================================
   hpu_3parts # (
@@ -2522,8 +2499,13 @@ module top_hpu #(
     .AXI4_KSK_ADD_W   (AXI4_KSK_ADD_W),
     .INTER_PART_PIPE  (INTER_PART_PIPE)
   ) hpu_3parts (
+    .prc_free_clk                  (prc_free_clk),
+    .prc_free_srst_n               (prc_free_srst_n),
+
     .prc_clk                       (prc_clk),
+    .prc_ce                        (prc_ce),
     .prc_srst_n                    (prc_srst_n),
+
     .cfg_clk                       (cfg_clk),
     .cfg_srst_n                    (cfg_srst_n),
 

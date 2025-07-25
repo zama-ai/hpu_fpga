@@ -1,8 +1,8 @@
 // ============================================================================================== //
 // Description  : Axi4-lite register bank
 // This file was generated with rust regmap generator:
-//  * Date:  2025-06-12
-//  * Tool_version: 9bab20def30cfd61d2ed40616bd05d08a747ddf4
+//  * Date:  2025-07-17
+//  * Tool_version: bb0db737792da6b81e69a039028c971af1627fe2
 // ---------------------------------------------------------------------------------------------- //
 // xR[n]W[na]
 // |-> who is in charge of the register update logic : u -> User
@@ -30,8 +30,8 @@
 //      : Value provided by the RTL. The host can read it with notify. The write data is processed by the RTL.
 // ============================================================================================== //
 module hpu_regif_core_prc_1in3
-import axi_if_shell_axil_pkg::*;
 import axi_if_common_param_pkg::*;
+import axi_if_shell_axil_pkg::*;
 import hpu_regif_core_prc_1in3_pkg::*;
 #()(
   input  logic                           clk,
@@ -820,12 +820,18 @@ import hpu_regif_core_prc_1in3_pkg::*;
   assign r_status_1in3_error_wr_enD = wr_en_ok && (wr_add[AXIL_ADD_RANGE_W-1:0] == STATUS_1IN3_ERROR_OFS[AXIL_ADD_RANGE_W-1:0]);
   always_ff @(posedge clk) begin
     if (!s_rst_n) begin
-      r_status_1in3_error       <= status_1in3_error_default;
       r_status_1in3_error_wr_en <= 1'b0;
     end
     else begin
-      r_status_1in3_error       <= r_status_1in3_errorD;
       r_status_1in3_error_wr_en <= r_status_1in3_error_wr_enD;
+    end
+  end
+  always_ff @(posedge clk) begin
+    if (!s_rst_n) begin
+      r_status_1in3_error       <= status_1in3_error_default;
+    end
+    else begin
+      r_status_1in3_error       <= r_status_1in3_errorD;
     end
   end
 // Register FF: ksk_avail_avail
@@ -846,12 +852,18 @@ import hpu_regif_core_prc_1in3_pkg::*;
   assign r_ksk_avail_reset_wr_enD = wr_en_ok && (wr_add[AXIL_ADD_RANGE_W-1:0] == KSK_AVAIL_RESET_OFS[AXIL_ADD_RANGE_W-1:0]);
   always_ff @(posedge clk) begin
     if (!s_rst_n) begin
-      r_ksk_avail_reset       <= ksk_avail_reset_default;
       r_ksk_avail_reset_wr_en <= 1'b0;
     end
     else begin
-      r_ksk_avail_reset       <= r_ksk_avail_resetD;
       r_ksk_avail_reset_wr_en <= r_ksk_avail_reset_wr_enD;
+    end
+  end
+  always_ff @(posedge clk) begin
+    if (!s_rst_n) begin
+      r_ksk_avail_reset       <= ksk_avail_reset_default;
+    end
+    else begin
+      r_ksk_avail_reset       <= r_ksk_avail_resetD;
     end
   end
 // Register FF: runtime_1in3_pep_cmux_loop
@@ -949,12 +961,18 @@ import hpu_regif_core_prc_1in3_pkg::*;
   assign r_runtime_1in3_pep_seq_bpip_batch_cnt_wr_enD = wr_en_ok && (wr_add[AXIL_ADD_RANGE_W-1:0] == RUNTIME_1IN3_PEP_SEQ_BPIP_BATCH_CNT_OFS[AXIL_ADD_RANGE_W-1:0]);
   always_ff @(posedge clk) begin
     if (!s_rst_n) begin
-      r_runtime_1in3_pep_seq_bpip_batch_cnt       <= runtime_1in3_pep_seq_bpip_batch_cnt_default;
       r_runtime_1in3_pep_seq_bpip_batch_cnt_wr_en <= 1'b0;
     end
     else begin
-      r_runtime_1in3_pep_seq_bpip_batch_cnt       <= r_runtime_1in3_pep_seq_bpip_batch_cntD;
       r_runtime_1in3_pep_seq_bpip_batch_cnt_wr_en <= r_runtime_1in3_pep_seq_bpip_batch_cnt_wr_enD;
+    end
+  end
+  always_ff @(posedge clk) begin
+    if (!s_rst_n) begin
+      r_runtime_1in3_pep_seq_bpip_batch_cnt       <= runtime_1in3_pep_seq_bpip_batch_cnt_default;
+    end
+    else begin
+      r_runtime_1in3_pep_seq_bpip_batch_cnt       <= r_runtime_1in3_pep_seq_bpip_batch_cntD;
     end
   end
 // Register FF: runtime_1in3_pep_seq_bpip_batch_flush_cnt
@@ -964,12 +982,18 @@ import hpu_regif_core_prc_1in3_pkg::*;
   assign r_runtime_1in3_pep_seq_bpip_batch_flush_cnt_wr_enD = wr_en_ok && (wr_add[AXIL_ADD_RANGE_W-1:0] == RUNTIME_1IN3_PEP_SEQ_BPIP_BATCH_FLUSH_CNT_OFS[AXIL_ADD_RANGE_W-1:0]);
   always_ff @(posedge clk) begin
     if (!s_rst_n) begin
-      r_runtime_1in3_pep_seq_bpip_batch_flush_cnt       <= runtime_1in3_pep_seq_bpip_batch_flush_cnt_default;
       r_runtime_1in3_pep_seq_bpip_batch_flush_cnt_wr_en <= 1'b0;
     end
     else begin
-      r_runtime_1in3_pep_seq_bpip_batch_flush_cnt       <= r_runtime_1in3_pep_seq_bpip_batch_flush_cntD;
       r_runtime_1in3_pep_seq_bpip_batch_flush_cnt_wr_en <= r_runtime_1in3_pep_seq_bpip_batch_flush_cnt_wr_enD;
+    end
+  end
+  always_ff @(posedge clk) begin
+    if (!s_rst_n) begin
+      r_runtime_1in3_pep_seq_bpip_batch_flush_cnt       <= runtime_1in3_pep_seq_bpip_batch_flush_cnt_default;
+    end
+    else begin
+      r_runtime_1in3_pep_seq_bpip_batch_flush_cnt       <= r_runtime_1in3_pep_seq_bpip_batch_flush_cntD;
     end
   end
 // Register FF: runtime_1in3_pep_seq_bpip_batch_timeout_cnt
@@ -979,12 +1003,18 @@ import hpu_regif_core_prc_1in3_pkg::*;
   assign r_runtime_1in3_pep_seq_bpip_batch_timeout_cnt_wr_enD = wr_en_ok && (wr_add[AXIL_ADD_RANGE_W-1:0] == RUNTIME_1IN3_PEP_SEQ_BPIP_BATCH_TIMEOUT_CNT_OFS[AXIL_ADD_RANGE_W-1:0]);
   always_ff @(posedge clk) begin
     if (!s_rst_n) begin
-      r_runtime_1in3_pep_seq_bpip_batch_timeout_cnt       <= runtime_1in3_pep_seq_bpip_batch_timeout_cnt_default;
       r_runtime_1in3_pep_seq_bpip_batch_timeout_cnt_wr_en <= 1'b0;
     end
     else begin
-      r_runtime_1in3_pep_seq_bpip_batch_timeout_cnt       <= r_runtime_1in3_pep_seq_bpip_batch_timeout_cntD;
       r_runtime_1in3_pep_seq_bpip_batch_timeout_cnt_wr_en <= r_runtime_1in3_pep_seq_bpip_batch_timeout_cnt_wr_enD;
+    end
+  end
+  always_ff @(posedge clk) begin
+    if (!s_rst_n) begin
+      r_runtime_1in3_pep_seq_bpip_batch_timeout_cnt       <= runtime_1in3_pep_seq_bpip_batch_timeout_cnt_default;
+    end
+    else begin
+      r_runtime_1in3_pep_seq_bpip_batch_timeout_cnt       <= r_runtime_1in3_pep_seq_bpip_batch_timeout_cntD;
     end
   end
 // Register FF: runtime_1in3_pep_seq_bpip_waiting_batch_cnt
@@ -994,12 +1024,18 @@ import hpu_regif_core_prc_1in3_pkg::*;
   assign r_runtime_1in3_pep_seq_bpip_waiting_batch_cnt_wr_enD = wr_en_ok && (wr_add[AXIL_ADD_RANGE_W-1:0] == RUNTIME_1IN3_PEP_SEQ_BPIP_WAITING_BATCH_CNT_OFS[AXIL_ADD_RANGE_W-1:0]);
   always_ff @(posedge clk) begin
     if (!s_rst_n) begin
-      r_runtime_1in3_pep_seq_bpip_waiting_batch_cnt       <= runtime_1in3_pep_seq_bpip_waiting_batch_cnt_default;
       r_runtime_1in3_pep_seq_bpip_waiting_batch_cnt_wr_en <= 1'b0;
     end
     else begin
-      r_runtime_1in3_pep_seq_bpip_waiting_batch_cnt       <= r_runtime_1in3_pep_seq_bpip_waiting_batch_cntD;
       r_runtime_1in3_pep_seq_bpip_waiting_batch_cnt_wr_en <= r_runtime_1in3_pep_seq_bpip_waiting_batch_cnt_wr_enD;
+    end
+  end
+  always_ff @(posedge clk) begin
+    if (!s_rst_n) begin
+      r_runtime_1in3_pep_seq_bpip_waiting_batch_cnt       <= runtime_1in3_pep_seq_bpip_waiting_batch_cnt_default;
+    end
+    else begin
+      r_runtime_1in3_pep_seq_bpip_waiting_batch_cnt       <= r_runtime_1in3_pep_seq_bpip_waiting_batch_cntD;
     end
   end
 // Register FF: runtime_1in3_pep_seq_bpip_batch_filling_cnt_1
@@ -1009,12 +1045,18 @@ import hpu_regif_core_prc_1in3_pkg::*;
   assign r_runtime_1in3_pep_seq_bpip_batch_filling_cnt_1_wr_enD = wr_en_ok && (wr_add[AXIL_ADD_RANGE_W-1:0] == RUNTIME_1IN3_PEP_SEQ_BPIP_BATCH_FILLING_CNT_1_OFS[AXIL_ADD_RANGE_W-1:0]);
   always_ff @(posedge clk) begin
     if (!s_rst_n) begin
-      r_runtime_1in3_pep_seq_bpip_batch_filling_cnt_1       <= runtime_1in3_pep_seq_bpip_batch_filling_cnt_1_default;
       r_runtime_1in3_pep_seq_bpip_batch_filling_cnt_1_wr_en <= 1'b0;
     end
     else begin
-      r_runtime_1in3_pep_seq_bpip_batch_filling_cnt_1       <= r_runtime_1in3_pep_seq_bpip_batch_filling_cnt_1D;
       r_runtime_1in3_pep_seq_bpip_batch_filling_cnt_1_wr_en <= r_runtime_1in3_pep_seq_bpip_batch_filling_cnt_1_wr_enD;
+    end
+  end
+  always_ff @(posedge clk) begin
+    if (!s_rst_n) begin
+      r_runtime_1in3_pep_seq_bpip_batch_filling_cnt_1       <= runtime_1in3_pep_seq_bpip_batch_filling_cnt_1_default;
+    end
+    else begin
+      r_runtime_1in3_pep_seq_bpip_batch_filling_cnt_1       <= r_runtime_1in3_pep_seq_bpip_batch_filling_cnt_1D;
     end
   end
 // Register FF: runtime_1in3_pep_seq_bpip_batch_filling_cnt_2
@@ -1024,12 +1066,18 @@ import hpu_regif_core_prc_1in3_pkg::*;
   assign r_runtime_1in3_pep_seq_bpip_batch_filling_cnt_2_wr_enD = wr_en_ok && (wr_add[AXIL_ADD_RANGE_W-1:0] == RUNTIME_1IN3_PEP_SEQ_BPIP_BATCH_FILLING_CNT_2_OFS[AXIL_ADD_RANGE_W-1:0]);
   always_ff @(posedge clk) begin
     if (!s_rst_n) begin
-      r_runtime_1in3_pep_seq_bpip_batch_filling_cnt_2       <= runtime_1in3_pep_seq_bpip_batch_filling_cnt_2_default;
       r_runtime_1in3_pep_seq_bpip_batch_filling_cnt_2_wr_en <= 1'b0;
     end
     else begin
-      r_runtime_1in3_pep_seq_bpip_batch_filling_cnt_2       <= r_runtime_1in3_pep_seq_bpip_batch_filling_cnt_2D;
       r_runtime_1in3_pep_seq_bpip_batch_filling_cnt_2_wr_en <= r_runtime_1in3_pep_seq_bpip_batch_filling_cnt_2_wr_enD;
+    end
+  end
+  always_ff @(posedge clk) begin
+    if (!s_rst_n) begin
+      r_runtime_1in3_pep_seq_bpip_batch_filling_cnt_2       <= runtime_1in3_pep_seq_bpip_batch_filling_cnt_2_default;
+    end
+    else begin
+      r_runtime_1in3_pep_seq_bpip_batch_filling_cnt_2       <= r_runtime_1in3_pep_seq_bpip_batch_filling_cnt_2D;
     end
   end
 // Register FF: runtime_1in3_pep_seq_bpip_batch_filling_cnt_3
@@ -1039,12 +1087,18 @@ import hpu_regif_core_prc_1in3_pkg::*;
   assign r_runtime_1in3_pep_seq_bpip_batch_filling_cnt_3_wr_enD = wr_en_ok && (wr_add[AXIL_ADD_RANGE_W-1:0] == RUNTIME_1IN3_PEP_SEQ_BPIP_BATCH_FILLING_CNT_3_OFS[AXIL_ADD_RANGE_W-1:0]);
   always_ff @(posedge clk) begin
     if (!s_rst_n) begin
-      r_runtime_1in3_pep_seq_bpip_batch_filling_cnt_3       <= runtime_1in3_pep_seq_bpip_batch_filling_cnt_3_default;
       r_runtime_1in3_pep_seq_bpip_batch_filling_cnt_3_wr_en <= 1'b0;
     end
     else begin
-      r_runtime_1in3_pep_seq_bpip_batch_filling_cnt_3       <= r_runtime_1in3_pep_seq_bpip_batch_filling_cnt_3D;
       r_runtime_1in3_pep_seq_bpip_batch_filling_cnt_3_wr_en <= r_runtime_1in3_pep_seq_bpip_batch_filling_cnt_3_wr_enD;
+    end
+  end
+  always_ff @(posedge clk) begin
+    if (!s_rst_n) begin
+      r_runtime_1in3_pep_seq_bpip_batch_filling_cnt_3       <= runtime_1in3_pep_seq_bpip_batch_filling_cnt_3_default;
+    end
+    else begin
+      r_runtime_1in3_pep_seq_bpip_batch_filling_cnt_3       <= r_runtime_1in3_pep_seq_bpip_batch_filling_cnt_3D;
     end
   end
 // Register FF: runtime_1in3_pep_seq_bpip_batch_filling_cnt_4
@@ -1054,12 +1108,18 @@ import hpu_regif_core_prc_1in3_pkg::*;
   assign r_runtime_1in3_pep_seq_bpip_batch_filling_cnt_4_wr_enD = wr_en_ok && (wr_add[AXIL_ADD_RANGE_W-1:0] == RUNTIME_1IN3_PEP_SEQ_BPIP_BATCH_FILLING_CNT_4_OFS[AXIL_ADD_RANGE_W-1:0]);
   always_ff @(posedge clk) begin
     if (!s_rst_n) begin
-      r_runtime_1in3_pep_seq_bpip_batch_filling_cnt_4       <= runtime_1in3_pep_seq_bpip_batch_filling_cnt_4_default;
       r_runtime_1in3_pep_seq_bpip_batch_filling_cnt_4_wr_en <= 1'b0;
     end
     else begin
-      r_runtime_1in3_pep_seq_bpip_batch_filling_cnt_4       <= r_runtime_1in3_pep_seq_bpip_batch_filling_cnt_4D;
       r_runtime_1in3_pep_seq_bpip_batch_filling_cnt_4_wr_en <= r_runtime_1in3_pep_seq_bpip_batch_filling_cnt_4_wr_enD;
+    end
+  end
+  always_ff @(posedge clk) begin
+    if (!s_rst_n) begin
+      r_runtime_1in3_pep_seq_bpip_batch_filling_cnt_4       <= runtime_1in3_pep_seq_bpip_batch_filling_cnt_4_default;
+    end
+    else begin
+      r_runtime_1in3_pep_seq_bpip_batch_filling_cnt_4       <= r_runtime_1in3_pep_seq_bpip_batch_filling_cnt_4D;
     end
   end
 // Register FF: runtime_1in3_pep_seq_bpip_batch_filling_cnt_5
@@ -1069,12 +1129,18 @@ import hpu_regif_core_prc_1in3_pkg::*;
   assign r_runtime_1in3_pep_seq_bpip_batch_filling_cnt_5_wr_enD = wr_en_ok && (wr_add[AXIL_ADD_RANGE_W-1:0] == RUNTIME_1IN3_PEP_SEQ_BPIP_BATCH_FILLING_CNT_5_OFS[AXIL_ADD_RANGE_W-1:0]);
   always_ff @(posedge clk) begin
     if (!s_rst_n) begin
-      r_runtime_1in3_pep_seq_bpip_batch_filling_cnt_5       <= runtime_1in3_pep_seq_bpip_batch_filling_cnt_5_default;
       r_runtime_1in3_pep_seq_bpip_batch_filling_cnt_5_wr_en <= 1'b0;
     end
     else begin
-      r_runtime_1in3_pep_seq_bpip_batch_filling_cnt_5       <= r_runtime_1in3_pep_seq_bpip_batch_filling_cnt_5D;
       r_runtime_1in3_pep_seq_bpip_batch_filling_cnt_5_wr_en <= r_runtime_1in3_pep_seq_bpip_batch_filling_cnt_5_wr_enD;
+    end
+  end
+  always_ff @(posedge clk) begin
+    if (!s_rst_n) begin
+      r_runtime_1in3_pep_seq_bpip_batch_filling_cnt_5       <= runtime_1in3_pep_seq_bpip_batch_filling_cnt_5_default;
+    end
+    else begin
+      r_runtime_1in3_pep_seq_bpip_batch_filling_cnt_5       <= r_runtime_1in3_pep_seq_bpip_batch_filling_cnt_5D;
     end
   end
 // Register FF: runtime_1in3_pep_seq_bpip_batch_filling_cnt_6
@@ -1084,12 +1150,18 @@ import hpu_regif_core_prc_1in3_pkg::*;
   assign r_runtime_1in3_pep_seq_bpip_batch_filling_cnt_6_wr_enD = wr_en_ok && (wr_add[AXIL_ADD_RANGE_W-1:0] == RUNTIME_1IN3_PEP_SEQ_BPIP_BATCH_FILLING_CNT_6_OFS[AXIL_ADD_RANGE_W-1:0]);
   always_ff @(posedge clk) begin
     if (!s_rst_n) begin
-      r_runtime_1in3_pep_seq_bpip_batch_filling_cnt_6       <= runtime_1in3_pep_seq_bpip_batch_filling_cnt_6_default;
       r_runtime_1in3_pep_seq_bpip_batch_filling_cnt_6_wr_en <= 1'b0;
     end
     else begin
-      r_runtime_1in3_pep_seq_bpip_batch_filling_cnt_6       <= r_runtime_1in3_pep_seq_bpip_batch_filling_cnt_6D;
       r_runtime_1in3_pep_seq_bpip_batch_filling_cnt_6_wr_en <= r_runtime_1in3_pep_seq_bpip_batch_filling_cnt_6_wr_enD;
+    end
+  end
+  always_ff @(posedge clk) begin
+    if (!s_rst_n) begin
+      r_runtime_1in3_pep_seq_bpip_batch_filling_cnt_6       <= runtime_1in3_pep_seq_bpip_batch_filling_cnt_6_default;
+    end
+    else begin
+      r_runtime_1in3_pep_seq_bpip_batch_filling_cnt_6       <= r_runtime_1in3_pep_seq_bpip_batch_filling_cnt_6D;
     end
   end
 // Register FF: runtime_1in3_pep_seq_bpip_batch_filling_cnt_7
@@ -1099,12 +1171,18 @@ import hpu_regif_core_prc_1in3_pkg::*;
   assign r_runtime_1in3_pep_seq_bpip_batch_filling_cnt_7_wr_enD = wr_en_ok && (wr_add[AXIL_ADD_RANGE_W-1:0] == RUNTIME_1IN3_PEP_SEQ_BPIP_BATCH_FILLING_CNT_7_OFS[AXIL_ADD_RANGE_W-1:0]);
   always_ff @(posedge clk) begin
     if (!s_rst_n) begin
-      r_runtime_1in3_pep_seq_bpip_batch_filling_cnt_7       <= runtime_1in3_pep_seq_bpip_batch_filling_cnt_7_default;
       r_runtime_1in3_pep_seq_bpip_batch_filling_cnt_7_wr_en <= 1'b0;
     end
     else begin
-      r_runtime_1in3_pep_seq_bpip_batch_filling_cnt_7       <= r_runtime_1in3_pep_seq_bpip_batch_filling_cnt_7D;
       r_runtime_1in3_pep_seq_bpip_batch_filling_cnt_7_wr_en <= r_runtime_1in3_pep_seq_bpip_batch_filling_cnt_7_wr_enD;
+    end
+  end
+  always_ff @(posedge clk) begin
+    if (!s_rst_n) begin
+      r_runtime_1in3_pep_seq_bpip_batch_filling_cnt_7       <= runtime_1in3_pep_seq_bpip_batch_filling_cnt_7_default;
+    end
+    else begin
+      r_runtime_1in3_pep_seq_bpip_batch_filling_cnt_7       <= r_runtime_1in3_pep_seq_bpip_batch_filling_cnt_7D;
     end
   end
 // Register FF: runtime_1in3_pep_seq_bpip_batch_filling_cnt_8
@@ -1114,12 +1192,18 @@ import hpu_regif_core_prc_1in3_pkg::*;
   assign r_runtime_1in3_pep_seq_bpip_batch_filling_cnt_8_wr_enD = wr_en_ok && (wr_add[AXIL_ADD_RANGE_W-1:0] == RUNTIME_1IN3_PEP_SEQ_BPIP_BATCH_FILLING_CNT_8_OFS[AXIL_ADD_RANGE_W-1:0]);
   always_ff @(posedge clk) begin
     if (!s_rst_n) begin
-      r_runtime_1in3_pep_seq_bpip_batch_filling_cnt_8       <= runtime_1in3_pep_seq_bpip_batch_filling_cnt_8_default;
       r_runtime_1in3_pep_seq_bpip_batch_filling_cnt_8_wr_en <= 1'b0;
     end
     else begin
-      r_runtime_1in3_pep_seq_bpip_batch_filling_cnt_8       <= r_runtime_1in3_pep_seq_bpip_batch_filling_cnt_8D;
       r_runtime_1in3_pep_seq_bpip_batch_filling_cnt_8_wr_en <= r_runtime_1in3_pep_seq_bpip_batch_filling_cnt_8_wr_enD;
+    end
+  end
+  always_ff @(posedge clk) begin
+    if (!s_rst_n) begin
+      r_runtime_1in3_pep_seq_bpip_batch_filling_cnt_8       <= runtime_1in3_pep_seq_bpip_batch_filling_cnt_8_default;
+    end
+    else begin
+      r_runtime_1in3_pep_seq_bpip_batch_filling_cnt_8       <= r_runtime_1in3_pep_seq_bpip_batch_filling_cnt_8D;
     end
   end
 // Register FF: runtime_1in3_pep_seq_bpip_batch_filling_cnt_9
@@ -1129,12 +1213,18 @@ import hpu_regif_core_prc_1in3_pkg::*;
   assign r_runtime_1in3_pep_seq_bpip_batch_filling_cnt_9_wr_enD = wr_en_ok && (wr_add[AXIL_ADD_RANGE_W-1:0] == RUNTIME_1IN3_PEP_SEQ_BPIP_BATCH_FILLING_CNT_9_OFS[AXIL_ADD_RANGE_W-1:0]);
   always_ff @(posedge clk) begin
     if (!s_rst_n) begin
-      r_runtime_1in3_pep_seq_bpip_batch_filling_cnt_9       <= runtime_1in3_pep_seq_bpip_batch_filling_cnt_9_default;
       r_runtime_1in3_pep_seq_bpip_batch_filling_cnt_9_wr_en <= 1'b0;
     end
     else begin
-      r_runtime_1in3_pep_seq_bpip_batch_filling_cnt_9       <= r_runtime_1in3_pep_seq_bpip_batch_filling_cnt_9D;
       r_runtime_1in3_pep_seq_bpip_batch_filling_cnt_9_wr_en <= r_runtime_1in3_pep_seq_bpip_batch_filling_cnt_9_wr_enD;
+    end
+  end
+  always_ff @(posedge clk) begin
+    if (!s_rst_n) begin
+      r_runtime_1in3_pep_seq_bpip_batch_filling_cnt_9       <= runtime_1in3_pep_seq_bpip_batch_filling_cnt_9_default;
+    end
+    else begin
+      r_runtime_1in3_pep_seq_bpip_batch_filling_cnt_9       <= r_runtime_1in3_pep_seq_bpip_batch_filling_cnt_9D;
     end
   end
 // Register FF: runtime_1in3_pep_seq_bpip_batch_filling_cnt_10
@@ -1144,12 +1234,18 @@ import hpu_regif_core_prc_1in3_pkg::*;
   assign r_runtime_1in3_pep_seq_bpip_batch_filling_cnt_10_wr_enD = wr_en_ok && (wr_add[AXIL_ADD_RANGE_W-1:0] == RUNTIME_1IN3_PEP_SEQ_BPIP_BATCH_FILLING_CNT_10_OFS[AXIL_ADD_RANGE_W-1:0]);
   always_ff @(posedge clk) begin
     if (!s_rst_n) begin
-      r_runtime_1in3_pep_seq_bpip_batch_filling_cnt_10       <= runtime_1in3_pep_seq_bpip_batch_filling_cnt_10_default;
       r_runtime_1in3_pep_seq_bpip_batch_filling_cnt_10_wr_en <= 1'b0;
     end
     else begin
-      r_runtime_1in3_pep_seq_bpip_batch_filling_cnt_10       <= r_runtime_1in3_pep_seq_bpip_batch_filling_cnt_10D;
       r_runtime_1in3_pep_seq_bpip_batch_filling_cnt_10_wr_en <= r_runtime_1in3_pep_seq_bpip_batch_filling_cnt_10_wr_enD;
+    end
+  end
+  always_ff @(posedge clk) begin
+    if (!s_rst_n) begin
+      r_runtime_1in3_pep_seq_bpip_batch_filling_cnt_10       <= runtime_1in3_pep_seq_bpip_batch_filling_cnt_10_default;
+    end
+    else begin
+      r_runtime_1in3_pep_seq_bpip_batch_filling_cnt_10       <= r_runtime_1in3_pep_seq_bpip_batch_filling_cnt_10D;
     end
   end
 // Register FF: runtime_1in3_pep_seq_bpip_batch_filling_cnt_11
@@ -1159,12 +1255,18 @@ import hpu_regif_core_prc_1in3_pkg::*;
   assign r_runtime_1in3_pep_seq_bpip_batch_filling_cnt_11_wr_enD = wr_en_ok && (wr_add[AXIL_ADD_RANGE_W-1:0] == RUNTIME_1IN3_PEP_SEQ_BPIP_BATCH_FILLING_CNT_11_OFS[AXIL_ADD_RANGE_W-1:0]);
   always_ff @(posedge clk) begin
     if (!s_rst_n) begin
-      r_runtime_1in3_pep_seq_bpip_batch_filling_cnt_11       <= runtime_1in3_pep_seq_bpip_batch_filling_cnt_11_default;
       r_runtime_1in3_pep_seq_bpip_batch_filling_cnt_11_wr_en <= 1'b0;
     end
     else begin
-      r_runtime_1in3_pep_seq_bpip_batch_filling_cnt_11       <= r_runtime_1in3_pep_seq_bpip_batch_filling_cnt_11D;
       r_runtime_1in3_pep_seq_bpip_batch_filling_cnt_11_wr_en <= r_runtime_1in3_pep_seq_bpip_batch_filling_cnt_11_wr_enD;
+    end
+  end
+  always_ff @(posedge clk) begin
+    if (!s_rst_n) begin
+      r_runtime_1in3_pep_seq_bpip_batch_filling_cnt_11       <= runtime_1in3_pep_seq_bpip_batch_filling_cnt_11_default;
+    end
+    else begin
+      r_runtime_1in3_pep_seq_bpip_batch_filling_cnt_11       <= r_runtime_1in3_pep_seq_bpip_batch_filling_cnt_11D;
     end
   end
 // Register FF: runtime_1in3_pep_seq_bpip_batch_filling_cnt_12
@@ -1174,12 +1276,18 @@ import hpu_regif_core_prc_1in3_pkg::*;
   assign r_runtime_1in3_pep_seq_bpip_batch_filling_cnt_12_wr_enD = wr_en_ok && (wr_add[AXIL_ADD_RANGE_W-1:0] == RUNTIME_1IN3_PEP_SEQ_BPIP_BATCH_FILLING_CNT_12_OFS[AXIL_ADD_RANGE_W-1:0]);
   always_ff @(posedge clk) begin
     if (!s_rst_n) begin
-      r_runtime_1in3_pep_seq_bpip_batch_filling_cnt_12       <= runtime_1in3_pep_seq_bpip_batch_filling_cnt_12_default;
       r_runtime_1in3_pep_seq_bpip_batch_filling_cnt_12_wr_en <= 1'b0;
     end
     else begin
-      r_runtime_1in3_pep_seq_bpip_batch_filling_cnt_12       <= r_runtime_1in3_pep_seq_bpip_batch_filling_cnt_12D;
       r_runtime_1in3_pep_seq_bpip_batch_filling_cnt_12_wr_en <= r_runtime_1in3_pep_seq_bpip_batch_filling_cnt_12_wr_enD;
+    end
+  end
+  always_ff @(posedge clk) begin
+    if (!s_rst_n) begin
+      r_runtime_1in3_pep_seq_bpip_batch_filling_cnt_12       <= runtime_1in3_pep_seq_bpip_batch_filling_cnt_12_default;
+    end
+    else begin
+      r_runtime_1in3_pep_seq_bpip_batch_filling_cnt_12       <= r_runtime_1in3_pep_seq_bpip_batch_filling_cnt_12D;
     end
   end
 // Register FF: runtime_1in3_pep_seq_bpip_batch_filling_cnt_13
@@ -1189,12 +1297,18 @@ import hpu_regif_core_prc_1in3_pkg::*;
   assign r_runtime_1in3_pep_seq_bpip_batch_filling_cnt_13_wr_enD = wr_en_ok && (wr_add[AXIL_ADD_RANGE_W-1:0] == RUNTIME_1IN3_PEP_SEQ_BPIP_BATCH_FILLING_CNT_13_OFS[AXIL_ADD_RANGE_W-1:0]);
   always_ff @(posedge clk) begin
     if (!s_rst_n) begin
-      r_runtime_1in3_pep_seq_bpip_batch_filling_cnt_13       <= runtime_1in3_pep_seq_bpip_batch_filling_cnt_13_default;
       r_runtime_1in3_pep_seq_bpip_batch_filling_cnt_13_wr_en <= 1'b0;
     end
     else begin
-      r_runtime_1in3_pep_seq_bpip_batch_filling_cnt_13       <= r_runtime_1in3_pep_seq_bpip_batch_filling_cnt_13D;
       r_runtime_1in3_pep_seq_bpip_batch_filling_cnt_13_wr_en <= r_runtime_1in3_pep_seq_bpip_batch_filling_cnt_13_wr_enD;
+    end
+  end
+  always_ff @(posedge clk) begin
+    if (!s_rst_n) begin
+      r_runtime_1in3_pep_seq_bpip_batch_filling_cnt_13       <= runtime_1in3_pep_seq_bpip_batch_filling_cnt_13_default;
+    end
+    else begin
+      r_runtime_1in3_pep_seq_bpip_batch_filling_cnt_13       <= r_runtime_1in3_pep_seq_bpip_batch_filling_cnt_13D;
     end
   end
 // Register FF: runtime_1in3_pep_seq_bpip_batch_filling_cnt_14
@@ -1204,12 +1318,18 @@ import hpu_regif_core_prc_1in3_pkg::*;
   assign r_runtime_1in3_pep_seq_bpip_batch_filling_cnt_14_wr_enD = wr_en_ok && (wr_add[AXIL_ADD_RANGE_W-1:0] == RUNTIME_1IN3_PEP_SEQ_BPIP_BATCH_FILLING_CNT_14_OFS[AXIL_ADD_RANGE_W-1:0]);
   always_ff @(posedge clk) begin
     if (!s_rst_n) begin
-      r_runtime_1in3_pep_seq_bpip_batch_filling_cnt_14       <= runtime_1in3_pep_seq_bpip_batch_filling_cnt_14_default;
       r_runtime_1in3_pep_seq_bpip_batch_filling_cnt_14_wr_en <= 1'b0;
     end
     else begin
-      r_runtime_1in3_pep_seq_bpip_batch_filling_cnt_14       <= r_runtime_1in3_pep_seq_bpip_batch_filling_cnt_14D;
       r_runtime_1in3_pep_seq_bpip_batch_filling_cnt_14_wr_en <= r_runtime_1in3_pep_seq_bpip_batch_filling_cnt_14_wr_enD;
+    end
+  end
+  always_ff @(posedge clk) begin
+    if (!s_rst_n) begin
+      r_runtime_1in3_pep_seq_bpip_batch_filling_cnt_14       <= runtime_1in3_pep_seq_bpip_batch_filling_cnt_14_default;
+    end
+    else begin
+      r_runtime_1in3_pep_seq_bpip_batch_filling_cnt_14       <= r_runtime_1in3_pep_seq_bpip_batch_filling_cnt_14D;
     end
   end
 // Register FF: runtime_1in3_pep_seq_bpip_batch_filling_cnt_15
@@ -1219,12 +1339,18 @@ import hpu_regif_core_prc_1in3_pkg::*;
   assign r_runtime_1in3_pep_seq_bpip_batch_filling_cnt_15_wr_enD = wr_en_ok && (wr_add[AXIL_ADD_RANGE_W-1:0] == RUNTIME_1IN3_PEP_SEQ_BPIP_BATCH_FILLING_CNT_15_OFS[AXIL_ADD_RANGE_W-1:0]);
   always_ff @(posedge clk) begin
     if (!s_rst_n) begin
-      r_runtime_1in3_pep_seq_bpip_batch_filling_cnt_15       <= runtime_1in3_pep_seq_bpip_batch_filling_cnt_15_default;
       r_runtime_1in3_pep_seq_bpip_batch_filling_cnt_15_wr_en <= 1'b0;
     end
     else begin
-      r_runtime_1in3_pep_seq_bpip_batch_filling_cnt_15       <= r_runtime_1in3_pep_seq_bpip_batch_filling_cnt_15D;
       r_runtime_1in3_pep_seq_bpip_batch_filling_cnt_15_wr_en <= r_runtime_1in3_pep_seq_bpip_batch_filling_cnt_15_wr_enD;
+    end
+  end
+  always_ff @(posedge clk) begin
+    if (!s_rst_n) begin
+      r_runtime_1in3_pep_seq_bpip_batch_filling_cnt_15       <= runtime_1in3_pep_seq_bpip_batch_filling_cnt_15_default;
+    end
+    else begin
+      r_runtime_1in3_pep_seq_bpip_batch_filling_cnt_15       <= r_runtime_1in3_pep_seq_bpip_batch_filling_cnt_15D;
     end
   end
 // Register FF: runtime_1in3_pep_seq_bpip_batch_filling_cnt_16
@@ -1234,12 +1360,18 @@ import hpu_regif_core_prc_1in3_pkg::*;
   assign r_runtime_1in3_pep_seq_bpip_batch_filling_cnt_16_wr_enD = wr_en_ok && (wr_add[AXIL_ADD_RANGE_W-1:0] == RUNTIME_1IN3_PEP_SEQ_BPIP_BATCH_FILLING_CNT_16_OFS[AXIL_ADD_RANGE_W-1:0]);
   always_ff @(posedge clk) begin
     if (!s_rst_n) begin
-      r_runtime_1in3_pep_seq_bpip_batch_filling_cnt_16       <= runtime_1in3_pep_seq_bpip_batch_filling_cnt_16_default;
       r_runtime_1in3_pep_seq_bpip_batch_filling_cnt_16_wr_en <= 1'b0;
     end
     else begin
-      r_runtime_1in3_pep_seq_bpip_batch_filling_cnt_16       <= r_runtime_1in3_pep_seq_bpip_batch_filling_cnt_16D;
       r_runtime_1in3_pep_seq_bpip_batch_filling_cnt_16_wr_en <= r_runtime_1in3_pep_seq_bpip_batch_filling_cnt_16_wr_enD;
+    end
+  end
+  always_ff @(posedge clk) begin
+    if (!s_rst_n) begin
+      r_runtime_1in3_pep_seq_bpip_batch_filling_cnt_16       <= runtime_1in3_pep_seq_bpip_batch_filling_cnt_16_default;
+    end
+    else begin
+      r_runtime_1in3_pep_seq_bpip_batch_filling_cnt_16       <= r_runtime_1in3_pep_seq_bpip_batch_filling_cnt_16D;
     end
   end
 // Register FF: runtime_1in3_pep_seq_ld_ack_cnt
@@ -1249,12 +1381,18 @@ import hpu_regif_core_prc_1in3_pkg::*;
   assign r_runtime_1in3_pep_seq_ld_ack_cnt_wr_enD = wr_en_ok && (wr_add[AXIL_ADD_RANGE_W-1:0] == RUNTIME_1IN3_PEP_SEQ_LD_ACK_CNT_OFS[AXIL_ADD_RANGE_W-1:0]);
   always_ff @(posedge clk) begin
     if (!s_rst_n) begin
-      r_runtime_1in3_pep_seq_ld_ack_cnt       <= runtime_1in3_pep_seq_ld_ack_cnt_default;
       r_runtime_1in3_pep_seq_ld_ack_cnt_wr_en <= 1'b0;
     end
     else begin
-      r_runtime_1in3_pep_seq_ld_ack_cnt       <= r_runtime_1in3_pep_seq_ld_ack_cntD;
       r_runtime_1in3_pep_seq_ld_ack_cnt_wr_en <= r_runtime_1in3_pep_seq_ld_ack_cnt_wr_enD;
+    end
+  end
+  always_ff @(posedge clk) begin
+    if (!s_rst_n) begin
+      r_runtime_1in3_pep_seq_ld_ack_cnt       <= runtime_1in3_pep_seq_ld_ack_cnt_default;
+    end
+    else begin
+      r_runtime_1in3_pep_seq_ld_ack_cnt       <= r_runtime_1in3_pep_seq_ld_ack_cntD;
     end
   end
 // Register FF: runtime_1in3_pep_seq_cmux_not_full_batch_cnt
@@ -1264,12 +1402,18 @@ import hpu_regif_core_prc_1in3_pkg::*;
   assign r_runtime_1in3_pep_seq_cmux_not_full_batch_cnt_wr_enD = wr_en_ok && (wr_add[AXIL_ADD_RANGE_W-1:0] == RUNTIME_1IN3_PEP_SEQ_CMUX_NOT_FULL_BATCH_CNT_OFS[AXIL_ADD_RANGE_W-1:0]);
   always_ff @(posedge clk) begin
     if (!s_rst_n) begin
-      r_runtime_1in3_pep_seq_cmux_not_full_batch_cnt       <= runtime_1in3_pep_seq_cmux_not_full_batch_cnt_default;
       r_runtime_1in3_pep_seq_cmux_not_full_batch_cnt_wr_en <= 1'b0;
     end
     else begin
-      r_runtime_1in3_pep_seq_cmux_not_full_batch_cnt       <= r_runtime_1in3_pep_seq_cmux_not_full_batch_cntD;
       r_runtime_1in3_pep_seq_cmux_not_full_batch_cnt_wr_en <= r_runtime_1in3_pep_seq_cmux_not_full_batch_cnt_wr_enD;
+    end
+  end
+  always_ff @(posedge clk) begin
+    if (!s_rst_n) begin
+      r_runtime_1in3_pep_seq_cmux_not_full_batch_cnt       <= runtime_1in3_pep_seq_cmux_not_full_batch_cnt_default;
+    end
+    else begin
+      r_runtime_1in3_pep_seq_cmux_not_full_batch_cnt       <= r_runtime_1in3_pep_seq_cmux_not_full_batch_cntD;
     end
   end
 // Register FF: runtime_1in3_pep_seq_ipip_flush_cnt
@@ -1279,12 +1423,18 @@ import hpu_regif_core_prc_1in3_pkg::*;
   assign r_runtime_1in3_pep_seq_ipip_flush_cnt_wr_enD = wr_en_ok && (wr_add[AXIL_ADD_RANGE_W-1:0] == RUNTIME_1IN3_PEP_SEQ_IPIP_FLUSH_CNT_OFS[AXIL_ADD_RANGE_W-1:0]);
   always_ff @(posedge clk) begin
     if (!s_rst_n) begin
-      r_runtime_1in3_pep_seq_ipip_flush_cnt       <= runtime_1in3_pep_seq_ipip_flush_cnt_default;
       r_runtime_1in3_pep_seq_ipip_flush_cnt_wr_en <= 1'b0;
     end
     else begin
-      r_runtime_1in3_pep_seq_ipip_flush_cnt       <= r_runtime_1in3_pep_seq_ipip_flush_cntD;
       r_runtime_1in3_pep_seq_ipip_flush_cnt_wr_en <= r_runtime_1in3_pep_seq_ipip_flush_cnt_wr_enD;
+    end
+  end
+  always_ff @(posedge clk) begin
+    if (!s_rst_n) begin
+      r_runtime_1in3_pep_seq_ipip_flush_cnt       <= runtime_1in3_pep_seq_ipip_flush_cnt_default;
+    end
+    else begin
+      r_runtime_1in3_pep_seq_ipip_flush_cnt       <= r_runtime_1in3_pep_seq_ipip_flush_cntD;
     end
   end
 // Register FF: runtime_1in3_pep_ldb_rcp_dur
@@ -1294,12 +1444,18 @@ import hpu_regif_core_prc_1in3_pkg::*;
   assign r_runtime_1in3_pep_ldb_rcp_dur_wr_enD = wr_en_ok && (wr_add[AXIL_ADD_RANGE_W-1:0] == RUNTIME_1IN3_PEP_LDB_RCP_DUR_OFS[AXIL_ADD_RANGE_W-1:0]);
   always_ff @(posedge clk) begin
     if (!s_rst_n) begin
-      r_runtime_1in3_pep_ldb_rcp_dur       <= runtime_1in3_pep_ldb_rcp_dur_default;
       r_runtime_1in3_pep_ldb_rcp_dur_wr_en <= 1'b0;
     end
     else begin
-      r_runtime_1in3_pep_ldb_rcp_dur       <= r_runtime_1in3_pep_ldb_rcp_durD;
       r_runtime_1in3_pep_ldb_rcp_dur_wr_en <= r_runtime_1in3_pep_ldb_rcp_dur_wr_enD;
+    end
+  end
+  always_ff @(posedge clk) begin
+    if (!s_rst_n) begin
+      r_runtime_1in3_pep_ldb_rcp_dur       <= runtime_1in3_pep_ldb_rcp_dur_default;
+    end
+    else begin
+      r_runtime_1in3_pep_ldb_rcp_dur       <= r_runtime_1in3_pep_ldb_rcp_durD;
     end
   end
 // Register FF: runtime_1in3_pep_ldg_req_dur
@@ -1309,12 +1465,18 @@ import hpu_regif_core_prc_1in3_pkg::*;
   assign r_runtime_1in3_pep_ldg_req_dur_wr_enD = wr_en_ok && (wr_add[AXIL_ADD_RANGE_W-1:0] == RUNTIME_1IN3_PEP_LDG_REQ_DUR_OFS[AXIL_ADD_RANGE_W-1:0]);
   always_ff @(posedge clk) begin
     if (!s_rst_n) begin
-      r_runtime_1in3_pep_ldg_req_dur       <= runtime_1in3_pep_ldg_req_dur_default;
       r_runtime_1in3_pep_ldg_req_dur_wr_en <= 1'b0;
     end
     else begin
-      r_runtime_1in3_pep_ldg_req_dur       <= r_runtime_1in3_pep_ldg_req_durD;
       r_runtime_1in3_pep_ldg_req_dur_wr_en <= r_runtime_1in3_pep_ldg_req_dur_wr_enD;
+    end
+  end
+  always_ff @(posedge clk) begin
+    if (!s_rst_n) begin
+      r_runtime_1in3_pep_ldg_req_dur       <= runtime_1in3_pep_ldg_req_dur_default;
+    end
+    else begin
+      r_runtime_1in3_pep_ldg_req_dur       <= r_runtime_1in3_pep_ldg_req_durD;
     end
   end
 // Register FF: runtime_1in3_pep_ldg_rcp_dur
@@ -1324,12 +1486,18 @@ import hpu_regif_core_prc_1in3_pkg::*;
   assign r_runtime_1in3_pep_ldg_rcp_dur_wr_enD = wr_en_ok && (wr_add[AXIL_ADD_RANGE_W-1:0] == RUNTIME_1IN3_PEP_LDG_RCP_DUR_OFS[AXIL_ADD_RANGE_W-1:0]);
   always_ff @(posedge clk) begin
     if (!s_rst_n) begin
-      r_runtime_1in3_pep_ldg_rcp_dur       <= runtime_1in3_pep_ldg_rcp_dur_default;
       r_runtime_1in3_pep_ldg_rcp_dur_wr_en <= 1'b0;
     end
     else begin
-      r_runtime_1in3_pep_ldg_rcp_dur       <= r_runtime_1in3_pep_ldg_rcp_durD;
       r_runtime_1in3_pep_ldg_rcp_dur_wr_en <= r_runtime_1in3_pep_ldg_rcp_dur_wr_enD;
+    end
+  end
+  always_ff @(posedge clk) begin
+    if (!s_rst_n) begin
+      r_runtime_1in3_pep_ldg_rcp_dur       <= runtime_1in3_pep_ldg_rcp_dur_default;
+    end
+    else begin
+      r_runtime_1in3_pep_ldg_rcp_dur       <= r_runtime_1in3_pep_ldg_rcp_durD;
     end
   end
 // Register FF: runtime_1in3_pep_load_ksk_rcp_dur_pc0
@@ -1339,12 +1507,18 @@ import hpu_regif_core_prc_1in3_pkg::*;
   assign r_runtime_1in3_pep_load_ksk_rcp_dur_pc0_wr_enD = wr_en_ok && (wr_add[AXIL_ADD_RANGE_W-1:0] == RUNTIME_1IN3_PEP_LOAD_KSK_RCP_DUR_PC0_OFS[AXIL_ADD_RANGE_W-1:0]);
   always_ff @(posedge clk) begin
     if (!s_rst_n) begin
-      r_runtime_1in3_pep_load_ksk_rcp_dur_pc0       <= runtime_1in3_pep_load_ksk_rcp_dur_pc0_default;
       r_runtime_1in3_pep_load_ksk_rcp_dur_pc0_wr_en <= 1'b0;
     end
     else begin
-      r_runtime_1in3_pep_load_ksk_rcp_dur_pc0       <= r_runtime_1in3_pep_load_ksk_rcp_dur_pc0D;
       r_runtime_1in3_pep_load_ksk_rcp_dur_pc0_wr_en <= r_runtime_1in3_pep_load_ksk_rcp_dur_pc0_wr_enD;
+    end
+  end
+  always_ff @(posedge clk) begin
+    if (!s_rst_n) begin
+      r_runtime_1in3_pep_load_ksk_rcp_dur_pc0       <= runtime_1in3_pep_load_ksk_rcp_dur_pc0_default;
+    end
+    else begin
+      r_runtime_1in3_pep_load_ksk_rcp_dur_pc0       <= r_runtime_1in3_pep_load_ksk_rcp_dur_pc0D;
     end
   end
 // Register FF: runtime_1in3_pep_load_ksk_rcp_dur_pc1
@@ -1354,12 +1528,18 @@ import hpu_regif_core_prc_1in3_pkg::*;
   assign r_runtime_1in3_pep_load_ksk_rcp_dur_pc1_wr_enD = wr_en_ok && (wr_add[AXIL_ADD_RANGE_W-1:0] == RUNTIME_1IN3_PEP_LOAD_KSK_RCP_DUR_PC1_OFS[AXIL_ADD_RANGE_W-1:0]);
   always_ff @(posedge clk) begin
     if (!s_rst_n) begin
-      r_runtime_1in3_pep_load_ksk_rcp_dur_pc1       <= runtime_1in3_pep_load_ksk_rcp_dur_pc1_default;
       r_runtime_1in3_pep_load_ksk_rcp_dur_pc1_wr_en <= 1'b0;
     end
     else begin
-      r_runtime_1in3_pep_load_ksk_rcp_dur_pc1       <= r_runtime_1in3_pep_load_ksk_rcp_dur_pc1D;
       r_runtime_1in3_pep_load_ksk_rcp_dur_pc1_wr_en <= r_runtime_1in3_pep_load_ksk_rcp_dur_pc1_wr_enD;
+    end
+  end
+  always_ff @(posedge clk) begin
+    if (!s_rst_n) begin
+      r_runtime_1in3_pep_load_ksk_rcp_dur_pc1       <= runtime_1in3_pep_load_ksk_rcp_dur_pc1_default;
+    end
+    else begin
+      r_runtime_1in3_pep_load_ksk_rcp_dur_pc1       <= r_runtime_1in3_pep_load_ksk_rcp_dur_pc1D;
     end
   end
 // Register FF: runtime_1in3_pep_load_ksk_rcp_dur_pc2
@@ -1369,12 +1549,18 @@ import hpu_regif_core_prc_1in3_pkg::*;
   assign r_runtime_1in3_pep_load_ksk_rcp_dur_pc2_wr_enD = wr_en_ok && (wr_add[AXIL_ADD_RANGE_W-1:0] == RUNTIME_1IN3_PEP_LOAD_KSK_RCP_DUR_PC2_OFS[AXIL_ADD_RANGE_W-1:0]);
   always_ff @(posedge clk) begin
     if (!s_rst_n) begin
-      r_runtime_1in3_pep_load_ksk_rcp_dur_pc2       <= runtime_1in3_pep_load_ksk_rcp_dur_pc2_default;
       r_runtime_1in3_pep_load_ksk_rcp_dur_pc2_wr_en <= 1'b0;
     end
     else begin
-      r_runtime_1in3_pep_load_ksk_rcp_dur_pc2       <= r_runtime_1in3_pep_load_ksk_rcp_dur_pc2D;
       r_runtime_1in3_pep_load_ksk_rcp_dur_pc2_wr_en <= r_runtime_1in3_pep_load_ksk_rcp_dur_pc2_wr_enD;
+    end
+  end
+  always_ff @(posedge clk) begin
+    if (!s_rst_n) begin
+      r_runtime_1in3_pep_load_ksk_rcp_dur_pc2       <= runtime_1in3_pep_load_ksk_rcp_dur_pc2_default;
+    end
+    else begin
+      r_runtime_1in3_pep_load_ksk_rcp_dur_pc2       <= r_runtime_1in3_pep_load_ksk_rcp_dur_pc2D;
     end
   end
 // Register FF: runtime_1in3_pep_load_ksk_rcp_dur_pc3
@@ -1384,12 +1570,18 @@ import hpu_regif_core_prc_1in3_pkg::*;
   assign r_runtime_1in3_pep_load_ksk_rcp_dur_pc3_wr_enD = wr_en_ok && (wr_add[AXIL_ADD_RANGE_W-1:0] == RUNTIME_1IN3_PEP_LOAD_KSK_RCP_DUR_PC3_OFS[AXIL_ADD_RANGE_W-1:0]);
   always_ff @(posedge clk) begin
     if (!s_rst_n) begin
-      r_runtime_1in3_pep_load_ksk_rcp_dur_pc3       <= runtime_1in3_pep_load_ksk_rcp_dur_pc3_default;
       r_runtime_1in3_pep_load_ksk_rcp_dur_pc3_wr_en <= 1'b0;
     end
     else begin
-      r_runtime_1in3_pep_load_ksk_rcp_dur_pc3       <= r_runtime_1in3_pep_load_ksk_rcp_dur_pc3D;
       r_runtime_1in3_pep_load_ksk_rcp_dur_pc3_wr_en <= r_runtime_1in3_pep_load_ksk_rcp_dur_pc3_wr_enD;
+    end
+  end
+  always_ff @(posedge clk) begin
+    if (!s_rst_n) begin
+      r_runtime_1in3_pep_load_ksk_rcp_dur_pc3       <= runtime_1in3_pep_load_ksk_rcp_dur_pc3_default;
+    end
+    else begin
+      r_runtime_1in3_pep_load_ksk_rcp_dur_pc3       <= r_runtime_1in3_pep_load_ksk_rcp_dur_pc3D;
     end
   end
 // Register FF: runtime_1in3_pep_load_ksk_rcp_dur_pc4
@@ -1399,12 +1591,18 @@ import hpu_regif_core_prc_1in3_pkg::*;
   assign r_runtime_1in3_pep_load_ksk_rcp_dur_pc4_wr_enD = wr_en_ok && (wr_add[AXIL_ADD_RANGE_W-1:0] == RUNTIME_1IN3_PEP_LOAD_KSK_RCP_DUR_PC4_OFS[AXIL_ADD_RANGE_W-1:0]);
   always_ff @(posedge clk) begin
     if (!s_rst_n) begin
-      r_runtime_1in3_pep_load_ksk_rcp_dur_pc4       <= runtime_1in3_pep_load_ksk_rcp_dur_pc4_default;
       r_runtime_1in3_pep_load_ksk_rcp_dur_pc4_wr_en <= 1'b0;
     end
     else begin
-      r_runtime_1in3_pep_load_ksk_rcp_dur_pc4       <= r_runtime_1in3_pep_load_ksk_rcp_dur_pc4D;
       r_runtime_1in3_pep_load_ksk_rcp_dur_pc4_wr_en <= r_runtime_1in3_pep_load_ksk_rcp_dur_pc4_wr_enD;
+    end
+  end
+  always_ff @(posedge clk) begin
+    if (!s_rst_n) begin
+      r_runtime_1in3_pep_load_ksk_rcp_dur_pc4       <= runtime_1in3_pep_load_ksk_rcp_dur_pc4_default;
+    end
+    else begin
+      r_runtime_1in3_pep_load_ksk_rcp_dur_pc4       <= r_runtime_1in3_pep_load_ksk_rcp_dur_pc4D;
     end
   end
 // Register FF: runtime_1in3_pep_load_ksk_rcp_dur_pc5
@@ -1414,12 +1612,18 @@ import hpu_regif_core_prc_1in3_pkg::*;
   assign r_runtime_1in3_pep_load_ksk_rcp_dur_pc5_wr_enD = wr_en_ok && (wr_add[AXIL_ADD_RANGE_W-1:0] == RUNTIME_1IN3_PEP_LOAD_KSK_RCP_DUR_PC5_OFS[AXIL_ADD_RANGE_W-1:0]);
   always_ff @(posedge clk) begin
     if (!s_rst_n) begin
-      r_runtime_1in3_pep_load_ksk_rcp_dur_pc5       <= runtime_1in3_pep_load_ksk_rcp_dur_pc5_default;
       r_runtime_1in3_pep_load_ksk_rcp_dur_pc5_wr_en <= 1'b0;
     end
     else begin
-      r_runtime_1in3_pep_load_ksk_rcp_dur_pc5       <= r_runtime_1in3_pep_load_ksk_rcp_dur_pc5D;
       r_runtime_1in3_pep_load_ksk_rcp_dur_pc5_wr_en <= r_runtime_1in3_pep_load_ksk_rcp_dur_pc5_wr_enD;
+    end
+  end
+  always_ff @(posedge clk) begin
+    if (!s_rst_n) begin
+      r_runtime_1in3_pep_load_ksk_rcp_dur_pc5       <= runtime_1in3_pep_load_ksk_rcp_dur_pc5_default;
+    end
+    else begin
+      r_runtime_1in3_pep_load_ksk_rcp_dur_pc5       <= r_runtime_1in3_pep_load_ksk_rcp_dur_pc5D;
     end
   end
 // Register FF: runtime_1in3_pep_load_ksk_rcp_dur_pc6
@@ -1429,12 +1633,18 @@ import hpu_regif_core_prc_1in3_pkg::*;
   assign r_runtime_1in3_pep_load_ksk_rcp_dur_pc6_wr_enD = wr_en_ok && (wr_add[AXIL_ADD_RANGE_W-1:0] == RUNTIME_1IN3_PEP_LOAD_KSK_RCP_DUR_PC6_OFS[AXIL_ADD_RANGE_W-1:0]);
   always_ff @(posedge clk) begin
     if (!s_rst_n) begin
-      r_runtime_1in3_pep_load_ksk_rcp_dur_pc6       <= runtime_1in3_pep_load_ksk_rcp_dur_pc6_default;
       r_runtime_1in3_pep_load_ksk_rcp_dur_pc6_wr_en <= 1'b0;
     end
     else begin
-      r_runtime_1in3_pep_load_ksk_rcp_dur_pc6       <= r_runtime_1in3_pep_load_ksk_rcp_dur_pc6D;
       r_runtime_1in3_pep_load_ksk_rcp_dur_pc6_wr_en <= r_runtime_1in3_pep_load_ksk_rcp_dur_pc6_wr_enD;
+    end
+  end
+  always_ff @(posedge clk) begin
+    if (!s_rst_n) begin
+      r_runtime_1in3_pep_load_ksk_rcp_dur_pc6       <= runtime_1in3_pep_load_ksk_rcp_dur_pc6_default;
+    end
+    else begin
+      r_runtime_1in3_pep_load_ksk_rcp_dur_pc6       <= r_runtime_1in3_pep_load_ksk_rcp_dur_pc6D;
     end
   end
 // Register FF: runtime_1in3_pep_load_ksk_rcp_dur_pc7
@@ -1444,12 +1654,18 @@ import hpu_regif_core_prc_1in3_pkg::*;
   assign r_runtime_1in3_pep_load_ksk_rcp_dur_pc7_wr_enD = wr_en_ok && (wr_add[AXIL_ADD_RANGE_W-1:0] == RUNTIME_1IN3_PEP_LOAD_KSK_RCP_DUR_PC7_OFS[AXIL_ADD_RANGE_W-1:0]);
   always_ff @(posedge clk) begin
     if (!s_rst_n) begin
-      r_runtime_1in3_pep_load_ksk_rcp_dur_pc7       <= runtime_1in3_pep_load_ksk_rcp_dur_pc7_default;
       r_runtime_1in3_pep_load_ksk_rcp_dur_pc7_wr_en <= 1'b0;
     end
     else begin
-      r_runtime_1in3_pep_load_ksk_rcp_dur_pc7       <= r_runtime_1in3_pep_load_ksk_rcp_dur_pc7D;
       r_runtime_1in3_pep_load_ksk_rcp_dur_pc7_wr_en <= r_runtime_1in3_pep_load_ksk_rcp_dur_pc7_wr_enD;
+    end
+  end
+  always_ff @(posedge clk) begin
+    if (!s_rst_n) begin
+      r_runtime_1in3_pep_load_ksk_rcp_dur_pc7       <= runtime_1in3_pep_load_ksk_rcp_dur_pc7_default;
+    end
+    else begin
+      r_runtime_1in3_pep_load_ksk_rcp_dur_pc7       <= r_runtime_1in3_pep_load_ksk_rcp_dur_pc7D;
     end
   end
 // Register FF: runtime_1in3_pep_load_ksk_rcp_dur_pc8
@@ -1459,12 +1675,18 @@ import hpu_regif_core_prc_1in3_pkg::*;
   assign r_runtime_1in3_pep_load_ksk_rcp_dur_pc8_wr_enD = wr_en_ok && (wr_add[AXIL_ADD_RANGE_W-1:0] == RUNTIME_1IN3_PEP_LOAD_KSK_RCP_DUR_PC8_OFS[AXIL_ADD_RANGE_W-1:0]);
   always_ff @(posedge clk) begin
     if (!s_rst_n) begin
-      r_runtime_1in3_pep_load_ksk_rcp_dur_pc8       <= runtime_1in3_pep_load_ksk_rcp_dur_pc8_default;
       r_runtime_1in3_pep_load_ksk_rcp_dur_pc8_wr_en <= 1'b0;
     end
     else begin
-      r_runtime_1in3_pep_load_ksk_rcp_dur_pc8       <= r_runtime_1in3_pep_load_ksk_rcp_dur_pc8D;
       r_runtime_1in3_pep_load_ksk_rcp_dur_pc8_wr_en <= r_runtime_1in3_pep_load_ksk_rcp_dur_pc8_wr_enD;
+    end
+  end
+  always_ff @(posedge clk) begin
+    if (!s_rst_n) begin
+      r_runtime_1in3_pep_load_ksk_rcp_dur_pc8       <= runtime_1in3_pep_load_ksk_rcp_dur_pc8_default;
+    end
+    else begin
+      r_runtime_1in3_pep_load_ksk_rcp_dur_pc8       <= r_runtime_1in3_pep_load_ksk_rcp_dur_pc8D;
     end
   end
 // Register FF: runtime_1in3_pep_load_ksk_rcp_dur_pc9
@@ -1474,12 +1696,18 @@ import hpu_regif_core_prc_1in3_pkg::*;
   assign r_runtime_1in3_pep_load_ksk_rcp_dur_pc9_wr_enD = wr_en_ok && (wr_add[AXIL_ADD_RANGE_W-1:0] == RUNTIME_1IN3_PEP_LOAD_KSK_RCP_DUR_PC9_OFS[AXIL_ADD_RANGE_W-1:0]);
   always_ff @(posedge clk) begin
     if (!s_rst_n) begin
-      r_runtime_1in3_pep_load_ksk_rcp_dur_pc9       <= runtime_1in3_pep_load_ksk_rcp_dur_pc9_default;
       r_runtime_1in3_pep_load_ksk_rcp_dur_pc9_wr_en <= 1'b0;
     end
     else begin
-      r_runtime_1in3_pep_load_ksk_rcp_dur_pc9       <= r_runtime_1in3_pep_load_ksk_rcp_dur_pc9D;
       r_runtime_1in3_pep_load_ksk_rcp_dur_pc9_wr_en <= r_runtime_1in3_pep_load_ksk_rcp_dur_pc9_wr_enD;
+    end
+  end
+  always_ff @(posedge clk) begin
+    if (!s_rst_n) begin
+      r_runtime_1in3_pep_load_ksk_rcp_dur_pc9       <= runtime_1in3_pep_load_ksk_rcp_dur_pc9_default;
+    end
+    else begin
+      r_runtime_1in3_pep_load_ksk_rcp_dur_pc9       <= r_runtime_1in3_pep_load_ksk_rcp_dur_pc9D;
     end
   end
 // Register FF: runtime_1in3_pep_load_ksk_rcp_dur_pc10
@@ -1489,12 +1717,18 @@ import hpu_regif_core_prc_1in3_pkg::*;
   assign r_runtime_1in3_pep_load_ksk_rcp_dur_pc10_wr_enD = wr_en_ok && (wr_add[AXIL_ADD_RANGE_W-1:0] == RUNTIME_1IN3_PEP_LOAD_KSK_RCP_DUR_PC10_OFS[AXIL_ADD_RANGE_W-1:0]);
   always_ff @(posedge clk) begin
     if (!s_rst_n) begin
-      r_runtime_1in3_pep_load_ksk_rcp_dur_pc10       <= runtime_1in3_pep_load_ksk_rcp_dur_pc10_default;
       r_runtime_1in3_pep_load_ksk_rcp_dur_pc10_wr_en <= 1'b0;
     end
     else begin
-      r_runtime_1in3_pep_load_ksk_rcp_dur_pc10       <= r_runtime_1in3_pep_load_ksk_rcp_dur_pc10D;
       r_runtime_1in3_pep_load_ksk_rcp_dur_pc10_wr_en <= r_runtime_1in3_pep_load_ksk_rcp_dur_pc10_wr_enD;
+    end
+  end
+  always_ff @(posedge clk) begin
+    if (!s_rst_n) begin
+      r_runtime_1in3_pep_load_ksk_rcp_dur_pc10       <= runtime_1in3_pep_load_ksk_rcp_dur_pc10_default;
+    end
+    else begin
+      r_runtime_1in3_pep_load_ksk_rcp_dur_pc10       <= r_runtime_1in3_pep_load_ksk_rcp_dur_pc10D;
     end
   end
 // Register FF: runtime_1in3_pep_load_ksk_rcp_dur_pc11
@@ -1504,12 +1738,18 @@ import hpu_regif_core_prc_1in3_pkg::*;
   assign r_runtime_1in3_pep_load_ksk_rcp_dur_pc11_wr_enD = wr_en_ok && (wr_add[AXIL_ADD_RANGE_W-1:0] == RUNTIME_1IN3_PEP_LOAD_KSK_RCP_DUR_PC11_OFS[AXIL_ADD_RANGE_W-1:0]);
   always_ff @(posedge clk) begin
     if (!s_rst_n) begin
-      r_runtime_1in3_pep_load_ksk_rcp_dur_pc11       <= runtime_1in3_pep_load_ksk_rcp_dur_pc11_default;
       r_runtime_1in3_pep_load_ksk_rcp_dur_pc11_wr_en <= 1'b0;
     end
     else begin
-      r_runtime_1in3_pep_load_ksk_rcp_dur_pc11       <= r_runtime_1in3_pep_load_ksk_rcp_dur_pc11D;
       r_runtime_1in3_pep_load_ksk_rcp_dur_pc11_wr_en <= r_runtime_1in3_pep_load_ksk_rcp_dur_pc11_wr_enD;
+    end
+  end
+  always_ff @(posedge clk) begin
+    if (!s_rst_n) begin
+      r_runtime_1in3_pep_load_ksk_rcp_dur_pc11       <= runtime_1in3_pep_load_ksk_rcp_dur_pc11_default;
+    end
+    else begin
+      r_runtime_1in3_pep_load_ksk_rcp_dur_pc11       <= r_runtime_1in3_pep_load_ksk_rcp_dur_pc11D;
     end
   end
 // Register FF: runtime_1in3_pep_load_ksk_rcp_dur_pc12
@@ -1519,12 +1759,18 @@ import hpu_regif_core_prc_1in3_pkg::*;
   assign r_runtime_1in3_pep_load_ksk_rcp_dur_pc12_wr_enD = wr_en_ok && (wr_add[AXIL_ADD_RANGE_W-1:0] == RUNTIME_1IN3_PEP_LOAD_KSK_RCP_DUR_PC12_OFS[AXIL_ADD_RANGE_W-1:0]);
   always_ff @(posedge clk) begin
     if (!s_rst_n) begin
-      r_runtime_1in3_pep_load_ksk_rcp_dur_pc12       <= runtime_1in3_pep_load_ksk_rcp_dur_pc12_default;
       r_runtime_1in3_pep_load_ksk_rcp_dur_pc12_wr_en <= 1'b0;
     end
     else begin
-      r_runtime_1in3_pep_load_ksk_rcp_dur_pc12       <= r_runtime_1in3_pep_load_ksk_rcp_dur_pc12D;
       r_runtime_1in3_pep_load_ksk_rcp_dur_pc12_wr_en <= r_runtime_1in3_pep_load_ksk_rcp_dur_pc12_wr_enD;
+    end
+  end
+  always_ff @(posedge clk) begin
+    if (!s_rst_n) begin
+      r_runtime_1in3_pep_load_ksk_rcp_dur_pc12       <= runtime_1in3_pep_load_ksk_rcp_dur_pc12_default;
+    end
+    else begin
+      r_runtime_1in3_pep_load_ksk_rcp_dur_pc12       <= r_runtime_1in3_pep_load_ksk_rcp_dur_pc12D;
     end
   end
 // Register FF: runtime_1in3_pep_load_ksk_rcp_dur_pc13
@@ -1534,12 +1780,18 @@ import hpu_regif_core_prc_1in3_pkg::*;
   assign r_runtime_1in3_pep_load_ksk_rcp_dur_pc13_wr_enD = wr_en_ok && (wr_add[AXIL_ADD_RANGE_W-1:0] == RUNTIME_1IN3_PEP_LOAD_KSK_RCP_DUR_PC13_OFS[AXIL_ADD_RANGE_W-1:0]);
   always_ff @(posedge clk) begin
     if (!s_rst_n) begin
-      r_runtime_1in3_pep_load_ksk_rcp_dur_pc13       <= runtime_1in3_pep_load_ksk_rcp_dur_pc13_default;
       r_runtime_1in3_pep_load_ksk_rcp_dur_pc13_wr_en <= 1'b0;
     end
     else begin
-      r_runtime_1in3_pep_load_ksk_rcp_dur_pc13       <= r_runtime_1in3_pep_load_ksk_rcp_dur_pc13D;
       r_runtime_1in3_pep_load_ksk_rcp_dur_pc13_wr_en <= r_runtime_1in3_pep_load_ksk_rcp_dur_pc13_wr_enD;
+    end
+  end
+  always_ff @(posedge clk) begin
+    if (!s_rst_n) begin
+      r_runtime_1in3_pep_load_ksk_rcp_dur_pc13       <= runtime_1in3_pep_load_ksk_rcp_dur_pc13_default;
+    end
+    else begin
+      r_runtime_1in3_pep_load_ksk_rcp_dur_pc13       <= r_runtime_1in3_pep_load_ksk_rcp_dur_pc13D;
     end
   end
 // Register FF: runtime_1in3_pep_load_ksk_rcp_dur_pc14
@@ -1549,12 +1801,18 @@ import hpu_regif_core_prc_1in3_pkg::*;
   assign r_runtime_1in3_pep_load_ksk_rcp_dur_pc14_wr_enD = wr_en_ok && (wr_add[AXIL_ADD_RANGE_W-1:0] == RUNTIME_1IN3_PEP_LOAD_KSK_RCP_DUR_PC14_OFS[AXIL_ADD_RANGE_W-1:0]);
   always_ff @(posedge clk) begin
     if (!s_rst_n) begin
-      r_runtime_1in3_pep_load_ksk_rcp_dur_pc14       <= runtime_1in3_pep_load_ksk_rcp_dur_pc14_default;
       r_runtime_1in3_pep_load_ksk_rcp_dur_pc14_wr_en <= 1'b0;
     end
     else begin
-      r_runtime_1in3_pep_load_ksk_rcp_dur_pc14       <= r_runtime_1in3_pep_load_ksk_rcp_dur_pc14D;
       r_runtime_1in3_pep_load_ksk_rcp_dur_pc14_wr_en <= r_runtime_1in3_pep_load_ksk_rcp_dur_pc14_wr_enD;
+    end
+  end
+  always_ff @(posedge clk) begin
+    if (!s_rst_n) begin
+      r_runtime_1in3_pep_load_ksk_rcp_dur_pc14       <= runtime_1in3_pep_load_ksk_rcp_dur_pc14_default;
+    end
+    else begin
+      r_runtime_1in3_pep_load_ksk_rcp_dur_pc14       <= r_runtime_1in3_pep_load_ksk_rcp_dur_pc14D;
     end
   end
 // Register FF: runtime_1in3_pep_load_ksk_rcp_dur_pc15
@@ -1564,12 +1822,18 @@ import hpu_regif_core_prc_1in3_pkg::*;
   assign r_runtime_1in3_pep_load_ksk_rcp_dur_pc15_wr_enD = wr_en_ok && (wr_add[AXIL_ADD_RANGE_W-1:0] == RUNTIME_1IN3_PEP_LOAD_KSK_RCP_DUR_PC15_OFS[AXIL_ADD_RANGE_W-1:0]);
   always_ff @(posedge clk) begin
     if (!s_rst_n) begin
-      r_runtime_1in3_pep_load_ksk_rcp_dur_pc15       <= runtime_1in3_pep_load_ksk_rcp_dur_pc15_default;
       r_runtime_1in3_pep_load_ksk_rcp_dur_pc15_wr_en <= 1'b0;
     end
     else begin
-      r_runtime_1in3_pep_load_ksk_rcp_dur_pc15       <= r_runtime_1in3_pep_load_ksk_rcp_dur_pc15D;
       r_runtime_1in3_pep_load_ksk_rcp_dur_pc15_wr_en <= r_runtime_1in3_pep_load_ksk_rcp_dur_pc15_wr_enD;
+    end
+  end
+  always_ff @(posedge clk) begin
+    if (!s_rst_n) begin
+      r_runtime_1in3_pep_load_ksk_rcp_dur_pc15       <= runtime_1in3_pep_load_ksk_rcp_dur_pc15_default;
+    end
+    else begin
+      r_runtime_1in3_pep_load_ksk_rcp_dur_pc15       <= r_runtime_1in3_pep_load_ksk_rcp_dur_pc15D;
     end
   end
 // Register FF: runtime_1in3_pep_mmacc_sxt_rcp_dur
@@ -1579,12 +1843,18 @@ import hpu_regif_core_prc_1in3_pkg::*;
   assign r_runtime_1in3_pep_mmacc_sxt_rcp_dur_wr_enD = wr_en_ok && (wr_add[AXIL_ADD_RANGE_W-1:0] == RUNTIME_1IN3_PEP_MMACC_SXT_RCP_DUR_OFS[AXIL_ADD_RANGE_W-1:0]);
   always_ff @(posedge clk) begin
     if (!s_rst_n) begin
-      r_runtime_1in3_pep_mmacc_sxt_rcp_dur       <= runtime_1in3_pep_mmacc_sxt_rcp_dur_default;
       r_runtime_1in3_pep_mmacc_sxt_rcp_dur_wr_en <= 1'b0;
     end
     else begin
-      r_runtime_1in3_pep_mmacc_sxt_rcp_dur       <= r_runtime_1in3_pep_mmacc_sxt_rcp_durD;
       r_runtime_1in3_pep_mmacc_sxt_rcp_dur_wr_en <= r_runtime_1in3_pep_mmacc_sxt_rcp_dur_wr_enD;
+    end
+  end
+  always_ff @(posedge clk) begin
+    if (!s_rst_n) begin
+      r_runtime_1in3_pep_mmacc_sxt_rcp_dur       <= runtime_1in3_pep_mmacc_sxt_rcp_dur_default;
+    end
+    else begin
+      r_runtime_1in3_pep_mmacc_sxt_rcp_dur       <= r_runtime_1in3_pep_mmacc_sxt_rcp_durD;
     end
   end
 // Register FF: runtime_1in3_pep_mmacc_sxt_req_dur
@@ -1594,12 +1864,18 @@ import hpu_regif_core_prc_1in3_pkg::*;
   assign r_runtime_1in3_pep_mmacc_sxt_req_dur_wr_enD = wr_en_ok && (wr_add[AXIL_ADD_RANGE_W-1:0] == RUNTIME_1IN3_PEP_MMACC_SXT_REQ_DUR_OFS[AXIL_ADD_RANGE_W-1:0]);
   always_ff @(posedge clk) begin
     if (!s_rst_n) begin
-      r_runtime_1in3_pep_mmacc_sxt_req_dur       <= runtime_1in3_pep_mmacc_sxt_req_dur_default;
       r_runtime_1in3_pep_mmacc_sxt_req_dur_wr_en <= 1'b0;
     end
     else begin
-      r_runtime_1in3_pep_mmacc_sxt_req_dur       <= r_runtime_1in3_pep_mmacc_sxt_req_durD;
       r_runtime_1in3_pep_mmacc_sxt_req_dur_wr_en <= r_runtime_1in3_pep_mmacc_sxt_req_dur_wr_enD;
+    end
+  end
+  always_ff @(posedge clk) begin
+    if (!s_rst_n) begin
+      r_runtime_1in3_pep_mmacc_sxt_req_dur       <= runtime_1in3_pep_mmacc_sxt_req_dur_default;
+    end
+    else begin
+      r_runtime_1in3_pep_mmacc_sxt_req_dur       <= r_runtime_1in3_pep_mmacc_sxt_req_durD;
     end
   end
 // Register FF: runtime_1in3_pep_mmacc_sxt_cmd_wait_b_dur
@@ -1609,12 +1885,18 @@ import hpu_regif_core_prc_1in3_pkg::*;
   assign r_runtime_1in3_pep_mmacc_sxt_cmd_wait_b_dur_wr_enD = wr_en_ok && (wr_add[AXIL_ADD_RANGE_W-1:0] == RUNTIME_1IN3_PEP_MMACC_SXT_CMD_WAIT_B_DUR_OFS[AXIL_ADD_RANGE_W-1:0]);
   always_ff @(posedge clk) begin
     if (!s_rst_n) begin
-      r_runtime_1in3_pep_mmacc_sxt_cmd_wait_b_dur       <= runtime_1in3_pep_mmacc_sxt_cmd_wait_b_dur_default;
       r_runtime_1in3_pep_mmacc_sxt_cmd_wait_b_dur_wr_en <= 1'b0;
     end
     else begin
-      r_runtime_1in3_pep_mmacc_sxt_cmd_wait_b_dur       <= r_runtime_1in3_pep_mmacc_sxt_cmd_wait_b_durD;
       r_runtime_1in3_pep_mmacc_sxt_cmd_wait_b_dur_wr_en <= r_runtime_1in3_pep_mmacc_sxt_cmd_wait_b_dur_wr_enD;
+    end
+  end
+  always_ff @(posedge clk) begin
+    if (!s_rst_n) begin
+      r_runtime_1in3_pep_mmacc_sxt_cmd_wait_b_dur       <= runtime_1in3_pep_mmacc_sxt_cmd_wait_b_dur_default;
+    end
+    else begin
+      r_runtime_1in3_pep_mmacc_sxt_cmd_wait_b_dur       <= r_runtime_1in3_pep_mmacc_sxt_cmd_wait_b_durD;
     end
   end
 // Register FF: runtime_1in3_pep_inst_cnt
@@ -1624,12 +1906,18 @@ import hpu_regif_core_prc_1in3_pkg::*;
   assign r_runtime_1in3_pep_inst_cnt_wr_enD = wr_en_ok && (wr_add[AXIL_ADD_RANGE_W-1:0] == RUNTIME_1IN3_PEP_INST_CNT_OFS[AXIL_ADD_RANGE_W-1:0]);
   always_ff @(posedge clk) begin
     if (!s_rst_n) begin
-      r_runtime_1in3_pep_inst_cnt       <= runtime_1in3_pep_inst_cnt_default;
       r_runtime_1in3_pep_inst_cnt_wr_en <= 1'b0;
     end
     else begin
-      r_runtime_1in3_pep_inst_cnt       <= r_runtime_1in3_pep_inst_cntD;
       r_runtime_1in3_pep_inst_cnt_wr_en <= r_runtime_1in3_pep_inst_cnt_wr_enD;
+    end
+  end
+  always_ff @(posedge clk) begin
+    if (!s_rst_n) begin
+      r_runtime_1in3_pep_inst_cnt       <= runtime_1in3_pep_inst_cnt_default;
+    end
+    else begin
+      r_runtime_1in3_pep_inst_cnt       <= r_runtime_1in3_pep_inst_cntD;
     end
   end
 // Register FF: runtime_1in3_pep_ack_cnt
@@ -1639,12 +1927,18 @@ import hpu_regif_core_prc_1in3_pkg::*;
   assign r_runtime_1in3_pep_ack_cnt_wr_enD = wr_en_ok && (wr_add[AXIL_ADD_RANGE_W-1:0] == RUNTIME_1IN3_PEP_ACK_CNT_OFS[AXIL_ADD_RANGE_W-1:0]);
   always_ff @(posedge clk) begin
     if (!s_rst_n) begin
-      r_runtime_1in3_pep_ack_cnt       <= runtime_1in3_pep_ack_cnt_default;
       r_runtime_1in3_pep_ack_cnt_wr_en <= 1'b0;
     end
     else begin
-      r_runtime_1in3_pep_ack_cnt       <= r_runtime_1in3_pep_ack_cntD;
       r_runtime_1in3_pep_ack_cnt_wr_en <= r_runtime_1in3_pep_ack_cnt_wr_enD;
+    end
+  end
+  always_ff @(posedge clk) begin
+    if (!s_rst_n) begin
+      r_runtime_1in3_pep_ack_cnt       <= runtime_1in3_pep_ack_cnt_default;
+    end
+    else begin
+      r_runtime_1in3_pep_ack_cnt       <= r_runtime_1in3_pep_ack_cntD;
     end
   end
 // Register FF: runtime_1in3_pem_load_inst_cnt
@@ -1654,12 +1948,18 @@ import hpu_regif_core_prc_1in3_pkg::*;
   assign r_runtime_1in3_pem_load_inst_cnt_wr_enD = wr_en_ok && (wr_add[AXIL_ADD_RANGE_W-1:0] == RUNTIME_1IN3_PEM_LOAD_INST_CNT_OFS[AXIL_ADD_RANGE_W-1:0]);
   always_ff @(posedge clk) begin
     if (!s_rst_n) begin
-      r_runtime_1in3_pem_load_inst_cnt       <= runtime_1in3_pem_load_inst_cnt_default;
       r_runtime_1in3_pem_load_inst_cnt_wr_en <= 1'b0;
     end
     else begin
-      r_runtime_1in3_pem_load_inst_cnt       <= r_runtime_1in3_pem_load_inst_cntD;
       r_runtime_1in3_pem_load_inst_cnt_wr_en <= r_runtime_1in3_pem_load_inst_cnt_wr_enD;
+    end
+  end
+  always_ff @(posedge clk) begin
+    if (!s_rst_n) begin
+      r_runtime_1in3_pem_load_inst_cnt       <= runtime_1in3_pem_load_inst_cnt_default;
+    end
+    else begin
+      r_runtime_1in3_pem_load_inst_cnt       <= r_runtime_1in3_pem_load_inst_cntD;
     end
   end
 // Register FF: runtime_1in3_pem_load_ack_cnt
@@ -1669,12 +1969,18 @@ import hpu_regif_core_prc_1in3_pkg::*;
   assign r_runtime_1in3_pem_load_ack_cnt_wr_enD = wr_en_ok && (wr_add[AXIL_ADD_RANGE_W-1:0] == RUNTIME_1IN3_PEM_LOAD_ACK_CNT_OFS[AXIL_ADD_RANGE_W-1:0]);
   always_ff @(posedge clk) begin
     if (!s_rst_n) begin
-      r_runtime_1in3_pem_load_ack_cnt       <= runtime_1in3_pem_load_ack_cnt_default;
       r_runtime_1in3_pem_load_ack_cnt_wr_en <= 1'b0;
     end
     else begin
-      r_runtime_1in3_pem_load_ack_cnt       <= r_runtime_1in3_pem_load_ack_cntD;
       r_runtime_1in3_pem_load_ack_cnt_wr_en <= r_runtime_1in3_pem_load_ack_cnt_wr_enD;
+    end
+  end
+  always_ff @(posedge clk) begin
+    if (!s_rst_n) begin
+      r_runtime_1in3_pem_load_ack_cnt       <= runtime_1in3_pem_load_ack_cnt_default;
+    end
+    else begin
+      r_runtime_1in3_pem_load_ack_cnt       <= r_runtime_1in3_pem_load_ack_cntD;
     end
   end
 // Register FF: runtime_1in3_pem_store_inst_cnt
@@ -1684,12 +1990,18 @@ import hpu_regif_core_prc_1in3_pkg::*;
   assign r_runtime_1in3_pem_store_inst_cnt_wr_enD = wr_en_ok && (wr_add[AXIL_ADD_RANGE_W-1:0] == RUNTIME_1IN3_PEM_STORE_INST_CNT_OFS[AXIL_ADD_RANGE_W-1:0]);
   always_ff @(posedge clk) begin
     if (!s_rst_n) begin
-      r_runtime_1in3_pem_store_inst_cnt       <= runtime_1in3_pem_store_inst_cnt_default;
       r_runtime_1in3_pem_store_inst_cnt_wr_en <= 1'b0;
     end
     else begin
-      r_runtime_1in3_pem_store_inst_cnt       <= r_runtime_1in3_pem_store_inst_cntD;
       r_runtime_1in3_pem_store_inst_cnt_wr_en <= r_runtime_1in3_pem_store_inst_cnt_wr_enD;
+    end
+  end
+  always_ff @(posedge clk) begin
+    if (!s_rst_n) begin
+      r_runtime_1in3_pem_store_inst_cnt       <= runtime_1in3_pem_store_inst_cnt_default;
+    end
+    else begin
+      r_runtime_1in3_pem_store_inst_cnt       <= r_runtime_1in3_pem_store_inst_cntD;
     end
   end
 // Register FF: runtime_1in3_pem_store_ack_cnt
@@ -1699,12 +2011,18 @@ import hpu_regif_core_prc_1in3_pkg::*;
   assign r_runtime_1in3_pem_store_ack_cnt_wr_enD = wr_en_ok && (wr_add[AXIL_ADD_RANGE_W-1:0] == RUNTIME_1IN3_PEM_STORE_ACK_CNT_OFS[AXIL_ADD_RANGE_W-1:0]);
   always_ff @(posedge clk) begin
     if (!s_rst_n) begin
-      r_runtime_1in3_pem_store_ack_cnt       <= runtime_1in3_pem_store_ack_cnt_default;
       r_runtime_1in3_pem_store_ack_cnt_wr_en <= 1'b0;
     end
     else begin
-      r_runtime_1in3_pem_store_ack_cnt       <= r_runtime_1in3_pem_store_ack_cntD;
       r_runtime_1in3_pem_store_ack_cnt_wr_en <= r_runtime_1in3_pem_store_ack_cnt_wr_enD;
+    end
+  end
+  always_ff @(posedge clk) begin
+    if (!s_rst_n) begin
+      r_runtime_1in3_pem_store_ack_cnt       <= runtime_1in3_pem_store_ack_cnt_default;
+    end
+    else begin
+      r_runtime_1in3_pem_store_ack_cnt       <= r_runtime_1in3_pem_store_ack_cntD;
     end
   end
 // Register FF: runtime_1in3_pea_inst_cnt
@@ -1714,12 +2032,18 @@ import hpu_regif_core_prc_1in3_pkg::*;
   assign r_runtime_1in3_pea_inst_cnt_wr_enD = wr_en_ok && (wr_add[AXIL_ADD_RANGE_W-1:0] == RUNTIME_1IN3_PEA_INST_CNT_OFS[AXIL_ADD_RANGE_W-1:0]);
   always_ff @(posedge clk) begin
     if (!s_rst_n) begin
-      r_runtime_1in3_pea_inst_cnt       <= runtime_1in3_pea_inst_cnt_default;
       r_runtime_1in3_pea_inst_cnt_wr_en <= 1'b0;
     end
     else begin
-      r_runtime_1in3_pea_inst_cnt       <= r_runtime_1in3_pea_inst_cntD;
       r_runtime_1in3_pea_inst_cnt_wr_en <= r_runtime_1in3_pea_inst_cnt_wr_enD;
+    end
+  end
+  always_ff @(posedge clk) begin
+    if (!s_rst_n) begin
+      r_runtime_1in3_pea_inst_cnt       <= runtime_1in3_pea_inst_cnt_default;
+    end
+    else begin
+      r_runtime_1in3_pea_inst_cnt       <= r_runtime_1in3_pea_inst_cntD;
     end
   end
 // Register FF: runtime_1in3_pea_ack_cnt
@@ -1729,12 +2053,18 @@ import hpu_regif_core_prc_1in3_pkg::*;
   assign r_runtime_1in3_pea_ack_cnt_wr_enD = wr_en_ok && (wr_add[AXIL_ADD_RANGE_W-1:0] == RUNTIME_1IN3_PEA_ACK_CNT_OFS[AXIL_ADD_RANGE_W-1:0]);
   always_ff @(posedge clk) begin
     if (!s_rst_n) begin
-      r_runtime_1in3_pea_ack_cnt       <= runtime_1in3_pea_ack_cnt_default;
       r_runtime_1in3_pea_ack_cnt_wr_en <= 1'b0;
     end
     else begin
-      r_runtime_1in3_pea_ack_cnt       <= r_runtime_1in3_pea_ack_cntD;
       r_runtime_1in3_pea_ack_cnt_wr_en <= r_runtime_1in3_pea_ack_cnt_wr_enD;
+    end
+  end
+  always_ff @(posedge clk) begin
+    if (!s_rst_n) begin
+      r_runtime_1in3_pea_ack_cnt       <= runtime_1in3_pea_ack_cnt_default;
+    end
+    else begin
+      r_runtime_1in3_pea_ack_cnt       <= r_runtime_1in3_pea_ack_cntD;
     end
   end
 // Register FF: runtime_1in3_isc_inst_cnt
@@ -1744,12 +2074,18 @@ import hpu_regif_core_prc_1in3_pkg::*;
   assign r_runtime_1in3_isc_inst_cnt_wr_enD = wr_en_ok && (wr_add[AXIL_ADD_RANGE_W-1:0] == RUNTIME_1IN3_ISC_INST_CNT_OFS[AXIL_ADD_RANGE_W-1:0]);
   always_ff @(posedge clk) begin
     if (!s_rst_n) begin
-      r_runtime_1in3_isc_inst_cnt       <= runtime_1in3_isc_inst_cnt_default;
       r_runtime_1in3_isc_inst_cnt_wr_en <= 1'b0;
     end
     else begin
-      r_runtime_1in3_isc_inst_cnt       <= r_runtime_1in3_isc_inst_cntD;
       r_runtime_1in3_isc_inst_cnt_wr_en <= r_runtime_1in3_isc_inst_cnt_wr_enD;
+    end
+  end
+  always_ff @(posedge clk) begin
+    if (!s_rst_n) begin
+      r_runtime_1in3_isc_inst_cnt       <= runtime_1in3_isc_inst_cnt_default;
+    end
+    else begin
+      r_runtime_1in3_isc_inst_cnt       <= r_runtime_1in3_isc_inst_cntD;
     end
   end
 // Register FF: runtime_1in3_isc_ack_cnt
@@ -1759,12 +2095,18 @@ import hpu_regif_core_prc_1in3_pkg::*;
   assign r_runtime_1in3_isc_ack_cnt_wr_enD = wr_en_ok && (wr_add[AXIL_ADD_RANGE_W-1:0] == RUNTIME_1IN3_ISC_ACK_CNT_OFS[AXIL_ADD_RANGE_W-1:0]);
   always_ff @(posedge clk) begin
     if (!s_rst_n) begin
-      r_runtime_1in3_isc_ack_cnt       <= runtime_1in3_isc_ack_cnt_default;
       r_runtime_1in3_isc_ack_cnt_wr_en <= 1'b0;
     end
     else begin
-      r_runtime_1in3_isc_ack_cnt       <= r_runtime_1in3_isc_ack_cntD;
       r_runtime_1in3_isc_ack_cnt_wr_en <= r_runtime_1in3_isc_ack_cnt_wr_enD;
+    end
+  end
+  always_ff @(posedge clk) begin
+    if (!s_rst_n) begin
+      r_runtime_1in3_isc_ack_cnt       <= runtime_1in3_isc_ack_cnt_default;
+    end
+    else begin
+      r_runtime_1in3_isc_ack_cnt       <= r_runtime_1in3_isc_ack_cntD;
     end
   end
 // Register FF: runtime_1in3_pem_load_info_0_pc0_0

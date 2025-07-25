@@ -12,6 +12,7 @@
 
 `include "hpu_io_macro_inc.sv"
 
+(* keep_hierarchy = "yes" *)
 module hpu_3parts_3in3_core
   import common_definition_pkg::*;
   import param_tfhe_pkg::*;
@@ -80,8 +81,11 @@ module hpu_3parts_3in3_core
   output bskentry_proc_t      bsk_entry_proc,
 
   //-- For regif
-  input pep_rif_elt_t         p2_p3_pep_rif_elt
+  input pep_rif_elt_t         p2_p3_pep_rif_elt,
 
+  // Reset three way handshake
+  output logic                hpu_reset,
+  input  logic                hpu_reset_done
 );
 
 // ============================================================================================== --
@@ -213,7 +217,10 @@ module hpu_3parts_3in3_core
     .pep_rif_info              (pep_rif_info),
     .pep_rif_counter_inc       (pep_rif_counter_inc),
 
-    .interrupt                 (interrupt)
+    .interrupt                 (interrupt),
+
+    .hpu_reset                 (hpu_reset),
+    .hpu_reset_done            (hpu_reset_done)
   );
 
 // ============================================================================================== --

@@ -53,6 +53,27 @@
             "is_include_file": false
         },
         {
+            "name": "hw/module/hpu/rtl/hpu_soft_reset.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false
+        },
+        {
+            "name": "hw/module/hpu/rtl/hpu_qualified_pipe.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false
+        },
+        {
+            "name": "hw/module/hpu/rtl/hpu_qual_sll.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false
+        },
+        {
             "name": "hw/module/hpu/rtl/hpu_3parts.sv",
             "library": "work",
             "env": ["all"],
@@ -66,6 +87,7 @@
     "dependency_dir": [
         "hw/common_lib/common_package",
         "hw/common_lib/stream_to_pipe",
+        "hw/common_lib/cdc/module/xpm_cdc_single_wrapper",
         "hw/module/param",
         "hw/module/top_common",
         "hw/module/axi_if/module/axi_if_common",
@@ -85,7 +107,8 @@
         "hw/module/pe_mem",
         "hw/module/pe_pbs",
         "hw/module/regfile",
-        "hw/module/hpu/module/hpu_regif"
+        "hw/module/hpu/module/hpu_regif",
+        "hw/module/fpga_clock_reset"
     ],
     "include_dir": []
 }

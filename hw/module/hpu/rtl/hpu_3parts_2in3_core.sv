@@ -12,6 +12,7 @@
 
 `include "hpu_io_macro_inc.sv"
 
+(* keep_hierarchy = "yes" *)
 module hpu_3parts_2in3_core
   import common_definition_pkg::*;
   import param_tfhe_pkg::*;
@@ -46,70 +47,53 @@ module hpu_3parts_2in3_core
   parameter int    VERSION_MINOR    = 0
 )
 (
-  input  logic                prc_clk,     // process clock
-  input  logic                prc_srst_n, // synchronous reset
+  input  logic                               prc_clk,     // process clock
+  input  logic                               prc_srst_n, // synchronous reset
 
-  input  logic                cfg_clk,     // config clock
-  input  logic                cfg_srst_n, // synchronous reset
+  input  logic                               cfg_clk,     // config clock
+  input  logic                               cfg_srst_n, // synchronous reset
 
-  //== HPU internal signals
-  //-- MMACC
-  // Feed
-  input  mainsubs_feed_cmd_t  main_subs_feed_cmd,
-  input  logic                main_subs_feed_cmd_vld,
-  output logic                main_subs_feed_cmd_rdy,
+  // Decomposer -> NTT
+  input  logic [PSI-1:0][R-1:0]              decomp_ntt_data_avail,
+  input  logic [PSI-1:0][R-1:0][PBS_B_W:0]   decomp_ntt_data, // 2s complement
+  input  logic                               decomp_ntt_sob,
+  input  logic                               decomp_ntt_eob,
+  input  logic                               decomp_ntt_sog,
+  input  logic                               decomp_ntt_eog,
+  input  logic                               decomp_ntt_sol,
+  input  logic                               decomp_ntt_eol,
+  input  logic [BPBS_ID_W-1:0]               decomp_ntt_pbs_id,
+  input  logic                               decomp_ntt_last_pbs,
+  input  logic                               decomp_ntt_full_throughput,
+  input  logic                               decomp_ntt_ctrl_avail,
 
-  input  mainsubs_feed_data_t main_subs_feed_data,
-  input  logic                main_subs_feed_data_avail,
-
-  input  mainsubs_feed_part_t main_subs_feed_part,
-  input  logic                main_subs_feed_part_avail,
-
-  // Acc
-  output subsmain_acc_data_t  subs_main_acc_data,
-  output logic                subs_main_acc_data_avail,
-
-  // Sxt
-  input  mainsubs_sxt_cmd_t   main_subs_sxt_cmd,
-  input  logic                main_subs_sxt_cmd_vld,
-  output logic                main_subs_sxt_cmd_rdy,
-
-  output subsmain_sxt_data_t  subs_main_sxt_data,
-  output logic                subs_main_sxt_data_vld,
-  input  logic                subs_main_sxt_data_rdy,
-
-  output subsmain_sxt_part_t  subs_main_sxt_part,
-  output logic                subs_main_sxt_part_vld,
-  input  logic                subs_main_sxt_part_rdy,
-
-  //-- LDG
-  input  mainsubs_ldg_cmd_t   main_subs_ldg_cmd,
-  input  logic                main_subs_ldg_cmd_vld,
-  output logic                main_subs_ldg_cmd_rdy,
-
-  input  mainsubs_ldg_data_t  main_subs_ldg_data,
-  input  logic                main_subs_ldg_data_vld,
-  output logic                main_subs_ldg_data_rdy,
-
-  //-- MMACC Misc
-  output subsmain_side_t      subs_main_side,
-  input  mainsubs_side_t      main_subs_side,
+  // Mod switch output
+  output logic [PSI-1:0][R-1:0]              ntt_acc_modsw_data_avail,
+  output logic                               ntt_acc_modsw_ctrl_avail,
+  output logic [PSI-1:0][R-1:0][MOD_Q_W-1:0] ntt_acc_modsw_data,
+  output logic                               ntt_acc_modsw_sob,
+  output logic                               ntt_acc_modsw_eob,
+  output logic                               ntt_acc_modsw_sol,
+  output logic                               ntt_acc_modsw_eol,
+  output logic                               ntt_acc_modsw_sog,
+  output logic                               ntt_acc_modsw_eog,
+  output logic [BPBS_ID_W-1:0]               ntt_acc_modsw_pbs_id,
 
   //-- Data path
-  output ntt_proc_data_t      p2_p3_ntt_proc_data,
-  output logic [PSI-1:0][R-1:0]p2_p3_ntt_proc_avail,
-  output logic                p2_p3_ntt_proc_ctrl_avail,
+  output ntt_proc_data_t                     p2_p3_ntt_proc_data,
+  output logic [PSI-1:0][R-1:0]              p2_p3_ntt_proc_avail,
+  output logic                               p2_p3_ntt_proc_ctrl_avail,
 
-  input  ntt_proc_data_t      p3_p2_ntt_proc_data,
-  input  logic [PSI-1:0][R-1:0]p3_p2_ntt_proc_avail,
-  input  logic                p3_p2_ntt_proc_ctrl_avail,
+  input  ntt_proc_data_t                     p3_p2_ntt_proc_data,
+  input  logic [PSI-1:0][R-1:0]              p3_p2_ntt_proc_avail,
+  input  logic                               p3_p2_ntt_proc_ctrl_avail,
 
   //-- Cmd path
-  input ntt_proc_cmd_t        ntt_proc_cmd,
-  input logic                 ntt_proc_cmd_avail,
+  input ntt_proc_cmd_t                       ntt_proc_cmd,
+  input logic                                ntt_proc_cmd_avail,
 
   //-- For regif
-  output pep_rif_elt_t        pep_rif_elt
+  output pep_rif_elt_t                       pep_rif_elt
 );
 
 // ============================================================================================== --
@@ -128,22 +112,6 @@ module hpu_3parts_2in3_core
   // -------------------------------------------------------------------------------------------- --
   // NTT
   // -------------------------------------------------------------------------------------------- --
-  // Decomposer -> NTT
-  logic [PSI-1:0][R-1:0]                  decomp_ntt_data_avail;
-  logic [PSI-1:0][R-1:0][PBS_B_W:0]       decomp_ntt_data; // 2s complement
-  logic                                   decomp_ntt_sob;
-  logic                                   decomp_ntt_eob;
-  logic                                   decomp_ntt_sog;
-  logic                                   decomp_ntt_eog;
-  logic                                   decomp_ntt_sol;
-  logic                                   decomp_ntt_eol;
-  logic [BPBS_ID_W-1:0]                   decomp_ntt_pbs_id;
-  logic                                   decomp_ntt_last_pbs;
-  logic                                   decomp_ntt_full_throughput;
-  logic                                   decomp_ntt_ctrl_avail;
-  logic [PSI-1:0][R-1:0]                  decomp_ntt_data_rdy;
-  logic                                   decomp_ntt_ctrl_rdy;
-
   // Output data to next ntt
   ntt_proc_data_t                         next_otw_data;
   logic [PSI-1:0][R-1:0]                  next_otw_data_avail;
@@ -166,18 +134,6 @@ module hpu_3parts_2in3_core
   logic                                   ntt_acc_eog;
   logic [BPBS_ID_W-1:0]                   ntt_acc_pbs_id;
 
-  // Mod switch output
-  logic [PSI-1:0][R-1:0]                  ntt_acc_modsw_data_avail;
-  logic                                   ntt_acc_modsw_ctrl_avail;
-  logic [PSI-1:0][R-1:0][MOD_Q_W-1:0]     ntt_acc_modsw_data;
-  logic                                   ntt_acc_modsw_sob;
-  logic                                   ntt_acc_modsw_eob;
-  logic                                   ntt_acc_modsw_sol;
-  logic                                   ntt_acc_modsw_eol;
-  logic                                   ntt_acc_modsw_sog;
-  logic                                   ntt_acc_modsw_eog;
-  logic [BPBS_ID_W-1:0]                   ntt_acc_modsw_pbs_id;
-
   // Errors and counters
   pep_error_t                             pep_error;
   pep_info_t                              pep_rif_info;
@@ -186,17 +142,14 @@ module hpu_3parts_2in3_core
   pep_error_t                             pep_otw_error;
   pep_error_t                             pep_ret_error;
   pep_error_t                             pep_modsw_error;
-  pep_error_t                             pep_entry_error;
 
   pep_info_t                              pep_otw_rif_info;
   pep_info_t                              pep_ret_rif_info;
   pep_info_t                              pep_modsw_rif_info;
-  pep_info_t                              pep_entry_rif_info;
 
   pep_counter_inc_t                       pep_otw_rif_counter_inc;
   pep_counter_inc_t                       pep_ret_rif_counter_inc;
   pep_counter_inc_t                       pep_modsw_rif_counter_inc;
-  pep_counter_inc_t                       pep_entry_rif_counter_inc;
 
 // ============================================================================================== --
 // Side
@@ -207,16 +160,13 @@ module hpu_3parts_2in3_core
 
   assign pep_errorD           = pep_otw_error
                                 | pep_ret_error
-                                | pep_modsw_error
-                                | pep_entry_error;
+                                | pep_modsw_error;
   assign pep_rif_infoD        = pep_otw_rif_info
                                 | pep_ret_rif_info
-                                | pep_modsw_rif_info
-                                | pep_entry_rif_info;
+                                | pep_modsw_rif_info;
   assign pep_rif_counter_incD = pep_otw_rif_counter_inc
                                 | pep_ret_rif_counter_inc
-                                | pep_modsw_rif_counter_inc
-                                | pep_entry_rif_counter_inc;
+                                | pep_modsw_rif_counter_inc;
 
   always_ff @(posedge prc_clk)
     if (!prc_srst_n) begin
@@ -247,116 +197,6 @@ module hpu_3parts_2in3_core
   assign pep_rif_elt.error           = pep_error;
   assign pep_rif_elt.rif_info        = pep_rif_info;
   assign pep_rif_elt.rif_counter_inc = pep_rif_counter_inc;
-
-// ============================================================================================== --
-// pe_pbs_with_entry_subsidiary
-// contains:
-// * pep_mon_mult_acc
-// * pep_load_glwe
-// ============================================================================================== --
-  pe_pbs_with_entry_subsidiary
-  #(
-    .MOD_MULT_TYPE        (MOD_MULT_TYPE),
-    .REDUCT_TYPE          (REDUCT_TYPE),
-    .MULT_TYPE            (MULT_TYPE),
-    .PP_MOD_MULT_TYPE     (PP_MOD_MULT_TYPE),
-    .PP_MULT_TYPE         (PP_MULT_TYPE),
-    .MODSW_2_PRECISION_W  (MODSW_2_PRECISION_W),
-    .MODSW_2_MULT_TYPE    (MODSW_2_MULT_TYPE),
-    .MODSW_MULT_TYPE      (MODSW_MULT_TYPE),
-
-    .RAM_LATENCY          (RAM_LATENCY),
-    .URAM_LATENCY         (URAM_LATENCY),
-    .ROM_LATENCY          (ROM_LATENCY),
-
-    .TWD_IFNL_FILE_PREFIX (TWD_IFNL_FILE_PREFIX),
-    .TWD_PHRU_FILE_PREFIX (TWD_PHRU_FILE_PREFIX),
-
-    .INST_FIFO_DEPTH      (PEP_INST_FIFO_DEPTH),
-
-    .REGF_RD_LATENCY      (REGF_RD_LATENCY),
-    .KS_IF_COEF_NB        (KS_IF_COEF_NB),
-    .KS_IF_SUBW_NB        (KS_IF_SUBW_NB),
-
-    .PHYS_RAM_DEPTH       (PHYS_RAM_DEPTH)
-  ) pe_pbs_with_entry_subsidiary (
-    .clk                                   (prc_clk),
-    .s_rst_n                               (prc_srst_n),
-
-    .decomp_ntt_data_avail                 (decomp_ntt_data_avail),
-    .decomp_ntt_data                       (decomp_ntt_data),
-    .decomp_ntt_sob                        (decomp_ntt_sob),
-    .decomp_ntt_eob                        (decomp_ntt_eob),
-    .decomp_ntt_sog                        (decomp_ntt_sog),
-    .decomp_ntt_eog                        (decomp_ntt_eog),
-    .decomp_ntt_sol                        (decomp_ntt_sol),
-    .decomp_ntt_eol                        (decomp_ntt_eol),
-    .decomp_ntt_pbs_id                     (decomp_ntt_pbs_id),
-    .decomp_ntt_last_pbs                   (decomp_ntt_last_pbs),
-    .decomp_ntt_full_throughput            (decomp_ntt_full_throughput),
-    .decomp_ntt_ctrl_avail                 (decomp_ntt_ctrl_avail),
-    .decomp_ntt_data_rdy                   (decomp_ntt_data_rdy),
-    .decomp_ntt_ctrl_rdy                   (decomp_ntt_ctrl_rdy),
-
-    .ntt_acc_modsw_data_avail              (ntt_acc_modsw_data_avail),
-    .ntt_acc_modsw_ctrl_avail              (ntt_acc_modsw_ctrl_avail),
-    .ntt_acc_modsw_data                    (ntt_acc_modsw_data),
-    .ntt_acc_modsw_sob                     (ntt_acc_modsw_sob),
-    .ntt_acc_modsw_eob                     (ntt_acc_modsw_eob),
-    .ntt_acc_modsw_sol                     (ntt_acc_modsw_sol),
-    .ntt_acc_modsw_eol                     (ntt_acc_modsw_eol),
-    .ntt_acc_modsw_sog                     (ntt_acc_modsw_sog),
-    .ntt_acc_modsw_eog                     (ntt_acc_modsw_eog),
-    .ntt_acc_modsw_pbs_id                  (ntt_acc_modsw_pbs_id),
-
-    .subs_main_ntt_acc_modsw_avail         (subs_main_acc_data_avail),
-    .subs_main_ntt_acc_modsw_data          (subs_main_acc_data.data),
-    .subs_main_ntt_acc_modsw_sob           (subs_main_acc_data.sob),
-    .subs_main_ntt_acc_modsw_eob           (subs_main_acc_data.eob),
-    .subs_main_ntt_acc_modsw_sol           (subs_main_acc_data.sol),
-    .subs_main_ntt_acc_modsw_eol           (subs_main_acc_data.eol),
-    .subs_main_ntt_acc_modsw_sog           (subs_main_acc_data.sog),
-    .subs_main_ntt_acc_modsw_eog           (subs_main_acc_data.eog),
-    .subs_main_ntt_acc_modsw_pbs_id        (subs_main_acc_data.pbs_id),
-
-    .main_subs_feed_cmd                    (main_subs_feed_cmd),
-    .main_subs_feed_cmd_vld                (main_subs_feed_cmd_vld),
-    .main_subs_feed_cmd_rdy                (main_subs_feed_cmd_rdy),
-
-    .main_subs_feed_data                   (main_subs_feed_data),
-    .main_subs_feed_data_avail             (main_subs_feed_data_avail),
-
-    .main_subs_feed_part                   (main_subs_feed_part),
-    .main_subs_feed_part_avail             (main_subs_feed_part_avail),
-
-    .main_subs_sxt_cmd                     (main_subs_sxt_cmd),
-    .main_subs_sxt_cmd_vld                 (main_subs_sxt_cmd_vld),
-    .main_subs_sxt_cmd_rdy                 (main_subs_sxt_cmd_rdy),
-
-    .subs_main_sxt_data                    (subs_main_sxt_data),
-    .subs_main_sxt_data_vld                (subs_main_sxt_data_vld),
-    .subs_main_sxt_data_rdy                (subs_main_sxt_data_rdy),
-
-    .subs_main_sxt_part                    (subs_main_sxt_part),
-    .subs_main_sxt_part_vld                (subs_main_sxt_part_vld),
-    .subs_main_sxt_part_rdy                (subs_main_sxt_part_rdy),
-
-    .main_subs_ldg_cmd                     (main_subs_ldg_cmd),
-    .main_subs_ldg_cmd_vld                 (main_subs_ldg_cmd_vld),
-    .main_subs_ldg_cmd_rdy                 (main_subs_ldg_cmd_rdy),
-
-    .main_subs_ldg_data                    (main_subs_ldg_data),
-    .main_subs_ldg_data_vld                (main_subs_ldg_data_vld),
-    .main_subs_ldg_data_rdy                (main_subs_ldg_data_rdy),
-
-    .subs_main_proc                        (subs_main_side.proc),
-    .main_subs_proc                        (main_subs_side.proc),
-
-    .pep_error                             (pep_entry_error),
-    .pep_rif_info                          (pep_entry_rif_info),
-    .pep_rif_counter_inc                   (pep_entry_rif_counter_inc)
-
-  );
 
 // ============================================================================================== --
 // pe_pbs_with_ntt_core_middle : outward
@@ -411,8 +251,8 @@ module hpu_3parts_2in3_core
     .decomp_ntt_last_pbs        (decomp_ntt_last_pbs),
     .decomp_ntt_full_throughput (decomp_ntt_full_throughput),
     .decomp_ntt_ctrl_avail      (decomp_ntt_ctrl_avail),
-    .decomp_ntt_data_rdy        (decomp_ntt_data_rdy),
-    .decomp_ntt_ctrl_rdy        (decomp_ntt_ctrl_rdy),
+    .decomp_ntt_data_rdy        (/*UNUSED*/),
+    .decomp_ntt_ctrl_rdy        (/*UNUSED*/),
 
     .next_data                  (next_otw_data.data),
     .next_data_avail            (next_otw_data_avail),

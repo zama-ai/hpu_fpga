@@ -39,6 +39,13 @@
             "is_include_file": false
         },
         {
+            "name": "hw/module/hpu/module/hpu_regif/rtl/hpu_regif_req_ack_rd.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false
+        },
+        {
             "name": "hw/module/hpu/module/hpu_regif/rtl/hpu_regif_error_manager.sv",
             "library": "work",
             "env": ["all"],

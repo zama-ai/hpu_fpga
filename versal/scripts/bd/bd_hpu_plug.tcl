@@ -51,8 +51,7 @@ namespace eval _nsp_hpu {
     variable PCIE_REF_FREQ 100.000
 
     # User
-    set freq 300.000
-    if {$::ntt_psi == 64} {set freq 350.000}
+    set freq 350.000
     variable USER_0_FREQ $freq
     variable USER_1_FREQ 100.000
 

@@ -34,14 +34,20 @@ module hpu_regif_cfg_3in3
   output logic                           s_axil_rvalid,
   input  logic                           s_axil_rready,
 
-  output logic [BSK_PC_MAX-1:0][axi_if_bsk_axi_pkg::AXI4_ADD_W-1:0] bsk_mem_addr
+  output logic [BSK_PC_MAX-1:0][axi_if_bsk_axi_pkg::AXI4_ADD_W-1:0] bsk_mem_addr,
+
+  // Reset three way handshake
+  output logic                           hpu_reset,
+  input  logic                           hpu_reset_done
 );
 
 // ============================================================================================== --
 // localparam
 // ============================================================================================== --
   // Current design supports BSK_PC_MAX up to 16.
-  localparam int BSK_PC_MAX_L    = 16;
+  localparam int BSK_PC_MAX_L        = 16;
+  localparam int REQ_ACK_NB          = 1; // hpu_reset
+  localparam int REQ_ACK_HPU_RST_OFS = 0;
 
   generate
     if (BSK_PC_MAX > BSK_PC_MAX_L) begin : __UNSUPPORTED_BSK_PC_MAX
@@ -53,6 +59,32 @@ module hpu_regif_cfg_3in3
 // signals
 // ============================================================================================== --
   logic [BSK_PC_MAX_L-1:0][2*REG_DATA_W-1:0]         r_bsk_mem_addr;
+  logic [REQ_ACK_NB-1:0][REG_DATA_W-1:0]             r_req_ack_upd;
+  logic [REQ_ACK_NB-1:0]                             r_req_ack_wr_en;
+  logic [REQ_ACK_NB-1:0]                             r_req_ack_rd_en;
+  logic [REG_DATA_W-1:0]                             r_wr_data;
+  logic [REQ_ACK_NB-1:0]                             req_cmd;
+  logic [REQ_ACK_NB-1:0]                             ack_rsp;
+
+// Reset interface
+  assign hpu_reset = req_cmd[REQ_ACK_HPU_RST_OFS];
+  assign ack_rsp[REQ_ACK_HPU_RST_OFS] = hpu_reset_done;
+  hpu_regif_req_ack_rd
+  #(
+     .IN_NB       (REQ_ACK_NB),
+     .REG_DATA_W  (REG_DATA_W)
+  ) hpu_regif_req_ack_rd (
+    .clk             (cfg_clk),
+    .s_rst_n         (cfg_srst_n),
+
+    .r_req_ack_upd   (r_req_ack_upd),
+    .r_req_ack_wr_en (r_req_ack_wr_en),
+    .r_req_ack_rd_en (r_req_ack_rd_en),
+    .r_wr_data       (r_wr_data),
+
+    .req_cmd         (req_cmd),
+    .ack_rsp         (ack_rsp)
+  );
 
 // ============================================================================================== --
 // hpu_regif_core
@@ -85,7 +117,7 @@ module hpu_regif_cfg_3in3
       .s_axil_rvalid             (s_axil_rvalid),
       .s_axil_rready             (s_axil_rready),
 
-      .r_axil_wdata              (/*UNUSED*/),
+      .r_axil_wdata              (r_wr_data),
 
       // Registers IO
       .r_hbm_axi4_addr_3in3_bsk_pc0_lsb   (r_bsk_mem_addr[0][0*REG_DATA_W+:REG_DATA_W]),
@@ -119,7 +151,11 @@ module hpu_regif_cfg_3in3
       .r_hbm_axi4_addr_3in3_bsk_pc14_lsb  (r_bsk_mem_addr[14][0*REG_DATA_W+:REG_DATA_W]),
       .r_hbm_axi4_addr_3in3_bsk_pc14_msb  (r_bsk_mem_addr[14][1*REG_DATA_W+:REG_DATA_W]),
       .r_hbm_axi4_addr_3in3_bsk_pc15_lsb  (r_bsk_mem_addr[15][0*REG_DATA_W+:REG_DATA_W]),
-      .r_hbm_axi4_addr_3in3_bsk_pc15_msb  (r_bsk_mem_addr[15][1*REG_DATA_W+:REG_DATA_W])
+      .r_hbm_axi4_addr_3in3_bsk_pc15_msb  (r_bsk_mem_addr[15][1*REG_DATA_W+:REG_DATA_W]),
+      .r_hpu_reset_trigger_upd            (r_req_ack_upd[REQ_ACK_HPU_RST_OFS]),
+      .r_hpu_reset_trigger_wr_en          (r_req_ack_wr_en[REQ_ACK_HPU_RST_OFS]),
+      .r_hpu_reset_trigger_rd_en          (r_req_ack_rd_en[REQ_ACK_HPU_RST_OFS]),
+      .r_hpu_reset_trigger                (/*UNUSED*/)
   );
 
 endmodule

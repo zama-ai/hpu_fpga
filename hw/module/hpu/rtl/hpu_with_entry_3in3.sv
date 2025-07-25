@@ -92,7 +92,11 @@ module hpu_with_entry_3in3
   input  pep_info_t                                                    pep_rif_info,
   input  pep_counter_inc_t                                             pep_rif_counter_inc,
 
-  output logic [1:0]                                                   interrupt // TODO
+  output logic [1:0]                                                   interrupt, // TODO
+
+  // Reset three way handshake -----------------------------------------------------------------------
+  output logic                                                         hpu_reset,
+  input  logic                                                         hpu_reset_done
 );
 
 // ============================================================================================== --
@@ -126,7 +130,9 @@ module hpu_with_entry_3in3
     .s_axil_rready             (s_axil_cfg_rready),
 
     // Registers IO
-    .bsk_mem_addr              (bsk_mem_addr)
+    .bsk_mem_addr              (bsk_mem_addr),
+    .hpu_reset                 (hpu_reset),
+    .hpu_reset_done            (hpu_reset_done)
   );
 
 // ============================================================================================== --

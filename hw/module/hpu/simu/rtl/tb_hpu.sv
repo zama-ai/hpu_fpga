@@ -44,7 +44,7 @@ module tb_hpu;
 // ============================================================================================== --
   localparam int CLK_HALF_PERIOD     = 1;
   localparam int LPD_CLK_HALF_PERIOD = 5;
-  localparam int ARST_ACTIVATION     = 17;
+  localparam int ARST_ACTIVATION     = 100 + 17; // 100 to allow for FPGA global reset to happen
 
   localparam int MEM_WR_CMD_BUF_DEPTH = 1; // Should be >= 1
   localparam int MEM_RD_CMD_BUF_DEPTH = 4; // Should be >= 1
@@ -191,6 +191,21 @@ module tb_hpu;
   always_ff @(posedge cfg_clk) begin
     cfg_srst_n <= a_rst_n;
   end
+
+  logic clk_ce;
+  logic clk_g;
+
+  BUFGCE #(
+    // We need the CE path to be synchronized. There's no way a path from a flop with the huge
+    // insertion delay of the FPGA clock tree will be able to meet timing back to the clock's root
+    // @ 350MHz.
+    .CE_TYPE    ( "HARDSYNC"   ) ,
+    .SIM_DEVICE ( "VERSAL_HBM" )
+  ) clock_gate (
+    .CE ( clk_ce ) ,
+    .I  ( clk    ) ,
+    .O  ( clk_g  )
+  );
 
 // ============================================================================================== --
 // End of test
@@ -561,19 +576,23 @@ logic                                        axi4_trc_bready;
     .AXI4_KSK_ADD_W   (AXI4_KSK_ADD_W   ),
     .INTER_PART_PIPE  (INTER_PART_PIPE  )
   ) dut (
-    .prc_clk       (clk    ),
-    .prc_srst_n    (s_rst_n),
+    .prc_free_clk    (clk        ) ,
+    .prc_free_srst_n (s_rst_n    ) ,
 
-    .cfg_clk       (cfg_clk  ),
-    .cfg_srst_n    (cfg_srst_n),
+    .prc_clk         (clk_g      ) ,
+    .prc_ce          (clk_ce     ) ,
+    .prc_srst_n      (/*UNUSED*/ ) ,
 
-    .isc_dop       (isc_dop),
-    .isc_dop_rdy   (isc_dop_rdy),
-    .isc_dop_vld   (isc_dop_vld),
+    .cfg_clk         (cfg_clk    ) ,
+    .cfg_srst_n      (cfg_srst_n ) ,
 
-    .isc_ack       (isc_ack),
-    .isc_ack_rdy   (isc_ack_rdy),
-    .isc_ack_vld   (isc_ack_vld),
+    .isc_dop         (isc_dop    ) ,
+    .isc_dop_rdy     (isc_dop_rdy) ,
+    .isc_dop_vld     (isc_dop_vld) ,
+
+    .isc_ack         (isc_ack    ) ,
+    .isc_ack_rdy     (isc_ack_rdy) ,
+    .isc_ack_vld     (isc_ack_vld) ,
 
     `AXIL_INSTANCE(s_axil_prc_1in3,tb_axil_prc,[P1_OFS])
     `AXIL_INSTANCE(s_axil_cfg_1in3,tb_axil_cfg,[P1_OFS])
@@ -1125,6 +1144,21 @@ logic                                        axi4_trc_bready;
 // ============================================================================================== --
 // Utilities function to generate stimulus
 // ============================================================================================== --
+
+// ---------------------------------------------------------------------------------------------- --
+// Soft Reset
+// ---------------------------------------------------------------------------------------------- --
+task automatic soft_reset;
+begin
+  logic [REG_DATA_W-1:0] rdata;
+
+  $display("%t > INFO: Soft Reset",$time);
+
+  gen_cfg_axil_loop[P3_OFS].maxil_drv_if.write_trans(HPU_RESET_TRIGGER_OFS, 1);
+  for(rdata = '0; !rdata[REG_DATA_W-1];)
+    gen_cfg_axil_loop[P3_OFS].maxil_drv_if.read_trans(HPU_RESET_TRIGGER_OFS, rdata);
+end
+endtask
 
 // ---------------------------------------------------------------------------------------------- --
 // check_dummy_reg
@@ -1915,6 +1949,11 @@ endtask
     while (!s_rst_n) @(posedge clk);
     while (!cfg_srst_n) @(posedge cfg_clk);
     repeat(10) @(posedge clk);
+
+    //===============================
+    // Soft Reset
+    //===============================
+    soft_reset();
 
     //===============================
     // Check dummy registers

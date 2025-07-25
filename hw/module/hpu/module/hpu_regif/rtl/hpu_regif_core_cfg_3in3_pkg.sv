@@ -1,8 +1,8 @@
 // ============================================================================================== //
 // Description  : register  map address definition package
 // This file was generated with rust regmap generator:
-//  * Date:  2025-06-12
-//  * Tool_version: 9bab20def30cfd61d2ed40616bd05d08a747ddf4
+//  * Date:  2025-07-17
+//  * Tool_version: bb0db737792da6b81e69a039028c971af1627fe2
 // ---------------------------------------------------------------------------------------------- //
 //
 // Should only be used in testbench to drive the register interface
@@ -44,4 +44,10 @@ package hpu_regif_core_cfg_3in3_pkg;
   localparam int HBM_AXI4_ADDR_3IN3_BSK_PC14_MSB_OFS = 'h20084;
   localparam int HBM_AXI4_ADDR_3IN3_BSK_PC15_LSB_OFS = 'h20088;
   localparam int HBM_AXI4_ADDR_3IN3_BSK_PC15_MSB_OFS = 'h2008c;
+  typedef struct packed {
+    logic [(1-1):0] done;
+    logic [(30-1):0] padding_1;
+    logic [(1-1):0] request;
+   } hpu_reset_trigger_t;
+  localparam int HPU_RESET_TRIGGER_OFS = 'h20100;
 endpackage

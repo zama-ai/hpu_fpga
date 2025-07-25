@@ -102,6 +102,7 @@ tb_pep_mono_mult_acc,hpu_module,wip,hw/module/pep_mono_mult_acc/simu/tb_pep_mono
 tb_trace_manager,hpu_module,wip,hw/module/trace_manager/simu,-1,-1,true
 tb_ucore,hpu_module,wip,hw/module/ucore/simu/,-1,-1,true
 tb_instruction_scheduler,hpu_module,wip,hw/module/instruction_scheduler/simu/,-1,-1,true
+tb_fpga_clock_reset,hpu_module,wip,hw/module/fpga_clock_reset/simu/,-1,-1,true
 
 #####################################################################
 # HPU_TOP

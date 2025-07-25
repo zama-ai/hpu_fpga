@@ -81,8 +81,6 @@ module pe_pbs_with_entry_subsidiary
   output logic                                                         decomp_ntt_last_pbs,
   output logic                                                         decomp_ntt_full_throughput,
   output logic                                                         decomp_ntt_ctrl_avail,
-  input  logic [PSI-1:0][R-1:0]                                        decomp_ntt_data_rdy,
-  input  logic                                                         decomp_ntt_ctrl_rdy,
 
   //== ModSW
   // ModSW -> MMACC

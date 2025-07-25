@@ -1,6 +1,6 @@
 # HPU_REGIF_CORE documentation
-**Date**: 2025-06-12
-**Tool Version**: 9bab20def30cfd61d2ed40616bd05d08a747ddf4
+**Date**: 2025-07-17
+**Tool Version**: bb0db737792da6b81e69a039028c971af1627fe2
 
 ## RegisterMap Overview
 
@@ -37,6 +37,7 @@ Below is a summary of all the registers in the current register map:
 | [runtime_1in3](#section-runtime-1in3) | 0x12000 | 0x13c | Runtime information |
 | [entry_cfg_3in3](#section-entry-cfg-3in3) | 0x20000 | 0x10 | entry_cfg_3in3 section with known value used for debug. |
 | [hbm_axi4_addr_3in3](#section-hbm-axi4-addr-3in3) | 0x20010 | 0x80 | HBM AXI4 connection address offset |
+| [hpu_reset](#section-hpu-reset) | 0x20100 | 0x4 | Used to control the HPU soft reset |
 | [entry_prc_3in3](#section-entry-prc-3in3) | 0x30000 | 0x10 | entry_prc_3in3 section with known value used for debug. |
 | [status_3in3](#section-status-3in3) | 0x30010 | 0x4 | HPU status of parts 2in3 and 3in3 |
 | [bsk_avail](#section-bsk-avail) | 0x31000 | 0x8 | BSK availability configuration |
@@ -3467,6 +3468,46 @@ Below is a summary of all the registers in the current section hbm_axi4_addr_3in
 - **Offset**: 0x2008c
 - **Default**: 0
 
+
+
+
+---
+
+
+
+
+## Section hpu-reset
+
+### Register Overview
+
+Below is a summary of all the registers in the current section hpu_reset:
+
+| Name             | Offset | Access | Description |
+|-----------------:|:------:|:------:|:------------|
+| [trigger](#register-hpu-resettrigger) | 0x20100 | RW |  A soft reset for the whole HPU reconfigurable logic |
+
+
+---
+
+
+### Register hpu-reset.trigger
+
+- **Description**: A soft reset for the whole HPU reconfigurable logic
+- **Owner**: Kernel
+- **Read Access**: ReadNotify
+- **Write Access**: WriteNotify
+- **Offset**: 0x20100
+- **Default**: C.f. fields
+
+
+#### Field Details
+
+Register trigger contains following Sub-fields:
+
+| Field Name | Offset_b | Size_b | Default      | Description   |
+|-----------:|:--------:|:------:|:------------:|:--------------|
+| request      | 0 | 1 |0| request |
+| done      | 31 | 1 |0| done |
 
 
 

@@ -1,8 +1,8 @@
 // ============================================================================================== //
 // Description  : Axi4-lite register bank
 // This file was generated with rust regmap generator:
-//  * Date:  2025-06-12
-//  * Tool_version: 9bab20def30cfd61d2ed40616bd05d08a747ddf4
+//  * Date:  2025-07-17
+//  * Tool_version: bb0db737792da6b81e69a039028c971af1627fe2
 // ---------------------------------------------------------------------------------------------- //
 // xR[n]W[na]
 // |-> who is in charge of the register update logic : u -> User
@@ -119,6 +119,11 @@ import hpu_regif_core_cfg_3in3_pkg::*;
     , output logic [REG_DATA_W-1: 0] r_hbm_axi4_addr_3in3_bsk_pc15_lsb
   // Register IO: hbm_axi4_addr_3in3_bsk_pc15_msb
     , output logic [REG_DATA_W-1: 0] r_hbm_axi4_addr_3in3_bsk_pc15_msb
+  // Register IO: hpu_reset_trigger
+    , output hpu_reset_trigger_t r_hpu_reset_trigger
+        , input hpu_reset_trigger_t r_hpu_reset_trigger_upd
+        , output logic r_hpu_reset_trigger_rd_en
+    , output logic r_hpu_reset_trigger_wr_en
 );
 // ============================================================================================== --
 // localparam
@@ -356,6 +361,13 @@ import hpu_regif_core_cfg_3in3_pkg::*;
 //-- Default hbm_axi4_addr_3in3_bsk_pc15_msb
   logic [REG_DATA_W-1:0]hbm_axi4_addr_3in3_bsk_pc15_msb_default;
   assign hbm_axi4_addr_3in3_bsk_pc15_msb_default = 'h0;
+//-- Default hpu_reset_trigger
+  hpu_reset_trigger_t hpu_reset_trigger_default;
+  always_comb begin
+    hpu_reset_trigger_default = 'h0;
+    hpu_reset_trigger_default.request = 'h0;
+    hpu_reset_trigger_default.done = 'h0;
+  end
 // ============================================================================================== --
 // Write reg
 // ============================================================================================== --
@@ -713,6 +725,21 @@ import hpu_regif_core_cfg_3in3_pkg::*;
       r_hbm_axi4_addr_3in3_bsk_pc15_msb       <= r_hbm_axi4_addr_3in3_bsk_pc15_msbD;
     end
   end
+// Register FF: hpu_reset_trigger
+  logic [REG_DATA_W-1:0] r_hpu_reset_triggerD;
+  assign r_hpu_reset_triggerD       = r_hpu_reset_trigger_upd;
+  logic r_hpu_reset_trigger_wr_enD;
+  assign r_hpu_reset_trigger_wr_enD = wr_en_ok && (wr_add[AXIL_ADD_RANGE_W-1:0] == HPU_RESET_TRIGGER_OFS[AXIL_ADD_RANGE_W-1:0]);
+  always_ff @(posedge clk) begin
+    if (!s_rst_n) begin
+      r_hpu_reset_trigger_wr_en <= 1'b0;
+    end
+    else begin
+      r_hpu_reset_trigger_wr_en <= r_hpu_reset_trigger_wr_enD;
+    end
+  end
+  assign r_hpu_reset_trigger_rd_en = rd_en_ok && (rd_add[AXIL_ADD_RANGE_W-1:0] == HPU_RESET_TRIGGER_OFS[AXIL_ADD_RANGE_W-1:0]);
+  assign r_hpu_reset_trigger = r_hpu_reset_trigger_upd;
 // ============================================================================================== --
 // Read reg
 // ============================================================================================== --
@@ -839,6 +866,9 @@ import hpu_regif_core_cfg_3in3_pkg::*;
           end
           HBM_AXI4_ADDR_3IN3_BSK_PC15_MSB_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register hbm_axi4_addr_3in3_bsk_pc15_msb
             axil_rdataD = r_hbm_axi4_addr_3in3_bsk_pc15_msb;
+          end
+          HPU_RESET_TRIGGER_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register hpu_reset_trigger
+            axil_rdataD = r_hpu_reset_trigger;
           end
           default:
             axil_rdataD = REG_DATA_W'('h0BAD_ADD1); // Default value

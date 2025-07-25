@@ -12,6 +12,7 @@
 
 `include "hpu_io_macro_inc.sv"
 
+(* keep_hierarchy = "yes" *)
 module hpu_3parts_1in3_core
   import common_definition_pkg::*;
   import param_tfhe_pkg::*;
@@ -79,47 +80,30 @@ module hpu_3parts_1in3_core
   output logic                 isc_ack_vld,
 
   //== HPU internal signals
-  //-- MMACC
-  // Feed
-  output mainsubs_feed_cmd_t   main_subs_feed_cmd,
-  output logic                 main_subs_feed_cmd_vld,
-  input  logic                 main_subs_feed_cmd_rdy,
+  output logic [PSI-1:0][R-1:0]             decomp_ntt_data_avail,
+  output logic [PSI-1:0][R-1:0][PBS_B_W:0]  decomp_ntt_data, // 2s complement
+  output logic                              decomp_ntt_sob,
+  output logic                              decomp_ntt_eob,
+  output logic                              decomp_ntt_sog,
+  output logic                              decomp_ntt_eog,
+  output logic                              decomp_ntt_sol,
+  output logic                              decomp_ntt_eol,
+  output logic [BPBS_ID_W-1:0]              decomp_ntt_pbs_id,
+  output logic                              decomp_ntt_last_pbs,
+  output logic                              decomp_ntt_full_throughput,
+  output logic                              decomp_ntt_ctrl_avail,
 
-  output mainsubs_feed_data_t  main_subs_feed_data,
-  output logic                 main_subs_feed_data_avail,
-
-  output mainsubs_feed_part_t  main_subs_feed_part,
-  output logic                 main_subs_feed_part_avail,
-
-  // Acc
-  input  subsmain_acc_data_t   subs_main_acc_data,
-  input  logic                 subs_main_acc_data_avail,
-
-  // Sxt
-  output mainsubs_sxt_cmd_t    main_subs_sxt_cmd,
-  output logic                 main_subs_sxt_cmd_vld,
-  input  logic                 main_subs_sxt_cmd_rdy,
-
-  input  subsmain_sxt_data_t   subs_main_sxt_data,
-  input  logic                 subs_main_sxt_data_vld,
-  output logic                 subs_main_sxt_data_rdy,
-
-  input  subsmain_sxt_part_t   subs_main_sxt_part,
-  input  logic                 subs_main_sxt_part_vld,
-  output logic                 subs_main_sxt_part_rdy,
-
-  //-- LDG
-  output mainsubs_ldg_cmd_t    main_subs_ldg_cmd,
-  output logic                 main_subs_ldg_cmd_vld,
-  input  logic                 main_subs_ldg_cmd_rdy,
-
-  output mainsubs_ldg_data_t   main_subs_ldg_data,
-  output logic                 main_subs_ldg_data_vld,
-  input  logic                 main_subs_ldg_data_rdy,
-
-  //-- MMACC Misc
-  output mainsubs_side_t       main_subs_side,
-  input  subsmain_side_t       subs_main_side,
+  // Mod switch output
+  input logic [PSI-1:0][R-1:0]              ntt_acc_modsw_data_avail,
+  input logic                               ntt_acc_modsw_ctrl_avail,
+  input logic [PSI-1:0][R-1:0][MOD_Q_W-1:0] ntt_acc_modsw_data,
+  input logic                               ntt_acc_modsw_sob,
+  input logic                               ntt_acc_modsw_eob,
+  input logic                               ntt_acc_modsw_sol,
+  input logic                               ntt_acc_modsw_eol,
+  input logic                               ntt_acc_modsw_sog,
+  input logic                               ntt_acc_modsw_eog,
+  input logic [BPBS_ID_W-1:0]               ntt_acc_modsw_pbs_id,
 
   //-- BSK
   output entrybsk_proc_t       entry_bsk_proc,
@@ -155,7 +139,12 @@ module hpu_3parts_1in3_core
   pep_info_t                              pep_ksk_rif_info;
   pep_info_t                              pep_ks_rif_info;
 
+  pep_info_t                              subs_pep_entry_rif_info;
+  pep_info_t                              subs_pep_ksk_rif_info;
+  pep_info_t                              subs_pep_ks_rif_info;
+
   pep_counter_inc_t                       pep_entry_rif_counter_inc;
+  pep_counter_inc_t                       subs_pep_entry_rif_counter_inc;
   pep_counter_inc_t                       pep_ksk_rif_counter_inc;
   pep_counter_inc_t                       pep_ks_rif_counter_inc;
 
@@ -299,6 +288,48 @@ module hpu_3parts_1in3_core
   logic                                   inc_bsk_wr_ptr;
   logic                                   inc_bsk_rd_ptr;
 
+  // Acc
+  subsmain_acc_data_t                     subs_main_acc_data;
+  logic                                   subs_main_acc_data_avail;
+
+  //-- MMACC
+  // Feed
+  mainsubs_feed_cmd_t                     main_subs_feed_cmd;
+  logic                                   main_subs_feed_cmd_vld;
+  logic                                   main_subs_feed_cmd_rdy;
+
+  mainsubs_feed_data_t                    main_subs_feed_data;
+  logic                                   main_subs_feed_data_avail;
+
+  mainsubs_feed_part_t                    main_subs_feed_part;
+  logic                                   main_subs_feed_part_avail;
+
+  // Sxt
+  mainsubs_sxt_cmd_t                      main_subs_sxt_cmd;
+  logic                                   main_subs_sxt_cmd_vld;
+  logic                                   main_subs_sxt_cmd_rdy;
+
+  subsmain_sxt_data_t                     subs_main_sxt_data;
+  logic                                   subs_main_sxt_data_vld;
+  logic                                   subs_main_sxt_data_rdy;
+
+  subsmain_sxt_part_t                     subs_main_sxt_part;
+  logic                                   subs_main_sxt_part_vld;
+  logic                                   subs_main_sxt_part_rdy;
+
+  //-- LDG
+  mainsubs_ldg_cmd_t                      main_subs_ldg_cmd;
+  logic                                   main_subs_ldg_cmd_vld;
+  logic                                   main_subs_ldg_cmd_rdy;
+
+  mainsubs_ldg_data_t                     main_subs_ldg_data;
+  logic                                   main_subs_ldg_data_vld;
+  logic                                   main_subs_ldg_data_rdy;
+
+  //-- MMACC Misc
+  mainsubs_side_t                         main_subs_side;
+  subsmain_side_t                         subs_main_side;
+
 // ---------------------------------------------------------------------------------------------- --
 // Errors
 // ---------------------------------------------------------------------------------------------- --
@@ -308,6 +339,8 @@ module hpu_3parts_1in3_core
   pep_error_t                             pep_ks_error;
   pep_error_t                             pep_ksk_error;
   pep_error_t                             pep_entry_error;
+  pep_error_t                             subs_pep_entry_error;
+
 
 // ============================================================================================== --
 // To regif
@@ -318,13 +351,18 @@ module hpu_3parts_1in3_core
 
   assign pep_rif_infoD = pep_entry_rif_info
                         | pep_ksk_rif_info
-                        | pep_ks_rif_info;
+                        | pep_ks_rif_info
+                        | subs_pep_entry_rif_info
+                        | subs_pep_ksk_rif_info
+                        | subs_pep_ks_rif_info;
 
   assign pep_rif_counter_incD = pep_entry_rif_counter_inc
+                        | subs_pep_entry_rif_counter_inc
                         | pep_ksk_rif_counter_inc
                         | pep_ks_rif_counter_inc;
 
   assign pep_errorD = pep_entry_error
+                    | subs_pep_entry_error
                     | pep_ks_error
                     | pep_ksk_error;
 
@@ -688,6 +726,113 @@ module hpu_3parts_1in3_core
 
     .subs_main_proc             (subs_main_side.proc),
     .main_subs_proc             (main_subs_side.proc)
+  );
+
+// ============================================================================================== --
+// pe_pbs_with_entry_subsidiary
+// contains:
+// * pep_mon_mult_acc
+// * pep_load_glwe
+// ============================================================================================== --
+  pe_pbs_with_entry_subsidiary
+  #(
+    .MOD_MULT_TYPE        (MOD_MULT_TYPE),
+    .REDUCT_TYPE          (REDUCT_TYPE),
+    .MULT_TYPE            (MULT_TYPE),
+    .PP_MOD_MULT_TYPE     (PP_MOD_MULT_TYPE),
+    .PP_MULT_TYPE         (PP_MULT_TYPE),
+    .MODSW_2_PRECISION_W  (MODSW_2_PRECISION_W),
+    .MODSW_2_MULT_TYPE    (MODSW_2_MULT_TYPE),
+    .MODSW_MULT_TYPE      (MODSW_MULT_TYPE),
+
+    .RAM_LATENCY          (RAM_LATENCY),
+    .URAM_LATENCY         (URAM_LATENCY),
+    .ROM_LATENCY          (ROM_LATENCY),
+
+    .TWD_IFNL_FILE_PREFIX (TWD_IFNL_FILE_PREFIX),
+    .TWD_PHRU_FILE_PREFIX (TWD_PHRU_FILE_PREFIX),
+
+    .INST_FIFO_DEPTH      (PEP_INST_FIFO_DEPTH),
+
+    .REGF_RD_LATENCY      (REGF_RD_LATENCY),
+    .KS_IF_COEF_NB        (KS_IF_COEF_NB),
+    .KS_IF_SUBW_NB        (KS_IF_SUBW_NB),
+
+    .PHYS_RAM_DEPTH       (PHYS_RAM_DEPTH)
+  ) pe_pbs_with_entry_subsidiary (
+    .clk                                   (prc_clk),
+    .s_rst_n                               (prc_srst_n),
+
+    .decomp_ntt_data_avail                 (decomp_ntt_data_avail),
+    .decomp_ntt_data                       (decomp_ntt_data),
+    .decomp_ntt_sob                        (decomp_ntt_sob),
+    .decomp_ntt_eob                        (decomp_ntt_eob),
+    .decomp_ntt_sog                        (decomp_ntt_sog),
+    .decomp_ntt_eog                        (decomp_ntt_eog),
+    .decomp_ntt_sol                        (decomp_ntt_sol),
+    .decomp_ntt_eol                        (decomp_ntt_eol),
+    .decomp_ntt_pbs_id                     (decomp_ntt_pbs_id),
+    .decomp_ntt_last_pbs                   (decomp_ntt_last_pbs),
+    .decomp_ntt_full_throughput            (decomp_ntt_full_throughput),
+    .decomp_ntt_ctrl_avail                 (decomp_ntt_ctrl_avail),
+
+    .ntt_acc_modsw_data_avail              (ntt_acc_modsw_data_avail),
+    .ntt_acc_modsw_ctrl_avail              (ntt_acc_modsw_ctrl_avail),
+    .ntt_acc_modsw_data                    (ntt_acc_modsw_data),
+    .ntt_acc_modsw_sob                     (ntt_acc_modsw_sob),
+    .ntt_acc_modsw_eob                     (ntt_acc_modsw_eob),
+    .ntt_acc_modsw_sol                     (ntt_acc_modsw_sol),
+    .ntt_acc_modsw_eol                     (ntt_acc_modsw_eol),
+    .ntt_acc_modsw_sog                     (ntt_acc_modsw_sog),
+    .ntt_acc_modsw_eog                     (ntt_acc_modsw_eog),
+    .ntt_acc_modsw_pbs_id                  (ntt_acc_modsw_pbs_id),
+
+    .subs_main_ntt_acc_modsw_avail         (subs_main_acc_data_avail),
+    .subs_main_ntt_acc_modsw_data          (subs_main_acc_data.data),
+    .subs_main_ntt_acc_modsw_sob           (subs_main_acc_data.sob),
+    .subs_main_ntt_acc_modsw_eob           (subs_main_acc_data.eob),
+    .subs_main_ntt_acc_modsw_sol           (subs_main_acc_data.sol),
+    .subs_main_ntt_acc_modsw_eol           (subs_main_acc_data.eol),
+    .subs_main_ntt_acc_modsw_sog           (subs_main_acc_data.sog),
+    .subs_main_ntt_acc_modsw_eog           (subs_main_acc_data.eog),
+    .subs_main_ntt_acc_modsw_pbs_id        (subs_main_acc_data.pbs_id),
+
+    .main_subs_feed_cmd                    (main_subs_feed_cmd),
+    .main_subs_feed_cmd_vld                (main_subs_feed_cmd_vld),
+    .main_subs_feed_cmd_rdy                (main_subs_feed_cmd_rdy),
+
+    .main_subs_feed_data                   (main_subs_feed_data),
+    .main_subs_feed_data_avail             (main_subs_feed_data_avail),
+
+    .main_subs_feed_part                   (main_subs_feed_part),
+    .main_subs_feed_part_avail             (main_subs_feed_part_avail),
+
+    .main_subs_sxt_cmd                     (main_subs_sxt_cmd),
+    .main_subs_sxt_cmd_vld                 (main_subs_sxt_cmd_vld),
+    .main_subs_sxt_cmd_rdy                 (main_subs_sxt_cmd_rdy),
+
+    .subs_main_sxt_data                    (subs_main_sxt_data),
+    .subs_main_sxt_data_vld                (subs_main_sxt_data_vld),
+    .subs_main_sxt_data_rdy                (subs_main_sxt_data_rdy),
+
+    .subs_main_sxt_part                    (subs_main_sxt_part),
+    .subs_main_sxt_part_vld                (subs_main_sxt_part_vld),
+    .subs_main_sxt_part_rdy                (subs_main_sxt_part_rdy),
+
+    .main_subs_ldg_cmd                     (main_subs_ldg_cmd),
+    .main_subs_ldg_cmd_vld                 (main_subs_ldg_cmd_vld),
+    .main_subs_ldg_cmd_rdy                 (main_subs_ldg_cmd_rdy),
+
+    .main_subs_ldg_data                    (main_subs_ldg_data),
+    .main_subs_ldg_data_vld                (main_subs_ldg_data_vld),
+    .main_subs_ldg_data_rdy                (main_subs_ldg_data_rdy),
+
+    .subs_main_proc                        (subs_main_side.proc),
+    .main_subs_proc                        (main_subs_side.proc),
+
+    .pep_error                             (subs_pep_entry_error),
+    .pep_rif_info                          (subs_pep_entry_rif_info),
+    .pep_rif_counter_inc                   (subs_pep_entry_rif_counter_inc)
   );
 
 // ---------------------------------------------------------------------------------------------- --

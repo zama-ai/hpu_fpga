@@ -1,0 +1,17 @@
+{
+    "local_root_path": "${PROJECT_DIR}",
+    "dep_root_path"  : "${PROJECT_DIR}",
+    "rtl_files": [
+        {
+            "name": "hw/module/fpga_clock_reset/simu/rtl/tb_fpga_clock_reset.sv",
+            "library": "work",
+            "env": ["simu"],
+            "target": ["all"],
+            "is_include_file": false
+        }
+    ],
+    "dependency_dir": [
+        "hw/module/fpga_clock_reset"
+    ],
+    "include_dir": []
+}

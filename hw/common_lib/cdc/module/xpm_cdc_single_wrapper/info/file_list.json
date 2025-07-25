@@ -1,0 +1,17 @@
+{
+    "local_root_path": "${PROJECT_DIR}",
+    "dep_root_path"  : "${PROJECT_DIR}",
+    "is_include_dir" : false,
+    "rtl_files": [
+        {
+            "name": "hw/common_lib/cdc/module/xpm_cdc_single_wrapper/rtl/xpm_cdc_single_wrapper.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false
+        }
+    ],
+    "constraint_files": [],
+    "dependency_dir": [],
+    "include_dir": []
+}

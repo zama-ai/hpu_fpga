@@ -829,69 +829,27 @@ proc create_hier_cell_noc_wrapper { parentCell nameHier ntt_psi } {
   puts ">>> NTT PSI: $ntt_psi"
 
   # BSK
-  if { $ntt_psi == 64 } {
   # in this case BSK IF is in SLR0
-    set_property CONFIG.PHYSICAL_LOC NOC_NMU512_X0Y2 [get_bd_intf_pins axi_noc_cips/S05_AXI]
-    set_property CONFIG.PHYSICAL_LOC NOC_NMU512_X0Y3 [get_bd_intf_pins axi_noc_cips/S06_AXI]
+  set_property CONFIG.PHYSICAL_LOC NOC_NMU512_X0Y2 [get_bd_intf_pins axi_noc_cips/S05_AXI]
+  set_property CONFIG.PHYSICAL_LOC NOC_NMU512_X0Y3 [get_bd_intf_pins axi_noc_cips/S06_AXI]
 
-    set_property CONFIG.PHYSICAL_LOC NOC_NMU512_X1Y2 [get_bd_intf_pins axi_noc_cips/S07_AXI]
-    set_property CONFIG.PHYSICAL_LOC NOC_NMU512_X1Y3 [get_bd_intf_pins axi_noc_cips/S08_AXI]
+  set_property CONFIG.PHYSICAL_LOC NOC_NMU512_X1Y2 [get_bd_intf_pins axi_noc_cips/S07_AXI]
+  set_property CONFIG.PHYSICAL_LOC NOC_NMU512_X1Y3 [get_bd_intf_pins axi_noc_cips/S08_AXI]
 
-    set_property CONFIG.PHYSICAL_LOC NOC_NMU512_X2Y2 [get_bd_intf_pins axi_noc_cips/S09_AXI]
-    set_property CONFIG.PHYSICAL_LOC NOC_NMU512_X2Y3 [get_bd_intf_pins axi_noc_cips/S10_AXI]
+  set_property CONFIG.PHYSICAL_LOC NOC_NMU512_X2Y2 [get_bd_intf_pins axi_noc_cips/S09_AXI]
+  set_property CONFIG.PHYSICAL_LOC NOC_NMU512_X2Y3 [get_bd_intf_pins axi_noc_cips/S10_AXI]
 
-    set_property CONFIG.PHYSICAL_LOC NOC_NMU512_X3Y2 [get_bd_intf_pins axi_noc_cips/S11_AXI]
-    set_property CONFIG.PHYSICAL_LOC NOC_NMU512_X3Y3 [get_bd_intf_pins axi_noc_cips/S12_AXI]
-
-  } elseif { $ntt_psi == 32 } {
-  # in this case BSK IF is in SLR1
-    set_property CONFIG.PHYSICAL_LOC NOC_NMU512_X0Y8 [get_bd_intf_pins axi_noc_cips/S05_AXI]
-    set_property CONFIG.PHYSICAL_LOC NOC_NMU512_X0Y9 [get_bd_intf_pins axi_noc_cips/S06_AXI]
-
-    set_property CONFIG.PHYSICAL_LOC NOC_NMU512_X1Y8 [get_bd_intf_pins axi_noc_cips/S07_AXI]
-    set_property CONFIG.PHYSICAL_LOC NOC_NMU512_X1Y9 [get_bd_intf_pins axi_noc_cips/S08_AXI]
-
-    set_property CONFIG.PHYSICAL_LOC NOC_NMU512_X2Y8 [get_bd_intf_pins axi_noc_cips/S09_AXI]
-    set_property CONFIG.PHYSICAL_LOC NOC_NMU512_X2Y9 [get_bd_intf_pins axi_noc_cips/S10_AXI]
-
-    set_property CONFIG.PHYSICAL_LOC NOC_NMU512_X3Y8 [get_bd_intf_pins axi_noc_cips/S11_AXI]
-    set_property CONFIG.PHYSICAL_LOC NOC_NMU512_X3Y9 [get_bd_intf_pins axi_noc_cips/S12_AXI]
-  # means psi = 16 or under
-  } else {
-  # in this case BSK IF is in SLR1
-    set_property CONFIG.PHYSICAL_LOC NOC_NMU512_X0Y8 [get_bd_intf_pins axi_noc_cips/S05_AXI]
-    set_property CONFIG.PHYSICAL_LOC NOC_NMU512_X0Y9 [get_bd_intf_pins axi_noc_cips/S06_AXI]
-
-    set_property CONFIG.PHYSICAL_LOC NOC_NMU512_X1Y8 [get_bd_intf_pins axi_noc_cips/S07_AXI]
-    set_property CONFIG.PHYSICAL_LOC NOC_NMU512_X1Y9 [get_bd_intf_pins axi_noc_cips/S08_AXI]
-
-    set_property CONFIG.PHYSICAL_LOC NOC_NMU512_X2Y8 [get_bd_intf_pins axi_noc_cips/S09_AXI]
-    set_property CONFIG.PHYSICAL_LOC NOC_NMU512_X2Y9 [get_bd_intf_pins axi_noc_cips/S10_AXI]
-
-    set_property CONFIG.PHYSICAL_LOC NOC_NMU512_X3Y8 [get_bd_intf_pins axi_noc_cips/S11_AXI]
-    set_property CONFIG.PHYSICAL_LOC NOC_NMU512_X3Y9 [get_bd_intf_pins axi_noc_cips/S12_AXI]
-  }
+  set_property CONFIG.PHYSICAL_LOC NOC_NMU512_X3Y2 [get_bd_intf_pins axi_noc_cips/S11_AXI]
+  set_property CONFIG.PHYSICAL_LOC NOC_NMU512_X3Y3 [get_bd_intf_pins axi_noc_cips/S12_AXI]
 
   # REGIF
   # connected to RPU
   set_property CONFIG.PHYSICAL_LOC NOC_NMU512_X2Y1  [get_bd_intf_pins axi_noc_cips/S04_AXI]
-  if { $ntt_psi == 64 } {
-    # 2 are used in SLR0, and 2 in SLR2
-    set_property CONFIG.PHYSICAL_LOC NOC_NSU512_X2Y1 [get_bd_intf_pins axi_noc_cips/M04_AXI]
-    set_property CONFIG.PHYSICAL_LOC NOC_NSU512_X2Y2 [get_bd_intf_pins axi_noc_cips/M05_AXI]
-    set_property CONFIG.PHYSICAL_LOC NOC_NSU512_X2Y16 [get_bd_intf_pins axi_noc_cips/M02_AXI]
-    set_property CONFIG.PHYSICAL_LOC NOC_NSU512_X2Y13 [get_bd_intf_pins axi_noc_cips/M03_AXI]
-  } elseif { $ntt_psi == 32 } {
-    # 2 are used in SLR1, and 2 in SLR2
-    set_property CONFIG.PHYSICAL_LOC NOC_NSU512_X2Y8 [get_bd_intf_pins axi_noc_cips/M04_AXI]
-    set_property CONFIG.PHYSICAL_LOC NOC_NSU512_X2Y9 [get_bd_intf_pins axi_noc_cips/M05_AXI]
-    set_property CONFIG.PHYSICAL_LOC NOC_NSU512_X2Y16 [get_bd_intf_pins axi_noc_cips/M02_AXI]
-    set_property CONFIG.PHYSICAL_LOC NOC_NSU512_X2Y13 [get_bd_intf_pins axi_noc_cips/M03_AXI]
-  # means psi = 16 or under
-  } else {
-    # All 4 are used in SLR1
-    # Let the tool place them
-  }
+# 2 are used in SLR0, and 2 in SLR2
+set_property CONFIG.PHYSICAL_LOC NOC_NSU512_X2Y1 [get_bd_intf_pins axi_noc_cips/M04_AXI]
+set_property CONFIG.PHYSICAL_LOC NOC_NSU512_X2Y2 [get_bd_intf_pins axi_noc_cips/M05_AXI]
+set_property CONFIG.PHYSICAL_LOC NOC_NSU512_X2Y16 [get_bd_intf_pins axi_noc_cips/M02_AXI]
+set_property CONFIG.PHYSICAL_LOC NOC_NSU512_X2Y13 [get_bd_intf_pins axi_noc_cips/M03_AXI]
 
   # MGMT (to UUID, GCQ...)
   set_property CONFIG.PHYSICAL_LOC NOC_NSU512_X2Y0 [get_bd_intf_pins axi_noc_cips/M00_AXI]
@@ -900,21 +858,10 @@ proc create_hier_cell_noc_wrapper { parentCell nameHier ntt_psi } {
   set_property CONFIG.PHYSICAL_LOC NOC_NSU512_X0Y10 [get_bd_intf_pins axi_noc_cips/M06_AXI]
 
   #  AXIS
-  if { $ntt_psi == 64 } {
-    set_property CONFIG.PHYSICAL_LOC NOC_NMU512_X0Y0  [get_bd_intf_pins axis_noc/S00_AXIS]
-    set_property CONFIG.PHYSICAL_LOC NOC_NSU512_X1Y0  [get_bd_intf_pins axis_noc/M01_AXIS]
-    set_property CONFIG.PHYSICAL_LOC NOC_NMU512_X1Y14 [get_bd_intf_pins axis_noc/S01_AXIS]
-    set_property CONFIG.PHYSICAL_LOC NOC_NSU512_X0Y14 [get_bd_intf_pins axis_noc/M00_AXIS]
-  } elseif { $ntt_psi == 32 } {
-    set_property CONFIG.PHYSICAL_LOC NOC_NMU512_X0Y0  [get_bd_intf_pins axis_noc/S00_AXIS]
-    set_property CONFIG.PHYSICAL_LOC NOC_NSU512_X1Y0  [get_bd_intf_pins axis_noc/M01_AXIS]
-    set_property CONFIG.PHYSICAL_LOC NOC_NMU512_X1Y14 [get_bd_intf_pins axis_noc/S01_AXIS]
-    set_property CONFIG.PHYSICAL_LOC NOC_NSU512_X0Y14 [get_bd_intf_pins axis_noc/M00_AXIS]
-  } else {
-    set_property CONFIG.PHYSICAL_LOC NOC_NMU512_X0Y0  [get_bd_intf_pins axis_noc/S00_AXIS]
-    set_property CONFIG.PHYSICAL_LOC NOC_NSU512_X1Y0  [get_bd_intf_pins axis_noc/M01_AXIS]
-    # Let the tool place axis_noc/S01_AXIS and axis_noc/M00_AXIS
-  }
+  set_property CONFIG.PHYSICAL_LOC NOC_NMU512_X0Y0  [get_bd_intf_pins axis_noc/S00_AXIS]
+  set_property CONFIG.PHYSICAL_LOC NOC_NSU512_X1Y0  [get_bd_intf_pins axis_noc/M01_AXIS]
+  set_property CONFIG.PHYSICAL_LOC NOC_NMU512_X1Y14 [get_bd_intf_pins axis_noc/S01_AXIS]
+  set_property CONFIG.PHYSICAL_LOC NOC_NSU512_X0Y14 [get_bd_intf_pins axis_noc/M00_AXIS]
 
   ####################################
   # Transmit NOC/HBM mapping
