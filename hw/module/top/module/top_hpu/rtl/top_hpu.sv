@@ -514,8 +514,6 @@ module top_hpu #(
   logic [31:0] SW_REG_GT_LINE_RATE;
 
   // Ethernet
-  logic [3:0] pm_rdy; // hanging
-
   logic [3:0] rx_core_reset;
   logic [3:0] rx_serdes_reset;
   logic [3:0] tx_core_reset;
@@ -704,21 +702,19 @@ module top_hpu #(
 
   //TODO: TBD
   logic [63:0] rx_axis_tdata0;
-  logic [63:0] rx_axis_tdata1;
   logic [63:0] rx_axis_tdata2;
-  logic [63:0] rx_axis_tdata3;
   logic [63:0] rx_axis_tdata4;
-  logic [63:0] rx_axis_tdata5;
   logic [63:0] rx_axis_tdata6;
-  logic [63:0] rx_axis_tdata7;
+
+  logic [63:0] tx_axis_tdata0;
+  logic [63:0] tx_axis_tdata2;
+  logic [63:0] tx_axis_tdata4;
+  logic [63:0] tx_axis_tdata6;
+
   logic [10:0] rx_axis_tkeep_user0;
-  logic [10:0] rx_axis_tkeep_user1;
   logic [10:0] rx_axis_tkeep_user2;
-  logic [10:0] rx_axis_tkeep_user3;
   logic [10:0] rx_axis_tkeep_user4;
-  logic [10:0] rx_axis_tkeep_user5;
   logic [10:0] rx_axis_tkeep_user6;
-  logic [10:0] rx_axis_tkeep_user7;
 
   logic [3:0]       axis_buffer_tx_tready;
   logic [3:0]       axis_buffer_tx_tvalid;
@@ -2201,38 +2197,32 @@ module top_hpu #(
     // RX datapath
     .rx_axis_tdata0      (rx_axis_tdata0[63:0]),
     .rx_axis_tkeep_user0 (rx_axis_tkeep_user0[10:0]),
-    .rx_axis_tdata1      (rx_axis_tdata1[63:0]),
-    .rx_axis_tkeep_user1 (rx_axis_tkeep_user1[10:0]),
     .rx_axis_tdata2      (rx_axis_tdata2[63:0]),
     .rx_axis_tkeep_user2 (rx_axis_tkeep_user2[10:0]),
-    .rx_axis_tdata3      (rx_axis_tdata3[63:0]),
-    .rx_axis_tkeep_user3 (rx_axis_tkeep_user3[10:0]),
     .rx_axis_tdata4      (rx_axis_tdata4[63:0]),
     .rx_axis_tkeep_user4 (rx_axis_tkeep_user4[10:0]),
-    .rx_axis_tdata5      (rx_axis_tdata5[63:0]),
-    .rx_axis_tkeep_user5 (rx_axis_tkeep_user5[10:0]),
+    .rx_axis_tdata6      (rx_axis_tdata4[63:0]),
+    .rx_axis_tkeep_user6 (rx_axis_tkeep_user6[10:0]),
     .rx_axis_tlast_0     (rx_axis_tlast_0),
     .rx_axis_tvalid_0    (rx_axis_tvalid_0),
     // TX datapath
     .tx_axis_tdata0      (axis_buffer_tx_tdata[0][63:0]),
     .tx_axis_tkeep_user0 (axis_buffer_tx_tkeep[0][10:0]),
-    .tx_axis_tdata1      (axis_buffer_tx_tdata[1][63:0]),
-    .tx_axis_tkeep_user1 (axis_buffer_tx_tkeep[1][10:0]),
     .tx_axis_tdata2      (axis_buffer_tx_tdata[2][63:0]),
     .tx_axis_tkeep_user2 (axis_buffer_tx_tkeep[2][10:0]),
-    .tx_axis_tdata3      (axis_buffer_tx_tdata[3][63:0]),
-    .tx_axis_tkeep_user3 (axis_buffer_tx_tkeep[3][10:0]),
     .tx_axis_tdata4      (axis_buffer_tx_tdata[4][63:0]),
     .tx_axis_tkeep_user4 (axis_buffer_tx_tkeep[4][10:0]),
-    .tx_axis_tdata5      (axis_buffer_tx_tdata[5][63:0]),
-    .tx_axis_tkeep_user5 (axis_buffer_tx_tkeep[5][10:0]),
+    .tx_axis_tdata6      (axis_buffer_tx_tdata[5][63:0]),
+    .tx_axis_tkeep_user6 (axis_buffer_tx_tkeep[5][10:0]),
     .tx_axis_tlast_0     (axis_buffer_tx_tlast[0]),
     .tx_axis_tready_0    (tx_axis_tready_0),
     .tx_axis_tvalid_0    (axis_buffer_tx_tvalid[0]),
-    // control signals
+    // # control signals
     .gtpowergood_in          (gtpowergood_in),
-    .pm_rdy            (pm_rdy),
-    .pm_tick           (4'b0),
+    // performance monitoring
+    .pm_rdy                  (),
+    .pm_tick                 (4'b0),
+    // resets
     .gt_tx_reset_done_out    (gt_tx_reset_done_out),
     .gt_rx_reset_done_out    (gt_rx_reset_done_out),
     .gt_reset_all_in         (gt_reset_all_in),
