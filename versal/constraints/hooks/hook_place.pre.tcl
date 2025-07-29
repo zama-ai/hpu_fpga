@@ -28,16 +28,16 @@ set PS9_IRQ_pin [get_pins -of [get_cells -hierarchical PS9_inst -filter { PARENT
 
 set SHELL_VER $::env(SHELL_VER)
 
-if [string match "2025.1" $::env(XILINX_TOOL_VERSION)] {
-} else {
-    if {[llength ${PS9_IRQ_pin}] == 1} {
-        disconnect_net -objects ${PS9_IRQ_pin}
-        connect_net -hierarchical -net [get_nets -of [get_pins -hierarchical -regexp -filter { NAME =~ ".*/clock_reset/pcie_mgmt_pdi_reset/and_0/Res" }]] -objects ${PS9_IRQ_pin}
-    } else {
-        puts "Unable to get PMCPLIRQ pin for Force Reset rewiring."
-        error
-    }
-}
+# if [string match "2025.1" $::env(XILINX_TOOL_VERSION)] {
+# } else {
+#     if {[llength ${PS9_IRQ_pin}] == 1} {
+#         disconnect_net -objects ${PS9_IRQ_pin}
+#         connect_net -hierarchical -net [get_nets -of [get_pins -hierarchical -regexp -filter { NAME =~ ".*/clock_reset/pcie_mgmt_pdi_reset/and_0/Res" }]] -objects ${PS9_IRQ_pin}
+#     } else {
+#         puts "Unable to get PMCPLIRQ pin for Force Reset rewiring."
+#         error
+#     }
+# }
 
 # Enable GCLK Deskew
 set_property GCLK_DESKEW CALIBRATED [get_nets hpu_plug_wrapper/hpu_plug_i/shell_wrapper/clock_reset/usr_clk_wiz/inst/clock_primitive_inst/clk_out1]
@@ -82,11 +82,6 @@ add_cells_to_pblock -quiet [get_pblocks pblock_SLL1BOT] [get_cells -hier -regexp
 
 add_cells_to_pblock -quiet [get_pblocks pblock_SLL0TOP] [get_cells -hier -regexp -filter {NAME =~ ".*/p3_p2_sll.*/in_pipe"}]
 add_cells_to_pblock -quiet [get_pblocks pblock_SLL0TOP] [get_cells -hier -regexp -filter {NAME =~ ".*/p2_p3_sll.*/out_pipe"}]
-
-# Ethernet placement
-# top right SL1, bank 111 - port 4. Meant for MRMAC_X0Y3, one clock region away from this transceiver.
-set_property LOC GTM_QUAD_X0Y9    [get_cells -hier -filter {name =~ */gt_quad_base*/inst/quad_inst}]
-set_property LOC GTM_REFCLK_X0Y18 [get_cells -hier -filter {name =~ */util_ds_buf*/U0/USE_IBUFDS_GTME5.GEN_IBUFDS_GTME5[0].IBUFDS_GTME5_U}]
 
 
 # This is an alternate way of constraining the SLL flops and it supposedly uses IMUX registers,
