@@ -71,9 +71,7 @@ module top_hpu #(
   input  logic [3:0] gt_rxn_in,
   input  logic [3:0] gt_rxp_in,
   output logic [3:0] gt_txn_out,
-  output logic [3:0] gt_txp_out,
-
-  (* X_INTERFACE_INFO = "xilinx.com:signal:data:1.0 DATA.GT_LOOPBACK DATA" *) (* X_INTERFACE_PARAMETER = "XIL_INTERFACENAME DATA.GT_LOOPBACK, LAYERED_METADATA undef" *)  input  logic [2:0] gt_loopback
+  output logic [3:0] gt_txp_out
 );
 
 // ----------------------------------------------------------------------------------------- //
@@ -724,6 +722,7 @@ module top_hpu #(
 
   logic resetn_qsfp;
   logic clk_axi_qsfp;
+  logic [2:0] gt_loopback;
 
   // =========================================================================================== //
   // Connections
