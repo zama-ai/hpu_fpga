@@ -722,6 +722,9 @@ module top_hpu #(
   logic [7:0][10:0] axis_buffer_tx_tkeep;
   logic [3:0]       axis_buffer_tx_tlast;
 
+  logic resetn_qsfp;
+  logic clk_axi_qsfp;
+
   // =========================================================================================== //
   // Connections
   // =========================================================================================== //
@@ -2228,18 +2231,20 @@ module top_hpu #(
     .gt_reset_all_in         (gt_reset_all_in),
     .gt_reset_tx_datapath_in (gt_reset_tx_datapath_in),
     .gt_reset_rx_datapath_in (gt_reset_rx_datapath_in),
+    .resetn_qsfp             (resetn_qsfp),
     // clock
     .tx_core_clk       (tx_core_clk),
     .rx_core_clk       (rx_core_clk),
     .tx_alt_serdes_clk (tx_alt_serdes_clk),
     .rx_alt_serdes_clk (rx_alt_serdes_clk),
     .rx_serdes_clk     (rx_serdes_clk),
-    .tx_axi_clk        (tx_axi_clk),
-    .rx_axi_clk        (rx_axi_clk),
+    .tx_axi_clk        (4{clk_axi_qsfp}),
+    .rx_axi_clk        (4{clk_axi_qsfp}),
     .tx_flexif_clk     (tx_flexif_clk),
     .rx_flexif_clk     (rx_flexif_clk),
     .tx_ts_clk         (tx_ts_clk),
     .rx_ts_clk         (rx_ts_clk),
+    .clk_axi_qsfp      (clk_axi_qsfp),
     // reset
     .tx_core_reset    (tx_core_reset),
     .rx_core_reset    (rx_core_reset),

@@ -57,7 +57,10 @@ namespace eval _nsp_hpu {
 
     # Ethernet
     variable ETH_FREERUN_FREQ 100
-    variable ETH_QSFP_FREQ 156.25
+
+    # depends on axi-stream bit width {64;128}
+    variable ETH_QSFP_FREQ 390.625
+    # variable ETH_QSFP_FREQ 322.265
 
     #========================
     # AXI

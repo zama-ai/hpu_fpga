@@ -58,6 +58,7 @@ proc create_root_design { parentCell ntt_psi } {
   set HPU_TRC_HBM_DATA_W $_nsp_hpu::HPU_TRC_HBM_DATA_W
 
   set ETH_AXI_NB $_nsp_hpu::ETH_AXI_NB
+  set ETH_QSFP_FREQ $_nsp_hpu::ETH_QSFP_FREQ
 
   ####################################
   # Create Ports
@@ -391,8 +392,8 @@ proc create_root_design { parentCell ntt_psi } {
 
   set CLK_IN_D [ create_bd_intf_port -mode Slave -vlnv xilinx.com:interface:diff_clock_rtl:1.0 CLK_IN_D ]
   set_property -dict [ list \
-   CONFIG.FREQ_HZ {322265625} \
-   ] $CLK_IN_D
+   CONFIG.FREQ_HZ [expr int($ETH_QSFP_FREQ * 10**6)] \
+  ] $CLK_IN_D
 
   set ctl_tx_port0 [ create_bd_intf_port -mode Slave -vlnv xilinx.com:display_mrmac:mrmac_ctrl_ports:2.0 ctl_tx_port0 ]
   set ctl_tx_port1 [ create_bd_intf_port -mode Slave -vlnv xilinx.com:display_mrmac:mrmac_ctrl_ports:2.0 ctl_tx_port1 ]
@@ -410,8 +411,13 @@ proc create_root_design { parentCell ntt_psi } {
   set rx_preambleout [ create_bd_intf_port -mode Master -vlnv xilinx.com:display_mrmac:mrmac_statistics_ports:2.0 rx_preambleout ]
   set APB3_INTF [ create_bd_intf_port -mode Slave -vlnv xilinx.com:interface:apb_rtl:1.0 APB3_INTF ]
   set apb3clk_quad [ create_bd_port -dir I -type clk -freq_hz 200000000 apb3clk_quad ]
-  set tx_axi_clk [ create_bd_port -dir I -from 3 -to 0 -type clk -freq_hz 390625000 tx_axi_clk ]
-  set rx_axi_clk [ create_bd_port -dir I -from 3 -to 0 -type clk -freq_hz 390625000 rx_axi_clk ]
+
+  set tx_axi_clk   [ create_bd_port -dir I -from 3 -to 0 -type clk -freq_hz [expr int($ETH_QSFP_FREQ * 10**6)] tx_axi_clk ]
+  set rx_axi_clk   [ create_bd_port -dir I -from 3 -to 0 -type clk -freq_hz [expr int($ETH_QSFP_FREQ * 10**6)] rx_axi_clk ]
+  # theorical frequency cannot be reached
+  set clk_axi_qsfp [ create_bd_port -dir O -type clk  clk_axi_qsfp ]
+
+  set resetn_qsfp      [ create_bd_port -dir O -type rst resetn_qsfp ]
   set tx_core_reset [ create_bd_port -dir I -from 3 -to 0 -type rst tx_core_reset ]
 
   set_property -dict [ list \
@@ -744,6 +750,9 @@ proc create_root_design { parentCell ntt_psi } {
   connect_bd_net -net tx_flexif_clk                    [get_bd_ports tx_flexif_clk] [get_bd_pins eth_wrapper/tx_flexif_clk]
   connect_bd_net -net tx_serdes_reset                  [get_bd_ports tx_serdes_reset] [get_bd_pins eth_wrapper/tx_serdes_reset]
   connect_bd_net -net tx_ts_clk                        [get_bd_ports tx_ts_clk] [get_bd_pins eth_wrapper/tx_ts_clk]
+
+  connect_bd_net [get_bd_ports clk_axi_qsfp]           [get_bd_pins shell_wrapper/clk_eth_qsfp_0]
+  connect_bd_net [get_bd_ports resetn_qsfp]               [get_bd_pins shell_wrapper/resetn_eth_qsfp_ic_0]
 
   ####################################
   # Internal Connections
