@@ -112,7 +112,7 @@ module top_hpu #(
   localparam int START_FRAME_DELIMITER = 8'hD5;
   localparam int PREAMBLE = 48'h55555555555555;
   // tx preamble is only 56 bits
-  localparam int [55:0] TX_PREAMBLE = {PREAMBLE, START_FRAME_DELIMITER};
+  localparam [55:0] TX_PREAMBLE = {PREAMBLE, START_FRAME_DELIMITER};
 
   // ----------------------------------------------------------------------------------------- //
   // Signals
