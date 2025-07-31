@@ -295,7 +295,7 @@ set_property -dict { PACKAGE_PIN AC58                                           
 set_property -dict { PACKAGE_PIN AA61                                                 } [get_ports "qsfp1_4x_gtx_p[2]"]     ;# Bank 210 " GTM_TXP2_210
 set_property -dict { PACKAGE_PIN AA58                                                 } [get_ports "qsfp1_4x_gtx_p[3]"]     ;# Bank 210 " GTM_TXP3_210
 
-set_property -dict { PACKAGE_PIN AL17                                                 } [get_ports "qsfp2_322mhz_clk_p"]    ;# Bank 111 " GTM_REFCLKP0_111
+set_property -dict { PACKAGE_PIN AL17                                                 } [get_ports "gt_ref_clk_p"]          ;# Bank 111 " GTM_REFCLKP0_111
 
 set_property -dict { PACKAGE_PIN U3                                                   } [get_ports "qsfp2_4x_grx_p[0]"]     ;# Bank 112 " GTM_RXP0_112
 set_property -dict { PACKAGE_PIN U6                                                   } [get_ports "qsfp2_4x_grx_p[1]"]     ;# Bank 112 " GTM_RXP1_112

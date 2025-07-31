@@ -58,6 +58,7 @@ proc create_root_design { parentCell ntt_psi } {
   set HPU_TRC_HBM_DATA_W $_nsp_hpu::HPU_TRC_HBM_DATA_W
 
   set ETH_AXI_NB $_nsp_hpu::ETH_AXI_NB
+  set DMA_AXI_NB $_nsp_hpu::DMA_AXI_NB
   set ETH_QSFP_FREQ $_nsp_hpu::ETH_QSFP_FREQ
 
   ####################################
@@ -837,7 +838,7 @@ proc create_root_design { parentCell ntt_psi } {
   set regif_add 0x80080000
   set regif_add_noc [expr 0x20100000000 + $regif_add]
   set regif_range 0x00010000
-  assign_bd_address -offset $regif_add -range  [expr $REGIF_NB * $REGIF_CLK_NB * $regif_range] -target_address_space [get_bd_addr_spaces shell_wrapper/cips/M_AXI_LPD] [get_bd_addr_segs /axi_lpd/Reg] -force
+  assign_bd_address -offset $regif_add -range  [expr $ETH_AXI_NB + $DMA_AXI_NB * $REGIF_NB * $REGIF_CLK_NB * $regif_range] -target_address_space [get_bd_addr_spaces shell_wrapper/cips/M_AXI_LPD] [get_bd_addr_segs /axi_lpd/Reg] -force
   for { set i 0}  {$i < $REGIF_NB} {incr i} {
     for { set j 0}  {$j < $REGIF_CLK_NB} {incr j} {
       # Address order : first 2nd clock, then second clock
@@ -845,6 +846,11 @@ proc create_root_design { parentCell ntt_psi } {
       assign_bd_address -offset [expr $regif_add_noc + $n * $regif_range] -range $regif_range -target_address_space [get_bd_addr_spaces /S_REGIF_AXI_0 ] [get_bd_addr_segs /REGIF_AXI_${i}_${j}/Reg] -force
     }
   }
+
+  # Ethernet
+  assign_bd_address -offset 0x201800C0000 -range 0x00010000 -target_address_space [get_bd_addr_spaces s_axi] [get_bd_addr_segs eth_wrapper/mrmac_0_core/s_axi/Reg] -force
+  # APB3 not meant to be used
+  assign_bd_address -offset 0xA4080000 -range 0x00010000 -target_address_space [get_bd_addr_spaces APB3_INTF] [get_bd_addr_segs eth_wrapper/mrmac_0_gt_wrapper/gt_quad_base/APB3_INTF/Reg] -force
 
   # PMC
   assign_bd_address -offset 0x050080000000 -range 0x80000000 -target_address_space [get_bd_addr_spaces shell_wrapper/cips/PMC_NOC_AXI_0] [get_bd_addr_segs noc_wrapper/ddr_noc/axi_noc_mc_ddr4_0/S00_INI/C0_DDR_CH1] -force
@@ -913,11 +919,6 @@ proc create_root_design { parentCell ntt_psi } {
   assign_bd_address -offset 0x000101220000 -range 0x00010000 -target_address_space [get_bd_addr_spaces shell_wrapper/cips/CPM_PCIE_NOC_0] [get_bd_addr_segs shell_wrapper/cips/NOC_PMC_AXI_0/pspmc_0_psv_pmc_slave_boot] -force
   assign_bd_address -offset 0x000101220000 -range 0x00010000 -target_address_space [get_bd_addr_spaces shell_wrapper/cips/CPM_PCIE_NOC_1] [get_bd_addr_segs shell_wrapper/cips/NOC_PMC_AXI_0/pspmc_0_psv_pmc_slave_boot] -force
   assign_bd_address -offset 0x000102100000 -range 0x00010000 -target_address_space [get_bd_addr_spaces shell_wrapper/cips/CPM_PCIE_NOC_1] [get_bd_addr_segs shell_wrapper/cips/NOC_PMC_AXI_0/pspmc_0_psv_pmc_slave_boot_stream] -force
-
-  # Ethernet
-  # set_property offset 0x20180040000 [get_bd_addr_segs {eth_wrapper/S_ETH_AXI_0/SEG_mrmac_0_core_Reg}]
-  assign_bd_address -offset 0xA4080000 -range 0x00010000 -target_address_space [get_bd_addr_spaces APB3_INTF] [get_bd_addr_segs eth_wrapper/mrmac_0_gt_wrapper/gt_quad_base/APB3_INTF/Reg] -force
-  assign_bd_address -offset 0x20180040000 -range 0x00010000 -target_address_space [get_bd_addr_spaces s_axi] [get_bd_addr_segs eth_wrapper/mrmac_0_core/s_axi/Reg] -force
 
   ####################################
   # Address exclusion

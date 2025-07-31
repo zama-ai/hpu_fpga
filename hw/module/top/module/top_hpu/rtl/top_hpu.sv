@@ -68,10 +68,11 @@ module top_hpu #(
   input  logic [0:0]  top_hbm_ref_clk_1_clk_n,
 
   // Tranceivers --------------------------------------------------------------
-  input  logic [3:0] gt_rxn_in,
-  input  logic [3:0] gt_rxp_in,
-  output logic [3:0] gt_txn_out,
-  output logic [3:0] gt_txp_out
+  // bank 111: for use with GTM in the lower clock region X0Y7, GTM_QUAD_X0Y9
+  input  logic [3:0] qsfp3_4x_grx_n,
+  input  logic [3:0] qsfp3_4x_grx_p,
+  output logic [3:0] qsfp3_4x_gtx_n,
+  output logic [3:0] qsfp3_4x_gtx_p
 );
 
 // ----------------------------------------------------------------------------------------- //
@@ -107,10 +108,11 @@ module top_hpu #(
   localparam int AXI4_KSK_DATA_BYTES  = axi_if_ksk_axi_pkg::AXI4_DATA_BYTES;
   localparam int AXI4_KSK_ID_W        = axi_if_ksk_axi_pkg::AXI4_ID_W;
 
-  localparam [55:0] tx_preamblein_0   = 56'h555555555555d5;
-  localparam [55:0] tx_preamblein_1   = 56'h555555555555d5;
-  localparam [55:0] tx_preamblein_2   = 56'h555555555555d5;
-  localparam [55:0] tx_preamblein_3   = 56'h555555555555d5;
+  // Etherneet preamble
+  localparam int START_FRAME_DELIMITER = 8'hD5;
+  localparam int PREAMBLE = 48'h55555555555555;
+  // tx preamble is only 56 bits
+  localparam int [55:0] TX_PREAMBLE = {PREAMBLE, START_FRAME_DELIMITER};
 
   // ----------------------------------------------------------------------------------------- //
   // Signals
@@ -2139,10 +2141,10 @@ module top_hpu #(
      * -> NRZ modulation
      * -> four lanes
      */
-    .gt_rxn_in_0  (gt_rxn_in),
-    .gt_rxp_in_0  (gt_rxp_in),
-    .gt_txn_out_0 (gt_txn_out),
-    .gt_txp_out_0 (gt_txp_out),
+    .gt_rxn_in_0  (qsfp3_4x_grx_n),
+    .gt_rxp_in_0  (qsfp3_4x_grx_p),
+    .gt_txn_out_0 (qsfp3_4x_gtx_n),
+    .gt_txp_out_0 (qsfp3_4x_gtx_p),
     // input clocks
     .CLK_IN_D_clk_n  (gt_ref_clk_n), // TODO: check that is correclty infered by Vivado
     .CLK_IN_D_clk_p  (gt_ref_clk_p), // defined in the hook pre-synthesis
@@ -2194,7 +2196,7 @@ module top_hpu #(
     /* MRMAC: MultiRate MAC subsystem
      * -> includes MAC + PCS
      * -> Site is chosen by a loc in bd
-     * -> 1 x 100 G non segregated
+     * -> Segmented 4x25G (NRZ)
      */
     // RX datapath
     .rx_axis_tdata0      (rx_axis_tdata0[63:0]),
@@ -2272,11 +2274,11 @@ module top_hpu #(
     .rx_preambleout_rx_preambleout_1 (rx_preambleout_1),
     .rx_preambleout_rx_preambleout_2 (rx_preambleout_2),
     .rx_preambleout_rx_preambleout_3 (rx_preambleout_3),
-    //
-    .tx_preamblein_tx_preamblein_0 (tx_preamblein_0),
-    .tx_preamblein_tx_preamblein_1 (tx_preamblein_1),
-    .tx_preamblein_tx_preamblein_2 (tx_preamblein_2),
-    .tx_preamblein_tx_preamblein_3 (tx_preamblein_3),
+    // preamble - TODO
+    .tx_preamblein_tx_preamblein_0 (TX_PREAMBLE),
+    .tx_preamblein_tx_preamblein_1 (TX_PREAMBLE),
+    .tx_preamblein_tx_preamblein_2 (TX_PREAMBLE),
+    .tx_preamblein_tx_preamblein_3 (TX_PREAMBLE),
     // Statistics
     .stat_rx_port0_stat_rx_aligned               (stat_rx_aligned_0),
     .stat_rx_port0_stat_rx_aligned_err           (stat_rx_aligned_err_0),
@@ -2465,6 +2467,7 @@ module top_hpu #(
     .clk_usr_1_0(cfg_clk),
     .clk_usr_0_0_ce(prc_ce),
 
+    // configuration clock for ethernet link
     .clk_eth_cfg_0(eth_cfg_clk),
     .resetn_eth_cfg_ic_0(eth_cfg_srst_n),
 
