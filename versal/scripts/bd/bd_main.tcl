@@ -838,7 +838,7 @@ proc create_root_design { parentCell ntt_psi } {
   set regif_add 0x80080000
   set regif_add_noc [expr 0x20100000000 + $regif_add]
   set regif_range 0x00010000
-  assign_bd_address -offset $regif_add -range  [expr $ETH_AXI_NB + $DMA_AXI_NB * $REGIF_NB * $REGIF_CLK_NB * $regif_range] -target_address_space [get_bd_addr_spaces shell_wrapper/cips/M_AXI_LPD] [get_bd_addr_segs /axi_lpd/Reg] -force
+  assign_bd_address -offset $regif_add -range  [expr $ETH_AXI_NB * $DMA_AXI_NB * $REGIF_NB * $REGIF_CLK_NB * $regif_range] -target_address_space [get_bd_addr_spaces shell_wrapper/cips/M_AXI_LPD] [get_bd_addr_segs /axi_lpd/Reg] -force
   for { set i 0}  {$i < $REGIF_NB} {incr i} {
     for { set j 0}  {$j < $REGIF_CLK_NB} {incr j} {
       # Address order : first 2nd clock, then second clock
