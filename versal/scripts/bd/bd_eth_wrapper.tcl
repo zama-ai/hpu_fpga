@@ -444,27 +444,54 @@ proc create_hier_cell_eth_wrapper  { parentCell nameHier } {
   set ch2_rx_usr_clk2 [ create_bd_pin -dir O -from 0 -to 0 -type gt_usrclk ch2_rx_usr_clk2 ]
   set ch1_rx_usr_clk2 [ create_bd_pin -dir O -from 0 -to 0 -type gt_usrclk ch1_rx_usr_clk2 ]
   set ch3_rx_usr_clk2 [ create_bd_pin -dir O -from 0 -to 0 -type gt_usrclk ch3_rx_usr_clk2 ]
-  set tx_axis_tdata0 [ create_bd_pin -dir I -from 63 -to 0 tx_axis_tdata0 ]
-  set tx_axis_tdata2 [ create_bd_pin -dir I -from 63 -to 0 tx_axis_tdata2 ]
-  set tx_axis_tdata4 [ create_bd_pin -dir I -from 63 -to 0 tx_axis_tdata4 ]
-  set tx_axis_tdata6 [ create_bd_pin -dir I -from 63 -to 0 tx_axis_tdata6 ]
-  set tx_axis_tkeep_user0 [ create_bd_pin -dir I -from 10 -to 0 tx_axis_tkeep_user0 ]
-  set tx_axis_tkeep_user2 [ create_bd_pin -dir I -from 10 -to 0 tx_axis_tkeep_user2 ]
-  set tx_axis_tkeep_user4 [ create_bd_pin -dir I -from 10 -to 0 tx_axis_tkeep_user4 ]
-  set tx_axis_tkeep_user6 [ create_bd_pin -dir I -from 10 -to 0 tx_axis_tkeep_user6 ]
-  set tx_axis_tready_0 [ create_bd_pin -dir O tx_axis_tready_0 ]
-  set tx_axis_tlast_0 [ create_bd_pin -dir I tx_axis_tlast_0 ]
-  set tx_axis_tvalid_0 [ create_bd_pin -dir I tx_axis_tvalid_0 ]
-  set rx_axis_tdata0 [ create_bd_pin -dir O -from 63 -to 0 rx_axis_tdata0 ]
-  set rx_axis_tdata2 [ create_bd_pin -dir O -from 63 -to 0 rx_axis_tdata2 ]
-  set rx_axis_tdata4 [ create_bd_pin -dir O -from 63 -to 0 rx_axis_tdata4 ]
-  set rx_axis_tdata6 [ create_bd_pin -dir O -from 63 -to 0 rx_axis_tdata6 ]
-  set rx_axis_tkeep_user0 [ create_bd_pin -dir O -from 10 -to 0 rx_axis_tkeep_user0 ]
-  set rx_axis_tkeep_user2 [ create_bd_pin -dir O -from 10 -to 0 rx_axis_tkeep_user2 ]
-  set rx_axis_tkeep_user4 [ create_bd_pin -dir O -from 10 -to 0 rx_axis_tkeep_user4 ]
-  set rx_axis_tkeep_user4 [ create_bd_pin -dir O -from 10 -to 0 rx_axis_tkeep_user6 ]
-  set rx_axis_tlast_0 [ create_bd_pin -dir O rx_axis_tlast_0 ]
-  set rx_axis_tvalid_0 [ create_bd_pin -dir O rx_axis_tvalid_0 ]
+
+  # == TX axi-stream intterface
+  set tx_axis_tdata_0   [ create_bd_pin -dir I -from 63 -to 0 tx_axis_tdata_0 ]
+  set tx_axis_tready_0  [ create_bd_pin -dir O tx_axis_tready_0 ]
+  set tx_axis_tlast_0   [ create_bd_pin -dir I tx_axis_tlast_0 ]
+  set tx_axis_tvalid_0  [ create_bd_pin -dir I tx_axis_tvalid_0 ]
+
+  set tx_axis_tdata_2   [ create_bd_pin -dir I -from 63 -to 0 tx_axis_tdata_2 ]
+  set tx_axis_tready_2  [ create_bd_pin -dir O tx_axis_tready_2 ]
+  set tx_axis_tlast_2   [ create_bd_pin -dir I tx_axis_tlast_2 ]
+  set tx_axis_tvalid_2  [ create_bd_pin -dir I tx_axis_tvalid_2 ]
+
+  set tx_axis_tdata_4   [ create_bd_pin -dir I -from 63 -to 0 tx_axis_tdata_4 ]
+  set tx_axis_tready_4  [ create_bd_pin -dir O tx_axis_tready_4 ]
+  set tx_axis_tlast_4   [ create_bd_pin -dir I tx_axis_tlast_4 ]
+  set tx_axis_tvalid_4  [ create_bd_pin -dir I tx_axis_tvalid_4 ]
+
+  set tx_axis_tdata_6   [ create_bd_pin -dir I -from 63 -to 0 tx_axis_tdata_6 ]
+  set tx_axis_tready_6  [ create_bd_pin -dir O tx_axis_tready_6 ]
+  set tx_axis_tlast_6   [ create_bd_pin -dir I tx_axis_tlast_6 ]
+  set tx_axis_tvalid_6  [ create_bd_pin -dir I tx_axis_tvalid_6 ]
+
+  set tx_axis_tkeep_user_0 [ create_bd_pin -dir I -from 10 -to 0 tx_axis_tkeep_user_0 ]
+  set tx_axis_tkeep_user_2 [ create_bd_pin -dir I -from 10 -to 0 tx_axis_tkeep_user_2 ]
+  set tx_axis_tkeep_user_4 [ create_bd_pin -dir I -from 10 -to 0 tx_axis_tkeep_user_4 ]
+  set tx_axis_tkeep_user_6 [ create_bd_pin -dir I -from 10 -to 0 tx_axis_tkeep_user_6 ]
+
+  # == RX axi-stream intterface
+  set rx_axis_tdata_0      [ create_bd_pin -dir O -from 63 -to 0 rx_axis_tdata_0 ]
+  set rx_axis_tkeep_user_0 [ create_bd_pin -dir O -from 10 -to 0 rx_axis_tkeep_user_0 ]
+  set rx_axis_tlast_0     [ create_bd_pin -dir O rx_axis_tlast_0 ]
+  set rx_axis_tvalid_0    [ create_bd_pin -dir O rx_axis_tvalid_0 ]
+
+  set rx_axis_tdata_2      [ create_bd_pin -dir O -from 63 -to 0 rx_axis_tdata_2 ]
+  set rx_axis_tkeep_user_2 [ create_bd_pin -dir O -from 10 -to 0 rx_axis_tkeep_user_2 ]
+  set rx_axis_tlast_2     [ create_bd_pin -dir O rx_axis_tlast_2 ]
+  set rx_axis_tvalid_2    [ create_bd_pin -dir O rx_axis_tvalid_2 ]
+
+  set rx_axis_tdata_4      [ create_bd_pin -dir O -from 63 -to 0 rx_axis_tdata_4 ]
+  set rx_axis_tkeep_user_4 [ create_bd_pin -dir O -from 10 -to 0 rx_axis_tkeep_user_4 ]
+  set rx_axis_tlast_4     [ create_bd_pin -dir O rx_axis_tlast_4 ]
+  set rx_axis_tvalid_4    [ create_bd_pin -dir O rx_axis_tvalid_4 ]
+
+  set rx_axis_tdata_6      [ create_bd_pin -dir O -from 63 -to 0 rx_axis_tdata_6 ]
+  set rx_axis_tkeep_user_6 [ create_bd_pin -dir O -from 10 -to 0 rx_axis_tkeep_user_6 ]
+  set rx_axis_tlast_6     [ create_bd_pin -dir O rx_axis_tlast_6 ]
+  set rx_axis_tvalid_6    [ create_bd_pin -dir O rx_axis_tvalid_6 ]
+
   set gt_reset_tx_datapath_in [ create_bd_pin -dir I -from 3 -to 0 gt_reset_tx_datapath_in ]
   set gt_reset_rx_datapath_in [ create_bd_pin -dir I -from 3 -to 0 gt_reset_rx_datapath_in ]
   set pm_rdy [ create_bd_pin -dir O -from 3 -to 0 pm_rdy ]
@@ -521,10 +548,10 @@ proc create_hier_cell_eth_wrapper  { parentCell nameHier } {
     CONFIG.MAC_PORT3_RATE_C0 {25GE} \
     CONFIG.MRMAC_CLIENTS_C0 {4} \
     CONFIG.MRMAC_CONFIGURATION_TYPE {Static Configuration} \
-    CONFIG.MRMAC_DATA_PATH_INTERFACE_PORT0_C0 {Low Latency 64b  Non-Segmented} \
-    CONFIG.MRMAC_DATA_PATH_INTERFACE_PORT1_C0 {Low Latency 64b  Non-Segmented} \
-    CONFIG.MRMAC_DATA_PATH_INTERFACE_PORT2_C0 {Low Latency 64b  Non-Segmented} \
-    CONFIG.MRMAC_DATA_PATH_INTERFACE_PORT3_C0 {Low Latency 64b  Non-Segmented} \
+    CONFIG.MRMAC_DATA_PATH_INTERFACE_PORT0_C0 {Independent 64b  Non-Segmented} \
+    CONFIG.MRMAC_DATA_PATH_INTERFACE_PORT1_C0 {Independent 64b  Non-Segmented} \
+    CONFIG.MRMAC_DATA_PATH_INTERFACE_PORT2_C0 {Independent 64b  Non-Segmented} \
+    CONFIG.MRMAC_DATA_PATH_INTERFACE_PORT3_C0 {Independent 64b  Non-Segmented} \
     CONFIG.MRMAC_LOCATION_C0 {MRMAC_X0Y3} \
     CONFIG.MRMAC_MODE_C0 {MAC+PCS} \
     CONFIG.MRMAC_PRESET_C0 {4x25GE Narrow} \
@@ -609,29 +636,21 @@ proc create_hier_cell_eth_wrapper  { parentCell nameHier } {
   connect_bd_net -net mrmac_0_core_gt_rx_reset_done_out  [get_bd_pins mrmac_0_core/gt_rx_reset_done_out] [get_bd_pins gt_rx_reset_done_out]
   connect_bd_net -net mrmac_0_core_gt_tx_reset_done_out  [get_bd_pins mrmac_0_core/gt_tx_reset_done_out] [get_bd_pins gt_tx_reset_done_out]
   connect_bd_net -net mrmac_0_core_pm_rdy  [get_bd_pins mrmac_0_core/pm_rdy] [get_bd_pins pm_rdy]
-  connect_bd_net -net mrmac_0_core_rx_axis_tdata0  [get_bd_pins mrmac_0_core/rx_axis_tdata0] [get_bd_pins rx_axis_tdata0]
-  connect_bd_net -net mrmac_0_core_rx_axis_tdata2  [get_bd_pins mrmac_0_core/rx_axis_tdata2] [get_bd_pins rx_axis_tdata2]
-  connect_bd_net -net mrmac_0_core_rx_axis_tdata4  [get_bd_pins mrmac_0_core/rx_axis_tdata4] [get_bd_pins rx_axis_tdata4]
-  connect_bd_net -net mrmac_0_core_rx_axis_tkeep_user0  [get_bd_pins mrmac_0_core/rx_axis_tkeep_user0] [get_bd_pins rx_axis_tkeep_user0]
-  connect_bd_net -net mrmac_0_core_rx_axis_tkeep_user2  [get_bd_pins mrmac_0_core/rx_axis_tkeep_user2] [get_bd_pins rx_axis_tkeep_user2]
-  connect_bd_net -net mrmac_0_core_rx_axis_tkeep_user4  [get_bd_pins mrmac_0_core/rx_axis_tkeep_user4] [get_bd_pins rx_axis_tkeep_user4]
-  connect_bd_net -net mrmac_0_core_rx_axis_tkeep_user6  [get_bd_pins mrmac_0_core/rx_axis_tkeep_user6] [get_bd_pins rx_axis_tkeep_user6]
-  connect_bd_net -net mrmac_0_core_rx_axis_tlast_0  [get_bd_pins mrmac_0_core/rx_axis_tlast_0] [get_bd_pins rx_axis_tlast_0]
-  connect_bd_net -net mrmac_0_core_rx_axis_tvalid_0  [get_bd_pins mrmac_0_core/rx_axis_tvalid_0] [get_bd_pins rx_axis_tvalid_0]
+
   connect_bd_net -net mrmac_0_core_rx_clr_out_0  [get_bd_pins mrmac_0_core/rx_clr_out_0] [get_bd_pins mrmac_0_gt_wrapper/MBUFG_GT_CLR1]
   connect_bd_net -net mrmac_0_core_rx_clr_out_1  [get_bd_pins mrmac_0_core/rx_clr_out_1] [get_bd_pins mrmac_0_gt_wrapper/MBUFG_GT_CLR2]
   connect_bd_net -net mrmac_0_core_rx_clr_out_2  [get_bd_pins mrmac_0_core/rx_clr_out_2] [get_bd_pins mrmac_0_gt_wrapper/MBUFG_GT_CLR3]
   connect_bd_net -net mrmac_0_core_rx_clr_out_3  [get_bd_pins mrmac_0_core/rx_clr_out_3] [get_bd_pins mrmac_0_gt_wrapper/MBUFG_GT_CLR4]
+
   connect_bd_net -net mrmac_0_core_rx_clrb_leaf_out_0  [get_bd_pins mrmac_0_core/rx_clrb_leaf_out_0] [get_bd_pins mrmac_0_gt_wrapper/MBUFG_GT_CLRB_LEAF1]
   connect_bd_net -net mrmac_0_core_rx_clrb_leaf_out_1  [get_bd_pins mrmac_0_core/rx_clrb_leaf_out_1] [get_bd_pins mrmac_0_gt_wrapper/MBUFG_GT_CLRB_LEAF2]
   connect_bd_net -net mrmac_0_core_rx_clrb_leaf_out_2  [get_bd_pins mrmac_0_core/rx_clrb_leaf_out_2] [get_bd_pins mrmac_0_gt_wrapper/MBUFG_GT_CLRB_LEAF3]
   connect_bd_net -net mrmac_0_core_rx_clrb_leaf_out_3  [get_bd_pins mrmac_0_core/rx_clrb_leaf_out_3] [get_bd_pins mrmac_0_gt_wrapper/MBUFG_GT_CLRB_LEAF4]
-  connect_bd_net -net mrmac_0_core_tx_axis_tready_0  [get_bd_pins mrmac_0_core/tx_axis_tready_0] [get_bd_pins tx_axis_tready_0]
   connect_bd_net -net mrmac_0_core_tx_clr_out_0  [get_bd_pins mrmac_0_core/tx_clr_out_0] [get_bd_pins mrmac_0_gt_wrapper/MBUFG_GT_CLR]
   connect_bd_net -net mrmac_0_core_tx_clrb_leaf_out_0  [get_bd_pins mrmac_0_core/tx_clrb_leaf_out_0] [get_bd_pins mrmac_0_gt_wrapper/MBUFG_GT_CLRB_LEAF]
+
   connect_bd_net -net pm_tick_1  [get_bd_pins pm_tick] [get_bd_pins mrmac_0_core/pm_tick]
   connect_bd_net -net rx_alt_serdes_clk_1  [get_bd_pins rx_alt_serdes_clk] [get_bd_pins mrmac_0_core/rx_alt_serdes_clk]
-  connect_bd_net -net rx_axi_clk_1  [get_bd_pins rx_axi_clk] [get_bd_pins mrmac_0_core/rx_axi_clk]
   connect_bd_net -net rx_core_clk_1  [get_bd_pins rx_core_clk] [get_bd_pins mrmac_0_core/rx_core_clk]
   connect_bd_net -net rx_core_reset_1  [get_bd_pins rx_core_reset] [get_bd_pins mrmac_0_core/rx_core_reset]
   connect_bd_net -net rx_flexif_clk_1  [get_bd_pins rx_flexif_clk] [get_bd_pins mrmac_0_core/rx_flexif_clk]
@@ -642,17 +661,7 @@ proc create_hier_cell_eth_wrapper  { parentCell nameHier } {
   connect_bd_net -net s_axi_aclk_1  [get_bd_pins s_axi_aclk] [get_bd_pins mrmac_0_core/s_axi_aclk]
   connect_bd_net -net s_axi_aresetn_1  [get_bd_pins s_axi_aresetn] [get_bd_pins mrmac_0_core/s_axi_aresetn] [get_bd_pins mrmac_0_gt_wrapper/s_axi_aresetn]
   connect_bd_net -net tx_alt_serdes_clk_1  [get_bd_pins tx_alt_serdes_clk] [get_bd_pins mrmac_0_core/tx_alt_serdes_clk]
-  connect_bd_net -net tx_axi_clk_1  [get_bd_pins tx_axi_clk] [get_bd_pins mrmac_0_core/tx_axi_clk]
-  connect_bd_net -net tx_axis_tdata0_1  [get_bd_pins tx_axis_tdata0] [get_bd_pins mrmac_0_core/tx_axis_tdata0]
-  connect_bd_net -net tx_axis_tdata2_1  [get_bd_pins tx_axis_tdata2] [get_bd_pins mrmac_0_core/tx_axis_tdata2]
-  connect_bd_net -net tx_axis_tdata4_1  [get_bd_pins tx_axis_tdata4] [get_bd_pins mrmac_0_core/tx_axis_tdata4]
-  connect_bd_net -net tx_axis_tdata6_1  [get_bd_pins tx_axis_tdata6] [get_bd_pins mrmac_0_core/tx_axis_tdata6]
-  connect_bd_net -net tx_axis_tkeep_user0_1  [get_bd_pins tx_axis_tkeep_user0] [get_bd_pins mrmac_0_core/tx_axis_tkeep_user0]
-  connect_bd_net -net tx_axis_tkeep_user2_1  [get_bd_pins tx_axis_tkeep_user2] [get_bd_pins mrmac_0_core/tx_axis_tkeep_user2]
-  connect_bd_net -net tx_axis_tkeep_user4_1  [get_bd_pins tx_axis_tkeep_user4] [get_bd_pins mrmac_0_core/tx_axis_tkeep_user4]
-  connect_bd_net -net tx_axis_tkeep_user6_1  [get_bd_pins tx_axis_tkeep_user6] [get_bd_pins mrmac_0_core/tx_axis_tkeep_user6]
-  connect_bd_net -net tx_axis_tlast_0_1  [get_bd_pins tx_axis_tlast_0] [get_bd_pins mrmac_0_core/tx_axis_tlast_0]
-  connect_bd_net -net tx_axis_tvalid_0_1  [get_bd_pins tx_axis_tvalid_0] [get_bd_pins mrmac_0_core/tx_axis_tvalid_0]
+
   connect_bd_net -net tx_core_clk_1  [get_bd_pins tx_core_clk] [get_bd_pins mrmac_0_core/tx_core_clk]
   connect_bd_net -net tx_core_reset_1  [get_bd_pins tx_core_reset] [get_bd_pins mrmac_0_core/tx_core_reset]
   connect_bd_net -net tx_flexif_clk_1  [get_bd_pins tx_flexif_clk] [get_bd_pins mrmac_0_core/tx_flexif_clk]
@@ -668,6 +677,55 @@ proc create_hier_cell_eth_wrapper  { parentCell nameHier } {
   connect_bd_intf_net [get_bd_intf_pins mrmac_0_core/gtm_rx_serdes_interface_1]  [get_bd_intf_pins mrmac_0_gt_wrapper/RX1_GT_IP_Interface]
   connect_bd_intf_net [get_bd_intf_pins mrmac_0_core/gtm_rx_serdes_interface_2]  [get_bd_intf_pins mrmac_0_gt_wrapper/RX2_GT_IP_Interface]
   connect_bd_intf_net [get_bd_intf_pins mrmac_0_core/gtm_rx_serdes_interface_3]  [get_bd_intf_pins mrmac_0_gt_wrapper/RX3_GT_IP_Interface]
+
+  # == RX Lanes
+  connect_bd_net -net rx_axi_clk_1                     [get_bd_pins rx_axi_clk]                       [get_bd_pins mrmac_0_core/rx_axi_clk]
+  # 0
+  connect_bd_net -net mrmac_0_core_rx_axis_tdata_0      [get_bd_pins mrmac_0_core/rx_axis_tdata_0]      [get_bd_pins rx_axis_tdata_0]
+  connect_bd_net -net mrmac_0_core_rx_axis_tkeep_user_0 [get_bd_pins mrmac_0_core/rx_axis_tkeep_user_0] [get_bd_pins rx_axis_tkeep_user_0]
+  connect_bd_net -net mrmac_0_core_rx_axis_tlast_0     [get_bd_pins mrmac_0_core/rx_axis_tlast_0]     [get_bd_pins rx_axis_tlast_0]
+  connect_bd_net -net mrmac_0_core_rx_axis_tvalid_0    [get_bd_pins mrmac_0_core/rx_axis_tvalid_0]    [get_bd_pins rx_axis_tvalid_0]
+  # 1
+  connect_bd_net -net mrmac_0_core_rx_axis_tdata_2      [get_bd_pins mrmac_0_core/rx_axis_tdata_2]      [get_bd_pins rx_axis_tdata_2]
+  connect_bd_net -net mrmac_0_core_rx_axis_tkeep_user_2 [get_bd_pins mrmac_0_core/rx_axis_tkeep_use_2] [get_bd_pins rx_axis_tkeep_user_2]
+  connect_bd_net -net mrmac_0_core_rx_axis_tlast_2     [get_bd_pins mrmac_0_core/rx_axis_tlast_2]     [get_bd_pins rx_axis_tlast_2]
+  connect_bd_net -net mrmac_0_core_rx_axis_tvalid_2    [get_bd_pins mrmac_0_core/rx_axis_tvalid_2]    [get_bd_pins rx_axis_tvalid_2]
+  # 2
+  connect_bd_net -net mrmac_0_core_rx_axis_tdata_4      [get_bd_pins mrmac_0_core/rx_axis_tdata_4]      [get_bd_pins rx_axis_tdata_4]
+  connect_bd_net -net mrmac_0_core_rx_axis_tkeep_user_4 [get_bd_pins mrmac_0_core/rx_axis_tkeep_user_4] [get_bd_pins rx_axis_tkeep_user_4]
+  connect_bd_net -net mrmac_0_core_rx_axis_tlast_4     [get_bd_pins mrmac_0_core/rx_axis_tlast_4]     [get_bd_pins rx_axis_tlast_4]
+  connect_bd_net -net mrmac_0_core_rx_axis_tvalid_4    [get_bd_pins mrmac_0_core/rx_axis_tvalid_4]    [get_bd_pins rx_axis_tvalid_4]
+  # 3
+  connect_bd_net -net mrmac_0_core_rx_axis_tdata_6      [get_bd_pins mrmac_0_core/rx_axis_tdata_6]      [get_bd_pins rx_axis_tdata_6]
+  connect_bd_net -net mrmac_0_core_rx_axis_tkeep_user_6 [get_bd_pins mrmac_0_core/rx_axis_tkeep_user_6] [get_bd_pins rx_axis_tkeep_user_6]
+  connect_bd_net -net mrmac_0_core_rx_axis_tlast_6     [get_bd_pins mrmac_0_core/rx_axis_tlast_6]     [get_bd_pins rx_axis_tlast_6]
+  connect_bd_net -net mrmac_0_core_rx_axis_tvalid_6    [get_bd_pins mrmac_0_core/rx_axis_tvalid_6]    [get_bd_pins rx_axis_tvalid_6]
+  # == TX Lanes
+  connect_bd_net -net tx_axi_clk_1                     [get_bd_pins tx_axi_clk]          [get_bd_pins mrmac_0_core/tx_axi_clk]
+  # 0
+  connect_bd_net -net mrmac_0_core_tx_axis_tdata_0      [get_bd_pins tx_axis_tdata_0]      [get_bd_pins mrmac_0_core/tx_axis_tdata_0]
+  connect_bd_net -net mrmac_0_core_tx_axis_tkeep_user_0 [get_bd_pins tx_axis_tkeep_user_0] [get_bd_pins mrmac_0_core/tx_axis_tkeep_user_0]
+  connect_bd_net -net mrmac_0_core_tx_axis_tlast_0     [get_bd_pins tx_axis_tlast_0]     [get_bd_pins mrmac_0_core/tx_axis_tlast_0]
+  connect_bd_net -net mrmac_0_core_tx_axis_tvalid_0    [get_bd_pins tx_axis_tvalid_0]    [get_bd_pins mrmac_0_core/tx_axis_tvalid_0]
+  connect_bd_net -net mrmac_0_core_tx_axis_tready_0    [get_bd_pins tx_axis_tready_0]    [get_bd_pins mrmac_0_core/tx_axis_tready_0]
+  # 1
+  connect_bd_net -net mrmac_0_core_tx_axis_tdata2      [get_bd_pins tx_axis_tdata2]      [get_bd_pins mrmac_0_core/tx_axis_tdata2]
+  connect_bd_net -net mrmac_0_core_tx_axis_tkeep_user2 [get_bd_pins tx_axis_tkeep_user2] [get_bd_pins mrmac_0_core/tx_axis_tkeep_user2]
+  connect_bd_net -net mrmac_0_core_tx_axis_tlast_2     [get_bd_pins tx_axis_tlast_2]     [get_bd_pins mrmac_0_core/tx_axis_tlast_2]
+  connect_bd_net -net mrmac_0_core_tx_axis_tvalid_2    [get_bd_pins tx_axis_tvalid_2]    [get_bd_pins mrmac_0_core/tx_axis_tvalid_2]
+  connect_bd_net -net mrmac_0_core_tx_axis_tready_2    [get_bd_pins tx_axis_tready_2]    [get_bd_pins mrmac_0_core/tx_axis_tready_2]
+  # 2
+  connect_bd_net -net mrmac_0_core_tx_axis_tdata_4      [get_bd_pins tx_axis_tdata_4]      [get_bd_pins mrmac_0_core/tx_axis_tdata_4]
+  connect_bd_net -net mrmac_0_core_tx_axis_tkeep_user_4 [get_bd_pins tx_axis_tkeep_user_4] [get_bd_pins mrmac_0_core/tx_axis_tkeep_user_4]
+  connect_bd_net -net mrmac_0_core_tx_axis_tlast_4     [get_bd_pins tx_axis_tlast_4]     [get_bd_pins mrmac_0_core/tx_axis_tlast_4]
+  connect_bd_net -net mrmac_0_core_tx_axis_tvalid_4    [get_bd_pins tx_axis_tvalid_4]    [get_bd_pins mrmac_0_core/tx_axis_tvalid_4]
+  connect_bd_net -net mrmac_0_core_tx_axis_tready_4    [get_bd_pins tx_axis_tready_4]    [get_bd_pins mrmac_0_core/tx_axis_tready_4]
+  # 3
+  connect_bd_net -net mrmac_0_core_tx_axis_tdata_6      [get_bd_pins tx_axis_tdata_6]      [get_bd_pins mrmac_0_core/tx_axis_tdata_6]
+  connect_bd_net -net mrmac_0_core_tx_axis_tkeep_user_6 [get_bd_pins tx_axis_tkeep_user_6] [get_bd_pins mrmac_0_core/tx_axis_tkeep_user_6]
+  connect_bd_net -net mrmac_0_core_tx_axis_tlast_6     [get_bd_pins tx_axis_tlast_6]     [get_bd_pins mrmac_0_core/tx_axis_tlast_6]
+  connect_bd_net -net mrmac_0_core_tx_axis_tvalid_6    [get_bd_pins tx_axis_tvalid_6]    [get_bd_pins mrmac_0_core/tx_axis_tvalid_6]
+  connect_bd_net -net mrmac_0_core_tx_axis_tready_6    [get_bd_pins tx_axis_tready_6]    [get_bd_pins mrmac_0_core/tx_axis_tready_6]
 
   # Restore current instance
   current_bd_instance $oldCurInst

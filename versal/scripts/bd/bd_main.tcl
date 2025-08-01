@@ -374,6 +374,22 @@ proc create_root_design { parentCell ntt_psi } {
     set prop_clk(pl0_ref_clk_0) "$prop_clk(pl0_ref_clk_0):S_ETH_AXI_0"
   }
 
+  set port [ create_bd_intf_port -mode Master -vlnv xilinx.com:interface:aximm_rtl:1.0 ETH_AXI_0 ]
+  set_property -dict [ list \
+     CONFIG.ADDR_WIDTH $AXI4_ADD_W \
+     CONFIG.DATA_WIDTH $AXIL_DATA_W \
+     CONFIG.PROTOCOL {AXI4LITE} \
+     CONFIG.READ_WRITE_MODE {READ_WRITE} \
+  ] $port
+
+  set port [ create_bd_intf_port -mode Slave -vlnv xilinx.com:interface:aximm_rtl:1.0 ETH_AXI_CFG ]
+  set_property -dict [ list \
+     CONFIG.ADDR_WIDTH $AXI4_ADD_W \
+     CONFIG.DATA_WIDTH $AXIL_DATA_W \
+     CONFIG.PROTOCOL {AXI4LITE} \
+     CONFIG.READ_WRITE_MODE {READ_WRITE} \
+  ] $port
+
   # == Clock port connections
   # Bus clock must be defined with a port clock
   set_property -dict [ list \
@@ -395,6 +411,8 @@ proc create_root_design { parentCell ntt_psi } {
   set_property -dict [ list \
    CONFIG.FREQ_HZ [expr int($ETH_QSFP_FREQ * 10**6)] \
   ] $CLK_IN_D
+
+  set_property CONFIG.ASSOCIATED_BUSIF {ETH_AXI_CFG:ETH_AXI_0} [get_bd_ports /clk_eth_cfg_0]
 
   set ctl_tx_port0 [ create_bd_intf_port -mode Slave -vlnv xilinx.com:display_mrmac:mrmac_ctrl_ports:2.0 ctl_tx_port0 ]
   set ctl_tx_port1 [ create_bd_intf_port -mode Slave -vlnv xilinx.com:display_mrmac:mrmac_ctrl_ports:2.0 ctl_tx_port1 ]
@@ -489,27 +507,55 @@ proc create_root_design { parentCell ntt_psi } {
   set ch2_rx_usr_clk2 [ create_bd_port -dir O -from 0 -to 0 -type gt_usrclk ch2_rx_usr_clk2 ]
   set ch1_rx_usr_clk2 [ create_bd_port -dir O -from 0 -to 0 -type gt_usrclk ch1_rx_usr_clk2 ]
   set ch3_rx_usr_clk2 [ create_bd_port -dir O -from 0 -to 0 -type gt_usrclk ch3_rx_usr_clk2 ]
-  set tx_axis_tdata0 [ create_bd_port -dir I -from 63 -to 0 tx_axis_tdata0 ]
-  set tx_axis_tdata2 [ create_bd_port -dir I -from 63 -to 0 tx_axis_tdata2 ]
-  set tx_axis_tdata4 [ create_bd_port -dir I -from 63 -to 0 tx_axis_tdata4 ]
-  set tx_axis_tdata6 [ create_bd_port -dir I -from 63 -to 0 tx_axis_tdata6 ]
-  set tx_axis_tkeep_user0 [ create_bd_port -dir I -from 10 -to 0 tx_axis_tkeep_user0 ]
-  set tx_axis_tkeep_user2 [ create_bd_port -dir I -from 10 -to 0 tx_axis_tkeep_user2 ]
-  set tx_axis_tkeep_user4 [ create_bd_port -dir I -from 10 -to 0 tx_axis_tkeep_user4 ]
-  set tx_axis_tkeep_user6 [ create_bd_port -dir I -from 10 -to 0 tx_axis_tkeep_user6 ]
-  set tx_axis_tready_0 [ create_bd_port -dir O tx_axis_tready_0 ]
-  set tx_axis_tlast_0 [ create_bd_port -dir I tx_axis_tlast_0 ]
-  set tx_axis_tvalid_0 [ create_bd_port -dir I tx_axis_tvalid_0 ]
-  set rx_axis_tdata0 [ create_bd_port -dir O -from 63 -to 0 rx_axis_tdata0 ]
-  set rx_axis_tdata2 [ create_bd_port -dir O -from 63 -to 0 rx_axis_tdata2 ]
-  set rx_axis_tdata4 [ create_bd_port -dir O -from 63 -to 0 rx_axis_tdata4 ]
-  set rx_axis_tdata6 [ create_bd_port -dir O -from 63 -to 0 rx_axis_tdata6 ]
-  set rx_axis_tkeep_user0 [ create_bd_port -dir O -from 10 -to 0 rx_axis_tkeep_user0 ]
-  set rx_axis_tkeep_user2 [ create_bd_port -dir O -from 10 -to 0 rx_axis_tkeep_user2 ]
-  set rx_axis_tkeep_user4 [ create_bd_port -dir O -from 10 -to 0 rx_axis_tkeep_user4 ]
-  set rx_axis_tkeep_user6 [ create_bd_port -dir O -from 10 -to 0 rx_axis_tkeep_user6 ]
-  set rx_axis_tlast_0 [ create_bd_port -dir O rx_axis_tlast_0 ]
-  set rx_axis_tvalid_0 [ create_bd_port -dir O rx_axis_tvalid_0 ]
+
+  # == TX axi-stream intterface
+  set tx_axis_tdata_0    [ create_bd_port -dir I -from 63 -to 0 tx_axis_tdata_0 ]
+  set tx_axis_tready_0  [ create_bd_port -dir O tx_axis_tready_0 ]
+  set tx_axis_tlast_0   [ create_bd_port -dir I tx_axis_tlast_0 ]
+  set tx_axis_tvalid_0  [ create_bd_port -dir I tx_axis_tvalid_0 ]
+
+  set tx_axis_tdata_2    [ create_bd_port -dir I -from 63 -to 0 tx_axis_tdata_2 ]
+  set tx_axis_tready_2  [ create_bd_port -dir O tx_axis_tready_2 ]
+  set tx_axis_tlast_2   [ create_bd_port -dir I tx_axis_tlast_2 ]
+  set tx_axis_tvalid_2  [ create_bd_port -dir I tx_axis_tvalid_2 ]
+
+  set tx_axis_tdata_4    [ create_bd_port -dir I -from 63 -to 0 tx_axis_tdata_4 ]
+  set tx_axis_tready_4  [ create_bd_port -dir O tx_axis_tready_4 ]
+  set tx_axis_tlast_4   [ create_bd_port -dir I tx_axis_tlast_4 ]
+  set tx_axis_tvalid_4  [ create_bd_port -dir I tx_axis_tvalid_4 ]
+
+  set tx_axis_tdata_6    [ create_bd_port -dir I -from 63 -to 0 tx_axis_tdata_6 ]
+  set tx_axis_tready_6  [ create_bd_port -dir O tx_axis_tready_6 ]
+  set tx_axis_tlast_6   [ create_bd_port -dir I tx_axis_tlast_6 ]
+  set tx_axis_tvalid_6  [ create_bd_port -dir I tx_axis_tvalid_6 ]
+
+  set tx_axis_tkeep_user_0 [ create_bd_port -dir I -from 10 -to 0 tx_axis_tkeep_user_0 ]
+  set tx_axis_tkeep_user_2 [ create_bd_port -dir I -from 10 -to 0 tx_axis_tkeep_user_2 ]
+  set tx_axis_tkeep_user_4 [ create_bd_port -dir I -from 10 -to 0 tx_axis_tkeep_user_4 ]
+  set tx_axis_tkeep_user_6 [ create_bd_port -dir I -from 10 -to 0 tx_axis_tkeep_user_6 ]
+
+  # == RX axi-stream intterface
+
+  set rx_axis_tdata_0      [ create_bd_port -dir O -from 63 -to 0 rx_axis_tdata_0 ]
+  set rx_axis_tkeep_user_0 [ create_bd_port -dir O -from 10 -to 0 rx_axis_tkeep_user_0 ]
+  set rx_axis_tlast_0     [ create_bd_port -dir O rx_axis_tlast_0 ]
+  set rx_axis_tvalid_0    [ create_bd_port -dir O rx_axis_tvalid_0 ]
+
+  set rx_axis_tdata_2      [ create_bd_port -dir O -from 63 -to 0 rx_axis_tdata_2 ]
+  set rx_axis_tkeep_user_2 [ create_bd_port -dir O -from 10 -to 0 rx_axis_tkeep_user_2 ]
+  set rx_axis_tlast_2     [ create_bd_port -dir O rx_axis_tlast_2 ]
+  set rx_axis_tvalid_2    [ create_bd_port -dir O rx_axis_tvalid_2 ]
+
+  set rx_axis_tdata_4      [ create_bd_port -dir O -from 63 -to 0 rx_axis_tdata_4 ]
+  set rx_axis_tkeep_user_4 [ create_bd_port -dir O -from 10 -to 0 rx_axis_tkeep_user_4 ]
+  set rx_axis_tlast_4     [ create_bd_port -dir O rx_axis_tlast_4 ]
+  set rx_axis_tvalid_4    [ create_bd_port -dir O rx_axis_tvalid_4 ]
+
+  set rx_axis_tdata_6      [ create_bd_port -dir O -from 63 -to 0 rx_axis_tdata_6 ]
+  set rx_axis_tkeep_user_6 [ create_bd_port -dir O -from 10 -to 0 rx_axis_tkeep_user_6 ]
+  set rx_axis_tlast_6     [ create_bd_port -dir O rx_axis_tlast_6 ]
+  set rx_axis_tvalid_6    [ create_bd_port -dir O rx_axis_tvalid_6 ]
+
   set gt_reset_tx_datapath_in [ create_bd_port -dir I -from 3 -to 0 gt_reset_tx_datapath_in ]
   set gt_reset_rx_datapath_in [ create_bd_port -dir I -from 3 -to 0 gt_reset_rx_datapath_in ]
   set pm_rdy [ create_bd_port -dir O -from 3 -to 0 pm_rdy ]
@@ -713,20 +759,8 @@ proc create_root_design { parentCell ntt_psi } {
   connect_bd_net -net eth_wrapper_gt_rx_reset_done_out [get_bd_ports gt_rx_reset_done_out] [get_bd_pins eth_wrapper/gt_rx_reset_done_out]
   connect_bd_net -net eth_wrapper_gt_tx_reset_done_out [get_bd_ports gt_tx_reset_done_out] [get_bd_pins eth_wrapper/gt_tx_reset_done_out]
   connect_bd_net -net eth_wrapper_pm_rdy               [get_bd_ports pm_rdy] [get_bd_pins eth_wrapper/pm_rdy]
-  connect_bd_net -net eth_wrapper_rx_axis_tdata0       [get_bd_ports rx_axis_tdata0] [get_bd_pins eth_wrapper/rx_axis_tdata0]
-  connect_bd_net -net eth_wrapper_rx_axis_tdata2       [get_bd_ports rx_axis_tdata2] [get_bd_pins eth_wrapper/rx_axis_tdata2]
-  connect_bd_net -net eth_wrapper_rx_axis_tdata4       [get_bd_ports rx_axis_tdata4] [get_bd_pins eth_wrapper/rx_axis_tdata4]
-  connect_bd_net -net eth_wrapper_rx_axis_tdata6       [get_bd_ports rx_axis_tdata6] [get_bd_pins eth_wrapper/rx_axis_tdata6]
-  connect_bd_net -net eth_wrapper_rx_axis_tkeep_user0  [get_bd_ports rx_axis_tkeep_user0] [get_bd_pins eth_wrapper/rx_axis_tkeep_user0]
-  connect_bd_net -net eth_wrapper_rx_axis_tkeep_user2  [get_bd_ports rx_axis_tkeep_user2] [get_bd_pins eth_wrapper/rx_axis_tkeep_user2]
-  connect_bd_net -net eth_wrapper_rx_axis_tkeep_user4  [get_bd_ports rx_axis_tkeep_user4] [get_bd_pins eth_wrapper/rx_axis_tkeep_user4]
-  connect_bd_net -net eth_wrapper_rx_axis_tkeep_user6  [get_bd_ports rx_axis_tkeep_user6] [get_bd_pins eth_wrapper/rx_axis_tkeep_user6]
-  connect_bd_net -net eth_wrapper_rx_axis_tlast_0      [get_bd_ports rx_axis_tlast_0] [get_bd_pins eth_wrapper/rx_axis_tlast_0]
-  connect_bd_net -net eth_wrapper_rx_axis_tvalid_0     [get_bd_ports rx_axis_tvalid_0] [get_bd_pins eth_wrapper/rx_axis_tvalid_0]
-  connect_bd_net -net eth_wrapper_tx_axis_tready_0     [get_bd_ports tx_axis_tready_0] [get_bd_pins eth_wrapper/tx_axis_tready_0]
   connect_bd_net -net pm_tick                          [get_bd_ports pm_tick] [get_bd_pins eth_wrapper/pm_tick]
   connect_bd_net -net rx_alt_serdes_clk                [get_bd_ports rx_alt_serdes_clk] [get_bd_pins eth_wrapper/rx_alt_serdes_clk]
-  connect_bd_net -net rx_axi_clk                       [get_bd_ports rx_axi_clk] [get_bd_pins eth_wrapper/rx_axi_clk]
   connect_bd_net -net rx_core_clk                      [get_bd_ports rx_core_clk] [get_bd_pins eth_wrapper/rx_core_clk]
   connect_bd_net -net rx_core_reset                    [get_bd_ports rx_core_reset] [get_bd_pins eth_wrapper/rx_core_reset]
   connect_bd_net -net rx_flexif_clk                    [get_bd_ports rx_flexif_clk] [get_bd_pins eth_wrapper/rx_flexif_clk]
@@ -735,25 +769,63 @@ proc create_root_design { parentCell ntt_psi } {
   connect_bd_net -net rx_serdes_reset                  [get_bd_ports rx_serdes_reset] [get_bd_pins eth_wrapper/rx_serdes_reset]
   connect_bd_net -net rx_ts_clk                        [get_bd_ports rx_ts_clk] [get_bd_pins eth_wrapper/rx_ts_clk]
   connect_bd_net -net tx_alt_serdes_clk                [get_bd_ports tx_alt_serdes_clk] [get_bd_pins eth_wrapper/tx_alt_serdes_clk]
-  connect_bd_net -net tx_axi_clk                       [get_bd_ports tx_axi_clk] [get_bd_pins eth_wrapper/tx_axi_clk]
-  connect_bd_net -net tx_axis_tdata0                   [get_bd_ports tx_axis_tdata0] [get_bd_pins eth_wrapper/tx_axis_tdata0]
-  connect_bd_net -net tx_axis_tdata2                   [get_bd_ports tx_axis_tdata2] [get_bd_pins eth_wrapper/tx_axis_tdata2]
-  connect_bd_net -net tx_axis_tdata4                   [get_bd_ports tx_axis_tdata4] [get_bd_pins eth_wrapper/tx_axis_tdata4]
-  connect_bd_net -net tx_axis_tdata6                   [get_bd_ports tx_axis_tdata6] [get_bd_pins eth_wrapper/tx_axis_tdata6]
-  connect_bd_net -net tx_axis_tkeep_user0              [get_bd_ports tx_axis_tkeep_user0] [get_bd_pins eth_wrapper/tx_axis_tkeep_user0]
-  connect_bd_net -net tx_axis_tkeep_user2              [get_bd_ports tx_axis_tkeep_user2] [get_bd_pins eth_wrapper/tx_axis_tkeep_user2]
-  connect_bd_net -net tx_axis_tkeep_user4              [get_bd_ports tx_axis_tkeep_user4] [get_bd_pins eth_wrapper/tx_axis_tkeep_user4]
-  connect_bd_net -net tx_axis_tkeep_user6              [get_bd_ports tx_axis_tkeep_user6] [get_bd_pins eth_wrapper/tx_axis_tkeep_user6]
-  connect_bd_net -net tx_axis_tlast_0                  [get_bd_ports tx_axis_tlast_0] [get_bd_pins eth_wrapper/tx_axis_tlast_0]
-  connect_bd_net -net tx_axis_tvalid_0                 [get_bd_ports tx_axis_tvalid_0] [get_bd_pins eth_wrapper/tx_axis_tvalid_0]
   connect_bd_net -net tx_core_clk                      [get_bd_ports tx_core_clk] [get_bd_pins eth_wrapper/tx_core_clk]
   connect_bd_net -net tx_core_reset                    [get_bd_ports tx_core_reset] [get_bd_pins eth_wrapper/tx_core_reset]
   connect_bd_net -net tx_flexif_clk                    [get_bd_ports tx_flexif_clk] [get_bd_pins eth_wrapper/tx_flexif_clk]
   connect_bd_net -net tx_serdes_reset                  [get_bd_ports tx_serdes_reset] [get_bd_pins eth_wrapper/tx_serdes_reset]
   connect_bd_net -net tx_ts_clk                        [get_bd_ports tx_ts_clk] [get_bd_pins eth_wrapper/tx_ts_clk]
 
-  connect_bd_net [get_bd_ports clk_axi_qsfp]           [get_bd_pins shell_wrapper/clk_eth_qsfp_0]
-  connect_bd_net [get_bd_ports resetn_qsfp]               [get_bd_pins shell_wrapper/resetn_eth_qsfp_ic_0]
+  # == RX Lanes
+  connect_bd_net -net rx_axi_clk                            [get_bd_ports rx_axi_clk]                       [get_bd_pins eth_wrapper/rx_axi_clk]
+  # 0
+  connect_bd_net [get_bd_pins eth_wrapper/rx_axis_tdata_0]      [get_bd_ports rx_axis_tdata_0]
+  connect_bd_net [get_bd_pins eth_wrapper/rx_axis_tkeep_user_0] [get_bd_ports rx_axis_tkeep_user_0]
+  connect_bd_net [get_bd_pins eth_wrapper/rx_axis_tlast_0]      [get_bd_ports rx_axis_tlast_0]
+  connect_bd_net [get_bd_pins eth_wrapper/rx_axis_tvalid_0]     [get_bd_ports rx_axis_tvalid_0]
+  # 1
+  connect_bd_net [get_bd_pins eth_wrapper/rx_axis_tdata_2]      [get_bd_ports rx_axis_tdata_2]
+  connect_bd_net [get_bd_pins eth_wrapper/rx_axis_tkeep_user_2] [get_bd_ports rx_axis_tkeep_user_2]
+  connect_bd_net [get_bd_pins eth_wrapper/rx_axis_tlast_2]      [get_bd_ports rx_axis_tlast_2]
+  connect_bd_net [get_bd_pins eth_wrapper/rx_axis_tvalid_2]     [get_bd_ports rx_axis_tvalid_2]
+  # 2
+  connect_bd_net [get_bd_pins eth_wrapper/rx_axis_tdata_4]      [get_bd_ports rx_axis_tdata_4]
+  connect_bd_net [get_bd_pins eth_wrapper/rx_axis_tkeep_user_4] [get_bd_ports rx_axis_tkeep_user_4]
+  connect_bd_net [get_bd_pins eth_wrapper/rx_axis_tlast_4]      [get_bd_ports rx_axis_tlast_4]
+  connect_bd_net [get_bd_pins eth_wrapper/rx_axis_tvalid_4]     [get_bd_ports rx_axis_tvalid_4]
+  # 3
+  connect_bd_net [get_bd_pins eth_wrapper/rx_axis_tdata_6]      [get_bd_ports rx_axis_tdata_6]
+  connect_bd_net [get_bd_pins eth_wrapper/rx_axis_tkeep_user_6] [get_bd_ports rx_axis_tkeep_user_6]
+  connect_bd_net [get_bd_pins eth_wrapper/rx_axis_tlast_6]      [get_bd_ports rx_axis_tlast_6]
+  connect_bd_net [get_bd_pins eth_wrapper/rx_axis_tvalid_6]     [get_bd_ports rx_axis_tvalid_6]
+  # == TX Lanes
+  connect_bd_net -net tx_axi_clk                       [get_bd_ports tx_axi_clk] [get_bd_pins eth_wrapper/tx_axi_clk]
+  # 0
+  connect_bd_net [get_bd_ports tx_axis_tdata_0]      [get_bd_pins eth_wrapper/tx_axis_tdata_0]
+  connect_bd_net [get_bd_ports tx_axis_tkeep_user_0] [get_bd_pins eth_wrapper/tx_axis_tkeep_user_0]
+  connect_bd_net [get_bd_ports tx_axis_tlast_0]     [get_bd_pins eth_wrapper/tx_axis_tlast_0]
+  connect_bd_net [get_bd_ports tx_axis_tvalid_0]    [get_bd_pins eth_wrapper/tx_axis_tvalid_0]
+  connect_bd_net [get_bd_ports tx_axis_tready_0]    [get_bd_pins eth_wrapper/tx_axis_tready_0]
+  # 1
+  connect_bd_net [get_bd_ports tx_axis_tdata_2]      [get_bd_pins eth_wrapper/tx_axis_tdata_2]
+  connect_bd_net [get_bd_ports tx_axis_tkeep_user_2] [get_bd_pins eth_wrapper/tx_axis_tkeep_user_2]
+  connect_bd_net [get_bd_ports tx_axis_tlast_2]     [get_bd_pins eth_wrapper/tx_axis_tlast_2]
+  connect_bd_net [get_bd_ports tx_axis_tvalid_2]    [get_bd_pins eth_wrapper/tx_axis_tvalid_2]
+  connect_bd_net [get_bd_ports tx_axis_tready_2]    [get_bd_pins eth_wrapper/tx_axis_tready_2]
+  # 2
+  connect_bd_net  [get_bd_ports tx_axis_tdata_4]      [get_bd_pins eth_wrapper/tx_axis_tdata_4]
+  connect_bd_net  [get_bd_ports tx_axis_tkeep_user_4] [get_bd_pins eth_wrapper/tx_axis_tkeep_user_4]
+  connect_bd_net [get_bd_ports tx_axis_tlast_4] [get_bd_pins eth_wrapper/tx_axis_tlast_4]
+  connect_bd_net [get_bd_ports tx_axis_tvalid_4]    [get_bd_pins eth_wrapper/tx_axis_tvalid_4]
+  connect_bd_net [get_bd_ports tx_axis_tready_4]    [get_bd_pins eth_wrapper/tx_axis_tready_4]
+  # 3
+  connect_bd_net  [get_bd_ports tx_axis_tdata_6]      [get_bd_pins eth_wrapper/tx_axis_tdata_6]
+  connect_bd_net  [get_bd_ports tx_axis_tkeep_user_6] [get_bd_pins eth_wrapper/tx_axis_tkeep_user_6]
+  connect_bd_net [get_bd_ports tx_axis_tlast_6]     [get_bd_pins eth_wrapper/tx_axis_tlast_6]
+  connect_bd_net [get_bd_ports tx_axis_tvalid_6]    [get_bd_pins eth_wrapper/tx_axis_tvalid_6]
+  connect_bd_net [get_bd_ports tx_axis_tready_6]    [get_bd_pins eth_wrapper/tx_axis_tready_6]
+
+  connect_bd_net [get_bd_ports clk_axi_qsfp] [get_bd_pins shell_wrapper/clk_eth_qsfp_0]
+  connect_bd_net [get_bd_ports resetn_qsfp]  [get_bd_pins shell_wrapper/resetn_eth_qsfp_ic_0]
 
   ####################################
   # Internal Connections
@@ -796,7 +868,10 @@ proc create_root_design { parentCell ntt_psi } {
   # Ethernet
   connect_bd_net      [get_bd_pins eth_wrapper/s_axi_aclk]    [get_bd_pins shell_wrapper/clk_eth_cfg_0]
   connect_bd_net      [get_bd_pins eth_wrapper/s_axi_aresetn] [get_bd_pins shell_wrapper/resetn_eth_cfg_ic_0]
-  connect_bd_intf_net [get_bd_intf_pins eth_wrapper/s_axi]    [get_bd_intf_pins noc_wrapper/ETH_AXI_0]
+
+  connect_bd_intf_net [get_bd_intf_pins noc_wrapper/ETH_AXI_0] [get_bd_intf_ports /ETH_AXI_0]
+  connect_bd_intf_net [get_bd_intf_ports /ETH_AXI_CFG] [get_bd_intf_pins eth_wrapper/s_axi]
+
 
   ####################################
   # Address

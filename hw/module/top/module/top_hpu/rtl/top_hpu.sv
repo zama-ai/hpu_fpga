@@ -280,6 +280,27 @@ module top_hpu #(
   logic [1:0][2:0]                                  axi_regif_cfg_arprot;
   logic [1:0][2:0]                                  axi_regif_cfg_awprot;
 
+  // Ethernet loopback
+  logic [31:0]                                      axi_eth_loopback_awaddr;
+  logic                                             axi_eth_loopback_awvalid;
+  logic                                             axi_eth_loopback_awready;
+  logic [31:0]                                      axi_eth_loopback_wdata;
+  logic                                             axi_eth_loopback_wvalid;
+  logic                                             axi_eth_loopback_wready;
+  logic [3:0]                                       axi_eth_loopback_wstrb;
+  logic [1:0]                                       axi_eth_loopback_bresp;
+  logic                                             axi_eth_loopback_bvalid;
+  logic                                             axi_eth_loopback_bready;
+  logic [31:0]                                      axi_eth_loopback_araddr;
+  logic                                             axi_eth_loopback_arvalid;
+  logic                                             axi_eth_loopback_arready;
+  logic [31:0]                                      axi_eth_loopback_rdata;
+  logic [1:0]                                       axi_eth_loopback_rresp;
+  logic                                             axi_eth_loopback_rvalid;
+  logic                                             axi_eth_loopback_rready;
+  logic [2:0]                                       axi_eth_loopback_arprot;
+  logic [2:0]                                       axi_eth_loopback_awprot;
+
   /* TRACE
    *
    */
@@ -700,27 +721,17 @@ module top_hpu #(
   logic [2:0]   stat_tx_pcs_bad_code_2;
   logic [2:0]   stat_tx_pcs_bad_code_3;
 
-  //TODO: TBD
-  logic [63:0] rx_axis_tdata0;
-  logic [63:0] rx_axis_tdata2;
-  logic [63:0] rx_axis_tdata4;
-  logic [63:0] rx_axis_tdata6;
+  //TODO: TBD with dma
+  logic [3:0][63:0] qsfp_rx_tdata;
+  logic [3:0][10:0] qsfp_rx_tkeep;
+  logic [3:0]       qsfp_rx_tlast;
+  logic [3:0]       qsfp_rx_tvalid;
 
-  logic [63:0] tx_axis_tdata0;
-  logic [63:0] tx_axis_tdata2;
-  logic [63:0] tx_axis_tdata4;
-  logic [63:0] tx_axis_tdata6;
-
-  logic [10:0] rx_axis_tkeep_user0;
-  logic [10:0] rx_axis_tkeep_user2;
-  logic [10:0] rx_axis_tkeep_user4;
-  logic [10:0] rx_axis_tkeep_user6;
-
-  logic [3:0]       axis_buffer_tx_tready;
-  logic [3:0]       axis_buffer_tx_tvalid;
-  logic [7:0][63:0] axis_buffer_tx_tdata;
-  logic [7:0][10:0] axis_buffer_tx_tkeep;
-  logic [3:0]       axis_buffer_tx_tlast;
+  logic [3:0][63:0] qsfp_tx_tdata;
+  logic [3:0][10:0] qsfp_tx_tkeep;
+  logic [3:0]       qsfp_tx_tlast;
+  logic [3:0]       qsfp_tx_tvalid;
+  logic [3:0]       qsfp_tx_tready;
 
   logic resetn_qsfp;
   logic clk_axi_qsfp;
@@ -2136,6 +2147,51 @@ module top_hpu #(
     .hbm_ref_clk_1_clk_n(top_hbm_ref_clk_1_clk_n),
     .hbm_ref_clk_1_clk_p(top_hbm_ref_clk_1_clk_p),
 
+    /* Axi4-lite loopback
+     * here to set correct address-space * to access ethernet configuration link
+     * address is x8008'0000 + offset while IP is expecting for x0000'XXXX
+     * "XXXX" as address
+     */
+    .ETH_AXI_0_araddr   (axi_eth_loopback_araddr),
+    .ETH_AXI_0_arprot   (axi_eth_loopback_arprot),
+    .ETH_AXI_0_arready  (axi_eth_loopback_arready),
+    .ETH_AXI_0_arvalid  (axi_eth_loopback_arvalid),
+    .ETH_AXI_0_awaddr   (axi_eth_loopback_awaddr),
+    .ETH_AXI_0_awprot   (axi_eth_loopback_awprot),
+    .ETH_AXI_0_awready  (axi_eth_loopback_awready),
+    .ETH_AXI_0_awvalid  (axi_eth_loopback_awvalid),
+    .ETH_AXI_0_bready   (axi_eth_loopback_bready),
+    .ETH_AXI_0_bresp    (axi_eth_loopback_bresp),
+    .ETH_AXI_0_bvalid   (axi_eth_loopback_bvalid),
+    .ETH_AXI_0_rdata    (axi_eth_loopback_rdata),
+    .ETH_AXI_0_rready   (axi_eth_loopback_rready),
+    .ETH_AXI_0_rresp    (axi_eth_loopback_rresp),
+    .ETH_AXI_0_rvalid   (axi_eth_loopback_rvalid),
+    .ETH_AXI_0_wdata    (axi_eth_loopback_wdata),
+    .ETH_AXI_0_wready   (axi_eth_loopback_wready),
+    .ETH_AXI_0_wstrb    (axi_eth_loopback_wstrb),
+    .ETH_AXI_0_wvalid   (axi_eth_loopback_wvalid),
+
+    .ETH_AXI_CFG_araddr   ({'h0000, axi_eth_loopback_araddr[15:0]}),
+    .ETH_AXI_CFG_arprot   (axi_eth_loopback_arprot),
+    .ETH_AXI_CFG_arready  (axi_eth_loopback_arready),
+    .ETH_AXI_CFG_arvalid  (axi_eth_loopback_arvalid),
+    .ETH_AXI_CFG_awaddr   ({'h0000, axi_eth_loopback_awaddr[15:0]}),
+    .ETH_AXI_CFG_awprot   (axi_eth_loopback_awprot),
+    .ETH_AXI_CFG_awready  (axi_eth_loopback_awready),
+    .ETH_AXI_CFG_awvalid  (axi_eth_loopback_awvalid),
+    .ETH_AXI_CFG_bready   (axi_eth_loopback_bready),
+    .ETH_AXI_CFG_bresp    (axi_eth_loopback_bresp),
+    .ETH_AXI_CFG_bvalid   (axi_eth_loopback_bvalid),
+    .ETH_AXI_CFG_rdata    (axi_eth_loopback_rdata),
+    .ETH_AXI_CFG_rready   (axi_eth_loopback_rready),
+    .ETH_AXI_CFG_rresp    (axi_eth_loopback_rresp),
+    .ETH_AXI_CFG_rvalid   (axi_eth_loopback_rvalid),
+    .ETH_AXI_CFG_wdata    (axi_eth_loopback_wdata),
+    .ETH_AXI_CFG_wready   (axi_eth_loopback_wready),
+    .ETH_AXI_CFG_wstrb    (axi_eth_loopback_wstrb),
+    .ETH_AXI_CFG_wvalid   (axi_eth_loopback_wvalid),
+
     /* Tranceivers
      * -> GTM for one QSFP port
      * -> NRZ modulation
@@ -2198,30 +2254,50 @@ module top_hpu #(
      * -> Site is chosen by a loc in bd
      * -> Segmented 4x25G (NRZ)
      */
-    // RX datapath
-    .rx_axis_tdata0      (rx_axis_tdata0[63:0]),
-    .rx_axis_tkeep_user0 (rx_axis_tkeep_user0[10:0]),
-    .rx_axis_tdata2      (rx_axis_tdata2[63:0]),
-    .rx_axis_tkeep_user2 (rx_axis_tkeep_user2[10:0]),
-    .rx_axis_tdata4      (rx_axis_tdata4[63:0]),
-    .rx_axis_tkeep_user4 (rx_axis_tkeep_user4[10:0]),
-    .rx_axis_tdata6      (rx_axis_tdata4[63:0]),
-    .rx_axis_tkeep_user6 (rx_axis_tkeep_user6[10:0]),
-    .rx_axis_tlast_0     (rx_axis_tlast_0),
-    .rx_axis_tvalid_0    (rx_axis_tvalid_0),
-    // TX datapath
-    .tx_axis_tdata0      (axis_buffer_tx_tdata[0][63:0]),
-    .tx_axis_tkeep_user0 (axis_buffer_tx_tkeep[0][10:0]),
-    .tx_axis_tdata2      (axis_buffer_tx_tdata[2][63:0]),
-    .tx_axis_tkeep_user2 (axis_buffer_tx_tkeep[2][10:0]),
-    .tx_axis_tdata4      (axis_buffer_tx_tdata[4][63:0]),
-    .tx_axis_tkeep_user4 (axis_buffer_tx_tkeep[4][10:0]),
-    .tx_axis_tdata6      (axis_buffer_tx_tdata[5][63:0]),
-    .tx_axis_tkeep_user6 (axis_buffer_tx_tkeep[5][10:0]),
-    .tx_axis_tlast_0     (axis_buffer_tx_tlast[0]),
-    .tx_axis_tready_0    (tx_axis_tready_0),
-    .tx_axis_tvalid_0    (axis_buffer_tx_tvalid[0]),
-    // # control signals
+    // == == axi4-stream == == //
+    // == RX datapath
+    // Lane 0
+    .rx_axis_tdata_0     (qsfp_rx_tdata[0]),
+    .rx_axis_tkeep_user_0(qsfp_rx_tkeep_user[0]),
+    .rx_axis_tlast_0     (qsfp_rx_tlast[0]),
+    .rx_axis_tvalid_0    (qsfp_rx_tvalid[0]),
+    // Lane 1
+    .rx_axis_tdata_1     (qsfp_rx_tdata[1]),
+    .rx_axis_tkeep_user_1(qsfp_rx_tkeep_user[1]),
+    .rx_axis_tlast_1     (qsfp_rx_tlast[1]),
+    .rx_axis_tvalid_1    (qsfp_rx_tvalid[1]),
+    // Lane 2
+    .rx_axis_tdata_2     (qsfp_rx_tdata[2]),
+    .rx_axis_tkeep_user_2(qsfp_rx_tkeep_user[2]),
+    .rx_axis_tlast_2     (qsfp_rx_tlast[2]),
+    .rx_axis_tvalid_2    (qsfp_rx_tvalid[2]),
+    // Lane 3
+    .rx_axis_tdata_3     (qsfp_rx_tdata[3]),
+    .rx_axis_tkeep_user_3(qsfp_rx_tkeep_user[3]),
+    .rx_axis_tlast_3     (qsfp_rx_tlast[3]),
+    .rx_axis_tvalid_3    (qsfp_rx_tvalid[3]),
+    // == TX datapath
+    // Lane 0
+    .tx_axis_tdata_0     (qsfp_tx_tdata[0]),
+    .tx_axis_tkeep_user_0(qsfp_tx_tkeep_user[0]),
+    .tx_axis_tlast_0     (qsfp_tx_tlast[0]),
+    .tx_axis_tvalid_0    (qsfp_tx_tvalid[0]),
+    // Lane 1
+    .tx_axis_tdata_1     (qsfp_tx_tdata[1]),
+    .tx_axis_tkeep_user_1(qsfp_tx_tkeep_user[1]),
+    .tx_axis_tlast_1     (qsfp_tx_tlast[1]),
+    .tx_axis_tvalid_1    (qsfp_tx_tvalid[1]),
+    // Lane 2
+    .tx_axis_tdata_2     (qsfp_tx_tdata[2]),
+    .tx_axis_tkeep_user_2(qsfp_tx_tkeep_user[2]),
+    .tx_axis_tlast_2     (qsfp_tx_tlast[2]),
+    .tx_axis_tvalid_2    (qsfp_tx_tvalid[2]),
+    // Lane 3
+    .tx_axis_tdata_3     (qsfp_tx_tdata[3]),
+    .tx_axis_tkeep_user_3(qsfp_tx_tkeep_user[3]),
+    .tx_axis_tlast_3     (qsfp_tx_tlast[3]),
+    .tx_axis_tvalid_3    (qsfp_tx_tvalid[3]),
+    // == == control-sig == == //
     .gtpowergood_in          (gtpowergood_in),
     // performance monitoring
     .pm_rdy                  (),
