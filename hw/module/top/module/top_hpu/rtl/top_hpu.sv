@@ -280,27 +280,72 @@ module top_hpu #(
   logic [1:0][2:0]                                  axi_regif_cfg_arprot;
   logic [1:0][2:0]                                  axi_regif_cfg_awprot;
 
-  // Ethernet loopback
-  logic [31:0]                                      axi_eth_loopback_awaddr;
-  logic                                             axi_eth_loopback_awvalid;
-  logic                                             axi_eth_loopback_awready;
-  logic [31:0]                                      axi_eth_loopback_wdata;
-  logic                                             axi_eth_loopback_wvalid;
-  logic                                             axi_eth_loopback_wready;
-  logic [3:0]                                       axi_eth_loopback_wstrb;
-  logic [1:0]                                       axi_eth_loopback_bresp;
-  logic                                             axi_eth_loopback_bvalid;
-  logic                                             axi_eth_loopback_bready;
-  logic [31:0]                                      axi_eth_loopback_araddr;
-  logic                                             axi_eth_loopback_arvalid;
-  logic                                             axi_eth_loopback_arready;
-  logic [31:0]                                      axi_eth_loopback_rdata;
-  logic [1:0]                                       axi_eth_loopback_rresp;
-  logic                                             axi_eth_loopback_rvalid;
-  logic                                             axi_eth_loopback_rready;
+  // == Ethernet
+  // axi4-lite direct access to mrmac registers
+  logic [31:0]                                      axi_eth_mrmac_awaddr;
+  logic                                             axi_eth_mrmac_awvalid;
+  logic                                             axi_eth_mrmac_awready;
+  logic [31:0]                                      axi_eth_mrmac_wdata;
+  logic                                             axi_eth_mrmac_wvalid;
+  logic                                             axi_eth_mrmac_wready;
+  logic [3:0]                                       axi_eth_mrmac_wstrb;
+  logic [1:0]                                       axi_eth_mrmac_bresp;
+  logic                                             axi_eth_mrmac_bvalid;
+  logic                                             axi_eth_mrmac_bready;
+  logic [31:0]                                      axi_eth_mrmac_araddr;
+  logic                                             axi_eth_mrmac_arvalid;
+  logic                                             axi_eth_mrmac_arready;
+  logic [31:0]                                      axi_eth_mrmac_rdata;
+  logic [1:0]                                       axi_eth_mrmac_rresp;
+  logic                                             axi_eth_mrmac_rvalid;
+  logic                                             axi_eth_mrmac_rready;
   // unused for axi lite
-  logic [2:0]                                       axi_eth_loopback_arprot;
-  logic [2:0]                                       axi_eth_loopback_awprot;
+  logic [2:0]                                       axi_eth_mrmac_arprot;
+  logic [2:0]                                       axi_eth_mrmac_awprot;
+
+  // axi4-lite direct access to axi-stream FIFO
+  logic [31:0]                                      axi_eth_dbg_awaddr;
+  logic                                             axi_eth_dbg_awvalid;
+  logic                                             axi_eth_dbg_awready;
+  logic [31:0]                                      axi_eth_dbg_wdata;
+  logic                                             axi_eth_dbg_wvalid;
+  logic                                             axi_eth_dbg_wready;
+  logic [3:0]                                       axi_eth_dbg_wstrb;
+  logic [1:0]                                       axi_eth_dbg_bresp;
+  logic                                             axi_eth_dbg_bvalid;
+  logic                                             axi_eth_dbg_bready;
+  logic [31:0]                                      axi_eth_dbg_araddr;
+  logic                                             axi_eth_dbg_arvalid;
+  logic                                             axi_eth_dbg_arready;
+  logic [31:0]                                      axi_eth_dbg_rdata;
+  logic [1:0]                                       axi_eth_dbg_rresp;
+  logic                                             axi_eth_dbg_rvalid;
+  logic                                             axi_eth_dbg_rready;
+  // unused for axi lite
+  logic [2:0]                                       axi_eth_dbg_arprot;
+  logic [2:0]                                       axi_eth_dbg_awprot;
+
+  // axi4-lite direct access to dma controller interface
+  logic [31:0]                                      axi_eth_dma_awaddr;
+  logic                                             axi_eth_dma_awvalid;
+  logic                                             axi_eth_dma_awready;
+  logic [31:0]                                      axi_eth_dma_wdata;
+  logic                                             axi_eth_dma_wvalid;
+  logic                                             axi_eth_dma_wready;
+  logic [3:0]                                       axi_eth_dma_wstrb;
+  logic [1:0]                                       axi_eth_dma_bresp;
+  logic                                             axi_eth_dma_bvalid;
+  logic                                             axi_eth_dma_bready;
+  logic [31:0]                                      axi_eth_dma_araddr;
+  logic                                             axi_eth_dma_arvalid;
+  logic                                             axi_eth_dma_arready;
+  logic [31:0]                                      axi_eth_dma_rdata;
+  logic [1:0]                                       axi_eth_dma_rresp;
+  logic                                             axi_eth_dma_rvalid;
+  logic                                             axi_eth_dma_rready;
+  // unused for axi lite
+  logic [2:0]                                       axi_eth_dma_arprot;
+  logic [2:0]                                       axi_eth_dma_awprot;
 
   /* TRACE
    *
@@ -2153,43 +2198,85 @@ module top_hpu #(
      * address is x8008'0000 + offset while IP is expecting for x0000'XXXX
      * "XXXX" as address
      */
-    .ETH_AXI_0_araddr   (axi_eth_loopback_araddr),
-    .ETH_AXI_0_arready  (axi_eth_loopback_arready),
-    .ETH_AXI_0_arvalid  (axi_eth_loopback_arvalid),
-    .ETH_AXI_0_awaddr   (axi_eth_loopback_awaddr),
-    .ETH_AXI_0_awready  (axi_eth_loopback_awready),
-    .ETH_AXI_0_awvalid  (axi_eth_loopback_awvalid),
-    .ETH_AXI_0_bready   (axi_eth_loopback_bready),
-    .ETH_AXI_0_bresp    (axi_eth_loopback_bresp),
-    .ETH_AXI_0_bvalid   (axi_eth_loopback_bvalid),
-    .ETH_AXI_0_rdata    (axi_eth_loopback_rdata),
-    .ETH_AXI_0_rready   (axi_eth_loopback_rready),
-    .ETH_AXI_0_rresp    (axi_eth_loopback_rresp),
-    .ETH_AXI_0_rvalid   (axi_eth_loopback_rvalid),
-    .ETH_AXI_0_wdata    (axi_eth_loopback_wdata),
-    .ETH_AXI_0_wready   (axi_eth_loopback_wready),
-    .ETH_AXI_0_wvalid   (axi_eth_loopback_wvalid),
+    .ETH_AXI_0_araddr   (axi_eth_mrmac_araddr),
+    .ETH_AXI_0_arready  (axi_eth_mrmac_arready),
+    .ETH_AXI_0_arvalid  (axi_eth_mrmac_arvalid),
+    .ETH_AXI_0_awaddr   (axi_eth_mrmac_awaddr),
+    .ETH_AXI_0_awready  (axi_eth_mrmac_awready),
+    .ETH_AXI_0_awvalid  (axi_eth_mrmac_awvalid),
+    .ETH_AXI_0_bready   (axi_eth_mrmac_bready),
+    .ETH_AXI_0_bresp    (axi_eth_mrmac_bresp),
+    .ETH_AXI_0_bvalid   (axi_eth_mrmac_bvalid),
+    .ETH_AXI_0_rdata    (axi_eth_mrmac_rdata),
+    .ETH_AXI_0_rready   (axi_eth_mrmac_rready),
+    .ETH_AXI_0_rresp    (axi_eth_mrmac_rresp),
+    .ETH_AXI_0_rvalid   (axi_eth_mrmac_rvalid),
+    .ETH_AXI_0_wdata    (axi_eth_mrmac_wdata),
+    .ETH_AXI_0_wready   (axi_eth_mrmac_wready),
+    .ETH_AXI_0_wvalid   (axi_eth_mrmac_wvalid),
     // unused after loopback
-    .ETH_AXI_0_arprot   (axi_eth_loopback_arprot),
-    .ETH_AXI_0_awprot   (axi_eth_loopback_awprot),
-    .ETH_AXI_0_wstrb    (axi_eth_loopback_wstrb),
+    .ETH_AXI_0_arprot   (axi_eth_mrmac_arprot),
+    .ETH_AXI_0_awprot   (axi_eth_mrmac_awprot),
+    .ETH_AXI_0_wstrb    (axi_eth_mrmac_wstrb),
 
-    .ETH_AXI_CFG_araddr   ({'h0000, axi_eth_loopback_araddr[15:0]}),
-    .ETH_AXI_CFG_arready  (axi_eth_loopback_arready),
-    .ETH_AXI_CFG_arvalid  (axi_eth_loopback_arvalid),
-    .ETH_AXI_CFG_awaddr   ({'h0000, axi_eth_loopback_awaddr[15:0]}),
-    .ETH_AXI_CFG_awready  (axi_eth_loopback_awready),
-    .ETH_AXI_CFG_awvalid  (axi_eth_loopback_awvalid),
-    .ETH_AXI_CFG_bready   (axi_eth_loopback_bready),
-    .ETH_AXI_CFG_bresp    (axi_eth_loopback_bresp),
-    .ETH_AXI_CFG_bvalid   (axi_eth_loopback_bvalid),
-    .ETH_AXI_CFG_rdata    (axi_eth_loopback_rdata),
-    .ETH_AXI_CFG_rready   (axi_eth_loopback_rready),
-    .ETH_AXI_CFG_rresp    (axi_eth_loopback_rresp),
-    .ETH_AXI_CFG_rvalid   (axi_eth_loopback_rvalid),
-    .ETH_AXI_CFG_wdata    (axi_eth_loopback_wdata),
-    .ETH_AXI_CFG_wready   (axi_eth_loopback_wready),
-    .ETH_AXI_CFG_wvalid   (axi_eth_loopback_wvalid),
+    .ETH_AXI_CFG_araddr   ({'h0000, axi_eth_mrmac_araddr[15:0]}),
+    .ETH_AXI_CFG_arready  (axi_eth_mrmac_arready),
+    .ETH_AXI_CFG_arvalid  (axi_eth_mrmac_arvalid),
+    .ETH_AXI_CFG_awaddr   ({'h0000, axi_eth_mrmac_awaddr[15:0]}),
+    .ETH_AXI_CFG_awready  (axi_eth_mrmac_awready),
+    .ETH_AXI_CFG_awvalid  (axi_eth_mrmac_awvalid),
+    .ETH_AXI_CFG_bready   (axi_eth_mrmac_bready),
+    .ETH_AXI_CFG_bresp    (axi_eth_mrmac_bresp),
+    .ETH_AXI_CFG_bvalid   (axi_eth_mrmac_bvalid),
+    .ETH_AXI_CFG_rdata    (axi_eth_mrmac_rdata),
+    .ETH_AXI_CFG_rready   (axi_eth_mrmac_rready),
+    .ETH_AXI_CFG_rresp    (axi_eth_mrmac_rresp),
+    .ETH_AXI_CFG_rvalid   (axi_eth_mrmac_rvalid),
+    .ETH_AXI_CFG_wdata    (axi_eth_mrmac_wdata),
+    .ETH_AXI_CFG_wready   (axi_eth_mrmac_wready),
+    .ETH_AXI_CFG_wvalid   (axi_eth_mrmac_wvalid),
+
+    .ETH_AXI_1_araddr   (axi_eth_dbg_araddr),
+    .ETH_AXI_1_arready  (axi_eth_dbg_arready),
+    .ETH_AXI_1_arvalid  (axi_eth_dbg_arvalid),
+    .ETH_AXI_1_awaddr   (axi_eth_dbg_awaddr),
+    .ETH_AXI_1_awready  (axi_eth_dbg_awready),
+    .ETH_AXI_1_awvalid  (axi_eth_dbg_awvalid),
+    .ETH_AXI_1_bready   (axi_eth_dbg_bready),
+    .ETH_AXI_1_bresp    (axi_eth_dbg_bresp),
+    .ETH_AXI_1_bvalid   (axi_eth_dbg_bvalid),
+    .ETH_AXI_1_rdata    (axi_eth_dbg_rdata),
+    .ETH_AXI_1_rready   (axi_eth_dbg_rready),
+    .ETH_AXI_1_rresp    (axi_eth_dbg_rresp),
+    .ETH_AXI_1_rvalid   (axi_eth_dbg_rvalid),
+    .ETH_AXI_1_wdata    (axi_eth_dbg_wdata),
+    .ETH_AXI_1_wready   (axi_eth_dbg_wready),
+    .ETH_AXI_1_wvalid   (axi_eth_dbg_wvalid),
+    // unused after loopback
+    .ETH_AXI_1_arprot   (axi_eth_dbg_arprot),
+    .ETH_AXI_1_awprot   (axi_eth_dbg_awprot),
+    .ETH_AXI_1_wstrb    (axi_eth_dbg_wstrb),
+
+    .ETH_AXI_2_araddr   (axi_eth_dma_araddr),
+    .ETH_AXI_2_arready  (axi_eth_dma_arready),
+    .ETH_AXI_2_arvalid  (axi_eth_dma_arvalid),
+    .ETH_AXI_2_awaddr   (axi_eth_dma_awaddr),
+    .ETH_AXI_2_awready  (axi_eth_dma_awready),
+    .ETH_AXI_2_awvalid  (axi_eth_dma_awvalid),
+    .ETH_AXI_2_bready   (axi_eth_dma_bready),
+    .ETH_AXI_2_bresp    (axi_eth_dma_bresp),
+    .ETH_AXI_2_bvalid   (axi_eth_dma_bvalid),
+    .ETH_AXI_2_rdata    (axi_eth_dma_rdata),
+    .ETH_AXI_2_rready   (axi_eth_dma_rready),
+    .ETH_AXI_2_rresp    (axi_eth_dma_rresp),
+    .ETH_AXI_2_rvalid   (axi_eth_dma_rvalid),
+    .ETH_AXI_2_wdata    (axi_eth_dma_wdata),
+    .ETH_AXI_2_wready   (axi_eth_dma_wready),
+    .ETH_AXI_2_wvalid   (axi_eth_dma_wvalid),
+    // unused after loopback
+    .ETH_AXI_2_arprot   (axi_eth_dma_arprot),
+    .ETH_AXI_2_awprot   (axi_eth_dma_awprot),
+    .ETH_AXI_2_wstrb    (axi_eth_dma_wstrb),
 
     /* Tranceivers
      * -> GTM for one QSFP port

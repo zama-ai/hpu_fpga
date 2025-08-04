@@ -161,9 +161,8 @@ proc create_hier_cell_noc_wrapper { parentCell nameHier ntt_psi } {
 
   create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:aximm_rtl:1.0 S_REGIF_AXI_0
 
-  for { set i 0}  {$i < $ETH_AXI_NB} {incr i} {
-    create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:aximm_rtl:1.0 S_ETH_AXI_${i}
-  }
+  create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:aximm_rtl:1.0 S_ETH_AXI_0
+
 
   # DDR noc
   set CH0_DDR4_0_0 [ create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:ddr4_rtl:1.0 CH0_DDR4_0_0 ]
@@ -263,7 +262,7 @@ proc create_hier_cell_noc_wrapper { parentCell nameHier ntt_psi } {
     CONFIG.HBM_REF_CLK_FREQ0 $HBM_REF_FREQ \
     CONFIG.HBM_REF_CLK_FREQ1 $HBM_REF_FREQ \
     CONFIG.HBM_REF_CLK_SELECTION {External} \
-    CONFIG.NUM_CLKS [expr 7 + $LPD_AXI_NB + $ETH_AXI_NB + $REGIF_CLK_NB] \
+    CONFIG.NUM_CLKS [expr 8 + $LPD_AXI_NB + $REGIF_CLK_NB] \
     CONFIG.NUM_HBM_BLI $HNMU_AXI_NB \
     CONFIG.NUM_MI [expr $AXI_PCIE_NB + $REGIF_NB*$REGIF_CLK_NB + $ETH_AXI_NB] \
     CONFIG.NUM_NMI {4} \
@@ -391,10 +390,6 @@ proc create_hier_cell_noc_wrapper { parentCell nameHier ntt_psi } {
   set mregif_clock_pins_l [list]
   for { set i 0}  {$i < $REGIF_CLK_NB} {incr i} {
     lappend mregif_clock_pins_l [format "aclk%0d" [expr $i + $other_aclk_ofs + $mregif_ofs]]
-  }
-  set meth_clock_pins_l [list]
-  for { set i 0}  {$i < $REGIF_CLK_NB} {incr i} {
-    lappend meth_clock_pins_l [format "aclk%0d" [expr $i + $eth_ofs]]
   }
   set pcie_mgmt_noc_clock_pins_l [list]
   for { set i 0}  {$i < $AXI_PCIE_NB} {incr i} {
@@ -618,7 +613,9 @@ proc create_hier_cell_noc_wrapper { parentCell nameHier ntt_psi } {
   # Regfile : RPU <-> MAC-Ethernet through NOC
   # using axi-lite, same connection as regfile
   connect_bd_net [get_bd_pins eth_clk] [get_bd_pins axi_noc_cips/[lindex $seth_clock_pins_l 0]]
-  lappend eth_cnx [lindex $meth_noc_pins_l 0] $axil_qos
+  for {set i 0}  {$i < $ETH_AXI_NB} {incr i} {
+    lappend eth_cnx [lindex $meth_noc_pins_l $i] $axil_qos
+  }
   set_property -dict [list \
     CONFIG.CONNECTIONS $eth_cnx
   ] [get_bd_intf_pins axi_noc_cips/[lindex $eth_noc_pins_l 0]]
@@ -677,11 +674,10 @@ proc create_hier_cell_noc_wrapper { parentCell nameHier ntt_psi } {
   ] [get_bd_pins axi_noc_cips/[lindex $sregif_clock_pins_l 0]]
 
   # S_ETH
-  for { set i 0}  {$i < $ETH_AXI_NB} {incr i} {
-    set_property -dict [ list \
-        CONFIG.ASSOCIATED_BUSIF [lindex $eth_noc_pins_l $i] \
-    ] [get_bd_pins axi_noc_cips/[lindex $seth_clock_pins_l $i]]
-  }
+  set_property -dict [ list \
+      CONFIG.ASSOCIATED_BUSIF [lindex $eth_noc_pins_l 0] \
+  ] [get_bd_pins axi_noc_cips/[lindex $seth_clock_pins_l 0]]
+
 
   # REGIF
   for { set j 0}  {$j < $REGIF_CLK_NB} {incr j} {
@@ -811,7 +807,7 @@ proc create_hier_cell_noc_wrapper { parentCell nameHier ntt_psi } {
 
   for {set i 0}  {$i < $ETH_AXI_NB} {incr i} {
     set name "ETH_AXI_${i}"
-    connect_bd_intf_net [get_bd_intf_pins eth_sc_${i}/S00_AXI] [get_bd_intf_pins axi_noc_cips/[lindex $meth_noc_pins_l 0]]
+    connect_bd_intf_net [get_bd_intf_pins eth_sc_${i}/S00_AXI] [get_bd_intf_pins axi_noc_cips/[lindex $meth_noc_pins_l $i]]
     connect_bd_intf_net [get_bd_intf_pins eth_sc_${i}/M00_AXI] [get_bd_intf_pins $name]
     connect_bd_net [get_bd_pins eth_sc_${i}/aclk] [get_bd_pins eth_clk]
     connect_bd_net [get_bd_pins eth_sc_${i}/aresetn] [get_bd_pins eth_rst_n]

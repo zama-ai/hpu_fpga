@@ -58,7 +58,6 @@ proc create_root_design { parentCell ntt_psi } {
   set HPU_TRC_HBM_DATA_W $_nsp_hpu::HPU_TRC_HBM_DATA_W
 
   set ETH_AXI_NB $_nsp_hpu::ETH_AXI_NB
-  set DMA_AXI_NB $_nsp_hpu::DMA_AXI_NB
   set ETH_QSFP_FREQ $_nsp_hpu::ETH_QSFP_FREQ
 
   ####################################
@@ -374,13 +373,15 @@ proc create_root_design { parentCell ntt_psi } {
     set prop_clk(pl0_ref_clk_0) "$prop_clk(pl0_ref_clk_0):S_ETH_AXI_0"
   }
 
-  set port [ create_bd_intf_port -mode Master -vlnv xilinx.com:interface:aximm_rtl:1.0 ETH_AXI_0 ]
-  set_property -dict [ list \
-     CONFIG.ADDR_WIDTH $AXI4_ADD_W \
-     CONFIG.DATA_WIDTH $AXIL_DATA_W \
-     CONFIG.PROTOCOL {AXI4LITE} \
-     CONFIG.READ_WRITE_MODE {READ_WRITE} \
-  ] $port
+  for { set i 0}  {$i < $ETH_AXI_NB} {incr i} {
+    set port [ create_bd_intf_port -mode Master -vlnv xilinx.com:interface:aximm_rtl:1.0 ETH_AXI_${i} ]
+    set_property -dict [ list \
+      CONFIG.ADDR_WIDTH $AXI4_ADD_W \
+      CONFIG.DATA_WIDTH $AXIL_DATA_W \
+      CONFIG.PROTOCOL {AXI4LITE} \
+      CONFIG.READ_WRITE_MODE {READ_WRITE} \
+    ] $port
+  }
 
   set port [ create_bd_intf_port -mode Slave -vlnv xilinx.com:interface:aximm_rtl:1.0 ETH_AXI_CFG ]
   set_property -dict [ list \
@@ -412,7 +413,7 @@ proc create_root_design { parentCell ntt_psi } {
    CONFIG.FREQ_HZ [expr int($ETH_QSFP_FREQ * 10**6)] \
   ] $CLK_IN_D
 
-  set_property CONFIG.ASSOCIATED_BUSIF {ETH_AXI_CFG:ETH_AXI_0} [get_bd_ports /clk_eth_cfg_0]
+  set_property CONFIG.ASSOCIATED_BUSIF {ETH_AXI_CFG:ETH_AXI_0:ETH_AXI_1:ETH_AXI_2} [get_bd_ports /clk_eth_cfg_0]
 
   set ctl_tx_port0 [ create_bd_intf_port -mode Slave -vlnv xilinx.com:display_mrmac:mrmac_ctrl_ports:2.0 ctl_tx_port0 ]
   set ctl_tx_port1 [ create_bd_intf_port -mode Slave -vlnv xilinx.com:display_mrmac:mrmac_ctrl_ports:2.0 ctl_tx_port1 ]
@@ -695,7 +696,8 @@ proc create_root_design { parentCell ntt_psi } {
   connect_bd_intf_net -intf_net S_REGIF_AXI_0 [get_bd_intf_ports /S_REGIF_AXI_0] [get_bd_intf_pins noc_wrapper/S_REGIF_AXI_0]
 
   # RPU to Ethernet
-  connect_bd_intf_net  -intf_net s_eth_axi_loopback  [get_bd_intf_ports S_ETH_AXI_0] [get_bd_intf_pins noc_wrapper/S_ETH_AXI_0]
+  connect_bd_intf_net -intf_net S_ETH_AXI_0 [get_bd_intf_ports S_ETH_AXI_0] [get_bd_intf_pins noc_wrapper/S_ETH_AXI_0]
+
 
   # == Ethernet
   connect_bd_intf_net -intf_net APB3_INTF                  [get_bd_intf_ports APB3_INTF] [get_bd_intf_pins eth_wrapper/APB3_INTF]
@@ -869,9 +871,11 @@ proc create_root_design { parentCell ntt_psi } {
   connect_bd_net      [get_bd_pins eth_wrapper/s_axi_aclk]    [get_bd_pins shell_wrapper/clk_eth_cfg_0]
   connect_bd_net      [get_bd_pins eth_wrapper/s_axi_aresetn] [get_bd_pins shell_wrapper/resetn_eth_cfg_ic_0]
 
-  connect_bd_intf_net [get_bd_intf_pins noc_wrapper/ETH_AXI_0] [get_bd_intf_ports /ETH_AXI_0]
   connect_bd_intf_net [get_bd_intf_ports /ETH_AXI_CFG] [get_bd_intf_pins eth_wrapper/s_axi]
 
+  for {set i 0}  {$i < $ETH_AXI_NB} {incr i} {
+    connect_bd_intf_net [get_bd_intf_pins noc_wrapper/ETH_AXI_${i}] [get_bd_intf_ports /ETH_AXI_${i}]
+  }
 
   ####################################
   # Address
@@ -913,13 +917,18 @@ proc create_root_design { parentCell ntt_psi } {
   set regif_add 0x80080000
   set regif_add_noc [expr 0x20100000000 + $regif_add]
   set regif_range 0x00010000
-  assign_bd_address -offset $regif_add -range  [expr ($ETH_AXI_NB + $DMA_AXI_NB) * $REGIF_NB * $REGIF_CLK_NB * $regif_range] -target_address_space [get_bd_addr_spaces shell_wrapper/cips/M_AXI_LPD] [get_bd_addr_segs /axi_lpd/Reg] -force
+  assign_bd_address -offset $regif_add -range  [expr ($ETH_AXI_NB  + $REGIF_NB * $REGIF_CLK_NB) * $regif_range] -target_address_space [get_bd_addr_spaces shell_wrapper/cips/M_AXI_LPD] [get_bd_addr_segs /axi_lpd/Reg] -force
   for { set i 0}  {$i < $REGIF_NB} {incr i} {
     for { set j 0}  {$j < $REGIF_CLK_NB} {incr j} {
       # Address order : first 2nd clock, then second clock
       set n [expr $i * $REGIF_CLK_NB + ($REGIF_CLK_NB - 1 - $j)]
       assign_bd_address -offset [expr $regif_add_noc + $n * $regif_range] -range $regif_range -target_address_space [get_bd_addr_spaces /S_REGIF_AXI_0 ] [get_bd_addr_segs /REGIF_AXI_${i}_${j}/Reg] -force
     }
+  }
+
+  set ethernet_add_start [expr $regif_add_noc + ($REGIF_NB * $REGIF_CLK_NB) * 0x10000]
+  for { set i 0}  {$i < $ETH_AXI_NB} {incr i} {
+    assign_bd_address -offset [expr $ethernet_add_start + $i * 0x10000] -range $regif_range -target_address_space [get_bd_addr_spaces /S_ETH_AXI_${i}] [get_bd_addr_segs ETH_AXI_${i}/Reg] -force
   }
 
   # Ethernet
