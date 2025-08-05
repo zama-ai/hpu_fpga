@@ -878,7 +878,6 @@ module top_hpu #(
      * low power domain coming from RPU through NoC
      * axi_lpd is coming out from block design with address space >= x8000'0000
      * S_REGIF_AXI_* is targeting NSU, address must be over 0x201'0000'0000
-     * S_ETH_AXI_* is targeting NSU, address must be over 0x201'0000'0000
      * M_REGF_AXI_* going to NMU
      */
     .axi_lpd_araddr  (axi_lpd_araddr  ),
@@ -954,42 +953,6 @@ module top_hpu #(
     .S_REGIF_AXI_0_wready   (axi_lpd_wready),
     .S_REGIF_AXI_0_wstrb    (axi_lpd_wstrb),
     .S_REGIF_AXI_0_wvalid   (axi_lpd_wvalid),
-    // as register file, ethernet is driven by the same bus
-    .S_ETH_AXI_0_araddr     ({'h00000201, axi_lpd_araddr}),
-    .S_ETH_AXI_0_arburst    (axi_lpd_arburst),
-    .S_ETH_AXI_0_arcache    (axi_lpd_arcache),
-    .S_ETH_AXI_0_arlen      (axi_lpd_arlen),
-    .S_ETH_AXI_0_arlock     (axi_lpd_arlock),
-    .S_ETH_AXI_0_arprot     (axi_lpd_arprot),
-    .S_ETH_AXI_0_arqos      (axi_lpd_arqos),
-    .S_ETH_AXI_0_arready    (axi_lpd_arready),
-    .S_ETH_AXI_0_arregion   (axi_lpd_arregion),
-    .S_ETH_AXI_0_arsize     (axi_lpd_arsize),
-    .S_ETH_AXI_0_arvalid    (axi_lpd_arvalid),
-    .S_ETH_AXI_0_awaddr     ({'h00000201, axi_lpd_awaddr}),
-    .S_ETH_AXI_0_awburst    (axi_lpd_awburst),
-    .S_ETH_AXI_0_awcache    (axi_lpd_awcache),
-    .S_ETH_AXI_0_awlen      (axi_lpd_awlen),
-    .S_ETH_AXI_0_awlock     (axi_lpd_awlock),
-    .S_ETH_AXI_0_awprot     (axi_lpd_awprot),
-    .S_ETH_AXI_0_awqos      (axi_lpd_awqos),
-    .S_ETH_AXI_0_awready    (axi_lpd_awready),
-    .S_ETH_AXI_0_awregion   (axi_lpd_awregion),
-    .S_ETH_AXI_0_awsize     (axi_lpd_awsize),
-    .S_ETH_AXI_0_awvalid    (axi_lpd_awvalid),
-    .S_ETH_AXI_0_bready     (axi_lpd_bready),
-    .S_ETH_AXI_0_bresp      (axi_lpd_bresp),
-    .S_ETH_AXI_0_bvalid     (axi_lpd_bvalid),
-    .S_ETH_AXI_0_rdata      (axi_lpd_rdata),
-    .S_ETH_AXI_0_rlast      (axi_lpd_rlast),
-    .S_ETH_AXI_0_rready     (axi_lpd_rready),
-    .S_ETH_AXI_0_rresp      (axi_lpd_rresp),
-    .S_ETH_AXI_0_rvalid     (axi_lpd_rvalid),
-    .S_ETH_AXI_0_wdata      (axi_lpd_wdata),
-    .S_ETH_AXI_0_wlast      (axi_lpd_wlast),
-    .S_ETH_AXI_0_wready     (axi_lpd_wready),
-    .S_ETH_AXI_0_wstrb      (axi_lpd_wstrb),
-    .S_ETH_AXI_0_wvalid     (axi_lpd_wvalid),
 
     // axi4-lite going to regfile
     .REGIF_AXI_0_0_araddr   (axi_regif_prc_araddr[0]),

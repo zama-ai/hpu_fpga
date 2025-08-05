@@ -334,45 +334,6 @@ proc create_root_design { parentCell ntt_psi } {
   }
 
   # == Ethernet control via RPU
-
-  # Axi lite loopback
-  set port_s_eth_axi [create_bd_intf_port -mode Slave -vlnv xilinx.com:interface:aximm_rtl:1.0 S_ETH_AXI_0]
-  set_property -dict [ list \
-   CONFIG.ADDR_WIDTH $AXI4_ADD_W \
-   CONFIG.ARUSER_WIDTH {0} \
-   CONFIG.AWUSER_WIDTH {0} \
-   CONFIG.BUSER_WIDTH {0} \
-   CONFIG.DATA_WIDTH $AXIL_DATA_W \
-   CONFIG.HAS_BRESP {1} \
-   CONFIG.HAS_BURST {0} \
-   CONFIG.HAS_CACHE {0} \
-   CONFIG.HAS_LOCK {0} \
-   CONFIG.HAS_PROT {0} \
-   CONFIG.HAS_QOS {0} \
-   CONFIG.HAS_REGION {0} \
-   CONFIG.HAS_RRESP {1} \
-   CONFIG.HAS_WSTRB {1} \
-   CONFIG.ID_WIDTH {0} \
-   CONFIG.MAX_BURST_LENGTH {1} \
-   CONFIG.NUM_READ_OUTSTANDING {1} \
-   CONFIG.NUM_READ_THREADS {1} \
-   CONFIG.NUM_WRITE_OUTSTANDING {1} \
-   CONFIG.NUM_WRITE_THREADS {1} \
-   CONFIG.PROTOCOL {AXI4} \
-   CONFIG.READ_WRITE_MODE {READ_WRITE} \
-   CONFIG.RUSER_BITS_PER_BYTE {0} \
-   CONFIG.RUSER_WIDTH {0} \
-   CONFIG.SUPPORTS_NARROW_BURST {0} \
-   CONFIG.WUSER_BITS_PER_BYTE {0} \
-   CONFIG.WUSER_WIDTH {0} \
-  ] $port_s_eth_axi
-
-  if {$prop_clk(pl0_ref_clk_0) eq ""} {
-    set prop_clk(pl0_ref_clk_0) "S_ETH_AXI_0"
-  } else {
-    set prop_clk(pl0_ref_clk_0) "$prop_clk(pl0_ref_clk_0):S_ETH_AXI_0"
-  }
-
   for { set i 0}  {$i < $ETH_AXI_NB} {incr i} {
     set port [ create_bd_intf_port -mode Master -vlnv xilinx.com:interface:aximm_rtl:1.0 ETH_AXI_${i} ]
     set_property -dict [ list \
@@ -695,10 +656,6 @@ proc create_root_design { parentCell ntt_psi } {
 
   connect_bd_intf_net -intf_net S_REGIF_AXI_0 [get_bd_intf_ports /S_REGIF_AXI_0] [get_bd_intf_pins noc_wrapper/S_REGIF_AXI_0]
 
-  # RPU to Ethernet
-  connect_bd_intf_net -intf_net S_ETH_AXI_0 [get_bd_intf_ports S_ETH_AXI_0] [get_bd_intf_pins noc_wrapper/S_ETH_AXI_0]
-
-
   # == Ethernet
   connect_bd_intf_net -intf_net APB3_INTF                  [get_bd_intf_ports APB3_INTF] [get_bd_intf_pins eth_wrapper/APB3_INTF]
   connect_bd_intf_net -intf_net CLK_IN_D                   [get_bd_intf_ports CLK_IN_D] [get_bd_intf_pins eth_wrapper/CLK_IN_D]
@@ -914,6 +871,7 @@ proc create_root_design { parentCell ntt_psi } {
   assign_bd_address -offset 0x80010000 -range 0x00001000 -target_address_space [get_bd_addr_spaces shell_wrapper/cips/M_AXI_LPD] [get_bd_addr_segs shell_wrapper/base_logic/gcq_m2r/S01_AXI/S01_AXI_Reg] -force
 
   # NOC to PL
+  # == regfiles
   set regif_add 0x80080000
   set regif_add_noc [expr 0x20100000000 + $regif_add]
   set regif_range 0x00010000
@@ -925,14 +883,16 @@ proc create_root_design { parentCell ntt_psi } {
       assign_bd_address -offset [expr $regif_add_noc + $n * $regif_range] -range $regif_range -target_address_space [get_bd_addr_spaces /S_REGIF_AXI_0 ] [get_bd_addr_segs /REGIF_AXI_${i}_${j}/Reg] -force
     }
   }
-
-  set ethernet_add_start [expr $regif_add_noc + ($REGIF_NB * $REGIF_CLK_NB) * 0x10000]
+  # == Ethernet configuration
+  set ethernet_start_addr [expr $regif_add_noc + ($REGIF_NB * $REGIF_CLK_NB) * 0x10000]
+  puts "ethernet_start_addr"
+  puts $ethernet_start_addr
   for { set i 0}  {$i < $ETH_AXI_NB} {incr i} {
-    assign_bd_address -offset [expr $ethernet_add_start + $i * 0x10000] -range $regif_range -target_address_space [get_bd_addr_spaces /S_ETH_AXI_${i}] [get_bd_addr_segs ETH_AXI_${i}/Reg] -force
+    assign_bd_address -offset [expr $ethernet_start_addr + $i * 0x10000] -range $regif_range -target_address_space [get_bd_addr_spaces /S_REGIF_AXI_0] [get_bd_addr_segs /ETH_AXI_${i}/Reg]
   }
 
   # Ethernet
-  assign_bd_address -offset 0x201800C0000 -range 0x00010000 -target_address_space [get_bd_addr_spaces s_axi] [get_bd_addr_segs eth_wrapper/mrmac_0_core/s_axi/Reg] -force
+  assign_bd_address -offset 0x00000000 -range 0x00010000 -target_address_space [get_bd_addr_spaces s_axi] [get_bd_addr_segs eth_wrapper/mrmac_0_core/s_axi/Reg] -force
   # APB3 not meant to be used
   assign_bd_address -offset 0xA4080000 -range 0x00010000 -target_address_space [get_bd_addr_spaces APB3_INTF] [get_bd_addr_segs eth_wrapper/mrmac_0_gt_wrapper/gt_quad_base/APB3_INTF/Reg] -force
 
