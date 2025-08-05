@@ -350,7 +350,10 @@ MSTRCLK 1,0,0,0 IS_CURRENT_QUAD 1}}} \
   connect_bd_net -net mrmac_0_core_tx_clr_out_0  [get_bd_pins MBUFG_GT_CLR] [get_bd_pins mbufg_gt_0/MBUFG_GT_CLR]
   connect_bd_net -net mrmac_0_core_tx_clrb_leaf_out_0  [get_bd_pins MBUFG_GT_CLRB_LEAF] [get_bd_pins mbufg_gt_0/MBUFG_GT_CLRB_LEAF]
   connect_bd_net -net s_axi_aresetn_1  [get_bd_pins s_axi_aresetn] [get_bd_pins gt_quad_base/apb3presetn]
+
+  # This important to note that we use GT_REFCLK0 and not GT_REFCLK1
   connect_bd_net -net util_ds_buf_0_IBUFDS_GTME5_O  [get_bd_pins util_ds_buf_0/IBUFDS_GTME5_O]   [get_bd_pins gt_quad_base/GT_REFCLK0]
+  # GT_REFCLK1 will therefore be unconnected even if this triggers a critical warning [BD 41-759]
 
   connect_bd_net -net xlconst_mbufg_0_dout  [get_bd_pins xlconst_mbufg_0/dout] \
   [get_bd_pins mbufg_gt_0/MBUFG_GT_CE] \

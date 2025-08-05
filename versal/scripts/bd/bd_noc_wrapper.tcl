@@ -607,8 +607,6 @@ proc create_hier_cell_noc_wrapper { parentCell nameHier ntt_psi } {
   for {set i 0}  {$i < $ETH_AXI_NB} {incr i} {
     lappend regif_cnx [lindex $meth_noc_pins_l $i] $axil_qos
   }
-  puts "regif_cnx"
-  puts $regif_cnx
   set_property -dict [list \
     CONFIG.CONNECTIONS $regif_cnx
   ] [get_bd_intf_pins axi_noc_cips/[lindex $sregif_noc_pins_l 0]]
@@ -716,6 +714,20 @@ proc create_hier_cell_noc_wrapper { parentCell nameHier ntt_psi } {
     CONFIG.ASSOCIATED_BUSIF ${axis_noc_pins_format} \
     ] [get_bd_pins axis_noc/[lindex $axis_noc_clock_pins_l $i]]
   }
+
+  # Ethernet
+  set meth_noc_pins_format ""
+  for { set i 0}  {$i < $ETH_AXI_NB} {incr i} {
+    set n [lindex $meth_noc_pins_l $i]
+    if {$meth_noc_pins_format eq ""} {
+      set meth_noc_pins_format "${n}"
+    } else {
+      set meth_noc_pins_format "${meth_noc_pins_format}:${n}"
+    }
+  }
+  set_property -dict [ list \
+    CONFIG.ASSOCIATED_BUSIF  ${meth_noc_pins_format}\
+  ] [get_bd_pins axi_noc_cips/[lindex $seth_clock_pins_l 0]]
 
   ####################################
   # Connection
