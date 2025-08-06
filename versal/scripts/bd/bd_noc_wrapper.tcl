@@ -122,8 +122,8 @@ proc create_hier_cell_noc_wrapper { parentCell nameHier ntt_psi } {
   set HPU_TRC_HBM_DATA_W $_nsp_hpu::HPU_TRC_HBM_DATA_W
 
   set HNMU_AXI_NB [expr $KSK_AXI_NB + $CT_AXI_NB + $GLWE_AXI_NB + $TRC_AXI_NB]
-  # 5 additional inputs for 2xCPM, 1xPMC, 1xRPU_DDR, 1xRPU_ETH
-  set NMU_AXI_NB [expr $BSK_AXI_NB + 5]
+  # 4 additional inputs for 2xCPM, 1xPMC, 1xRPU_DDR
+  set NMU_AXI_NB [expr $BSK_AXI_NB + 4]
 
   # AXI LPD <-> regfile
   set REGIF_CLK_NB $_nsp_hpu::REGIF_CLK_NB
@@ -300,8 +300,7 @@ proc create_hier_cell_noc_wrapper { parentCell nameHier ntt_psi } {
   set pmc_ofs [expr $cpm_ofs + 2]
   set lpd_ofs [expr $pmc_ofs + 1]
   set sregif_ofs [expr $lpd_ofs + 1]
-  set eth_ofs [expr $sregif_ofs + 1]
-  set bsk_ofs [expr $eth_ofs + 1]
+  set bsk_ofs [expr $sregif_ofs + 1]
   set other_aclk_ofs [expr $bsk_ofs + 1]
 
   set cpm_noc_pins_l [list]
@@ -328,6 +327,8 @@ proc create_hier_cell_noc_wrapper { parentCell nameHier ntt_psi } {
   set mgmt_ofs 0
   set mregif_ofs [expr $mgmt_ofs + $AXI_PCIE_NB]
   set meth_ofs [expr $mgmt_ofs + $AXI_PCIE_NB + $REGIF_NB*$REGIF_CLK_NB]
+  # eth offset is only here for clock : ethernet configuration
+  set eth_ofs [expr $other_aclk_ofs + $mregif_ofs + $REGIF_CLK_NB]
 
   set pcie_mgmt_noc_pins_l [list]
   for { set i 0}  {$i < $AXI_PCIE_NB} {incr i} {
@@ -395,6 +396,17 @@ proc create_hier_cell_noc_wrapper { parentCell nameHier ntt_psi } {
   for { set i 0}  {$i < 1} {incr i} {
     lappend axis_noc_clock_pins_l [format "aclk%0d" $i]
   }
+
+  puts ">>>>>>>> Defining clock pins >>>>>>>> "
+  puts "axis_noc_clock_pins_l      $axis_noc_clock_pins_l"
+  puts "cpm_noc_clock_pins_l       $cpm_noc_clock_pins_l"
+  puts "pmc_noc_clock_pins_l       $pmc_noc_clock_pins_l"
+  puts "lpd_noc_clock_pins_l       $lpd_noc_clock_pins_l"
+  puts "sregif_clock_pins_l        $sregif_clock_pins_l"
+  puts "seth_clock_pins_l          $seth_clock_pins_l"
+  puts "hpu_noc_clock_pins_l       $hpu_noc_clock_pins_l"
+  puts "pcie_mgmt_noc_clock_pins_l $pcie_mgmt_noc_clock_pins_l"
+  puts "mregif_clock_pins_l        $mregif_clock_pins_l"
 
   #===================================
   # NOC properties
