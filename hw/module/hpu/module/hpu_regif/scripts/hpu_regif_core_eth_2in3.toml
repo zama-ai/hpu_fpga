@@ -1,0 +1,51 @@
+module_name="hpu_regif_core_eth_2in3"
+description="HPU ethernet configuration register interface. Will be accessed by RPU to define registers."
+word_size_b = 32
+offset = 0x40000
+range = 0x10000
+ext_pkg = ["axi_if_common_param_pkg", "axi_if_shell_axil_pkg"]
+
+# =====================================================================================================================
+[section.entry_eth_2in3]
+description="entry_eth_2in3 section with known value used for debug."
+offset= 0x0
+
+[section.entry_eth_2in3.register.dummy_val0]
+  description="RTL version"
+  owner="Parameter"
+  read_access="Read"
+  write_access="None"
+  default={Cst=0x05050504}
+
+[section.entry_eth_2in3.register.dummy_val1]
+  description="RTL version"
+  owner="Parameter"
+  read_access="Read"
+  write_access="None"
+  default={Cst=0x15151515}
+
+[section.entry_eth_2in3.register.dummy_val2]
+  description="RTL version"
+  owner="Parameter"
+  read_access="Read"
+  write_access="None"
+  default={Cst=0x25252525}
+
+[section.entry_eth_2in3.register.dummy_val3]
+  description="RTL version"
+  owner="Parameter"
+  read_access="Read"
+  write_access="None"
+  default={Cst=0x35353535}
+
+# =====================================================================================================================
+[section.line]
+description="line selection, possible values are 0, 1, 2, 3"
+offset= 0x10
+
+[section.line.register.select]
+  description="ethernet line selection for direct link"
+  owner="User"
+  read_access="Read"
+  write_access="Write"
+  default={Cst=0x00000000}
