@@ -396,9 +396,9 @@ proc create_root_design { parentCell ntt_psi } {
   set tx_axi_clk   [ create_bd_port -dir I -from 3 -to 0 -type clk -freq_hz [expr int($ETH_QSFP_FREQ * 10**6)] tx_axi_clk ]
   set rx_axi_clk   [ create_bd_port -dir I -from 3 -to 0 -type clk -freq_hz [expr int($ETH_QSFP_FREQ * 10**6)] rx_axi_clk ]
   # theorical frequency cannot be reached
-  set clk_axi_qsfp [ create_bd_port -dir O -type clk  clk_axi_qsfp ]
+  set clk_axis_mrmac [ create_bd_port -dir O -type clk  clk_axis_mrmac ]
 
-  set resetn_qsfp      [ create_bd_port -dir O -type rst resetn_qsfp ]
+  set resetn_axis_mrmac      [ create_bd_port -dir O -type rst resetn_axis_mrmac ]
   set tx_core_reset [ create_bd_port -dir I -from 3 -to 0 -type rst tx_core_reset ]
 
   set_property -dict [ list \
@@ -783,8 +783,8 @@ proc create_root_design { parentCell ntt_psi } {
   connect_bd_net [get_bd_ports tx_axis_tvalid_6]    [get_bd_pins eth_wrapper/tx_axis_tvalid_6]
   connect_bd_net [get_bd_ports tx_axis_tready_6]    [get_bd_pins eth_wrapper/tx_axis_tready_6]
 
-  connect_bd_net [get_bd_ports clk_axi_qsfp] [get_bd_pins shell_wrapper/clk_eth_qsfp_0]
-  connect_bd_net [get_bd_ports resetn_qsfp]  [get_bd_pins shell_wrapper/resetn_eth_qsfp_ic_0]
+  connect_bd_net [get_bd_ports clk_axis_mrmac]     [get_bd_pins shell_wrapper/clk_eth_qsfp_0]
+  connect_bd_net [get_bd_ports resetn_axis_mrmac]  [get_bd_pins shell_wrapper/resetn_eth_qsfp_ic_0]
 
   ####################################
   # Internal Connections

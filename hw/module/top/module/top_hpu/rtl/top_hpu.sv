@@ -108,11 +108,17 @@ module top_hpu #(
   localparam int AXI4_KSK_DATA_BYTES  = axi_if_ksk_axi_pkg::AXI4_DATA_BYTES;
   localparam int AXI4_KSK_ID_W        = axi_if_ksk_axi_pkg::AXI4_ID_W;
 
-  // Etherneet preamble
+  // number of QSFP lines: do not modify
+  localparam int LINE_NB = 4;
+  // Ethernet preamble
   localparam int START_FRAME_DELIMITER = 8'hD5;
   localparam int PREAMBLE = 48'h55555555555555;
   // tx preamble is only 56 bits
   localparam [55:0] TX_PREAMBLE = {PREAMBLE, START_FRAME_DELIMITER};
+
+  // axi4-stream ethernet
+  localparam int AXIS_TDATA_W = 64;
+  localparam int AXIS_TKEEP_W = 11;
 
   // ----------------------------------------------------------------------------------------- //
   // Signals
@@ -163,10 +169,12 @@ module top_hpu #(
   // Configuration clock (slow)
   logic cfg_clk;
   logic cfg_srst_n;
+
   // Ethernet configuration clock
   logic eth_cfg_clk;
   logic eth_cfg_srst_n;
 
+  // Tranceivers clocks
   logic ch0_tx_usr_clk;
   logic ch1_tx_usr_clk;
   logic ch2_tx_usr_clk;
@@ -186,11 +194,12 @@ module top_hpu #(
   logic ch2_rx_usr_clk2;
   logic ch3_rx_usr_clk2;
 
-  logic [3:0] rx_core_clk;
-  logic [3:0] rx_serdes_clk;
-  logic [3:0] tx_core_clk;
-  logic [3:0] rx_alt_serdes_clk;
-  logic [3:0] tx_alt_serdes_clk;
+  // LINE_NB
+  logic [LINE_NB-1:0] rx_core_clk;
+  logic [LINE_NB-1:0] rx_serdes_clk;
+  logic [LINE_NB-1:0] tx_core_clk;
+  logic [LINE_NB-1:0] rx_alt_serdes_clk;
+  logic [LINE_NB-1:0] tx_alt_serdes_clk;
 
   assign rx_core_clk       = {ch3_rx_usr_clk, ch2_rx_usr_clk, ch1_rx_usr_clk, ch0_rx_usr_clk};
   assign rx_serdes_clk     = {ch3_rx_usr_clk, ch2_rx_usr_clk, ch1_rx_usr_clk, ch0_rx_usr_clk};
@@ -768,19 +777,20 @@ module top_hpu #(
   logic [2:0]   stat_tx_pcs_bad_code_3;
 
   //TODO: TBD with dma
-  logic [3:0][63:0] qsfp_rx_tdata;
-  logic [3:0][10:0] qsfp_rx_tkeep_user;
-  logic [3:0]       qsfp_rx_tlast;
-  logic [3:0]       qsfp_rx_tvalid;
+  logic resetn_axis_mrmac;
+  logic clk_axis_mrmac;
 
-  logic [3:0][63:0] qsfp_tx_tdata;
-  logic [3:0][10:0] qsfp_tx_tkeep_user;
-  logic [3:0]       qsfp_tx_tlast;
-  logic [3:0]       qsfp_tx_tvalid;
-  logic [3:0]       qsfp_tx_tready;
+  logic [LINE_NB-1:0][AXIS_TDATA_W-1:0] qsfp_rx_tdata;
+  logic [LINE_NB-1:0][AXIS_TKEEP_W-1:0] qsfp_rx_tkeep_user;
+  logic [LINE_NB-1:0]                   qsfp_rx_tlast;
+  logic [LINE_NB-1:0]                   qsfp_rx_tvalid;
 
-  logic resetn_qsfp;
-  logic clk_axi_qsfp;
+  logic [LINE_NB-1:0][AXIS_TDATA_W-1:0] qsfp_tx_tdata;
+  logic [LINE_NB-1:0][AXIS_TKEEP_W-1:0] qsfp_tx_tkeep_user;
+  logic [LINE_NB-1:0]                   qsfp_tx_tlast;
+  logic [LINE_NB-1:0]                   qsfp_tx_tvalid;
+  logic [LINE_NB-1:0]                   qsfp_tx_tready;
+
   logic [2:0] gt_loopback;
 
   // =========================================================================================== //
@@ -2241,18 +2251,18 @@ module top_hpu #(
     .ETH_AXI_2_awprot   (axi_eth_dma_awprot),
     .ETH_AXI_2_wstrb    (axi_eth_dma_wstrb),
 
-    /* Tranceivers
+    /* Tranceivers ------------------------------------------------------------------- //
      * -> GTM for one QSFP port
      * -> NRZ modulation
      * -> four lanes
-     */
+    //  ------------------------------------------------------------------------------ */
     .gt_rxn_in_0  (qsfp3_4x_grx_n),
     .gt_rxp_in_0  (qsfp3_4x_grx_p),
     .gt_txn_out_0 (qsfp3_4x_gtx_n),
     .gt_txp_out_0 (qsfp3_4x_gtx_p),
     // input clocks
-    .CLK_IN_D_clk_n  (gt_ref_clk_n), // TODO: check that is correclty infered by Vivado
-    .CLK_IN_D_clk_p  (gt_ref_clk_p), // defined in the hook pre-synthesis
+    .CLK_IN_D_clk_n  (gt_ref_clk_n),
+    .CLK_IN_D_clk_p  (gt_ref_clk_p),
     // output clocks
     .ch0_txusrclk    (ch0_tx_usr_clk2),
     .ch1_txusrclk    (ch0_tx_usr_clk2),
@@ -2282,7 +2292,7 @@ module top_hpu #(
     .APB3_INTF_pslverr  (),
     .APB3_INTF_pwdata   (32'd0),
     .APB3_INTF_pwrite   (1'b0),
-    .apb3clk_quad       (1'b0), // TODO
+    .apb3clk_quad       (1'b0),
     // control signals
     .gtpowergood  (gtpowergood_in),
     .ch0_loopback (gt_loopback),
@@ -2298,12 +2308,11 @@ module top_hpu #(
     .ch3_rxrate   (SW_REG_GT_LINE_RATE[31:24]),
     .ch3_txrate   (SW_REG_GT_LINE_RATE[31:24]),
 
-    /* MRMAC: MultiRate MAC subsystem
+    /* MRMAC: MultiRate MAC subsystem ---------------------------------------------------
      * -> includes MAC + PCS
      * -> Site is chosen by a loc in bd
      * -> Segmented 4x25G (NRZ)
-     */
-    // == == axi4-stream == == //
+    //  ------------------------------------------------------------------------------ */
     // == RX datapath
     // Lane 0
     .rx_axis_tdata_0     (qsfp_rx_tdata[0]),
@@ -2346,37 +2355,45 @@ module top_hpu #(
     .tx_axis_tkeep_user_6(qsfp_tx_tkeep_user[3]),
     .tx_axis_tlast_6     (qsfp_tx_tlast[3]),
     .tx_axis_tvalid_6    (qsfp_tx_tvalid[3]),
-    // == == control-sig == == //
+    //  --------------------------------- clocking ----------------------------------- //
+    // drives the bulk of the MRMAC datapath: from [GT -> bufg (output 0)]
+    .tx_core_clk       (tx_core_clk),
+    .rx_core_clk       (rx_core_clk),
+    // internal clock 50% of core_clk: from [GT -> bufg (output 1)]
+    .tx_alt_serdes_clk (tx_alt_serdes_clk),
+    .rx_alt_serdes_clk (rx_alt_serdes_clk),
+    // drive data across the SerDes interface to the MRMAC: from [GT -> bufg (output 0)]
+    .rx_serdes_clk     (rx_serdes_clk),
+    // axi4-stream clock tiled depending of MRMAC configuration
+    .tx_axi_clk        ({4{clk_axis_mrmac}}),
+    .rx_axi_clk        ({4{clk_axis_mrmac}}),
+    // flexible interface - should be 50% core_clk
+    .tx_flexif_clk     (/* DISABLED */),
+    .rx_flexif_clk     (/* DISABLED */),
+    // timestamping clocking
+    .tx_ts_clk         ({4{clk_axis_mrmac}}),
+    .rx_ts_clk         ({4{clk_axis_mrmac}}),
+    //  ----------------------------------- reset ------------------------------------ //
+    // master core
+    .tx_core_reset    (tx_core_reset),
+    .rx_core_reset    (rx_core_reset),
+    // serdes iterface res
+    .tx_serdes_reset  (tx_serdes_reset),
+    .rx_serdes_reset  (rx_serdes_reset),
+    // flexible interface
+    .rx_flexif_reset  (rx_flexif_reset),
+    // GT
+    .gt_tx_reset_done_out    (gt_tx_reset_done_out),
+    .gt_rx_reset_done_out    (gt_rx_reset_done_out),
+    // programmable resets
+    .gt_reset_all_in         (gt_reset_all_in),
+    .gt_reset_tx_datapath_in (gt_reset_tx_datapath_in),
+    .gt_reset_rx_datapath_in (gt_reset_rx_datapath_in),
+    //  ---------------------------------- control ----------------------------------- //
     .gtpowergood_in          (gtpowergood_in),
     // performance monitoring
     .pm_rdy                  (),
     .pm_tick                 (4'b0),
-    // resets
-    .gt_tx_reset_done_out    (gt_tx_reset_done_out),
-    .gt_rx_reset_done_out    (gt_rx_reset_done_out),
-    .gt_reset_all_in         (gt_reset_all_in),
-    .gt_reset_tx_datapath_in (gt_reset_tx_datapath_in),
-    .gt_reset_rx_datapath_in (gt_reset_rx_datapath_in),
-    .resetn_qsfp             (resetn_qsfp),
-    // clock
-    .tx_core_clk       (tx_core_clk),
-    .rx_core_clk       (rx_core_clk),
-    .tx_alt_serdes_clk (tx_alt_serdes_clk),
-    .rx_alt_serdes_clk (rx_alt_serdes_clk),
-    .rx_serdes_clk     (rx_serdes_clk),
-    .tx_axi_clk        ({4{clk_axi_qsfp}}),
-    .rx_axi_clk        ({4{clk_axi_qsfp}}),
-    .tx_flexif_clk     (tx_flexif_clk),
-    .rx_flexif_clk     (rx_flexif_clk),
-    .tx_ts_clk         (tx_ts_clk),
-    .rx_ts_clk         (rx_ts_clk),
-    .clk_axi_qsfp      (clk_axi_qsfp),
-    // reset
-    .tx_core_reset    (tx_core_reset),
-    .rx_core_reset    (rx_core_reset),
-    .tx_serdes_reset  (tx_serdes_reset),
-    .rx_serdes_reset  (rx_serdes_reset),
-    .rx_flexif_reset  (rx_flexif_reset),
     // Control tx
     .ctl_tx_port0_ctl_tx_lane0_vlm_bip7_override       (1'b0),
     .ctl_tx_port0_ctl_tx_lane0_vlm_bip7_override_value (8'd0),
@@ -2399,7 +2416,7 @@ module top_hpu #(
     .rx_preambleout_rx_preambleout_1 (rx_preambleout_1),
     .rx_preambleout_rx_preambleout_2 (rx_preambleout_2),
     .rx_preambleout_rx_preambleout_3 (rx_preambleout_3),
-    // preamble - TODO
+    // hardcoded tx preamble
     .tx_preamblein_tx_preamblein_0 (TX_PREAMBLE),
     .tx_preamblein_tx_preamblein_1 (TX_PREAMBLE),
     .tx_preamblein_tx_preamblein_2 (TX_PREAMBLE),
@@ -2578,8 +2595,12 @@ module top_hpu #(
     .stat_tx_port3_stat_tx_local_fault           (),
     .stat_tx_port3_stat_tx_pcs_bad_code          (),
 
-    /* Clocks
-     */
+    /* Clocks Resets Generator ----------------------------------------------------------
+     * -> register
+     * -> ethernet
+     * -> DDR
+    //  ------------------------------------------------------------------------------ */
+    //  direct form CIPS
     .pl0_ref_clk_0  (),
     .pl0_resetn_0   (),
 
@@ -2592,10 +2613,15 @@ module top_hpu #(
     .clk_usr_1_0(cfg_clk),
     .clk_usr_0_0_ce(prc_ce),
 
-    // configuration clock for ethernet link
-    .clk_eth_cfg_0(eth_cfg_clk),
+    // == Ethernet
+    // MRMAC clock - axi4-stream
+    .clk_axis_mrmac    (clk_axis_mrmac),
+    .resetn_axis_mrmac (resetn_axis_mrmac),
+    // configuration clock - axi4-lite
+    .clk_eth_cfg_0      (eth_cfg_clk),
     .resetn_eth_cfg_ic_0(eth_cfg_srst_n),
 
+    // == DDR
     .sys_clk0_0_clk_n(top_sys_clk0_0_clk_n),
     .sys_clk0_0_clk_p(top_sys_clk0_0_clk_p),
     .sys_clk0_1_clk_n(top_sys_clk0_1_clk_n),
