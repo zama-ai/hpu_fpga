@@ -1,0 +1,19 @@
+{
+    "local_root_path": "${PROJECT_DIR}",
+    "dep_root_path"  : "${PROJECT_DIR}",
+    "is_include_dir" : false,
+    "rtl_files": [
+        {
+            "name": "hw/module/dma/rtl/dma.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false
+        }
+    ],
+    "constraint_files": [
+        "hw/module/dma/constraint/dma_timing_constraints_local.xdc"
+    ],
+    "dependency_dir": ["hw/module/hpu/module/hpu_regif"],
+    "include_dir": []
+}
