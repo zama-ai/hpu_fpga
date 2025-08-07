@@ -13,6 +13,7 @@
     "dependency_dir": [
         "hw/simu_lib/simu_base",
         "hw/simu_lib/stream_lib",
+        "hw/simu_lib/axi4_lib",
         "hw/module/dma"
     ],
     "include_dir": []

@@ -107,24 +107,24 @@ module hpu_3parts_2in3_core
 
   // QSFP system interface
   // == TX
-  output[LINE_NB-1:0][AXIS_DATA_W-1:0  ] qsfp_tx_tdata,
-  output[LINE_NB-1:0][AXIS_TKEEP_W-1:0 ] qsfp_tx_tkeep_user,
-  output[LINE_NB-1:0]                    qsfp_tx_tlast,
-  output[LINE_NB-1:0]                    qsfp_tx_tvalid,
-  input [LINE_NB-1:0]                    qsfp_tx_tready,
+  output[LINE_NB-1:0][AXIS_TDATA_W-1:0  ] qsfp_tx_tdata,
+  output[LINE_NB-1:0][AXIS_TKEEP_W-1:0 ]  qsfp_tx_tkeep_user,
+  output[LINE_NB-1:0]                     qsfp_tx_tlast,
+  output[LINE_NB-1:0]                     qsfp_tx_tvalid,
+  input [LINE_NB-1:0]                     qsfp_tx_tready,
   // == RX
-  input [LINE_NB-1:0][AXIS_DATA_W-1:0  ] qsfp_rx_tdata,
-  input [LINE_NB-1:0][AXIS_TKEEP_W-1:0 ] qsfp_rx_tkeep_user,
-  input [LINE_NB-1:0]                    qsfp_rx_tlast,
-  input [LINE_NB-1:0]                    qsfp_rx_tvalid,
+  input [LINE_NB-1:0][AXIS_TDATA_W-1:0  ] qsfp_rx_tdata,
+  input [LINE_NB-1:0][AXIS_TKEEP_W-1:0 ]  qsfp_rx_tkeep_user,
+  input [LINE_NB-1:0]                     qsfp_rx_tlast,
+  input [LINE_NB-1:0]                     qsfp_rx_tvalid,
   // axi4-stream interface in direction of block design IP for RPU
   // == RX
-  output [AXIS_DATA_W-1:0]  axis_rx_tdata,
+  output [AXIS_TDATA_W-1:0] axis_rx_tdata,
   output [AXIS_TKEEP_W-1:0] axis_rx_tkeep_user,
   output                    axis_rx_tlast,
   output                    axis_rx_tvalid,
   // == TX
-  input  [AXIS_DATA_W-1:0]  axis_tx_tdata,
+  input  [AXIS_TDATA_W-1:0]  axis_tx_tdata,
   input  [AXIS_TKEEP_W-1:0] axis_tx_tkeep_user,
   input                     axis_tx_tlast,
   input                     axis_tx_tvalid,
@@ -443,7 +443,7 @@ module hpu_3parts_2in3_core
 // TODO: WIP
 //
 // ---------------------------------------------------------------------------------------------- --
-  dma # (
+  dma #(
     .LINE_NB     (LINE_NB),
     .AXIS_TDATA_W(AXIS_TDATA_W),
     .AXIS_TKEEP_W(AXIS_TKEEP_W)

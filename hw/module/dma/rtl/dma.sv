@@ -15,7 +15,7 @@
 
 module dma
   import axi_if_common_param_pkg::*;
-  import hpu_regif_core_eth_2in3_pkg::*;
+  import axi_if_shell_axil_pkg::*;
 #(
   parameter int LINE_NB       = 4,  // number of QSFP lines
   parameter int AXIS_TDATA_W  = 64, // must match MAC+PCS configuration from bd
@@ -44,24 +44,24 @@ module dma
   input  logic                       s_axil_dma_rready,
   // QSFP system interface ----------------------------------------------------
   // == TX
-  output[LINE_NB-1:0][AXIS_DATA_W-1:0  ] qsfp_tx_tdata,
-  output[LINE_NB-1:0][AXIS_TKEEP_W-1:0 ] qsfp_tx_tkeep_user,
-  output[LINE_NB-1:0]                    qsfp_tx_tlast,
-  output[LINE_NB-1:0]                    qsfp_tx_tvalid,
-  input [LINE_NB-1:0]                    qsfp_tx_tready,
+  output[LINE_NB-1:0][AXIS_TDATA_W-1:0  ] qsfp_tx_tdata,
+  output[LINE_NB-1:0][AXIS_TKEEP_W-1:0 ]  qsfp_tx_tkeep_user,
+  output[LINE_NB-1:0]                     qsfp_tx_tlast,
+  output[LINE_NB-1:0]                     qsfp_tx_tvalid,
+  input [LINE_NB-1:0]                     qsfp_tx_tready,
   // == RX
-  input [LINE_NB-1:0][AXIS_DATA_W-1:0  ] qsfp_rx_tdata,
-  input [LINE_NB-1:0][AXIS_TKEEP_W-1:0 ] qsfp_rx_tkeep_user,
-  input [LINE_NB-1:0]                    qsfp_rx_tlast,
-  input [LINE_NB-1:0]                    qsfp_rx_tvalid,
+  input [LINE_NB-1:0][AXIS_TDATA_W-1:0  ] qsfp_rx_tdata,
+  input [LINE_NB-1:0][AXIS_TKEEP_W-1:0 ]  qsfp_rx_tkeep_user,
+  input [LINE_NB-1:0]                     qsfp_rx_tlast,
+  input [LINE_NB-1:0]                     qsfp_rx_tvalid,
   // axi4-stream interface to fifo --------------------------------------------
   // == RX
-  output [AXIS_DATA_W-1:0]  axis_rx_tdata,
+  output [AXIS_TDATA_W-1:0]  axis_rx_tdata,
   output [AXIS_TKEEP_W-1:0] axis_rx_tkeep_user,
   output                    axis_rx_tlast,
   output                    axis_rx_tvalid,
   // == TX
-  input  [AXIS_DATA_W-1:0]  axis_tx_tdata,
+  input  [AXIS_TDATA_W-1:0]  axis_tx_tdata,
   input  [AXIS_TKEEP_W-1:0] axis_tx_tkeep_user,
   input                     axis_tx_tlast,
   input                     axis_tx_tvalid,
@@ -120,7 +120,7 @@ module dma
 
   axis_switch # (
     .LINE_NB            (LINE_NB),
-    .AXIS_TDATA_W       (AXIS_DATA_W),
+    .AXIS_TDATA_W       (AXIS_TDATA_W),
     .AXIS_TKEEP_W       (AXIS_TKEEP_W)
   ) axis_switch (
     .qsfp_rx_tdata      (qsfp_rx_tdata),

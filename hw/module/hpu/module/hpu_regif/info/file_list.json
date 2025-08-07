@@ -32,6 +32,13 @@
             "is_include_file": false
         },
         {
+            "name": "hw/module/hpu/module/hpu_regif/rtl/hpu_regif_core_eth_2in3_pkg.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false
+        },
+        {
             "name": "hw/module/hpu/module/hpu_regif/rtl/hpu_regif_req_ack.sv",
             "library": "work",
             "env": ["all"],
@@ -110,6 +117,13 @@
         },
         {
             "name": "hw/module/hpu/module/hpu_regif/rtl/hpu_regif_prc_3in3.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false
+        },
+        {
+            "name": "hw/module/hpu/module/hpu_regif/rtl/hpu_regif_core_eth_2in3.sv",
             "library": "work",
             "env": ["all"],
             "target": ["all"],
