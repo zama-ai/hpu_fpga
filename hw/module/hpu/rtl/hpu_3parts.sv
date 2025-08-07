@@ -60,6 +60,12 @@ module hpu_3parts
   input  logic                 cfg_clk,    // config clock
   input  logic                 cfg_srst_n, // synchronous reset
 
+  input logic                  cfg_eth_clk,     // ethernet configuration slow clock
+  input logic                  cfg_eth_srst_n,  // ethernet configuration slow clock
+
+  input logic                  prc_mrmac_clk,    // mrmac clock at axis speed
+  input logic                  prc_mrmac_srst_n, // mrmac clock at axis speed
+
   output logic [3:0]           interrupt,
 
   //== Axi4-lite slave @prc_clk and @cfg_clk
@@ -67,6 +73,7 @@ module hpu_3parts
   `HPU_AXIL_IO(cfg_1in3,axi_if_shell_axil_pkg)
   `HPU_AXIL_IO(prc_3in3,axi_if_shell_axil_pkg)
   `HPU_AXIL_IO(cfg_3in3,axi_if_shell_axil_pkg)
+  `HPU_AXIL_IO(dma_2in3,axi_if_shell_axil_pkg)
 
   //== Axi4 trace interface
   `HPU_AXI4_IO(trc, TRC, axi_if_trc_axi_pkg,)
@@ -503,6 +510,14 @@ module hpu_3parts
 
     .cfg_clk                    (cfg_clk),
     .cfg_srst_n                 (cfg_srst_n),
+
+    .cfg_eth_clk                (cfg_eth_clk),
+    .cfg_eth_srst_n             (cfg_eth_srst_n),
+
+    .prc_mrmac_clk              (prc_mrmac_clk),
+    .prc_mrmac_srst_n           (prc_mrmac_srst_n),
+
+    `HPU_AXIL_INSTANCE(dma,dma_2in3)
 
     .decomp_ntt_data_avail      (out_p1_p2_sll_ctrl.decomp_ntt_ctrl.data_avail),
     .decomp_ntt_data            (out_p1_p2_sll_data.decomp_ntt_data.data),

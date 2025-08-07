@@ -42,6 +42,11 @@ module hpu_3parts_2in3_core
   parameter int    AXI4_BSK_ADD_W   = 64,
   parameter int    AXI4_KSK_ADD_W   = 64,
 
+  // Ethernet configuration
+  parameter int LINE_NB       = 4,  // number of QSFP lines
+  parameter int AXIS_TDATA_W  = 64, // must match MAC+PCS configuration from bd
+  parameter int AXIS_TKEEP_W  = 11,
+
   // HPU version
   parameter int    VERSION_MAJOR    = 2,
   parameter int    VERSION_MINOR    = 0
@@ -52,6 +57,14 @@ module hpu_3parts_2in3_core
 
   input  logic                               cfg_clk,     // config clock
   input  logic                               cfg_srst_n, // synchronous reset
+
+  input logic                                cfg_eth_clk,     // ethernet configuration slow clock
+  input logic                                cfg_eth_srst_n,  // ethernet configuration slow clock
+
+  input logic                                prc_mrmac_clk,    // mrmac clock at axis speed
+  input logic                                prc_mrmac_srst_n, // mrmac clock at axis speed
+
+  `HPU_AXIL_IO(dma,axi_if_shell_axil_pkg)
 
   // Decomposer -> NTT
   input  logic [PSI-1:0][R-1:0]              decomp_ntt_data_avail,
@@ -91,6 +104,31 @@ module hpu_3parts_2in3_core
   //-- Cmd path
   input ntt_proc_cmd_t                       ntt_proc_cmd,
   input logic                                ntt_proc_cmd_avail,
+
+  // QSFP system interface
+  // == TX
+  output[LINE_NB-1:0][AXIS_DATA_W-1:0  ] qsfp_tx_tdata,
+  output[LINE_NB-1:0][AXIS_TKEEP_W-1:0 ] qsfp_tx_tkeep_user,
+  output[LINE_NB-1:0]                    qsfp_tx_tlast,
+  output[LINE_NB-1:0]                    qsfp_tx_tvalid,
+  input [LINE_NB-1:0]                    qsfp_tx_tready,
+  // == RX
+  input [LINE_NB-1:0][AXIS_DATA_W-1:0  ] qsfp_rx_tdata,
+  input [LINE_NB-1:0][AXIS_TKEEP_W-1:0 ] qsfp_rx_tkeep_user,
+  input [LINE_NB-1:0]                    qsfp_rx_tlast,
+  input [LINE_NB-1:0]                    qsfp_rx_tvalid,
+  // axi4-stream interface in direction of block design IP for RPU
+  // == RX
+  output [AXIS_DATA_W-1:0]  axis_rx_tdata,
+  output [AXIS_TKEEP_W-1:0] axis_rx_tkeep_user,
+  output                    axis_rx_tlast,
+  output                    axis_rx_tvalid,
+  // == TX
+  input  [AXIS_DATA_W-1:0]  axis_tx_tdata,
+  input  [AXIS_TKEEP_W-1:0] axis_tx_tkeep_user,
+  input                     axis_tx_tlast,
+  input                     axis_tx_tvalid,
+  output                    axis_tx_tready,
 
   //-- For regif
   output pep_rif_elt_t                       pep_rif_elt
@@ -394,6 +432,64 @@ module hpu_3parts_2in3_core
     .pep_error                (pep_modsw_error),
     .pep_rif_info             (pep_modsw_rif_info),
     .pep_rif_counter_inc      (pep_modsw_rif_counter_inc)
+  );
+
+
+// ---------------------------------------------------------------------------------------------- --
+// DMA
+// contains:
+// * control register file for MAC+PCS & GT
+// * axi4-stream switch in order to toggle between each line for RPU connection
+// TODO: WIP
+//
+// ---------------------------------------------------------------------------------------------- --
+  dma # (
+    .LINE_NB     (LINE_NB),
+    .AXIS_TDATA_W(AXIS_TDATA_W),
+    .AXIS_TKEEP_W(AXIS_TKEEP_W)
+  ) dma (
+    .clk_eth_cfg   (clk_eth_cfg),
+    .resetn_eth_cfg(resetn_eth_cfg),
+
+    .s_axil_dma_awaddr(s_axil_dma_awaddr),
+    .s_axil_dma_awvalid(s_axil_dma_awvalid),
+    .s_axil_dma_awready(s_axil_dma_awready),
+    .s_axil_dma_wdata(s_axil_dma_wdata),
+    .s_axil_dma_wstrb(s_axil_dma_wstrb),
+    .s_axil_dma_wvalid(s_axil_dma_wvalid),
+    .s_axil_dma_wready(s_axil_dma_wready),
+    .s_axil_dma_bresp(s_axil_dma_bresp),
+    .s_axil_dma_bvalid(s_axil_dma_bvalid),
+    .s_axil_dma_bready(s_axil_dma_bready),
+    .s_axil_dma_araddr(s_axil_dma_araddr),
+    .s_axil_dma_arvalid(s_axil_dma_arvalid),
+    .s_axil_dma_arready(s_axil_dma_arready),
+    .s_axil_dma_rdata(s_axil_dma_rdata),
+    .s_axil_dma_rresp(s_axil_dma_rresp),
+    .s_axil_dma_rvalid(s_axil_dma_rvalid),
+    .s_axil_dma_rready(s_axil_dma_rready),
+
+    .qsfp_tx_tdata(qsfp_tx_tdata),
+    .qsfp_tx_tkeep_user(qsfp_tx_tkeep_user),
+    .qsfp_tx_tlast(qsfp_tx_tlast),
+    .qsfp_tx_tvalid(qsfp_tx_tvalid),
+    .qsfp_tx_tready(qsfp_tx_tready),
+
+    .qsfp_rx_tdata(qsfp_rx_tdata),
+    .qsfp_rx_tkeep_user(qsfp_rx_tkeep_user),
+    .qsfp_rx_tlast(qsfp_rx_tlast),
+    .qsfp_rx_tvalid(qsfp_rx_tvalid),
+
+    .axis_rx_tdata(axis_rx_tdata),
+    .axis_rx_tkeep_user(axis_rx_tkeep_user),
+    .axis_rx_tlast(axis_rx_tlast),
+    .axis_rx_tvalid(axis_rx_tvalid),
+
+    .axis_tx_tdata(axis_tx_tdata),
+    .axis_tx_tkeep_user(axis_tx_tkeep_user),
+    .axis_tx_tlast(axis_tx_tlast),
+    .axis_tx_tvalid(axis_tx_tvalid),
+    .axis_tx_tready(axis_tx_tready)
   );
 
 endmodule

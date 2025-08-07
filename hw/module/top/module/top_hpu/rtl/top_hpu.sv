@@ -2657,6 +2657,12 @@ module top_hpu #(
     .cfg_clk                       (cfg_clk),
     .cfg_srst_n                    (cfg_srst_n),
 
+    .cfg_eth_clk                   (eth_cfg_clk),
+    .cfg_eth_srst_n                (eth_cfg_srst_n),
+
+    .prc_mrmac_clk                 (clk_axis_mrmac),
+    .prc_mrmac_srst_n              (resetn_axis_mrmac),
+
     /* AXI-LITE
      * Direct connection to the hpu regif
      */
@@ -2731,6 +2737,24 @@ module top_hpu #(
     .s_axil_cfg_3in3_rresp         (axi_regif_cfg_rresp[1]),
     .s_axil_cfg_3in3_rvalid        (axi_regif_cfg_rvalid[1]),
     .s_axil_cfg_3in3_rready        (axi_regif_cfg_rready[1]),
+
+    .s_axil_dma_2in3_awaddr        (axi_eth_dma_awaddr),
+    .s_axil_dma_2in3_awvalid       (axi_eth_dma_awvalid),
+    .s_axil_dma_2in3_awready       (axi_eth_dma_awready),
+    .s_axil_dma_2in3_wdata         (axi_eth_dma_wdata),
+    .s_axil_dma_2in3_wstrb         (axi_eth_dma_wstrb),
+    .s_axil_dma_2in3_wvalid        (axi_eth_dma_wvalid),
+    .s_axil_dma_2in3_wready        (axi_eth_dma_wready),
+    .s_axil_dma_2in3_bresp         (axi_eth_dma_bresp),
+    .s_axil_dma_2in3_bvalid        (axi_eth_dma_bvalid),
+    .s_axil_dma_2in3_bready        (axi_eth_dma_bready),
+    .s_axil_dma_2in3_araddr        (axi_eth_dma_araddr),
+    .s_axil_dma_2in3_arvalid       (axi_eth_dma_arvalid),
+    .s_axil_dma_2in3_arready       (axi_eth_dma_arready),
+    .s_axil_dma_2in3_rdata         (axi_eth_dma_rdata),
+    .s_axil_dma_2in3_rresp         (axi_eth_dma_rresp),
+    .s_axil_dma_2in3_rvalid        (axi_eth_dma_rvalid),
+    .s_axil_dma_2in3_rready        (axi_eth_dma_rready),
 
     .m_axi4_trc_awid               (m_axi4_trc_awid),
     .m_axi4_trc_awaddr             (m_axi4_trc_awaddr),
