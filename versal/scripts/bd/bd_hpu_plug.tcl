@@ -77,6 +77,12 @@ namespace eval _nsp_hpu {
     set AXIS_NOC_DATA_BYTE [expr (($AXIS_DATA_BYTES + 15) / 16) * 16]
     set AXIS_NOC_DATA_W [expr $AXIS_NOC_DATA_BYTE * 8]
 
+    # Ethernet configuration
+    # 64 depends on the line configurations, beware
+    # current configuration is: 4x Independent 64b Non-Segmented
+    set AXIS_DATA_ETH_W 64
+    set AXIS_DATA_ETH_BYTES [expr $AXIS_DATA_ETH_W / 8]
+
     #========================
     # QOS
     #========================

@@ -60,6 +60,9 @@ proc create_root_design { parentCell ntt_psi } {
   set ETH_AXI_NB $_nsp_hpu::ETH_AXI_NB
   set ETH_QSFP_FREQ $_nsp_hpu::ETH_QSFP_FREQ
 
+  set AXIS_DATA_ETH_W $_nsp_hpu::AXIS_DATA_ETH_W
+  set AXIS_DATA_ETH_BYTES $_nsp_hpu::AXIS_DATA_ETH_BYTES
+
   ####################################
   # Create Ports
   ####################################
@@ -91,6 +94,11 @@ proc create_root_design { parentCell ntt_psi } {
    CONFIG.FREQ_HZ [expr int($HBM_REF_FREQ * 10**6)] \
    ] $hbm_ref_clk_1
 
+  set CLK_IN_D [ create_bd_intf_port -mode Slave -vlnv xilinx.com:interface:diff_clock_rtl:1.0 CLK_IN_D ]
+  set_property -dict [ list \
+   CONFIG.FREQ_HZ [expr int($ETH_QSFP_FREQ * 10**6)] \
+  ] $CLK_IN_D
+
   # System clocks
   set clk_usr_0_0 [ create_bd_port -dir O -type clk clk_usr_0_0 ]
   set clk_usr_0_0_fr [ create_bd_port -dir O -type clk clk_usr_0_0_fr ]
@@ -99,10 +107,96 @@ proc create_root_design { parentCell ntt_psi } {
   set clk_usr_0_0_ce [ create_bd_port -dir I clk_usr_0_0_ce]
   set clk_eth_cfg_0 [ create_bd_port -dir O -type clk clk_eth_cfg_0 ]
 
+  set apb3clk_quad [ create_bd_port -dir I -type clk -freq_hz 200000000 apb3clk_quad ]
+
+  set tx_axi_clk [ create_bd_port -dir I -from 3 -to 0 -type clk -freq_hz [expr int($ETH_QSFP_FREQ * 10**6)] tx_axi_clk ]
+  set rx_axi_clk [ create_bd_port -dir I -from 3 -to 0 -type clk -freq_hz [expr int($ETH_QSFP_FREQ * 10**6)] rx_axi_clk ]
+
+  set tx_flexif_clk [ create_bd_port -dir I -from 3 -to 0 -type clk -freq_hz 250000000 tx_flexif_clk ]
+  set rx_flexif_clk [ create_bd_port -dir I -from 3 -to 0 -type clk -freq_hz 250000000 rx_flexif_clk ]
+
+  set tx_ts_clk [ create_bd_port -dir I -from 3 -to 0 -type clk -freq_hz 250000000 tx_ts_clk ]
+  set rx_ts_clk [ create_bd_port -dir I -from 3 -to 0 -type clk -freq_hz 250000000 rx_ts_clk ]
+
+  # theorical frequency cannot be reached
+  set clk_axis_mrmac [ create_bd_port -dir O -type clk  clk_axis_mrmac ]
+
+  # gt user clocks
+  # please note that -freq_hz does not exists for -type gt_usrclk
+  set tx_core_clk       [ create_bd_port -dir I -from 3 -to 0 -type gt_usrclk tx_core_clk ]
+  set rx_core_clk       [ create_bd_port -dir I -from 3 -to 0 -type gt_usrclk rx_core_clk ]
+  set rx_serdes_clk     [ create_bd_port -dir I -from 3 -to 0 -type gt_usrclk rx_serdes_clk ]
+  set tx_alt_serdes_clk [ create_bd_port -dir I -from 3 -to 0 -type gt_usrclk tx_alt_serdes_clk ]
+  set rx_alt_serdes_clk [ create_bd_port -dir I -from 3 -to 0 -type gt_usrclk rx_alt_serdes_clk ]
+
+  set ch0_tx_usr_clk  [ create_bd_port -dir O -from 0 -to 0 -type gt_usrclk ch0_tx_usr_clk ]
+  set ch0_rx_usr_clk  [ create_bd_port -dir O -from 0 -to 0 -type gt_usrclk ch0_rx_usr_clk ]
+  set ch1_rx_usr_clk  [ create_bd_port -dir O -from 0 -to 0 -type gt_usrclk ch1_rx_usr_clk ]
+  set ch2_rx_usr_clk  [ create_bd_port -dir O -from 0 -to 0 -type gt_usrclk ch2_rx_usr_clk ]
+  set ch3_rx_usr_clk  [ create_bd_port -dir O -from 0 -to 0 -type gt_usrclk ch3_rx_usr_clk ]
+  set ch0_tx_usr_clk2 [ create_bd_port -dir O -from 0 -to 0 -type gt_usrclk ch0_tx_usr_clk2 ]
+  set ch0_rx_usr_clk2 [ create_bd_port -dir O -from 0 -to 0 -type gt_usrclk ch0_rx_usr_clk2 ]
+  set ch2_rx_usr_clk2 [ create_bd_port -dir O -from 0 -to 0 -type gt_usrclk ch2_rx_usr_clk2 ]
+  set ch1_rx_usr_clk2 [ create_bd_port -dir O -from 0 -to 0 -type gt_usrclk ch1_rx_usr_clk2 ]
+  set ch3_rx_usr_clk2 [ create_bd_port -dir O -from 0 -to 0 -type gt_usrclk ch3_rx_usr_clk2 ]
+
+  set ch0_rxusrclk [ create_bd_port -dir I -from 0 -to 0 -type gt_usrclk ch0_rxusrclk ]
+  set ch0_txusrclk [ create_bd_port -dir I -from 0 -to 0 -type gt_usrclk ch0_txusrclk ]
+  set ch1_rxusrclk [ create_bd_port -dir I -from 0 -to 0 -type gt_usrclk ch1_rxusrclk ]
+  set ch1_txusrclk [ create_bd_port -dir I -from 0 -to 0 -type gt_usrclk ch1_txusrclk ]
+  set ch2_rxusrclk [ create_bd_port -dir I -from 0 -to 0 -type gt_usrclk ch2_rxusrclk ]
+  set ch2_txusrclk [ create_bd_port -dir I -from 0 -to 0 -type gt_usrclk ch2_txusrclk ]
+  set ch3_rxusrclk [ create_bd_port -dir I -from 0 -to 0 -type gt_usrclk ch3_rxusrclk ]
+  set ch3_txusrclk [ create_bd_port -dir I -from 0 -to 0 -type gt_usrclk ch3_txusrclk ]
+
+  # core_clk output buff 0
+  set_property -dict [ list \
+   CONFIG.FREQ_HZ {644531000} \
+ ] $tx_core_clk
+  set_property -dict [ list \
+   CONFIG.FREQ_HZ {644531000} \
+ ] $rx_core_clk
+  set_property -dict [ list \
+   CONFIG.FREQ_HZ {644531000} \
+ ] $rx_serdes_clk
+
+  # 50% of core_clk output buff 1
+  set_property -dict [ list \
+   CONFIG.FREQ_HZ {322266000} \
+ ] $rx_alt_serdes_clk
+  set_property -dict [ list \
+   CONFIG.FREQ_HZ {322266000} \
+ ] $tx_alt_serdes_clk
+  set_property -dict [ list \
+   CONFIG.FREQ_HZ {322266000} \
+ ] $ch0_rxusrclk
+  set_property -dict [ list \
+   CONFIG.FREQ_HZ {322266000} \
+ ] $ch0_txusrclk
+  set_property -dict [ list \
+   CONFIG.FREQ_HZ {322266000} \
+ ] $ch1_rxusrclk
+  set_property -dict [ list \
+   CONFIG.FREQ_HZ {322266000} \
+ ] $ch1_txusrclk
+  set_property -dict [ list \
+   CONFIG.FREQ_HZ {322266000} \
+ ] $ch2_rxusrclk
+  set_property -dict [ list \
+   CONFIG.FREQ_HZ {322266000} \
+ ] $ch2_txusrclk
+  set_property -dict [ list \
+   CONFIG.FREQ_HZ {322266000} \
+ ] $ch3_rxusrclk
+  set_property -dict [ list \
+   CONFIG.FREQ_HZ {322266000} \
+ ] $ch3_txusrclk
+
   # Association properties
   set prop_clk(clk_usr_0_0) ""
   set prop_clk(clk_usr_1_0) ""
   set prop_clk(pl0_ref_clk_0) ""
+  set prop_clk(clk_axis_mrmac) ""
 
   # == Resets
   set resetn_usr_0_ic_0 [ create_bd_port -dir O -type rst resetn_usr_0_ic_0 ]
@@ -110,6 +204,18 @@ proc create_root_design { parentCell ntt_psi } {
   set resetn_usr_1_ic_0 [ create_bd_port -dir O -type rst resetn_usr_1_ic_0 ]
   set pl0_resetn_0 [ create_bd_port -dir O -type rst pl0_resetn_0 ]
   set resetn_eth_cfg_ic_0 [ create_bd_port -dir O -from 0 -to 0 -type rst resetn_eth_cfg_ic_0 ]
+
+  set resetn_axis_mrmac [ create_bd_port -dir O -type rst resetn_axis_mrmac ]
+
+  set_property -dict [list CONFIG.POLARITY {ACTIVE_HIGH}] [create_bd_port -dir I -from 3 -to 0 -type rst rx_core_reset]
+  set_property -dict [list CONFIG.POLARITY {ACTIVE_HIGH}] [create_bd_port -dir I -from 3 -to 0 -type rst tx_core_reset]
+  set_property -dict [list CONFIG.POLARITY {ACTIVE_HIGH}] [create_bd_port -dir I -from 3 -to 0 -type rst tx_serdes_reset]
+  set_property -dict [list CONFIG.POLARITY {ACTIVE_HIGH}] [create_bd_port -dir I -from 3 -to 0 -type rst rx_serdes_reset]
+  set_property -dict [list CONFIG.POLARITY {ACTIVE_HIGH}] [create_bd_port -dir I -from 3 -to 0 -type rst rx_flexif_reset]
+
+  # gt resets
+  set gt_reset_tx_datapath_in [ create_bd_port -dir I -from 3 -to 0 gt_reset_tx_datapath_in ]
+  set gt_reset_rx_datapath_in [ create_bd_port -dir I -from 3 -to 0 gt_reset_rx_datapath_in ]
 
   # == PCIe
   set gt_pciea1 [ create_bd_intf_port -mode Master -vlnv xilinx.com:interface:gt_rtl:1.0 gt_pciea1 ]
@@ -352,6 +458,34 @@ proc create_root_design { parentCell ntt_psi } {
      CONFIG.READ_WRITE_MODE {READ_WRITE} \
   ] $port
 
+  set port [ create_bd_intf_port -mode Slave -vlnv xilinx.com:interface:aximm_rtl:1.0 ETH_AXI_DBG ]
+  set_property -dict [ list \
+     CONFIG.ADDR_WIDTH $AXI4_ADD_W \
+     CONFIG.DATA_WIDTH $AXIL_DATA_W \
+     CONFIG.PROTOCOL {AXI4LITE} \
+     CONFIG.READ_WRITE_MODE {READ_WRITE} \
+  ] $port
+
+  set axis_m_eth [ create_bd_intf_port -mode Master -vlnv xilinx.com:interface:axis_rtl:1.0 axis_m_eth ]
+  set axis_s_eth [ create_bd_intf_port -mode Slave -vlnv xilinx.com:interface:axis_rtl:1.0  axis_s_eth ]
+  set_property -dict [ list \
+   CONFIG.HAS_TKEEP {0} \
+   CONFIG.HAS_TLAST {0} \
+   CONFIG.HAS_TREADY {1} \
+   CONFIG.HAS_TSTRB {0} \
+   CONFIG.LAYERED_METADATA {undef} \
+   CONFIG.TDATA_NUM_BYTES $AXIS_DATA_ETH_BYTES \
+   CONFIG.TDEST_WIDTH {0} \
+   CONFIG.TID_WIDTH {0} \
+   CONFIG.TUSER_WIDTH {0} \
+  ] $axis_s_eth
+
+  if {$prop_clk(clk_axis_mrmac) eq ""} {
+    set prop_clk(clk_axis_mrmac) "axis_m_eth:axis_s_eth"
+  } else {
+    set prop_clk(clk_axis_mrmac) "$prop_clk(clk_usr_0_0):axis_m_eth:axis_s_eth"
+  }
+
   # == Clock port connections
   # Bus clock must be defined with a port clock
   set_property -dict [ list \
@@ -366,15 +500,15 @@ proc create_root_design { parentCell ntt_psi } {
    CONFIG.ASSOCIATED_BUSIF $prop_clk(pl0_ref_clk_0) \
   ] [get_bd_ports /pl0_ref_clk_0]
 
+  set_property -dict [ list \
+   CONFIG.ASSOCIATED_BUSIF $prop_clk(clk_axis_mrmac) \
+  ] [get_bd_ports /clk_axis_mrmac]
+
+
   # == Ethernet via QSFP
   set GT_Serial [ create_bd_intf_port -mode Master -vlnv xilinx.com:interface:gt_rtl:1.0 GT_Serial ]
 
-  set CLK_IN_D [ create_bd_intf_port -mode Slave -vlnv xilinx.com:interface:diff_clock_rtl:1.0 CLK_IN_D ]
-  set_property -dict [ list \
-   CONFIG.FREQ_HZ [expr int($ETH_QSFP_FREQ * 10**6)] \
-  ] $CLK_IN_D
-
-  set_property CONFIG.ASSOCIATED_BUSIF {ETH_AXI_CFG:ETH_AXI_0:ETH_AXI_1:ETH_AXI_2} [get_bd_ports /clk_eth_cfg_0]
+  set_property CONFIG.ASSOCIATED_BUSIF {ETH_AXI_CFG:ETH_AXI_DBG:ETH_AXI_0:ETH_AXI_1:ETH_AXI_2} [get_bd_ports /clk_eth_cfg_0]
 
   set ctl_tx_port0 [ create_bd_intf_port -mode Slave -vlnv xilinx.com:display_mrmac:mrmac_ctrl_ports:2.0 ctl_tx_port0 ]
   set ctl_tx_port1 [ create_bd_intf_port -mode Slave -vlnv xilinx.com:display_mrmac:mrmac_ctrl_ports:2.0 ctl_tx_port1 ]
@@ -388,90 +522,23 @@ proc create_root_design { parentCell ntt_psi } {
   set stat_rx_port1 [ create_bd_intf_port -mode Master -vlnv xilinx.com:display_mrmac:mrmac_statistics_ports:2.0 stat_rx_port1 ]
   set stat_rx_port2 [ create_bd_intf_port -mode Master -vlnv xilinx.com:display_mrmac:mrmac_statistics_ports:2.0 stat_rx_port2 ]
   set stat_rx_port3 [ create_bd_intf_port -mode Master -vlnv xilinx.com:display_mrmac:mrmac_statistics_ports:2.0 stat_rx_port3 ]
+
   set tx_preamblein [ create_bd_intf_port -mode Slave -vlnv xilinx.com:display_mrmac:mrmac_statistics_ports:2.0 tx_preamblein ]
   set rx_preambleout [ create_bd_intf_port -mode Master -vlnv xilinx.com:display_mrmac:mrmac_statistics_ports:2.0 rx_preambleout ]
+
   set APB3_INTF [ create_bd_intf_port -mode Slave -vlnv xilinx.com:interface:apb_rtl:1.0 APB3_INTF ]
-  set apb3clk_quad [ create_bd_port -dir I -type clk -freq_hz 200000000 apb3clk_quad ]
 
-  set tx_axi_clk   [ create_bd_port -dir I -from 3 -to 0 -type clk -freq_hz [expr int($ETH_QSFP_FREQ * 10**6)] tx_axi_clk ]
-  set rx_axi_clk   [ create_bd_port -dir I -from 3 -to 0 -type clk -freq_hz [expr int($ETH_QSFP_FREQ * 10**6)] rx_axi_clk ]
-  # theorical frequency cannot be reached
-  set clk_axis_mrmac [ create_bd_port -dir O -type clk  clk_axis_mrmac ]
-
-  set resetn_axis_mrmac      [ create_bd_port -dir O -type rst resetn_axis_mrmac ]
-  set tx_core_reset [ create_bd_port -dir I -from 3 -to 0 -type rst tx_core_reset ]
-
-  set_property -dict [ list \
-   CONFIG.POLARITY {ACTIVE_HIGH} \
- ] $tx_core_reset
-
-  set rx_core_reset [ create_bd_port -dir I -from 3 -to 0 -type rst rx_core_reset ]
-  set_property -dict [ list \
-   CONFIG.POLARITY {ACTIVE_HIGH} \
- ] $rx_core_reset
-
-  set tx_serdes_reset [ create_bd_port -dir I -from 3 -to 0 -type rst tx_serdes_reset ]
-  set_property -dict [ list \
-   CONFIG.POLARITY {ACTIVE_HIGH} \
- ] $tx_serdes_reset
-
-  set rx_serdes_reset [ create_bd_port -dir I -from 3 -to 0 -type rst rx_serdes_reset ]
-  set_property -dict [ list \
-   CONFIG.POLARITY {ACTIVE_HIGH} \
- ] $rx_serdes_reset
-
-  set rx_flexif_reset [ create_bd_port -dir I -from 3 -to 0 -type rst rx_flexif_reset ]
-  set_property -dict [ list \
-   CONFIG.POLARITY {ACTIVE_HIGH} \
- ] $rx_flexif_reset
-
-  set tx_core_clk [ create_bd_port -dir I -from 3 -to 0 -type gt_usrclk tx_core_clk ]
-  set_property -dict [ list \
-   CONFIG.FREQ_HZ {644531000} \
- ] $tx_core_clk
-
-  set rx_core_clk [ create_bd_port -dir I -from 3 -to 0 -type gt_usrclk rx_core_clk ]
-  set_property -dict [ list \
-   CONFIG.FREQ_HZ {644531000} \
- ] $rx_core_clk
-
-  set rx_serdes_clk [ create_bd_port -dir I -from 3 -to 0 -type gt_usrclk rx_serdes_clk ]
-  set_property -dict [ list \
-   CONFIG.FREQ_HZ {644531000} \
- ] $rx_serdes_clk
-
-  set tx_alt_serdes_clk [ create_bd_port -dir I -from 3 -to 0 -type gt_usrclk tx_alt_serdes_clk ]
-  set_property -dict [ list \
-   CONFIG.FREQ_HZ {322266000} \
- ] $tx_alt_serdes_clk
-
-  set rx_alt_serdes_clk [ create_bd_port -dir I -from 3 -to 0 -type gt_usrclk rx_alt_serdes_clk ]
-  set_property -dict [ list \
-   CONFIG.FREQ_HZ {322266000} \
- ] $rx_alt_serdes_clk
-
-  set tx_flexif_clk [ create_bd_port -dir I -from 3 -to 0 -type clk -freq_hz 250000000 tx_flexif_clk ]
-  set rx_flexif_clk [ create_bd_port -dir I -from 3 -to 0 -type clk -freq_hz 250000000 rx_flexif_clk ]
-  set tx_ts_clk [ create_bd_port -dir I -from 3 -to 0 -type clk -freq_hz 250000000 tx_ts_clk ]
-  set rx_ts_clk [ create_bd_port -dir I -from 3 -to 0 -type clk -freq_hz 250000000 rx_ts_clk ]
   set pm_tick [ create_bd_port -dir I -from 3 -to 0 pm_tick ]
+
   set gt_tx_reset_done_out [ create_bd_port -dir O -from 3 -to 0 gt_tx_reset_done_out ]
   set gt_rx_reset_done_out [ create_bd_port -dir O -from 3 -to 0 gt_rx_reset_done_out ]
+
   set gt_reset_all_in [ create_bd_port -dir I -from 3 -to 0 gt_reset_all_in ]
+
   set gtpowergood_in [ create_bd_port -dir I gtpowergood_in ]
-  set ch0_tx_usr_clk [ create_bd_port -dir O -from 0 -to 0 -type gt_usrclk ch0_tx_usr_clk ]
-  set ch0_rx_usr_clk [ create_bd_port -dir O -from 0 -to 0 -type gt_usrclk ch0_rx_usr_clk ]
-  set ch1_rx_usr_clk [ create_bd_port -dir O -from 0 -to 0 -type gt_usrclk ch1_rx_usr_clk ]
-  set ch2_rx_usr_clk [ create_bd_port -dir O -from 0 -to 0 -type gt_usrclk ch2_rx_usr_clk ]
-  set ch3_rx_usr_clk [ create_bd_port -dir O -from 0 -to 0 -type gt_usrclk ch3_rx_usr_clk ]
-  set ch0_tx_usr_clk2 [ create_bd_port -dir O -from 0 -to 0 -type gt_usrclk ch0_tx_usr_clk2 ]
-  set ch0_rx_usr_clk2 [ create_bd_port -dir O -from 0 -to 0 -type gt_usrclk ch0_rx_usr_clk2 ]
-  set ch2_rx_usr_clk2 [ create_bd_port -dir O -from 0 -to 0 -type gt_usrclk ch2_rx_usr_clk2 ]
-  set ch1_rx_usr_clk2 [ create_bd_port -dir O -from 0 -to 0 -type gt_usrclk ch1_rx_usr_clk2 ]
-  set ch3_rx_usr_clk2 [ create_bd_port -dir O -from 0 -to 0 -type gt_usrclk ch3_rx_usr_clk2 ]
 
   # == TX axi-stream intterface
-  set tx_axis_tdata_0    [ create_bd_port -dir I -from 63 -to 0 tx_axis_tdata_0 ]
+  set tx_axis_tdata_0   [ create_bd_port -dir I -from 63 -to 0 tx_axis_tdata_0 ]
   set tx_axis_tready_0  [ create_bd_port -dir O tx_axis_tready_0 ]
   set tx_axis_tlast_0   [ create_bd_port -dir I tx_axis_tlast_0 ]
   set tx_axis_tvalid_0  [ create_bd_port -dir I tx_axis_tvalid_0 ]
@@ -496,64 +563,30 @@ proc create_root_design { parentCell ntt_psi } {
   set tx_axis_tkeep_user_4 [ create_bd_port -dir I -from 10 -to 0 tx_axis_tkeep_user_4 ]
   set tx_axis_tkeep_user_6 [ create_bd_port -dir I -from 10 -to 0 tx_axis_tkeep_user_6 ]
 
-  # == RX axi-stream intterface
-
+  # == RX axi-stream interface
   set rx_axis_tdata_0      [ create_bd_port -dir O -from 63 -to 0 rx_axis_tdata_0 ]
   set rx_axis_tkeep_user_0 [ create_bd_port -dir O -from 10 -to 0 rx_axis_tkeep_user_0 ]
-  set rx_axis_tlast_0     [ create_bd_port -dir O rx_axis_tlast_0 ]
-  set rx_axis_tvalid_0    [ create_bd_port -dir O rx_axis_tvalid_0 ]
+  set rx_axis_tlast_0      [ create_bd_port -dir O rx_axis_tlast_0 ]
+  set rx_axis_tvalid_0     [ create_bd_port -dir O rx_axis_tvalid_0 ]
 
   set rx_axis_tdata_2      [ create_bd_port -dir O -from 63 -to 0 rx_axis_tdata_2 ]
   set rx_axis_tkeep_user_2 [ create_bd_port -dir O -from 10 -to 0 rx_axis_tkeep_user_2 ]
-  set rx_axis_tlast_2     [ create_bd_port -dir O rx_axis_tlast_2 ]
-  set rx_axis_tvalid_2    [ create_bd_port -dir O rx_axis_tvalid_2 ]
+  set rx_axis_tlast_2      [ create_bd_port -dir O rx_axis_tlast_2 ]
+  set rx_axis_tvalid_2     [ create_bd_port -dir O rx_axis_tvalid_2 ]
 
   set rx_axis_tdata_4      [ create_bd_port -dir O -from 63 -to 0 rx_axis_tdata_4 ]
   set rx_axis_tkeep_user_4 [ create_bd_port -dir O -from 10 -to 0 rx_axis_tkeep_user_4 ]
-  set rx_axis_tlast_4     [ create_bd_port -dir O rx_axis_tlast_4 ]
-  set rx_axis_tvalid_4    [ create_bd_port -dir O rx_axis_tvalid_4 ]
+  set rx_axis_tlast_4      [ create_bd_port -dir O rx_axis_tlast_4 ]
+  set rx_axis_tvalid_4     [ create_bd_port -dir O rx_axis_tvalid_4 ]
 
   set rx_axis_tdata_6      [ create_bd_port -dir O -from 63 -to 0 rx_axis_tdata_6 ]
   set rx_axis_tkeep_user_6 [ create_bd_port -dir O -from 10 -to 0 rx_axis_tkeep_user_6 ]
-  set rx_axis_tlast_6     [ create_bd_port -dir O rx_axis_tlast_6 ]
-  set rx_axis_tvalid_6    [ create_bd_port -dir O rx_axis_tvalid_6 ]
+  set rx_axis_tlast_6      [ create_bd_port -dir O rx_axis_tlast_6 ]
+  set rx_axis_tvalid_6     [ create_bd_port -dir O rx_axis_tvalid_6 ]
 
-  set gt_reset_tx_datapath_in [ create_bd_port -dir I -from 3 -to 0 gt_reset_tx_datapath_in ]
-  set gt_reset_rx_datapath_in [ create_bd_port -dir I -from 3 -to 0 gt_reset_rx_datapath_in ]
   set pm_rdy [ create_bd_port -dir O -from 3 -to 0 pm_rdy ]
+
   set gtpowergood [ create_bd_port -dir O gtpowergood ]
-  set ch0_rxusrclk [ create_bd_port -dir I -from 0 -to 0 -type gt_usrclk ch0_rxusrclk ]
-  set_property -dict [ list \
-   CONFIG.FREQ_HZ {322266000} \
- ] $ch0_rxusrclk
-  set ch0_txusrclk [ create_bd_port -dir I -from 0 -to 0 -type gt_usrclk ch0_txusrclk ]
-  set_property -dict [ list \
-   CONFIG.FREQ_HZ {322266000} \
- ] $ch0_txusrclk
-  set ch1_rxusrclk [ create_bd_port -dir I -from 0 -to 0 -type gt_usrclk ch1_rxusrclk ]
-  set_property -dict [ list \
-   CONFIG.FREQ_HZ {322266000} \
- ] $ch1_rxusrclk
-  set ch1_txusrclk [ create_bd_port -dir I -from 0 -to 0 -type gt_usrclk ch1_txusrclk ]
-  set_property -dict [ list \
-   CONFIG.FREQ_HZ {322266000} \
- ] $ch1_txusrclk
-  set ch2_rxusrclk [ create_bd_port -dir I -from 0 -to 0 -type gt_usrclk ch2_rxusrclk ]
-  set_property -dict [ list \
-   CONFIG.FREQ_HZ {322266000} \
- ] $ch2_rxusrclk
-  set ch2_txusrclk [ create_bd_port -dir I -from 0 -to 0 -type gt_usrclk ch2_txusrclk ]
-  set_property -dict [ list \
-   CONFIG.FREQ_HZ {322266000} \
- ] $ch2_txusrclk
-  set ch3_rxusrclk [ create_bd_port -dir I -from 0 -to 0 -type gt_usrclk ch3_rxusrclk ]
-  set_property -dict [ list \
-   CONFIG.FREQ_HZ {322266000} \
- ] $ch3_rxusrclk
-  set ch3_txusrclk [ create_bd_port -dir I -from 0 -to 0 -type gt_usrclk ch3_txusrclk ]
-  set_property -dict [ list \
-   CONFIG.FREQ_HZ {322266000} \
- ] $ch3_txusrclk
 
   set ch0_loopback [ create_bd_port -dir I -from 2 -to 0 ch0_loopback ]
   set ch0_txrate   [ create_bd_port -dir I -from 7 -to 0 ch0_txrate ]
@@ -734,8 +767,12 @@ proc create_root_design { parentCell ntt_psi } {
   connect_bd_net -net tx_serdes_reset                  [get_bd_ports tx_serdes_reset] [get_bd_pins eth_wrapper/tx_serdes_reset]
   connect_bd_net -net tx_ts_clk                        [get_bd_ports tx_ts_clk] [get_bd_pins eth_wrapper/tx_ts_clk]
 
+  # in the RTL we choose that all tx_axi_clk and rx_axi_clk match clk_axis_mrmac
+  connect_bd_net [get_bd_ports clk_axis_mrmac]    [get_bd_pins shell_wrapper/clk_eth_qsfp_0] [get_bd_pins eth_wrapper/s_axis_mrmac_aclk]
+  connect_bd_net [get_bd_ports resetn_axis_mrmac] [get_bd_pins shell_wrapper/resetn_eth_qsfp_ic_0]
+
   # == RX Lanes
-  connect_bd_net -net rx_axi_clk                            [get_bd_ports rx_axi_clk]                       [get_bd_pins eth_wrapper/rx_axi_clk]
+  connect_bd_net -net rx_axi_clk [get_bd_ports rx_axi_clk] [get_bd_pins eth_wrapper/rx_axi_clk]
   # 0
   connect_bd_net [get_bd_pins eth_wrapper/rx_axis_tdata_0]      [get_bd_ports rx_axis_tdata_0]
   connect_bd_net [get_bd_pins eth_wrapper/rx_axis_tkeep_user_0] [get_bd_ports rx_axis_tkeep_user_0]
@@ -757,34 +794,41 @@ proc create_root_design { parentCell ntt_psi } {
   connect_bd_net [get_bd_pins eth_wrapper/rx_axis_tlast_6]      [get_bd_ports rx_axis_tlast_6]
   connect_bd_net [get_bd_pins eth_wrapper/rx_axis_tvalid_6]     [get_bd_ports rx_axis_tvalid_6]
   # == TX Lanes
-  connect_bd_net -net tx_axi_clk                       [get_bd_ports tx_axi_clk] [get_bd_pins eth_wrapper/tx_axi_clk]
+  connect_bd_net -net tx_axi_clk                     [get_bd_ports tx_axi_clk] [get_bd_pins eth_wrapper/tx_axi_clk]
   # 0
   connect_bd_net [get_bd_ports tx_axis_tdata_0]      [get_bd_pins eth_wrapper/tx_axis_tdata_0]
   connect_bd_net [get_bd_ports tx_axis_tkeep_user_0] [get_bd_pins eth_wrapper/tx_axis_tkeep_user_0]
-  connect_bd_net [get_bd_ports tx_axis_tlast_0]     [get_bd_pins eth_wrapper/tx_axis_tlast_0]
-  connect_bd_net [get_bd_ports tx_axis_tvalid_0]    [get_bd_pins eth_wrapper/tx_axis_tvalid_0]
-  connect_bd_net [get_bd_ports tx_axis_tready_0]    [get_bd_pins eth_wrapper/tx_axis_tready_0]
+  connect_bd_net [get_bd_ports tx_axis_tlast_0]      [get_bd_pins eth_wrapper/tx_axis_tlast_0]
+  connect_bd_net [get_bd_ports tx_axis_tvalid_0]     [get_bd_pins eth_wrapper/tx_axis_tvalid_0]
+  connect_bd_net [get_bd_ports tx_axis_tready_0]     [get_bd_pins eth_wrapper/tx_axis_tready_0]
   # 1
   connect_bd_net [get_bd_ports tx_axis_tdata_2]      [get_bd_pins eth_wrapper/tx_axis_tdata_2]
   connect_bd_net [get_bd_ports tx_axis_tkeep_user_2] [get_bd_pins eth_wrapper/tx_axis_tkeep_user_2]
-  connect_bd_net [get_bd_ports tx_axis_tlast_2]     [get_bd_pins eth_wrapper/tx_axis_tlast_2]
-  connect_bd_net [get_bd_ports tx_axis_tvalid_2]    [get_bd_pins eth_wrapper/tx_axis_tvalid_2]
-  connect_bd_net [get_bd_ports tx_axis_tready_2]    [get_bd_pins eth_wrapper/tx_axis_tready_2]
+  connect_bd_net [get_bd_ports tx_axis_tlast_2]      [get_bd_pins eth_wrapper/tx_axis_tlast_2]
+  connect_bd_net [get_bd_ports tx_axis_tvalid_2]     [get_bd_pins eth_wrapper/tx_axis_tvalid_2]
+  connect_bd_net [get_bd_ports tx_axis_tready_2]     [get_bd_pins eth_wrapper/tx_axis_tready_2]
   # 2
   connect_bd_net  [get_bd_ports tx_axis_tdata_4]      [get_bd_pins eth_wrapper/tx_axis_tdata_4]
   connect_bd_net  [get_bd_ports tx_axis_tkeep_user_4] [get_bd_pins eth_wrapper/tx_axis_tkeep_user_4]
-  connect_bd_net [get_bd_ports tx_axis_tlast_4] [get_bd_pins eth_wrapper/tx_axis_tlast_4]
-  connect_bd_net [get_bd_ports tx_axis_tvalid_4]    [get_bd_pins eth_wrapper/tx_axis_tvalid_4]
-  connect_bd_net [get_bd_ports tx_axis_tready_4]    [get_bd_pins eth_wrapper/tx_axis_tready_4]
+  connect_bd_net [get_bd_ports tx_axis_tlast_4]       [get_bd_pins eth_wrapper/tx_axis_tlast_4]
+  connect_bd_net [get_bd_ports tx_axis_tvalid_4]      [get_bd_pins eth_wrapper/tx_axis_tvalid_4]
+  connect_bd_net [get_bd_ports tx_axis_tready_4]      [get_bd_pins eth_wrapper/tx_axis_tready_4]
   # 3
   connect_bd_net  [get_bd_ports tx_axis_tdata_6]      [get_bd_pins eth_wrapper/tx_axis_tdata_6]
   connect_bd_net  [get_bd_ports tx_axis_tkeep_user_6] [get_bd_pins eth_wrapper/tx_axis_tkeep_user_6]
-  connect_bd_net [get_bd_ports tx_axis_tlast_6]     [get_bd_pins eth_wrapper/tx_axis_tlast_6]
-  connect_bd_net [get_bd_ports tx_axis_tvalid_6]    [get_bd_pins eth_wrapper/tx_axis_tvalid_6]
-  connect_bd_net [get_bd_ports tx_axis_tready_6]    [get_bd_pins eth_wrapper/tx_axis_tready_6]
+  connect_bd_net [get_bd_ports tx_axis_tlast_6]       [get_bd_pins eth_wrapper/tx_axis_tlast_6]
+  connect_bd_net [get_bd_ports tx_axis_tvalid_6]      [get_bd_pins eth_wrapper/tx_axis_tvalid_6]
+  connect_bd_net [get_bd_ports tx_axis_tready_6]      [get_bd_pins eth_wrapper/tx_axis_tready_6]
 
-  connect_bd_net [get_bd_ports clk_axis_mrmac]     [get_bd_pins shell_wrapper/clk_eth_qsfp_0]
-  connect_bd_net [get_bd_ports resetn_axis_mrmac]  [get_bd_pins shell_wrapper/resetn_eth_qsfp_ic_0]
+  # Ethernet configuration and debug ports
+  connect_bd_intf_net [get_bd_intf_ports /ETH_AXI_CFG] [get_bd_intf_pins eth_wrapper/s_axil_mrmac]
+  connect_bd_intf_net [get_bd_intf_ports /ETH_AXI_DBG] [get_bd_intf_pins eth_wrapper/s_axil_dbg]
+  connect_bd_intf_net [get_bd_intf_ports /axis_m_eth]  [get_bd_intf_pins eth_wrapper/axis_m_eth]
+  connect_bd_intf_net [get_bd_intf_ports /axis_s_eth]  [get_bd_intf_pins eth_wrapper/axis_s_eth]
+
+  for {set i 0}  {$i < $ETH_AXI_NB} {incr i} {
+    connect_bd_intf_net [get_bd_intf_ports /ETH_AXI_${i}] [get_bd_intf_pins noc_wrapper/ETH_AXI_${i}]
+  }
 
   ####################################
   # Internal Connections
@@ -827,12 +871,6 @@ proc create_root_design { parentCell ntt_psi } {
   # Ethernet
   connect_bd_net      [get_bd_pins eth_wrapper/s_axi_aclk]    [get_bd_pins shell_wrapper/clk_eth_cfg_0]
   connect_bd_net      [get_bd_pins eth_wrapper/s_axi_aresetn] [get_bd_pins shell_wrapper/resetn_eth_cfg_ic_0]
-
-  connect_bd_intf_net [get_bd_intf_ports /ETH_AXI_CFG] [get_bd_intf_pins eth_wrapper/s_axi]
-
-  for {set i 0}  {$i < $ETH_AXI_NB} {incr i} {
-    connect_bd_intf_net [get_bd_intf_pins noc_wrapper/ETH_AXI_${i}] [get_bd_intf_ports /ETH_AXI_${i}]
-  }
 
   ####################################
   # Address
@@ -892,7 +930,9 @@ proc create_root_design { parentCell ntt_psi } {
   }
 
   # Ethernet
-  assign_bd_address -offset 0x00000000 -range 0x00010000 -target_address_space [get_bd_addr_spaces s_axi] [get_bd_addr_segs eth_wrapper/mrmac_0_core/s_axi/Reg] -force
+  assign_bd_address -offset 0x00000000 -range 0x00010000 -target_address_space [get_bd_addr_spaces s_axil_mrmac] [get_bd_addr_segs eth_wrapper/mrmac_0_core/s_axi/Reg] -force
+  assign_bd_address -offset 0x00000000 -range 0x00010000 -target_address_space [get_bd_addr_spaces ETH_AXI_DBG] [get_bd_addr_segs eth_wrapper/line_dbg/S_AXI/Mem0]  -force
+
   # APB3 not meant to be used
   assign_bd_address -offset 0xA4080000 -range 0x00010000 -target_address_space [get_bd_addr_spaces APB3_INTF] [get_bd_addr_segs eth_wrapper/mrmac_0_gt_wrapper/gt_quad_base/APB3_INTF/Reg] -force
 
