@@ -452,7 +452,7 @@ proc create_root_design { parentCell ntt_psi } {
 
   set port [ create_bd_intf_port -mode Slave -vlnv xilinx.com:interface:aximm_rtl:1.0 ETH_AXI_CFG ]
   set_property -dict [ list \
-     CONFIG.ADDR_WIDTH $AXI4_ADD_W \
+     CONFIG.ADDR_WIDTH $AXIL_ADD_W \
      CONFIG.DATA_WIDTH $AXIL_DATA_W \
      CONFIG.PROTOCOL {AXI4LITE} \
      CONFIG.READ_WRITE_MODE {READ_WRITE} \
@@ -460,7 +460,7 @@ proc create_root_design { parentCell ntt_psi } {
 
   set port [ create_bd_intf_port -mode Slave -vlnv xilinx.com:interface:aximm_rtl:1.0 ETH_AXI_DBG ]
   set_property -dict [ list \
-     CONFIG.ADDR_WIDTH $AXI4_ADD_W \
+     CONFIG.ADDR_WIDTH $AXIL_ADD_W \
      CONFIG.DATA_WIDTH $AXIL_DATA_W \
      CONFIG.PROTOCOL {AXI4LITE} \
      CONFIG.READ_WRITE_MODE {READ_WRITE} \

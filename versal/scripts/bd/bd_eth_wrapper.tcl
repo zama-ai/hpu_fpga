@@ -559,12 +559,12 @@ proc create_hier_cell_eth_wrapper  { parentCell nameHier } {
   ] $axil_clk_converter
 
   # we use this smart connect to cross clock domains aclk -> aclk1
-  set_property -dict [ list \
-  CONFIG.ASSOCIATED_BUSIF S00_AXI \
-  ] [get_bd_pins axil_clk_converter/aclk]
-  set_property -dict [ list \
-  CONFIG.ASSOCIATED_BUSIF M00_AXI \
-  ] [get_bd_pins axil_clk_converter/aclk1]
+  # set_property -dict [ list \
+  # CONFIG.ASSOCIATED_BUSIF S00_AXI \
+  # ] [get_bd_pins axil_clk_converter/aclk]
+  # set_property -dict [ list \
+  # CONFIG.ASSOCIATED_BUSIF M00_AXI \
+  # ] [get_bd_pins axil_clk_converter/aclk1]
 
   # Create instance: mrmac_0_core, and set properties
   set mrmac_0_core [ create_bd_cell -type ip -vlnv xilinx.com:ip:mrmac:3.1 mrmac_0_core ]
@@ -613,9 +613,11 @@ proc create_hier_cell_eth_wrapper  { parentCell nameHier } {
 
   set line_dbg [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_fifo_mm_s:4.3 line_dbg ]
   set_property -dict [list \
-    CONFIG.C_AXIS_TUSER_WIDTH {4} \
-    CONFIG.C_DATA_INTERFACE_TYPE {0} \
+    CONFIG.C_DATA_INTERFACE_TYPE {1} \
+    CONFIG.C_AXIS_TUSER_WIDTH {$AXIS_DATA_ETH_BYTES} \
     CONFIG.C_S_AXI4_DATA_WIDTH $AXIS_DATA_ETH_W \
+    CONFIG.C_HAS_AXIS_TDEST {false} \
+    CONFIG.C_HAS_AXIS_TUSER {false} \
     CONFIG.C_USE_RX_DATA {1} \
     CONFIG.C_USE_TX_CTRL {0} \
     CONFIG.C_USE_TX_CUT_THROUGH {0} \
