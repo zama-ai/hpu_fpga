@@ -615,7 +615,7 @@ proc create_hier_cell_eth_wrapper  { parentCell nameHier } {
   set_property -dict [list \
     CONFIG.C_DATA_INTERFACE_TYPE {1} \
     CONFIG.C_AXIS_TUSER_WIDTH {$AXIS_DATA_ETH_BYTES} \
-    CONFIG.C_S_AXI4_DATA_WIDTH $AXIS_DATA_ETH_W \
+    CONFIG.C_S_AXI4_DATA_WIDTH {$AXIS_DATA_ETH_W} \
     CONFIG.C_HAS_AXIS_TDEST {false} \
     CONFIG.C_HAS_AXIS_TUSER {false} \
     CONFIG.C_USE_RX_DATA {1} \
