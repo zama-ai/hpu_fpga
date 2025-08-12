@@ -124,7 +124,7 @@ module hpu_3parts_2in3_core
   output                    axis_rx_tlast,
   output                    axis_rx_tvalid,
   // == TX
-  input  [AXIS_TDATA_W-1:0]  axis_tx_tdata,
+  input  [AXIS_TDATA_W-1:0] axis_tx_tdata,
   input  [AXIS_TKEEP_W-1:0] axis_tx_tkeep_user,
   input                     axis_tx_tlast,
   input                     axis_tx_tvalid,

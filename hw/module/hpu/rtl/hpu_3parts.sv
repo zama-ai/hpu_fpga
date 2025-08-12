@@ -90,6 +90,31 @@ module hpu_3parts
   //== Axi4 BSK interface
   `HPU_AXI4_IO(bsk, BSK, axi_if_bsk_axi_pkg, [BSK_PC_MAX-1:0])
 
+  // QSFP system interface
+  // == TX
+  output[LINE_NB-1:0][AXIS_TDATA_W-1:0  ] qsfp_tx_tdata,
+  output[LINE_NB-1:0][AXIS_TKEEP_W-1:0 ]  qsfp_tx_tkeep_user,
+  output[LINE_NB-1:0]                     qsfp_tx_tlast,
+  output[LINE_NB-1:0]                     qsfp_tx_tvalid,
+  input [LINE_NB-1:0]                     qsfp_tx_tready,
+  // == RX
+  input [LINE_NB-1:0][AXIS_TDATA_W-1:0  ] qsfp_rx_tdata,
+  input [LINE_NB-1:0][AXIS_TKEEP_W-1:0 ]  qsfp_rx_tkeep_user,
+  input [LINE_NB-1:0]                     qsfp_rx_tlast,
+  input [LINE_NB-1:0]                     qsfp_rx_tvalid,
+  // axi4-stream interface in direction of block design IP for RPU
+  // == RX
+  output [AXIS_TDATA_W-1:0] axis_rx_tdata,
+  output [AXIS_TKEEP_W-1:0] axis_rx_tkeep_user,
+  output                    axis_rx_tlast,
+  output                    axis_rx_tvalid,
+  // == TX
+  input  [AXIS_TDATA_W-1:0] axis_tx_tdata,
+  input  [AXIS_TKEEP_W-1:0] axis_tx_tkeep_user,
+  input                     axis_tx_tlast,
+  input                     axis_tx_tvalid,
+  output                    axis_tx_tready,
+
   //== AXI stream for ISC
   input  logic [PE_INST_W-1:0] isc_dop,
   output logic                 isc_dop_rdy,
@@ -517,7 +542,7 @@ module hpu_3parts
     .prc_mrmac_clk              (prc_mrmac_clk),
     .prc_mrmac_srst_n           (prc_mrmac_srst_n),
 
-    `HPU_AXIL_INSTANCE(dma,dma_2in3)
+    `HPU_AXIL_INSTANCE(dma,eth_2in3)
 
     .decomp_ntt_data_avail      (out_p1_p2_sll_ctrl.decomp_ntt_ctrl.data_avail),
     .decomp_ntt_data            (out_p1_p2_sll_data.decomp_ntt_data.data),
@@ -554,7 +579,29 @@ module hpu_3parts
     .ntt_proc_cmd               (out_p1_p2_sll_data.ntt_proc_cmd),
     .ntt_proc_cmd_avail         (out_p1_p2_sll_ctrl.ntt_proc_cmd_avail),
 
-    .pep_rif_elt                (in_p2_p3_sll_ctrl.pep_rif_elt)
+    .pep_rif_elt                (in_p2_p3_sll_ctrl.pep_rif_elt),
+
+    .qsfp_tx_tdata(qsfp_tx_tdata),
+    .qsfp_tx_tkeep_user(qsfp_tx_tkeep_user),
+    .qsfp_tx_tlast(qsfp_tx_tlast),
+    .qsfp_tx_tvalid(qsfp_tx_tvalid),
+    .qsfp_tx_tready(qsfp_tx_tready),
+
+    .qsfp_rx_tdata(qsfp_rx_tdata),
+    .qsfp_rx_tkeep_user(qsfp_rx_tkeep_user),
+    .qsfp_rx_tlast(qsfp_rx_tlast),
+    .qsfp_rx_tvalid(qsfp_rx_tvalid),
+
+    .axis_rx_tdata(axis_rx_tdata),
+    .axis_rx_tkeep_user(axis_rx_tkeep_user),
+    .axis_rx_tlast(axis_rx_tlast),
+    .axis_rx_tvalid(axis_rx_tvalid),
+
+    .axis_tx_tdata(axis_tx_tdata),
+    .axis_tx_tkeep_user(axis_tx_tkeep_user),
+    .axis_tx_tlast(axis_tx_tlast),
+    .axis_tx_tvalid(axis_tx_tvalid),
+    .axis_tx_tready(axis_tx_tready)
   );
 
 // ============================================================================================== --

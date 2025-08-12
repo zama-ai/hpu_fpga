@@ -2167,9 +2167,14 @@ module top_hpu #(
     .hbm_ref_clk_1_clk_p(top_hbm_ref_clk_1_clk_p),
 
     /* Axi4-lite loopback
-     * here to set correct address-space * to access ethernet configuration link
-     * address is x8008'0000 + offset while IP is expecting for x0000'XXXX
-     * "XXXX" as address
+     * in order to set correct address-space to access ethernet configuration link
+     * ETH_AXI_X_ corresponds to the X'th output of the NOC
+     * ETH_AXI_ID corresponds to "ID" block
+      * address is x8008'0000 + offset while the two IPs are expecting for x0000'XXXX
+     *
+     * AXI 0 -> id=cfg (IP) mrmac configuration registers
+     * AXI 1 -> id=dbg (IP) direct access to selected line FIFO
+     * AXI 2 -> direct access to dma regfile
      */
     .ETH_AXI_0_araddr   (axi_eth_mrmac_araddr),
     .ETH_AXI_0_arready  (axi_eth_mrmac_arready),
@@ -2230,6 +2235,25 @@ module top_hpu #(
     .ETH_AXI_1_awprot   (axi_eth_dbg_awprot),
     .ETH_AXI_1_wstrb    (axi_eth_dbg_wstrb),
 
+    // direct link to fifo for one of the lines
+    .ETH_AXI_DBG_araddr   ({'h0000, axi_eth_dbg_araddr[15:0]}),
+    .ETH_AXI_DBG_arready  (axi_eth_dbg_arready),
+    .ETH_AXI_DBG_arvalid  (axi_eth_dbg_arvalid),
+    .ETH_AXI_DBG_awaddr   ({'h0000, axi_eth_dbg_awaddr[15:0]}),
+    .ETH_AXI_DBG_awready  (axi_eth_dbg_awready),
+    .ETH_AXI_DBG_awvalid  (axi_eth_dbg_awvalid),
+    .ETH_AXI_DBG_bready   (axi_eth_dbg_bready),
+    .ETH_AXI_DBG_bresp    (axi_eth_dbg_bresp),
+    .ETH_AXI_DBG_bvalid   (axi_eth_dbg_bvalid),
+    .ETH_AXI_DBG_rdata    (axi_eth_dbg_rdata),
+    .ETH_AXI_DBG_rready   (axi_eth_dbg_rready),
+    .ETH_AXI_DBG_rresp    (axi_eth_dbg_rresp),
+    .ETH_AXI_DBG_rvalid   (axi_eth_dbg_rvalid),
+    .ETH_AXI_DBG_wdata    (axi_eth_dbg_wdata),
+    .ETH_AXI_DBG_wready   (axi_eth_dbg_wready),
+    .ETH_AXI_DBG_wvalid   (axi_eth_dbg_wvalid),
+
+    // access to regfile in dma
     .ETH_AXI_2_araddr   (axi_eth_dma_araddr),
     .ETH_AXI_2_arready  (axi_eth_dma_arready),
     .ETH_AXI_2_arvalid  (axi_eth_dma_arvalid),
@@ -2968,7 +2992,30 @@ module top_hpu #(
     .isc_ack_rdy                   (isc_ack_rdy),
     .isc_ack_vld                   (isc_ack_vld),
 
-    .interrupt                     (hpu_interrupt)
+    .interrupt                     (hpu_interrupt),
+
+    // QSFP system interface
+    .qsfp_tx_tdata(qsfp_tx_tdata),
+    .qsfp_tx_tkeep_user(qsfp_tx_tkeep_user),
+    .qsfp_tx_tlast(qsfp_tx_tlast),
+    .qsfp_tx_tvalid(qsfp_tx_tvalid),
+    .qsfp_tx_tready(qsfp_tx_tready),
+
+    .qsfp_rx_tdata(qsfp_rx_tdata),
+    .qsfp_rx_tkeep_user(qsfp_rx_tkeep_user),
+    .qsfp_rx_tlast(qsfp_rx_tlast),
+    .qsfp_rx_tvalid(qsfp_rx_tvalid),
+
+    .axis_rx_tdata(axis_rx_tdata),
+    .axis_rx_tkeep_user(axis_rx_tkeep_user),
+    .axis_rx_tlast(axis_rx_tlast),
+    .axis_rx_tvalid(axis_rx_tvalid),
+
+    .axis_tx_tdata(axis_tx_tdata),
+    .axis_tx_tkeep_user(axis_tx_tkeep_user),
+    .axis_tx_tlast(axis_tx_tlast),
+    .axis_tx_tvalid(axis_tx_tvalid),
+    .axis_tx_tready(axis_tx_tready)
   );
 
 endmodule
