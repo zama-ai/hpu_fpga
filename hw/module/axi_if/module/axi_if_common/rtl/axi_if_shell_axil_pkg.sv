@@ -12,7 +12,7 @@ package axi_if_shell_axil_pkg;
   //----------------------
   // AXI4-Lite
   //----------------------
-  localparam int AXIL_ADD_W      = 24;
+  localparam int AXIL_ADD_W      = 19;
   localparam int AXIL_DATA_W     = 32;
 
   localparam int AXIL_DATA_BYTES = AXIL_DATA_W/8;

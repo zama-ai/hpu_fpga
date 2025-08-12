@@ -1,7 +1,7 @@
 module_name="hpu_regif_core_eth_2in3"
 description="HPU ethernet configuration register interface. Will be accessed by RPU to define registers."
 word_size_b = 32
-offset = 0x40000
+offset = 0xE0000
 range = 0x10000
 ext_pkg = ["axi_if_common_param_pkg", "axi_if_shell_axil_pkg"]
 

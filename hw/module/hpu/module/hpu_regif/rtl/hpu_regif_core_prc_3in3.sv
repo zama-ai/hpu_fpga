@@ -1,7 +1,7 @@
 // ============================================================================================== //
 // Description  : Axi4-lite register bank
 // This file was generated with rust regmap generator:
-//  * Date:  2025-07-17
+//  * Date:  2025-08-12
 //  * Tool_version: bb0db737792da6b81e69a039028c971af1627fe2
 // ---------------------------------------------------------------------------------------------- //
 // xR[n]W[na]
@@ -30,8 +30,8 @@
 //      : Value provided by the RTL. The host can read it with notify. The write data is processed by the RTL.
 // ============================================================================================== //
 module hpu_regif_core_prc_3in3
-import axi_if_shell_axil_pkg::*;
 import axi_if_common_param_pkg::*;
+import axi_if_shell_axil_pkg::*;
 import hpu_regif_core_prc_3in3_pkg::*;
 #()(
   input  logic                           clk,
@@ -139,7 +139,7 @@ import hpu_regif_core_prc_3in3_pkg::*;
 // ============================================================================================== --
 // localparam
 // ============================================================================================== --
-  localparam int AXIL_ADD_OFS = 'h30000;
+  localparam int AXIL_ADD_OFS = 'hb0000;
   localparam int AXIL_ADD_RANGE= 'h10000; // Should be a power of 2
   localparam int AXIL_ADD_RANGE_W = $clog2(AXIL_ADD_RANGE);
   localparam [AXIL_ADD_W-1:0] AXIL_ADD_RANGE_MASK = AXIL_ADD_W'(AXIL_ADD_RANGE - 1);
