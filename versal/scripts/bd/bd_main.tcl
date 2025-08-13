@@ -118,7 +118,7 @@ proc create_root_design { parentCell ntt_psi } {
   set tx_ts_clk [ create_bd_port -dir I -from 3 -to 0 -type clk -freq_hz 250000000 tx_ts_clk ]
   set rx_ts_clk [ create_bd_port -dir I -from 3 -to 0 -type clk -freq_hz 250000000 rx_ts_clk ]
 
-  # theorical frequency cannot be reached
+  # theoretical frequency cannot be reached
   set clk_axis_mrmac [ create_bd_port -dir O -type clk  clk_axis_mrmac ]
 
   # gt user clocks

@@ -22,6 +22,7 @@ extend-ignore-re = [
     "[0-9]*h[0-9a-fA-F]+",
     # proper noun
     "Toom-Cook",
+    "SerDes",
 ]
 
 [files]
