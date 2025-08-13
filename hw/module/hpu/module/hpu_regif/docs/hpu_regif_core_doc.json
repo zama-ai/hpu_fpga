@@ -5,8 +5,8 @@
   "offset": 524288,
   "range": 458752,
   "ext_pkg": [
-    "axi_if_shell_axil_pkg",
-    "axi_if_common_param_pkg"
+    "axi_if_common_param_pkg",
+    "axi_if_shell_axil_pkg"
   ],
   "section": [
     {
@@ -4179,22 +4179,161 @@
     },
     {
       "name": "line",
-      "description": "line selection, possible values are 0, 1, 2, 3",
+      "description": "Line parameter sections",
       "offset": 917520,
       "bytes_align": 4,
       "range": 4,
       "register": [
         {
-          "name": "select",
-          "description": "ethernet line selection for direct link",
+          "name": "parameter",
+          "description": "Different parameters for qsfp lines",
           "owner": "User",
           "read_access": "Read",
           "write_access": "Write",
           "offset": 917520,
           "default": {
-            "Cst": 0
+            "ParamsField": {
+              "params": [],
+              "name_val": [
+                [
+                  "select",
+                  "'h0"
+                ],
+                [
+                  "loopback",
+                  "'h0"
+                ],
+                [
+                  "rate",
+                  "'h0"
+                ]
+              ]
+            }
           },
-          "field": null
+          "field": [
+            {
+              "name": "select",
+              "description": "line selection",
+              "size_b": 2,
+              "offset_b": 0,
+              "default": {
+                "Cst": 0
+              }
+            },
+            {
+              "name": "loopback",
+              "description": "line loopback configurations",
+              "size_b": 3,
+              "offset_b": 3,
+              "default": {
+                "Cst": 0
+              }
+            },
+            {
+              "name": "rate",
+              "description": "line rates",
+              "size_b": 8,
+              "offset_b": 6,
+              "default": {
+                "Cst": 0
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "reset",
+      "description": "different resets are available",
+      "offset": 917524,
+      "bytes_align": 4,
+      "range": 8,
+      "register": [
+        {
+          "name": "datapath",
+          "description": "progammable datapath resets",
+          "owner": "User",
+          "read_access": "Read",
+          "write_access": "Write",
+          "offset": 917524,
+          "default": {
+            "ParamsField": {
+              "params": [],
+              "name_val": [
+                [
+                  "gt_all",
+                  "'h0"
+                ],
+                [
+                  "tx_rst",
+                  "'h0"
+                ],
+                [
+                  "rx_rst",
+                  "'h0"
+                ]
+              ]
+            }
+          },
+          "field": [
+            {
+              "name": "gt_all",
+              "description": "line loopback configurations",
+              "size_b": 4,
+              "offset_b": 0,
+              "default": {
+                "Cst": 0
+              }
+            },
+            {
+              "name": "tx_rst",
+              "description": "line selection",
+              "size_b": 4,
+              "offset_b": 4,
+              "default": {
+                "Cst": 0
+              }
+            },
+            {
+              "name": "rx_rst",
+              "description": "line selection",
+              "size_b": 4,
+              "offset_b": 8,
+              "default": {
+                "Cst": 0
+              }
+            }
+          ]
+        },
+        {
+          "name": "monitor",
+          "description": "reset done monitoring",
+          "owner": "Kernel",
+          "read_access": "Read",
+          "write_access": "None",
+          "offset": 917528,
+          "default": {
+            "ParamsField": {
+              "params": [],
+              "name_val": [
+                [
+                  "rst_done",
+                  "'h0"
+                ]
+              ]
+            }
+          },
+          "field": [
+            {
+              "name": "rst_done",
+              "description": "rst done monitoring",
+              "size_b": 8,
+              "offset_b": 0,
+              "default": {
+                "Cst": 0
+              }
+            }
+          ]
         }
       ]
     }

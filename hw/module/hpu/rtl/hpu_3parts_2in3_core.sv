@@ -105,6 +105,9 @@ module hpu_3parts_2in3_core
   input ntt_proc_cmd_t                       ntt_proc_cmd,
   input logic                                ntt_proc_cmd_avail,
 
+  //-- For regif
+  output pep_rif_elt_t                       pep_rif_elt,
+
   // QSFP system interface
   // == TX
   output[LINE_NB-1:0][AXIS_TDATA_W-1:0  ] qsfp_tx_tdata,
@@ -130,8 +133,14 @@ module hpu_3parts_2in3_core
   input                     axis_tx_tvalid,
   output                    axis_tx_tready,
 
-  //-- For regif
-  output pep_rif_elt_t                       pep_rif_elt
+  // transceiver control
+  output [2:0]         gt_loopback,
+  output [7:0]         gt_line_rate,
+  output [LINE_NB-1:0] gt_reset_rx_datapath,
+  output [LINE_NB-1:0] gt_reset_tx_datapath,
+  output [LINE_NB-1:0] gt_reset_all,
+  input  [LINE_NB-1:0] gt_rx_reset_done,
+  input  [LINE_NB-1:0] gt_tx_reset_done
 );
 
 // ============================================================================================== --
@@ -448,9 +457,11 @@ module hpu_3parts_2in3_core
     .AXIS_TDATA_W(AXIS_TDATA_W),
     .AXIS_TKEEP_W(AXIS_TKEEP_W)
   ) dma (
+    // configration interface: regif
     .clk_eth_cfg   (clk_eth_cfg),
     .resetn_eth_cfg(resetn_eth_cfg),
 
+    // register interface
     .s_axil_dma_awaddr(s_axil_dma_awaddr),
     .s_axil_dma_awvalid(s_axil_dma_awvalid),
     .s_axil_dma_awready(s_axil_dma_awready),
@@ -469,6 +480,7 @@ module hpu_3parts_2in3_core
     .s_axil_dma_rvalid(s_axil_dma_rvalid),
     .s_axil_dma_rready(s_axil_dma_rready),
 
+    // directly from QSFP axi4-stream
     .qsfp_tx_tdata(qsfp_tx_tdata),
     .qsfp_tx_tkeep_user(qsfp_tx_tkeep_user),
     .qsfp_tx_tlast(qsfp_tx_tlast),
@@ -490,7 +502,15 @@ module hpu_3parts_2in3_core
     .axis_tx_tlast(axis_tx_tlast),
     .axis_tx_tvalid(axis_tx_tvalid),
     .axis_tx_tready(axis_tx_tready)
+
+    // gt control signals
+    .gt_loopback(gt_loopback),
+    .gt_line_rate(gt_line_rate),
+    .gt_reset_rx_datapath(gt_reset_rx_datapath),
+    .gt_reset_tx_datapath(gt_reset_tx_datapath),
+    .gt_reset_all(gt_reset_all),
+    .gt_rx_reset_done(gt_rx_reset_done),
+    .gt_tx_reset_done(gt_tx_reset_done)
   );
 
 endmodule
-

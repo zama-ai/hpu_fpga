@@ -67,7 +67,7 @@ module top_hpu #(
   input  logic [0:0]  top_hbm_ref_clk_1_clk_p,
   input  logic [0:0]  top_hbm_ref_clk_1_clk_n,
 
-  // Tranceivers --------------------------------------------------------------
+  // Transceivers --------------------------------------------------------------
   // bank 111: for use with GTM in the lower clock region X0Y7, GTM_QUAD_X0Y9
   input  logic [3:0] qsfp3_4x_grx_n,
   input  logic [3:0] qsfp3_4x_grx_p,
@@ -174,7 +174,7 @@ module top_hpu #(
   logic eth_cfg_clk;
   logic eth_cfg_srst_n;
 
-  // Tranceivers clocks
+  // Transceivers clocks
   logic ch0_tx_usr_clk;
   logic ch1_tx_usr_clk;
   logic ch2_tx_usr_clk;
@@ -585,23 +585,50 @@ module top_hpu #(
   logic [KSK_PC_MAX-1:0][AXI4_ARQOS_W-1:0]          m_axi4_ksk_arqos;
   logic [KSK_PC_MAX-1:0][AXI4_ARREGION_W-1:0]       m_axi4_ksk_arregion;
 
-  // DMA
-  logic [7:0]  gt_line_rate;
+  // ======================================================================= //
+  // Ethernet link: MRMAC, GTM and DMA
+  // ======================================================================= //
+  // mrmac axi4-stream interface
+  logic resetn_axis_mrmac;
+  logic clk_axis_mrmac;
+  // ----------------------------------------------------------------------- //
+  // coming from regif: dma
+  // ---------------------- //
+  // Line rate
   logic [31:0] SW_REG_GT_LINE_RATE;
-
-  // Ethernet
-  logic [3:0] rx_core_reset;
-  logic [3:0] rx_serdes_reset;
-  logic [3:0] tx_core_reset;
-  logic [3:0] tx_serdes_reset;
-
-  logic [3:0] gt_tx_reset_done_out;
-  logic [3:0] gt_rx_reset_done_out;
-  logic [3:0] mst_tx_dp_reset_out;
-  logic [3:0] mst_rx_dp_reset_out;
-
-  logic [3:0] rx_flexif_reset;
-
+  logic [7:0]         gt_line_rate;
+  // loopback
+  logic [2:0]         gt_loopback;
+  // asynchronous resets
+  logic [LINE_NB-1:0] gt_reset_rx_datapath;
+  logic [LINE_NB-1:0] gt_reset_tx_datapath;
+  logic [LINE_NB-1:0] gt_reset_all;
+  // reset monitoring
+  logic [LINE_NB-1:0] gt_rx_reset_done;
+  logic [LINE_NB-1:0] gt_tx_reset_done;
+  // ----------------------------------------------------------------------- //
+  // resets
+  //  ---- //
+  // built resets from reset monitoring
+  logic [LINE_NB-1:0] rx_core_reset;
+  logic [LINE_NB-1:0] rx_serdes_reset;
+  logic [LINE_NB-1:0] tx_core_reset;
+  logic [LINE_NB-1:0] tx_serdes_reset;
+  // flexible reset
+  logic [LINE_NB-1:0] rx_flexif_reset;
+  // ----------------------------------------------------------------------- //
+  // QSFP RX axi4-stream
+  logic [LINE_NB-1:0][AXIS_TDATA_W-1:0] qsfp_rx_tdata;
+  logic [LINE_NB-1:0][AXIS_TKEEP_W-1:0] qsfp_rx_tkeep_user;
+  logic [LINE_NB-1:0]                   qsfp_rx_tlast;
+  logic [LINE_NB-1:0]                   qsfp_rx_tvalid;
+  // QSFP TX axi4-stream
+  logic [LINE_NB-1:0][AXIS_TDATA_W-1:0] qsfp_tx_tdata;
+  logic [LINE_NB-1:0][AXIS_TKEEP_W-1:0] qsfp_tx_tkeep_user;
+  logic [LINE_NB-1:0]                   qsfp_tx_tlast;
+  logic [LINE_NB-1:0]                   qsfp_tx_tvalid;
+  logic [LINE_NB-1:0]                   qsfp_tx_tready;
+  // ----------------------------------------------------------------------- //
   // TODO: define what to do with statistics
   logic         stat_rx_aligned_0;
   logic         stat_rx_aligned_2;
@@ -776,23 +803,6 @@ module top_hpu #(
   logic [2:0]   stat_tx_pcs_bad_code_2;
   logic [2:0]   stat_tx_pcs_bad_code_3;
 
-  //TODO: TBD with dma
-  logic resetn_axis_mrmac;
-  logic clk_axis_mrmac;
-
-  logic [LINE_NB-1:0][AXIS_TDATA_W-1:0] qsfp_rx_tdata;
-  logic [LINE_NB-1:0][AXIS_TKEEP_W-1:0] qsfp_rx_tkeep_user;
-  logic [LINE_NB-1:0]                   qsfp_rx_tlast;
-  logic [LINE_NB-1:0]                   qsfp_rx_tvalid;
-
-  logic [LINE_NB-1:0][AXIS_TDATA_W-1:0] qsfp_tx_tdata;
-  logic [LINE_NB-1:0][AXIS_TKEEP_W-1:0] qsfp_tx_tkeep_user;
-  logic [LINE_NB-1:0]                   qsfp_tx_tlast;
-  logic [LINE_NB-1:0]                   qsfp_tx_tvalid;
-  logic [LINE_NB-1:0]                   qsfp_tx_tready;
-
-  logic [2:0] gt_loopback;
-
   // =========================================================================================== //
   // Connections
   // =========================================================================================== //
@@ -825,12 +835,15 @@ module top_hpu #(
   assign isc_ack_rdy         = axis_s_rx_tready;
 
   // core and Serdes Resets
-  assign rx_core_reset   = {~gt_rx_reset_done_out[3],~gt_rx_reset_done_out[2],~gt_rx_reset_done_out[1],~gt_rx_reset_done_out[0]};
-  assign rx_serdes_reset = {~gt_rx_reset_done_out[3],~gt_rx_reset_done_out[2],~gt_rx_reset_done_out[1],~gt_rx_reset_done_out[0]};
-  assign tx_core_reset   = {~gt_tx_reset_done_out[3],~gt_tx_reset_done_out[2],~gt_tx_reset_done_out[1],~gt_tx_reset_done_out[0]};
-  assign tx_serdes_reset = {~gt_tx_reset_done_out[3],~gt_tx_reset_done_out[2],~gt_tx_reset_done_out[1],~gt_tx_reset_done_out[0]};
+  assign rx_core_reset   = {~gt_rx_reset_done[3],~gt_rx_reset_done[2],~gt_rx_reset_done[1],~gt_rx_reset_done[0]};
+  assign rx_serdes_reset = {~gt_rx_reset_done[3],~gt_rx_reset_done[2],~gt_rx_reset_done[1],~gt_rx_reset_done[0]};
+  assign tx_core_reset   = {~gt_tx_reset_done[3],~gt_tx_reset_done[2],~gt_tx_reset_done[1],~gt_tx_reset_done[0]};
+  assign tx_serdes_reset = {~gt_tx_reset_done[3],~gt_tx_reset_done[2],~gt_tx_reset_done[1],~gt_tx_reset_done[0]};
 
   assign rx_flexif_reset = {4{~eth_cfg_srst_n}};
+
+  // line rate
+  assign SW_REG_GT_LINE_RATE = {gt_line_rate, gt_line_rate, gt_line_rate, gt_line_rate};
 
   // =========================================================================================== //
   // SHELL
@@ -2275,7 +2288,7 @@ module top_hpu #(
     .ETH_AXI_2_awprot   (axi_eth_dma_awprot),
     .ETH_AXI_2_wstrb    (axi_eth_dma_wstrb),
 
-    /* Tranceivers ------------------------------------------------------------------- //
+    /* Transceivers ------------------------------------------------------------------- //
      * -> GTM for one QSFP port
      * -> NRZ modulation
      * -> four lanes
@@ -2296,7 +2309,7 @@ module top_hpu #(
     .ch1_rxusrclk    (ch1_rx_usr_clk2),
     .ch2_rxusrclk    (ch2_rx_usr_clk2),
     .ch3_rxusrclk    (ch3_rx_usr_clk2),
-    // oputput clocks from bufg
+    // output clocks from bufg
     .ch0_tx_usr_clk  (ch0_tx_usr_clk),
     .ch0_tx_usr_clk2 (ch0_tx_usr_clk2),
     .ch0_rx_usr_clk  (ch0_rx_usr_clk),
@@ -2407,12 +2420,12 @@ module top_hpu #(
     // flexible interface
     .rx_flexif_reset  (rx_flexif_reset),
     // GT
-    .gt_tx_reset_done_out    (gt_tx_reset_done_out),
-    .gt_rx_reset_done_out    (gt_rx_reset_done_out),
+    .gt_tx_reset_done_out    (gt_tx_reset_done),
+    .gt_rx_reset_done_out    (gt_rx_reset_done),
     // programmable resets
-    .gt_reset_all_in         (gt_reset_all_in),
-    .gt_reset_tx_datapath_in (gt_reset_tx_datapath_in),
-    .gt_reset_rx_datapath_in (gt_reset_rx_datapath_in),
+    .gt_reset_all_in         (gt_reset_all),
+    .gt_reset_tx_datapath_in (gt_reset_tx_datapath),
+    .gt_reset_rx_datapath_in (gt_reset_rx_datapath),
     //  ---------------------------------- control ----------------------------------- //
     .gtpowergood_in          (gtpowergood_in),
     // performance monitoring
@@ -2651,12 +2664,6 @@ module top_hpu #(
     .sys_clk0_1_clk_n(top_sys_clk0_1_clk_n),
     .sys_clk0_1_clk_p(top_sys_clk0_1_clk_p)
   );
-
-//=====================================
-// DMA
-//=====================================
-  // GTM line rate is defined from RPU using axi-lite
-  assign SW_REG_GT_LINE_RATE = {gt_line_rate, gt_line_rate, gt_line_rate, gt_line_rate};
 
 //=====================================
 // HPU
@@ -3015,7 +3022,15 @@ module top_hpu #(
     .axis_tx_tkeep_user(axis_tx_tkeep_user),
     .axis_tx_tlast(axis_tx_tlast),
     .axis_tx_tvalid(axis_tx_tvalid),
-    .axis_tx_tready(axis_tx_tready)
+    .axis_tx_tready(axis_tx_tready),
+
+    .gt_loopback(gt_loopback),
+    .gt_line_rate(gt_line_rate),
+    .gt_reset_rx_datapath(gt_reset_rx_datapath),
+    .gt_reset_tx_datapath(gt_reset_tx_datapath),
+    .gt_reset_all(gt_reset_all),
+    .gt_rx_reset_done(gt_rx_reset_done),
+    .gt_tx_reset_done(gt_tx_reset_done)
   );
 
 endmodule

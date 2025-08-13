@@ -114,6 +114,14 @@ module hpu_3parts
   input                     axis_tx_tlast,
   input                     axis_tx_tvalid,
   output                    axis_tx_tready,
+  // transceiver control
+  output [2:0]         gt_loopback,
+  output [7:0]         gt_line_rate,
+  output [LINE_NB-1:0] gt_reset_rx_datapath,
+  output [LINE_NB-1:0] gt_reset_tx_datapath,
+  output [LINE_NB-1:0] gt_reset_all,
+  input  [LINE_NB-1:0] gt_rx_reset_done,
+  input  [LINE_NB-1:0] gt_tx_reset_done
 
   //== AXI stream for ISC
   input  logic [PE_INST_W-1:0] isc_dop,
@@ -601,7 +609,16 @@ module hpu_3parts
     .axis_tx_tkeep_user(axis_tx_tkeep_user),
     .axis_tx_tlast(axis_tx_tlast),
     .axis_tx_tvalid(axis_tx_tvalid),
-    .axis_tx_tready(axis_tx_tready)
+    .axis_tx_tready(axis_tx_tready),
+
+    .gt_loopback(gt_loopback),
+    .gt_line_rate(gt_line_rate),
+    .gt_reset_rx_datapath(gt_reset_rx_datapath),
+    .gt_reset_tx_datapath(gt_reset_tx_datapath),
+    .gt_reset_all(gt_reset_all),
+    .gt_rx_reset_done(gt_rx_reset_done),
+    .gt_tx_reset_done(gt_tx_reset_done)
+
   );
 
 // ============================================================================================== --

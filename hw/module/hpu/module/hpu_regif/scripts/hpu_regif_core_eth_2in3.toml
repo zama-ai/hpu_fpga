@@ -40,12 +40,35 @@ offset= 0x0
 
 # =====================================================================================================================
 [section.line]
-description="line selection, possible values are 0, 1, 2, 3"
 offset= 0x10
+description="Line parameter sections"
 
-[section.line.register.select]
-  description="ethernet line selection for direct link"
+[section.line.register.parameter]
+  description="Different parameters for qsfp lines"
   owner="User"
   read_access="Read"
   write_access="Write"
-  default={Cst=0x00000000}
+  field.rate      = {size_b=8, offset_b=6, default={Cst=0x0}, description="line rates"}
+  field.loopback  = {size_b=3, offset_b=3, default={Cst=0x0}, description="line loopback configurations"}
+  field.select    = {size_b=2, offset_b=0, default={Cst=0x0}, description="line selection"}
+
+# =====================================================================================================================
+[section.reset]
+offset= 0x14
+description="different resets are available"
+
+[section.reset.register.datapath]
+  description="programmable datapath resets"
+  owner="User"
+  read_access="Read"
+  write_access="Write"
+  field.rx_rst={size_b=4, offset_b=8, default={Cst=0x0}, description="line selection"}
+  field.tx_rst={size_b=4, offset_b=4, default={Cst=0x0}, description="line selection"}
+  field.gt_all={size_b=4, offset_b=0, default={Cst=0x0}, description="line loopback configurations"}
+
+[section.reset.register.monitor]
+  description="reset done monitoring"
+  owner="Kernel"
+  read_access="Read"
+  write_access="None"
+  field.rst_done={size_b=8, offset_b=0, default={Cst=0x0}, description="rst done monitoring"}

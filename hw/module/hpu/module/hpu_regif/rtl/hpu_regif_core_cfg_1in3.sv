@@ -12,17 +12,17 @@
 //  | [n] optional generate read notification (have a _rd_en)
 //  | Write options
 //  | [n] optional generate wr notification (have a _wr_en)
-//
+// 
 // Thus type of registers are:
-// uRW  : Read-write
+// uRW  : Read-write                                              
 //      : Value provided by the host. The host can read it and write it.
-// uW   : Write-only
+// uW   : Write-only                                              
 //      : Value provided by the host. The host can only write it.
-// uWn  : Write-only with notification
+// uWn  : Write-only with notification                            
 //      : Value provided by the host. The host can only write it.
-// kR   : Read-only register
+// kR   : Read-only register                                      
 //      : Value provided by the RTL.
-// kRn  : Read-only register with notification  (rd)
+// kRn  : Read-only register with notification  (rd)              
 //      : Value provided by the RTL.
 // kRWn : Read-only register with notification (wr)
 //      : Value provided by the RTL. The host can read it. The write data is processed by the RTL.
@@ -30,8 +30,8 @@
 //      : Value provided by the RTL. The host can read it with notify. The write data is processed by the RTL.
 // ============================================================================================== //
 module hpu_regif_core_cfg_1in3
-import axi_if_shell_axil_pkg::*;
 import axi_if_common_param_pkg::*;
+import axi_if_shell_axil_pkg::*;
 import hpu_regif_core_cfg_1in3_pkg::*;
 #(
     parameter int VERSION_MAJOR = 0,

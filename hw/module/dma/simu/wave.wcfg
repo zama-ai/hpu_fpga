@@ -1,0 +1,261 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<wave_config>
+   <wave_state>
+   </wave_state>
+   <db_ref_list>
+      <db_ref path="/home/lsainati/Documents/projects/hpu_fpga_internal/hw/output/xsim/tb_dma/wave.wdb" id="1">
+         <top_modules>
+            <top_module name="axi_if_common_param_pkg" />
+            <top_module name="axi_if_shell_axil_pkg" />
+            <top_module name="glbl" />
+            <top_module name="hpu_regif_core_eth_2in3_pkg" />
+            <top_module name="tb_dma" />
+         </top_modules>
+      </db_ref>
+   </db_ref_list>
+   <zoom_setting>
+      <ZoomStartTime time="0.000 ns"></ZoomStartTime>
+      <ZoomEndTime time="531.001 ns"></ZoomEndTime>
+      <Cursor1Time time="91.000 ns"></Cursor1Time>
+   </zoom_setting>
+   <column_width_setting>
+      <NameColumnWidth column_width="276"></NameColumnWidth>
+      <ValueColumnWidth column_width="76"></ValueColumnWidth>
+   </column_width_setting>
+   <WVObjectSize size="57" />
+   <wvobject fp_name="divider47" type="divider">
+      <obj_property name="label">system if</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/tb_dma/dut/clk_eth_cfg">
+      <obj_property name="ElementShortName">clk_eth_cfg</obj_property>
+      <obj_property name="ObjectShortName">clk_eth_cfg</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/tb_dma/dut/resetn_eth_cfg">
+      <obj_property name="ElementShortName">resetn_eth_cfg</obj_property>
+      <obj_property name="ObjectShortName">resetn_eth_cfg</obj_property>
+   </wvobject>
+   <wvobject fp_name="divider48" type="divider">
+      <obj_property name="label">axi4-lite</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/tb_dma/dut/s_axil_dma_awaddr">
+      <obj_property name="ElementShortName">s_axil_dma_awaddr[19:0]</obj_property>
+      <obj_property name="ObjectShortName">s_axil_dma_awaddr[19:0]</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/tb_dma/dut/s_axil_dma_awvalid">
+      <obj_property name="ElementShortName">s_axil_dma_awvalid</obj_property>
+      <obj_property name="ObjectShortName">s_axil_dma_awvalid</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/tb_dma/dut/s_axil_dma_awready">
+      <obj_property name="ElementShortName">s_axil_dma_awready</obj_property>
+      <obj_property name="ObjectShortName">s_axil_dma_awready</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/tb_dma/dut/s_axil_dma_wdata">
+      <obj_property name="ElementShortName">s_axil_dma_wdata[31:0]</obj_property>
+      <obj_property name="ObjectShortName">s_axil_dma_wdata[31:0]</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/tb_dma/dut/s_axil_dma_wstrb">
+      <obj_property name="ElementShortName">s_axil_dma_wstrb[3:0]</obj_property>
+      <obj_property name="ObjectShortName">s_axil_dma_wstrb[3:0]</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/tb_dma/dut/s_axil_dma_wvalid">
+      <obj_property name="ElementShortName">s_axil_dma_wvalid</obj_property>
+      <obj_property name="ObjectShortName">s_axil_dma_wvalid</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/tb_dma/dut/s_axil_dma_wready">
+      <obj_property name="ElementShortName">s_axil_dma_wready</obj_property>
+      <obj_property name="ObjectShortName">s_axil_dma_wready</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/tb_dma/dut/s_axil_dma_bresp">
+      <obj_property name="ElementShortName">s_axil_dma_bresp[1:0]</obj_property>
+      <obj_property name="ObjectShortName">s_axil_dma_bresp[1:0]</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/tb_dma/dut/s_axil_dma_bvalid">
+      <obj_property name="ElementShortName">s_axil_dma_bvalid</obj_property>
+      <obj_property name="ObjectShortName">s_axil_dma_bvalid</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/tb_dma/dut/s_axil_dma_bready">
+      <obj_property name="ElementShortName">s_axil_dma_bready</obj_property>
+      <obj_property name="ObjectShortName">s_axil_dma_bready</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/tb_dma/dut/s_axil_dma_araddr">
+      <obj_property name="ElementShortName">s_axil_dma_araddr[19:0]</obj_property>
+      <obj_property name="ObjectShortName">s_axil_dma_araddr[19:0]</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/tb_dma/dut/s_axil_dma_arvalid">
+      <obj_property name="ElementShortName">s_axil_dma_arvalid</obj_property>
+      <obj_property name="ObjectShortName">s_axil_dma_arvalid</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/tb_dma/dut/s_axil_dma_arready">
+      <obj_property name="ElementShortName">s_axil_dma_arready</obj_property>
+      <obj_property name="ObjectShortName">s_axil_dma_arready</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/tb_dma/dut/s_axil_dma_rdata">
+      <obj_property name="ElementShortName">s_axil_dma_rdata[31:0]</obj_property>
+      <obj_property name="ObjectShortName">s_axil_dma_rdata[31:0]</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/tb_dma/dut/s_axil_dma_rresp">
+      <obj_property name="ElementShortName">s_axil_dma_rresp[1:0]</obj_property>
+      <obj_property name="ObjectShortName">s_axil_dma_rresp[1:0]</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/tb_dma/dut/s_axil_dma_rvalid">
+      <obj_property name="ElementShortName">s_axil_dma_rvalid</obj_property>
+      <obj_property name="ObjectShortName">s_axil_dma_rvalid</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/tb_dma/dut/s_axil_dma_rready">
+      <obj_property name="ElementShortName">s_axil_dma_rready</obj_property>
+      <obj_property name="ObjectShortName">s_axil_dma_rready</obj_property>
+   </wvobject>
+   <wvobject fp_name="divider48" type="divider">
+      <obj_property name="label">qsfp</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/tb_dma/dut/qsfp_tx_tdata">
+      <obj_property name="ElementShortName">qsfp_tx_tdata[3:0][63:0]</obj_property>
+      <obj_property name="ObjectShortName">qsfp_tx_tdata[3:0][63:0]</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/tb_dma/dut/qsfp_tx_tkeep_user">
+      <obj_property name="ElementShortName">qsfp_tx_tkeep_user[3:0][10:0]</obj_property>
+      <obj_property name="ObjectShortName">qsfp_tx_tkeep_user[3:0][10:0]</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/tb_dma/dut/qsfp_tx_tlast">
+      <obj_property name="ElementShortName">qsfp_tx_tlast[3:0]</obj_property>
+      <obj_property name="ObjectShortName">qsfp_tx_tlast[3:0]</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/tb_dma/dut/qsfp_tx_tvalid">
+      <obj_property name="ElementShortName">qsfp_tx_tvalid[3:0]</obj_property>
+      <obj_property name="ObjectShortName">qsfp_tx_tvalid[3:0]</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/tb_dma/dut/qsfp_tx_tready">
+      <obj_property name="ElementShortName">qsfp_tx_tready[3:0]</obj_property>
+      <obj_property name="ObjectShortName">qsfp_tx_tready[3:0]</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/tb_dma/dut/qsfp_rx_tdata">
+      <obj_property name="ElementShortName">qsfp_rx_tdata[3:0][63:0]</obj_property>
+      <obj_property name="ObjectShortName">qsfp_rx_tdata[3:0][63:0]</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/tb_dma/dut/qsfp_rx_tkeep_user">
+      <obj_property name="ElementShortName">qsfp_rx_tkeep_user[3:0][10:0]</obj_property>
+      <obj_property name="ObjectShortName">qsfp_rx_tkeep_user[3:0][10:0]</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/tb_dma/dut/qsfp_rx_tlast">
+      <obj_property name="ElementShortName">qsfp_rx_tlast[3:0]</obj_property>
+      <obj_property name="ObjectShortName">qsfp_rx_tlast[3:0]</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/tb_dma/dut/qsfp_rx_tvalid">
+      <obj_property name="ElementShortName">qsfp_rx_tvalid[3:0]</obj_property>
+      <obj_property name="ObjectShortName">qsfp_rx_tvalid[3:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="divider48" type="divider">
+      <obj_property name="label">axi4-stream</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/tb_dma/dut/axis_rx_tdata">
+      <obj_property name="ElementShortName">axis_rx_tdata[63:0]</obj_property>
+      <obj_property name="ObjectShortName">axis_rx_tdata[63:0]</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/tb_dma/dut/axis_rx_tkeep_user">
+      <obj_property name="ElementShortName">axis_rx_tkeep_user[10:0]</obj_property>
+      <obj_property name="ObjectShortName">axis_rx_tkeep_user[10:0]</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/tb_dma/dut/axis_rx_tlast">
+      <obj_property name="ElementShortName">axis_rx_tlast</obj_property>
+      <obj_property name="ObjectShortName">axis_rx_tlast</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/tb_dma/dut/axis_rx_tvalid">
+      <obj_property name="ElementShortName">axis_rx_tvalid</obj_property>
+      <obj_property name="ObjectShortName">axis_rx_tvalid</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/tb_dma/dut/axis_tx_tdata">
+      <obj_property name="ElementShortName">axis_tx_tdata[63:0]</obj_property>
+      <obj_property name="ObjectShortName">axis_tx_tdata[63:0]</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/tb_dma/dut/axis_tx_tkeep_user">
+      <obj_property name="ElementShortName">axis_tx_tkeep_user[10:0]</obj_property>
+      <obj_property name="ObjectShortName">axis_tx_tkeep_user[10:0]</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/tb_dma/dut/axis_tx_tlast">
+      <obj_property name="ElementShortName">axis_tx_tlast</obj_property>
+      <obj_property name="ObjectShortName">axis_tx_tlast</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/tb_dma/dut/axis_tx_tvalid">
+      <obj_property name="ElementShortName">axis_tx_tvalid</obj_property>
+      <obj_property name="ObjectShortName">axis_tx_tvalid</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/tb_dma/dut/axis_tx_tready">
+      <obj_property name="ElementShortName">axis_tx_tready</obj_property>
+      <obj_property name="ObjectShortName">axis_tx_tready</obj_property>
+   </wvobject>
+   <wvobject fp_name="divider48" type="divider">
+      <obj_property name="label">registers</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/tb_dma/dut/hpu_regif_core_eth_2in3/r_line_parameter">
+      <obj_property name="ElementShortName">r_line_parameter</obj_property>
+      <obj_property name="ObjectShortName">r_line_parameter</obj_property>
+      <obj_property name="isExpanded"></obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/tb_dma/dut/hpu_regif_core_eth_2in3/r_reset_datapath">
+      <obj_property name="ElementShortName">r_reset_datapath</obj_property>
+      <obj_property name="ObjectShortName">r_reset_datapath</obj_property>
+      <obj_property name="isExpanded"></obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/tb_dma/dut/hpu_regif_core_eth_2in3/r_reset_monitor">
+      <obj_property name="ElementShortName">r_reset_monitor</obj_property>
+      <obj_property name="ObjectShortName">r_reset_monitor</obj_property>
+      <obj_property name="isExpanded"></obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/tb_dma/dut/gt_loopback">
+      <obj_property name="ElementShortName">gt_loopback[2:0]</obj_property>
+      <obj_property name="ObjectShortName">gt_loopback[2:0]</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/tb_dma/dut/gt_line_rate">
+      <obj_property name="ElementShortName">gt_line_rate[7:0]</obj_property>
+      <obj_property name="ObjectShortName">gt_line_rate[7:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="divider48" type="divider">
+      <obj_property name="label">outputs</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/tb_dma/dut/gt_loopback">
+      <obj_property name="ElementShortName">gt_loopback[2:0]</obj_property>
+      <obj_property name="ObjectShortName">gt_loopback[2:0]</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/tb_dma/dut/gt_line_rate">
+      <obj_property name="ElementShortName">gt_line_rate[7:0]</obj_property>
+      <obj_property name="ObjectShortName">gt_line_rate[7:0]</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/tb_dma/dut/gt_reset_rx_datapath">
+      <obj_property name="ElementShortName">gt_reset_rx_datapath[3:0]</obj_property>
+      <obj_property name="ObjectShortName">gt_reset_rx_datapath[3:0]</obj_property>
+      <obj_property name="Radix">BINARYRADIX</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/tb_dma/dut/gt_reset_tx_datapath">
+      <obj_property name="ElementShortName">gt_reset_tx_datapath[3:0]</obj_property>
+      <obj_property name="ObjectShortName">gt_reset_tx_datapath[3:0]</obj_property>
+      <obj_property name="Radix">BINARYRADIX</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/tb_dma/dut/gt_reset_all">
+      <obj_property name="ElementShortName">gt_reset_all[3:0]</obj_property>
+      <obj_property name="ObjectShortName">gt_reset_all[3:0]</obj_property>
+      <obj_property name="Radix">BINARYRADIX</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/tb_dma/tdata">
+      <obj_property name="ElementShortName">tdata[4:0][63:0]</obj_property>
+      <obj_property name="ObjectShortName">tdata[4:0][63:0]</obj_property>
+      <obj_property name="isExpanded"></obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/tb_dma/tkeep_user">
+      <obj_property name="ElementShortName">tkeep_user[4:0][10:0]</obj_property>
+      <obj_property name="ObjectShortName">tkeep_user[4:0][10:0]</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/tb_dma/tlast">
+      <obj_property name="ElementShortName">tlast[4:0]</obj_property>
+      <obj_property name="ObjectShortName">tlast[4:0]</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/tb_dma/tvalid">
+      <obj_property name="ElementShortName">tvalid[4:0]</obj_property>
+      <obj_property name="ObjectShortName">tvalid[4:0]</obj_property>
+   </wvobject>
+</wave_config>

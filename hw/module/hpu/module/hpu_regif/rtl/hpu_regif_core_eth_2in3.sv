@@ -12,17 +12,17 @@
 //  | [n] optional generate read notification (have a _rd_en)
 //  | Write options
 //  | [n] optional generate wr notification (have a _wr_en)
-//
+// 
 // Thus type of registers are:
-// uRW  : Read-write
+// uRW  : Read-write                                              
 //      : Value provided by the host. The host can read it and write it.
-// uW   : Write-only
+// uW   : Write-only                                              
 //      : Value provided by the host. The host can only write it.
-// uWn  : Write-only with notification
+// uWn  : Write-only with notification                            
 //      : Value provided by the host. The host can only write it.
-// kR   : Read-only register
+// kR   : Read-only register                                      
 //      : Value provided by the RTL.
-// kRn  : Read-only register with notification  (rd)
+// kRn  : Read-only register with notification  (rd)              
 //      : Value provided by the RTL.
 // kRWn : Read-only register with notification (wr)
 //      : Value provided by the RTL. The host can read it. The write data is processed by the RTL.
@@ -55,8 +55,13 @@ import hpu_regif_core_eth_2in3_pkg::*;
   input  logic                          s_axil_rready,
   // Registered version of wdata
   output logic [AXIL_DATA_W-1:0]        r_axil_wdata
-  // Register IO: line_select
-    , output logic [REG_DATA_W-1: 0] r_line_select
+  // Register IO: line_parameter
+    , output line_parameter_t r_line_parameter
+  // Register IO: reset_datapath
+    , output reset_datapath_t r_reset_datapath
+  // Register IO: reset_monitor
+    , output reset_monitor_t r_reset_monitor
+        , input reset_monitor_t r_reset_monitor_upd
 );
 // ============================================================================================== --
 // localparam
@@ -198,23 +203,64 @@ import hpu_regif_core_eth_2in3_pkg::*;
 //-- Default entry_eth_2in3_dummy_val3
   logic [REG_DATA_W-1:0]entry_eth_2in3_dummy_val3_default;
   assign entry_eth_2in3_dummy_val3_default = 'h35353535;
-//-- Default line_select
-  logic [REG_DATA_W-1:0]line_select_default;
-  assign line_select_default = 'h0;
+//-- Default line_parameter
+  line_parameter_t line_parameter_default;
+  always_comb begin
+    line_parameter_default = 'h0;
+    line_parameter_default.select = 'h0;
+    line_parameter_default.loopback = 'h0;
+    line_parameter_default.rate = 'h0;
+  end
+//-- Default reset_datapath
+  reset_datapath_t reset_datapath_default;
+  always_comb begin
+    reset_datapath_default = 'h0;
+    reset_datapath_default.gt_all = 'h0;
+    reset_datapath_default.tx_rst = 'h0;
+    reset_datapath_default.rx_rst = 'h0;
+  end
+//-- Default reset_monitor
+  reset_monitor_t reset_monitor_default;
+  always_comb begin
+    reset_monitor_default = 'h0;
+    reset_monitor_default.rst_done = 'h0;
+  end
 // ============================================================================================== --
 // Write reg
 // ============================================================================================== --
   // To ease the code, use REG_DATA_W as register size.
   // Unused bits will be simplified by the synthesizer
-// Register FF: line_select
-  logic [REG_DATA_W-1:0] r_line_selectD;
-  assign r_line_selectD = (wr_en_ok && (wr_add[AXIL_ADD_RANGE_W-1:0] == LINE_SELECT_OFS[AXIL_ADD_RANGE_W-1:0]))? wr_data: r_line_select;
+// Register FF: line_parameter
+  logic [REG_DATA_W-1:0] r_line_parameterD;
+  assign r_line_parameterD = (wr_en_ok && (wr_add[AXIL_ADD_RANGE_W-1:0] == LINE_PARAMETER_OFS[AXIL_ADD_RANGE_W-1:0]))? wr_data: r_line_parameter;
   always_ff @(posedge clk) begin
     if (!s_rst_n) begin
-      r_line_select       <= line_select_default;
+      r_line_parameter       <= line_parameter_default;
     end
     else begin
-      r_line_select       <= r_line_selectD;
+      r_line_parameter       <= r_line_parameterD;
+    end
+  end
+// Register FF: reset_datapath
+  logic [REG_DATA_W-1:0] r_reset_datapathD;
+  assign r_reset_datapathD = (wr_en_ok && (wr_add[AXIL_ADD_RANGE_W-1:0] == RESET_DATAPATH_OFS[AXIL_ADD_RANGE_W-1:0]))? wr_data: r_reset_datapath;
+  always_ff @(posedge clk) begin
+    if (!s_rst_n) begin
+      r_reset_datapath       <= reset_datapath_default;
+    end
+    else begin
+      r_reset_datapath       <= r_reset_datapathD;
+    end
+  end
+// Register FF: reset_monitor
+  logic [REG_DATA_W-1:0] r_reset_monitorD;
+  assign r_reset_monitorD       = r_reset_monitor_upd;
+  always_ff @(posedge clk) begin
+    if (!s_rst_n) begin
+      r_reset_monitor       <= reset_monitor_default;
+    end
+    else begin
+      r_reset_monitor       <= r_reset_monitorD;
     end
   end
 // ============================================================================================== --
@@ -248,8 +294,14 @@ import hpu_regif_core_eth_2in3_pkg::*;
           ENTRY_ETH_2IN3_DUMMY_VAL3_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register entry_eth_2in3_dummy_val3
             axil_rdataD = entry_eth_2in3_dummy_val3_default;
           end
-          LINE_SELECT_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register line_select
-            axil_rdataD = r_line_select;
+          LINE_PARAMETER_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register line_parameter
+            axil_rdataD = r_line_parameter;
+          end
+          RESET_DATAPATH_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register reset_datapath
+            axil_rdataD = r_reset_datapath;
+          end
+          RESET_MONITOR_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register reset_monitor
+            axil_rdataD = r_reset_monitor;
           end
           default:
             axil_rdataD = REG_DATA_W'('h0BAD_ADD1); // Default value

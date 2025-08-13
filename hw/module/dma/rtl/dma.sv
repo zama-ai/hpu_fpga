@@ -5,12 +5,6 @@
 // Description  : Top of DMA
 // ----------------------------------------------------------------------------------------------
 //
-// General info on the module.
-//
-// Parameters : Describes the parameters.
-//
-// Prerequisites : Describes the conditions on the inputs.
-//
 // ==============================================================================================
 
 module dma
@@ -56,42 +50,57 @@ module dma
   input [LINE_NB-1:0]                     qsfp_rx_tvalid,
   // axi4-stream interface to fifo --------------------------------------------
   // == RX
-  output [AXIS_TDATA_W-1:0]  axis_rx_tdata,
+  output [AXIS_TDATA_W-1:0] axis_rx_tdata,
   output [AXIS_TKEEP_W-1:0] axis_rx_tkeep_user,
   output                    axis_rx_tlast,
   output                    axis_rx_tvalid,
   // == TX
-  input  [AXIS_TDATA_W-1:0]  axis_tx_tdata,
+  input  [AXIS_TDATA_W-1:0] axis_tx_tdata,
   input  [AXIS_TKEEP_W-1:0] axis_tx_tkeep_user,
   input                     axis_tx_tlast,
   input                     axis_tx_tvalid,
-  output                    axis_tx_tready
-);
+  output                    axis_tx_tready,
 
-
-  logic [$clog2(LINE_NB):0] r_line_select;
-
-  logic [LINE_NB-1:0] gt_reset_tx_datapath_in;
-  logic [LINE_NB-1:0] gt_reset_rx_datapath_in;
-  logic [LINE_NB-1:0] gt_reset_all_in;
-
-  logic [7:0] gt_line_rate;
-
+  // control interface --------------------------------------------------------
   // loopback mode, will be applied to all channels
   //  * 000: disabled
   //  * 010: near end pma
   //  * 100: near end pcs
-  logic [2:0] gt_loopback;
+  output [2:0] gt_loopback,
+  // Line rate TBD
+  output [7:0] gt_line_rate,
+  // resets
+  output [LINE_NB-1:0] gt_reset_rx_datapath,
+  output [LINE_NB-1:0] gt_reset_tx_datapath,
+  output [LINE_NB-1:0] gt_reset_all,
+  input  [LINE_NB-1:0] gt_rx_reset_done,
+  input  [LINE_NB-1:0] gt_tx_reset_done
+);
 
+  // ============================================================================================ --
+  // Signal
+  // ============================================================================================ --
+  logic [$clog2(LINE_NB):0] line_sel;
 
+  // ============================================================================================ //
+  // Register file
+  // =============
   // What needs to be controlled through axi4-lite
-  //  = MRMAC
-  //  * line selection
-  //  * rx/tx datapath reset
-  //  * GT PLL and datapath reset
-  //  = GTM
-  //  * channel line rate
-  //  * loopback
+  //  = MRMAC =================================================================
+  //  * line selection            : 3b : rw : line_select
+  //  * rx datapath reset         : 4b : rw : gt_reset_rx_datapath
+  //  * tx datapath reset         : 4b : rw : gt_reset_tx_datapath
+  //  * GT PLL and datapath reset : 4b : rw : gt_reset_all
+  //  * reset done monitoring     : 8b : r  : gt_{rx;tx}_reset_done
+  //  = GTM ===================================================================
+  //  * channel line rate         : 8b : rw : gt_line_rate
+  //  * loopback                  : 3b : rw : gt_loopback
+  // ============================================================================================ //
+  // Registers
+  logic [31:0] r_line_parameter;
+  logic [31:0] r_reset_datapath;
+  logic [31:0] r_reset_monitor;
+  // -------------------------------------------------------------------------------------------- //
   hpu_regif_core_eth_2in3  hpu_regif_core_eth_2in3 (
     // configuration interface
     .clk    (clk_eth_cfg),
@@ -117,9 +126,17 @@ module dma
     .r_axil_wdata  (/* */),
 
     // control signals
-    .r_line_select(r_line_select)
+    .r_line_parameter(r_line_parameter),
+    .r_reset_datapath(r_reset_datapath),
+    .r_reset_monitor_upd(r_reset_monitor)
   );
 
+  // ============================================================================================ //
+  // AXI4-stream switch
+  // ==================
+  // depending on line_sel signal, selects and outputs the correct line
+  // this module is fully combinatory
+  // ============================================================================================ //
   axis_switch # (
     .LINE_NB            (LINE_NB),
     .AXIS_TDATA_W       (AXIS_TDATA_W),
@@ -147,7 +164,20 @@ module dma
     .axis_tx_tvalid     (axis_tx_tvalid),
     .axis_tx_tready     (axis_tx_tready),
 
-    .line_sel(r_line_select)
+    .line_sel(line_sel)
   );
+
+  // assigning outputs
+  assign line_sel      = r_line_parameter[1:0];
+  assign gt_loopback   = r_line_parameter[4:2];
+  assign gt_line_rate  = r_line_parameter[14:5];
+
+  assign gt_reset_all         = r_reset_datapath[3:0];
+  assign gt_reset_tx_datapath = r_reset_datapath[7:4];
+  assign gt_reset_rx_datapath = r_reset_datapath[11:8];
+
+  assign r_reset_monitor[3:0] = gt_tx_reset_done;
+  assign r_reset_monitor[7:4] = gt_rx_reset_done;
+  assign r_reset_monitor[31:8] = 'h0;
 
 endmodule

@@ -1,10 +1,10 @@
 # HPU_REGIF_CORE documentation
-**Date**: 2025-08-12
-**Tool Version**: bb0db737792da6b81e69a039028c971af1627fe2
+**Date**: 2025-08-12  
+**Tool Version**: bb0db737792da6b81e69a039028c971af1627fe2  
 
 ## RegisterMap Overview
 
-**Module Name**: hpu_regif_core
+**Module Name**: hpu_regif_core  
 **Description**: HPU top-level register interface. Used by the host to retrieve design information, and to configure it.
 
 HPU top-level register interface. Used by the host to retrieve design information, and to configure it.
@@ -13,11 +13,11 @@ HPU top-level register interface. Used by the host to retrieve design informatio
 
 HPU top-level register interface. Used by the host to retrieve design information, and to configure it.
 
-HPU ethernet configuration register interface. Will be accessed by RPU to define registers.
-**Offset**: 0x80000
+HPU ethernet configuration register interface. Will be accessed by RPU to define registers.  
+**Offset**: 0x80000 
 **Range**: 0x70000
-**Word Size (b)**: 32
-**External Packages**: "axi_if_shell_axil_pkg.sv","axi_if_common_param_pkg.sv"
+**Word Size (b)**: 32  
+**External Packages**: "axi_if_common_param_pkg.sv","axi_if_shell_axil_pkg.sv"
 
 
 ---
@@ -45,7 +45,8 @@ Below is a summary of all the registers in the current register map:
 | [bsk_avail](#section-bsk-avail) | 0xb1000 | 0x8 | BSK availability configuration |
 | [runtime_3in3](#section-runtime-3in3) | 0xb2000 | 0x48 | Runtime information |
 | [entry_eth_2in3](#section-entry-eth-2in3) | 0xe0000 | 0x10 | entry_eth_2in3 section with known value used for debug. |
-| [line](#section-line) | 0xe0010 | 0x4 | line selection, possible values are 0, 1, 2, 3 |
+| [line](#section-line) | 0xe0010 | 0x4 | Line parameter sections |
+| [reset](#section-reset) | 0xe0014 | 0x8 | different resets are available |
 
 
 ---
@@ -75,7 +76,7 @@ Below is a summary of all the registers in the current section entry_cfg_1in3:
 - **Read Access**: Read
 - **Write Access**: None
 - **Offset**: 0x80000
-- **Default**: 16843009
+- **Default**: 16843009 
 
 
 
@@ -90,7 +91,7 @@ Below is a summary of all the registers in the current section entry_cfg_1in3:
 - **Read Access**: Read
 - **Write Access**: None
 - **Offset**: 0x80004
-- **Default**: 286331153
+- **Default**: 286331153 
 
 
 
@@ -105,7 +106,7 @@ Below is a summary of all the registers in the current section entry_cfg_1in3:
 - **Read Access**: Read
 - **Write Access**: None
 - **Offset**: 0x80008
-- **Default**: 555819297
+- **Default**: 555819297 
 
 
 
@@ -120,14 +121,14 @@ Below is a summary of all the registers in the current section entry_cfg_1in3:
 - **Read Access**: Read
 - **Write Access**: None
 - **Offset**: 0x8000c
-- **Default**: 825307441
+- **Default**: 825307441 
 
 
 
 
 ---
 
-
+ 
 
 
 ## Section info
@@ -169,7 +170,7 @@ Below is a summary of all the registers in the current section info:
 - **Read Access**: Read
 - **Write Access**: None
 - **Offset**: 0x80010
-- **Default**: C.f. fields
+- **Default**: C.f. fields 
 
 
 #### Field Details
@@ -193,7 +194,7 @@ Register version contains following Sub-fields:
 - **Read Access**: Read
 - **Write Access**: None
 - **Offset**: 0x80014
-- **Default**: NTT_CORE_ARCH
+- **Default**: NTT_CORE_ARCH 
 
 
 
@@ -208,7 +209,7 @@ Register version contains following Sub-fields:
 - **Read Access**: Read
 - **Write Access**: None
 - **Offset**: 0x80018
-- **Default**: C.f. fields
+- **Default**: C.f. fields 
 
 
 #### Field Details
@@ -234,7 +235,7 @@ Register ntt_structure contains following Sub-fields:
 - **Read Access**: Read
 - **Write Access**: None
 - **Offset**: 0x8001c
-- **Default**: C.f. fields
+- **Default**: C.f. fields 
 
 
 #### Field Details
@@ -264,7 +265,7 @@ Register ntt_rdx_cut contains following Sub-fields:
 - **Read Access**: Read
 - **Write Access**: None
 - **Offset**: 0x80020
-- **Default**: C.f. fields
+- **Default**: C.f. fields 
 
 
 #### Field Details
@@ -288,7 +289,7 @@ Register ntt_pbs contains following Sub-fields:
 - **Read Access**: Read
 - **Write Access**: None
 - **Offset**: 0x80024
-- **Default**: MOD_NTT_NAME
+- **Default**: MOD_NTT_NAME 
 
 
 
@@ -303,7 +304,7 @@ Register ntt_pbs contains following Sub-fields:
 - **Read Access**: Read
 - **Write Access**: None
 - **Offset**: 0x80028
-- **Default**: APPLICATION_NAME
+- **Default**: APPLICATION_NAME 
 
 
 
@@ -318,7 +319,7 @@ Register ntt_pbs contains following Sub-fields:
 - **Read Access**: Read
 - **Write Access**: None
 - **Offset**: 0x8002c
-- **Default**: C.f. fields
+- **Default**: C.f. fields 
 
 
 #### Field Details
@@ -343,7 +344,7 @@ Register ks_structure contains following Sub-fields:
 - **Read Access**: Read
 - **Write Access**: None
 - **Offset**: 0x80030
-- **Default**: C.f. fields
+- **Default**: C.f. fields 
 
 
 #### Field Details
@@ -368,7 +369,7 @@ Register ks_crypto_param contains following Sub-fields:
 - **Read Access**: Read
 - **Write Access**: None
 - **Offset**: 0x80034
-- **Default**: C.f. fields
+- **Default**: C.f. fields 
 
 
 #### Field Details
@@ -392,7 +393,7 @@ Register regf_structure contains following Sub-fields:
 - **Read Access**: Read
 - **Write Access**: None
 - **Offset**: 0x80038
-- **Default**: C.f. fields
+- **Default**: C.f. fields 
 
 
 #### Field Details
@@ -416,7 +417,7 @@ Register isc_structure contains following Sub-fields:
 - **Read Access**: Read
 - **Write Access**: None
 - **Offset**: 0x8003c
-- **Default**: C.f. fields
+- **Default**: C.f. fields 
 
 
 #### Field Details
@@ -442,7 +443,7 @@ Register pe_properties contains following Sub-fields:
 - **Read Access**: Read
 - **Write Access**: None
 - **Offset**: 0x80040
-- **Default**: C.f. fields
+- **Default**: C.f. fields 
 
 
 #### Field Details
@@ -465,7 +466,7 @@ Register bsk_structure contains following Sub-fields:
 - **Read Access**: Read
 - **Write Access**: None
 - **Offset**: 0x80044
-- **Default**: C.f. fields
+- **Default**: C.f. fields 
 
 
 #### Field Details
@@ -488,7 +489,7 @@ Register ksk_structure contains following Sub-fields:
 - **Read Access**: Read
 - **Write Access**: None
 - **Offset**: 0x80048
-- **Default**: C.f. fields
+- **Default**: C.f. fields 
 
 
 #### Field Details
@@ -514,7 +515,7 @@ Register hbm_axi4_nb contains following Sub-fields:
 - **Read Access**: Read
 - **Write Access**: None
 - **Offset**: 0x8004c
-- **Default**: AXI4_PEM_DATA_W
+- **Default**: AXI4_PEM_DATA_W 
 
 
 
@@ -529,7 +530,7 @@ Register hbm_axi4_nb contains following Sub-fields:
 - **Read Access**: Read
 - **Write Access**: None
 - **Offset**: 0x80050
-- **Default**: AXI4_GLWE_DATA_W
+- **Default**: AXI4_GLWE_DATA_W 
 
 
 
@@ -544,7 +545,7 @@ Register hbm_axi4_nb contains following Sub-fields:
 - **Read Access**: Read
 - **Write Access**: None
 - **Offset**: 0x80054
-- **Default**: AXI4_BSK_DATA_W
+- **Default**: AXI4_BSK_DATA_W 
 
 
 
@@ -559,14 +560,14 @@ Register hbm_axi4_nb contains following Sub-fields:
 - **Read Access**: Read
 - **Write Access**: None
 - **Offset**: 0x80058
-- **Default**: AXI4_KSK_DATA_W
+- **Default**: AXI4_KSK_DATA_W 
 
 
 
 
 ---
 
-
+ 
 
 
 ## Section hbm-axi4-addr-1in3
@@ -629,7 +630,7 @@ Below is a summary of all the registers in the current section hbm_axi4_addr_1in
 - **Read Access**: Read
 - **Write Access**: Write
 - **Offset**: 0x81000
-- **Default**: 0
+- **Default**: 0 
 
 
 
@@ -644,7 +645,7 @@ Below is a summary of all the registers in the current section hbm_axi4_addr_1in
 - **Read Access**: Read
 - **Write Access**: Write
 - **Offset**: 0x81004
-- **Default**: 0
+- **Default**: 0 
 
 
 
@@ -659,7 +660,7 @@ Below is a summary of all the registers in the current section hbm_axi4_addr_1in
 - **Read Access**: Read
 - **Write Access**: Write
 - **Offset**: 0x81008
-- **Default**: 0
+- **Default**: 0 
 
 
 
@@ -674,7 +675,7 @@ Below is a summary of all the registers in the current section hbm_axi4_addr_1in
 - **Read Access**: Read
 - **Write Access**: Write
 - **Offset**: 0x8100c
-- **Default**: 0
+- **Default**: 0 
 
 
 
@@ -689,7 +690,7 @@ Below is a summary of all the registers in the current section hbm_axi4_addr_1in
 - **Read Access**: Read
 - **Write Access**: Write
 - **Offset**: 0x81010
-- **Default**: 0
+- **Default**: 0 
 
 
 
@@ -704,7 +705,7 @@ Below is a summary of all the registers in the current section hbm_axi4_addr_1in
 - **Read Access**: Read
 - **Write Access**: Write
 - **Offset**: 0x81014
-- **Default**: 0
+- **Default**: 0 
 
 
 
@@ -719,7 +720,7 @@ Below is a summary of all the registers in the current section hbm_axi4_addr_1in
 - **Read Access**: Read
 - **Write Access**: Write
 - **Offset**: 0x81018
-- **Default**: 0
+- **Default**: 0 
 
 
 
@@ -734,7 +735,7 @@ Below is a summary of all the registers in the current section hbm_axi4_addr_1in
 - **Read Access**: Read
 - **Write Access**: Write
 - **Offset**: 0x8101c
-- **Default**: 0
+- **Default**: 0 
 
 
 
@@ -749,7 +750,7 @@ Below is a summary of all the registers in the current section hbm_axi4_addr_1in
 - **Read Access**: Read
 - **Write Access**: Write
 - **Offset**: 0x81020
-- **Default**: 0
+- **Default**: 0 
 
 
 
@@ -764,7 +765,7 @@ Below is a summary of all the registers in the current section hbm_axi4_addr_1in
 - **Read Access**: Read
 - **Write Access**: Write
 - **Offset**: 0x81024
-- **Default**: 0
+- **Default**: 0 
 
 
 
@@ -779,7 +780,7 @@ Below is a summary of all the registers in the current section hbm_axi4_addr_1in
 - **Read Access**: Read
 - **Write Access**: Write
 - **Offset**: 0x81028
-- **Default**: 0
+- **Default**: 0 
 
 
 
@@ -794,7 +795,7 @@ Below is a summary of all the registers in the current section hbm_axi4_addr_1in
 - **Read Access**: Read
 - **Write Access**: Write
 - **Offset**: 0x8102c
-- **Default**: 0
+- **Default**: 0 
 
 
 
@@ -809,7 +810,7 @@ Below is a summary of all the registers in the current section hbm_axi4_addr_1in
 - **Read Access**: Read
 - **Write Access**: Write
 - **Offset**: 0x81030
-- **Default**: 0
+- **Default**: 0 
 
 
 
@@ -824,7 +825,7 @@ Below is a summary of all the registers in the current section hbm_axi4_addr_1in
 - **Read Access**: Read
 - **Write Access**: Write
 - **Offset**: 0x81034
-- **Default**: 0
+- **Default**: 0 
 
 
 
@@ -839,7 +840,7 @@ Below is a summary of all the registers in the current section hbm_axi4_addr_1in
 - **Read Access**: Read
 - **Write Access**: Write
 - **Offset**: 0x81038
-- **Default**: 0
+- **Default**: 0 
 
 
 
@@ -854,7 +855,7 @@ Below is a summary of all the registers in the current section hbm_axi4_addr_1in
 - **Read Access**: Read
 - **Write Access**: Write
 - **Offset**: 0x8103c
-- **Default**: 0
+- **Default**: 0 
 
 
 
@@ -869,7 +870,7 @@ Below is a summary of all the registers in the current section hbm_axi4_addr_1in
 - **Read Access**: Read
 - **Write Access**: Write
 - **Offset**: 0x81040
-- **Default**: 0
+- **Default**: 0 
 
 
 
@@ -884,7 +885,7 @@ Below is a summary of all the registers in the current section hbm_axi4_addr_1in
 - **Read Access**: Read
 - **Write Access**: Write
 - **Offset**: 0x81044
-- **Default**: 0
+- **Default**: 0 
 
 
 
@@ -899,7 +900,7 @@ Below is a summary of all the registers in the current section hbm_axi4_addr_1in
 - **Read Access**: Read
 - **Write Access**: Write
 - **Offset**: 0x81048
-- **Default**: 0
+- **Default**: 0 
 
 
 
@@ -914,7 +915,7 @@ Below is a summary of all the registers in the current section hbm_axi4_addr_1in
 - **Read Access**: Read
 - **Write Access**: Write
 - **Offset**: 0x8104c
-- **Default**: 0
+- **Default**: 0 
 
 
 
@@ -929,7 +930,7 @@ Below is a summary of all the registers in the current section hbm_axi4_addr_1in
 - **Read Access**: Read
 - **Write Access**: Write
 - **Offset**: 0x81050
-- **Default**: 0
+- **Default**: 0 
 
 
 
@@ -944,7 +945,7 @@ Below is a summary of all the registers in the current section hbm_axi4_addr_1in
 - **Read Access**: Read
 - **Write Access**: Write
 - **Offset**: 0x81054
-- **Default**: 0
+- **Default**: 0 
 
 
 
@@ -959,7 +960,7 @@ Below is a summary of all the registers in the current section hbm_axi4_addr_1in
 - **Read Access**: Read
 - **Write Access**: Write
 - **Offset**: 0x81058
-- **Default**: 0
+- **Default**: 0 
 
 
 
@@ -974,7 +975,7 @@ Below is a summary of all the registers in the current section hbm_axi4_addr_1in
 - **Read Access**: Read
 - **Write Access**: Write
 - **Offset**: 0x8105c
-- **Default**: 0
+- **Default**: 0 
 
 
 
@@ -989,7 +990,7 @@ Below is a summary of all the registers in the current section hbm_axi4_addr_1in
 - **Read Access**: Read
 - **Write Access**: Write
 - **Offset**: 0x81060
-- **Default**: 0
+- **Default**: 0 
 
 
 
@@ -1004,7 +1005,7 @@ Below is a summary of all the registers in the current section hbm_axi4_addr_1in
 - **Read Access**: Read
 - **Write Access**: Write
 - **Offset**: 0x81064
-- **Default**: 0
+- **Default**: 0 
 
 
 
@@ -1019,7 +1020,7 @@ Below is a summary of all the registers in the current section hbm_axi4_addr_1in
 - **Read Access**: Read
 - **Write Access**: Write
 - **Offset**: 0x81068
-- **Default**: 0
+- **Default**: 0 
 
 
 
@@ -1034,7 +1035,7 @@ Below is a summary of all the registers in the current section hbm_axi4_addr_1in
 - **Read Access**: Read
 - **Write Access**: Write
 - **Offset**: 0x8106c
-- **Default**: 0
+- **Default**: 0 
 
 
 
@@ -1049,7 +1050,7 @@ Below is a summary of all the registers in the current section hbm_axi4_addr_1in
 - **Read Access**: Read
 - **Write Access**: Write
 - **Offset**: 0x81070
-- **Default**: 0
+- **Default**: 0 
 
 
 
@@ -1064,7 +1065,7 @@ Below is a summary of all the registers in the current section hbm_axi4_addr_1in
 - **Read Access**: Read
 - **Write Access**: Write
 - **Offset**: 0x81074
-- **Default**: 0
+- **Default**: 0 
 
 
 
@@ -1079,7 +1080,7 @@ Below is a summary of all the registers in the current section hbm_axi4_addr_1in
 - **Read Access**: Read
 - **Write Access**: Write
 - **Offset**: 0x81078
-- **Default**: 0
+- **Default**: 0 
 
 
 
@@ -1094,7 +1095,7 @@ Below is a summary of all the registers in the current section hbm_axi4_addr_1in
 - **Read Access**: Read
 - **Write Access**: Write
 - **Offset**: 0x8107c
-- **Default**: 0
+- **Default**: 0 
 
 
 
@@ -1109,7 +1110,7 @@ Below is a summary of all the registers in the current section hbm_axi4_addr_1in
 - **Read Access**: Read
 - **Write Access**: Write
 - **Offset**: 0x81080
-- **Default**: 0
+- **Default**: 0 
 
 
 
@@ -1124,7 +1125,7 @@ Below is a summary of all the registers in the current section hbm_axi4_addr_1in
 - **Read Access**: Read
 - **Write Access**: Write
 - **Offset**: 0x81084
-- **Default**: 0
+- **Default**: 0 
 
 
 
@@ -1139,7 +1140,7 @@ Below is a summary of all the registers in the current section hbm_axi4_addr_1in
 - **Read Access**: Read
 - **Write Access**: Write
 - **Offset**: 0x81088
-- **Default**: 0
+- **Default**: 0 
 
 
 
@@ -1154,7 +1155,7 @@ Below is a summary of all the registers in the current section hbm_axi4_addr_1in
 - **Read Access**: Read
 - **Write Access**: Write
 - **Offset**: 0x8108c
-- **Default**: 0
+- **Default**: 0 
 
 
 
@@ -1169,7 +1170,7 @@ Below is a summary of all the registers in the current section hbm_axi4_addr_1in
 - **Read Access**: Read
 - **Write Access**: Write
 - **Offset**: 0x81090
-- **Default**: 0
+- **Default**: 0 
 
 
 
@@ -1184,7 +1185,7 @@ Below is a summary of all the registers in the current section hbm_axi4_addr_1in
 - **Read Access**: Read
 - **Write Access**: Write
 - **Offset**: 0x81094
-- **Default**: 0
+- **Default**: 0 
 
 
 
@@ -1199,7 +1200,7 @@ Below is a summary of all the registers in the current section hbm_axi4_addr_1in
 - **Read Access**: Read
 - **Write Access**: Write
 - **Offset**: 0x81098
-- **Default**: 0
+- **Default**: 0 
 
 
 
@@ -1214,14 +1215,14 @@ Below is a summary of all the registers in the current section hbm_axi4_addr_1in
 - **Read Access**: Read
 - **Write Access**: Write
 - **Offset**: 0x8109c
-- **Default**: 0
+- **Default**: 0 
 
 
 
 
 ---
 
-
+ 
 
 
 ## Section bpip
@@ -1246,7 +1247,7 @@ Below is a summary of all the registers in the current section bpip:
 - **Read Access**: Read
 - **Write Access**: Write
 - **Offset**: 0x82000
-- **Default**: C.f. fields
+- **Default**: C.f. fields 
 
 
 #### Field Details
@@ -1270,14 +1271,14 @@ Register use contains following Sub-fields:
 - **Read Access**: Read
 - **Write Access**: Write
 - **Offset**: 0x82004
-- **Default**: 4294967295
+- **Default**: 4294967295 
 
 
 
 
 ---
 
-
+ 
 
 
 ## Section keyswitch
@@ -1301,7 +1302,7 @@ Below is a summary of all the registers in the current section keyswitch:
 - **Read Access**: Read
 - **Write Access**: Write
 - **Offset**: 0x83000
-- **Default**: C.f. fields
+- **Default**: C.f. fields 
 
 
 #### Field Details
@@ -1316,7 +1317,7 @@ Register config contains following Sub-fields:
 
 ---
 
-
+ 
 
 
 ## Section entry-prc-1in3
@@ -1343,7 +1344,7 @@ Below is a summary of all the registers in the current section entry_prc_1in3:
 - **Read Access**: Read
 - **Write Access**: None
 - **Offset**: 0x90000
-- **Default**: 33686018
+- **Default**: 33686018 
 
 
 
@@ -1358,7 +1359,7 @@ Below is a summary of all the registers in the current section entry_prc_1in3:
 - **Read Access**: Read
 - **Write Access**: None
 - **Offset**: 0x90004
-- **Default**: 303174162
+- **Default**: 303174162 
 
 
 
@@ -1373,7 +1374,7 @@ Below is a summary of all the registers in the current section entry_prc_1in3:
 - **Read Access**: Read
 - **Write Access**: None
 - **Offset**: 0x90008
-- **Default**: 572662306
+- **Default**: 572662306 
 
 
 
@@ -1388,14 +1389,14 @@ Below is a summary of all the registers in the current section entry_prc_1in3:
 - **Read Access**: Read
 - **Write Access**: None
 - **Offset**: 0x9000c
-- **Default**: 842150450
+- **Default**: 842150450 
 
 
 
 
 ---
 
-
+ 
 
 
 ## Section status-1in3
@@ -1419,7 +1420,7 @@ Below is a summary of all the registers in the current section status_1in3:
 - **Read Access**: Read
 - **Write Access**: WriteNotify
 - **Offset**: 0x90010
-- **Default**: C.f. fields
+- **Default**: C.f. fields 
 
 
 #### Field Details
@@ -1434,7 +1435,7 @@ Register error contains following Sub-fields:
 
 ---
 
-
+ 
 
 
 ## Section ksk-avail
@@ -1459,7 +1460,7 @@ Below is a summary of all the registers in the current section ksk_avail:
 - **Read Access**: Read
 - **Write Access**: Write
 - **Offset**: 0x91000
-- **Default**: C.f. fields
+- **Default**: C.f. fields 
 
 
 #### Field Details
@@ -1482,7 +1483,7 @@ Register avail contains following Sub-fields:
 - **Read Access**: Read
 - **Write Access**: WriteNotify
 - **Offset**: 0x91004
-- **Default**: C.f. fields
+- **Default**: C.f. fields 
 
 
 #### Field Details
@@ -1498,7 +1499,7 @@ Register reset contains following Sub-fields:
 
 ---
 
-
+ 
 
 
 ## Section runtime-1in3
@@ -1600,7 +1601,7 @@ Below is a summary of all the registers in the current section runtime_1in3:
 - **Read Access**: Read
 - **Write Access**: None
 - **Offset**: 0x92000
-- **Default**: C.f. fields
+- **Default**: C.f. fields 
 
 
 #### Field Details
@@ -1626,7 +1627,7 @@ Register pep_cmux_loop contains following Sub-fields:
 - **Read Access**: Read
 - **Write Access**: None
 - **Offset**: 0x92004
-- **Default**: C.f. fields
+- **Default**: C.f. fields 
 
 
 #### Field Details
@@ -1652,7 +1653,7 @@ Register pep_pointer_0 contains following Sub-fields:
 - **Read Access**: Read
 - **Write Access**: None
 - **Offset**: 0x92008
-- **Default**: C.f. fields
+- **Default**: C.f. fields 
 
 
 #### Field Details
@@ -1678,7 +1679,7 @@ Register pep_pointer_1 contains following Sub-fields:
 - **Read Access**: Read
 - **Write Access**: None
 - **Offset**: 0x9200c
-- **Default**: C.f. fields
+- **Default**: C.f. fields 
 
 
 #### Field Details
@@ -1703,7 +1704,7 @@ Register pep_pointer_2 contains following Sub-fields:
 - **Read Access**: Read
 - **Write Access**: None
 - **Offset**: 0x92010
-- **Default**: 0
+- **Default**: 0 
 
 
 
@@ -1718,7 +1719,7 @@ Register pep_pointer_2 contains following Sub-fields:
 - **Read Access**: Read
 - **Write Access**: None
 - **Offset**: 0x92014
-- **Default**: 0
+- **Default**: 0 
 
 
 
@@ -1733,7 +1734,7 @@ Register pep_pointer_2 contains following Sub-fields:
 - **Read Access**: Read
 - **Write Access**: None
 - **Offset**: 0x92018
-- **Default**: 0
+- **Default**: 0 
 
 
 
@@ -1748,7 +1749,7 @@ Register pep_pointer_2 contains following Sub-fields:
 - **Read Access**: Read
 - **Write Access**: None
 - **Offset**: 0x9201c
-- **Default**: 0
+- **Default**: 0 
 
 
 
@@ -1763,7 +1764,7 @@ Register pep_pointer_2 contains following Sub-fields:
 - **Read Access**: Read
 - **Write Access**: WriteNotify
 - **Offset**: 0x92020
-- **Default**: 0
+- **Default**: 0 
 
 
 
@@ -1778,7 +1779,7 @@ Register pep_pointer_2 contains following Sub-fields:
 - **Read Access**: Read
 - **Write Access**: WriteNotify
 - **Offset**: 0x92024
-- **Default**: 0
+- **Default**: 0 
 
 
 
@@ -1793,7 +1794,7 @@ Register pep_pointer_2 contains following Sub-fields:
 - **Read Access**: Read
 - **Write Access**: WriteNotify
 - **Offset**: 0x92028
-- **Default**: 0
+- **Default**: 0 
 
 
 
@@ -1808,7 +1809,7 @@ Register pep_pointer_2 contains following Sub-fields:
 - **Read Access**: Read
 - **Write Access**: WriteNotify
 - **Offset**: 0x9202c
-- **Default**: 0
+- **Default**: 0 
 
 
 
@@ -1823,7 +1824,7 @@ Register pep_pointer_2 contains following Sub-fields:
 - **Read Access**: Read
 - **Write Access**: WriteNotify
 - **Offset**: 0x92030
-- **Default**: 0
+- **Default**: 0 
 
 
 
@@ -1838,7 +1839,7 @@ Register pep_pointer_2 contains following Sub-fields:
 - **Read Access**: Read
 - **Write Access**: WriteNotify
 - **Offset**: 0x92034
-- **Default**: 0
+- **Default**: 0 
 
 
 
@@ -1853,7 +1854,7 @@ Register pep_pointer_2 contains following Sub-fields:
 - **Read Access**: Read
 - **Write Access**: WriteNotify
 - **Offset**: 0x92038
-- **Default**: 0
+- **Default**: 0 
 
 
 
@@ -1868,7 +1869,7 @@ Register pep_pointer_2 contains following Sub-fields:
 - **Read Access**: Read
 - **Write Access**: WriteNotify
 - **Offset**: 0x9203c
-- **Default**: 0
+- **Default**: 0 
 
 
 
@@ -1883,7 +1884,7 @@ Register pep_pointer_2 contains following Sub-fields:
 - **Read Access**: Read
 - **Write Access**: WriteNotify
 - **Offset**: 0x92040
-- **Default**: 0
+- **Default**: 0 
 
 
 
@@ -1898,7 +1899,7 @@ Register pep_pointer_2 contains following Sub-fields:
 - **Read Access**: Read
 - **Write Access**: WriteNotify
 - **Offset**: 0x92044
-- **Default**: 0
+- **Default**: 0 
 
 
 
@@ -1913,7 +1914,7 @@ Register pep_pointer_2 contains following Sub-fields:
 - **Read Access**: Read
 - **Write Access**: WriteNotify
 - **Offset**: 0x92048
-- **Default**: 0
+- **Default**: 0 
 
 
 
@@ -1928,7 +1929,7 @@ Register pep_pointer_2 contains following Sub-fields:
 - **Read Access**: Read
 - **Write Access**: WriteNotify
 - **Offset**: 0x9204c
-- **Default**: 0
+- **Default**: 0 
 
 
 
@@ -1943,7 +1944,7 @@ Register pep_pointer_2 contains following Sub-fields:
 - **Read Access**: Read
 - **Write Access**: WriteNotify
 - **Offset**: 0x92050
-- **Default**: 0
+- **Default**: 0 
 
 
 
@@ -1958,7 +1959,7 @@ Register pep_pointer_2 contains following Sub-fields:
 - **Read Access**: Read
 - **Write Access**: WriteNotify
 - **Offset**: 0x92054
-- **Default**: 0
+- **Default**: 0 
 
 
 
@@ -1973,7 +1974,7 @@ Register pep_pointer_2 contains following Sub-fields:
 - **Read Access**: Read
 - **Write Access**: WriteNotify
 - **Offset**: 0x92058
-- **Default**: 0
+- **Default**: 0 
 
 
 
@@ -1988,7 +1989,7 @@ Register pep_pointer_2 contains following Sub-fields:
 - **Read Access**: Read
 - **Write Access**: WriteNotify
 - **Offset**: 0x9205c
-- **Default**: 0
+- **Default**: 0 
 
 
 
@@ -2003,7 +2004,7 @@ Register pep_pointer_2 contains following Sub-fields:
 - **Read Access**: Read
 - **Write Access**: WriteNotify
 - **Offset**: 0x92060
-- **Default**: 0
+- **Default**: 0 
 
 
 
@@ -2018,7 +2019,7 @@ Register pep_pointer_2 contains following Sub-fields:
 - **Read Access**: Read
 - **Write Access**: WriteNotify
 - **Offset**: 0x92064
-- **Default**: 0
+- **Default**: 0 
 
 
 
@@ -2033,7 +2034,7 @@ Register pep_pointer_2 contains following Sub-fields:
 - **Read Access**: Read
 - **Write Access**: WriteNotify
 - **Offset**: 0x92068
-- **Default**: 0
+- **Default**: 0 
 
 
 
@@ -2048,7 +2049,7 @@ Register pep_pointer_2 contains following Sub-fields:
 - **Read Access**: Read
 - **Write Access**: WriteNotify
 - **Offset**: 0x9206c
-- **Default**: 0
+- **Default**: 0 
 
 
 
@@ -2063,7 +2064,7 @@ Register pep_pointer_2 contains following Sub-fields:
 - **Read Access**: Read
 - **Write Access**: WriteNotify
 - **Offset**: 0x92070
-- **Default**: 0
+- **Default**: 0 
 
 
 
@@ -2078,7 +2079,7 @@ Register pep_pointer_2 contains following Sub-fields:
 - **Read Access**: Read
 - **Write Access**: WriteNotify
 - **Offset**: 0x92074
-- **Default**: 0
+- **Default**: 0 
 
 
 
@@ -2093,7 +2094,7 @@ Register pep_pointer_2 contains following Sub-fields:
 - **Read Access**: Read
 - **Write Access**: WriteNotify
 - **Offset**: 0x92078
-- **Default**: 0
+- **Default**: 0 
 
 
 
@@ -2108,7 +2109,7 @@ Register pep_pointer_2 contains following Sub-fields:
 - **Read Access**: Read
 - **Write Access**: WriteNotify
 - **Offset**: 0x9207c
-- **Default**: 0
+- **Default**: 0 
 
 
 
@@ -2123,7 +2124,7 @@ Register pep_pointer_2 contains following Sub-fields:
 - **Read Access**: Read
 - **Write Access**: WriteNotify
 - **Offset**: 0x92080
-- **Default**: 0
+- **Default**: 0 
 
 
 
@@ -2138,7 +2139,7 @@ Register pep_pointer_2 contains following Sub-fields:
 - **Read Access**: Read
 - **Write Access**: WriteNotify
 - **Offset**: 0x92084
-- **Default**: 0
+- **Default**: 0 
 
 
 
@@ -2153,7 +2154,7 @@ Register pep_pointer_2 contains following Sub-fields:
 - **Read Access**: Read
 - **Write Access**: WriteNotify
 - **Offset**: 0x92088
-- **Default**: 0
+- **Default**: 0 
 
 
 
@@ -2168,7 +2169,7 @@ Register pep_pointer_2 contains following Sub-fields:
 - **Read Access**: Read
 - **Write Access**: WriteNotify
 - **Offset**: 0x9208c
-- **Default**: 0
+- **Default**: 0 
 
 
 
@@ -2183,7 +2184,7 @@ Register pep_pointer_2 contains following Sub-fields:
 - **Read Access**: Read
 - **Write Access**: WriteNotify
 - **Offset**: 0x92090
-- **Default**: 0
+- **Default**: 0 
 
 
 
@@ -2198,7 +2199,7 @@ Register pep_pointer_2 contains following Sub-fields:
 - **Read Access**: Read
 - **Write Access**: WriteNotify
 - **Offset**: 0x92094
-- **Default**: 0
+- **Default**: 0 
 
 
 
@@ -2213,7 +2214,7 @@ Register pep_pointer_2 contains following Sub-fields:
 - **Read Access**: Read
 - **Write Access**: WriteNotify
 - **Offset**: 0x92098
-- **Default**: 0
+- **Default**: 0 
 
 
 
@@ -2228,7 +2229,7 @@ Register pep_pointer_2 contains following Sub-fields:
 - **Read Access**: Read
 - **Write Access**: WriteNotify
 - **Offset**: 0x9209c
-- **Default**: 0
+- **Default**: 0 
 
 
 
@@ -2243,7 +2244,7 @@ Register pep_pointer_2 contains following Sub-fields:
 - **Read Access**: Read
 - **Write Access**: WriteNotify
 - **Offset**: 0x920a0
-- **Default**: 0
+- **Default**: 0 
 
 
 
@@ -2258,7 +2259,7 @@ Register pep_pointer_2 contains following Sub-fields:
 - **Read Access**: Read
 - **Write Access**: WriteNotify
 - **Offset**: 0x920a4
-- **Default**: 0
+- **Default**: 0 
 
 
 
@@ -2273,7 +2274,7 @@ Register pep_pointer_2 contains following Sub-fields:
 - **Read Access**: Read
 - **Write Access**: WriteNotify
 - **Offset**: 0x920a8
-- **Default**: 0
+- **Default**: 0 
 
 
 
@@ -2288,7 +2289,7 @@ Register pep_pointer_2 contains following Sub-fields:
 - **Read Access**: Read
 - **Write Access**: WriteNotify
 - **Offset**: 0x920ac
-- **Default**: 0
+- **Default**: 0 
 
 
 
@@ -2303,7 +2304,7 @@ Register pep_pointer_2 contains following Sub-fields:
 - **Read Access**: Read
 - **Write Access**: WriteNotify
 - **Offset**: 0x920b0
-- **Default**: 0
+- **Default**: 0 
 
 
 
@@ -2318,7 +2319,7 @@ Register pep_pointer_2 contains following Sub-fields:
 - **Read Access**: Read
 - **Write Access**: WriteNotify
 - **Offset**: 0x920b4
-- **Default**: 0
+- **Default**: 0 
 
 
 
@@ -2333,7 +2334,7 @@ Register pep_pointer_2 contains following Sub-fields:
 - **Read Access**: Read
 - **Write Access**: WriteNotify
 - **Offset**: 0x920b8
-- **Default**: 0
+- **Default**: 0 
 
 
 
@@ -2348,7 +2349,7 @@ Register pep_pointer_2 contains following Sub-fields:
 - **Read Access**: Read
 - **Write Access**: WriteNotify
 - **Offset**: 0x920bc
-- **Default**: 0
+- **Default**: 0 
 
 
 
@@ -2363,7 +2364,7 @@ Register pep_pointer_2 contains following Sub-fields:
 - **Read Access**: Read
 - **Write Access**: WriteNotify
 - **Offset**: 0x920c0
-- **Default**: 0
+- **Default**: 0 
 
 
 
@@ -2378,7 +2379,7 @@ Register pep_pointer_2 contains following Sub-fields:
 - **Read Access**: Read
 - **Write Access**: WriteNotify
 - **Offset**: 0x920c4
-- **Default**: 0
+- **Default**: 0 
 
 
 
@@ -2393,7 +2394,7 @@ Register pep_pointer_2 contains following Sub-fields:
 - **Read Access**: Read
 - **Write Access**: WriteNotify
 - **Offset**: 0x920c8
-- **Default**: 0
+- **Default**: 0 
 
 
 
@@ -2408,7 +2409,7 @@ Register pep_pointer_2 contains following Sub-fields:
 - **Read Access**: Read
 - **Write Access**: WriteNotify
 - **Offset**: 0x920cc
-- **Default**: 0
+- **Default**: 0 
 
 
 
@@ -2423,7 +2424,7 @@ Register pep_pointer_2 contains following Sub-fields:
 - **Read Access**: Read
 - **Write Access**: WriteNotify
 - **Offset**: 0x920d0
-- **Default**: 0
+- **Default**: 0 
 
 
 
@@ -2438,7 +2439,7 @@ Register pep_pointer_2 contains following Sub-fields:
 - **Read Access**: Read
 - **Write Access**: WriteNotify
 - **Offset**: 0x920d4
-- **Default**: 0
+- **Default**: 0 
 
 
 
@@ -2453,7 +2454,7 @@ Register pep_pointer_2 contains following Sub-fields:
 - **Read Access**: Read
 - **Write Access**: WriteNotify
 - **Offset**: 0x920d8
-- **Default**: 0
+- **Default**: 0 
 
 
 
@@ -2468,7 +2469,7 @@ Register pep_pointer_2 contains following Sub-fields:
 - **Read Access**: Read
 - **Write Access**: WriteNotify
 - **Offset**: 0x920dc
-- **Default**: 0
+- **Default**: 0 
 
 
 
@@ -2483,7 +2484,7 @@ Register pep_pointer_2 contains following Sub-fields:
 - **Read Access**: Read
 - **Write Access**: WriteNotify
 - **Offset**: 0x920e0
-- **Default**: 0
+- **Default**: 0 
 
 
 
@@ -2498,7 +2499,7 @@ Register pep_pointer_2 contains following Sub-fields:
 - **Read Access**: Read
 - **Write Access**: WriteNotify
 - **Offset**: 0x920e4
-- **Default**: 0
+- **Default**: 0 
 
 
 
@@ -2513,7 +2514,7 @@ Register pep_pointer_2 contains following Sub-fields:
 - **Read Access**: Read
 - **Write Access**: WriteNotify
 - **Offset**: 0x920e8
-- **Default**: 0
+- **Default**: 0 
 
 
 
@@ -2528,7 +2529,7 @@ Register pep_pointer_2 contains following Sub-fields:
 - **Read Access**: Read
 - **Write Access**: WriteNotify
 - **Offset**: 0x920ec
-- **Default**: 0
+- **Default**: 0 
 
 
 
@@ -2543,7 +2544,7 @@ Register pep_pointer_2 contains following Sub-fields:
 - **Read Access**: Read
 - **Write Access**: WriteNotify
 - **Offset**: 0x920f0
-- **Default**: 0
+- **Default**: 0 
 
 
 
@@ -2558,7 +2559,7 @@ Register pep_pointer_2 contains following Sub-fields:
 - **Read Access**: Read
 - **Write Access**: WriteNotify
 - **Offset**: 0x920f4
-- **Default**: 0
+- **Default**: 0 
 
 
 
@@ -2573,7 +2574,7 @@ Register pep_pointer_2 contains following Sub-fields:
 - **Read Access**: Read
 - **Write Access**: WriteNotify
 - **Offset**: 0x920f8
-- **Default**: 0
+- **Default**: 0 
 
 
 
@@ -2588,7 +2589,7 @@ Register pep_pointer_2 contains following Sub-fields:
 - **Read Access**: Read
 - **Write Access**: None
 - **Offset**: 0x920fc
-- **Default**: 0
+- **Default**: 0 
 
 
 
@@ -2603,7 +2604,7 @@ Register pep_pointer_2 contains following Sub-fields:
 - **Read Access**: Read
 - **Write Access**: None
 - **Offset**: 0x92100
-- **Default**: 0
+- **Default**: 0 
 
 
 
@@ -2618,7 +2619,7 @@ Register pep_pointer_2 contains following Sub-fields:
 - **Read Access**: Read
 - **Write Access**: None
 - **Offset**: 0x92104
-- **Default**: 0
+- **Default**: 0 
 
 
 
@@ -2633,7 +2634,7 @@ Register pep_pointer_2 contains following Sub-fields:
 - **Read Access**: Read
 - **Write Access**: None
 - **Offset**: 0x92108
-- **Default**: 0
+- **Default**: 0 
 
 
 
@@ -2648,7 +2649,7 @@ Register pep_pointer_2 contains following Sub-fields:
 - **Read Access**: Read
 - **Write Access**: None
 - **Offset**: 0x9210c
-- **Default**: 0
+- **Default**: 0 
 
 
 
@@ -2663,7 +2664,7 @@ Register pep_pointer_2 contains following Sub-fields:
 - **Read Access**: Read
 - **Write Access**: None
 - **Offset**: 0x92110
-- **Default**: 0
+- **Default**: 0 
 
 
 
@@ -2678,7 +2679,7 @@ Register pep_pointer_2 contains following Sub-fields:
 - **Read Access**: Read
 - **Write Access**: None
 - **Offset**: 0x92114
-- **Default**: 0
+- **Default**: 0 
 
 
 
@@ -2693,7 +2694,7 @@ Register pep_pointer_2 contains following Sub-fields:
 - **Read Access**: Read
 - **Write Access**: None
 - **Offset**: 0x92118
-- **Default**: 0
+- **Default**: 0 
 
 
 
@@ -2708,7 +2709,7 @@ Register pep_pointer_2 contains following Sub-fields:
 - **Read Access**: Read
 - **Write Access**: None
 - **Offset**: 0x9211c
-- **Default**: 0
+- **Default**: 0 
 
 
 
@@ -2723,7 +2724,7 @@ Register pep_pointer_2 contains following Sub-fields:
 - **Read Access**: Read
 - **Write Access**: None
 - **Offset**: 0x92120
-- **Default**: 0
+- **Default**: 0 
 
 
 
@@ -2738,7 +2739,7 @@ Register pep_pointer_2 contains following Sub-fields:
 - **Read Access**: Read
 - **Write Access**: None
 - **Offset**: 0x92124
-- **Default**: 0
+- **Default**: 0 
 
 
 
@@ -2753,7 +2754,7 @@ Register pep_pointer_2 contains following Sub-fields:
 - **Read Access**: Read
 - **Write Access**: None
 - **Offset**: 0x92128
-- **Default**: 0
+- **Default**: 0 
 
 
 
@@ -2768,7 +2769,7 @@ Register pep_pointer_2 contains following Sub-fields:
 - **Read Access**: Read
 - **Write Access**: None
 - **Offset**: 0x9212c
-- **Default**: C.f. fields
+- **Default**: C.f. fields 
 
 
 #### Field Details
@@ -2801,7 +2802,7 @@ Register pem_store_info_0 contains following Sub-fields:
 - **Read Access**: Read
 - **Write Access**: None
 - **Offset**: 0x92130
-- **Default**: C.f. fields
+- **Default**: C.f. fields 
 
 
 #### Field Details
@@ -2831,7 +2832,7 @@ Register pem_store_info_1 contains following Sub-fields:
 - **Read Access**: Read
 - **Write Access**: None
 - **Offset**: 0x92134
-- **Default**: C.f. fields
+- **Default**: C.f. fields 
 
 
 #### Field Details
@@ -2855,7 +2856,7 @@ Register pem_store_info_2 contains following Sub-fields:
 - **Read Access**: Read
 - **Write Access**: None
 - **Offset**: 0x92138
-- **Default**: C.f. fields
+- **Default**: C.f. fields 
 
 
 #### Field Details
@@ -2871,7 +2872,7 @@ Register pem_store_info_3 contains following Sub-fields:
 
 ---
 
-
+ 
 
 
 ## Section entry-cfg-3in3
@@ -2898,7 +2899,7 @@ Below is a summary of all the registers in the current section entry_cfg_3in3:
 - **Read Access**: Read
 - **Write Access**: None
 - **Offset**: 0xa0000
-- **Default**: 50529027
+- **Default**: 50529027 
 
 
 
@@ -2913,7 +2914,7 @@ Below is a summary of all the registers in the current section entry_cfg_3in3:
 - **Read Access**: Read
 - **Write Access**: None
 - **Offset**: 0xa0004
-- **Default**: 320017171
+- **Default**: 320017171 
 
 
 
@@ -2928,7 +2929,7 @@ Below is a summary of all the registers in the current section entry_cfg_3in3:
 - **Read Access**: Read
 - **Write Access**: None
 - **Offset**: 0xa0008
-- **Default**: 589505315
+- **Default**: 589505315 
 
 
 
@@ -2943,14 +2944,14 @@ Below is a summary of all the registers in the current section entry_cfg_3in3:
 - **Read Access**: Read
 - **Write Access**: None
 - **Offset**: 0xa000c
-- **Default**: 858993459
+- **Default**: 858993459 
 
 
 
 
 ---
 
-
+ 
 
 
 ## Section hbm-axi4-addr-3in3
@@ -3005,7 +3006,7 @@ Below is a summary of all the registers in the current section hbm_axi4_addr_3in
 - **Read Access**: Read
 - **Write Access**: Write
 - **Offset**: 0xa0010
-- **Default**: 0
+- **Default**: 0 
 
 
 
@@ -3020,7 +3021,7 @@ Below is a summary of all the registers in the current section hbm_axi4_addr_3in
 - **Read Access**: Read
 - **Write Access**: Write
 - **Offset**: 0xa0014
-- **Default**: 0
+- **Default**: 0 
 
 
 
@@ -3035,7 +3036,7 @@ Below is a summary of all the registers in the current section hbm_axi4_addr_3in
 - **Read Access**: Read
 - **Write Access**: Write
 - **Offset**: 0xa0018
-- **Default**: 0
+- **Default**: 0 
 
 
 
@@ -3050,7 +3051,7 @@ Below is a summary of all the registers in the current section hbm_axi4_addr_3in
 - **Read Access**: Read
 - **Write Access**: Write
 - **Offset**: 0xa001c
-- **Default**: 0
+- **Default**: 0 
 
 
 
@@ -3065,7 +3066,7 @@ Below is a summary of all the registers in the current section hbm_axi4_addr_3in
 - **Read Access**: Read
 - **Write Access**: Write
 - **Offset**: 0xa0020
-- **Default**: 0
+- **Default**: 0 
 
 
 
@@ -3080,7 +3081,7 @@ Below is a summary of all the registers in the current section hbm_axi4_addr_3in
 - **Read Access**: Read
 - **Write Access**: Write
 - **Offset**: 0xa0024
-- **Default**: 0
+- **Default**: 0 
 
 
 
@@ -3095,7 +3096,7 @@ Below is a summary of all the registers in the current section hbm_axi4_addr_3in
 - **Read Access**: Read
 - **Write Access**: Write
 - **Offset**: 0xa0028
-- **Default**: 0
+- **Default**: 0 
 
 
 
@@ -3110,7 +3111,7 @@ Below is a summary of all the registers in the current section hbm_axi4_addr_3in
 - **Read Access**: Read
 - **Write Access**: Write
 - **Offset**: 0xa002c
-- **Default**: 0
+- **Default**: 0 
 
 
 
@@ -3125,7 +3126,7 @@ Below is a summary of all the registers in the current section hbm_axi4_addr_3in
 - **Read Access**: Read
 - **Write Access**: Write
 - **Offset**: 0xa0030
-- **Default**: 0
+- **Default**: 0 
 
 
 
@@ -3140,7 +3141,7 @@ Below is a summary of all the registers in the current section hbm_axi4_addr_3in
 - **Read Access**: Read
 - **Write Access**: Write
 - **Offset**: 0xa0034
-- **Default**: 0
+- **Default**: 0 
 
 
 
@@ -3155,7 +3156,7 @@ Below is a summary of all the registers in the current section hbm_axi4_addr_3in
 - **Read Access**: Read
 - **Write Access**: Write
 - **Offset**: 0xa0038
-- **Default**: 0
+- **Default**: 0 
 
 
 
@@ -3170,7 +3171,7 @@ Below is a summary of all the registers in the current section hbm_axi4_addr_3in
 - **Read Access**: Read
 - **Write Access**: Write
 - **Offset**: 0xa003c
-- **Default**: 0
+- **Default**: 0 
 
 
 
@@ -3185,7 +3186,7 @@ Below is a summary of all the registers in the current section hbm_axi4_addr_3in
 - **Read Access**: Read
 - **Write Access**: Write
 - **Offset**: 0xa0040
-- **Default**: 0
+- **Default**: 0 
 
 
 
@@ -3200,7 +3201,7 @@ Below is a summary of all the registers in the current section hbm_axi4_addr_3in
 - **Read Access**: Read
 - **Write Access**: Write
 - **Offset**: 0xa0044
-- **Default**: 0
+- **Default**: 0 
 
 
 
@@ -3215,7 +3216,7 @@ Below is a summary of all the registers in the current section hbm_axi4_addr_3in
 - **Read Access**: Read
 - **Write Access**: Write
 - **Offset**: 0xa0048
-- **Default**: 0
+- **Default**: 0 
 
 
 
@@ -3230,7 +3231,7 @@ Below is a summary of all the registers in the current section hbm_axi4_addr_3in
 - **Read Access**: Read
 - **Write Access**: Write
 - **Offset**: 0xa004c
-- **Default**: 0
+- **Default**: 0 
 
 
 
@@ -3245,7 +3246,7 @@ Below is a summary of all the registers in the current section hbm_axi4_addr_3in
 - **Read Access**: Read
 - **Write Access**: Write
 - **Offset**: 0xa0050
-- **Default**: 0
+- **Default**: 0 
 
 
 
@@ -3260,7 +3261,7 @@ Below is a summary of all the registers in the current section hbm_axi4_addr_3in
 - **Read Access**: Read
 - **Write Access**: Write
 - **Offset**: 0xa0054
-- **Default**: 0
+- **Default**: 0 
 
 
 
@@ -3275,7 +3276,7 @@ Below is a summary of all the registers in the current section hbm_axi4_addr_3in
 - **Read Access**: Read
 - **Write Access**: Write
 - **Offset**: 0xa0058
-- **Default**: 0
+- **Default**: 0 
 
 
 
@@ -3290,7 +3291,7 @@ Below is a summary of all the registers in the current section hbm_axi4_addr_3in
 - **Read Access**: Read
 - **Write Access**: Write
 - **Offset**: 0xa005c
-- **Default**: 0
+- **Default**: 0 
 
 
 
@@ -3305,7 +3306,7 @@ Below is a summary of all the registers in the current section hbm_axi4_addr_3in
 - **Read Access**: Read
 - **Write Access**: Write
 - **Offset**: 0xa0060
-- **Default**: 0
+- **Default**: 0 
 
 
 
@@ -3320,7 +3321,7 @@ Below is a summary of all the registers in the current section hbm_axi4_addr_3in
 - **Read Access**: Read
 - **Write Access**: Write
 - **Offset**: 0xa0064
-- **Default**: 0
+- **Default**: 0 
 
 
 
@@ -3335,7 +3336,7 @@ Below is a summary of all the registers in the current section hbm_axi4_addr_3in
 - **Read Access**: Read
 - **Write Access**: Write
 - **Offset**: 0xa0068
-- **Default**: 0
+- **Default**: 0 
 
 
 
@@ -3350,7 +3351,7 @@ Below is a summary of all the registers in the current section hbm_axi4_addr_3in
 - **Read Access**: Read
 - **Write Access**: Write
 - **Offset**: 0xa006c
-- **Default**: 0
+- **Default**: 0 
 
 
 
@@ -3365,7 +3366,7 @@ Below is a summary of all the registers in the current section hbm_axi4_addr_3in
 - **Read Access**: Read
 - **Write Access**: Write
 - **Offset**: 0xa0070
-- **Default**: 0
+- **Default**: 0 
 
 
 
@@ -3380,7 +3381,7 @@ Below is a summary of all the registers in the current section hbm_axi4_addr_3in
 - **Read Access**: Read
 - **Write Access**: Write
 - **Offset**: 0xa0074
-- **Default**: 0
+- **Default**: 0 
 
 
 
@@ -3395,7 +3396,7 @@ Below is a summary of all the registers in the current section hbm_axi4_addr_3in
 - **Read Access**: Read
 - **Write Access**: Write
 - **Offset**: 0xa0078
-- **Default**: 0
+- **Default**: 0 
 
 
 
@@ -3410,7 +3411,7 @@ Below is a summary of all the registers in the current section hbm_axi4_addr_3in
 - **Read Access**: Read
 - **Write Access**: Write
 - **Offset**: 0xa007c
-- **Default**: 0
+- **Default**: 0 
 
 
 
@@ -3425,7 +3426,7 @@ Below is a summary of all the registers in the current section hbm_axi4_addr_3in
 - **Read Access**: Read
 - **Write Access**: Write
 - **Offset**: 0xa0080
-- **Default**: 0
+- **Default**: 0 
 
 
 
@@ -3440,7 +3441,7 @@ Below is a summary of all the registers in the current section hbm_axi4_addr_3in
 - **Read Access**: Read
 - **Write Access**: Write
 - **Offset**: 0xa0084
-- **Default**: 0
+- **Default**: 0 
 
 
 
@@ -3455,7 +3456,7 @@ Below is a summary of all the registers in the current section hbm_axi4_addr_3in
 - **Read Access**: Read
 - **Write Access**: Write
 - **Offset**: 0xa0088
-- **Default**: 0
+- **Default**: 0 
 
 
 
@@ -3470,14 +3471,14 @@ Below is a summary of all the registers in the current section hbm_axi4_addr_3in
 - **Read Access**: Read
 - **Write Access**: Write
 - **Offset**: 0xa008c
-- **Default**: 0
+- **Default**: 0 
 
 
 
 
 ---
 
-
+ 
 
 
 ## Section hpu-reset
@@ -3501,7 +3502,7 @@ Below is a summary of all the registers in the current section hpu_reset:
 - **Read Access**: ReadNotify
 - **Write Access**: WriteNotify
 - **Offset**: 0xa0100
-- **Default**: C.f. fields
+- **Default**: C.f. fields 
 
 
 #### Field Details
@@ -3517,7 +3518,7 @@ Register trigger contains following Sub-fields:
 
 ---
 
-
+ 
 
 
 ## Section entry-prc-3in3
@@ -3544,7 +3545,7 @@ Below is a summary of all the registers in the current section entry_prc_3in3:
 - **Read Access**: Read
 - **Write Access**: None
 - **Offset**: 0xb0000
-- **Default**: 67372036
+- **Default**: 67372036 
 
 
 
@@ -3559,7 +3560,7 @@ Below is a summary of all the registers in the current section entry_prc_3in3:
 - **Read Access**: Read
 - **Write Access**: None
 - **Offset**: 0xb0004
-- **Default**: 336860180
+- **Default**: 336860180 
 
 
 
@@ -3574,7 +3575,7 @@ Below is a summary of all the registers in the current section entry_prc_3in3:
 - **Read Access**: Read
 - **Write Access**: None
 - **Offset**: 0xb0008
-- **Default**: 606348324
+- **Default**: 606348324 
 
 
 
@@ -3589,14 +3590,14 @@ Below is a summary of all the registers in the current section entry_prc_3in3:
 - **Read Access**: Read
 - **Write Access**: None
 - **Offset**: 0xb000c
-- **Default**: 875836468
+- **Default**: 875836468 
 
 
 
 
 ---
 
-
+ 
 
 
 ## Section status-3in3
@@ -3620,7 +3621,7 @@ Below is a summary of all the registers in the current section status_3in3:
 - **Read Access**: Read
 - **Write Access**: WriteNotify
 - **Offset**: 0xb0010
-- **Default**: C.f. fields
+- **Default**: C.f. fields 
 
 
 #### Field Details
@@ -3635,7 +3636,7 @@ Register error contains following Sub-fields:
 
 ---
 
-
+ 
 
 
 ## Section bsk-avail
@@ -3660,7 +3661,7 @@ Below is a summary of all the registers in the current section bsk_avail:
 - **Read Access**: Read
 - **Write Access**: Write
 - **Offset**: 0xb1000
-- **Default**: C.f. fields
+- **Default**: C.f. fields 
 
 
 #### Field Details
@@ -3683,7 +3684,7 @@ Register avail contains following Sub-fields:
 - **Read Access**: Read
 - **Write Access**: WriteNotify
 - **Offset**: 0xb1004
-- **Default**: C.f. fields
+- **Default**: C.f. fields 
 
 
 #### Field Details
@@ -3699,7 +3700,7 @@ Register reset contains following Sub-fields:
 
 ---
 
-
+ 
 
 
 ## Section runtime-3in3
@@ -3740,7 +3741,7 @@ Below is a summary of all the registers in the current section runtime_3in3:
 - **Read Access**: Read
 - **Write Access**: WriteNotify
 - **Offset**: 0xb2000
-- **Default**: 0
+- **Default**: 0 
 
 
 
@@ -3755,7 +3756,7 @@ Below is a summary of all the registers in the current section runtime_3in3:
 - **Read Access**: Read
 - **Write Access**: WriteNotify
 - **Offset**: 0xb2004
-- **Default**: 0
+- **Default**: 0 
 
 
 
@@ -3770,7 +3771,7 @@ Below is a summary of all the registers in the current section runtime_3in3:
 - **Read Access**: Read
 - **Write Access**: WriteNotify
 - **Offset**: 0xb2008
-- **Default**: 0
+- **Default**: 0 
 
 
 
@@ -3785,7 +3786,7 @@ Below is a summary of all the registers in the current section runtime_3in3:
 - **Read Access**: Read
 - **Write Access**: WriteNotify
 - **Offset**: 0xb200c
-- **Default**: 0
+- **Default**: 0 
 
 
 
@@ -3800,7 +3801,7 @@ Below is a summary of all the registers in the current section runtime_3in3:
 - **Read Access**: Read
 - **Write Access**: WriteNotify
 - **Offset**: 0xb2010
-- **Default**: 0
+- **Default**: 0 
 
 
 
@@ -3815,7 +3816,7 @@ Below is a summary of all the registers in the current section runtime_3in3:
 - **Read Access**: Read
 - **Write Access**: WriteNotify
 - **Offset**: 0xb2014
-- **Default**: 0
+- **Default**: 0 
 
 
 
@@ -3830,7 +3831,7 @@ Below is a summary of all the registers in the current section runtime_3in3:
 - **Read Access**: Read
 - **Write Access**: WriteNotify
 - **Offset**: 0xb2018
-- **Default**: 0
+- **Default**: 0 
 
 
 
@@ -3845,7 +3846,7 @@ Below is a summary of all the registers in the current section runtime_3in3:
 - **Read Access**: Read
 - **Write Access**: WriteNotify
 - **Offset**: 0xb201c
-- **Default**: 0
+- **Default**: 0 
 
 
 
@@ -3860,7 +3861,7 @@ Below is a summary of all the registers in the current section runtime_3in3:
 - **Read Access**: Read
 - **Write Access**: WriteNotify
 - **Offset**: 0xb2020
-- **Default**: 0
+- **Default**: 0 
 
 
 
@@ -3875,7 +3876,7 @@ Below is a summary of all the registers in the current section runtime_3in3:
 - **Read Access**: Read
 - **Write Access**: WriteNotify
 - **Offset**: 0xb2024
-- **Default**: 0
+- **Default**: 0 
 
 
 
@@ -3890,7 +3891,7 @@ Below is a summary of all the registers in the current section runtime_3in3:
 - **Read Access**: Read
 - **Write Access**: WriteNotify
 - **Offset**: 0xb2028
-- **Default**: 0
+- **Default**: 0 
 
 
 
@@ -3905,7 +3906,7 @@ Below is a summary of all the registers in the current section runtime_3in3:
 - **Read Access**: Read
 - **Write Access**: WriteNotify
 - **Offset**: 0xb202c
-- **Default**: 0
+- **Default**: 0 
 
 
 
@@ -3920,7 +3921,7 @@ Below is a summary of all the registers in the current section runtime_3in3:
 - **Read Access**: Read
 - **Write Access**: WriteNotify
 - **Offset**: 0xb2030
-- **Default**: 0
+- **Default**: 0 
 
 
 
@@ -3935,7 +3936,7 @@ Below is a summary of all the registers in the current section runtime_3in3:
 - **Read Access**: Read
 - **Write Access**: WriteNotify
 - **Offset**: 0xb2034
-- **Default**: 0
+- **Default**: 0 
 
 
 
@@ -3950,7 +3951,7 @@ Below is a summary of all the registers in the current section runtime_3in3:
 - **Read Access**: Read
 - **Write Access**: WriteNotify
 - **Offset**: 0xb2038
-- **Default**: 0
+- **Default**: 0 
 
 
 
@@ -3965,7 +3966,7 @@ Below is a summary of all the registers in the current section runtime_3in3:
 - **Read Access**: Read
 - **Write Access**: WriteNotify
 - **Offset**: 0xb203c
-- **Default**: 0
+- **Default**: 0 
 
 
 
@@ -3980,7 +3981,7 @@ Below is a summary of all the registers in the current section runtime_3in3:
 - **Read Access**: Read
 - **Write Access**: None
 - **Offset**: 0xb2040
-- **Default**: C.f. fields
+- **Default**: C.f. fields 
 
 
 #### Field Details
@@ -4004,7 +4005,7 @@ Register pep_bskif_req_info_0 contains following Sub-fields:
 - **Read Access**: Read
 - **Write Access**: None
 - **Offset**: 0xb2044
-- **Default**: C.f. fields
+- **Default**: C.f. fields 
 
 
 #### Field Details
@@ -4021,7 +4022,7 @@ Register pep_bskif_req_info_1 contains following Sub-fields:
 
 ---
 
-
+ 
 
 
 ## Section entry-eth-2in3
@@ -4048,7 +4049,7 @@ Below is a summary of all the registers in the current section entry_eth_2in3:
 - **Read Access**: Read
 - **Write Access**: None
 - **Offset**: 0xe0000
-- **Default**: 84215044
+- **Default**: 84215044 
 
 
 
@@ -4063,7 +4064,7 @@ Below is a summary of all the registers in the current section entry_eth_2in3:
 - **Read Access**: Read
 - **Write Access**: None
 - **Offset**: 0xe0004
-- **Default**: 353703189
+- **Default**: 353703189 
 
 
 
@@ -4078,7 +4079,7 @@ Below is a summary of all the registers in the current section entry_eth_2in3:
 - **Read Access**: Read
 - **Write Access**: None
 - **Offset**: 0xe0008
-- **Default**: 623191333
+- **Default**: 623191333 
 
 
 
@@ -4093,14 +4094,14 @@ Below is a summary of all the registers in the current section entry_eth_2in3:
 - **Read Access**: Read
 - **Write Access**: None
 - **Offset**: 0xe000c
-- **Default**: 892679477
+- **Default**: 892679477 
 
 
 
 
 ---
 
-
+ 
 
 
 ## Section line
@@ -4111,26 +4112,101 @@ Below is a summary of all the registers in the current section line:
 
 | Name             | Offset | Access | Description |
 |-----------------:|:------:|:------:|:------------|
-| [select](#register-lineselect) | 0xe0010 | RW |  ethernet line selection for direct link |
+| [parameter](#register-lineparameter) | 0xe0010 | RW |  Different parameters for qsfp lines |
 
 
 ---
 
 
-### Register line.select
+### Register line.parameter
 
-- **Description**: ethernet line selection for direct link
+- **Description**: Different parameters for qsfp lines
 - **Owner**: User
 - **Read Access**: Read
 - **Write Access**: Write
 - **Offset**: 0xe0010
-- **Default**: 0
+- **Default**: C.f. fields 
 
+
+#### Field Details
+
+Register parameter contains following Sub-fields:
+
+| Field Name | Offset_b | Size_b | Default      | Description   |
+|-----------:|:--------:|:------:|:------------:|:--------------|
+| select      | 0 | 2 |0| line selection |
+| loopback      | 3 | 3 |0| line loopback configurations |
+| rate      | 6 | 8 |0| line rates |
+
+
+
+---
+
+ 
+
+
+## Section reset
+
+### Register Overview
+
+Below is a summary of all the registers in the current section reset:
+
+| Name             | Offset | Access | Description |
+|-----------------:|:------:|:------:|:------------|
+| [datapath](#register-resetdatapath) | 0xe0014 | RW |  progammable datapath resets |
+| [monitor](#register-resetmonitor) | 0xe0018 | R. |  reset done monitoring |
+
+
+---
+
+
+### Register reset.datapath
+
+- **Description**: progammable datapath resets
+- **Owner**: User
+- **Read Access**: Read
+- **Write Access**: Write
+- **Offset**: 0xe0014
+- **Default**: C.f. fields 
+
+
+#### Field Details
+
+Register datapath contains following Sub-fields:
+
+| Field Name | Offset_b | Size_b | Default      | Description   |
+|-----------:|:--------:|:------:|:------------:|:--------------|
+| gt_all      | 0 | 4 |0| line loopback configurations |
+| tx_rst      | 4 | 4 |0| line selection |
+| rx_rst      | 8 | 4 |0| line selection |
 
 
 
 ---
 
 
+### Register reset.monitor
+
+- **Description**: reset done monitoring
+- **Owner**: Kernel
+- **Read Access**: Read
+- **Write Access**: None
+- **Offset**: 0xe0018
+- **Default**: C.f. fields 
 
 
+#### Field Details
+
+Register monitor contains following Sub-fields:
+
+| Field Name | Offset_b | Size_b | Default      | Description   |
+|-----------:|:--------:|:------:|:------------:|:--------------|
+| rst_done      | 0 | 8 |0| rst done monitoring |
+
+
+
+---
+
+ 
+
+ 
