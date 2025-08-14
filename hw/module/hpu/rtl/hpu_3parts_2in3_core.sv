@@ -501,7 +501,7 @@ module hpu_3parts_2in3_core
     .axis_tx_tkeep_user(axis_tx_tkeep_user),
     .axis_tx_tlast(axis_tx_tlast),
     .axis_tx_tvalid(axis_tx_tvalid),
-    .axis_tx_tready(axis_tx_tready)
+    .axis_tx_tready(axis_tx_tready),
 
     // gt control signals
     .gt_loopback(gt_loopback),

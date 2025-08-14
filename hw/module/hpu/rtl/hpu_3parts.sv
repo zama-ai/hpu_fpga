@@ -45,6 +45,11 @@ module hpu_3parts
   parameter int    VERSION_MAJOR    = 2,
   parameter int    VERSION_MINOR    = 0,
 
+  // Ethernet
+  parameter int    LINE_NB       = 4,  // number of QSFP lines
+  parameter int    AXIS_TDATA_W  = 64, // must match MAC+PCS configuration from bd
+  parameter int    AXIS_TKEEP_W  = 11,
+
   // Add pipe on signals between parts.
   parameter int    INTER_PART_PIPE  = 2 // Indicates the number of pipes on signals crossing the SLRs.
                                         // Note that 0 means not used.
@@ -121,7 +126,7 @@ module hpu_3parts
   output [LINE_NB-1:0] gt_reset_tx_datapath,
   output [LINE_NB-1:0] gt_reset_all,
   input  [LINE_NB-1:0] gt_rx_reset_done,
-  input  [LINE_NB-1:0] gt_tx_reset_done
+  input  [LINE_NB-1:0] gt_tx_reset_done,
 
   //== AXI stream for ISC
   input  logic [PE_INST_W-1:0] isc_dop,

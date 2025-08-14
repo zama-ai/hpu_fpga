@@ -2676,7 +2676,10 @@ module top_hpu #(
     .AXI4_GLWE_ADD_W  (AXI4_GLWE_ADD_W),
     .AXI4_BSK_ADD_W   (AXI4_BSK_ADD_W),
     .AXI4_KSK_ADD_W   (AXI4_KSK_ADD_W),
-    .INTER_PART_PIPE  (INTER_PART_PIPE)
+    .INTER_PART_PIPE  (INTER_PART_PIPE),
+    .LINE_NB          (LINE_NB),
+    .AXIS_TDATA_W     (AXIS_TDATA_W),
+    .AXIS_TKEEP_W     (AXIS_TKEEP_W)
   ) hpu_3parts (
     .prc_free_clk                  (prc_free_clk),
     .prc_free_srst_n               (prc_free_srst_n),
