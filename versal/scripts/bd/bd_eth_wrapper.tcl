@@ -431,6 +431,7 @@ proc create_hier_cell_eth_wrapper  { parentCell nameHier } {
   set s_axi_aresetn [ create_bd_pin -dir I -type rst s_axi_aresetn ]
 
   set s_axis_mrmac_aclk [ create_bd_pin -dir I -type clk s_axis_mrmac_aclk ]
+  set s_axis_mrmac_aresetn [ create_bd_pin -dir I -type rst s_axis_mrmac_aresetn ]
 
   set tx_core_clk [ create_bd_pin -dir I -from 3 -to 0 -type gt_usrclk tx_core_clk ]
   set rx_core_clk [ create_bd_pin -dir I -from 3 -to 0 -type gt_usrclk rx_core_clk ]
@@ -632,12 +633,13 @@ proc create_hier_cell_eth_wrapper  { parentCell nameHier } {
   ####################################
   # clocks and resets
   connect_bd_net -net config_aresetn [get_bd_pins s_axi_aresetn] [get_bd_pins mrmac_0_core/s_axi_aresetn] \
-                                     [get_bd_pins line_dbg/s_axi_aresetn] [get_bd_pins mrmac_0_gt_wrapper/s_axi_aresetn] \
+                                     [get_bd_pins mrmac_0_gt_wrapper/s_axi_aresetn] \
                                      [get_bd_pins axil_clk_converter/aresetn]
 
   connect_bd_net -net config_aclk [get_bd_pins s_axi_aclk] [get_bd_pins mrmac_0_core/s_axi_aclk] [get_bd_pins axil_clk_converter/aclk]
 
   connect_bd_net -net stream_aclk [get_bd_pins s_axis_mrmac_aclk] [get_bd_pins axil_clk_converter/aclk1] [get_bd_pins line_dbg/s_axi_aclk]
+  connect_bd_net -net stream_aresetn [get_bd_pins s_axis_mrmac_aresetn] [get_bd_pins line_dbg/s_axi_aresetn]
 
   # dbg
   connect_bd_intf_net -boundary_type upper     [get_bd_intf_pins axil_clk_converter/S00_AXI] [get_bd_intf_pins s_axil_dbg]

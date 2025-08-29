@@ -871,6 +871,7 @@ proc create_root_design { parentCell ntt_psi } {
   # Ethernet
   connect_bd_net      [get_bd_pins eth_wrapper/s_axi_aclk]    [get_bd_pins shell_wrapper/clk_eth_cfg_0]
   connect_bd_net      [get_bd_pins eth_wrapper/s_axi_aresetn] [get_bd_pins shell_wrapper/resetn_eth_cfg_ic_0]
+  connect_bd_net      [get_bd_pins eth_wrapper/s_axis_mrmac_aresetn] [get_bd_pins shell_wrapper/resetn_eth_qsfp_ic_0]
 
   ####################################
   # Address
