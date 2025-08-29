@@ -78,7 +78,24 @@ module hpu_3parts
   `HPU_AXIL_IO(cfg_1in3,axi_if_shell_axil_pkg)
   `HPU_AXIL_IO(prc_3in3,axi_if_shell_axil_pkg)
   `HPU_AXIL_IO(cfg_3in3,axi_if_shell_axil_pkg)
-  `HPU_AXIL_IO(dma_2in3,axi_if_shell_axil_pkg)
+  // `HPU_AXIL_IO(dma_2in3,axi_if_shell_axil_pkg)
+  input  logic [AXIL_ADD_W-1:0]              s_axil_dma_2in3_awaddr,
+  input  logic                               s_axil_dma_2in3_awvalid,
+  output logic                               s_axil_dma_2in3_awready,
+  input  logic [AXIL_DATA_W-1:0]             s_axil_dma_2in3_wdata,
+  input  logic [AXIL_DATA_BYTES-1:0]         s_axil_dma_2in3_wstrb, /* UNUSED */
+  input  logic                               s_axil_dma_2in3_wvalid,
+  output logic                               s_axil_dma_2in3_wready,
+  output logic [1:0]                         s_axil_dma_2in3_bresp,
+  output logic                               s_axil_dma_2in3_bvalid,
+  input  logic                               s_axil_dma_2in3_bready,
+  input  logic [AXIL_ADD_W-1:0]              s_axil_dma_2in3_araddr,
+  input  logic                               s_axil_dma_2in3_arvalid,
+  output logic                               s_axil_dma_2in3_arready,
+  output logic [AXIL_DATA_W-1:0]             s_axil_dma_2in3_rdata,
+  output logic [1:0]                         s_axil_dma_2in3_rresp,
+  output logic                               s_axil_dma_2in3_rvalid,
+  input  logic                               s_axil_dma_2in3_rready,
 
   //== Axi4 trace interface
   `HPU_AXI4_IO(trc, TRC, axi_if_trc_axi_pkg,)
@@ -555,7 +572,23 @@ module hpu_3parts
     .prc_mrmac_clk              (prc_mrmac_clk),
     .prc_mrmac_srst_n           (prc_mrmac_srst_n),
 
-    `HPU_AXIL_INSTANCE(dma,eth_2in3)
+    .s_axil_dma_awaddr          (s_axil_dma_2in3_awaddr),
+    .s_axil_dma_awvalid         (s_axil_dma_2in3_awvalid),
+    .s_axil_dma_awready         (s_axil_dma_2in3_awready),
+    .s_axil_dma_wdata           (s_axil_dma_2in3_wdata),
+    .s_axil_dma_wstrb           (s_axil_dma_2in3_wstrb),
+    .s_axil_dma_wvalid          (s_axil_dma_2in3_wvalid),
+    .s_axil_dma_wready          (s_axil_dma_2in3_wready),
+    .s_axil_dma_bresp           (s_axil_dma_2in3_bresp),
+    .s_axil_dma_bvalid          (s_axil_dma_2in3_bvalid),
+    .s_axil_dma_bready          (s_axil_dma_2in3_bready),
+    .s_axil_dma_araddr          (s_axil_dma_2in3_araddr),
+    .s_axil_dma_arvalid         (s_axil_dma_2in3_arvalid),
+    .s_axil_dma_arready         (s_axil_dma_2in3_arready),
+    .s_axil_dma_rdata           (s_axil_dma_2in3_rdata),
+    .s_axil_dma_rresp           (s_axil_dma_2in3_rresp),
+    .s_axil_dma_rvalid          (s_axil_dma_2in3_rvalid),
+    .s_axil_dma_rready          (s_axil_dma_2in3_rready),
 
     .decomp_ntt_data_avail      (out_p1_p2_sll_ctrl.decomp_ntt_ctrl.data_avail),
     .decomp_ntt_data            (out_p1_p2_sll_data.decomp_ntt_data.data),

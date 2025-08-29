@@ -112,8 +112,8 @@ module top_hpu #(
   localparam int LINE_NB = 4;
   // Ethernet preamble
   localparam int START_FRAME_DELIMITER = 8'hD5;
-  localparam int PREAMBLE = 48'h55555555555555;
-  // tx preamble is only 56 bits
+  localparam int PREAMBLE = 48'h555555555555;
+  // tx preamble is only 56 bits: we are in  custom mode due to non-segmented configuration
   localparam [55:0] TX_PREAMBLE = {PREAMBLE, START_FRAME_DELIMITER};
 
   // axi4-stream ethernet
@@ -596,16 +596,16 @@ module top_hpu #(
   // ---------------------- //
   // Line rate
   logic [31:0] SW_REG_GT_LINE_RATE;
-  logic [7:0]         gt_line_rate;
+  (* mark_debug = "true" *) logic [7:0]         gt_line_rate;
   // loopback
-  logic [2:0]         gt_loopback;
+  (* mark_debug = "true" *) logic [2:0]         gt_loopback;
   // asynchronous resets
   logic [LINE_NB-1:0] gt_reset_rx_datapath;
   logic [LINE_NB-1:0] gt_reset_tx_datapath;
   logic [LINE_NB-1:0] gt_reset_all;
   // reset monitoring
-  logic [LINE_NB-1:0] gt_rx_reset_done;
-  logic [LINE_NB-1:0] gt_tx_reset_done;
+  (* mark_debug = "true" *) logic [LINE_NB-1:0] gt_rx_reset_done;
+  (* mark_debug = "true" *) logic [LINE_NB-1:0] gt_tx_reset_done;
   // ----------------------------------------------------------------------- //
   // resets
   //  ---- //
@@ -617,6 +617,7 @@ module top_hpu #(
   // flexible reset
   logic [LINE_NB-1:0] rx_flexif_reset;
   // ----------------------------------------------------------------------- //
+  (* mark_debug = "true" *) logic gtpowergood_in;
   // QSFP RX axi4-stream
   logic [LINE_NB-1:0][AXIS_TDATA_W-1:0] qsfp_rx_tdata;
   logic [LINE_NB-1:0][AXIS_TKEEP_W-1:0] qsfp_rx_tkeep_user;

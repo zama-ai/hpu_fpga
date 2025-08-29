@@ -8,8 +8,8 @@ set_max_delay -datapath_only -from [get_clocks clk_pl_0] -to [get_clocks -of_obj
 set_clock_groups -quiet -name pl0_ref_clk_0 -asynchronous -group [get_clocks -of_objects [get_pins i_mrmac_0_cips_wrapper/mrmac_0_cips_i/pl0_ref_clk_0]]
 
 # quasi-static signals
-set_false_path -through [get_nets gt_line_rate]
-set_false_path -through [get_nets gt_loopback]
+set_false_path -through [get_nets -hierarchical -regexp -filter { NAME =~ ".*dma/gt_line_rate.*"}]
+set_false_path -through [get_nets -hierarchical -regexp -filter { NAME =~ ".*dma/gt_loopback.*"}]
 
 # asynchronous reset signals
 set_false_path -through [get_nets  -hierarchical -regexp -filter { NAME =~ ".*gt_reset_rx_datapath.*"}]

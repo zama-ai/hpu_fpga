@@ -64,7 +64,23 @@ module hpu_3parts_2in3_core
   input logic                                prc_mrmac_clk,    // mrmac clock at axis speed
   input logic                                prc_mrmac_srst_n, // mrmac clock at axis speed
 
-  `HPU_AXIL_IO(dma,axi_if_shell_axil_pkg)
+  input  logic [AXIL_ADD_W-1:0]              s_axil_dma_awaddr,
+  input  logic                               s_axil_dma_awvalid,
+  output logic                               s_axil_dma_awready,
+  input  logic [AXIL_DATA_W-1:0]             s_axil_dma_wdata,
+  input  logic [AXIL_DATA_BYTES-1:0]         s_axil_dma_wstrb, /* UNUSED */
+  input  logic                               s_axil_dma_wvalid,
+  output logic                               s_axil_dma_wready,
+  output logic [1:0]                         s_axil_dma_bresp,
+  output logic                               s_axil_dma_bvalid,
+  input  logic                               s_axil_dma_bready,
+  input  logic [AXIL_ADD_W-1:0]              s_axil_dma_araddr,
+  input  logic                               s_axil_dma_arvalid,
+  output logic                               s_axil_dma_arready,
+  output logic [AXIL_DATA_W-1:0]             s_axil_dma_rdata,
+  output logic [1:0]                         s_axil_dma_rresp,
+  output logic                               s_axil_dma_rvalid,
+  input  logic                               s_axil_dma_rready,
 
   // Decomposer -> NTT
   input  logic [PSI-1:0][R-1:0]              decomp_ntt_data_avail,
@@ -458,8 +474,8 @@ module hpu_3parts_2in3_core
     .AXIS_TKEEP_W(AXIS_TKEEP_W)
   ) dma (
     // configration interface: regif
-    .clk_eth_cfg   (clk_eth_cfg),
-    .resetn_eth_cfg(resetn_eth_cfg),
+    .clk_eth_cfg   (cfg_eth_clk),
+    .resetn_eth_cfg(cfg_eth_srst_n),
 
     // register interface
     .s_axil_dma_awaddr(s_axil_dma_awaddr),
