@@ -2663,7 +2663,14 @@ module top_hpu #(
     .sys_clk0_0_clk_n(top_sys_clk0_0_clk_n),
     .sys_clk0_0_clk_p(top_sys_clk0_0_clk_p),
     .sys_clk0_1_clk_n(top_sys_clk0_1_clk_n),
-    .sys_clk0_1_clk_p(top_sys_clk0_1_clk_p)
+    .sys_clk0_1_clk_p(top_sys_clk0_1_clk_p),
+
+    .ila_clk(eth_cfg_clk),
+    .ila_line_rate(gt_line_rate),
+    .ila_loopback(gt_loopback),
+    .ila_rx_reset_done(gt_rx_reset_done),
+    .ila_tx_reset_done(gt_tx_reset_done),
+    .ila_gtpowergood_in(gtpowergood_in)
   );
 
 //=====================================

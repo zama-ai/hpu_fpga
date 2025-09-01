@@ -626,6 +626,32 @@ proc create_root_design { parentCell ntt_psi } {
   save_bd_design
 
   ####################################
+  # Debug
+  ####################################
+  create_bd_cell -type ip -vlnv xilinx.com:ip:axis_ila:1.3 axis_ila_0
+  set_property -dict [list \
+    CONFIG.C_MON_TYPE {Net_Probes} \
+    CONFIG.C_NUM_OF_PROBES {5} \
+    CONFIG.C_PROBE0_WIDTH {8} \
+    CONFIG.C_PROBE1_WIDTH {3} \
+    CONFIG.C_PROBE2_WIDTH {4} \
+    CONFIG.C_PROBE3_WIDTH {4} \
+  ] [get_bd_cells axis_ila_0]
+
+  make_bd_pins_external  [get_bd_pins axis_ila_0/clk]
+  make_bd_pins_external  [get_bd_pins axis_ila_0/probe0]
+  make_bd_pins_external  [get_bd_pins axis_ila_0/probe1]
+  make_bd_pins_external  [get_bd_pins axis_ila_0/probe2]
+  make_bd_pins_external  [get_bd_pins axis_ila_0/probe3]
+  make_bd_pins_external  [get_bd_pins axis_ila_0/probe4]
+  set_property name ila_clk [get_bd_ports clk_0]
+  set_property name ila_line_rate [get_bd_ports probe0_0]
+  set_property name ila_loopback [get_bd_ports probe1_0]
+  set_property name ila_rx_reset_done [get_bd_ports probe2_0]
+  set_property name ila_tx_reset_done [get_bd_ports probe3_0]
+  set_property name ila_gtpowergood_in [get_bd_ports probe4_0]
+
+  ####################################
   # Port Connections
   ####################################
   # == Clocks
