@@ -107,7 +107,7 @@ proc create_root_design { parentCell ntt_psi } {
   set clk_usr_0_0_ce [ create_bd_port -dir I clk_usr_0_0_ce]
   set clk_eth_cfg_0 [ create_bd_port -dir O -type clk clk_eth_cfg_0 ]
 
-  set apb3clk_quad [ create_bd_port -dir I -type clk -freq_hz 200000000 apb3clk_quad ]
+  # set apb3clk_quad [ create_bd_port -dir I -type clk -freq_hz 200000000 apb3clk_quad ]
 
   set tx_axi_clk [ create_bd_port -dir I -from 3 -to 0 -type clk -freq_hz [expr int($ETH_QSFP_FREQ * 10**6)] tx_axi_clk ]
   set rx_axi_clk [ create_bd_port -dir I -from 3 -to 0 -type clk -freq_hz [expr int($ETH_QSFP_FREQ * 10**6)] rx_axi_clk ]
@@ -761,7 +761,6 @@ proc create_root_design { parentCell ntt_psi } {
   connect_bd_intf_net -intf_net eth_wrapper_stat_tx_port3  [get_bd_intf_ports stat_tx_port3] [get_bd_intf_pins eth_wrapper/stat_tx_port3]
   connect_bd_intf_net -intf_net tx_preamblein              [get_bd_intf_ports tx_preamblein] [get_bd_intf_pins eth_wrapper/tx_preamblein]
 
-  connect_bd_net -net apb3clk_quad                     [get_bd_ports apb3clk_quad] [get_bd_pins eth_wrapper/apb3clk_quad]
   connect_bd_net -net ch0_loopback                     [get_bd_ports ch0_loopback] [get_bd_pins eth_wrapper/ch0_loopback]
   connect_bd_net -net ch0_rxrate                       [get_bd_ports ch0_rxrate] [get_bd_pins eth_wrapper/ch0_rxrate]
   connect_bd_net -net ch0_rxusrclk                     [get_bd_ports ch0_rxusrclk] [get_bd_pins eth_wrapper/ch0_rxusrclk]
@@ -901,6 +900,10 @@ proc create_root_design { parentCell ntt_psi } {
 
   connect_bd_net [get_bd_pins noc_wrapper/eth_clk]   [get_bd_pins shell_wrapper/clk_eth_cfg_0] [get_bd_ports clk_eth_cfg_0] -boundary_type upper
   connect_bd_net [get_bd_pins noc_wrapper/eth_rst_n] [get_bd_pins shell_wrapper/resetn_eth_cfg_ic_0] [get_bd_ports resetn_eth_cfg_ic_0] -boundary_type upper
+
+  connect_bd_net [get_bd_pins eth_wrapper/apb3clk_quad] [get_bd_pins shell_wrapper/clk_gt_freerun_0]
+  connect_bd_net [get_bd_pins eth_wrapper/apb3presetn]  [get_bd_pins shell_wrapper/resetn_gt_freerun_ic_0]
+
 
   # MGMT
   connect_bd_intf_net -intf_net s_axi_pcie_mgmt_slr0 [get_bd_intf_pins shell_wrapper/s_axi_pcie_mgmt_slr0] [get_bd_intf_pins noc_wrapper/s_axi_pcie_mgmt_slr0]

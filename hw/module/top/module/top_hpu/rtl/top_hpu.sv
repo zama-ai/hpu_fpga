@@ -2330,7 +2330,7 @@ module top_hpu #(
     .APB3_INTF_pslverr  (),
     .APB3_INTF_pwdata   (32'd0),
     .APB3_INTF_pwrite   (1'b0),
-    .apb3clk_quad       (eth_cfg_clk),
+    // .apb3clk_quad       (eth_cfg_clk),
     // control signals
     .gtpowergood  (gtpowergood_in),
     .ch0_loopback (gt_loopback),

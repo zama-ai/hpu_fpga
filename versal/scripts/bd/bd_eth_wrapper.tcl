@@ -66,7 +66,7 @@ proc create_hier_cell_mrmac_0_gt_wrapper { parentCell nameHier } {
   create_bd_pin -dir I -from 2 -to 0 ch2_loopback
   create_bd_pin -dir I -from 2 -to 0 ch3_loopback
   create_bd_pin -dir I -type clk apb3clk_quad
-  create_bd_pin -dir I -type rst s_axi_aresetn
+  create_bd_pin -dir I -type rst apb3presetn
   create_bd_pin -dir O gtpowergood
   create_bd_pin -dir I -from 3 -to 0 gt_rxp_in_0
   create_bd_pin -dir I -from 3 -to 0 gt_rxn_in_0
@@ -349,7 +349,7 @@ MSTRCLK 1,0,0,0 IS_CURRENT_QUAD 1}}} \
   connect_bd_net -net mrmac_0_core_rx_clrb_leaf_out_3  [get_bd_pins MBUFG_GT_CLRB_LEAF4] [get_bd_pins mbufg_gt_1_3/MBUFG_GT_CLRB_LEAF]
   connect_bd_net -net mrmac_0_core_tx_clr_out_0  [get_bd_pins MBUFG_GT_CLR] [get_bd_pins mbufg_gt_0/MBUFG_GT_CLR]
   connect_bd_net -net mrmac_0_core_tx_clrb_leaf_out_0  [get_bd_pins MBUFG_GT_CLRB_LEAF] [get_bd_pins mbufg_gt_0/MBUFG_GT_CLRB_LEAF]
-  connect_bd_net -net s_axi_aresetn_1  [get_bd_pins s_axi_aresetn] [get_bd_pins gt_quad_base/apb3presetn]
+  connect_bd_net -net apb3presetn_1  [get_bd_pins apb3presetn] [get_bd_pins gt_quad_base/apb3presetn]
 
   # This important to note that we use GT_REFCLK0 and not GT_REFCLK1
   connect_bd_net -net util_ds_buf_0_IBUFDS_GTME5_O  [get_bd_pins util_ds_buf_0/IBUFDS_GTME5_O]   [get_bd_pins gt_quad_base/GT_REFCLK0]
@@ -418,6 +418,8 @@ proc create_hier_cell_eth_wrapper  { parentCell nameHier } {
 
   # Create pins
   set apb3clk_quad [ create_bd_pin -dir I -type clk apb3clk_quad ]
+  set apb3presetn [ create_bd_pin -dir I -type rst apb3presetn ]
+
   set tx_axi_clk [ create_bd_pin -dir I -from 3 -to 0 -type clk tx_axi_clk ]
   set rx_axi_clk [ create_bd_pin -dir I -from 3 -to 0 -type clk rx_axi_clk ]
 
@@ -633,8 +635,8 @@ proc create_hier_cell_eth_wrapper  { parentCell nameHier } {
   ####################################
   # clocks and resets
   connect_bd_net -net config_aresetn [get_bd_pins s_axi_aresetn] [get_bd_pins mrmac_0_core/s_axi_aresetn] \
-                                     [get_bd_pins mrmac_0_gt_wrapper/s_axi_aresetn] \
                                      [get_bd_pins axil_clk_converter/aresetn]
+
 
   connect_bd_net -net config_aclk [get_bd_pins s_axi_aclk] [get_bd_pins mrmac_0_core/s_axi_aclk] [get_bd_pins axil_clk_converter/aclk]
 
@@ -654,6 +656,7 @@ proc create_hier_cell_eth_wrapper  { parentCell nameHier } {
   connect_bd_intf_net -intf_net gt_quad_base_GT_Serial [get_bd_intf_pins mrmac_0_gt_wrapper/GT_Serial]  [get_bd_intf_pins GT_Serial]
   connect_bd_intf_net -boundary_type upper             [get_bd_intf_pins mrmac_0_gt_wrapper/CLK_IN_D]   [get_bd_intf_pins mrmac_0_gt_wrapper/util_ds_buf_0/CLK_IN_D1]
 
+  connect_bd_net -net cfg_apb3presetn                  [get_bd_pins mrmac_0_gt_wrapper/apb3presetn]     [get_bd_pins apb3presetn]
   connect_bd_net -net apb3clk_quad_1                   [get_bd_pins mrmac_0_gt_wrapper/apb3clk_quad]    [get_bd_pins apb3clk_quad]
   connect_bd_net -net ch0_loopback_1                   [get_bd_pins mrmac_0_gt_wrapper/ch0_loopback]    [get_bd_pins ch0_loopback]
   connect_bd_net -net ch0_rxrate_1                     [get_bd_pins mrmac_0_gt_wrapper/ch0_rxrate]      [get_bd_pins ch0_rxrate]
