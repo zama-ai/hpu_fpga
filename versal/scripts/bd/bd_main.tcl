@@ -631,11 +631,18 @@ proc create_root_design { parentCell ntt_psi } {
   create_bd_cell -type ip -vlnv xilinx.com:ip:axis_ila:1.3 axis_ila_0
   set_property -dict [list \
     CONFIG.C_MON_TYPE {Net_Probes} \
-    CONFIG.C_NUM_OF_PROBES {5} \
+    CONFIG.C_NUM_OF_PROBES {12} \
     CONFIG.C_PROBE0_WIDTH {8} \
     CONFIG.C_PROBE1_WIDTH {3} \
     CONFIG.C_PROBE2_WIDTH {4} \
     CONFIG.C_PROBE3_WIDTH {4} \
+    CONFIG.C_PROBE10_WIDTH {4} \
+    CONFIG.C_PROBE11_WIDTH {4} \
+    CONFIG.C_PROBE5_WIDTH {4} \
+    CONFIG.C_PROBE6_WIDTH {4} \
+    CONFIG.C_PROBE7_WIDTH {4} \
+    CONFIG.C_PROBE8_WIDTH {4} \
+    CONFIG.C_PROBE9_WIDTH {4} \
   ] [get_bd_cells axis_ila_0]
 
   make_bd_pins_external  [get_bd_pins axis_ila_0/clk]
@@ -644,12 +651,27 @@ proc create_root_design { parentCell ntt_psi } {
   make_bd_pins_external  [get_bd_pins axis_ila_0/probe2]
   make_bd_pins_external  [get_bd_pins axis_ila_0/probe3]
   make_bd_pins_external  [get_bd_pins axis_ila_0/probe4]
+  make_bd_pins_external  [get_bd_pins axis_ila_0/probe5]
+  make_bd_pins_external  [get_bd_pins axis_ila_0/probe6]
+  make_bd_pins_external  [get_bd_pins axis_ila_0/probe7]
+  make_bd_pins_external  [get_bd_pins axis_ila_0/probe8]
+  make_bd_pins_external  [get_bd_pins axis_ila_0/probe9]
+  make_bd_pins_external  [get_bd_pins axis_ila_0/probe10]
+  make_bd_pins_external  [get_bd_pins axis_ila_0/probe11]
   set_property name ila_clk [get_bd_ports clk_0]
   set_property name ila_line_rate [get_bd_ports probe0_0]
   set_property name ila_loopback [get_bd_ports probe1_0]
   set_property name ila_rx_reset_done [get_bd_ports probe2_0]
   set_property name ila_tx_reset_done [get_bd_ports probe3_0]
   set_property name ila_gtpowergood_in [get_bd_ports probe4_0]
+
+  set_property name ila_gt_reset_rx_datapath [get_bd_ports probe5_0]
+  set_property name ila_gt_reset_tx_datapath [get_bd_ports probe6_0]
+  set_property name ila_gt_reset_all [get_bd_ports probe7_0]
+  set_property name ila_rx_core_reset [get_bd_ports probe8_0]
+  set_property name ila_rx_serdes_reset [get_bd_ports probe9_0]
+  set_property name ila_tx_core_reset [get_bd_ports probe10_0]
+  set_property name ila_tx_serdes_reset [get_bd_ports probe11_0]
 
   ####################################
   # Port Connections

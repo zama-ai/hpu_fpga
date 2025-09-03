@@ -2670,7 +2670,14 @@ module top_hpu #(
     .ila_loopback(gt_loopback),
     .ila_rx_reset_done(gt_rx_reset_done),
     .ila_tx_reset_done(gt_tx_reset_done),
-    .ila_gtpowergood_in(gtpowergood_in)
+    .ila_gtpowergood_in(gtpowergood_in),
+    .ila_gt_reset_rx_datapath(gt_reset_rx_datapath),
+    .ila_gt_reset_tx_datapath(gt_reset_tx_datapath),
+    .ila_gt_reset_all(gt_reset_all),
+    .ila_rx_core_reset(rx_core_reset),
+    .ila_rx_serdes_reset(rx_serdes_reset),
+    .ila_tx_core_reset(tx_core_reset),
+    .ila_tx_serdes_reset(tx_serdes_reset)
   );
 
 //=====================================
