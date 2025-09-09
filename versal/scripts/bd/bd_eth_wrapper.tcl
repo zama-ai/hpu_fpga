@@ -803,6 +803,22 @@ proc create_hier_cell_eth_wrapper  { parentCell nameHier } {
   connect_bd_net -net mrmac_0_core_tx_axis_tvalid_6     [get_bd_pins tx_axis_tvalid_6]     [get_bd_pins mrmac_0_core/tx_axis_tvalid_3]
   connect_bd_net -net mrmac_0_core_tx_axis_tready_6     [get_bd_pins tx_axis_tready_6]     [get_bd_pins mrmac_0_core/tx_axis_tready_3]
 
+
+
+  # Debug
+  create_bd_cell -type ip -vlnv xilinx.com:ip:axis_ila:1.3 ila_axis
+
+  set_property -dict [list \
+    CONFIG.C_MON_TYPE {Interface_Monitor} \
+    CONFIG.C_NUM_MONITOR_SLOTS {2} \
+    CONFIG.C_SLOT_0_INTF_TYPE {xilinx.com:interface:axis_rtl:1.0} \
+  ] [get_bd_cells ila_axis]
+
+  connect_bd_intf_net [get_bd_intf_pins ila_axis/SLOT_0_AXIS] [get_bd_intf_pins line_dbg/AXI_STR_TXD]
+  connect_bd_intf_net [get_bd_intf_pins ila_axis/SLOT_1_AXI] [get_bd_intf_pins line_dbg/S_AXI]
+  connect_bd_net [get_bd_pins s_axis_mrmac_aclk] [get_bd_pins ila_axis/clk]
+  connect_bd_net [get_bd_pins s_axis_mrmac_aresetn] [get_bd_pins ila_axis/resetn]
+
   # Restore current instance
   current_bd_instance $oldCurInst
 }

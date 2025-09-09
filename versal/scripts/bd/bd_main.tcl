@@ -631,7 +631,7 @@ proc create_root_design { parentCell ntt_psi } {
   create_bd_cell -type ip -vlnv xilinx.com:ip:axis_ila:1.3 axis_ila_0
   set_property -dict [list \
     CONFIG.C_MON_TYPE {Net_Probes} \
-    CONFIG.C_NUM_OF_PROBES {16} \
+    CONFIG.C_NUM_OF_PROBES {12} \
     CONFIG.C_PROBE0_WIDTH {8} \
     CONFIG.C_PROBE1_WIDTH {3} \
     CONFIG.C_PROBE2_WIDTH {4} \
@@ -672,11 +672,6 @@ proc create_root_design { parentCell ntt_psi } {
   set_property name ila_rx_serdes_reset [get_bd_ports probe9_0]
   set_property name ila_tx_core_reset [get_bd_ports probe10_0]
   set_property name ila_tx_serdes_reset [get_bd_ports probe11_0]
-
-  connect_bd_net [get_bd_pins eth_wrapper/mrmac_0_core/txdata_in_1] [get_bd_pins axis_ila_0/probe12]
-  connect_bd_net [get_bd_pins eth_wrapper/mrmac_0_core/mst_tx_dp_reset_out_1] [get_bd_pins axis_ila_0/probe13]
-  connect_bd_net [get_bd_pins eth_wrapper/mrmac_0_core/mst_tx_reset_out_1] [get_bd_pins axis_ila_0/probe14]
-  connect_bd_net [get_bd_pins eth_wrapper/mrmac_0_core/txuserrdy_out_1] [get_bd_pins axis_ila_0/probe15]
 
   ####################################
   # Port Connections
