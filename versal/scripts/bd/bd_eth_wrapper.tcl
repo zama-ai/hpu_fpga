@@ -554,20 +554,10 @@ proc create_hier_cell_eth_wrapper  { parentCell nameHier } {
    CONFIG.TUSER_WIDTH {0} \
   ] $axis_s_eth
 
-  # rather than clock convert axi stream best it to clock convert axi4-lite
-  set axil_clk_converter [ create_bd_cell -type ip -vlnv xilinx.com:ip:smartconnect:1.0 axil_clk_converter ]
-  set_property -dict [list \
-    CONFIG.NUM_CLKS {2} \
-    CONFIG.NUM_SI {1} \
-  ] $axil_clk_converter
-
-  # we use this smart connect to cross clock domains aclk -> aclk1
-  # set_property -dict [ list \
-  # CONFIG.ASSOCIATED_BUSIF S00_AXI \
-  # ] [get_bd_pins axil_clk_converter/aclk]
-  # set_property -dict [ list \
-  # CONFIG.ASSOCIATED_BUSIF M00_AXI \
-  # ] [get_bd_pins axil_clk_converter/aclk1]
+  # axi4-stream FIFO doesn't support too high frequency, let's make it run at 100
+  # therefore axi-streams interface with MRMAC must be boosted up to the higher freq
+  set axis_tx_clk_converter [ create_bd_cell -type ip -vlnv xilinx.com:ip:axis_clock_converter:1.1 axis_tx_clk_converter ]
+  set axis_rx_clk_converter [ create_bd_cell -type ip -vlnv xilinx.com:ip:axis_clock_converter:1.1 axis_rx_clk_converter ]
 
   # Create instance: mrmac_0_core, and set properties
   set mrmac_0_core [ create_bd_cell -type ip -vlnv xilinx.com:ip:mrmac:3.1 mrmac_0_core ]
@@ -635,22 +625,33 @@ proc create_hier_cell_eth_wrapper  { parentCell nameHier } {
   ####################################
   # clocks and resets
   connect_bd_net -net config_aresetn [get_bd_pins s_axi_aresetn] [get_bd_pins mrmac_0_core/s_axi_aresetn] \
-                                     [get_bd_pins axil_clk_converter/aresetn]
+                                     [get_bd_pins line_dbg/s_axi_aresetn] \
+                                     [get_bd_pins axis_tx_clk_converter/m_axis_aresetn] [get_bd_pins axis_rx_clk_converter/s_axis_aresetn]
 
 
-  connect_bd_net -net config_aclk [get_bd_pins s_axi_aclk] [get_bd_pins mrmac_0_core/s_axi_aclk] [get_bd_pins axil_clk_converter/aclk]
+  connect_bd_net -net stream_aresetn [get_bd_pins s_axis_mrmac_aresetn] \
+                                     [get_bd_pins axis_tx_clk_converter/s_axis_aresetn] [get_bd_pins axis_rx_clk_converter/m_axis_aresetn]
 
-  connect_bd_net -net stream_aclk [get_bd_pins s_axis_mrmac_aclk] [get_bd_pins axil_clk_converter/aclk1] [get_bd_pins line_dbg/s_axi_aclk]
-  connect_bd_net -net stream_aresetn [get_bd_pins s_axis_mrmac_aresetn] [get_bd_pins line_dbg/s_axi_aresetn]
+  connect_bd_net -net config_aclk [get_bd_pins s_axi_aclk] [get_bd_pins mrmac_0_core/s_axi_aclk] \
+                                  [get_bd_pins line_dbg/s_axi_aclk] \
+                                  [get_bd_pins axis_tx_clk_converter/m_axis_aclk] [get_bd_pins axis_rx_clk_converter/s_axis_aclk]
 
-  # dbg
-  connect_bd_intf_net -boundary_type upper     [get_bd_intf_pins axil_clk_converter/S00_AXI] [get_bd_intf_pins s_axil_dbg]
-  connect_bd_intf_net -intf_net net_axil_c_dbg [get_bd_intf_pins axil_clk_converter/M00_AXI] [get_bd_intf_pins line_dbg/S_AXI]
+  connect_bd_net -net stream_aclk [get_bd_pins s_axis_mrmac_aclk] \
+                                  [get_bd_pins axis_tx_clk_converter/s_axis_aclk] [get_bd_pins axis_rx_clk_converter/m_axis_aclk]
 
-  connect_bd_intf_net -intf_net net_axis_s_dbg [get_bd_intf_pins axis_s_eth] [get_bd_intf_pins line_dbg/AXI_STR_RXD]
-  connect_bd_intf_net -intf_net net_axis_m_dbg [get_bd_intf_pins axis_m_eth] [get_bd_intf_pins line_dbg/AXI_STR_TXD]
+  # dbg -------------------------------------------------------------------------------------------
+  # from slave axistream to line debug
+  connect_bd_intf_net [get_bd_intf_pins axis_s_eth] [get_bd_intf_pins axis_tx_clk_converter/S_AXIS]
+  connect_bd_intf_net [get_bd_intf_pins axis_tx_clk_converter/M_AXIS] [get_bd_intf_pins line_dbg/AXI_STR_RXD]
 
-  # GT wrapper
+  # from line debug to master axistream
+  connect_bd_intf_net [get_bd_intf_pins line_dbg/AXI_STR_TXD] [get_bd_intf_pins axis_rx_clk_converter/S_AXIS]
+  connect_bd_intf_net [get_bd_intf_pins axis_rx_clk_converter/M_AXIS] [get_bd_intf_pins axis_m_eth]
+
+  # axi4-lite comunication to IP
+  connect_bd_intf_net [get_bd_intf_pins s_axil_dbg] [get_bd_intf_pins line_dbg/S_AXI]
+
+  # GT wrapper ------------------------------------------------------------------------------------
   connect_bd_intf_net -intf_net APB3_INTF_1            [get_bd_intf_pins mrmac_0_gt_wrapper/APB3_INTF]  [get_bd_intf_pins APB3_INTF]
   connect_bd_intf_net -intf_net CLK_IN_D_1             [get_bd_intf_pins mrmac_0_gt_wrapper/CLK_IN_D]   [get_bd_intf_pins CLK_IN_D]
   connect_bd_intf_net -intf_net gt_quad_base_GT_Serial [get_bd_intf_pins mrmac_0_gt_wrapper/GT_Serial]  [get_bd_intf_pins GT_Serial]
@@ -816,8 +817,9 @@ proc create_hier_cell_eth_wrapper  { parentCell nameHier } {
 
   connect_bd_intf_net [get_bd_intf_pins ila_axis/SLOT_0_AXIS] [get_bd_intf_pins line_dbg/AXI_STR_TXD]
   connect_bd_intf_net [get_bd_intf_pins ila_axis/SLOT_1_AXI] [get_bd_intf_pins line_dbg/S_AXI]
-  connect_bd_net [get_bd_pins s_axis_mrmac_aclk] [get_bd_pins ila_axis/clk]
-  connect_bd_net [get_bd_pins s_axis_mrmac_aresetn] [get_bd_pins ila_axis/resetn]
+
+  connect_bd_net [get_bd_pins s_axi_aclk] [get_bd_pins ila_axis/clk]
+  connect_bd_net [get_bd_pins s_axi_aresetn] [get_bd_pins ila_axis/resetn]
 
   # Restore current instance
   current_bd_instance $oldCurInst
