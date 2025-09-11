@@ -466,6 +466,14 @@ proc create_root_design { parentCell ntt_psi } {
      CONFIG.READ_WRITE_MODE {READ_WRITE} \
   ] $port
 
+  set port [ create_bd_intf_port -mode Slave -vlnv xilinx.com:interface:aximm_rtl:1.0 ETH_AXI_FIFO ]
+  set_property -dict [ list \
+     CONFIG.ADDR_WIDTH $AXIL_ADD_W \
+     CONFIG.DATA_WIDTH $AXIL_DATA_W \
+     CONFIG.PROTOCOL {AXI4LITE} \
+     CONFIG.READ_WRITE_MODE {READ_WRITE} \
+  ] $port
+
   set axis_m_eth [ create_bd_intf_port -mode Master -vlnv xilinx.com:interface:axis_rtl:1.0 axis_m_eth ]
   set axis_s_eth [ create_bd_intf_port -mode Slave -vlnv xilinx.com:interface:axis_rtl:1.0  axis_s_eth ]
   set_property -dict [ list \
@@ -508,7 +516,7 @@ proc create_root_design { parentCell ntt_psi } {
   # == Ethernet via QSFP
   set GT_Serial [ create_bd_intf_port -mode Master -vlnv xilinx.com:interface:gt_rtl:1.0 GT_Serial ]
 
-  set_property CONFIG.ASSOCIATED_BUSIF {ETH_AXI_CFG:ETH_AXI_DBG:ETH_AXI_0:ETH_AXI_1:ETH_AXI_2} [get_bd_ports /clk_eth_cfg_0]
+  set_property CONFIG.ASSOCIATED_BUSIF {ETH_AXI_FIFO:ETH_AXI_CFG:ETH_AXI_DBG:ETH_AXI_0:ETH_AXI_1:ETH_AXI_2:ETH_AXI_3} [get_bd_ports /clk_eth_cfg_0]
 
   set ctl_tx_port0 [ create_bd_intf_port -mode Slave -vlnv xilinx.com:display_mrmac:mrmac_ctrl_ports:2.0 ctl_tx_port0 ]
   set ctl_tx_port1 [ create_bd_intf_port -mode Slave -vlnv xilinx.com:display_mrmac:mrmac_ctrl_ports:2.0 ctl_tx_port1 ]
@@ -869,6 +877,7 @@ proc create_root_design { parentCell ntt_psi } {
 
   # Ethernet configuration and debug ports
   connect_bd_intf_net [get_bd_intf_ports /ETH_AXI_CFG] [get_bd_intf_pins eth_wrapper/s_axil_mrmac]
+  connect_bd_intf_net [get_bd_intf_ports /ETH_AXI_FIFO] [get_bd_intf_pins eth_wrapper/s_axil_fifo]
   connect_bd_intf_net [get_bd_intf_ports /ETH_AXI_DBG] [get_bd_intf_pins eth_wrapper/s_axil_dbg]
   connect_bd_intf_net [get_bd_intf_ports /axis_m_eth]  [get_bd_intf_pins eth_wrapper/axis_m_eth]
   connect_bd_intf_net [get_bd_intf_ports /axis_s_eth]  [get_bd_intf_pins eth_wrapper/axis_s_eth]

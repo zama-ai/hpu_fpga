@@ -398,6 +398,7 @@ proc create_hier_cell_eth_wrapper  { parentCell nameHier } {
   set CLK_IN_D [ create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:diff_clock_rtl:1.0 CLK_IN_D ]
 
   set s_axil_mrmac [ create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:aximm_rtl:1.0 s_axil_mrmac ]
+  set s_axil_fifo [ create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:aximm_rtl:1.0 s_axil_fifo ]
   set s_axil_dbg [ create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:aximm_rtl:1.0 s_axil_dbg ]
 
   create_bd_intf_pin -mode Slave -vlnv xilinx.com:display_mrmac:mrmac_ctrl_ports:2.0 ctl_tx_port0
@@ -620,13 +621,17 @@ proc create_hier_cell_eth_wrapper  { parentCell nameHier } {
   # Create instance within hier object: mrmac_0_gt_wrapper
   create_hier_cell_mrmac_0_gt_wrapper $hier_obj mrmac_0_gt_wrapper
 
+  create_bd_cell -type ip -vlnv xilinx.com:ip:smartconnect:1.0 sc_axil2axi
+  set_property CONFIG.NUM_SI {1} [get_bd_cells sc_axil2axi]
+
   ####################################
   # Connection
   ####################################
   # clocks and resets
   connect_bd_net -net config_aresetn [get_bd_pins s_axi_aresetn] [get_bd_pins mrmac_0_core/s_axi_aresetn] \
                                      [get_bd_pins line_dbg/s_axi_aresetn] \
-                                     [get_bd_pins axis_tx_clk_converter/m_axis_aresetn] [get_bd_pins axis_rx_clk_converter/s_axis_aresetn]
+                                     [get_bd_pins axis_tx_clk_converter/m_axis_aresetn] [get_bd_pins axis_rx_clk_converter/s_axis_aresetn] \
+                                     [get_bd_pins sc_axil2axi/aresetn]
 
 
   connect_bd_net -net stream_aresetn [get_bd_pins s_axis_mrmac_aresetn] \
@@ -634,7 +639,8 @@ proc create_hier_cell_eth_wrapper  { parentCell nameHier } {
 
   connect_bd_net -net config_aclk [get_bd_pins s_axi_aclk] [get_bd_pins mrmac_0_core/s_axi_aclk] \
                                   [get_bd_pins line_dbg/s_axi_aclk] \
-                                  [get_bd_pins axis_tx_clk_converter/m_axis_aclk] [get_bd_pins axis_rx_clk_converter/s_axis_aclk]
+                                  [get_bd_pins axis_tx_clk_converter/m_axis_aclk] [get_bd_pins axis_rx_clk_converter/s_axis_aclk] \
+                                  [get_bd_pins sc_axil2axi/aclk]
 
   connect_bd_net -net stream_aclk [get_bd_pins s_axis_mrmac_aclk] \
                                   [get_bd_pins axis_tx_clk_converter/s_axis_aclk] [get_bd_pins axis_rx_clk_converter/m_axis_aclk]
@@ -650,6 +656,10 @@ proc create_hier_cell_eth_wrapper  { parentCell nameHier } {
 
   # axi4-lite comunication to IP
   connect_bd_intf_net [get_bd_intf_pins s_axil_dbg] [get_bd_intf_pins line_dbg/S_AXI]
+
+  # smartconnect
+  connect_bd_intf_net [get_bd_intf_pins s_axil_fifo] [get_bd_intf_pins sc_axil2axi/S00_AXI]
+  connect_bd_intf_net [get_bd_intf_pins sc_axil2axi/M00_AXI] [get_bd_intf_pins line_dbg/S_AXI_FULL]
 
   # GT wrapper ------------------------------------------------------------------------------------
   connect_bd_intf_net -intf_net APB3_INTF_1            [get_bd_intf_pins mrmac_0_gt_wrapper/APB3_INTF]  [get_bd_intf_pins APB3_INTF]

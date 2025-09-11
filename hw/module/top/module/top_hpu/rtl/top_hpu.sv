@@ -334,6 +334,27 @@ module top_hpu #(
   logic [2:0]                                       axi_eth_dbg_arprot;
   logic [2:0]                                       axi_eth_dbg_awprot;
 
+  logic [31:0]                                      axi_eth_fifo_awaddr;
+  logic                                             axi_eth_fifo_awvalid;
+  logic                                             axi_eth_fifo_awready;
+  logic [31:0]                                      axi_eth_fifo_wdata;
+  logic                                             axi_eth_fifo_wvalid;
+  logic                                             axi_eth_fifo_wready;
+  logic [3:0]                                       axi_eth_fifo_wstrb;
+  logic [1:0]                                       axi_eth_fifo_bresp;
+  logic                                             axi_eth_fifo_bvalid;
+  logic                                             axi_eth_fifo_bready;
+  logic [31:0]                                      axi_eth_fifo_araddr;
+  logic                                             axi_eth_fifo_arvalid;
+  logic                                             axi_eth_fifo_arready;
+  logic [31:0]                                      axi_eth_fifo_rdata;
+  logic [1:0]                                       axi_eth_fifo_rresp;
+  logic                                             axi_eth_fifo_rvalid;
+  logic                                             axi_eth_fifo_rready;
+  // unused for axi lite
+  logic [2:0]                                       axi_eth_fifo_arprot;
+  logic [2:0]                                       axi_eth_fifo_awprot;
+
   // axi4-lite direct access to dma controller interface
   logic [31:0]                                      axi_eth_dma_awaddr;
   logic                                             axi_eth_dma_awvalid;
@@ -2261,7 +2282,7 @@ module top_hpu #(
     .ETH_AXI_1_awprot   (axi_eth_dbg_awprot),
     .ETH_AXI_1_wstrb    (axi_eth_dbg_wstrb),
 
-    // direct link to fifo for one of the lines
+    // direct link to axi4-stream to fifo register map
     .ETH_AXI_DBG_araddr   ({'h0000, axi_eth_dbg_araddr[15:0]}),
     .ETH_AXI_DBG_arready  (axi_eth_dbg_arready),
     .ETH_AXI_DBG_arvalid  (axi_eth_dbg_arvalid),
@@ -2278,6 +2299,24 @@ module top_hpu #(
     .ETH_AXI_DBG_wdata    (axi_eth_dbg_wdata),
     .ETH_AXI_DBG_wready   (axi_eth_dbg_wready),
     .ETH_AXI_DBG_wvalid   (axi_eth_dbg_wvalid),
+
+    // direct link to axi4-stream fifo
+    .ETH_AXI_FIFO_araddr   ({'h0000, axi_eth_fifo_araddr[15:0]}),
+    .ETH_AXI_FIFO_arready  (axi_eth_fifo_arready),
+    .ETH_AXI_FIFO_arvalid  (axi_eth_fifo_arvalid),
+    .ETH_AXI_FIFO_awaddr   ({'h0000, axi_eth_fifo_awaddr[15:0]}),
+    .ETH_AXI_FIFO_awready  (axi_eth_fifo_awready),
+    .ETH_AXI_FIFO_awvalid  (axi_eth_fifo_awvalid),
+    .ETH_AXI_FIFO_bready   (axi_eth_fifo_bready),
+    .ETH_AXI_FIFO_bresp    (axi_eth_fifo_bresp),
+    .ETH_AXI_FIFO_bvalid   (axi_eth_fifo_bvalid),
+    .ETH_AXI_FIFO_rdata    (axi_eth_fifo_rdata),
+    .ETH_AXI_FIFO_rready   (axi_eth_fifo_rready),
+    .ETH_AXI_FIFO_rresp    (axi_eth_fifo_rresp),
+    .ETH_AXI_FIFO_rvalid   (axi_eth_fifo_rvalid),
+    .ETH_AXI_FIFO_wdata    (axi_eth_fifo_wdata),
+    .ETH_AXI_FIFO_wready   (axi_eth_fifo_wready),
+    .ETH_AXI_FIFO_wvalid   (axi_eth_fifo_wvalid),
 
     // access to regfile in dma
     .ETH_AXI_2_araddr   (axi_eth_dma_araddr),
