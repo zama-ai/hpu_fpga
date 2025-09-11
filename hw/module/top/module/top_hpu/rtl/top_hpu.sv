@@ -617,16 +617,16 @@ module top_hpu #(
   // ---------------------- //
   // Line rate
   logic [31:0] SW_REG_GT_LINE_RATE;
-  (* mark_debug = "true" *) logic [7:0]         gt_line_rate;
+  logic [7:0]         gt_line_rate;
   // loopback
-  (* mark_debug = "true" *) logic [2:0]         gt_loopback;
+  logic [2:0]         gt_loopback;
   // asynchronous resets
   logic [LINE_NB-1:0] gt_reset_rx_datapath;
   logic [LINE_NB-1:0] gt_reset_tx_datapath;
   logic [LINE_NB-1:0] gt_reset_all;
   // reset monitoring
-  (* mark_debug = "true" *) logic [LINE_NB-1:0] gt_rx_reset_done;
-  (* mark_debug = "true" *) logic [LINE_NB-1:0] gt_tx_reset_done;
+  logic [LINE_NB-1:0] gt_rx_reset_done;
+  logic [LINE_NB-1:0] gt_tx_reset_done;
   // ----------------------------------------------------------------------- //
   // resets
   //  ---- //
@@ -638,7 +638,7 @@ module top_hpu #(
   // flexible reset
   logic [LINE_NB-1:0] rx_flexif_reset;
   // ----------------------------------------------------------------------- //
-  (* mark_debug = "true" *) logic gtpowergood_in;
+  logic gtpowergood_in;
   // QSFP RX axi4-stream
   logic [LINE_NB-1:0][AXIS_TDATA_W-1:0] qsfp_rx_tdata;
   logic [LINE_NB-1:0][AXIS_TKEEP_W-1:0] qsfp_rx_tkeep_user;
