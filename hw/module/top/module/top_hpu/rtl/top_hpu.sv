@@ -854,7 +854,7 @@ module top_hpu #(
   logic         axis_m_eth_tvalid;
 
   logic [63:0]  axis_s_eth_tdata;
-  logic         axis_s_eth_tlast;
+  // logic         axis_s_eth_tlast;
   logic         axis_s_eth_tready;
   logic         axis_s_eth_tvalid;
 
@@ -2688,7 +2688,7 @@ module top_hpu #(
     .axis_m_eth_tvalid(axis_m_eth_tvalid),
 
     .axis_s_eth_tdata(axis_s_eth_tdata),
-    .axis_s_eth_tlast(axis_s_eth_tlast),
+    // .axis_s_eth_tlast(axis_s_eth_tlast),
     .axis_s_eth_tready(1'b1), // always ready
     .axis_s_eth_tvalid(axis_s_eth_tvalid),
 
@@ -3061,7 +3061,7 @@ module top_hpu #(
 
     .axis_rx_tdata(axis_s_eth_tdata),
     .axis_rx_tkeep_user(),
-    .axis_rx_tlast(axis_s_eth_tlast),
+    // .axis_rx_tlast(axis_s_eth_tlast),
     .axis_rx_tvalid(axis_s_eth_tvalid),
 
     .axis_tx_tdata(axis_m_eth_tdata),

@@ -10,7 +10,7 @@ set_clock_groups -quiet -name pl0_ref_clk_0 -asynchronous -group [get_clocks -of
 # quasi-static signals
 set_false_path -through [get_nets -hierarchical -regexp -filter { NAME =~ ".*dma/gt_line_rate.*"}]
 set_false_path -through [get_nets -hierarchical -regexp -filter { NAME =~ ".*dma/gt_loopback.*"}]
-set_false_path -through [get_nets -hierarchical -regexp -filter { NAME =~ ".*dma/hpu_regif_core_eth_2in3/r_line_parameter_reg.*"}]
+set_false_path -through [get_nets -hierarchical -regexp -filter { NAME =~ ".*/r_line_parameter_reg.*"}]
 
 # asynchronous reset signals
 set_false_path -through [get_nets  -hierarchical -regexp -filter { NAME =~ ".*gt_reset_rx_datapath.*"}]
