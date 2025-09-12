@@ -2301,6 +2301,27 @@ module top_hpu #(
     .ETH_AXI_DBG_wvalid   (axi_eth_dbg_wvalid),
 
     // direct link to axi4-stream fifo
+    .ETH_AXI_3_araddr   (axi_eth_fifo_araddr),
+    .ETH_AXI_3_arready  (axi_eth_fifo_arready),
+    .ETH_AXI_3_arvalid  (axi_eth_fifo_arvalid),
+    .ETH_AXI_3_awaddr   (axi_eth_fifo_awaddr),
+    .ETH_AXI_3_awready  (axi_eth_fifo_awready),
+    .ETH_AXI_3_awvalid  (axi_eth_fifo_awvalid),
+    .ETH_AXI_3_bready   (axi_eth_fifo_bready),
+    .ETH_AXI_3_bresp    (axi_eth_fifo_bresp),
+    .ETH_AXI_3_bvalid   (axi_eth_fifo_bvalid),
+    .ETH_AXI_3_rdata    (axi_eth_fifo_rdata),
+    .ETH_AXI_3_rready   (axi_eth_fifo_rready),
+    .ETH_AXI_3_rresp    (axi_eth_fifo_rresp),
+    .ETH_AXI_3_rvalid   (axi_eth_fifo_rvalid),
+    .ETH_AXI_3_wdata    (axi_eth_fifo_wdata),
+    .ETH_AXI_3_wready   (axi_eth_fifo_wready),
+    .ETH_AXI_3_wvalid   (axi_eth_fifo_wvalid),
+    // unused after loopback
+    .ETH_AXI_3_arprot   (axi_eth_fifo_arprot),
+    .ETH_AXI_3_awprot   (axi_eth_fifo_awprot),
+    .ETH_AXI_3_wstrb    (axi_eth_fifo_wstrb),
+
     .ETH_AXI_FIFO_araddr   ({'h0000, axi_eth_fifo_araddr[15:0]}),
     .ETH_AXI_FIFO_arready  (axi_eth_fifo_arready),
     .ETH_AXI_FIFO_arvalid  (axi_eth_fifo_arvalid),
