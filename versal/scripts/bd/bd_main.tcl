@@ -992,7 +992,8 @@ proc create_root_design { parentCell ntt_psi } {
 
   # Ethernet
   assign_bd_address -offset 0x00000000 -range 0x00010000 -target_address_space [get_bd_addr_spaces s_axil_mrmac] [get_bd_addr_segs eth_wrapper/mrmac_0_core/s_axi/Reg] -force
-  assign_bd_address -offset 0x00000000 -range 0x00010000 -target_address_space [get_bd_addr_spaces ETH_AXI_DBG] [get_bd_addr_segs eth_wrapper/line_dbg/S_AXI/Mem0]  -force
+  assign_bd_address -offset 0x00000000 -range 0x00010000 -target_address_space [get_bd_addr_spaces ETH_AXI_DBG] [get_bd_addr_segs eth_wrapper/line_dbg/S_AXI/Mem0] -force
+  assign_bd_address -offset 0x00000000 -range 0x00010000 -target_address_space [get_bd_addr_spaces ETH_AXI_FIFO] [get_bd_addr_segs eth_wrapper/line_dbg/S_AXI_FULL/Mem1]  -force
 
   # APB3 not meant to be used
   assign_bd_address -offset 0xA4080000 -range 0x00010000 -target_address_space [get_bd_addr_spaces APB3_INTF] [get_bd_addr_segs eth_wrapper/mrmac_0_gt_wrapper/gt_quad_base/APB3_INTF/Reg] -force
