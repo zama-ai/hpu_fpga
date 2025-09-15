@@ -577,30 +577,30 @@ proc create_hier_cell_eth_wrapper  { parentCell nameHier } {
     CONFIG.GT_TYPE_C0 {GTM} \
     CONFIG.MAC_PORT0_ENABLE_TIME_STAMPING_C0 {0} \
     CONFIG.MAC_PORT0_PREEMPTION_C0 {0} \
-    CONFIG.MAC_PORT0_RATE_C0 {25GE} \
     CONFIG.MAC_PORT0_RX_FLOW_C0 {0} \
     CONFIG.MAC_PORT0_TX_FLOW_C0 {0} \
+    CONFIG.MAC_PORT0_RATE_C0 {25GE} \
     CONFIG.MAC_PORT1_RATE_C0 {25GE} \
     CONFIG.MAC_PORT2_RATE_C0 {25GE} \
     CONFIG.MAC_PORT3_RATE_C0 {25GE} \
     CONFIG.MRMAC_CLIENTS_C0 {4} \
     CONFIG.MRMAC_CONFIGURATION_TYPE {Static Configuration} \
-    CONFIG.MRMAC_DATA_PATH_INTERFACE_PORT0_C0 {Independent 64b  Non-Segmented} \
-    CONFIG.MRMAC_DATA_PATH_INTERFACE_PORT1_C0 {Independent 64b  Non-Segmented} \
-    CONFIG.MRMAC_DATA_PATH_INTERFACE_PORT2_C0 {Independent 64b  Non-Segmented} \
-    CONFIG.MRMAC_DATA_PATH_INTERFACE_PORT3_C0 {Independent 64b  Non-Segmented} \
+    CONFIG.MRMAC_DATA_PATH_INTERFACE_PORT0_C0 {Independent 64b Non-Segmented} \
+    CONFIG.MRMAC_DATA_PATH_INTERFACE_PORT1_C0 {Independent 64b Non-Segmented} \
+    CONFIG.MRMAC_DATA_PATH_INTERFACE_PORT2_C0 {Independent 64b Non-Segmented} \
+    CONFIG.MRMAC_DATA_PATH_INTERFACE_PORT3_C0 {Independent 64b Non-Segmented} \
     CONFIG.MRMAC_LOCATION_C0 {MRMAC_X0Y3} \
     CONFIG.MRMAC_MODE_C0 {MAC+PCS} \
     CONFIG.MRMAC_PRESET_C0 {4x25GE Narrow} \
     CONFIG.MRMAC_SPEED_C0 {4x25GE} \
     CONFIG.NUM_GT_CHANNELS {4} \
     CONFIG.PORT0_1588v2_Clocking_C0 {Ordinary/Boundary Clock} \
-    CONFIG.PORT0_1588v2_Operation_MODE_C0 {No operation} \
     CONFIG.PORT1_1588v2_Clocking_C0 {Ordinary/Boundary Clock} \
-    CONFIG.PORT1_1588v2_Operation_MODE_C0 {No operation} \
     CONFIG.PORT2_1588v2_Clocking_C0 {Ordinary/Boundary Clock} \
-    CONFIG.PORT2_1588v2_Operation_MODE_C0 {No operation} \
     CONFIG.PORT3_1588v2_Clocking_C0 {Ordinary/Boundary Clock} \
+    CONFIG.PORT0_1588v2_Operation_MODE_C0 {No operation} \
+    CONFIG.PORT1_1588v2_Operation_MODE_C0 {No operation} \
+    CONFIG.PORT2_1588v2_Operation_MODE_C0 {No operation} \
     CONFIG.PORT3_1588v2_Operation_MODE_C0 {No operation} \
     CONFIG.TIMESTAMP_CLK_PERIOD_NS {4.0000} \
   ] $mrmac_0_core
