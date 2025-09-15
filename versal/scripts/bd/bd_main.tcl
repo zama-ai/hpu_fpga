@@ -107,8 +107,6 @@ proc create_root_design { parentCell ntt_psi } {
   set clk_usr_0_0_ce [ create_bd_port -dir I clk_usr_0_0_ce]
   set clk_eth_cfg_0 [ create_bd_port -dir O -type clk clk_eth_cfg_0 ]
 
-  # set apb3clk_quad [ create_bd_port -dir I -type clk -freq_hz 200000000 apb3clk_quad ]
-
   set tx_axi_clk [ create_bd_port -dir I -from 3 -to 0 -type clk -freq_hz [expr int($ETH_QSFP_FREQ * 10**6)] tx_axi_clk ]
   set rx_axi_clk [ create_bd_port -dir I -from 3 -to 0 -type clk -freq_hz [expr int($ETH_QSFP_FREQ * 10**6)] rx_axi_clk ]
 
