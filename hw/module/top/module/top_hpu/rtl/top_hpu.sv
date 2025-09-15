@@ -3125,7 +3125,7 @@ module top_hpu #(
     .axis_rx_tvalid(axis_s_eth_tvalid),
 
     .axis_tx_tdata(axis_m_eth_tdata),
-    .axis_tx_tkeep_user('h0),
+    .axis_tx_tkeep_user('h0FF), // TODO: to modify after
     .axis_tx_tlast(axis_m_eth_tlast),
     .axis_tx_tvalid(axis_m_eth_tvalid),
     .axis_tx_tready(axis_m_eth_tready),
