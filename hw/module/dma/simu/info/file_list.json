@@ -8,6 +8,13 @@
             "env": ["simu"],
             "target": ["all"],
             "is_include_file": false
+        },
+        {
+            "name": "hw/module/dma/simu/rtl/tb_fifo_handle.sv",
+            "library": "work",
+            "env": ["simu"],
+            "target": ["all"],
+            "is_include_file": false
         }
     ],
     "dependency_dir": [
