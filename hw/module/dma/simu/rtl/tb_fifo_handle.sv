@@ -22,20 +22,21 @@ module tb_fifo_handle;
   localparam int ARST_ACTIVATION = 17;
 
   localparam int LINE_NB = 4;
-  localparam int AXIS_TDATA_W  = 64;
+  localparam int AXIS_TDATA_W  = 32;
   localparam int AXIS_TKEEP_W  = 11;
 
   // number of words in an axi4-stream transactions
-  localparam int DATA_W = 32;
   localparam int FIFO_DEPTH = 512;
   localparam int NB_WORD_W = $clog2(FIFO_DEPTH)+1;
+
+  // arbitrary number of words for simulation
+  localparam int NB_WORDS = 18;
 
 // ============================================================================================== --
 // clock, reset
 // ============================================================================================== --
   bit clk_control;
   bit clk_mrmac;
-
 
   initial begin
     clk_control = 1'b0;
@@ -80,9 +81,10 @@ module tb_fifo_handle;
 // Error
 // ============================================================================================== --
   bit error;
+  logic error_data;
 
   always_ff @(posedge clk_control)
-    if (error) begin
+    if (error_data) begin
       $display("%t > FAILURE !", $time);
       $finish;
     end
@@ -102,9 +104,12 @@ module tb_fifo_handle;
   logic                    qsfp_tx_tvalid;
   logic                    qsfp_tx_tready;
   // to/from register interface -----------------------------------------------
-  logic [NB_WORD_W-1:0] r_nb_word;
-  logic [DATA_W-1:0]    r_word;
-  logic [NB_WORD_W-1:0] r_wr_data_count;
+  logic [NB_WORD_W-1:0]    r_nb_word;
+  logic [AXIS_TDATA_W-1:0] r_wr_word;
+  logic [NB_WORD_W-1:0]    r_wr_data_count;
+  logic [NB_WORD_W-1:0]    r_rd_data_count;
+  logic [AXIS_TDATA_W-1:0] r_rd_word;
+  logic                    read_ack;
 
   // ============================================================================================== --
   // Design under test instance
@@ -112,7 +117,6 @@ module tb_fifo_handle;
   fifo_handle # (
     .AXIS_TDATA_W(AXIS_TDATA_W),
     .AXIS_TKEEP_W(AXIS_TKEEP_W),
-    .DATA_W(DATA_W),
     .SIM_ASSERT_CHK(1)
   ) fifo_handle (
     // system interface
@@ -132,52 +136,181 @@ module tb_fifo_handle;
     .qsfp_tx_tready    (qsfp_tx_tready),
     // register interface
     .r_nb_word         (r_nb_word),
-    .r_word            (r_word),
-    .r_wr_data_count   (r_wr_data_count)
+    .r_wr_word         (r_wr_word),
+    .r_wr_data_count   (r_wr_data_count),
+    .r_rd_data_count   (r_rd_data_count),
+    .r_rd_word         (r_rd_word),
+    .read_ack          (read_ack)
   );
 
 // ============================================================================================== --
 // Scenario
 // ============================================================================================== --
+  logic trigger_rx_link;
+
   initial begin
-    logic [31:0] rdata;
-
     $display("%t > INFO: Initialization",$time);
+    read_ack = 1'b0;
     r_nb_word = 0;
-    r_word = 0;
-    repeat(100) @(posedge clk_control);
+    r_wr_word = 0;
+    qsfp_tx_tready = 1'b0;
+    trigger_rx_link = 1'b0;
 
-    $display("%t > INFO: ",$time);
-    r_nb_word = 16;
-    r_word = 0;
+    repeat(100) @(posedge clk_control);
+    qsfp_tx_tready = 1'b1; // let's consider tx ready always 1
+
+    // --------------------------------------------------------------------------------------------
+    $display("%t > INFO: Test sequence on TX link",$time);
+    // with an arbitrary given number of word we will
+    //  1- write nb_word+1 into the fifo
+    //  -- wait
+    //  2- write nb_word-3 into the fifo
+    //  -- wait
+    //  3- write 2*r_nb_word into the fifo
+    //
+    // ` at the end of (1) we should see a axi4-stream tx frame going through
+    // ` in (2) there are not enough words into the fifo, nothing should appear in qsfp tx
+    // ` at the very start of (3) we should see a axi4-stream tx frame going through and pause
+    //   beforethe second one. Pausing by waiting the fifo to fill up again with nb_words
+    // --------------------------------------------------------------------------------------------
+    r_nb_word = NB_WORDS; // coming from the register file. should be quite static signal.
+
     @(posedge clk_control);
 
-    for (int i = 0; i < 17 ; i++) begin
+    // (1)
+    for (int i = 0; i < r_nb_word+1 ; i++) begin
       @(posedge clk_control);
-      r_word = {$urandom, $urandom};
+      r_wr_word = {$urandom, $urandom};
     end
+
+    // --
     repeat(20) @(posedge clk_control);
 
-    for (int i = 0; i < 15 ; i++) begin
+    // (2)
+    for (int i = 0; i < r_nb_word-3 ; i++) begin
       @(posedge clk_control);
-      r_word = {$urandom, $urandom};
+      r_wr_word = {$urandom, $urandom};
     end
 
     repeat(20) @(posedge clk_control);
 
-    for (int i = 0; i < 34 ; i++) begin
+    // (3)
+    for (int i = 0; i < 2*r_nb_word ; i++) begin
       @(posedge clk_control);
-      r_word = {$urandom, $urandom};
+      r_wr_word = {$urandom, $urandom};
     end
 
+    repeat(20) @(posedge clk_control);
+
+    // --------------------------------------------------------------------------------------------
+    $display("%t > INFO: Test sequence on RX link",$time);
+    // goal here is to check that the data from qsfp rx can correctly be read from fifo
+    //  1- enable the qsfp axi4-stream link to emit
+    //  -- wait
+    //  2- launch several reads
+    //
+    // a checker below is checking that the values seen in r_rd_word has changed and that the
+    // values match the ones we send trhough axi4-stream
+    // --------------------------------------------------------------------------------------------
+
+    // (1)
+    trigger_rx_link = 1'b1;
+    repeat(10) @(posedge clk_control);
+
+    // (2)
+    for (int nb = 0; nb <= 5*r_nb_word; nb++) begin
+      read_ack = 1'b1;
+      @(posedge clk_control);
+      read_ack = 1'b0;
+      repeat(15) @(posedge clk_control);
+    end
+
+    // --------------------------------------------------------------------------------------------
     $display("%t > INFO: End simulation",$time);
+    // --------------------------------------------------------------------------------------------
     repeat(200) @(posedge clk_control);
     end_of_test = 1'b1;
   end
 
-// ============================================================================================== --
-// Tasks
-// ============================================================================================== --
+  // ============================================================================================== --
+  // axi4-stream write into the fifo
+  // ============================================================================================== --
+  logic [AXIS_TDATA_W-1:0] tdata;
+  logic [AXIS_TKEEP_W-1:0] tkeep_user;
+  logic                    tlast;
+  logic                    tvalid;
 
+  assign qsfp_rx_tdata      = tdata;
+  assign qsfp_rx_tkeep_user = tkeep_user;
+  assign qsfp_rx_tlast      = tlast;
+  assign qsfp_rx_tvalid     = tvalid;
+
+
+  logic [$clog2(NB_WORDS):0] rx_cnt;
+
+  always_ff @(posedge clk_mrmac) begin
+    if (!s_rstn_mrmac) begin
+        rx_cnt     <= 'h0;
+        tdata      <= 'h0;
+        tkeep_user <= 'h0;
+        tlast      <= 'h0;
+        tvalid     <= 'h0;
+    end else begin
+      if (trigger_rx_link) begin
+        rx_cnt <= rx_cnt +1;
+        tdata <= $urandom;
+        tkeep_user <= $urandom;
+        tlast  <= (rx_cnt == NB_WORDS-1) ? 1'b1 : 1'b0;
+        tvalid <= 1'b1;
+      end else begin
+        rx_cnt     <= 'h0;
+        tdata      <= 'h0;
+        tkeep_user <= 'h0;
+        tlast      <= 'h0;
+        tvalid     <= 'h0;
+      end
+    end
+  end
+
+  // ============================================================================================== --
+  // Checkers
+  // ============================================================================================== --
+  logic [AXIS_TDATA_W-1:0] data_ref_q[$:FIFO_DEPTH];
+  logic [AXIS_TDATA_W-1:0] r_rd_word_d;
+  logic word_has_updated;
+
+  always_ff @(posedge clk_mrmac) begin
+    logic [AXIS_TDATA_W-1:0] data_ref;
+    if (!s_rstn_mrmac) begin
+      error_data <= 1'b0;
+    end else begin
+      if (tvalid) begin
+        data_ref_q.push_front(tdata);
+      end
+      if (word_has_updated) begin
+        data_ref = data_ref_q.pop_back();
+        assert (r_rd_word == data_ref)
+        else begin
+          $display("> ERROR: Data mismatch: exp=0x%x seen=0x%x", data_ref, r_rd_word);
+          error_data <= 1;
+        end
+      end
+    end
+  end
+
+  always_ff @(posedge clk_mrmac)
+    r_rd_word_d <= r_rd_word;
+
+  always_ff @(posedge clk_mrmac) begin
+    if (s_rstn_mrmac) begin
+      word_has_updated <= 1'b0;
+    end else begin
+      if (r_rd_word_d != r_rd_word) begin
+        word_has_updated <= 1'b1;
+      end else begin
+        word_has_updated <= 1'b0;
+      end
+    end
+  end
 
 endmodule

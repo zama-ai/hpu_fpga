@@ -81,7 +81,7 @@ module xpm_fifo_async_wrapper #(
     .READ_MODE          ("std"),            // String
     .RELATED_CLOCKS     (0),                // DECIMAL
     .SIM_ASSERT_CHK     (SIM_ASSERT_CHK),   // DECIMAL; 0=disable simulation messages, 1=enable simulation messages
-    .USE_ADV_FEATURES   ("0707"),           // String
+    .USE_ADV_FEATURES   ("1707"),           // String
     .WAKEUP_TIME        (0),                // DECIMAL
     .WRITE_DATA_WIDTH   (DATA_W),           // DECIMAL
     .WR_DATA_COUNT_WIDTH(DATA_COUNT_WIDTH)  // DECIMAL
