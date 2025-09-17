@@ -103,6 +103,23 @@ proc create_hier_cell_mrmac_0_gt_wrapper { parentCell nameHier } {
   set_property -dict [list CONFIG.GT_TYPE.VALUE_MODE MANUAL] $gt_quad_base
   set_property CONFIG.GT_TYPE {GTM} $gt_quad_base
 
+  # forces all lanes (and both HSCLK of GT Quad) to use same GT_REFCLK0
+  set_property -dict [list \
+      CONFIG.PROT0_NO_OF_LANES.VALUE_MODE MANUAL \
+      CONFIG.PROT1_ENABLE.VALUE_MODE MANUAL \
+      CONFIG.RX3_LANE_SEL.VALUE_MODE MANUAL \
+      CONFIG.TX3_LANE_SEL.VALUE_MODE MANUAL \
+      CONFIG.RX2_LANE_SEL.VALUE_MODE MANUAL \
+      CONFIG.TX2_LANE_SEL.VALUE_MODE MANUAL] $gt_quad_base
+  set_property -dict [list \
+      CONFIG.PROT0_NO_OF_LANES {4} \
+      CONFIG.PROT1_ENABLE {false} \
+      CONFIG.RX3_LANE_SEL {PROT0} \
+      CONFIG.TX3_LANE_SEL {PROT0} \
+      CONFIG.RX2_LANE_SEL {PROT0} \
+      CONFIG.TX2_LANE_SEL {PROT0} \
+  ] $gt_quad_base
+
   # This property forces the frequency to be updated from the clock wizard defined earlier
   # The clock is not exactly what is expected (200Mhz) and without this argument mismatch will be found and an error will be triggered
   set_property -dict [list \
