@@ -1,7 +1,7 @@
 // ============================================================================================== //
 // Description  : register  map address definition package
 // This file was generated with rust regmap generator:
-//  * Date:  2025-08-12
+//  * Date:  2025-09-17
 //  * Tool_version: bb0db737792da6b81e69a039028c971af1627fe2
 // ---------------------------------------------------------------------------------------------- //
 //
@@ -32,4 +32,9 @@ package hpu_regif_core_eth_2in3_pkg;
     logic [(8-1):0] rst_done;
    } reset_monitor_t;
   localparam int RESET_MONITOR_OFS = 'he0018;
+  localparam int FIFO_WRITE_NUMBER_OF_WORDS_OFS = 'he001c;
+  localparam int FIFO_WRITE_WORDS_TO_WRITE_OFS = 'he0020;
+  localparam int FIFO_WRITE_FIFO_WRITE_DATA_COUNT_OFS = 'he0024;
+  localparam int FIFO_READ_WORDS_TO_READ_OFS = 'he002c;
+  localparam int FIFO_READ_FIFO_READ_DATA_COUNT_OFS = 'he0030;
 endpackage

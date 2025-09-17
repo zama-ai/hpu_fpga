@@ -10,14 +10,21 @@
 module dma
   import axi_if_common_param_pkg::*;
   import axi_if_shell_axil_pkg::*;
+  import hpu_regif_core_eth_2in3_pkg::*;
 #(
   parameter int LINE_NB       = 4,  // number of QSFP lines
   parameter int AXIS_TDATA_W  = 64, // must match MAC+PCS configuration from bd
-  parameter int AXIS_TKEEP_W  = 11
+  parameter int AXIS_TKEEP_W  = 11,
+
+  parameter int FIFO_DEPTH = 512,
+  parameter int NB_WORD_W = $clog2(FIFO_DEPTH)+1
 ) (
   // Ethernet configuration interface -----------------------------------------
   input logic clk_eth_cfg,
   input logic resetn_eth_cfg,
+  // Ethernet fast clock interface --------------------------------------------
+  input logic clk_eth_mrmac,
+  input logic resetn_eth_mrmac,
   // Axi4-lite slave interface for regfile ------------------------------------
   input  logic [AXIL_ADD_W-1:0]      s_axil_dma_awaddr,
   input  logic                       s_axil_dma_awvalid,
@@ -48,19 +55,6 @@ module dma
   input [LINE_NB-1:0][AXIS_TKEEP_W-1:0 ]  qsfp_rx_tkeep_user,
   input [LINE_NB-1:0]                     qsfp_rx_tlast,
   input [LINE_NB-1:0]                     qsfp_rx_tvalid,
-  // axi4-stream interface to fifo --------------------------------------------
-  // == RX
-  output [AXIS_TDATA_W-1:0] axis_rx_tdata,
-  output [AXIS_TKEEP_W-1:0] axis_rx_tkeep_user,
-  output                    axis_rx_tlast,
-  output                    axis_rx_tvalid,
-  // == TX
-  input  [AXIS_TDATA_W-1:0] axis_tx_tdata,
-  input  [AXIS_TKEEP_W-1:0] axis_tx_tkeep_user,
-  input                     axis_tx_tlast,
-  input                     axis_tx_tvalid,
-  output                    axis_tx_tready,
-
   // control interface --------------------------------------------------------
   // loopback mode, will be applied to all channels
   //  * 000: disabled
@@ -100,6 +94,12 @@ module dma
   logic [31:0] r_line_parameter;
   logic [31:0] r_reset_datapath;
   logic [31:0] r_reset_monitor;
+  // for fifo handler
+  logic [NB_WORD_W-1:0]    r_nb_word;
+  logic [AXIS_TDATA_W-1:0] r_wr_word;
+  logic [NB_WORD_W-1:0]    r_wr_data_count;
+  logic [NB_WORD_W-1:0]    r_rd_data_count;
+  logic [AXIS_TDATA_W-1:0] r_rd_word;
   // -------------------------------------------------------------------------------------------- //
   hpu_regif_core_eth_2in3  hpu_regif_core_eth_2in3 (
     // configuration interface
@@ -128,7 +128,60 @@ module dma
     // control signals
     .r_line_parameter(r_line_parameter),
     .r_reset_datapath(r_reset_datapath),
-    .r_reset_monitor_upd(r_reset_monitor)
+    .r_reset_monitor_upd(r_reset_monitor),
+
+    .r_fifo_write_number_of_words(r_nb_word),
+    .r_fifo_write_words_to_write(r_wr_word),
+    .r_fifo_write_fifo_write_data_count_upd(r_wr_data_count),
+    .r_fifo_read_words_to_read_upd(r_rd_word),
+    .r_fifo_read_fifo_read_data_count_upd(r_rd_data_count)
+  );
+
+  // read acknowledge must be built here in case hpu_regif_core_eth_2in3 changes
+  // read_ack is a pulse that partly controls the rx_fifo read, must be in configuration clock freq
+  logic read_ack;
+
+  always_ff @(posedge clk_eth_cfg) begin
+    if (~resetn_eth_cfg) begin
+      read_ack <= 1'b0;
+    end else begin
+      if ((s_axil_dma_araddr == FIFO_READ_WORDS_TO_READ_OFS) && s_axil_dma_arvalid) begin
+        read_ack <= 1'b1;
+      end else begin
+        read_ack <= 1'b0;
+      end
+    end
+  end
+
+  fifo_handle # (
+    .AXIS_TDATA_W(AXIS_TDATA_W),
+    .AXIS_TKEEP_W(AXIS_TKEEP_W),
+    .FIFO_DEPTH(FIFO_DEPTH),
+    .SIM_ASSERT_CHK(0)
+  ) fifo_handle (
+    // system interface
+    .clk_control        (clk_eth_cfg),
+    .s_rstn_control     (resetn_eth_cfg),
+    .clk_mrmac          (clk_eth_mrmac),
+    .s_rstn_mrmac       (resetn_eth_mrmac),
+    // MRMAC RX interface
+    .qsfp_rx_tdata      (axis_rx_tdata),
+    .qsfp_rx_tkeep_user (axis_rx_tkeep_user),
+    .qsfp_rx_tlast      (axis_rx_tlast),
+    .qsfp_rx_tvalid     (axis_rx_tvalid),
+    // MRMAC TX interface
+    .qsfp_tx_tdata      (axis_tx_tdata),
+    .qsfp_tx_tkeep_user (axis_tx_tkeep_user),
+    .qsfp_tx_tlast      (axis_tx_tlast),
+    .qsfp_tx_tvalid     (axis_tx_tvalid),
+    .qsfp_tx_tready     (axis_tx_tready),
+    // register interface
+    .r_nb_word          (r_nb_word),
+    .r_wr_word          (r_wr_word),
+    .r_wr_data_count    (r_wr_data_count),
+    .r_rd_data_count    (r_rd_data_count),
+    .r_rd_word          (r_rd_word),
+    .read_ack           (read_ack)
   );
 
   // ============================================================================================ //

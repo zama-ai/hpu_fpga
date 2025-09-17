@@ -17,7 +17,8 @@ module tb_dma;
 // ============================================================================================== --
 // localparam
 // ============================================================================================== --
-  localparam int CLK_HALF_PERIOD = 1;
+  localparam int CLK_HALF_PERIOD_A = 4;
+  localparam int CLK_HALF_PERIOD_B = 1;
   localparam int ARST_ACTIVATION = 17;
 
   localparam int LINE_NB = 4;
@@ -26,6 +27,7 @@ module tb_dma;
 
   // number of words in an axi4-stream transactions
   localparam int WORD_NB = 25;
+  localparam int NB_WORDS_FRAME = 15;
 
   // stalls for an arbitrary number of clock cycles
   localparam int ARBITRARY_STALL = 55;
@@ -33,22 +35,35 @@ module tb_dma;
 // ============================================================================================== --
 // clock, reset
 // ============================================================================================== --
-  bit clk;
-  bit a_rst_n; // asynchronous reset
-  bit s_rst_n; // synchronous reset
+  bit clk_control;
+  bit clk_mrmac;
 
   initial begin
-    clk     = 1'b0;
-    a_rst_n = 1'b0;                   // active reset
-    #ARST_ACTIVATION a_rst_n = 1'b1; // disable reset
+    clk_control = 1'b0;
+    clk_mrmac = 1'b0;
   end
 
   always begin
-    #CLK_HALF_PERIOD clk = ~clk;
+    #CLK_HALF_PERIOD_A clk_control = ~clk_control;
+  end
+  always begin
+    #CLK_HALF_PERIOD_B clk_mrmac = ~clk_mrmac;
   end
 
-  always_ff @(posedge clk) begin
-    s_rst_n <= a_rst_n;
+  bit a_rst_n; // asynchronous reset
+  bit s_rstn_control; // synchronous reset
+  bit s_rstn_mrmac; // synchronous reset
+
+  initial begin
+    a_rst_n = 1'b0;                  // active reset
+    #ARST_ACTIVATION a_rst_n = 1'b1; // disable reset
+  end
+
+  always_ff @(posedge clk_control) begin
+    s_rstn_control <= a_rst_n;
+  end
+  always_ff @(posedge clk_mrmac) begin
+    s_rstn_mrmac <= a_rst_n;
   end
 
 // ============================================================================================== --
@@ -58,7 +73,7 @@ module tb_dma;
 
   initial begin
     wait (end_of_test);
-    @(posedge clk) $display("%t > SUCCEED !", $time);
+    @(posedge clk_control) $display("%t > SUCCEED !", $time);
     $finish;
   end
 
@@ -67,7 +82,7 @@ module tb_dma;
 // ============================================================================================== --
   bit error;
 
-  always_ff @(posedge clk)
+  always_ff @(posedge clk_control)
     if (error) begin
       $display("%t > FAILURE !", $time);
       $finish;
@@ -137,8 +152,11 @@ module tb_dma;
     .AXIS_TDATA_W(AXIS_TDATA_W),
     .AXIS_TKEEP_W(AXIS_TKEEP_W)
   ) dut (
-    .clk_eth_cfg   (clk    ),
-    .resetn_eth_cfg(s_rst_n),
+    .clk_eth_cfg   (clk_control    ),
+    .resetn_eth_cfg(s_rstn_control ),
+
+    .clk_eth_mrmac   (clk_mrmac    ),
+    .resetn_eth_mrmac(s_rstn_mrmac ),
 
     .s_axil_dma_awaddr(s_axil_dma_awaddr),
     .s_axil_dma_awvalid(s_axil_dma_awvalid),
@@ -169,17 +187,6 @@ module tb_dma;
     .qsfp_rx_tlast(qsfp_rx_tlast),
     .qsfp_rx_tvalid(qsfp_rx_tvalid),
 
-    .axis_rx_tdata(axis_rx_tdata),
-    .axis_rx_tkeep_user(axis_rx_tkeep_user),
-    .axis_rx_tlast(axis_rx_tlast),
-    .axis_rx_tvalid(axis_rx_tvalid),
-
-    .axis_tx_tdata(axis_tx_tdata),
-    .axis_tx_tkeep_user(axis_tx_tkeep_user),
-    .axis_tx_tlast(axis_tx_tlast),
-    .axis_tx_tvalid(axis_tx_tvalid),
-    .axis_tx_tready(axis_tx_tready),
-
     .gt_line_rate(gt_line_rate),
     .gt_loopback(gt_loopback),
     .gt_reset_rx_datapath(gt_reset_rx_datapath),
@@ -195,7 +202,7 @@ module tb_dma;
   maxil_if #(
   .AXIL_DATA_W(AXIL_DATA_W),
   .AXIL_ADD_W  (AXIL_ADD_W)
-  ) maxil_drv_if ( .clk(clk), .rst_n(s_rst_n));
+  ) maxil_drv_if ( .clk(clk_control), .rst_n(s_rstn_control));
 
   // Connect interface on testbench signals
   assign s_axil_dma_awaddr  = maxil_drv_if.awaddr;
@@ -222,7 +229,7 @@ module tb_dma;
       // Axi4-stream tx driver
       axis_drv_if #(
       .AXIS_DATA_W(AXIS_TDATA_W)
-      ) axis_tx_driver ( .clk(clk), .rst_n(s_rst_n));
+      ) axis_tx_driver ( .clk(clk_mrmac), .rst_n(s_rstn_mrmac));
 
       // Connect interface on testbench signals
       assign qsfp_rx_tdata[gen_i]  = axis_tx_driver.tdata;
@@ -251,11 +258,21 @@ module tb_dma;
     maxil_drv_if.init();
     gt_rx_reset_done = 'h0;
     gt_tx_reset_done = 'h0;
-    repeat(20) @(posedge clk);
+    repeat(20) @(posedge clk_control);
 
-    //  First part of the test is to setup the configuration
+    // --------------------------------------------------------------------------------------------
     $display("%t > INFO: Register configuration",$time);
+    //  We need to configure correctly different signals.
+    //  By doing this we will verify axi4-lite communication with regfile
+    //
+    // 1 - we will read the first register segment, with dummy default values we know
+    // 2 - we will setup line rate, loopback and line selection
+    // once everything setup we can try to send a frame through register file on the correct lane
+    // 3 - Send a frame using register file
+    // 4 - trigger all qsfp-rx lanes + check that we read into fifo correct value on selected lane
+    // --------------------------------------------------------------------------------------------
 
+    // (1) Reading dummy values -------------------------------------------------------------------
     maxil_drv_if.read_trans(ENTRY_ETH_2IN3_DUMMY_VAL0_OFS, rdata);
     if (rdata != 'h05050504) begin
       $display("%t >    ERROR: ENTRY_ETH_2IN3_DUMMY_VAL0_OFS: %x != h05050504",$time, rdata);
@@ -278,35 +295,39 @@ module tb_dma;
     end
     $display("%t >    INFO: dummy section correctly read",$time);
 
+    // (2) Applying configuration & checking signals are correctly set ----------------------------
     line_rate     = 8'hAB;  // random, no idea what it should be
     line_loopback = 3'b100; // 3 near end pcs loopback
     line_select   = 2'b10;  // 2nd line selected
     line_parameter = {19'b0, line_rate, line_loopback , line_select};
     maxil_drv_if.write_trans(LINE_PARAMETER_OFS, line_parameter);
-    repeat(5) @(posedge clk);
-    if ( ( gt_line_rate == line_rate ) && (gt_loopback == line_loopback) && ( dut.line_sel == line_select)) begin
-      $display("%t >    INFO: line parameter correctly configured",$time);
-    end else begin
-      $display("%t >    ERROR: configuration doesn't match to what have been selected",$time);
-      error = 1'b1;
-    end
+    repeat(5) @(posedge clk_control);
 
     rst_rx_datapath = 4'b0100;
     rst_tx_datapath = 4'b1011;
     rst_all         = 4'b0101;
     reset_datpath = {20'h0, rst_rx_datapath, rst_tx_datapath, rst_all};
     maxil_drv_if.write_trans(RESET_DATAPATH_OFS, reset_datpath);
-    repeat(5) @(posedge clk);
-    if ( ( gt_reset_rx_datapath == rst_rx_datapath ) && (gt_reset_tx_datapath == rst_tx_datapath) && (gt_reset_all == rst_all)) begin
+    repeat(5) @(posedge clk_control);
+
+    if ((gt_line_rate == line_rate) && (gt_loopback == line_loopback) && (dut.line_sel == line_select)) begin
+      $display("%t >    INFO: line parameter correctly configured",$time);
+    end else begin
+      $display("%t >    ERROR: configuration doesn't match to what have been selected",$time);
+      error = 1'b1;
+    end
+
+    if ((gt_reset_rx_datapath == rst_rx_datapath) && (gt_reset_tx_datapath == rst_tx_datapath) && (gt_reset_all == rst_all)) begin
       $display("%t >    INFO: reset lines have been triggered correctly",$time);
     end else begin
       $display("%t >    ERROR: reset configuration has not been applied correctly",$time);
       error = 1'b1;
     end
 
+    // read reset register
     gt_rx_reset_done= 4'b0101;
     gt_tx_reset_done= 4'b1010;
-    repeat(5) @(posedge clk);
+    repeat(5) @(posedge clk_control);
     maxil_drv_if.read_trans(RESET_MONITOR_OFS, reset_monitor);
 
     if(( reset_monitor[3:0] == gt_tx_reset_done) && ( reset_monitor[7:4] == gt_rx_reset_done)) begin
@@ -320,24 +341,15 @@ module tb_dma;
 
     $display("%t > INFO: Configuration successful\n",$time);
 
-    // let's switch lanes and check that axis_rx_tdata msb id is correct
-    for (int i = 0; i < LINE_NB ; i++) begin
-      line_select = i;
-      line_parameter = {19'b0, line_rate, line_loopback , line_select};
-      maxil_drv_if.write_trans(LINE_PARAMETER_OFS, line_parameter);
-
-      if (axis_rx_tdata[AXIS_TDATA_W-1:AXIS_TDATA_W-(LINE_NB-1)] == line_select) begin
-        $display("%t >    INFO: line correctly switched to lane %1d",$time, i);
-      end else begin
-        $display("%t >    ERROR: line switch failed i=%1d!",$time, i);
-      end
+    // (3) Send a frame through regif -------------------------------------------------------------
+    // On lane 2 we send a frame with known words: from 0 to wr_frame
+    maxil_drv_if.write_trans(FIFO_WRITE_NUMBER_OF_WORDS_OFS, NB_WORDS_FRAME);
+    for (int wr_frame = 0; wr_frame < NB_WORDS_FRAME; wr_frame++) begin
+      maxil_drv_if.write_trans(FIFO_WRITE_WORDS_TO_WRITE_OFS, wr_frame);
     end
 
-    $display("%t > INFO: Lane switching correct\n",$time);
-
-
     $display("%t > INFO: End simulation",$time);
-    repeat(200) @(posedge clk);
+    repeat(200) @(posedge clk_control);
     end_of_test = 1'b1;
   end
 
@@ -357,10 +369,6 @@ module tb_dma;
       qsfp_rx_tvalid = 'h0;
       qsfp_tx_tready = 'h0;
     end
-    axis_tx_tdata = 'h0;
-    axis_tx_tkeep_user = 'h0;
-    axis_tx_tlast = 'h0;
-    axis_tx_tvalid = 'h0;
   endtask
 
 // ---------------------------------------------------------------------------------------------- --
@@ -377,8 +385,8 @@ module tb_dma;
   // let's create a fake tready to simulate a backpressure
   bit fake_tready;
 
-  always @(posedge clk) begin
-    if (!s_rst_n) begin
+  always @(posedge clk_mrmac) begin
+    if (!s_rstn_mrmac) begin
       fake_tready <= 0;
     end else begin
       // 75% chance of fake_tready = 1
@@ -400,7 +408,7 @@ module tb_dma;
   // Main stimulus: continuous transactions with 2–5 cycle gap between transactions
   int gap;
   initial begin
-    wait (s_rst_n);
+    wait (s_rstn_mrmac);
     // Launch all lanes concurrently
     // each iterators needs an automatic copy for each forked process
     fork
@@ -419,10 +427,10 @@ module tb_dma;
 
               if (lanes == LINE_NB) begin
                 // last lane backpressure
-                do @(posedge clk); while (!(tvalid[lanes] && fake_tready));
+                do @(posedge clk_mrmac); while (!(tvalid[lanes] && fake_tready));
               end else begin
                 // There is no sink backpressure on axi4-stream from MRMAC
-                @(posedge clk);
+                @(posedge clk_mrmac);
               end
 
               // Deassert valid for next-setup on next cycle
@@ -431,7 +439,7 @@ module tb_dma;
 
               // No stalls in the transaction
             end
-            repeat(ARBITRARY_STALL) @(posedge clk);
+            repeat(ARBITRARY_STALL) @(posedge clk_mrmac);
           end
         join_none
       end
@@ -446,10 +454,5 @@ module tb_dma;
       qsfp_rx_tvalid[lanes]     = tvalid[lanes];
     end
   end
-
-  assign axis_tx_tdata      = tdata[LINE_NB];
-  assign axis_tx_tkeep_user = tkeep_user[LINE_NB];
-  assign axis_tx_tlast      = tlast[LINE_NB];
-  assign axis_tx_tvalid     = tvalid[LINE_NB];
 
 endmodule
