@@ -126,8 +126,6 @@ module tb_dma;
   // ============================================================================================== --
   // Design under test instance
   // ============================================================================================== --
-  logic [LINE_NB-1:0] dummy_rx_tready;
-
   // gt configuration signals
   logic [7:0]         gt_line_rate;
   logic [2:0]         gt_loopback;
@@ -225,7 +223,6 @@ module tb_dma;
       // Connect interface on testbench signals
       assign qsfp_rx_tdata[gen_i]  = axis_tx_driver.tdata;
       assign qsfp_rx_tvalid[gen_i] = axis_tx_driver.tvalid;
-      assign axis_tx_driver.tready = dummy_rx_tready[gen_i];
     end
   endgenerate
 
