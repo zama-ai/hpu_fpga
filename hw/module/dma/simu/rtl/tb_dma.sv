@@ -22,8 +22,10 @@ module tb_dma;
   localparam int ARST_ACTIVATION = 17;
 
   localparam int LINE_NB = 4;
-  localparam int AXIS_TDATA_W  = 64;
-  localparam int AXIS_TKEEP_W  = 11;
+  localparam int AXIS_TDATA_W = 64;
+  localparam int AXIS_TKEEP_W = 11;
+
+  localparam int FIFO_DEPTH = 512;
 
   // number of words in an axi4-stream transactions
   localparam int WORD_NB = 25;
@@ -150,7 +152,8 @@ module tb_dma;
   dma #(
     .LINE_NB(LINE_NB),
     .AXIS_TDATA_W(AXIS_TDATA_W),
-    .AXIS_TKEEP_W(AXIS_TKEEP_W)
+    .AXIS_TKEEP_W(AXIS_TKEEP_W),
+    .FIFO_DEPTH(FIFO_DEPTH)
   ) dut (
     .clk_eth_cfg   (clk_control    ),
     .resetn_eth_cfg(s_rstn_control ),
@@ -250,14 +253,24 @@ module tb_dma;
 
   logic [31:0]        reset_monitor;
 
+  logic [1:0] line_ref_tx_q[$:FIFO_DEPTH];
+  logic [AXIS_TDATA_W-1:0] data_ref_tx_q[$:FIFO_DEPTH];
+  logic [AXIS_TDATA_W-1:0] data_ref_rx_q[LINE_NB-1:0][$];
+
+  logic en_rx_datapath;
+  logic [AXIS_TDATA_W-1:0] expected_data;
+  logic [AXIS_TDATA_W-1:0] read_data;
+
   initial begin
     logic [31:0] rdata;
+    logic [AXIS_TDATA_W:0] tx_tdata;
 
     $display("%t > INFO: Initialization",$time);
     init_axis;
     maxil_drv_if.init();
     gt_rx_reset_done = 'h0;
     gt_tx_reset_done = 'h0;
+    en_rx_datapath = 1'b0;
     repeat(20) @(posedge clk_control);
 
     // --------------------------------------------------------------------------------------------
@@ -343,17 +356,47 @@ module tb_dma;
 
     // (3) Send a frame through regif -------------------------------------------------------------
     // On lane 2 we send a frame with known words: from 0 to wr_frame
+
+    // lane qsfp tx ready must be 1 from here
+    qsfp_tx_tready[line_select] = 1'b1;
+    @(posedge clk_mrmac);
+
     maxil_drv_if.write_trans(FIFO_WRITE_NUMBER_OF_WORDS_OFS, NB_WORDS_FRAME);
-    for (int wr_frame = 0; wr_frame < NB_WORDS_FRAME; wr_frame++) begin
-      maxil_drv_if.write_trans(FIFO_WRITE_WORDS_TO_WRITE_OFS, wr_frame);
+    for (int wr_frame = 0; wr_frame < NB_WORDS_FRAME+1; wr_frame++) begin
+      tx_tdata = {$urandom, $urandom};
+      maxil_drv_if.write_trans(FIFO_WRITE_WORDS_TO_WRITE_OFS, tx_tdata);
+      data_ref_tx_q.push_front(tx_tdata);
+      line_ref_tx_q.push_front(line_select);
     end
 
+    // (4) Checks the rx datapath -----------------------------------------------------------------
+    en_rx_datapath = 1'b1;
+    repeat(3*NB_WORDS_FRAME) @(posedge clk_mrmac);
+    en_rx_datapath = 1'b0;
+    repeat(20) @(posedge clk_control);
+    // read the first value to trigger fifo pull
+    maxil_drv_if.read_trans(FIFO_READ_WORDS_TO_READ_OFS, read_data);
+    repeat(20) @(posedge clk_control);
+
+    for (int rd_i = 0; rd_i< NB_WORDS_FRAME; rd_i++ ) begin
+      maxil_drv_if.read_trans(FIFO_READ_WORDS_TO_READ_OFS, read_data);
+      expected_data = data_ref_rx_q[line_select].pop_back();
+
+      if (expected_data == read_data) begin
+        $display("%t >    INFO: reset lines have been triggered correctly",$time);
+      end else begin
+        $display("%t >    ERROR: aaaah %x %x",$time, expected_data, read_data);
+        error = 1'b1;
+      end
+
+      repeat(20) @(posedge clk_control);
+    end
+
+
     $display("%t > INFO: End simulation",$time);
-    repeat(200) @(posedge clk_control);
+    repeat(20) @(posedge clk_control);
     end_of_test = 1'b1;
   end
-
-
 
 // ============================================================================================== --
 // Tasks
@@ -405,8 +448,6 @@ module tb_dma;
   end
 
   // Send one AXIS transaction of WORD_NB beats
-  // Main stimulus: continuous transactions with 2–5 cycle gap between transactions
-  int gap;
   initial begin
     wait (s_rstn_mrmac);
     // Launch all lanes concurrently
@@ -417,34 +458,39 @@ module tb_dma;
         fork
           forever begin
             automatic int i;
+            @(posedge clk_mrmac);
             for (i = 0; i < WORD_NB; i++) begin
-              // data is fully random except in MSB: lane ID for differentitaion
-              tdata[lanes][AXIS_TDATA_W-LINE_NB:0]  <= {$urandom, $urandom};
-              tdata[lanes][AXIS_TDATA_W-1:AXIS_TDATA_W-(LINE_NB-1)]  <= lanes;
-              tkeep_user[lanes] <= $urandom;
-              tlast[lanes]  <= (i == WORD_NB-1);
-              tvalid[lanes] <= 1'b1;
+              if (en_rx_datapath == 1'b1) begin
+                tdata[lanes] = {$urandom,$urandom};
+                tkeep_user[lanes] = $urandom;
+                tlast[lanes] = (i == WORD_NB-1);
+                tvalid[lanes] = 1'b1;
 
-              if (lanes == LINE_NB) begin
-                // last lane backpressure
-                do @(posedge clk_mrmac); while (!(tvalid[lanes] && fake_tready));
+                if (lanes == LINE_NB) begin
+                  do @(posedge clk_mrmac); while (!(tvalid[lanes]));
+                end else begin
+                  @(posedge clk_mrmac);
+                end
+
+                tvalid[lanes] = 1'b0;
+                tlast[lanes] = 1'b0;
               end else begin
-                // There is no sink backpressure on axi4-stream from MRMAC
-                @(posedge clk_mrmac);
+                tdata = 'h0;
+                tkeep_user = 'h0;
+                tlast = 'h0;
+                tvalid = 'h0;
               end
-
-              // Deassert valid for next-setup on next cycle
-              tvalid[lanes] <= 1'b0;
-              tlast[lanes]  <= 1'b0;
-
-              // No stalls in the transaction
             end
-            repeat(ARBITRARY_STALL) @(posedge clk_mrmac);
           end
         join_none
       end
     join_none
   end
+
+always_ff @(posedge clk_mrmac)
+  for (int i=1; i<LINE_NB; i=i+1)
+    if (qsfp_rx_tvalid[i])
+      data_ref_rx_q[i].push_front(qsfp_rx_tdata[i]);
 
   always_comb begin
     for (int lanes = '0; lanes < LINE_NB ; lanes++) begin
@@ -454,5 +500,13 @@ module tb_dma;
       qsfp_rx_tvalid[lanes]     = tvalid[lanes];
     end
   end
+
+
+  // =========================================================================================== --
+  // Checker
+  // =========================================================================================== --
+
+  // tx lane checker todo
+
 
 endmodule

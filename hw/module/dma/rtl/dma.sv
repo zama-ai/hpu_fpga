@@ -145,13 +145,24 @@ module dma
     if (~resetn_eth_cfg) begin
       read_ack <= 1'b0;
     end else begin
-      if ((s_axil_dma_araddr == FIFO_READ_WORDS_TO_READ_OFS) && s_axil_dma_arvalid) begin
+      if ((s_axil_dma_araddr == FIFO_READ_WORDS_TO_READ_OFS) && s_axil_dma_arready) begin
         read_ack <= 1'b1;
       end else begin
         read_ack <= 1'b0;
       end
     end
   end
+
+  logic [AXIS_TDATA_W-1:0  ] axis_rx_tdata;
+  logic [AXIS_TKEEP_W-1:0 ]  axis_rx_tkeep_user;
+  logic                      axis_rx_tlast;
+  logic                      axis_rx_tvalid;
+
+  logic [AXIS_TDATA_W-1:0] axis_tx_tdata;
+  logic [AXIS_TKEEP_W-1:0] axis_tx_tkeep_user;
+  logic                    axis_tx_tlast;
+  logic                    axis_tx_tvalid;
+  logic                    axis_tx_tready;
 
   fifo_handle # (
     .AXIS_TDATA_W(AXIS_TDATA_W),
