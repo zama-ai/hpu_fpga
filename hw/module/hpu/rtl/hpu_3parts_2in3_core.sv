@@ -465,8 +465,8 @@ module hpu_3parts_2in3_core
     .clk_eth_cfg   (cfg_eth_clk),
     .resetn_eth_cfg(cfg_eth_srst_n),
 
-    .clk_eth_cfg   (prc_mrmac_clk),
-    .resetn_eth_cfg(prc_mrmac_srst_n),
+    .clk_eth_mrmac   (prc_mrmac_clk),
+    .resetn_eth_mrmac(prc_mrmac_srst_n),
 
     // register interface
     .s_axil_dma_awaddr(s_axil_dma_awaddr),
