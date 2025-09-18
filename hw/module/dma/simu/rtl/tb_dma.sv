@@ -364,7 +364,8 @@ module tb_dma;
     maxil_drv_if.write_trans(FIFO_WRITE_NUMBER_OF_WORDS_OFS, NB_WORDS_FRAME);
     for (int wr_frame = 0; wr_frame < NB_WORDS_FRAME+1; wr_frame++) begin
       tx_tdata = {$urandom, $urandom};
-      maxil_drv_if.write_trans(FIFO_WRITE_WORDS_TO_WRITE_OFS, tx_tdata);
+      maxil_drv_if.write_trans(FIFO_WRITE_WORDS_TO_WRITE_A_OFS, tx_tdata[AXIL_DATA_W-1:0]);
+      maxil_drv_if.write_trans(FIFO_WRITE_WORDS_TO_WRITE_B_OFS, tx_tdata[2*AXIL_DATA_W-1:AXIL_DATA_W]);
       data_ref_tx_q.push_front(tx_tdata);
       line_ref_tx_q.push_front(line_select);
     end
@@ -375,11 +376,12 @@ module tb_dma;
     en_rx_datapath = 1'b0;
     repeat(20) @(posedge clk_control);
     // read the first value to trigger fifo pull
-    maxil_drv_if.read_trans(FIFO_READ_WORDS_TO_READ_OFS, read_data);
+    maxil_drv_if.read_trans(FIFO_READ_WORDS_TO_READ_B_OFS, read_data);
     repeat(20) @(posedge clk_control);
 
     for (int rd_i = 0; rd_i< NB_WORDS_FRAME; rd_i++ ) begin
-      maxil_drv_if.read_trans(FIFO_READ_WORDS_TO_READ_OFS, read_data);
+      maxil_drv_if.read_trans(FIFO_READ_WORDS_TO_READ_A_OFS, read_data[AXIL_DATA_W-1:0]);
+      maxil_drv_if.read_trans(FIFO_READ_WORDS_TO_READ_B_OFS, read_data[2*AXIL_DATA_W-1:AXIL_DATA_W]);
       expected_data = data_ref_rx_q[line_select].pop_back();
 
       if (expected_data == read_data) begin

@@ -85,7 +85,14 @@ description="fifo write part"
   write_access="Write"
   default={Cst=0x0}
 
-[section.fifo_write.register.words_to_write]
+[section.fifo_write.register.words_to_write_a]
+  description="word that must be sent to fifo"
+  owner="User"
+  read_access="Read"
+  write_access="Write"
+  default={Cst=0x0}
+
+[section.fifo_write.register.words_to_write_b]
   description="word that must be sent to fifo"
   owner="User"
   read_access="Read"
@@ -99,13 +106,19 @@ description="fifo write part"
   write_access="None"
   default={Cst=0x0}
 
-
 # =====================================================================================================================
 [section.fifo_read]
 offset= 0x2C
 description="fifo write part"
 
-[section.fifo_read.register.words_to_read]
+[section.fifo_read.register.words_to_read_a]
+  description="word that must be sent to fifo"
+  owner="Kernel"
+  read_access="Read"
+  write_access="None"
+  default={Cst=0x0}
+
+[section.fifo_read.register.words_to_read_b]
   description="word that must be sent to fifo"
   owner="Kernel"
   read_access="Read"

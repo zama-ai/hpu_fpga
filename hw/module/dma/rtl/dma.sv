@@ -97,6 +97,8 @@ module dma
   // for fifo handler
   logic [NB_WORD_W-1:0]    r_nb_word;
   logic [AXIS_TDATA_W-1:0] r_wr_word;
+  logic [AXIL_DATA_W-1:0]  r_wr_word_a;
+  logic [AXIL_DATA_W-1:0]  r_wr_word_b;
   logic [NB_WORD_W-1:0]    r_wr_data_count;
   logic [NB_WORD_W-1:0]    r_rd_data_count;
   logic [AXIS_TDATA_W-1:0] r_rd_word;
@@ -131,21 +133,36 @@ module dma
     .r_reset_monitor_upd(r_reset_monitor),
 
     .r_fifo_write_number_of_words(r_nb_word),
-    .r_fifo_write_words_to_write(r_wr_word),
+    .r_fifo_write_words_to_write_a(r_wr_word_a),
+    .r_fifo_write_words_to_write_b(r_wr_word_b),
     .r_fifo_write_fifo_write_data_count_upd(r_wr_data_count),
-    .r_fifo_read_words_to_read_upd(r_rd_word),
+    .r_fifo_read_words_to_read_a_upd(r_rd_word[AXIL_DATA_W-1:0]),
+    .r_fifo_read_words_to_read_b_upd(r_rd_word[2*AXIL_DATA_W-1:AXIL_DATA_W]),
     .r_fifo_read_fifo_read_data_count_upd(r_rd_data_count)
   );
 
-  // read acknowledge must be built here in case hpu_regif_core_eth_2in3 changes
+  // Logic around regfile :
+  //
+
+  always_ff @(posedge clk_eth_cfg) begin
+    if (~resetn_eth_cfg) begin
+      r_wr_word <= 'h0;
+    end else begin
+      if ((s_axil_dma_awaddr == FIFO_WRITE_WORDS_TO_WRITE_B_OFS) && s_axil_dma_awready) begin
+        r_wr_word <= {r_wr_word_a, r_wr_word_b};
+      end
+    end
+  end
+
   // read_ack is a pulse that partly controls the rx_fifo read, must be in configuration clock freq
+  // because axi4-lite is limited in word number, the ack is triggered only when the second word is read
   logic read_ack;
 
   always_ff @(posedge clk_eth_cfg) begin
     if (~resetn_eth_cfg) begin
       read_ack <= 1'b0;
     end else begin
-      if ((s_axil_dma_araddr == FIFO_READ_WORDS_TO_READ_OFS) && s_axil_dma_arready) begin
+      if ((s_axil_dma_araddr == FIFO_READ_WORDS_TO_READ_B_OFS) && s_axil_dma_arready) begin
         read_ack <= 1'b1;
       end else begin
         read_ack <= 1'b0;

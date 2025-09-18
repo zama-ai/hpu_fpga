@@ -1,5 +1,5 @@
 # HPU_REGIF_CORE documentation
-**Date**: 2025-09-17  
+**Date**: 2025-09-18  
 **Tool Version**: bb0db737792da6b81e69a039028c971af1627fe2  
 
 ## RegisterMap Overview
@@ -17,7 +17,7 @@ HPU ethernet configuration register interface. Will be accessed by RPU to define
 **Offset**: 0x80000 
 **Range**: 0x70000
 **Word Size (b)**: 32  
-**External Packages**: "axi_if_shell_axil_pkg.sv","axi_if_common_param_pkg.sv"
+**External Packages**: "axi_if_common_param_pkg.sv","axi_if_shell_axil_pkg.sv"
 
 
 ---
@@ -47,8 +47,8 @@ Below is a summary of all the registers in the current register map:
 | [entry_eth_2in3](#section-entry-eth-2in3) | 0xe0000 | 0x10 | entry_eth_2in3 section with known value used for debug. |
 | [line](#section-line) | 0xe0010 | 0x4 | Line parameter sections |
 | [reset](#section-reset) | 0xe0014 | 0x8 | different resets are available |
-| [fifo_write](#section-fifo-write) | 0xe001c | 0xc | fifo write part |
-| [fifo_read](#section-fifo-read) | 0xe002c | 0x8 | fifo write part |
+| [fifo_write](#section-fifo-write) | 0xe001c | 0x10 | fifo write part |
+| [fifo_read](#section-fifo-read) | 0xe002c | 0xc | fifo write part |
 
 
 ---
@@ -4221,8 +4221,9 @@ Below is a summary of all the registers in the current section fifo_write:
 | Name             | Offset | Access | Description |
 |-----------------:|:------:|:------:|:------------|
 | [number_of_words](#register-fifo-writenumber-of-words) | 0xe001c | RW |  numbers of words in a frame |
-| [words_to_write](#register-fifo-writewords-to-write) | 0xe0020 | RW |  word that must be sent to fifo |
-| [fifo_write_data_count](#register-fifo-writefifo-write-data-count) | 0xe0024 | R. |  numbers of words that have been written |
+| [words_to_write_a](#register-fifo-writewords-to-write-a) | 0xe0020 | RW |  word that must be sent to fifo |
+| [words_to_write_b](#register-fifo-writewords-to-write-b) | 0xe0024 | RW |  word that must be sent to fifo |
+| [fifo_write_data_count](#register-fifo-writefifo-write-data-count) | 0xe0028 | R. |  numbers of words that have been written |
 
 
 ---
@@ -4243,7 +4244,7 @@ Below is a summary of all the registers in the current section fifo_write:
 ---
 
 
-### Register fifo-write.words-to-write
+### Register fifo-write.words-to-write-a
 
 - **Description**: word that must be sent to fifo
 - **Owner**: User
@@ -4258,13 +4259,28 @@ Below is a summary of all the registers in the current section fifo_write:
 ---
 
 
+### Register fifo-write.words-to-write-b
+
+- **Description**: word that must be sent to fifo
+- **Owner**: User
+- **Read Access**: Read
+- **Write Access**: Write
+- **Offset**: 0xe0024
+- **Default**: 0 
+
+
+
+
+---
+
+
 ### Register fifo-write.fifo-write-data-count
 
 - **Description**: numbers of words that have been written
 - **Owner**: Kernel
 - **Read Access**: Read
 - **Write Access**: None
-- **Offset**: 0xe0024
+- **Offset**: 0xe0028
 - **Default**: 0 
 
 
@@ -4283,14 +4299,15 @@ Below is a summary of all the registers in the current section fifo_read:
 
 | Name             | Offset | Access | Description |
 |-----------------:|:------:|:------:|:------------|
-| [words_to_read](#register-fifo-readwords-to-read) | 0xe002c | R. |  word that must be sent to fifo |
-| [fifo_read_data_count](#register-fifo-readfifo-read-data-count) | 0xe0030 | R. |  numbers of words that have been written |
+| [words_to_read_a](#register-fifo-readwords-to-read-a) | 0xe002c | R. |  word that must be sent to fifo |
+| [words_to_read_b](#register-fifo-readwords-to-read-b) | 0xe0030 | R. |  word that must be sent to fifo |
+| [fifo_read_data_count](#register-fifo-readfifo-read-data-count) | 0xe0034 | R. |  numbers of words that have been written |
 
 
 ---
 
 
-### Register fifo-read.words-to-read
+### Register fifo-read.words-to-read-a
 
 - **Description**: word that must be sent to fifo
 - **Owner**: Kernel
@@ -4305,13 +4322,28 @@ Below is a summary of all the registers in the current section fifo_read:
 ---
 
 
+### Register fifo-read.words-to-read-b
+
+- **Description**: word that must be sent to fifo
+- **Owner**: Kernel
+- **Read Access**: Read
+- **Write Access**: None
+- **Offset**: 0xe0030
+- **Default**: 0 
+
+
+
+
+---
+
+
 ### Register fifo-read.fifo-read-data-count
 
 - **Description**: numbers of words that have been written
 - **Owner**: Kernel
 - **Read Access**: Read
 - **Write Access**: None
-- **Offset**: 0xe0030
+- **Offset**: 0xe0034
 - **Default**: 0 
 
 

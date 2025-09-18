@@ -22,7 +22,7 @@ module tb_fifo_handle;
   localparam int ARST_ACTIVATION = 17;
 
   localparam int LINE_NB = 4;
-  localparam int AXIS_TDATA_W  = 32;
+  localparam int AXIS_TDATA_W  = 64;
   localparam int AXIS_TKEEP_W  = 11;
 
   // number of words in an axi4-stream transactions

@@ -1,7 +1,7 @@
 // ============================================================================================== //
 // Description  : Axi4-lite register bank
 // This file was generated with rust regmap generator:
-//  * Date:  2025-09-17
+//  * Date:  2025-09-18
 //  * Tool_version: bb0db737792da6b81e69a039028c971af1627fe2
 // ---------------------------------------------------------------------------------------------- //
 // xR[n]W[na]
@@ -30,8 +30,8 @@
 //      : Value provided by the RTL. The host can read it with notify. The write data is processed by the RTL.
 // ============================================================================================== //
 module hpu_regif_core_cfg_1in3
-import axi_if_common_param_pkg::*;
 import axi_if_shell_axil_pkg::*;
+import axi_if_common_param_pkg::*;
 import hpu_regif_core_cfg_1in3_pkg::*;
 #(
     parameter int VERSION_MAJOR = 0,

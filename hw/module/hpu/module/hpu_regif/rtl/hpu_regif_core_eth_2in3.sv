@@ -1,7 +1,7 @@
 // ============================================================================================== //
 // Description  : Axi4-lite register bank
 // This file was generated with rust regmap generator:
-//  * Date:  2025-09-17
+//  * Date:  2025-09-18
 //  * Tool_version: bb0db737792da6b81e69a039028c971af1627fe2
 // ---------------------------------------------------------------------------------------------- //
 // xR[n]W[na]
@@ -12,17 +12,17 @@
 //  | [n] optional generate read notification (have a _rd_en)
 //  | Write options
 //  | [n] optional generate wr notification (have a _wr_en)
-// 
+//
 // Thus type of registers are:
-// uRW  : Read-write                                              
+// uRW  : Read-write
 //      : Value provided by the host. The host can read it and write it.
-// uW   : Write-only                                              
+// uW   : Write-only
 //      : Value provided by the host. The host can only write it.
-// uWn  : Write-only with notification                            
+// uWn  : Write-only with notification
 //      : Value provided by the host. The host can only write it.
-// kR   : Read-only register                                      
+// kR   : Read-only register
 //      : Value provided by the RTL.
-// kRn  : Read-only register with notification  (rd)              
+// kRn  : Read-only register with notification  (rd)
 //      : Value provided by the RTL.
 // kRWn : Read-only register with notification (wr)
 //      : Value provided by the RTL. The host can read it. The write data is processed by the RTL.
@@ -30,8 +30,8 @@
 //      : Value provided by the RTL. The host can read it with notify. The write data is processed by the RTL.
 // ============================================================================================== //
 module hpu_regif_core_eth_2in3
-import axi_if_shell_axil_pkg::*;
 import axi_if_common_param_pkg::*;
+import axi_if_shell_axil_pkg::*;
 import hpu_regif_core_eth_2in3_pkg::*;
 #()(
   input  logic                           clk,
@@ -64,14 +64,19 @@ import hpu_regif_core_eth_2in3_pkg::*;
         , input reset_monitor_t r_reset_monitor_upd
   // Register IO: fifo_write_number_of_words
     , output logic [REG_DATA_W-1: 0] r_fifo_write_number_of_words
-  // Register IO: fifo_write_words_to_write
-    , output logic [REG_DATA_W-1: 0] r_fifo_write_words_to_write
+  // Register IO: fifo_write_words_to_write_a
+    , output logic [REG_DATA_W-1: 0] r_fifo_write_words_to_write_a
+  // Register IO: fifo_write_words_to_write_b
+    , output logic [REG_DATA_W-1: 0] r_fifo_write_words_to_write_b
   // Register IO: fifo_write_fifo_write_data_count
     , output logic [REG_DATA_W-1: 0] r_fifo_write_fifo_write_data_count
         , input  logic [REG_DATA_W-1: 0] r_fifo_write_fifo_write_data_count_upd
-  // Register IO: fifo_read_words_to_read
-    , output logic [REG_DATA_W-1: 0] r_fifo_read_words_to_read
-        , input  logic [REG_DATA_W-1: 0] r_fifo_read_words_to_read_upd
+  // Register IO: fifo_read_words_to_read_a
+    , output logic [REG_DATA_W-1: 0] r_fifo_read_words_to_read_a
+        , input  logic [REG_DATA_W-1: 0] r_fifo_read_words_to_read_a_upd
+  // Register IO: fifo_read_words_to_read_b
+    , output logic [REG_DATA_W-1: 0] r_fifo_read_words_to_read_b
+        , input  logic [REG_DATA_W-1: 0] r_fifo_read_words_to_read_b_upd
   // Register IO: fifo_read_fifo_read_data_count
     , output logic [REG_DATA_W-1: 0] r_fifo_read_fifo_read_data_count
         , input  logic [REG_DATA_W-1: 0] r_fifo_read_fifo_read_data_count_upd
@@ -241,15 +246,21 @@ import hpu_regif_core_eth_2in3_pkg::*;
 //-- Default fifo_write_number_of_words
   logic [REG_DATA_W-1:0]fifo_write_number_of_words_default;
   assign fifo_write_number_of_words_default = 'h0;
-//-- Default fifo_write_words_to_write
-  logic [REG_DATA_W-1:0]fifo_write_words_to_write_default;
-  assign fifo_write_words_to_write_default = 'h0;
+//-- Default fifo_write_words_to_write_a
+  logic [REG_DATA_W-1:0]fifo_write_words_to_write_a_default;
+  assign fifo_write_words_to_write_a_default = 'h0;
+//-- Default fifo_write_words_to_write_b
+  logic [REG_DATA_W-1:0]fifo_write_words_to_write_b_default;
+  assign fifo_write_words_to_write_b_default = 'h0;
 //-- Default fifo_write_fifo_write_data_count
   logic [REG_DATA_W-1:0]fifo_write_fifo_write_data_count_default;
   assign fifo_write_fifo_write_data_count_default = 'h0;
-//-- Default fifo_read_words_to_read
-  logic [REG_DATA_W-1:0]fifo_read_words_to_read_default;
-  assign fifo_read_words_to_read_default = 'h0;
+//-- Default fifo_read_words_to_read_a
+  logic [REG_DATA_W-1:0]fifo_read_words_to_read_a_default;
+  assign fifo_read_words_to_read_a_default = 'h0;
+//-- Default fifo_read_words_to_read_b
+  logic [REG_DATA_W-1:0]fifo_read_words_to_read_b_default;
+  assign fifo_read_words_to_read_b_default = 'h0;
 //-- Default fifo_read_fifo_read_data_count
   logic [REG_DATA_W-1:0]fifo_read_fifo_read_data_count_default;
   assign fifo_read_fifo_read_data_count_default = 'h0;
@@ -302,15 +313,26 @@ import hpu_regif_core_eth_2in3_pkg::*;
       r_fifo_write_number_of_words       <= r_fifo_write_number_of_wordsD;
     end
   end
-// Register FF: fifo_write_words_to_write
-  logic [REG_DATA_W-1:0] r_fifo_write_words_to_writeD;
-  assign r_fifo_write_words_to_writeD = (wr_en_ok && (wr_add[AXIL_ADD_RANGE_W-1:0] == FIFO_WRITE_WORDS_TO_WRITE_OFS[AXIL_ADD_RANGE_W-1:0]))? wr_data: r_fifo_write_words_to_write;
+// Register FF: fifo_write_words_to_write_a
+  logic [REG_DATA_W-1:0] r_fifo_write_words_to_write_aD;
+  assign r_fifo_write_words_to_write_aD = (wr_en_ok && (wr_add[AXIL_ADD_RANGE_W-1:0] == FIFO_WRITE_WORDS_TO_WRITE_A_OFS[AXIL_ADD_RANGE_W-1:0]))? wr_data: r_fifo_write_words_to_write_a;
   always_ff @(posedge clk) begin
     if (!s_rst_n) begin
-      r_fifo_write_words_to_write       <= fifo_write_words_to_write_default;
+      r_fifo_write_words_to_write_a       <= fifo_write_words_to_write_a_default;
     end
     else begin
-      r_fifo_write_words_to_write       <= r_fifo_write_words_to_writeD;
+      r_fifo_write_words_to_write_a       <= r_fifo_write_words_to_write_aD;
+    end
+  end
+// Register FF: fifo_write_words_to_write_b
+  logic [REG_DATA_W-1:0] r_fifo_write_words_to_write_bD;
+  assign r_fifo_write_words_to_write_bD = (wr_en_ok && (wr_add[AXIL_ADD_RANGE_W-1:0] == FIFO_WRITE_WORDS_TO_WRITE_B_OFS[AXIL_ADD_RANGE_W-1:0]))? wr_data: r_fifo_write_words_to_write_b;
+  always_ff @(posedge clk) begin
+    if (!s_rst_n) begin
+      r_fifo_write_words_to_write_b       <= fifo_write_words_to_write_b_default;
+    end
+    else begin
+      r_fifo_write_words_to_write_b       <= r_fifo_write_words_to_write_bD;
     end
   end
 // Register FF: fifo_write_fifo_write_data_count
@@ -324,15 +346,26 @@ import hpu_regif_core_eth_2in3_pkg::*;
       r_fifo_write_fifo_write_data_count       <= r_fifo_write_fifo_write_data_countD;
     end
   end
-// Register FF: fifo_read_words_to_read
-  logic [REG_DATA_W-1:0] r_fifo_read_words_to_readD;
-  assign r_fifo_read_words_to_readD       = r_fifo_read_words_to_read_upd;
+// Register FF: fifo_read_words_to_read_a
+  logic [REG_DATA_W-1:0] r_fifo_read_words_to_read_aD;
+  assign r_fifo_read_words_to_read_aD       = r_fifo_read_words_to_read_a_upd;
   always_ff @(posedge clk) begin
     if (!s_rst_n) begin
-      r_fifo_read_words_to_read       <= fifo_read_words_to_read_default;
+      r_fifo_read_words_to_read_a       <= fifo_read_words_to_read_a_default;
     end
     else begin
-      r_fifo_read_words_to_read       <= r_fifo_read_words_to_readD;
+      r_fifo_read_words_to_read_a       <= r_fifo_read_words_to_read_aD;
+    end
+  end
+// Register FF: fifo_read_words_to_read_b
+  logic [REG_DATA_W-1:0] r_fifo_read_words_to_read_bD;
+  assign r_fifo_read_words_to_read_bD       = r_fifo_read_words_to_read_b_upd;
+  always_ff @(posedge clk) begin
+    if (!s_rst_n) begin
+      r_fifo_read_words_to_read_b       <= fifo_read_words_to_read_b_default;
+    end
+    else begin
+      r_fifo_read_words_to_read_b       <= r_fifo_read_words_to_read_bD;
     end
   end
 // Register FF: fifo_read_fifo_read_data_count
@@ -389,14 +422,20 @@ import hpu_regif_core_eth_2in3_pkg::*;
           FIFO_WRITE_NUMBER_OF_WORDS_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register fifo_write_number_of_words
             axil_rdataD = r_fifo_write_number_of_words;
           end
-          FIFO_WRITE_WORDS_TO_WRITE_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register fifo_write_words_to_write
-            axil_rdataD = r_fifo_write_words_to_write;
+          FIFO_WRITE_WORDS_TO_WRITE_A_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register fifo_write_words_to_write_a
+            axil_rdataD = r_fifo_write_words_to_write_a;
+          end
+          FIFO_WRITE_WORDS_TO_WRITE_B_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register fifo_write_words_to_write_b
+            axil_rdataD = r_fifo_write_words_to_write_b;
           end
           FIFO_WRITE_FIFO_WRITE_DATA_COUNT_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register fifo_write_fifo_write_data_count
             axil_rdataD = r_fifo_write_fifo_write_data_count;
           end
-          FIFO_READ_WORDS_TO_READ_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register fifo_read_words_to_read
-            axil_rdataD = r_fifo_read_words_to_read;
+          FIFO_READ_WORDS_TO_READ_A_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register fifo_read_words_to_read_a
+            axil_rdataD = r_fifo_read_words_to_read_a;
+          end
+          FIFO_READ_WORDS_TO_READ_B_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register fifo_read_words_to_read_b
+            axil_rdataD = r_fifo_read_words_to_read_b;
           end
           FIFO_READ_FIFO_READ_DATA_COUNT_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register fifo_read_fifo_read_data_count
             axil_rdataD = r_fifo_read_fifo_read_data_count;

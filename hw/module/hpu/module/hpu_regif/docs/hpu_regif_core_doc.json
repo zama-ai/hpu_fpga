@@ -5,8 +5,8 @@
   "offset": 524288,
   "range": 458752,
   "ext_pkg": [
-    "axi_if_shell_axil_pkg",
-    "axi_if_common_param_pkg"
+    "axi_if_common_param_pkg",
+    "axi_if_shell_axil_pkg"
   ],
   "section": [
     {
@@ -4342,7 +4342,7 @@
       "description": "fifo write part",
       "offset": 917532,
       "bytes_align": 4,
-      "range": 12,
+      "range": 16,
       "register": [
         {
           "name": "number_of_words",
@@ -4357,7 +4357,7 @@
           "field": null
         },
         {
-          "name": "words_to_write",
+          "name": "words_to_write_a",
           "description": "word that must be sent to fifo",
           "owner": "User",
           "read_access": "Read",
@@ -4369,12 +4369,24 @@
           "field": null
         },
         {
+          "name": "words_to_write_b",
+          "description": "word that must be sent to fifo",
+          "owner": "User",
+          "read_access": "Read",
+          "write_access": "Write",
+          "offset": 917540,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
           "name": "fifo_write_data_count",
           "description": "numbers of words that have been written",
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "None",
-          "offset": 917540,
+          "offset": 917544,
           "default": {
             "Cst": 0
           },
@@ -4387,10 +4399,10 @@
       "description": "fifo write part",
       "offset": 917548,
       "bytes_align": 4,
-      "range": 8,
+      "range": 12,
       "register": [
         {
-          "name": "words_to_read",
+          "name": "words_to_read_a",
           "description": "word that must be sent to fifo",
           "owner": "Kernel",
           "read_access": "Read",
@@ -4402,12 +4414,24 @@
           "field": null
         },
         {
+          "name": "words_to_read_b",
+          "description": "word that must be sent to fifo",
+          "owner": "Kernel",
+          "read_access": "Read",
+          "write_access": "None",
+          "offset": 917552,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
           "name": "fifo_read_data_count",
           "description": "numbers of words that have been written",
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "None",
-          "offset": 917552,
+          "offset": 917556,
           "default": {
             "Cst": 0
           },
