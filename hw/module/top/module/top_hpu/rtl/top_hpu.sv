@@ -3119,17 +3119,6 @@ module top_hpu #(
     .qsfp_rx_tlast(qsfp_rx_tlast),
     .qsfp_rx_tvalid(qsfp_rx_tvalid),
 
-    .axis_rx_tdata(axis_s_eth_tdata),
-    .axis_rx_tkeep_user(),
-    // .axis_rx_tlast(axis_s_eth_tlast),
-    .axis_rx_tvalid(axis_s_eth_tvalid),
-
-    .axis_tx_tdata(axis_m_eth_tdata),
-    .axis_tx_tkeep_user('h0FF), // TODO: to modify after
-    .axis_tx_tlast(axis_m_eth_tlast),
-    .axis_tx_tvalid(axis_m_eth_tvalid),
-    .axis_tx_tready(axis_m_eth_tready),
-
     .gt_loopback(gt_loopback),
     .gt_line_rate(gt_line_rate),
     .gt_reset_rx_datapath(gt_reset_rx_datapath),

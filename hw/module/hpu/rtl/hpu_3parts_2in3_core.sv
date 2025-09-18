@@ -136,18 +136,6 @@ module hpu_3parts_2in3_core
   input [LINE_NB-1:0][AXIS_TKEEP_W-1:0 ]  qsfp_rx_tkeep_user,
   input [LINE_NB-1:0]                     qsfp_rx_tlast,
   input [LINE_NB-1:0]                     qsfp_rx_tvalid,
-  // axi4-stream interface in direction of block design IP for RPU
-  // == RX
-  output [AXIS_TDATA_W-1:0] axis_rx_tdata,
-  output [AXIS_TKEEP_W-1:0] axis_rx_tkeep_user,
-  output                    axis_rx_tlast,
-  output                    axis_rx_tvalid,
-  // == TX
-  input  [AXIS_TDATA_W-1:0] axis_tx_tdata,
-  input  [AXIS_TKEEP_W-1:0] axis_tx_tkeep_user,
-  input                     axis_tx_tlast,
-  input                     axis_tx_tvalid,
-  output                    axis_tx_tready,
 
   // transceiver control
   output [2:0]         gt_loopback,
@@ -510,17 +498,6 @@ module hpu_3parts_2in3_core
     .qsfp_rx_tkeep_user(qsfp_rx_tkeep_user),
     .qsfp_rx_tlast(qsfp_rx_tlast),
     .qsfp_rx_tvalid(qsfp_rx_tvalid),
-
-    .axis_rx_tdata(axis_rx_tdata),
-    .axis_rx_tkeep_user(axis_rx_tkeep_user),
-    .axis_rx_tlast(axis_rx_tlast),
-    .axis_rx_tvalid(axis_rx_tvalid),
-
-    .axis_tx_tdata(axis_tx_tdata),
-    .axis_tx_tkeep_user(axis_tx_tkeep_user),
-    .axis_tx_tlast(axis_tx_tlast),
-    .axis_tx_tvalid(axis_tx_tvalid),
-    .axis_tx_tready(axis_tx_tready),
 
     // gt control signals
     .gt_loopback(gt_loopback),
