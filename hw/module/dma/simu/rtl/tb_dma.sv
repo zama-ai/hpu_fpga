@@ -122,18 +122,6 @@ module tb_dma;
   logic [LINE_NB-1:0][AXIS_TKEEP_W-1:0] qsfp_rx_tkeep_user;
   logic [LINE_NB-1:0]                   qsfp_rx_tlast;
   logic [LINE_NB-1:0]                   qsfp_rx_tvalid;
-  // axi4-stream interface to fifo --------------------------------------------
-  // == RX
-  logic [AXIS_TDATA_W-1:0] axis_rx_tdata;
-  logic [AXIS_TKEEP_W-1:0] axis_rx_tkeep_user;
-  logic                    axis_rx_tlast;
-  logic                    axis_rx_tvalid;
-  // == TX
-  logic [AXIS_TDATA_W-1:0] axis_tx_tdata;
-  logic [AXIS_TKEEP_W-1:0] axis_tx_tkeep_user;
-  logic                    axis_tx_tlast;
-  logic                    axis_tx_tvalid;
-  logic                    axis_tx_tready;
 
   // ============================================================================================== --
   // Design under test instance
@@ -283,6 +271,7 @@ module tb_dma;
     // once everything setup we can try to send a frame through register file on the correct lane
     // 3 - Send a frame using register file
     // 4 - trigger all qsfp-rx lanes + check that we read into fifo correct value on selected lane
+    // 5 - reading that the fifo depths are accessible and has changed, that means not zeros
     // --------------------------------------------------------------------------------------------
 
     // (1) Reading dummy values -------------------------------------------------------------------
@@ -394,6 +383,20 @@ module tb_dma;
       repeat(20) @(posedge clk_control);
     end
 
+    // (5) Checks that fifo depths are accessible -------------------------------------------------
+    maxil_drv_if.read_trans(FIFO_WRITE_FIFO_WRITE_DATA_COUNT_OFS, read_data);
+
+    if(read_data == 0) begin
+      $display("%t >    ERROR: FIFO write data count has not been changed",$time);
+      error = 1'b1;
+    end
+
+    maxil_drv_if.read_trans(FIFO_READ_FIFO_READ_DATA_COUNT_OFS, read_data);
+
+    if(read_data == 0) begin
+      $display("%t >    ERROR: FIFO read data count has not been changed",$time);
+      error = 1'b1;
+    end
 
     $display("%t > INFO: End simulation",$time);
     repeat(20) @(posedge clk_control);
@@ -424,20 +427,6 @@ module tb_dma;
   logic [LINE_NB-1 + 1 :0][AXIS_TKEEP_W-1:0] tkeep_user;
   logic [LINE_NB-1 + 1 :0]                   tlast;
   logic [LINE_NB-1 + 1 :0]                   tvalid;
-  // only axis_tx_tready exists
-  bit tready;
-
-  // let's create a fake tready to simulate a backpressure
-  bit fake_tready;
-
-  always @(posedge clk_mrmac) begin
-    if (!s_rstn_mrmac) begin
-      fake_tready <= 0;
-    end else begin
-      // 75% chance of fake_tready = 1
-      fake_tready <= ($urandom_range(0,3) != 0);
-    end
-  end
 
   // for initialization
   initial begin
@@ -502,13 +491,5 @@ always_ff @(posedge clk_mrmac)
       qsfp_rx_tvalid[lanes]     = tvalid[lanes];
     end
   end
-
-
-  // =========================================================================================== --
-  // Checker
-  // =========================================================================================== --
-
-  // tx lane checker todo
-
 
 endmodule
