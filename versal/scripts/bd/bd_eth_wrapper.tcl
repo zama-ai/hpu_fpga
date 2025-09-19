@@ -448,7 +448,7 @@ proc create_hier_cell_eth_wrapper  { parentCell nameHier } {
   set axis_rx_clk_converter [ create_bd_cell -type ip -vlnv xilinx.com:ip:axis_clock_converter:1.1 axis_rx_clk_converter ]
 
   # Create instance: mrmac_0_core, and set properties
-  # Static 4 x 10GE Wide
+  # Static 4 x 25GE Narrow
   # No FEC
   # Must use GTM
   # Placement near bank 111
@@ -459,7 +459,7 @@ proc create_hier_cell_eth_wrapper  { parentCell nameHier } {
     CONFIG.FEC_SLICE1_CFG_C0 {FEC Disabled (Bypass)} \
     CONFIG.FEC_SLICE2_CFG_C0 {FEC Disabled (Bypass)} \
     CONFIG.FEC_SLICE3_CFG_C0 {FEC Disabled (Bypass)} \
-    CONFIG.FLEX_PORT0_DATA_RATE_C0 {10GE} \
+    CONFIG.FLEX_PORT0_DATA_RATE_C0 {25GE} \
     CONFIG.FLEX_PORT1_DATA_RATE_C0 {N/A} \
     CONFIG.FLEX_PORT2_DATA_RATE_C0 {N/A} \
     CONFIG.FLEX_PORT3_DATA_RATE_C0 {N/A} \
@@ -470,16 +470,16 @@ proc create_hier_cell_eth_wrapper  { parentCell nameHier } {
     CONFIG.MAC_PORT0_PREEMPTION_C0 {0} \
     CONFIG.MAC_PORT0_RX_FLOW_C0 {0} \
     CONFIG.MAC_PORT0_TX_FLOW_C0 {0} \
-    CONFIG.MAC_PORT0_RATE_C0 {10GE} \
-    CONFIG.MAC_PORT1_RATE_C0 {10GE} \
-    CONFIG.MAC_PORT2_RATE_C0 {10GE} \
-    CONFIG.MAC_PORT3_RATE_C0 {10GE} \
+    CONFIG.MAC_PORT0_RATE_C0 {25GE} \
+    CONFIG.MAC_PORT1_RATE_C0 {25GE} \
+    CONFIG.MAC_PORT2_RATE_C0 {25GE} \
+    CONFIG.MAC_PORT3_RATE_C0 {25GE} \
     CONFIG.MRMAC_CLIENTS_C0 {4} \
     CONFIG.MRMAC_CONFIGURATION_TYPE {Static Configuration} \
     CONFIG.MRMAC_LOCATION_C0 {MRMAC_X0Y3} \
     CONFIG.MRMAC_MODE_C0 {MAC+PCS} \
-    CONFIG.MRMAC_PRESET_C0 {4x10GE Wide} \
-    CONFIG.MRMAC_SPEED_C0 {4x10GE} \
+    CONFIG.MRMAC_PRESET_C0 {4x25GE Narrow} \
+    CONFIG.MRMAC_SPEED_C0 {4x25GE} \
     CONFIG.NUM_GT_CHANNELS {4} \
     CONFIG.PORT0_1588v2_Clocking_C0 {Ordinary/Boundary Clock} \
     CONFIG.PORT1_1588v2_Clocking_C0 {Ordinary/Boundary Clock} \
