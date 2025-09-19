@@ -1,7 +1,7 @@
 // ============================================================================================== //
 // Description  : register  map address definition package
 // This file was generated with rust regmap generator:
-//  * Date:  2025-09-18
+//  * Date:  2025-09-19
 //  * Tool_version: bb0db737792da6b81e69a039028c971af1627fe2
 // ---------------------------------------------------------------------------------------------- //
 //
@@ -39,4 +39,9 @@ package hpu_regif_core_eth_2in3_pkg;
   localparam int FIFO_READ_WORDS_TO_READ_A_OFS = 'he002c;
   localparam int FIFO_READ_WORDS_TO_READ_B_OFS = 'he0030;
   localparam int FIFO_READ_FIFO_READ_DATA_COUNT_OFS = 'he0034;
+  localparam int CNT_CLK_OFS = 'he003c;
+  localparam int CNT_TRIG_RD_OFS = 'he0040;
+  localparam int CNT_TX_WR_OFS = 'he0044;
+  localparam int CNT_WORDS_OFS = 'he0048;
+  localparam int STAT_STATUS_OFS = 'he004c;
 endpackage

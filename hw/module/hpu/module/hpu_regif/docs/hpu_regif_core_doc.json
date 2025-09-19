@@ -4438,6 +4438,84 @@
           "field": null
         }
       ]
+    },
+    {
+      "name": "cnt",
+      "description": "fifo write part",
+      "offset": 917564,
+      "bytes_align": 4,
+      "range": 16,
+      "register": [
+        {
+          "name": "clk",
+          "description": "clock counts",
+          "owner": "Kernel",
+          "read_access": "Read",
+          "write_access": "None",
+          "offset": 917564,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "trig_rd",
+          "description": "trig_rd",
+          "owner": "Kernel",
+          "read_access": "Read",
+          "write_access": "None",
+          "offset": 917568,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "tx_wr",
+          "description": "tx_wr",
+          "owner": "Kernel",
+          "read_access": "Read",
+          "write_access": "None",
+          "offset": 917572,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "words",
+          "description": "words",
+          "owner": "Kernel",
+          "read_access": "Read",
+          "write_access": "None",
+          "offset": 917576,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        }
+      ]
+    },
+    {
+      "name": "stat",
+      "description": "fifo write part",
+      "offset": 917580,
+      "bytes_align": 4,
+      "range": 4,
+      "register": [
+        {
+          "name": "status",
+          "description": "fifo status",
+          "owner": "Kernel",
+          "read_access": "Read",
+          "write_access": "None",
+          "offset": 917580,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        }
+      ]
     }
   ]
 }

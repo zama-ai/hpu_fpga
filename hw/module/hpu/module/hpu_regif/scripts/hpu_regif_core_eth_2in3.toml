@@ -132,3 +132,49 @@ description="fifo write part"
   write_access="None"
   default={Cst=0x0}
 
+
+# =====================================================================================================================
+[section.cnt]
+offset= 0x3C
+description="fifo write part"
+
+[section.cnt.register.clk]
+  description="clock counts"
+  owner="Kernel"
+  read_access="Read"
+  write_access="None"
+  default={Cst=0x0}
+
+[section.cnt.register.trig_rd]
+  description="trig_rd"
+  owner="Kernel"
+  read_access="Read"
+  write_access="None"
+  default={Cst=0x0}
+
+[section.cnt.register.tx_wr]
+  description="tx_wr"
+  owner="Kernel"
+  read_access="Read"
+  write_access="None"
+  default={Cst=0x0}
+
+[section.cnt.register.words]
+  description="words"
+  owner="Kernel"
+  read_access="Read"
+  write_access="None"
+  default={Cst=0x0}
+
+# =====================================================================================================================
+[section.stat]
+offset= 0x4C
+description="fifo write part"
+
+[section.stat.register.status]
+  description="fifo status"
+  owner="Kernel"
+  read_access="Read"
+  write_access="None"
+  default={Cst=0x0}
+

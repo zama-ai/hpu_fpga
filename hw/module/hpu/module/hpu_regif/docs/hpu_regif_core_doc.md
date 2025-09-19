@@ -1,5 +1,5 @@
 # HPU_REGIF_CORE documentation
-**Date**: 2025-09-18  
+**Date**: 2025-09-19  
 **Tool Version**: bb0db737792da6b81e69a039028c971af1627fe2  
 
 ## RegisterMap Overview
@@ -49,6 +49,8 @@ Below is a summary of all the registers in the current register map:
 | [reset](#section-reset) | 0xe0014 | 0x8 | different resets are available |
 | [fifo_write](#section-fifo-write) | 0xe001c | 0x10 | fifo write part |
 | [fifo_read](#section-fifo-read) | 0xe002c | 0xc | fifo write part |
+| [cnt](#section-cnt) | 0xe003c | 0x10 | fifo write part |
+| [stat](#section-stat) | 0xe004c | 0x4 | fifo write part |
 
 
 ---
@@ -4344,6 +4346,116 @@ Below is a summary of all the registers in the current section fifo_read:
 - **Read Access**: Read
 - **Write Access**: None
 - **Offset**: 0xe0034
+- **Default**: 0 
+
+
+
+
+---
+
+ 
+
+
+## Section cnt
+
+### Register Overview
+
+Below is a summary of all the registers in the current section cnt:
+
+| Name             | Offset | Access | Description |
+|-----------------:|:------:|:------:|:------------|
+| [clk](#register-cntclk) | 0xe003c | R. |  clock counts |
+| [trig_rd](#register-cnttrig-rd) | 0xe0040 | R. |  trig_rd |
+| [tx_wr](#register-cnttx-wr) | 0xe0044 | R. |  tx_wr |
+| [words](#register-cntwords) | 0xe0048 | R. |  words |
+
+
+---
+
+
+### Register cnt.clk
+
+- **Description**: clock counts
+- **Owner**: Kernel
+- **Read Access**: Read
+- **Write Access**: None
+- **Offset**: 0xe003c
+- **Default**: 0 
+
+
+
+
+---
+
+
+### Register cnt.trig-rd
+
+- **Description**: trig_rd
+- **Owner**: Kernel
+- **Read Access**: Read
+- **Write Access**: None
+- **Offset**: 0xe0040
+- **Default**: 0 
+
+
+
+
+---
+
+
+### Register cnt.tx-wr
+
+- **Description**: tx_wr
+- **Owner**: Kernel
+- **Read Access**: Read
+- **Write Access**: None
+- **Offset**: 0xe0044
+- **Default**: 0 
+
+
+
+
+---
+
+
+### Register cnt.words
+
+- **Description**: words
+- **Owner**: Kernel
+- **Read Access**: Read
+- **Write Access**: None
+- **Offset**: 0xe0048
+- **Default**: 0 
+
+
+
+
+---
+
+ 
+
+
+## Section stat
+
+### Register Overview
+
+Below is a summary of all the registers in the current section stat:
+
+| Name             | Offset | Access | Description |
+|-----------------:|:------:|:------:|:------------|
+| [status](#register-statstatus) | 0xe004c | R. |  fifo status |
+
+
+---
+
+
+### Register stat.status
+
+- **Description**: fifo status
+- **Owner**: Kernel
+- **Read Access**: Read
+- **Write Access**: None
+- **Offset**: 0xe004c
 - **Default**: 0 
 
 

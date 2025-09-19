@@ -395,6 +395,12 @@ module tb_dma;
       error = 1'b1;
     end
 
+    maxil_drv_if.read_trans(CNT_CLK_OFS, read_data);
+    maxil_drv_if.read_trans(CNT_TRIG_RD_OFS, read_data);
+    maxil_drv_if.read_trans(CNT_TX_WR_OFS, read_data);
+    maxil_drv_if.read_trans(CNT_WORDS_OFS, read_data);
+    maxil_drv_if.read_trans(STAT_STATUS_OFS, read_data);
+
     $display("%t > INFO: End simulation",$time);
     repeat(20) @(posedge clk_control);
     end_of_test = 1'b1;

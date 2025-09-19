@@ -1,7 +1,7 @@
 // ============================================================================================== //
 // Description  : Axi4-lite register bank
 // This file was generated with rust regmap generator:
-//  * Date:  2025-09-18
+//  * Date:  2025-09-19
 //  * Tool_version: bb0db737792da6b81e69a039028c971af1627fe2
 // ---------------------------------------------------------------------------------------------- //
 // xR[n]W[na]
@@ -12,17 +12,17 @@
 //  | [n] optional generate read notification (have a _rd_en)
 //  | Write options
 //  | [n] optional generate wr notification (have a _wr_en)
-//
+// 
 // Thus type of registers are:
-// uRW  : Read-write
+// uRW  : Read-write                                              
 //      : Value provided by the host. The host can read it and write it.
-// uW   : Write-only
+// uW   : Write-only                                              
 //      : Value provided by the host. The host can only write it.
-// uWn  : Write-only with notification
+// uWn  : Write-only with notification                            
 //      : Value provided by the host. The host can only write it.
-// kR   : Read-only register
+// kR   : Read-only register                                      
 //      : Value provided by the RTL.
-// kRn  : Read-only register with notification  (rd)
+// kRn  : Read-only register with notification  (rd)              
 //      : Value provided by the RTL.
 // kRWn : Read-only register with notification (wr)
 //      : Value provided by the RTL. The host can read it. The write data is processed by the RTL.
@@ -30,8 +30,8 @@
 //      : Value provided by the RTL. The host can read it with notify. The write data is processed by the RTL.
 // ============================================================================================== //
 module hpu_regif_core_eth_2in3
-import axi_if_common_param_pkg::*;
 import axi_if_shell_axil_pkg::*;
+import axi_if_common_param_pkg::*;
 import hpu_regif_core_eth_2in3_pkg::*;
 #()(
   input  logic                           clk,
@@ -80,6 +80,21 @@ import hpu_regif_core_eth_2in3_pkg::*;
   // Register IO: fifo_read_fifo_read_data_count
     , output logic [REG_DATA_W-1: 0] r_fifo_read_fifo_read_data_count
         , input  logic [REG_DATA_W-1: 0] r_fifo_read_fifo_read_data_count_upd
+  // Register IO: cnt_clk
+    , output logic [REG_DATA_W-1: 0] r_cnt_clk
+        , input  logic [REG_DATA_W-1: 0] r_cnt_clk_upd
+  // Register IO: cnt_trig_rd
+    , output logic [REG_DATA_W-1: 0] r_cnt_trig_rd
+        , input  logic [REG_DATA_W-1: 0] r_cnt_trig_rd_upd
+  // Register IO: cnt_tx_wr
+    , output logic [REG_DATA_W-1: 0] r_cnt_tx_wr
+        , input  logic [REG_DATA_W-1: 0] r_cnt_tx_wr_upd
+  // Register IO: cnt_words
+    , output logic [REG_DATA_W-1: 0] r_cnt_words
+        , input  logic [REG_DATA_W-1: 0] r_cnt_words_upd
+  // Register IO: stat_status
+    , output logic [REG_DATA_W-1: 0] r_stat_status
+        , input  logic [REG_DATA_W-1: 0] r_stat_status_upd
 );
 // ============================================================================================== --
 // localparam
@@ -264,6 +279,21 @@ import hpu_regif_core_eth_2in3_pkg::*;
 //-- Default fifo_read_fifo_read_data_count
   logic [REG_DATA_W-1:0]fifo_read_fifo_read_data_count_default;
   assign fifo_read_fifo_read_data_count_default = 'h0;
+//-- Default cnt_clk
+  logic [REG_DATA_W-1:0]cnt_clk_default;
+  assign cnt_clk_default = 'h0;
+//-- Default cnt_trig_rd
+  logic [REG_DATA_W-1:0]cnt_trig_rd_default;
+  assign cnt_trig_rd_default = 'h0;
+//-- Default cnt_tx_wr
+  logic [REG_DATA_W-1:0]cnt_tx_wr_default;
+  assign cnt_tx_wr_default = 'h0;
+//-- Default cnt_words
+  logic [REG_DATA_W-1:0]cnt_words_default;
+  assign cnt_words_default = 'h0;
+//-- Default stat_status
+  logic [REG_DATA_W-1:0]stat_status_default;
+  assign stat_status_default = 'h0;
 // ============================================================================================== --
 // Write reg
 // ============================================================================================== --
@@ -379,6 +409,61 @@ import hpu_regif_core_eth_2in3_pkg::*;
       r_fifo_read_fifo_read_data_count       <= r_fifo_read_fifo_read_data_countD;
     end
   end
+// Register FF: cnt_clk
+  logic [REG_DATA_W-1:0] r_cnt_clkD;
+  assign r_cnt_clkD       = r_cnt_clk_upd;
+  always_ff @(posedge clk) begin
+    if (!s_rst_n) begin
+      r_cnt_clk       <= cnt_clk_default;
+    end
+    else begin
+      r_cnt_clk       <= r_cnt_clkD;
+    end
+  end
+// Register FF: cnt_trig_rd
+  logic [REG_DATA_W-1:0] r_cnt_trig_rdD;
+  assign r_cnt_trig_rdD       = r_cnt_trig_rd_upd;
+  always_ff @(posedge clk) begin
+    if (!s_rst_n) begin
+      r_cnt_trig_rd       <= cnt_trig_rd_default;
+    end
+    else begin
+      r_cnt_trig_rd       <= r_cnt_trig_rdD;
+    end
+  end
+// Register FF: cnt_tx_wr
+  logic [REG_DATA_W-1:0] r_cnt_tx_wrD;
+  assign r_cnt_tx_wrD       = r_cnt_tx_wr_upd;
+  always_ff @(posedge clk) begin
+    if (!s_rst_n) begin
+      r_cnt_tx_wr       <= cnt_tx_wr_default;
+    end
+    else begin
+      r_cnt_tx_wr       <= r_cnt_tx_wrD;
+    end
+  end
+// Register FF: cnt_words
+  logic [REG_DATA_W-1:0] r_cnt_wordsD;
+  assign r_cnt_wordsD       = r_cnt_words_upd;
+  always_ff @(posedge clk) begin
+    if (!s_rst_n) begin
+      r_cnt_words       <= cnt_words_default;
+    end
+    else begin
+      r_cnt_words       <= r_cnt_wordsD;
+    end
+  end
+// Register FF: stat_status
+  logic [REG_DATA_W-1:0] r_stat_statusD;
+  assign r_stat_statusD       = r_stat_status_upd;
+  always_ff @(posedge clk) begin
+    if (!s_rst_n) begin
+      r_stat_status       <= stat_status_default;
+    end
+    else begin
+      r_stat_status       <= r_stat_statusD;
+    end
+  end
 // ============================================================================================== --
 // Read reg
 // ============================================================================================== --
@@ -439,6 +524,21 @@ import hpu_regif_core_eth_2in3_pkg::*;
           end
           FIFO_READ_FIFO_READ_DATA_COUNT_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register fifo_read_fifo_read_data_count
             axil_rdataD = r_fifo_read_fifo_read_data_count;
+          end
+          CNT_CLK_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register cnt_clk
+            axil_rdataD = r_cnt_clk;
+          end
+          CNT_TRIG_RD_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register cnt_trig_rd
+            axil_rdataD = r_cnt_trig_rd;
+          end
+          CNT_TX_WR_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register cnt_tx_wr
+            axil_rdataD = r_cnt_tx_wr;
+          end
+          CNT_WORDS_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register cnt_words
+            axil_rdataD = r_cnt_words;
+          end
+          STAT_STATUS_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register stat_status
+            axil_rdataD = r_stat_status;
           end
           default:
             axil_rdataD = REG_DATA_W'('h0BAD_ADD1); // Default value

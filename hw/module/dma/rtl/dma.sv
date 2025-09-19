@@ -102,6 +102,16 @@ module dma
   logic [NB_WORD_W-1:0]    r_wr_data_count;
   logic [NB_WORD_W-1:0]    r_rd_data_count;
   logic [AXIS_TDATA_W-1:0] r_rd_word;
+
+  logic [31:0]             clk_cnt_out;
+  logic [31:0]             trigger_rd_cnt_out;
+  logic [31:0]             tx_wr_en_cnt;
+  logic [31:0]             word_has_changed_cnt;
+  logic                    stat_tx_empty;
+  logic                    stat_tx_rd_rst_busy;
+  logic                    stat_tx_data_valid;
+  logic [NB_WORD_W-1:0]    stat_rd_data_count;
+
   // -------------------------------------------------------------------------------------------- //
   hpu_regif_core_eth_2in3  hpu_regif_core_eth_2in3 (
     // configuration interface
@@ -138,12 +148,18 @@ module dma
     .r_fifo_write_fifo_write_data_count_upd({ {(AXIL_DATA_W-NB_WORD_W){1'b0}}, r_wr_data_count}),
     .r_fifo_read_words_to_read_a_upd(r_rd_word[AXIL_DATA_W-1:0]),
     .r_fifo_read_words_to_read_b_upd(r_rd_word[2*AXIL_DATA_W-1:AXIL_DATA_W]),
-    .r_fifo_read_fifo_read_data_count_upd({ {(AXIL_DATA_W-NB_WORD_W){1'b0}}, r_rd_data_count})
+    .r_fifo_read_fifo_read_data_count_upd({ {(AXIL_DATA_W-NB_WORD_W){1'b0}}, r_rd_data_count}),
+
+    // debug
+    .r_cnt_clk_upd(clk_cnt_out),
+    .r_cnt_trig_rd_upd(trigger_rd_cnt_out),
+    .r_cnt_tx_wr_upd(tx_wr_en_cnt),
+    .r_cnt_words_upd(word_has_changed_cnt),
+    .r_stat_status_upd({stat_tx_empty, stat_tx_rd_rst_busy, stat_tx_data_valid,{(AXIL_DATA_W-NB_WORD_W-3){1'b0}}, r_rd_data_count})
   );
 
-  // Logic around regfile :
-  //
 
+  // Logic around regfile
   always_ff @(posedge clk_eth_cfg) begin
     if (~resetn_eth_cfg) begin
       r_wr_word <= 'h0;
@@ -209,7 +225,16 @@ module dma
     .r_wr_data_count    (r_wr_data_count),
     .r_rd_data_count    (r_rd_data_count),
     .r_rd_word          (r_rd_word),
-    .read_ack           (read_ack)
+    .read_ack           (read_ack),
+
+    .clk_cnt_out         (clk_cnt_out),
+    .trigger_rd_cnt_out  (trigger_rd_cnt_out),
+    .tx_wr_en_cnt        (tx_wr_en_cnt),
+    .word_has_changed_cnt(word_has_changed_cnt),
+    .stat_tx_empty       (stat_tx_empty),
+    .stat_tx_rd_rst_busy (stat_tx_rd_rst_busy),
+    .stat_tx_data_valid  (stat_tx_data_valid),
+    .stat_rd_data_count  (stat_rd_data_count)
   );
 
   // ============================================================================================ //
