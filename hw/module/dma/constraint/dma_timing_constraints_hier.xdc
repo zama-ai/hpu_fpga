@@ -21,6 +21,6 @@ set_false_path -to [get_cells -hierarchical -filter {NAME =~ *fifo_handle/cdc_rd
 set_false_path -to [get_cells -hierarchical -filter {NAME =~ *fifo_handle/cdc_clk_cnt_reg[0]*}]
 set_false_path -to [get_cells -hierarchical -filter {NAME =~ *fifo_handle/cdc_trigger_rd_cnt_reg[0]*}]
 
-set_false_path -to [get_cells -hierarchical -filter {NAME =~ *fifo_handle/cdc_tx_rd_rst_busy[0]*}]
-set_false_path -to [get_cells -hierarchical -filter {NAME =~ *fifo_handle/cdc_tx_data_valid[0]*}]
-set_false_path -to [get_cells -hierarchical -filter {NAME =~ *fifo_handle/cdc_qsfp_tx_tready[0]*}]
+set_false_path -to [get_cells -hierarchical -filter {NAME =~ *fifo_handle/cdc_tx_rd_rst_busy_reg[0]*}]
+set_false_path -to [get_cells -hierarchical -filter {NAME =~ *fifo_handle/cdc_tx_data_valid_reg[0]*}]
+set_false_path -to [get_cells -hierarchical -filter {NAME =~ *fifo_handle/cdc_qsfp_tx_tready_reg[0]*}]
