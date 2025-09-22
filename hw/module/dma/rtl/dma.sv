@@ -111,6 +111,9 @@ module dma
   logic                    stat_tx_rd_rst_busy;
   logic                    stat_tx_data_valid;
   logic [NB_WORD_W-1:0]    stat_rd_data_count;
+  logic                    stat_tx_full;
+  logic                    stat_tx_wr_rst_busy;
+  logic                    stat_qsfp_tx_tready;
 
   // -------------------------------------------------------------------------------------------- //
   hpu_regif_core_eth_2in3  hpu_regif_core_eth_2in3 (
@@ -155,7 +158,7 @@ module dma
     .r_cnt_trig_rd_upd(trigger_rd_cnt_out),
     .r_cnt_tx_wr_upd(tx_wr_en_cnt),
     .r_cnt_words_upd(word_has_changed_cnt),
-    .r_stat_status_upd({stat_tx_empty, stat_tx_rd_rst_busy, stat_tx_data_valid,{(AXIL_DATA_W-NB_WORD_W-3){1'b0}}, stat_rd_data_count})
+    .r_stat_status_upd({stat_tx_empty, stat_tx_rd_rst_busy, stat_tx_data_valid, stat_tx_full, stat_tx_wr_rst_busy, stat_qsfp_tx_tready, {(AXIL_DATA_W-NB_WORD_W-6){1'b0}}, stat_rd_data_count})
   );
 
 
@@ -234,6 +237,9 @@ module dma
     .stat_tx_empty       (stat_tx_empty),
     .stat_tx_rd_rst_busy (stat_tx_rd_rst_busy),
     .stat_tx_data_valid  (stat_tx_data_valid),
+    .stat_tx_full        (stat_tx_full),
+    .stat_tx_wr_rst_busy (stat_tx_wr_rst_busy),
+    .stat_qsfp_tx_tready (stat_qsfp_tx_tready),
     .stat_rd_data_count  (stat_rd_data_count)
   );
 

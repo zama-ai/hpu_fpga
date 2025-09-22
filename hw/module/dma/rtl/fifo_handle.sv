@@ -49,9 +49,13 @@ module fifo_handle #(
   output logic [31:0]             trigger_rd_cnt_out,
   output logic [31:0]             tx_wr_en_cnt,
   output logic [31:0]             word_has_changed_cnt,
+
   output logic                    stat_tx_empty,
   output logic                    stat_tx_rd_rst_busy,
   output logic                    stat_tx_data_valid,
+  output logic                    stat_tx_full,
+  output logic                    stat_tx_wr_rst_busy,
+  output logic                    stat_qsfp_tx_tready,
   output logic [NB_WORD_W-1:0]    stat_rd_data_count
 );
   // =========================================================================================== //
@@ -346,10 +350,6 @@ module fifo_handle #(
   assign trigger_rd_cnt_out = cdc_trigger_rd_cnt[CDC_SYNC_STAGES-1];
 
   // status ---------------------------------------------------------------------------------------
-  logic stat_tx_full;
-  logic stat_tx_wr_rst_busy;
-  logic stat_r_nb_word;
-
   always_ff @(posedge clk_control) begin
     if (~s_rstn_control) begin
       stat_tx_full <= 'h0;
@@ -363,6 +363,7 @@ module fifo_handle #(
   logic [CDC_SYNC_STAGES-1:0] cdc_tx_empty;
   logic [CDC_SYNC_STAGES-1:0] cdc_tx_rd_rst_busy;
   logic [CDC_SYNC_STAGES-1:0] cdc_tx_data_valid;
+  logic [CDC_SYNC_STAGES-1:0] cdc_qsfp_tx_tready;
   logic [CDC_SYNC_STAGES-1:0] [NB_WORD_W-1:0] cdc_rd_data_count;
 
   always_ff @(posedge clk_control) begin
@@ -370,6 +371,7 @@ module fifo_handle #(
     cdc_tx_rd_rst_busy[0] <= tx_rd_rst_busy;
     cdc_tx_data_valid[0]  <= tx_data_valid;
     cdc_rd_data_count[0]  <= rd_data_count;
+    cdc_qsfp_tx_tready[0] <= qsfp_tx_tready;
   end
 
   generate
@@ -379,6 +381,7 @@ module fifo_handle #(
         cdc_tx_rd_rst_busy[gen_i] <= cdc_tx_rd_rst_busy[gen_i-1];
         cdc_tx_data_valid[gen_i]  <= cdc_tx_data_valid[gen_i-1];
         cdc_rd_data_count[gen_i]  <= cdc_rd_data_count[gen_i-1];
+        cdc_qsfp_tx_tready[gen_i] <= cdc_qsfp_tx_tready[gen_i-1];
       end
     end
   endgenerate
@@ -387,5 +390,6 @@ module fifo_handle #(
   assign stat_tx_rd_rst_busy = cdc_tx_rd_rst_busy[CDC_SYNC_STAGES-1];
   assign stat_tx_data_valid = cdc_tx_data_valid[CDC_SYNC_STAGES-1];
   assign stat_rd_data_count = cdc_rd_data_count[CDC_SYNC_STAGES-1];
+  assign stat_qsfp_tx_tready = cdc_qsfp_tx_tready[CDC_SYNC_STAGES-1];
 
 endmodule
