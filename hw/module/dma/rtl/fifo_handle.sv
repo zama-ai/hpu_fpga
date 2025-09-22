@@ -169,46 +169,37 @@ module fifo_handle #(
     .dbiterr      ()
   );
 
+  // building the axi4-stream tx ------------------------------------------------------------------
+
   logic tx_data_valid_d;
   always_ff @(posedge clk_mrmac)
     tx_data_valid_d <= tx_data_valid;
 
 
-  logic [AXIS_TDATA_W-1:0] qsfp_tx_tdata_d;
-  logic                    qsfp_tx_tvalid_d;
-  logic                    qsfp_tx_tlast_d;
-  logic [AXIS_TKEEP_W-1:0] qsfp_tx_tkeep_user_d;
+  logic tx_start;
+  logic tx_active_reg;
+  logic tx_will_complete_next;
 
-  logic                    tx_tlast;
+  // pulse on start of transaction: positive edge of tx_data_valid when no words have been consumed
+  assign tx_start = (tx_data_valid & ~tx_data_valid_d) & (rd_data_count==nb_word_mrmac[CDC_SYNC_STAGES-1]);
+  assign tx_will_complete_next = qsfp_tx_tlast && qsfp_tx_tready && qsfp_tx_tvalid;
 
-  assign tx_tlast = ((rd_data_count ==  1) && tx_data_valid) ? 1'b1 : 1'b0;
-
+  // Registered state for memory
   always_ff @(posedge clk_mrmac) begin
-    qsfp_tx_tdata_d <= tx_rd_data;
-    qsfp_tx_tlast_d <= tx_tlast;
-  end
-
-  always_ff @(posedge clk_mrmac) begin
-    if (!s_rstn_mrmac) begin
-      qsfp_tx_tvalid_d <= 1'b0;
-      qsfp_tx_tkeep_user_d <='h0;
-    end else begin
-      if (tx_data_valid & ~ tx_data_valid_d) begin
-        qsfp_tx_tvalid_d <= 1'b1;
-        qsfp_tx_tkeep_user_d <= 'hff; // first 8 bytes are valid
-      end else if (qsfp_tx_tlast & qsfp_tx_tready) begin
-        qsfp_tx_tkeep_user_d <='h0;
-        qsfp_tx_tvalid_d <= 1'b0;
+      if (~s_rstn_mrmac) begin
+          tx_active_reg <= 1'b0;
+      end else begin
+          tx_active_reg <= qsfp_tx_tvalid && !tx_will_complete_next;
       end
-    end
   end
 
 
-  // building the axi4-stream tx ------------------------------------------------------------------
-  assign qsfp_tx_tdata = qsfp_tx_tdata_d;
-  assign qsfp_tx_tvalid = qsfp_tx_tvalid_d;
-  assign qsfp_tx_tlast = qsfp_tx_tlast_d;
-  assign qsfp_tx_tkeep_user = qsfp_tx_tkeep_user_d;
+
+  // valid when started and active communication is running
+  assign qsfp_tx_tvalid = tx_start || tx_active_reg;
+  assign qsfp_tx_tdata = tx_rd_data;
+  assign qsfp_tx_tlast = ((rd_data_count ==  1) && tx_data_valid) ? 1'b1 : 1'b0;
+  assign qsfp_tx_tkeep_user = qsfp_tx_tvalid ? 'hFF : 0; // first 8 bytes are valid
 
   // =========================================================================================== //
   // FIFO RX
