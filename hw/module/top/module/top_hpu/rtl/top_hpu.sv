@@ -2450,21 +2450,25 @@ module top_hpu #(
     .tx_axis_tkeep_user_0(qsfp_tx_tkeep_user[0]),
     .tx_axis_tlast_0     (qsfp_tx_tlast[0]),
     .tx_axis_tvalid_0    (qsfp_tx_tvalid[0]),
+    .tx_axis_tready_0    (qsfp_tx_tready[0]),
     // Lane 1
     .tx_axis_tdata_2     (qsfp_tx_tdata[1]),
     .tx_axis_tkeep_user_2(qsfp_tx_tkeep_user[1]),
     .tx_axis_tlast_2     (qsfp_tx_tlast[1]),
     .tx_axis_tvalid_2    (qsfp_tx_tvalid[1]),
+    .tx_axis_tready_2    (qsfp_tx_tready[1]),
     // Lane 2
     .tx_axis_tdata_4     (qsfp_tx_tdata[2]),
     .tx_axis_tkeep_user_4(qsfp_tx_tkeep_user[2]),
     .tx_axis_tlast_4     (qsfp_tx_tlast[2]),
     .tx_axis_tvalid_4    (qsfp_tx_tvalid[2]),
+    .tx_axis_tready_4    (qsfp_tx_tready[2]),
     // Lane 3
     .tx_axis_tdata_6     (qsfp_tx_tdata[3]),
     .tx_axis_tkeep_user_6(qsfp_tx_tkeep_user[3]),
     .tx_axis_tlast_6     (qsfp_tx_tlast[3]),
     .tx_axis_tvalid_6    (qsfp_tx_tvalid[3]),
+    .tx_axis_tready_6    (qsfp_tx_tready[3]),
     //  --------------------------------- clocking ----------------------------------- //
     // drives the bulk of the MRMAC datapath: from [GT -> bufg (output 0)]
     .tx_core_clk       (tx_core_clk),
@@ -3112,7 +3116,7 @@ module top_hpu #(
     .qsfp_tx_tlast(qsfp_tx_tlast),
     .qsfp_tx_tvalid(qsfp_tx_tvalid),
     // QSFP lines are always ready
-    .qsfp_tx_tready(4'b1111),
+    .qsfp_tx_tready(qsfp_tx_tready),
 
     .qsfp_rx_tdata(qsfp_rx_tdata),
     .qsfp_rx_tkeep_user(qsfp_rx_tkeep_user),

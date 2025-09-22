@@ -34,7 +34,7 @@ module fifo_handle #(
   output logic [AXIS_TKEEP_W-1:0] qsfp_tx_tkeep_user,
   output logic                    qsfp_tx_tlast,
   output logic                    qsfp_tx_tvalid,
-  input  logic                    qsfp_tx_tready, // fixed in the top to 4'b1
+  input  logic                    qsfp_tx_tready,
 
   // to/from register interface -----------------------------------------------
   input  logic [NB_WORD_W-1:0]    r_nb_word,
