@@ -105,7 +105,7 @@ module fifo_handle #(
   end
 
   // with this information we can trigger writes in the fifo
-  assign tx_wr_en = qsfp_tx_tready && word_has_changed && !tx_full && !tx_wr_rst_busy;
+  assign tx_wr_en = word_has_changed && !tx_full && !tx_wr_rst_busy;
 
   // FIFO tx read control -------------------------------------------------------------------------
   logic [AXIS_TDATA_W-1:0] tx_rd_data;
@@ -129,7 +129,7 @@ module fifo_handle #(
   end
 
   // when we know when to trigger the read, we just need to do it
-  assign tx_rd_en = trigger_rd && !tx_empty && !tx_rd_rst_busy;
+  assign tx_rd_en = qsfp_tx_tready && trigger_rd && !tx_empty && !tx_rd_rst_busy;
 
   xpm_fifo_async_wrapper # (
     .CDC_SYNC_STAGES(CDC_SYNC_STAGES),
@@ -169,11 +169,46 @@ module fifo_handle #(
     .dbiterr      ()
   );
 
+  logic tx_data_valid_d;
+  always_ff @(posedge clk_mrmac)
+    tx_data_valid_d <= tx_data_valid;
+
+
+  logic [AXIS_TDATA_W-1:0] qsfp_tx_tdata_d;
+  logic                    qsfp_tx_tvalid_d;
+  logic                    qsfp_tx_tlast_d;
+  logic [AXIS_TKEEP_W-1:0] qsfp_tx_tkeep_user_d;
+
+  logic                    tx_tlast;
+
+  assign tx_tlast = ((rd_data_count ==  1) && tx_data_valid) ? 1'b1 : 1'b0;
+
+  always_ff @(posedge clk_mrmac) begin
+    qsfp_tx_tdata_d <= tx_rd_data;
+    qsfp_tx_tlast_d <= tx_tlast;
+  end
+
+  always_ff @(posedge clk_mrmac) begin
+    if (!s_rstn_mrmac) begin
+      qsfp_tx_tvalid_d <= 1'b0;
+      qsfp_tx_tkeep_user_d <='h0;
+    end else begin
+      if (tx_data_valid & ~ tx_data_valid_d) begin
+        qsfp_tx_tvalid_d <= 1'b1;
+        qsfp_tx_tkeep_user_d <= 'hff; // first 8 bytes are valid
+      end else if (qsfp_tx_tlast & qsfp_tx_tready) begin
+        qsfp_tx_tkeep_user_d <='h0;
+        qsfp_tx_tvalid_d <= 1'b0;
+      end
+    end
+  end
+
+
   // building the axi4-stream tx ------------------------------------------------------------------
-  assign qsfp_tx_tdata = tx_rd_data;
-  assign qsfp_tx_tvalid = tx_data_valid;
-  assign qsfp_tx_tlast = ((rd_data_count ==  1) && tx_data_valid) ? 1'b1 : 1'b0;
-  assign qsfp_tx_tkeep_user = qsfp_tx_tvalid ? 'hF : 0; // first 4 bytes are valid
+  assign qsfp_tx_tdata = qsfp_tx_tdata_d;
+  assign qsfp_tx_tvalid = qsfp_tx_tvalid_d;
+  assign qsfp_tx_tlast = qsfp_tx_tlast_d;
+  assign qsfp_tx_tkeep_user = qsfp_tx_tkeep_user_d;
 
   // =========================================================================================== //
   // FIFO RX

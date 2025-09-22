@@ -354,6 +354,12 @@ module tb_dma;
       maxil_drv_if.write_trans(FIFO_WRITE_WORDS_TO_WRITE_B_OFS, tx_tdata[2*AXIL_DATA_W-1:AXIL_DATA_W]);
       data_ref_tx_q.push_front(tx_tdata);
       line_ref_tx_q.push_front(line_select);
+      if (wr_frame == NB_WORDS_FRAME-1) begin
+        repeat(11) @(posedge clk_mrmac);
+        qsfp_tx_tready[line_select] = 1'b0;
+        repeat(5) @(posedge clk_mrmac);
+        qsfp_tx_tready[line_select] = 1'b1;
+      end
     end
 
     // (4) Checks the rx datapath -----------------------------------------------------------------
@@ -371,7 +377,7 @@ module tb_dma;
       expected_data = data_ref_rx_q[line_select].pop_back();
 
       if (expected_data == read_data) begin
-        $display("%t >    INFO: reset lines have been triggered correctly",$time);
+        $display("%t >    INFO: rx datapath checked",$time);
       end else begin
         $display("%t >    ERROR: aaaah %x %x",$time, expected_data, read_data);
         error = 1'b1;
