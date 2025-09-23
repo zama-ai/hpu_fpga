@@ -111,8 +111,8 @@ module top_hpu #(
   // number of QSFP lines: do not modify
   localparam int LINE_NB = 4;
   // Ethernet preamble
-  localparam int START_FRAME_DELIMITER = 2'hD5;
-  localparam int PREAMBLE = 48'h555555555555;
+  localparam [7:0]  START_FRAME_DELIMITER = 'hD5;
+  localparam [47:0] PREAMBLE = 'h555555555555;
   // tx preamble is only 56 bits: we are in  custom mode due to non-segmented configuration
   localparam [55:0] TX_PREAMBLE = {PREAMBLE, START_FRAME_DELIMITER};
 
