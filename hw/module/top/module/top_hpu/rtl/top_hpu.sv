@@ -2373,15 +2373,15 @@ module top_hpu #(
     // input clocks
     .CLK_IN_D_clk_n  (gt_ref_clk_n),
     .CLK_IN_D_clk_p  (gt_ref_clk_p),
-    // output clocks
-    .ch0_txusrclk    (ch0_tx_usr_clk2),
-    .ch1_txusrclk    (ch0_tx_usr_clk2),
-    .ch2_txusrclk    (ch0_tx_usr_clk2),
-    .ch3_txusrclk    (ch0_tx_usr_clk2),
-    .ch0_rxusrclk    (ch0_rx_usr_clk2),
-    .ch1_rxusrclk    (ch1_rx_usr_clk2),
-    .ch2_rxusrclk    (ch2_rx_usr_clk2),
-    .ch3_rxusrclk    (ch3_rx_usr_clk2),
+    // input mrmac clocks: same as core clock
+    .ch0_txusrclk    (ch0_tx_usr_clk),
+    .ch1_txusrclk    (ch0_tx_usr_clk),
+    .ch2_txusrclk    (ch0_tx_usr_clk),
+    .ch3_txusrclk    (ch0_tx_usr_clk),
+    .ch0_rxusrclk    (ch0_rx_usr_clk),
+    .ch1_rxusrclk    (ch1_rx_usr_clk),
+    .ch2_rxusrclk    (ch2_rx_usr_clk),
+    .ch3_rxusrclk    (ch3_rx_usr_clk),
     // output clocks from bufg
     .ch0_tx_usr_clk  (ch0_tx_usr_clk),
     .ch0_tx_usr_clk2 (ch0_tx_usr_clk2),
@@ -2389,10 +2389,10 @@ module top_hpu #(
     .ch0_rx_usr_clk2 (ch0_rx_usr_clk2),
     .ch1_rx_usr_clk  (ch1_rx_usr_clk),
     .ch1_rx_usr_clk2 (ch1_rx_usr_clk2),
-    .ch3_rx_usr_clk  (ch3_rx_usr_clk),
-    .ch3_rx_usr_clk2 (ch3_rx_usr_clk2),
     .ch2_rx_usr_clk2 (ch2_rx_usr_clk2),
     .ch2_rx_usr_clk  (ch2_rx_usr_clk),
+    .ch3_rx_usr_clk  (ch3_rx_usr_clk),
+    .ch3_rx_usr_clk2 (ch3_rx_usr_clk2),
     // APB3 interface is not used
     .APB3_INTF_paddr    (16'd0),
     .APB3_INTF_penable  (1'b0),

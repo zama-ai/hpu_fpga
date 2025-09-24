@@ -166,28 +166,28 @@ proc create_root_design { parentCell ntt_psi } {
    CONFIG.FREQ_HZ {322266000} \
  ] $tx_alt_serdes_clk
   set_property -dict [ list \
-   CONFIG.FREQ_HZ {322266000} \
+   CONFIG.FREQ_HZ {644531000} \
  ] $ch0_rxusrclk
   set_property -dict [ list \
-   CONFIG.FREQ_HZ {322266000} \
+   CONFIG.FREQ_HZ {644531000} \
  ] $ch0_txusrclk
   set_property -dict [ list \
-   CONFIG.FREQ_HZ {322266000} \
+   CONFIG.FREQ_HZ {644531000} \
  ] $ch1_rxusrclk
   set_property -dict [ list \
-   CONFIG.FREQ_HZ {322266000} \
+   CONFIG.FREQ_HZ {644531000} \
  ] $ch1_txusrclk
   set_property -dict [ list \
-   CONFIG.FREQ_HZ {322266000} \
+   CONFIG.FREQ_HZ {644531000} \
  ] $ch2_rxusrclk
   set_property -dict [ list \
-   CONFIG.FREQ_HZ {322266000} \
+   CONFIG.FREQ_HZ {644531000} \
  ] $ch2_txusrclk
   set_property -dict [ list \
-   CONFIG.FREQ_HZ {322266000} \
+   CONFIG.FREQ_HZ {644531000} \
  ] $ch3_rxusrclk
   set_property -dict [ list \
-   CONFIG.FREQ_HZ {322266000} \
+   CONFIG.FREQ_HZ {644531000} \
  ] $ch3_txusrclk
 
   # Association properties
