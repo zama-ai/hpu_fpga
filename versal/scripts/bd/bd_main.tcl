@@ -165,6 +165,8 @@ proc create_root_design { parentCell ntt_psi } {
   set_property -dict [ list \
    CONFIG.FREQ_HZ {322266000} \
  ] $tx_alt_serdes_clk
+
+  # user clocks have the same clock frequency as core_clk
   set_property -dict [ list \
    CONFIG.FREQ_HZ {644531000} \
  ] $ch0_rxusrclk

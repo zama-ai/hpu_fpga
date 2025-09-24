@@ -98,6 +98,7 @@ proc create_hier_cell_clock_reset { parentCell nameHier } {
   set USER_0_FREQ $_nsp_hpu::USER_0_FREQ
   set USER_1_FREQ $_nsp_hpu::USER_1_FREQ
   set ETH_FREERUN_FREQ $_nsp_hpu::ETH_FREERUN_FREQ
+  set ETH_APB3_FREQ $_nsp_hpu::ETH_APB3_FREQ
   set ETH_QSFP_FREQ $_nsp_hpu::ETH_QSFP_FREQ
 
   ####################################
@@ -168,7 +169,7 @@ proc create_hier_cell_clock_reset { parentCell nameHier } {
   # Create instance: eth_clk_wiz, and set properties
   set eth_clk_wiz [ create_bd_cell -type ip -vlnv xilinx.com:ip:clk_wizard:1.0 eth_clk_wiz ]
   # we need a stable freerun clock and a qsfp clock
-  set eth_freq "${ETH_FREERUN_FREQ},${ETH_QSFP_FREQ},200"
+  set eth_freq "${ETH_FREERUN_FREQ},${ETH_QSFP_FREQ},${ETH_APB3_FREQ}"
   set_property -dict [list \
     CONFIG.CLKOUT_DRIVES {No_buffer,No_buffer,No_buffer} \
     CONFIG.CLKOUT_REQUESTED_OUT_FREQUENCY $eth_freq \

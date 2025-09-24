@@ -20,7 +20,7 @@ source ${BD_SCRIPTS_DIR}/bd_main.tcl
 ################################################################
 # Check if script is running in correct Vivado version.
 ################################################################
-check_version 2024.2
+check_version 2025.1
 
 ################################################################
 # Global variables
@@ -57,10 +57,10 @@ namespace eval _nsp_hpu {
 
     # Ethernet
     variable ETH_FREERUN_FREQ 100
-
-    # depends on axi-stream bit width {64;128}
+    # APB3 freerunning mandatory clock for MRMAC
+    variable ETH_APB3_FREQ 200
+    # we are in 4x25GE Narrow mode: 64b
     variable ETH_QSFP_FREQ 390.625
-    # variable ETH_QSFP_FREQ 322.265
 
     #========================
     # AXI

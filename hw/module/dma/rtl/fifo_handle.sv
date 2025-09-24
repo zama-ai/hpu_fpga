@@ -179,7 +179,6 @@ module fifo_handle #(
   always_ff @(posedge clk_mrmac)
     tx_data_valid_d <= tx_data_valid;
 
-
   logic tx_start;
   logic tx_active_reg;
   logic tx_will_complete_next;
@@ -196,8 +195,6 @@ module fifo_handle #(
           tx_active_reg <= qsfp_tx_tvalid && !tx_will_complete_next;
       end
   end
-
-
 
   // valid when started and active communication is running
   assign qsfp_tx_tvalid = tx_start || tx_active_reg;
@@ -258,13 +255,13 @@ module fifo_handle #(
     .dbiterr      ()
   );
 
-
   // ============================================================================================ //
   // Debug
   // =====
   // counter of
   //    - (@clk_mrmac) mrmac clk
   //    - (@clk_mrmac) trigger_rd
+  //    x (@clk_mrmac) sop to sop
   //
   //    - (@clk_control) tx_wr_en
   //    - (@clk_control) word_has_changed
