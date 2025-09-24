@@ -339,7 +339,7 @@ module fifo_handle #(
 
   generate
     for (genvar gen_i = 1; gen_i < CDC_SYNC_STAGES ; gen_i = gen_i + 1) begin
-      always_ff @(posedge clk_mrmac) begin
+      always_ff @(posedge clk_control) begin
         cdc_clk_cnt[gen_i] <= cdc_clk_cnt[gen_i-1];
         cdc_trigger_rd_cnt[gen_i] <= cdc_trigger_rd_cnt[gen_i-1];
       end
@@ -376,7 +376,7 @@ module fifo_handle #(
 
   generate
     for (genvar gen_i = 1; gen_i < CDC_SYNC_STAGES ; gen_i = gen_i + 1) begin
-      always_ff @(posedge clk_mrmac) begin
+      always_ff @(posedge clk_control) begin
         cdc_tx_empty[gen_i]       <= cdc_tx_empty[gen_i-1];
         cdc_tx_rd_rst_busy[gen_i] <= cdc_tx_rd_rst_busy[gen_i-1];
         cdc_tx_data_valid[gen_i]  <= cdc_tx_data_valid[gen_i-1];
