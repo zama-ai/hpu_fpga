@@ -4140,10 +4140,10 @@ Register parameter contains following Sub-fields:
 |-----------:|:--------:|:------:|:------------:|:--------------|
 | select      | 0 | 2 |0| line selection |
 | loopback      | 2 | 3 |0| line loopback configurations |
-| rate      | 4 | 8 |0| line rates |
-| rx_to_tx      | 29 | 1 |0|  |
-| tx_loop      | 30 | 1 |0|  |
-| reset_registers      | 31 | 1 |0|  |
+| rate      | 5 | 8 |0| line rates |
+| rx_to_tx      | 29 | 1 |0| a |
+| tx_loop      | 30 | 1 |0| b |
+| reset_registers      | 31 | 1 |0| c |
 
 
 

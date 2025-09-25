@@ -4245,14 +4245,14 @@
               "name": "rate",
               "description": "line rates",
               "size_b": 8,
-              "offset_b": 4,
+              "offset_b": 5,
               "default": {
                 "Cst": 0
               }
             },
             {
               "name": "rx_to_tx",
-              "description": "",
+              "description": "a",
               "size_b": 1,
               "offset_b": 29,
               "default": {
@@ -4261,7 +4261,7 @@
             },
             {
               "name": "tx_loop",
-              "description": "",
+              "description": "b",
               "size_b": 1,
               "offset_b": 30,
               "default": {
@@ -4270,7 +4270,7 @@
             },
             {
               "name": "reset_registers",
-              "description": "",
+              "description": "c",
               "size_b": 1,
               "offset_b": 31,
               "default": {
