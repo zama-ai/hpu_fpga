@@ -5,8 +5,6 @@
 // Description  : Handler for XPM FIFO ASYNC on rx and TX sides
 // ----------------------------------------------------------------------------------------------
 //
-// limitations: first word cannot be 0
-//
 // ==============================================================================================
 
 module fifo_handle #(
@@ -43,12 +41,18 @@ module fifo_handle #(
   output logic [NB_WORD_W-1:0]    r_rd_data_count,
   output logic [AXIS_TDATA_W-1:0] r_rd_word,
   input  logic                    read_ack,
+  input  logic                    write_ack,
 
-  // debug
-  output logic [31:0]             clk_cnt_out,
+  input logic                     tx_loop,
+  input logic                     rx_to_tx,
+
+  input logic                     reset_registers,
+  // statistics ---------------------------------------------------------------
+  output logic [63:0]             clk_cnt_out,
+  output logic [63:0]             valid_words_out,
   output logic [31:0]             trigger_rd_cnt_out,
   output logic [31:0]             tx_wr_en_cnt,
-  output logic [31:0]             word_has_changed_cnt,
+  output logic [63:0]             sop_cnt_out,
 
   output logic                    stat_tx_empty,
   output logic                    stat_tx_rd_rst_busy,
@@ -64,54 +68,45 @@ module fifo_handle #(
   localparam int CDC_SYNC_STAGES = 2;
 
   // word number is rather stable, changed only once in a while a false path must be set to first reg
-  // set_false_path -to [get_cells -hierarchical -filter {NAME =~ *fifo_handle/nb_word_mrmac[0]*}]
   logic [CDC_SYNC_STAGES-1:0] [NB_WORD_W-1:0] nb_word_mrmac;
+  logic [CDC_SYNC_STAGES-1:0] reset_registers_cdc;
 
   always_ff @(posedge clk_mrmac) begin
     nb_word_mrmac[0] <= r_nb_word;
+    reset_registers_cdc[0] <= reset_registers;
   end
 
   generate
-    for (genvar gen_i = 1; gen_i < CDC_SYNC_STAGES ; gen_i = gen_i + 1)
-      always_ff @(posedge clk_mrmac)
+    for (genvar gen_i = 1; gen_i < CDC_SYNC_STAGES ; gen_i = gen_i + 1) begin
+      always_ff @(posedge clk_mrmac) begin
         nb_word_mrmac[gen_i] <= nb_word_mrmac[gen_i-1];
+        reset_registers_cdc[gen_i] <= reset_registers_cdc[gen_i-1];
+      end
+    end
   endgenerate
+
+  // =========================================================================================== //
+  // general control
+  // =========================================================================================== //
+  // if the two different modes are selected, we choose to apply none
+  logic loop;
+  logic rx_tx;
+
+  assign loop  = tx_loop & ~rx_to_tx;
+  assign rx_tx = ~tx_loop & rx_to_tx;
 
   // =========================================================================================== //
   // FIFO TX
   // =========================================================================================== //
-  // FIFO tx write control ------------------------------------------------------------------------
+  // FIFO TX write control ------------------------------------------------------------------------
   logic tx_full;
   logic tx_wr_en;
   logic tx_wr_rst_busy;
 
-  // First Thing to know is when a word has been written to regif
-  logic [AXIS_TDATA_W-1:0] r_wr_word_d;
-
-  // note that no reset value: r_wr_word is assumed correctly reset, from register file
-  always_ff @(posedge clk_control) begin
-    r_wr_word_d <= r_wr_word;
-  end
-
-  // Then we need to know when a word has been changed in the regfile
-  logic word_has_changed;
-
-  always_ff @(posedge clk_control) begin
-    if(!s_rstn_control) begin
-      word_has_changed <= 1'b0;
-    end else begin
-      if (r_wr_word_d != r_wr_word) begin
-        word_has_changed <= 1'b1;
-      end else begin
-        word_has_changed <= 1'b0;
-      end
-    end
-  end
-
   // with this information we can trigger writes in the fifo
-  assign tx_wr_en = word_has_changed && !tx_full && !tx_wr_rst_busy;
+  assign tx_wr_en = write_ack && !tx_full && !tx_wr_rst_busy;
 
-  // FIFO tx read control -------------------------------------------------------------------------
+  // FIFO TX read control -------------------------------------------------------------------------
   logic [AXIS_TDATA_W-1:0] tx_rd_data;
   logic [NB_WORD_W-1:0]    rd_data_count;
   logic                    tx_rd_en;
@@ -135,6 +130,7 @@ module fifo_handle #(
   // when we know when to trigger the read, we just need to do it
   assign tx_rd_en = qsfp_tx_tready && trigger_rd && !tx_empty && !tx_rd_rst_busy;
 
+  // FIFO TX
   xpm_fifo_async_wrapper # (
     .CDC_SYNC_STAGES(CDC_SYNC_STAGES),
     .DATA_W(AXIS_TDATA_W),
@@ -147,7 +143,7 @@ module fifo_handle #(
     // Write Domain ports
     .wr_clk       (clk_control),
     .wr_en        (tx_wr_en),
-    .wr_data      (r_wr_word_d),
+    .wr_data      (r_wr_word),
     .full         (tx_full),
     .prog_full    (),
     .wr_data_count(r_wr_data_count),
@@ -173,34 +169,132 @@ module fifo_handle #(
     .dbiterr      ()
   );
 
+
   // building the axi4-stream tx ------------------------------------------------------------------
+  logic [AXIS_TDATA_W-1:0] fifo_tx_tvalid;
+  logic [AXIS_TKEEP_W-1:0] fifo_tx_tdata;
+  logic                    fifo_tx_tlast;
+  logic                    fifo_tx_tkeep_user;
 
   logic tx_data_valid_d;
   always_ff @(posedge clk_mrmac)
     tx_data_valid_d <= tx_data_valid;
 
-  logic tx_start;
+  logic tx_sop;
   logic tx_active_reg;
   logic tx_will_complete_next;
 
   // pulse on start of transaction: positive edge of tx_data_valid when no words have been consumed
-  assign tx_start = (tx_data_valid & ~tx_data_valid_d) & (rd_data_count==nb_word_mrmac[CDC_SYNC_STAGES-1]);
-  assign tx_will_complete_next = qsfp_tx_tlast && qsfp_tx_tready && qsfp_tx_tvalid;
+  assign tx_sop = (tx_data_valid & ~tx_data_valid_d) & (rd_data_count==nb_word_mrmac[CDC_SYNC_STAGES-1]);
+  assign tx_will_complete_next = fifo_tx_tlast && qsfp_tx_tready && fifo_tx_tvalid;
 
   // Registered state for memory
   always_ff @(posedge clk_mrmac) begin
       if (~s_rstn_mrmac) begin
           tx_active_reg <= 1'b0;
       end else begin
-          tx_active_reg <= qsfp_tx_tvalid && !tx_will_complete_next;
+          tx_active_reg <= fifo_tx_tvalid && !tx_will_complete_next;
       end
   end
 
   // valid when started and active communication is running
-  assign qsfp_tx_tvalid = tx_start || tx_active_reg;
-  assign qsfp_tx_tdata = tx_rd_data;
-  assign qsfp_tx_tlast = ((rd_data_count ==  1) && tx_data_valid) ? 1'b1 : 1'b0;
-  assign qsfp_tx_tkeep_user = qsfp_tx_tvalid ? 'hFF : 0; // first 8 bytes are valid
+  assign fifo_tx_tvalid    = tx_sop || tx_active_reg;
+  assign fifo_tx_tdata     = tx_rd_data;
+  assign fifo_tx_tlast     = ((rd_data_count ==  1) && tx_data_valid) ? 1'b1 : 1'b0;
+  assign fifo_tx_tkeep_user= fifo_tx_tvalid ? 'hFF : 0; // first 8 bytes are valid
+
+  // ----------------------------------------------------------------------------------------------
+  // memory in loopback mode
+  // ----------------------------------------------------------------------------------------------
+  logic [AXIS_TDATA_W-1:0] mem_tx_tdata;
+  logic [AXIS_TKEEP_W-1:0] mem_tx_tkeep_user;
+  logic                    mem_tx_tlast;
+  logic                    mem_tx_tvalid;
+  logic [AXIS_TDATA_W-1:0] memory[63:0];
+  logic [5:0]              wr_add;
+  logic [5:0]              rd_add;
+  logic                    mem_sop;
+
+  always @(posedge clk_mrmac) begin
+    if (~s_rstn_mrmac) begin
+      wr_add <= 'h0;
+    end else begin
+      if (loop) begin
+        if (fifo_tx_tvalid) begin
+          wr_add <= wr_add + 1;
+        end
+      end else begin
+        wr_add <= 'h0;
+      end
+    end
+  end
+
+  always @(posedge clk_mrmac)
+      if (loop)
+        if (fifo_tx_tvalid)
+          memory[wr_add] <= fifo_tx_tdata;
+
+  logic start_mem_pull;
+  logic start_mem_pull_d;
+  always_ff @(posedge clk_mrmac)
+    start_mem_pull_d <= start_mem_pull;
+
+  assign mem_sop = start_mem_pull & ~start_mem_pull_d;
+
+  always_ff @(posedge clk_mrmac) begin
+    if (~s_rstn_mrmac) begin
+      start_mem_pull <= 1'b0;
+    end else begin
+      if (loop) begin
+        if (fifo_tx_tlast) begin
+          start_mem_pull <= 1'b1;
+        end
+      end else begin
+        start_mem_pull <= 1'b0;
+      end
+    end
+  end
+
+  always_ff @(posedge clk_mrmac) begin
+    if (~s_rstn_mrmac) begin
+      rd_add <= 'h0;
+    end else begin
+      if (loop) begin
+        if (start_mem_pull & qsfp_tx_tready) begin
+          rd_add <= rd_add + 1;
+        end
+      end else begin
+        rd_add <= 'h0;
+      end
+    end
+  end
+
+  assign mem_tx_tvalid = start_mem_pull;
+  assign mem_tx_tdata = start_mem_pull ? memory[rd_add] : 'h0;
+  assign mem_tx_tlast = ((rd_add ==  63) && mem_tx_tvalid) ? 1'b1 : 1'b0;
+  assign mem_tx_tkeep_user = mem_tx_tvalid ? 'hFF : 0;
+
+  // ----------------------------------------------------------------------------------------------
+  // qsfp tx definition
+  // ----------------------------------------------------------------------------------------------
+  always_comb begin
+    if (~loop & ~rx_to_tx) begin
+      qsfp_tx_tvalid     = fifo_tx_tvalid;
+      qsfp_tx_tdata      = fifo_tx_tdata;
+      qsfp_tx_tlast      = fifo_tx_tlast;
+      qsfp_tx_tkeep_user = fifo_tx_tkeep_user;
+    end else if (loop) begin
+      qsfp_tx_tvalid     = mem_tx_tvalid;
+      qsfp_tx_tdata      = mem_tx_tdata;
+      qsfp_tx_tlast      = mem_tx_tlast;
+      qsfp_tx_tkeep_user = mem_tx_tkeep_user;
+    end else if (rx_to_tx) begin
+      qsfp_tx_tvalid     = qsfp_rx_tvalid;
+      qsfp_tx_tdata      = qsfp_rx_tdata;
+      qsfp_tx_tlast      = qsfp_rx_tlast;
+      qsfp_tx_tkeep_user = qsfp_rx_tkeep_user;
+    end
+  end
 
   // =========================================================================================== //
   // FIFO RX
@@ -255,6 +349,15 @@ module fifo_handle #(
     .dbiterr      ()
   );
 
+  // building qsfp rx start of packet
+  logic qsfp_rx_sop;
+  logic rx_data_valid_d;
+
+  always_ff @(posedge clk_mrmac)
+    rx_data_valid_d <= qsfp_rx_tvalid;
+
+  assign qsfp_rx_sop = (qsfp_rx_tvalid & ~rx_data_valid_d);
+
   // ============================================================================================ //
   // Debug
   // =====
@@ -279,17 +382,61 @@ module fifo_handle #(
   // ============================================================================================ //
 
   // counters -------------------------------------------------------------------------------------
-  // we will count indefinitely: we only want to check that stuff are moving
-
   // from fast clock
-  logic [31:0] clk_cnt;
+  logic [63:0] clk_cnt;
   logic [31:0] trigger_rd_cnt;
+  logic [63:0] valid_words;
+  logic [63:0] sop_cnt;
 
   always_ff @(posedge clk_mrmac) begin
-    if (~s_rstn_mrmac) begin
+    if (~s_rstn_mrmac || reset_registers_cdc) begin
       clk_cnt <='h0;
     end else begin
-      clk_cnt <= clk_cnt+1;
+      if (loop & start_mem_pull) begin
+        clk_cnt <= clk_cnt+1;
+      end
+    end
+  end
+
+  always_ff @(posedge clk_mrmac) begin
+    if (~s_rstn_mrmac || reset_registers_cdc) begin
+      valid_words <='h0;
+    end else begin
+      if (loop && qsfp_rx_tvalid) begin
+        valid_words <= valid_words+1;
+      end
+    end
+  end
+
+  logic tx_sop_d;
+  logic qsfp_rx_sop_d;
+
+  always_ff @(posedge clk_mrmac)
+    tx_sop_d <= tx_sop;
+  always_ff @(posedge clk_mrmac)
+    qsfp_rx_sop_d <= qsfp_rx_sop;
+
+  logic sop_tx_rx;
+  always_ff @(posedge clk_mrmac) begin
+    if (~s_rstn_mrmac) begin
+      sop_tx_rx <=1'b0;
+    end else begin
+      if (tx_sop & ~tx_sop_d) begin
+        sop_tx_rx <= 1'b1;
+      end else if (qsfp_rx_sop & ~qsfp_rx_sop_d) begin
+        sop_tx_rx <= 1'b0;
+      end
+    end
+  end
+
+
+  always_ff @(posedge clk_mrmac) begin
+    if (~s_rstn_mrmac || reset_registers_cdc) begin
+      sop_cnt <='h0;
+    end else begin
+      if (sop_tx_rx) begin
+        sop_cnt <= sop_cnt+1;
+      end
     end
   end
 
@@ -314,24 +461,18 @@ module fifo_handle #(
     end
   end
 
-  always_ff @(posedge clk_control) begin
-    if (~s_rstn_control) begin
-      word_has_changed_cnt <='h0;
-    end begin
-      if (word_has_changed == 1'b1) begin
-        word_has_changed_cnt <= word_has_changed_cnt+1;
-      end
-    end
-  end
-
   //  -------------------------------------------
   // clock conversion from fast to slow
-  logic [CDC_SYNC_STAGES-1:0][31:0] cdc_clk_cnt;
+  logic [CDC_SYNC_STAGES-1:0][63:0] cdc_clk_cnt;
+  logic [CDC_SYNC_STAGES-1:0][63:0] cdc_valid_words;
   logic [CDC_SYNC_STAGES-1:0][31:0] cdc_trigger_rd_cnt;
+  logic [CDC_SYNC_STAGES-1:0][31:0] cdc_sop_cnt;
 
   always_ff @(posedge clk_control) begin
     cdc_clk_cnt[0]        <= clk_cnt;
     cdc_trigger_rd_cnt[0] <= trigger_rd_cnt;
+    cdc_valid_words[0]    <= valid_words;
+    cdc_sop_cnt[0]        <= sop_cnt;
   end
 
   generate
@@ -339,12 +480,16 @@ module fifo_handle #(
       always_ff @(posedge clk_control) begin
         cdc_clk_cnt[gen_i] <= cdc_clk_cnt[gen_i-1];
         cdc_trigger_rd_cnt[gen_i] <= cdc_trigger_rd_cnt[gen_i-1];
+        cdc_valid_words[gen_i] <= cdc_valid_words[gen_i-1];
+        cdc_sop_cnt[gen_i] <= cdc_sop_cnt[gen_i-1];
       end
     end
   endgenerate
 
   assign clk_cnt_out = cdc_clk_cnt[CDC_SYNC_STAGES-1];
   assign trigger_rd_cnt_out = cdc_trigger_rd_cnt[CDC_SYNC_STAGES-1];
+  assign valid_words_out = cdc_valid_words[CDC_SYNC_STAGES-1];
+  assign sop_cnt_out = cdc_sop_cnt[CDC_SYNC_STAGES-1];
 
   // status ---------------------------------------------------------------------------------------
   always_ff @(posedge clk_control) begin

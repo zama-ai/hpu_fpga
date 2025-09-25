@@ -48,9 +48,12 @@ description="Line parameter sections"
   owner="User"
   read_access="Read"
   write_access="Write"
-  field.rate      = {size_b=8, offset_b=6, default={Cst=0x0}, description="line rates"}
-  field.loopback  = {size_b=3, offset_b=3, default={Cst=0x0}, description="line loopback configurations"}
   field.select    = {size_b=2, offset_b=0, default={Cst=0x0}, description="line selection"}
+  field.loopback  = {size_b=3, offset_b=2, default={Cst=0x0}, description="line loopback configurations"}
+  field.rate      = {size_b=8, offset_b=4, default={Cst=0x0}, description="line rates"}
+  field.rx_to_tx        = {size_b=1, offset_b=29, default={Cst=0x0}, description=""}
+  field.tx_loop         = {size_b=1, offset_b=30, default={Cst=0x0}, description=""}
+  field.reset_registers = {size_b=1, offset_b=31, default={Cst=0x0}, description=""}
 
 # =====================================================================================================================
 [section.reset]
@@ -138,13 +141,6 @@ description="fifo write part"
 offset= 0x3C
 description="fifo write part"
 
-[section.cnt.register.clk]
-  description="clock counts"
-  owner="Kernel"
-  read_access="Read"
-  write_access="None"
-  default={Cst=0x0}
-
 [section.cnt.register.trig_rd]
   description="trig_rd"
   owner="Kernel"
@@ -178,3 +174,44 @@ description="fifo write part"
   write_access="None"
   default={Cst=0x0}
 
+[section.stat.register.clk_a]
+  description="clock counts"
+  owner="Kernel"
+  read_access="Read"
+  write_access="None"
+  default={Cst=0x0}
+
+[section.stat.register.clk_b]
+  description="clock counts"
+  owner="Kernel"
+  read_access="Read"
+  write_access="None"
+  default={Cst=0x0}
+
+[section.stat.register.valid_words_a]
+  description="clock counts"
+  owner="Kernel"
+  read_access="Read"
+  write_access="None"
+  default={Cst=0x0}
+
+[section.stat.register.valid_words_b]
+  description="clock counts"
+  owner="Kernel"
+  read_access="Read"
+  write_access="None"
+  default={Cst=0x0}
+
+[section.stat.register.sop_cnt_a]
+  description="clock counts"
+  owner="Kernel"
+  read_access="Read"
+  write_access="None"
+  default={Cst=0x0}
+
+[section.stat.register.sop_cnt_b]
+  description="clock counts"
+  owner="Kernel"
+  read_access="Read"
+  write_access="None"
+  default={Cst=0x0}

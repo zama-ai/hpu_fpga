@@ -103,10 +103,11 @@ module dma
   logic [NB_WORD_W-1:0]    r_rd_data_count;
   logic [AXIS_TDATA_W-1:0] r_rd_word;
 
-  logic [31:0]             clk_cnt_out;
+  logic [63:0]             clk_cnt_out;
+  logic [63:0]             valid_words_out;
+  logic [63:0]             sop_cnt_out;
   logic [31:0]             trigger_rd_cnt_out;
   logic [31:0]             tx_wr_en_cnt;
-  logic [31:0]             word_has_changed_cnt;
   logic                    stat_tx_empty;
   logic                    stat_tx_rd_rst_busy;
   logic                    stat_tx_data_valid;
@@ -114,6 +115,10 @@ module dma
   logic                    stat_tx_full;
   logic                    stat_tx_wr_rst_busy;
   logic                    stat_qsfp_tx_tready;
+
+  logic tx_loop;
+  logic rx_to_tx;
+  logic reset_registers;
 
   hpu_regif_core_eth_2in3  hpu_regif_core_eth_2in3 (
     // configuration interface
@@ -137,26 +142,35 @@ module dma
     .s_axil_rvalid (s_axil_dma_rvalid),
     .s_axil_rready (s_axil_dma_rready),
     .r_axil_wdata  (/* */),
-    // control signals
+    // [section.line]
     .r_line_parameter(r_line_parameter),
+    // [section.reset]
     .r_reset_datapath(r_reset_datapath),
     .r_reset_monitor_upd(r_reset_monitor),
+    // [section.fifo_write]
     .r_fifo_write_number_of_words(r_nb_word),
     .r_fifo_write_words_to_write_a(r_wr_word_a),
     .r_fifo_write_words_to_write_b(r_wr_word_b),
     .r_fifo_write_fifo_write_data_count_upd({ {(AXIL_DATA_W-NB_WORD_W){1'b0}}, r_wr_data_count}),
+    // [section.fifo_read]
     .r_fifo_read_words_to_read_a_upd(r_rd_word[AXIL_DATA_W-1:0]),
     .r_fifo_read_words_to_read_b_upd(r_rd_word[2*AXIL_DATA_W-1:AXIL_DATA_W]),
     .r_fifo_read_fifo_read_data_count_upd({ {(AXIL_DATA_W-NB_WORD_W){1'b0}}, r_rd_data_count}),
-    // debug
-    .r_cnt_clk_upd(clk_cnt_out),
+    // [section.cnt]
     .r_cnt_trig_rd_upd(trigger_rd_cnt_out),
     .r_cnt_tx_wr_upd(tx_wr_en_cnt),
-    .r_cnt_words_upd(word_has_changed_cnt),
+    // [section.stat]
+    .r_stat_clk_a_upd(clk_cnt_out[31:0] ),
+    .r_stat_clk_b_upd(clk_cnt_out[63:32]),
+    .r_stat_valid_words_a_upd(valid_words_out[31:0] ),
+    .r_stat_valid_words_b_upd(valid_words_out[63:32]),
+    .r_stat_sop_cnt_a_upd(sop_cnt_out[31:0]),
+    .r_stat_sop_cnt_b_upd(sop_cnt_out[63:32]),
     .r_stat_status_upd({stat_tx_empty, stat_tx_rd_rst_busy, stat_tx_data_valid, stat_tx_full, stat_tx_wr_rst_busy, stat_qsfp_tx_tready, {(AXIL_DATA_W-NB_WORD_W-6){1'b0}}, stat_rd_data_count})
   );
 
   // Logic around regfile -------------------------------------------------------------------------
+  // merging half words into a single one
   always_ff @(posedge clk_eth_cfg) begin
     if (~resetn_eth_cfg) begin
       r_wr_word <= 'h0;
@@ -183,6 +197,20 @@ module dma
     end
   end
 
+  // write ack: same fashion as read_ack, a pulse is generated
+  logic write_ack;
+  always_ff @(posedge clk_eth_cfg) begin
+    if (~resetn_eth_cfg) begin
+      write_ack <= 1'b0;
+    end else begin
+      if ((s_axil_dma_awaddr == FIFO_WRITE_WORDS_TO_WRITE_B_OFS) && s_axil_dma_awready) begin
+        write_ack <= 1'b1;
+      end else begin
+        write_ack <= 1'b0;
+      end
+    end
+  end
+
   // ============================================================================================ //
   // Fifo Handle
   // ==================
@@ -192,16 +220,21 @@ module dma
   // ----------------------------------------------------------------------------------------------
   // There are different modes
   // ----------------------------------------------------------------------------------------------
-  //  - x0: DEBUG     : regfile must be able to read and write directly to the two FIFOs
+  //  - 0: DEBUG     : regfile must be able to read and write directly to the two FIFOs
   // ----------------------------------------------------------------------------------------------
-  //  - x1: RANDOM    : Sends "random" data to TX FIFO
+  //  - 1: FIFO_LOOP : after initialisation, we are sending continously what is in the fifo
+  //                   stop sending data in TX when this mode changes
   // ----------------------------------------------------------------------------------------------
-  //  - 1x: FIFO_LOOP : after initialisation, we are sending continously what is in the fifo
-  //                    stop sending data in TX when this mode changes
-  // ----------------------------------------------------------------------------------------------
-  //  - 0x: RX_TO_TX  : sends what is received in rx to tx fifo
+  //  - 2: RX_TO_TX  : sends what is received in rx to tx link
   // ----------------------------------------------------------------------------------------------
   //
+  // ----------------------------------------------------------------------------------------------
+  // Control of the logic
+  //
+  // reset_registers  : resets the value of the statistic counters
+  //
+  // ----------------------------------------------------------------------------------------------
+
   // ============================================================================================ //
   logic [AXIS_TDATA_W-1:0  ] axis_rx_tdata;
   logic [AXIS_TKEEP_W-1:0 ]  axis_rx_tkeep_user;
@@ -243,11 +276,16 @@ module dma
     .r_rd_data_count    (r_rd_data_count),
     .r_rd_word          (r_rd_word),
     .read_ack           (read_ack),
+    .write_ack          (write_ack),
+    .tx_loop            (tx_loop),
+    .rx_to_tx           (rx_to_tx),
+    .reset_registers    (reset_registers),
     // debug interface
     .clk_cnt_out         (clk_cnt_out),
+    .valid_words_out     (valid_words_out),
+    .sop_cnt_out         (sop_cnt_out),
     .trigger_rd_cnt_out  (trigger_rd_cnt_out),
     .tx_wr_en_cnt        (tx_wr_en_cnt),
-    .word_has_changed_cnt(word_has_changed_cnt),
     .stat_tx_empty       (stat_tx_empty),
     .stat_tx_rd_rst_busy (stat_tx_rd_rst_busy),
     .stat_tx_data_valid  (stat_tx_data_valid),
@@ -296,7 +334,11 @@ module dma
   // assigning outputs
   assign line_sel      = r_line_parameter[1:0];
   assign gt_loopback   = r_line_parameter[4:2];
-  assign gt_line_rate  = r_line_parameter[14:5];
+  assign gt_line_rate  = r_line_parameter[13:5];
+
+  assign rx_to_tx        = r_line_parameter[29];
+  assign tx_loop         = r_line_parameter[30];
+  assign reset_registers = r_line_parameter[31];
 
   assign gt_reset_all         = r_reset_datapath[3:0];
   assign gt_reset_tx_datapath = r_reset_datapath[7:4];

@@ -1,7 +1,7 @@
 // ============================================================================================== //
 // Description  : register  map address definition package
 // This file was generated with rust regmap generator:
-//  * Date:  2025-09-19
+//  * Date:  2025-09-25
 //  * Tool_version: bb0db737792da6b81e69a039028c971af1627fe2
 // ---------------------------------------------------------------------------------------------- //
 //
@@ -13,10 +13,13 @@ package hpu_regif_core_eth_2in3_pkg;
   localparam int ENTRY_ETH_2IN3_DUMMY_VAL2_OFS = 'he0008;
   localparam int ENTRY_ETH_2IN3_DUMMY_VAL3_OFS = 'he000c;
   typedef struct packed {
-    logic [(18-1):0] padding_14;
+    logic [(1-1):0] reset_registers;
+    logic [(1-1):0] tx_loop;
+    logic [(1-1):0] rx_to_tx;
+    logic [(17-1):0] padding_12;
     logic [(8-1):0] rate;
+    logic [(18446744073709551615-1):0] padding_5;
     logic [(3-1):0] loopback;
-    logic [(1-1):0] padding_2;
     logic [(2-1):0] select;
    } line_parameter_t;
   localparam int LINE_PARAMETER_OFS = 'he0010;
@@ -39,9 +42,14 @@ package hpu_regif_core_eth_2in3_pkg;
   localparam int FIFO_READ_WORDS_TO_READ_A_OFS = 'he002c;
   localparam int FIFO_READ_WORDS_TO_READ_B_OFS = 'he0030;
   localparam int FIFO_READ_FIFO_READ_DATA_COUNT_OFS = 'he0034;
-  localparam int CNT_CLK_OFS = 'he003c;
-  localparam int CNT_TRIG_RD_OFS = 'he0040;
-  localparam int CNT_TX_WR_OFS = 'he0044;
-  localparam int CNT_WORDS_OFS = 'he0048;
+  localparam int CNT_TRIG_RD_OFS = 'he003c;
+  localparam int CNT_TX_WR_OFS = 'he0040;
+  localparam int CNT_WORDS_OFS = 'he0044;
   localparam int STAT_STATUS_OFS = 'he004c;
+  localparam int STAT_CLK_A_OFS = 'he0050;
+  localparam int STAT_CLK_B_OFS = 'he0054;
+  localparam int STAT_VALID_WORDS_A_OFS = 'he0058;
+  localparam int STAT_VALID_WORDS_B_OFS = 'he005c;
+  localparam int STAT_SOP_CNT_A_OFS = 'he0060;
+  localparam int STAT_SOP_CNT_B_OFS = 'he0064;
 endpackage

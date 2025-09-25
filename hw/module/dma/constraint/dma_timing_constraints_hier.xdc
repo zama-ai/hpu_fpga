@@ -24,3 +24,8 @@ set_false_path -to [get_cells -hierarchical -filter {NAME =~ *fifo_handle/cdc_tr
 set_false_path -to [get_cells -hierarchical -filter {NAME =~ *fifo_handle/cdc_tx_rd_rst_busy_reg[0]*}]
 set_false_path -to [get_cells -hierarchical -filter {NAME =~ *fifo_handle/cdc_tx_data_valid_reg[0]*}]
 set_false_path -to [get_cells -hierarchical -filter {NAME =~ *fifo_handle/cdc_qsfp_tx_tready_reg[0]*}]
+
+
+set_false_path -to [get_cells -hierarchical -filter {NAME =~ *fifo_handle/cdc_valid_words_reg[0]*}]
+set_false_path -to [get_cells -hierarchical -filter {NAME =~ *fifo_handle/reset_registers_cdc_reg[0]*}]
+set_false_path -to [get_cells -hierarchical -filter {NAME =~ *fifo_handle/cdc_sop_cnt_reg[0]*}]

@@ -236,6 +236,13 @@ module tb_dma;
   logic [LINE_NB-1:0] rst_all;
   logic [31:0]        reset_datpath;
 
+  logic reset_registers;
+  logic tx_loop;
+  logic rx_to_tx;
+  logic [63:0] clk_count;
+  logic [63:0] valid_words_count;
+  logic [63:0] sop_count;
+
   logic [31:0]        reset_monitor;
 
   logic [1:0] line_ref_tx_q[$:FIFO_DEPTH];
@@ -401,11 +408,128 @@ module tb_dma;
       error = 1'b1;
     end
 
-    maxil_drv_if.read_trans(CNT_CLK_OFS, read_data);
-    maxil_drv_if.read_trans(CNT_TRIG_RD_OFS, read_data);
-    maxil_drv_if.read_trans(CNT_TX_WR_OFS, read_data);
-    maxil_drv_if.read_trans(CNT_WORDS_OFS, read_data);
-    maxil_drv_if.read_trans(STAT_STATUS_OFS, read_data);
+
+    // (6) enter in tx_loop mode ------------------------------------------------------------------
+    // needs to be checked that
+    //  + we are indeed going into tx_loop mode
+    //  + we can stop properly the mode
+    //  + the counters works ?
+    line_rate       = 8'h0;
+    line_loopback   = 3'b010; // 3 near end pcs loopback
+    line_select     = 2'b01;  // 1st line selected
+    reset_registers = 1'b0;
+    tx_loop         = 1'b1;
+    rx_to_tx        = 1'b0;
+    line_parameter = {reset_registers, tx_loop, rx_to_tx , 16'b0, line_rate, line_loopback , line_select};
+
+    qsfp_tx_tready[line_select] = 1'b1;
+
+    $display(" sending %0x", line_parameter);
+
+    maxil_drv_if.write_trans(LINE_PARAMETER_OFS, line_parameter);
+    maxil_drv_if.write_trans(FIFO_WRITE_NUMBER_OF_WORDS_OFS, 64);
+    // what values are clk_count and valid_words_count?
+    maxil_drv_if.read_trans(STAT_CLK_A_OFS, clk_count[31:00]);
+    maxil_drv_if.read_trans(STAT_CLK_B_OFS, clk_count[63:32]);
+    maxil_drv_if.read_trans(STAT_VALID_WORDS_A_OFS, valid_words_count[31:00]);
+    maxil_drv_if.read_trans(STAT_VALID_WORDS_B_OFS, valid_words_count[63:32]);
+
+    $display(" nb of valid words %0d and nb of clock went by %0d before sending any value to the fifo", valid_words_count, clk_count);
+
+    for (int wr_frame = 0; wr_frame < 64; wr_frame++) begin
+      tx_tdata = {$urandom, $urandom};
+      maxil_drv_if.write_trans(FIFO_WRITE_WORDS_TO_WRITE_A_OFS, tx_tdata[AXIL_DATA_W-1:0]);
+      maxil_drv_if.write_trans(FIFO_WRITE_WORDS_TO_WRITE_B_OFS, tx_tdata[2*AXIL_DATA_W-1:AXIL_DATA_W]);
+    end
+    en_rx_datapath = 1'b1;
+
+    repeat(50) @(clk_control);
+    // stop
+    en_rx_datapath = 1'b0;
+    tx_loop         = 1'b0;
+    line_parameter = {reset_registers, tx_loop, rx_to_tx , 16'b0, line_rate, line_loopback , line_select};
+    maxil_drv_if.write_trans(LINE_PARAMETER_OFS, line_parameter);
+
+    repeat(50) @(clk_control);
+    maxil_drv_if.read_trans(STAT_CLK_A_OFS, clk_count[31:00]);
+    maxil_drv_if.read_trans(STAT_CLK_B_OFS, clk_count[63:32]);
+    maxil_drv_if.read_trans(STAT_VALID_WORDS_A_OFS, valid_words_count[31:00]);
+    maxil_drv_if.read_trans(STAT_VALID_WORDS_B_OFS, valid_words_count[63:32]);
+    $display(" nb of valid words %0d and nb of clock went by %0d after stopping tx loop", valid_words_count, clk_count);
+
+    $display("resetting registers");
+    reset_registers = 1'b1;
+    line_parameter = {reset_registers, tx_loop, rx_to_tx , 16'b0, line_rate, line_loopback , line_select};
+    $display(" sending %0x", line_parameter);
+    maxil_drv_if.write_trans(LINE_PARAMETER_OFS, line_parameter);
+    reset_registers = 1'b0;
+    line_parameter = {reset_registers, tx_loop, rx_to_tx , 16'b0, line_rate, line_loopback , line_select};
+    maxil_drv_if.read_trans(STAT_CLK_A_OFS, clk_count[31:00]);
+    maxil_drv_if.read_trans(STAT_CLK_B_OFS, clk_count[63:32]);
+    maxil_drv_if.read_trans(STAT_VALID_WORDS_A_OFS, valid_words_count[31:00]);
+    maxil_drv_if.read_trans(STAT_VALID_WORDS_B_OFS, valid_words_count[63:32]);
+    $display(" nb of valid words %0d and nb of clock went by %0d after reset", valid_words_count, clk_count);
+
+
+    // (7) enter in rx to tx mode -----------------------------------------------------------------
+    rx_to_tx       = 1'b1;
+    en_rx_datapath = 1'b1;
+    line_parameter = {reset_registers, tx_loop, rx_to_tx , 16'b0, line_rate, line_loopback , line_select};
+    maxil_drv_if.write_trans(LINE_PARAMETER_OFS, line_parameter);
+
+    repeat(50) @(posedge clk_control);
+
+    en_rx_datapath = 1'b0;
+    line_parameter = {reset_registers, tx_loop, rx_to_tx , 16'b0, line_rate, line_loopback , line_select};
+    maxil_drv_if.write_trans(LINE_PARAMETER_OFS, line_parameter);
+    maxil_drv_if.read_trans(STAT_CLK_A_OFS, clk_count[31:00]);
+    maxil_drv_if.read_trans(STAT_CLK_B_OFS, clk_count[63:32]);
+    maxil_drv_if.read_trans(STAT_VALID_WORDS_A_OFS, valid_words_count[31:00]);
+    maxil_drv_if.read_trans(STAT_VALID_WORDS_B_OFS, valid_words_count[63:32]);
+    $display(" nb of valid words %0d and nb of clock went by %0d after rx to tx mode", valid_words_count, clk_count);
+
+    // (8) send one frame in loopback and expect register to change -------------------------------
+    line_rate       = 8'h0;
+    line_loopback   = 3'b010; // 3 near end pcs loopback
+    line_select     = 2'b01;  // 1st line selected
+    reset_registers = 1'b0;
+    tx_loop         = 1'b0;
+    rx_to_tx        = 1'b0;
+    en_rx_datapath  = 1'b1;
+    line_parameter = {reset_registers, tx_loop, rx_to_tx , 16'b0, line_rate, line_loopback , line_select};
+    maxil_drv_if.write_trans(LINE_PARAMETER_OFS, line_parameter);
+
+    maxil_drv_if.write_trans(FIFO_WRITE_NUMBER_OF_WORDS_OFS, 13);
+    for (int wr_frame = 0; wr_frame < 13; wr_frame++) begin
+      tx_tdata = {$urandom, $urandom};
+      maxil_drv_if.write_trans(FIFO_WRITE_WORDS_TO_WRITE_A_OFS, tx_tdata[AXIL_DATA_W-1:0]);
+      maxil_drv_if.write_trans(FIFO_WRITE_WORDS_TO_WRITE_B_OFS, tx_tdata[2*AXIL_DATA_W-1:AXIL_DATA_W]);
+    end
+    repeat(5) @(posedge clk_control);
+
+    maxil_drv_if.read_trans(STAT_SOP_CNT_A_OFS, sop_count[31:0]);
+    maxil_drv_if.read_trans(STAT_SOP_CNT_B_OFS, sop_count[63:32]);
+    $display(" sop count %0d", sop_count);
+
+    reset_registers = 1'b1;
+    line_parameter = {reset_registers, tx_loop, rx_to_tx , 16'b0, line_rate, line_loopback , line_select};
+    maxil_drv_if.write_trans(LINE_PARAMETER_OFS, line_parameter);
+
+    maxil_drv_if.read_trans(STAT_SOP_CNT_A_OFS, sop_count[31:0]);
+    maxil_drv_if.read_trans(STAT_SOP_CNT_B_OFS, sop_count[63:32]);
+
+    $display(" sop count after reset %0d", sop_count);
+
+    // maxil_drv_if.read_trans(STAT_CLK_A_OFS, read_data);
+    // maxil_drv_if.read_trans(STAT_CLK_B_OFS, read_data);
+
+    // maxil_drv_if.read_trans(STAT_VALID_WORDS_A_OFS, read_data);
+    // maxil_drv_if.read_trans(STAT_VALID_WORDS_B_OFS, read_data);
+
+    // maxil_drv_if.read_trans(CNT_TRIG_RD_OFS, read_data);
+    // maxil_drv_if.read_trans(CNT_TX_WR_OFS, read_data);
+    // maxil_drv_if.read_trans(CNT_WORDS_OFS, read_data);
+    // maxil_drv_if.read_trans(STAT_STATUS_OFS, read_data);
 
     $display("%t > INFO: End simulation",$time);
     repeat(20) @(posedge clk_control);

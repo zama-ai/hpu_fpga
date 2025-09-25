@@ -1,5 +1,5 @@
 # HPU_REGIF_CORE documentation
-**Date**: 2025-09-19  
+**Date**: 2025-09-25  
 **Tool Version**: bb0db737792da6b81e69a039028c971af1627fe2  
 
 ## RegisterMap Overview
@@ -49,8 +49,8 @@ Below is a summary of all the registers in the current register map:
 | [reset](#section-reset) | 0xe0014 | 0x8 | different resets are available |
 | [fifo_write](#section-fifo-write) | 0xe001c | 0x10 | fifo write part |
 | [fifo_read](#section-fifo-read) | 0xe002c | 0xc | fifo write part |
-| [cnt](#section-cnt) | 0xe003c | 0x10 | fifo write part |
-| [stat](#section-stat) | 0xe004c | 0x4 | fifo write part |
+| [cnt](#section-cnt) | 0xe003c | 0xc | fifo write part |
+| [stat](#section-stat) | 0xe004c | 0x1c | fifo write part |
 
 
 ---
@@ -4139,8 +4139,11 @@ Register parameter contains following Sub-fields:
 | Field Name | Offset_b | Size_b | Default      | Description   |
 |-----------:|:--------:|:------:|:------------:|:--------------|
 | select      | 0 | 2 |0| line selection |
-| loopback      | 3 | 3 |0| line loopback configurations |
-| rate      | 6 | 8 |0| line rates |
+| loopback      | 2 | 3 |0| line loopback configurations |
+| rate      | 4 | 8 |0| line rates |
+| rx_to_tx      | 29 | 1 |0|  |
+| tx_loop      | 30 | 1 |0|  |
+| reset_registers      | 31 | 1 |0|  |
 
 
 
@@ -4364,25 +4367,9 @@ Below is a summary of all the registers in the current section cnt:
 
 | Name             | Offset | Access | Description |
 |-----------------:|:------:|:------:|:------------|
-| [clk](#register-cntclk) | 0xe003c | R. |  clock counts |
-| [trig_rd](#register-cnttrig-rd) | 0xe0040 | R. |  trig_rd |
-| [tx_wr](#register-cnttx-wr) | 0xe0044 | R. |  tx_wr |
-| [words](#register-cntwords) | 0xe0048 | R. |  words |
-
-
----
-
-
-### Register cnt.clk
-
-- **Description**: clock counts
-- **Owner**: Kernel
-- **Read Access**: Read
-- **Write Access**: None
-- **Offset**: 0xe003c
-- **Default**: 0 
-
-
+| [trig_rd](#register-cnttrig-rd) | 0xe003c | R. |  trig_rd |
+| [tx_wr](#register-cnttx-wr) | 0xe0040 | R. |  tx_wr |
+| [words](#register-cntwords) | 0xe0044 | R. |  words |
 
 
 ---
@@ -4394,7 +4381,7 @@ Below is a summary of all the registers in the current section cnt:
 - **Owner**: Kernel
 - **Read Access**: Read
 - **Write Access**: None
-- **Offset**: 0xe0040
+- **Offset**: 0xe003c
 - **Default**: 0 
 
 
@@ -4409,7 +4396,7 @@ Below is a summary of all the registers in the current section cnt:
 - **Owner**: Kernel
 - **Read Access**: Read
 - **Write Access**: None
-- **Offset**: 0xe0044
+- **Offset**: 0xe0040
 - **Default**: 0 
 
 
@@ -4424,7 +4411,7 @@ Below is a summary of all the registers in the current section cnt:
 - **Owner**: Kernel
 - **Read Access**: Read
 - **Write Access**: None
-- **Offset**: 0xe0048
+- **Offset**: 0xe0044
 - **Default**: 0 
 
 
@@ -4444,6 +4431,12 @@ Below is a summary of all the registers in the current section stat:
 | Name             | Offset | Access | Description |
 |-----------------:|:------:|:------:|:------------|
 | [status](#register-statstatus) | 0xe004c | R. |  fifo status |
+| [clk_a](#register-statclk-a) | 0xe0050 | R. |  clock counts |
+| [clk_b](#register-statclk-b) | 0xe0054 | R. |  clock counts |
+| [valid_words_a](#register-statvalid-words-a) | 0xe0058 | R. |  clock counts |
+| [valid_words_b](#register-statvalid-words-b) | 0xe005c | R. |  clock counts |
+| [sop_cnt_a](#register-statsop-cnt-a) | 0xe0060 | R. |  clock counts |
+| [sop_cnt_b](#register-statsop-cnt-b) | 0xe0064 | R. |  clock counts |
 
 
 ---
@@ -4456,6 +4449,96 @@ Below is a summary of all the registers in the current section stat:
 - **Read Access**: Read
 - **Write Access**: None
 - **Offset**: 0xe004c
+- **Default**: 0 
+
+
+
+
+---
+
+
+### Register stat.clk-a
+
+- **Description**: clock counts
+- **Owner**: Kernel
+- **Read Access**: Read
+- **Write Access**: None
+- **Offset**: 0xe0050
+- **Default**: 0 
+
+
+
+
+---
+
+
+### Register stat.clk-b
+
+- **Description**: clock counts
+- **Owner**: Kernel
+- **Read Access**: Read
+- **Write Access**: None
+- **Offset**: 0xe0054
+- **Default**: 0 
+
+
+
+
+---
+
+
+### Register stat.valid-words-a
+
+- **Description**: clock counts
+- **Owner**: Kernel
+- **Read Access**: Read
+- **Write Access**: None
+- **Offset**: 0xe0058
+- **Default**: 0 
+
+
+
+
+---
+
+
+### Register stat.valid-words-b
+
+- **Description**: clock counts
+- **Owner**: Kernel
+- **Read Access**: Read
+- **Write Access**: None
+- **Offset**: 0xe005c
+- **Default**: 0 
+
+
+
+
+---
+
+
+### Register stat.sop-cnt-a
+
+- **Description**: clock counts
+- **Owner**: Kernel
+- **Read Access**: Read
+- **Write Access**: None
+- **Offset**: 0xe0060
+- **Default**: 0 
+
+
+
+
+---
+
+
+### Register stat.sop-cnt-b
+
+- **Description**: clock counts
+- **Owner**: Kernel
+- **Read Access**: Read
+- **Write Access**: None
+- **Offset**: 0xe0064
 - **Default**: 0 
 
 

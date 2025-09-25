@@ -110,6 +110,10 @@ module tb_fifo_handle;
   logic [NB_WORD_W-1:0]    r_rd_data_count;
   logic [AXIS_TDATA_W-1:0] r_rd_word;
   logic                    read_ack;
+  logic                    write_ack;
+  logic                    tx_loop;
+  logic                    rx_to_tx;
+  logic                    reset_registers;
 
   // ============================================================================================== --
   // Design under test instance
@@ -140,7 +144,13 @@ module tb_fifo_handle;
     .r_wr_data_count   (r_wr_data_count),
     .r_rd_data_count   (r_rd_data_count),
     .r_rd_word         (r_rd_word),
-    .read_ack          (read_ack)
+    .read_ack          (read_ack),
+    .write_ack         (write_ack),
+
+    .reset_registers   (reset_registers),
+
+    .tx_loop           (tx_loop),
+    .rx_to_tx          (rx_to_tx)
   );
 
 // ============================================================================================== --
@@ -151,10 +161,14 @@ module tb_fifo_handle;
   initial begin
     $display("%t > INFO: Initialization",$time);
     read_ack = 1'b0;
+    write_ack = 1'b0;
     r_nb_word = 0;
     r_wr_word = 0;
     qsfp_tx_tready = 1'b0;
     trigger_rx_link = 1'b0;
+    tx_loop = 1'b0;
+    rx_to_tx = 1'b0;
+    reset_registers = 1'b0;
 
     repeat(100) @(posedge clk_control);
     qsfp_tx_tready = 1'b1; // let's consider tx ready always 1
@@ -181,6 +195,9 @@ module tb_fifo_handle;
     for (int i = 0; i < r_nb_word+1 ; i++) begin
       @(posedge clk_control);
       r_wr_word = {$urandom, $urandom};
+      write_ack = 1'b1;
+      @(posedge clk_control);
+      write_ack = 1'b0;
     end
 
     // --
@@ -190,14 +207,20 @@ module tb_fifo_handle;
     for (int i = 0; i < r_nb_word-3 ; i++) begin
       @(posedge clk_control);
       r_wr_word = {$urandom, $urandom};
+      write_ack = 1'b1;
+      @(posedge clk_control);
+      write_ack = 1'b0;
     end
 
     repeat(20) @(posedge clk_control);
 
     // (3)
-    for (int i = 0; i < 2*r_nb_word ; i++) begin
+    for (int i = 0; i < 2*r_nb_word+2 ; i++) begin
       @(posedge clk_control);
       r_wr_word = {$urandom, $urandom};
+      write_ack = 1'b1;
+      @(posedge clk_control);
+      write_ack = 1'b0;
     end
 
     repeat(20) @(posedge clk_control);
@@ -222,8 +245,66 @@ module tb_fifo_handle;
       read_ack = 1'b1;
       @(posedge clk_control);
       read_ack = 1'b0;
-      repeat(15) @(posedge clk_control);
+      repeat(2) @(posedge clk_control);
     end
+    @(posedge clk_control);
+    trigger_rx_link = 1'b0;
+    repeat(10) @(posedge clk_control);
+
+    // // --------------------------------------------------------------------------------------------
+    // $display("%t > INFO: sending TX while being in rx to tx mode ",$time);
+    // // with an arbitrary given number of word we will
+    // //  1- write nb_word into the fifo
+    // //  -- wait
+    // //  2- stop the process
+    // //  3- reset our status registers
+    // //
+    // // --------------------------------------------------------------------------------------------
+    rx_to_tx = 1'b1;
+    trigger_rx_link = 1'b1;
+    @(posedge clk_control);
+
+
+    repeat(100) @(posedge clk_control);
+
+    @(posedge clk_control);
+    rx_to_tx = 1'b0;
+    trigger_rx_link = 1'b0;
+    repeat(10) @(posedge clk_control);
+
+    reset_registers <= 1'b1;
+    @(posedge clk_control);
+    reset_registers <= 1'b1;
+    // --------------------------------------------------------------------------------------------
+    $display("%t > INFO: sending TX while being in fifo loop mode ",$time);
+    // write 64 words of 64bits
+    //  1- write nb_word into the fifo
+    //  -- wait
+    //  2- stop the process
+    //  3- reset our status registers
+    //
+    // --------------------------------------------------------------------------------------------
+    tx_loop = 1'b1;
+    r_nb_word = 64; // coming from the register file. should be quite static signal.
+
+    @(posedge clk_control);
+
+    // (1)
+    for (int i = 0; i < 64 ; i++) begin
+      @(posedge clk_control);
+      r_wr_word = {$urandom, $urandom};
+      write_ack = 1'b1;
+      @(posedge clk_control);
+      write_ack = 1'b0;
+    end
+    repeat(20) @(posedge clk_control);
+    qsfp_tx_tready <= 1'b0;
+    repeat(10) @(posedge clk_control);
+    qsfp_tx_tready <= 1'b1;
+    repeat(50) @(posedge clk_control);
+    tx_loop = 1'b0;
+    repeat(10) @(posedge clk_control);
+
 
     // --------------------------------------------------------------------------------------------
     $display("%t > INFO: End simulation",$time);

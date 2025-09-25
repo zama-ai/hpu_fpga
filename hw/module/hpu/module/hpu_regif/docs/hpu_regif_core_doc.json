@@ -4206,6 +4206,18 @@
                 [
                   "rate",
                   "'h0"
+                ],
+                [
+                  "rx_to_tx",
+                  "'h0"
+                ],
+                [
+                  "tx_loop",
+                  "'h0"
+                ],
+                [
+                  "reset_registers",
+                  "'h0"
                 ]
               ]
             }
@@ -4224,7 +4236,7 @@
               "name": "loopback",
               "description": "line loopback configurations",
               "size_b": 3,
-              "offset_b": 3,
+              "offset_b": 2,
               "default": {
                 "Cst": 0
               }
@@ -4233,7 +4245,34 @@
               "name": "rate",
               "description": "line rates",
               "size_b": 8,
-              "offset_b": 6,
+              "offset_b": 4,
+              "default": {
+                "Cst": 0
+              }
+            },
+            {
+              "name": "rx_to_tx",
+              "description": "",
+              "size_b": 1,
+              "offset_b": 29,
+              "default": {
+                "Cst": 0
+              }
+            },
+            {
+              "name": "tx_loop",
+              "description": "",
+              "size_b": 1,
+              "offset_b": 30,
+              "default": {
+                "Cst": 0
+              }
+            },
+            {
+              "name": "reset_registers",
+              "description": "",
+              "size_b": 1,
+              "offset_b": 31,
               "default": {
                 "Cst": 0
               }
@@ -4444,27 +4483,15 @@
       "description": "fifo write part",
       "offset": 917564,
       "bytes_align": 4,
-      "range": 16,
+      "range": 12,
       "register": [
-        {
-          "name": "clk",
-          "description": "clock counts",
-          "owner": "Kernel",
-          "read_access": "Read",
-          "write_access": "None",
-          "offset": 917564,
-          "default": {
-            "Cst": 0
-          },
-          "field": null
-        },
         {
           "name": "trig_rd",
           "description": "trig_rd",
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "None",
-          "offset": 917568,
+          "offset": 917564,
           "default": {
             "Cst": 0
           },
@@ -4476,7 +4503,7 @@
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "None",
-          "offset": 917572,
+          "offset": 917568,
           "default": {
             "Cst": 0
           },
@@ -4488,7 +4515,7 @@
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "None",
-          "offset": 917576,
+          "offset": 917572,
           "default": {
             "Cst": 0
           },
@@ -4501,7 +4528,7 @@
       "description": "fifo write part",
       "offset": 917580,
       "bytes_align": 4,
-      "range": 4,
+      "range": 28,
       "register": [
         {
           "name": "status",
@@ -4510,6 +4537,78 @@
           "read_access": "Read",
           "write_access": "None",
           "offset": 917580,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "clk_a",
+          "description": "clock counts",
+          "owner": "Kernel",
+          "read_access": "Read",
+          "write_access": "None",
+          "offset": 917584,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "clk_b",
+          "description": "clock counts",
+          "owner": "Kernel",
+          "read_access": "Read",
+          "write_access": "None",
+          "offset": 917588,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "valid_words_a",
+          "description": "clock counts",
+          "owner": "Kernel",
+          "read_access": "Read",
+          "write_access": "None",
+          "offset": 917592,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "valid_words_b",
+          "description": "clock counts",
+          "owner": "Kernel",
+          "read_access": "Read",
+          "write_access": "None",
+          "offset": 917596,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "sop_cnt_a",
+          "description": "clock counts",
+          "owner": "Kernel",
+          "read_access": "Read",
+          "write_access": "None",
+          "offset": 917600,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "sop_cnt_b",
+          "description": "clock counts",
+          "owner": "Kernel",
+          "read_access": "Read",
+          "write_access": "None",
+          "offset": 917604,
           "default": {
             "Cst": 0
           },

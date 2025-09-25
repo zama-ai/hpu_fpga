@@ -1,7 +1,7 @@
 // ============================================================================================== //
 // Description  : Axi4-lite register bank
 // This file was generated with rust regmap generator:
-//  * Date:  2025-09-19
+//  * Date:  2025-09-25
 //  * Tool_version: bb0db737792da6b81e69a039028c971af1627fe2
 // ---------------------------------------------------------------------------------------------- //
 // xR[n]W[na]
@@ -30,8 +30,8 @@
 //      : Value provided by the RTL. The host can read it with notify. The write data is processed by the RTL.
 // ============================================================================================== //
 module hpu_regif_core_eth_2in3
-import axi_if_shell_axil_pkg::*;
 import axi_if_common_param_pkg::*;
+import axi_if_shell_axil_pkg::*;
 import hpu_regif_core_eth_2in3_pkg::*;
 #()(
   input  logic                           clk,
@@ -80,9 +80,6 @@ import hpu_regif_core_eth_2in3_pkg::*;
   // Register IO: fifo_read_fifo_read_data_count
     , output logic [REG_DATA_W-1: 0] r_fifo_read_fifo_read_data_count
         , input  logic [REG_DATA_W-1: 0] r_fifo_read_fifo_read_data_count_upd
-  // Register IO: cnt_clk
-    , output logic [REG_DATA_W-1: 0] r_cnt_clk
-        , input  logic [REG_DATA_W-1: 0] r_cnt_clk_upd
   // Register IO: cnt_trig_rd
     , output logic [REG_DATA_W-1: 0] r_cnt_trig_rd
         , input  logic [REG_DATA_W-1: 0] r_cnt_trig_rd_upd
@@ -95,6 +92,24 @@ import hpu_regif_core_eth_2in3_pkg::*;
   // Register IO: stat_status
     , output logic [REG_DATA_W-1: 0] r_stat_status
         , input  logic [REG_DATA_W-1: 0] r_stat_status_upd
+  // Register IO: stat_clk_a
+    , output logic [REG_DATA_W-1: 0] r_stat_clk_a
+        , input  logic [REG_DATA_W-1: 0] r_stat_clk_a_upd
+  // Register IO: stat_clk_b
+    , output logic [REG_DATA_W-1: 0] r_stat_clk_b
+        , input  logic [REG_DATA_W-1: 0] r_stat_clk_b_upd
+  // Register IO: stat_valid_words_a
+    , output logic [REG_DATA_W-1: 0] r_stat_valid_words_a
+        , input  logic [REG_DATA_W-1: 0] r_stat_valid_words_a_upd
+  // Register IO: stat_valid_words_b
+    , output logic [REG_DATA_W-1: 0] r_stat_valid_words_b
+        , input  logic [REG_DATA_W-1: 0] r_stat_valid_words_b_upd
+  // Register IO: stat_sop_cnt_a
+    , output logic [REG_DATA_W-1: 0] r_stat_sop_cnt_a
+        , input  logic [REG_DATA_W-1: 0] r_stat_sop_cnt_a_upd
+  // Register IO: stat_sop_cnt_b
+    , output logic [REG_DATA_W-1: 0] r_stat_sop_cnt_b
+        , input  logic [REG_DATA_W-1: 0] r_stat_sop_cnt_b_upd
 );
 // ============================================================================================== --
 // localparam
@@ -243,6 +258,9 @@ import hpu_regif_core_eth_2in3_pkg::*;
     line_parameter_default.select = 'h0;
     line_parameter_default.loopback = 'h0;
     line_parameter_default.rate = 'h0;
+    line_parameter_default.rx_to_tx = 'h0;
+    line_parameter_default.tx_loop = 'h0;
+    line_parameter_default.reset_registers = 'h0;
   end
 //-- Default reset_datapath
   reset_datapath_t reset_datapath_default;
@@ -279,9 +297,6 @@ import hpu_regif_core_eth_2in3_pkg::*;
 //-- Default fifo_read_fifo_read_data_count
   logic [REG_DATA_W-1:0]fifo_read_fifo_read_data_count_default;
   assign fifo_read_fifo_read_data_count_default = 'h0;
-//-- Default cnt_clk
-  logic [REG_DATA_W-1:0]cnt_clk_default;
-  assign cnt_clk_default = 'h0;
 //-- Default cnt_trig_rd
   logic [REG_DATA_W-1:0]cnt_trig_rd_default;
   assign cnt_trig_rd_default = 'h0;
@@ -294,6 +309,24 @@ import hpu_regif_core_eth_2in3_pkg::*;
 //-- Default stat_status
   logic [REG_DATA_W-1:0]stat_status_default;
   assign stat_status_default = 'h0;
+//-- Default stat_clk_a
+  logic [REG_DATA_W-1:0]stat_clk_a_default;
+  assign stat_clk_a_default = 'h0;
+//-- Default stat_clk_b
+  logic [REG_DATA_W-1:0]stat_clk_b_default;
+  assign stat_clk_b_default = 'h0;
+//-- Default stat_valid_words_a
+  logic [REG_DATA_W-1:0]stat_valid_words_a_default;
+  assign stat_valid_words_a_default = 'h0;
+//-- Default stat_valid_words_b
+  logic [REG_DATA_W-1:0]stat_valid_words_b_default;
+  assign stat_valid_words_b_default = 'h0;
+//-- Default stat_sop_cnt_a
+  logic [REG_DATA_W-1:0]stat_sop_cnt_a_default;
+  assign stat_sop_cnt_a_default = 'h0;
+//-- Default stat_sop_cnt_b
+  logic [REG_DATA_W-1:0]stat_sop_cnt_b_default;
+  assign stat_sop_cnt_b_default = 'h0;
 // ============================================================================================== --
 // Write reg
 // ============================================================================================== --
@@ -409,17 +442,6 @@ import hpu_regif_core_eth_2in3_pkg::*;
       r_fifo_read_fifo_read_data_count       <= r_fifo_read_fifo_read_data_countD;
     end
   end
-// Register FF: cnt_clk
-  logic [REG_DATA_W-1:0] r_cnt_clkD;
-  assign r_cnt_clkD       = r_cnt_clk_upd;
-  always_ff @(posedge clk) begin
-    if (!s_rst_n) begin
-      r_cnt_clk       <= cnt_clk_default;
-    end
-    else begin
-      r_cnt_clk       <= r_cnt_clkD;
-    end
-  end
 // Register FF: cnt_trig_rd
   logic [REG_DATA_W-1:0] r_cnt_trig_rdD;
   assign r_cnt_trig_rdD       = r_cnt_trig_rd_upd;
@@ -462,6 +484,72 @@ import hpu_regif_core_eth_2in3_pkg::*;
     end
     else begin
       r_stat_status       <= r_stat_statusD;
+    end
+  end
+// Register FF: stat_clk_a
+  logic [REG_DATA_W-1:0] r_stat_clk_aD;
+  assign r_stat_clk_aD       = r_stat_clk_a_upd;
+  always_ff @(posedge clk) begin
+    if (!s_rst_n) begin
+      r_stat_clk_a       <= stat_clk_a_default;
+    end
+    else begin
+      r_stat_clk_a       <= r_stat_clk_aD;
+    end
+  end
+// Register FF: stat_clk_b
+  logic [REG_DATA_W-1:0] r_stat_clk_bD;
+  assign r_stat_clk_bD       = r_stat_clk_b_upd;
+  always_ff @(posedge clk) begin
+    if (!s_rst_n) begin
+      r_stat_clk_b       <= stat_clk_b_default;
+    end
+    else begin
+      r_stat_clk_b       <= r_stat_clk_bD;
+    end
+  end
+// Register FF: stat_valid_words_a
+  logic [REG_DATA_W-1:0] r_stat_valid_words_aD;
+  assign r_stat_valid_words_aD       = r_stat_valid_words_a_upd;
+  always_ff @(posedge clk) begin
+    if (!s_rst_n) begin
+      r_stat_valid_words_a       <= stat_valid_words_a_default;
+    end
+    else begin
+      r_stat_valid_words_a       <= r_stat_valid_words_aD;
+    end
+  end
+// Register FF: stat_valid_words_b
+  logic [REG_DATA_W-1:0] r_stat_valid_words_bD;
+  assign r_stat_valid_words_bD       = r_stat_valid_words_b_upd;
+  always_ff @(posedge clk) begin
+    if (!s_rst_n) begin
+      r_stat_valid_words_b       <= stat_valid_words_b_default;
+    end
+    else begin
+      r_stat_valid_words_b       <= r_stat_valid_words_bD;
+    end
+  end
+// Register FF: stat_sop_cnt_a
+  logic [REG_DATA_W-1:0] r_stat_sop_cnt_aD;
+  assign r_stat_sop_cnt_aD       = r_stat_sop_cnt_a_upd;
+  always_ff @(posedge clk) begin
+    if (!s_rst_n) begin
+      r_stat_sop_cnt_a       <= stat_sop_cnt_a_default;
+    end
+    else begin
+      r_stat_sop_cnt_a       <= r_stat_sop_cnt_aD;
+    end
+  end
+// Register FF: stat_sop_cnt_b
+  logic [REG_DATA_W-1:0] r_stat_sop_cnt_bD;
+  assign r_stat_sop_cnt_bD       = r_stat_sop_cnt_b_upd;
+  always_ff @(posedge clk) begin
+    if (!s_rst_n) begin
+      r_stat_sop_cnt_b       <= stat_sop_cnt_b_default;
+    end
+    else begin
+      r_stat_sop_cnt_b       <= r_stat_sop_cnt_bD;
     end
   end
 // ============================================================================================== --
@@ -525,9 +613,6 @@ import hpu_regif_core_eth_2in3_pkg::*;
           FIFO_READ_FIFO_READ_DATA_COUNT_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register fifo_read_fifo_read_data_count
             axil_rdataD = r_fifo_read_fifo_read_data_count;
           end
-          CNT_CLK_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register cnt_clk
-            axil_rdataD = r_cnt_clk;
-          end
           CNT_TRIG_RD_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register cnt_trig_rd
             axil_rdataD = r_cnt_trig_rd;
           end
@@ -539,6 +624,24 @@ import hpu_regif_core_eth_2in3_pkg::*;
           end
           STAT_STATUS_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register stat_status
             axil_rdataD = r_stat_status;
+          end
+          STAT_CLK_A_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register stat_clk_a
+            axil_rdataD = r_stat_clk_a;
+          end
+          STAT_CLK_B_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register stat_clk_b
+            axil_rdataD = r_stat_clk_b;
+          end
+          STAT_VALID_WORDS_A_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register stat_valid_words_a
+            axil_rdataD = r_stat_valid_words_a;
+          end
+          STAT_VALID_WORDS_B_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register stat_valid_words_b
+            axil_rdataD = r_stat_valid_words_b;
+          end
+          STAT_SOP_CNT_A_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register stat_sop_cnt_a
+            axil_rdataD = r_stat_sop_cnt_a;
+          end
+          STAT_SOP_CNT_B_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register stat_sop_cnt_b
+            axil_rdataD = r_stat_sop_cnt_b;
           end
           default:
             axil_rdataD = REG_DATA_W'('h0BAD_ADD1); // Default value
