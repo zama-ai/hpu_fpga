@@ -111,6 +111,8 @@ module fifo_handle #(
   logic [NB_WORD_W-1:0]    rd_data_count;
   logic                    tx_rd_en;
   logic tx_data_valid;
+  logic tx_empty;
+  logic tx_rd_rst_busy;
 
   // we need to know when to trigger reads, when a full word number is ready in the fifo
   logic trigger_rd;
@@ -302,6 +304,8 @@ module fifo_handle #(
   logic rx_full;
   logic rx_wr_en;
   logic rx_wr_rst_busy;
+  logic rx_empty;
+  logic rx_rd_rst_busy;
 
   // with this information we can trigger writes in the fifo
   assign rx_wr_en = qsfp_rx_tvalid && !rx_full && !rx_wr_rst_busy;
