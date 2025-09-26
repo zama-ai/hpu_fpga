@@ -173,10 +173,10 @@ module fifo_handle #(
 
 
   // building the axi4-stream tx ------------------------------------------------------------------
-  logic [AXIS_TDATA_W-1:0] fifo_tx_tvalid;
-  logic [AXIS_TKEEP_W-1:0] fifo_tx_tdata;
+  logic [AXIS_TDATA_W-1:0] fifo_tx_tdata;
+  logic [AXIS_TKEEP_W-1:0] fifo_tx_tkeep_user;
   logic                    fifo_tx_tlast;
-  logic                    fifo_tx_tkeep_user;
+  logic                    fifo_tx_tvalid;
 
   logic tx_data_valid_d;
   always_ff @(posedge clk_mrmac)
