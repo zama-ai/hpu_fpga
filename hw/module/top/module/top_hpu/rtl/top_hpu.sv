@@ -174,39 +174,6 @@ module top_hpu #(
   logic eth_cfg_clk;
   logic eth_cfg_srst_n;
 
-  // Transceivers clocks
-  logic ch0_tx_usr_clk;
-  logic ch1_tx_usr_clk;
-  logic ch2_tx_usr_clk;
-  logic ch3_tx_usr_clk;
-
-  logic ch0_rx_usr_clk;
-  logic ch1_rx_usr_clk;
-  logic ch2_rx_usr_clk;
-  logic ch3_rx_usr_clk;
-
-  logic ch0_tx_usr_clk2;
-  logic ch1_tx_usr_clk2;
-  logic ch2_tx_usr_clk2;
-  logic ch3_tx_usr_clk2;
-  logic ch0_rx_usr_clk2;
-  logic ch1_rx_usr_clk2;
-  logic ch2_rx_usr_clk2;
-  logic ch3_rx_usr_clk2;
-
-  // LINE_NB
-  logic [LINE_NB-1:0] rx_core_clk;
-  logic [LINE_NB-1:0] rx_serdes_clk;
-  logic [LINE_NB-1:0] tx_core_clk;
-  logic [LINE_NB-1:0] rx_alt_serdes_clk;
-  logic [LINE_NB-1:0] tx_alt_serdes_clk;
-
-  assign rx_core_clk       = {ch3_rx_usr_clk, ch2_rx_usr_clk, ch1_rx_usr_clk, ch0_rx_usr_clk};
-  assign rx_serdes_clk     = {ch3_rx_usr_clk, ch2_rx_usr_clk, ch1_rx_usr_clk, ch0_rx_usr_clk};
-  assign tx_core_clk       = {ch0_tx_usr_clk, ch0_tx_usr_clk, ch0_tx_usr_clk, ch0_tx_usr_clk};
-  assign rx_alt_serdes_clk = {ch3_rx_usr_clk2, ch2_rx_usr_clk2, ch1_rx_usr_clk2, ch0_rx_usr_clk2};
-  assign tx_alt_serdes_clk = {ch0_tx_usr_clk2, ch0_tx_usr_clk2, ch0_tx_usr_clk2, ch0_tx_usr_clk2};
-
   /* AXI4 ---------------------------------------------------------------------
   * in direction to RTL register interface, size is fixed.
   */
@@ -628,17 +595,6 @@ module top_hpu #(
   logic [LINE_NB-1:0] gt_rx_reset_done;
   logic [LINE_NB-1:0] gt_tx_reset_done;
   // ----------------------------------------------------------------------- //
-  // resets
-  //  ---- //
-  // built resets from reset monitoring
-  logic [LINE_NB-1:0] rx_core_reset;
-  logic [LINE_NB-1:0] rx_serdes_reset;
-  logic [LINE_NB-1:0] tx_core_reset;
-  logic [LINE_NB-1:0] tx_serdes_reset;
-  // flexible reset
-  logic [LINE_NB-1:0] rx_flexif_reset;
-  // ----------------------------------------------------------------------- //
-  logic gtpowergood_in;
   // QSFP RX axi4-stream
   logic [LINE_NB-1:0][AXIS_TDATA_W-1:0] qsfp_rx_tdata;
   logic [LINE_NB-1:0][AXIS_TKEEP_W-1:0] qsfp_rx_tkeep_user;
@@ -856,17 +812,8 @@ module top_hpu #(
   assign axis_s_rx_tvalid    = isc_ack_vld;
   assign isc_ack_rdy         = axis_s_rx_tready;
 
-  // core and Serdes Resets
-  assign rx_core_reset   = {~gt_rx_reset_done[3],~gt_rx_reset_done[2],~gt_rx_reset_done[1],~gt_rx_reset_done[0]};
-  assign rx_serdes_reset = {~gt_rx_reset_done[3],~gt_rx_reset_done[2],~gt_rx_reset_done[1],~gt_rx_reset_done[0]};
-  assign tx_core_reset   = {~gt_tx_reset_done[3],~gt_tx_reset_done[2],~gt_tx_reset_done[1],~gt_tx_reset_done[0]};
-  assign tx_serdes_reset = {~gt_tx_reset_done[3],~gt_tx_reset_done[2],~gt_tx_reset_done[1],~gt_tx_reset_done[0]};
-
-  assign rx_flexif_reset = {4{~eth_cfg_srst_n}};
-
   // line rate
   assign SW_REG_GT_LINE_RATE = {gt_line_rate, gt_line_rate, gt_line_rate, gt_line_rate};
-
 
   // debug
   logic [63:0]  axis_m_eth_tdata;
@@ -2220,8 +2167,7 @@ module top_hpu #(
       * address is x8008'0000 + offset while the two IPs are expecting for x0000'XXXX
      *
      * AXI 0 -> id=cfg (IP) mrmac configuration registers
-     * AXI 1 -> id=dbg (IP) direct access to selected line FIFO
-     * AXI 2 -> direct access to dma regfile
+     * AXI 1 -> direct access to dma regfile
      */
     .ETH_AXI_0_araddr   (axi_eth_mrmac_araddr),
     .ETH_AXI_0_arready  (axi_eth_mrmac_arready),
@@ -2261,105 +2207,27 @@ module top_hpu #(
     .ETH_AXI_CFG_wready   (axi_eth_mrmac_wready),
     .ETH_AXI_CFG_wvalid   (axi_eth_mrmac_wvalid),
 
-    .ETH_AXI_1_araddr   (axi_eth_dbg_araddr),
-    .ETH_AXI_1_arready  (axi_eth_dbg_arready),
-    .ETH_AXI_1_arvalid  (axi_eth_dbg_arvalid),
-    .ETH_AXI_1_awaddr   (axi_eth_dbg_awaddr),
-    .ETH_AXI_1_awready  (axi_eth_dbg_awready),
-    .ETH_AXI_1_awvalid  (axi_eth_dbg_awvalid),
-    .ETH_AXI_1_bready   (axi_eth_dbg_bready),
-    .ETH_AXI_1_bresp    (axi_eth_dbg_bresp),
-    .ETH_AXI_1_bvalid   (axi_eth_dbg_bvalid),
-    .ETH_AXI_1_rdata    (axi_eth_dbg_rdata),
-    .ETH_AXI_1_rready   (axi_eth_dbg_rready),
-    .ETH_AXI_1_rresp    (axi_eth_dbg_rresp),
-    .ETH_AXI_1_rvalid   (axi_eth_dbg_rvalid),
-    .ETH_AXI_1_wdata    (axi_eth_dbg_wdata),
-    .ETH_AXI_1_wready   (axi_eth_dbg_wready),
-    .ETH_AXI_1_wvalid   (axi_eth_dbg_wvalid),
-    // unused after loopback
-    .ETH_AXI_1_arprot   (axi_eth_dbg_arprot),
-    .ETH_AXI_1_awprot   (axi_eth_dbg_awprot),
-    .ETH_AXI_1_wstrb    (axi_eth_dbg_wstrb),
-
-    // direct link to axi4-stream to fifo register map
-    .ETH_AXI_DBG_araddr   ({'h0000, axi_eth_dbg_araddr[15:0]}),
-    .ETH_AXI_DBG_arready  (axi_eth_dbg_arready),
-    .ETH_AXI_DBG_arvalid  (axi_eth_dbg_arvalid),
-    .ETH_AXI_DBG_awaddr   ({'h0000, axi_eth_dbg_awaddr[15:0]}),
-    .ETH_AXI_DBG_awready  (axi_eth_dbg_awready),
-    .ETH_AXI_DBG_awvalid  (axi_eth_dbg_awvalid),
-    .ETH_AXI_DBG_bready   (axi_eth_dbg_bready),
-    .ETH_AXI_DBG_bresp    (axi_eth_dbg_bresp),
-    .ETH_AXI_DBG_bvalid   (axi_eth_dbg_bvalid),
-    .ETH_AXI_DBG_rdata    (axi_eth_dbg_rdata),
-    .ETH_AXI_DBG_rready   (axi_eth_dbg_rready),
-    .ETH_AXI_DBG_rresp    (axi_eth_dbg_rresp),
-    .ETH_AXI_DBG_rvalid   (axi_eth_dbg_rvalid),
-    .ETH_AXI_DBG_wdata    (axi_eth_dbg_wdata),
-    .ETH_AXI_DBG_wready   (axi_eth_dbg_wready),
-    .ETH_AXI_DBG_wvalid   (axi_eth_dbg_wvalid),
-
-    // direct link to axi4-stream fifo
-    .ETH_AXI_3_araddr   (axi_eth_fifo_araddr),
-    .ETH_AXI_3_arready  (axi_eth_fifo_arready),
-    .ETH_AXI_3_arvalid  (axi_eth_fifo_arvalid),
-    .ETH_AXI_3_awaddr   (axi_eth_fifo_awaddr),
-    .ETH_AXI_3_awready  (axi_eth_fifo_awready),
-    .ETH_AXI_3_awvalid  (axi_eth_fifo_awvalid),
-    .ETH_AXI_3_bready   (axi_eth_fifo_bready),
-    .ETH_AXI_3_bresp    (axi_eth_fifo_bresp),
-    .ETH_AXI_3_bvalid   (axi_eth_fifo_bvalid),
-    .ETH_AXI_3_rdata    (axi_eth_fifo_rdata),
-    .ETH_AXI_3_rready   (axi_eth_fifo_rready),
-    .ETH_AXI_3_rresp    (axi_eth_fifo_rresp),
-    .ETH_AXI_3_rvalid   (axi_eth_fifo_rvalid),
-    .ETH_AXI_3_wdata    (axi_eth_fifo_wdata),
-    .ETH_AXI_3_wready   (axi_eth_fifo_wready),
-    .ETH_AXI_3_wvalid   (axi_eth_fifo_wvalid),
-    // unused after loopback
-    .ETH_AXI_3_arprot   (axi_eth_fifo_arprot),
-    .ETH_AXI_3_awprot   (axi_eth_fifo_awprot),
-    .ETH_AXI_3_wstrb    (axi_eth_fifo_wstrb),
-
-    .ETH_AXI_FIFO_araddr   ({'h0000, axi_eth_fifo_araddr[15:0]}),
-    .ETH_AXI_FIFO_arready  (axi_eth_fifo_arready),
-    .ETH_AXI_FIFO_arvalid  (axi_eth_fifo_arvalid),
-    .ETH_AXI_FIFO_awaddr   ({'h0000, axi_eth_fifo_awaddr[15:0]}),
-    .ETH_AXI_FIFO_awready  (axi_eth_fifo_awready),
-    .ETH_AXI_FIFO_awvalid  (axi_eth_fifo_awvalid),
-    .ETH_AXI_FIFO_bready   (axi_eth_fifo_bready),
-    .ETH_AXI_FIFO_bresp    (axi_eth_fifo_bresp),
-    .ETH_AXI_FIFO_bvalid   (axi_eth_fifo_bvalid),
-    .ETH_AXI_FIFO_rdata    (axi_eth_fifo_rdata),
-    .ETH_AXI_FIFO_rready   (axi_eth_fifo_rready),
-    .ETH_AXI_FIFO_rresp    (axi_eth_fifo_rresp),
-    .ETH_AXI_FIFO_rvalid   (axi_eth_fifo_rvalid),
-    .ETH_AXI_FIFO_wdata    (axi_eth_fifo_wdata),
-    .ETH_AXI_FIFO_wready   (axi_eth_fifo_wready),
-    .ETH_AXI_FIFO_wvalid   (axi_eth_fifo_wvalid),
-
     // access to regfile in dma
-    .ETH_AXI_2_araddr   (axi_eth_dma_araddr),
-    .ETH_AXI_2_arready  (axi_eth_dma_arready),
-    .ETH_AXI_2_arvalid  (axi_eth_dma_arvalid),
-    .ETH_AXI_2_awaddr   (axi_eth_dma_awaddr),
-    .ETH_AXI_2_awready  (axi_eth_dma_awready),
-    .ETH_AXI_2_awvalid  (axi_eth_dma_awvalid),
-    .ETH_AXI_2_bready   (axi_eth_dma_bready),
-    .ETH_AXI_2_bresp    (axi_eth_dma_bresp),
-    .ETH_AXI_2_bvalid   (axi_eth_dma_bvalid),
-    .ETH_AXI_2_rdata    (axi_eth_dma_rdata),
-    .ETH_AXI_2_rready   (axi_eth_dma_rready),
-    .ETH_AXI_2_rresp    (axi_eth_dma_rresp),
-    .ETH_AXI_2_rvalid   (axi_eth_dma_rvalid),
-    .ETH_AXI_2_wdata    (axi_eth_dma_wdata),
-    .ETH_AXI_2_wready   (axi_eth_dma_wready),
-    .ETH_AXI_2_wvalid   (axi_eth_dma_wvalid),
+    .ETH_AXI_1_araddr   (axi_eth_dma_araddr),
+    .ETH_AXI_1_arready  (axi_eth_dma_arready),
+    .ETH_AXI_1_arvalid  (axi_eth_dma_arvalid),
+    .ETH_AXI_1_awaddr   (axi_eth_dma_awaddr),
+    .ETH_AXI_1_awready  (axi_eth_dma_awready),
+    .ETH_AXI_1_awvalid  (axi_eth_dma_awvalid),
+    .ETH_AXI_1_bready   (axi_eth_dma_bready),
+    .ETH_AXI_1_bresp    (axi_eth_dma_bresp),
+    .ETH_AXI_1_bvalid   (axi_eth_dma_bvalid),
+    .ETH_AXI_1_rdata    (axi_eth_dma_rdata),
+    .ETH_AXI_1_rready   (axi_eth_dma_rready),
+    .ETH_AXI_1_rresp    (axi_eth_dma_rresp),
+    .ETH_AXI_1_rvalid   (axi_eth_dma_rvalid),
+    .ETH_AXI_1_wdata    (axi_eth_dma_wdata),
+    .ETH_AXI_1_wready   (axi_eth_dma_wready),
+    .ETH_AXI_1_wvalid   (axi_eth_dma_wvalid),
     // unused after loopback
-    .ETH_AXI_2_arprot   (axi_eth_dma_arprot),
-    .ETH_AXI_2_awprot   (axi_eth_dma_awprot),
-    .ETH_AXI_2_wstrb    (axi_eth_dma_wstrb),
+    .ETH_AXI_1_arprot   (axi_eth_dma_arprot),
+    .ETH_AXI_1_awprot   (axi_eth_dma_awprot),
+    .ETH_AXI_1_wstrb    (axi_eth_dma_wstrb),
 
     /* Transceivers ------------------------------------------------------------------- //
      * -> GTM for one QSFP port
@@ -2373,38 +2241,7 @@ module top_hpu #(
     // input clocks
     .CLK_IN_D_clk_n  (gt_ref_clk_n),
     .CLK_IN_D_clk_p  (gt_ref_clk_p),
-    // input mrmac clocks: same as core clock
-    .ch0_txusrclk    (ch0_tx_usr_clk),
-    .ch1_txusrclk    (ch0_tx_usr_clk),
-    .ch2_txusrclk    (ch0_tx_usr_clk),
-    .ch3_txusrclk    (ch0_tx_usr_clk),
-    .ch0_rxusrclk    (ch0_rx_usr_clk),
-    .ch1_rxusrclk    (ch1_rx_usr_clk),
-    .ch2_rxusrclk    (ch2_rx_usr_clk),
-    .ch3_rxusrclk    (ch3_rx_usr_clk),
-    // output clocks from bufg
-    .ch0_tx_usr_clk  (ch0_tx_usr_clk),
-    .ch0_tx_usr_clk2 (ch0_tx_usr_clk2),
-    .ch0_rx_usr_clk  (ch0_rx_usr_clk),
-    .ch0_rx_usr_clk2 (ch0_rx_usr_clk2),
-    .ch1_rx_usr_clk  (ch1_rx_usr_clk),
-    .ch1_rx_usr_clk2 (ch1_rx_usr_clk2),
-    .ch2_rx_usr_clk2 (ch2_rx_usr_clk2),
-    .ch2_rx_usr_clk  (ch2_rx_usr_clk),
-    .ch3_rx_usr_clk  (ch3_rx_usr_clk),
-    .ch3_rx_usr_clk2 (ch3_rx_usr_clk2),
-    // APB3 interface is not used
-    .APB3_INTF_paddr    (16'd0),
-    .APB3_INTF_penable  (1'b0),
-    .APB3_INTF_prdata   (),
-    .APB3_INTF_pready   (),
-    .APB3_INTF_psel     (1'b0),
-    .APB3_INTF_pslverr  (),
-    .APB3_INTF_pwdata   (32'd0),
-    .APB3_INTF_pwrite   (1'b0),
-    // .apb3clk_quad       (eth_cfg_clk),
     // control signals
-    .gtpowergood  (gtpowergood_in),
     .ch0_loopback (gt_loopback),
     .ch0_rxrate   (SW_REG_GT_LINE_RATE[7:0]),
     .ch0_txrate   (SW_REG_GT_LINE_RATE[7:0]),
@@ -2469,34 +2306,7 @@ module top_hpu #(
     .tx_axis_tlast_6     (qsfp_tx_tlast[3]),
     .tx_axis_tvalid_6    (qsfp_tx_tvalid[3]),
     .tx_axis_tready_6    (qsfp_tx_tready[3]),
-    //  --------------------------------- clocking ----------------------------------- //
-    // drives the bulk of the MRMAC datapath: from [GT -> bufg (output 0)]
-    .tx_core_clk       (tx_core_clk),
-    .rx_core_clk       (rx_core_clk),
-    // internal clock 50% of core_clk: from [GT -> bufg (output 1)]
-    .tx_alt_serdes_clk (tx_alt_serdes_clk),
-    .rx_alt_serdes_clk (rx_alt_serdes_clk),
-    // drive data across the SerDes interface to the MRMAC: from [GT -> bufg (output 0)]
-    .rx_serdes_clk     (rx_serdes_clk),
-    // axi4-stream clock tiled depending of MRMAC configuration
-    .tx_axi_clk        ({4{clk_axis_mrmac}}),
-    .rx_axi_clk        ({4{clk_axis_mrmac}}),
-    // flexible interface - should be 50% core_clk
-    .tx_flexif_clk     (/* DISABLED */),
-    .rx_flexif_clk     (/* DISABLED */),
-    // timestamping clocking
-    .tx_ts_clk         ({4{clk_axis_mrmac}}),
-    .rx_ts_clk         ({4{clk_axis_mrmac}}),
     //  ----------------------------------- reset ------------------------------------ //
-    // master core
-    .tx_core_reset    (tx_core_reset),
-    .rx_core_reset    (rx_core_reset),
-    // serdes iterface res
-    .tx_serdes_reset  (tx_serdes_reset),
-    .rx_serdes_reset  (rx_serdes_reset),
-    // flexible interface
-    .rx_flexif_reset  (rx_flexif_reset),
-    // GT
     .gt_tx_reset_done_out    (gt_tx_reset_done),
     .gt_rx_reset_done_out    (gt_rx_reset_done),
     // programmable resets
@@ -2504,10 +2314,8 @@ module top_hpu #(
     .gt_reset_tx_datapath_in (gt_reset_tx_datapath),
     .gt_reset_rx_datapath_in (gt_reset_rx_datapath),
     //  ---------------------------------- control ----------------------------------- //
-    .gtpowergood_in          (gtpowergood_in),
     // performance monitoring
-    .pm_rdy                  (),
-    .pm_tick                 (4'b0),
+    .pm_rdy                  (pm_rdy),
     // Control tx
     .ctl_tx_port0_ctl_tx_lane0_vlm_bip7_override       (1'b0),
     .ctl_tx_port0_ctl_tx_lane0_vlm_bip7_override_value (8'd0),
@@ -2741,7 +2549,6 @@ module top_hpu #(
     .sys_clk0_1_clk_n(top_sys_clk0_1_clk_n),
     .sys_clk0_1_clk_p(top_sys_clk0_1_clk_p),
 
-
     /* Debug signals --------------------------------------------------------------------
      * > axi4-stream for qsfp lane debugging
      * > placeholder for ila
@@ -2761,14 +2568,9 @@ module top_hpu #(
     .ila_loopback(gt_loopback),
     .ila_rx_reset_done(gt_rx_reset_done),
     .ila_tx_reset_done(gt_tx_reset_done),
-    .ila_gtpowergood_in(gtpowergood_in),
     .ila_gt_reset_rx_datapath(gt_reset_rx_datapath),
     .ila_gt_reset_tx_datapath(gt_reset_tx_datapath),
-    .ila_gt_reset_all(gt_reset_all),
-    .ila_rx_core_reset(rx_core_reset),
-    .ila_rx_serdes_reset(rx_serdes_reset),
-    .ila_tx_core_reset(tx_core_reset),
-    .ila_tx_serdes_reset(tx_serdes_reset)
+    .ila_gt_reset_all(gt_reset_all)
   );
 
 //=====================================

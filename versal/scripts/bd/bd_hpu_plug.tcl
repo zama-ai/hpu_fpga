@@ -213,7 +213,7 @@ namespace eval _nsp_hpu {
     variable REGIF_NB 2
 
     # Ethernet
-    variable ETH_AXI_NB 4
+    variable ETH_AXI_NB 2
 
     # For each regif we have REGIF_CLK_NB
     variable REGIF_CLK_NB 2
