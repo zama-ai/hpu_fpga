@@ -815,17 +815,6 @@ module top_hpu #(
   // line rate
   assign SW_REG_GT_LINE_RATE = {gt_line_rate, gt_line_rate, gt_line_rate, gt_line_rate};
 
-  // debug
-  logic [63:0]  axis_m_eth_tdata;
-  logic         axis_m_eth_tlast;
-  logic         axis_m_eth_tready;
-  logic         axis_m_eth_tvalid;
-
-  logic [63:0]  axis_s_eth_tdata;
-  // logic         axis_s_eth_tlast;
-  logic         axis_s_eth_tready;
-  logic         axis_s_eth_tvalid;
-
   // =========================================================================================== //
   // SHELL
   // based on aved example design
@@ -2550,19 +2539,8 @@ module top_hpu #(
     .sys_clk0_1_clk_p(top_sys_clk0_1_clk_p),
 
     /* Debug signals --------------------------------------------------------------------
-     * > axi4-stream for qsfp lane debugging
      * > placeholder for ila
     //  ------------------------------------------------------------------------------ */
-    .axis_m_eth_tdata(axis_m_eth_tdata),
-    .axis_m_eth_tlast(axis_m_eth_tlast),
-    .axis_m_eth_tready(axis_m_eth_tready),
-    .axis_m_eth_tvalid(axis_m_eth_tvalid),
-
-    .axis_s_eth_tdata(axis_s_eth_tdata),
-    // .axis_s_eth_tlast(axis_s_eth_tlast),
-    .axis_s_eth_tready(1'b1), // always ready
-    .axis_s_eth_tvalid(axis_s_eth_tvalid),
-
     .ila_clk(eth_cfg_clk),
     .ila_line_rate(gt_line_rate),
     .ila_loopback(gt_loopback),

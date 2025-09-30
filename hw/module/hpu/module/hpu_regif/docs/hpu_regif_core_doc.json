@@ -3,7 +3,7 @@
   "description": "HPU top-level register interface. Used by the host to retrieve design information, and to configure it.\n\nHPU top-level register interface. Used by the host to retrieve design information, and to configure it.\n\nHPU top-level register interface. Used by the host to retrieve design information, and to configure it.\n\nHPU top-level register interface. Used by the host to retrieve design information, and to configure it.\n\nHPU ethernet configuration register interface. Will be accessed by RPU to define registers.",
   "word_size_b": 32,
   "offset": 524288,
-  "range": 458752,
+  "range": 393216,
   "ext_pkg": [
     "axi_if_common_param_pkg",
     "axi_if_shell_axil_pkg"
@@ -4123,7 +4123,7 @@
     {
       "name": "entry_eth_2in3",
       "description": "entry_eth_2in3 section with known value used for debug.",
-      "offset": 917504,
+      "offset": 851968,
       "bytes_align": 4,
       "range": 16,
       "register": [
@@ -4133,7 +4133,7 @@
           "owner": "Parameter",
           "read_access": "Read",
           "write_access": "None",
-          "offset": 917504,
+          "offset": 851968,
           "default": {
             "Cst": 84215044
           },
@@ -4145,7 +4145,7 @@
           "owner": "Parameter",
           "read_access": "Read",
           "write_access": "None",
-          "offset": 917508,
+          "offset": 851972,
           "default": {
             "Cst": 353703189
           },
@@ -4157,7 +4157,7 @@
           "owner": "Parameter",
           "read_access": "Read",
           "write_access": "None",
-          "offset": 917512,
+          "offset": 851976,
           "default": {
             "Cst": 623191333
           },
@@ -4169,7 +4169,7 @@
           "owner": "Parameter",
           "read_access": "Read",
           "write_access": "None",
-          "offset": 917516,
+          "offset": 851980,
           "default": {
             "Cst": 892679477
           },
@@ -4180,7 +4180,7 @@
     {
       "name": "line",
       "description": "Line parameter sections",
-      "offset": 917520,
+      "offset": 851984,
       "bytes_align": 4,
       "range": 4,
       "register": [
@@ -4190,7 +4190,7 @@
           "owner": "User",
           "read_access": "Read",
           "write_access": "Write",
-          "offset": 917520,
+          "offset": 851984,
           "default": {
             "ParamsField": {
               "params": [],
@@ -4284,7 +4284,7 @@
     {
       "name": "reset",
       "description": "different resets are available",
-      "offset": 917524,
+      "offset": 851988,
       "bytes_align": 4,
       "range": 8,
       "register": [
@@ -4294,7 +4294,7 @@
           "owner": "User",
           "read_access": "Read",
           "write_access": "Write",
-          "offset": 917524,
+          "offset": 851988,
           "default": {
             "ParamsField": {
               "params": [],
@@ -4350,7 +4350,7 @@
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "None",
-          "offset": 917528,
+          "offset": 851992,
           "default": {
             "ParamsField": {
               "params": [],
@@ -4379,7 +4379,7 @@
     {
       "name": "fifo_write",
       "description": "fifo write part",
-      "offset": 917532,
+      "offset": 851996,
       "bytes_align": 4,
       "range": 16,
       "register": [
@@ -4389,7 +4389,7 @@
           "owner": "User",
           "read_access": "Read",
           "write_access": "Write",
-          "offset": 917532,
+          "offset": 851996,
           "default": {
             "Cst": 0
           },
@@ -4401,7 +4401,7 @@
           "owner": "User",
           "read_access": "Read",
           "write_access": "Write",
-          "offset": 917536,
+          "offset": 852000,
           "default": {
             "Cst": 0
           },
@@ -4413,7 +4413,7 @@
           "owner": "User",
           "read_access": "Read",
           "write_access": "Write",
-          "offset": 917540,
+          "offset": 852004,
           "default": {
             "Cst": 0
           },
@@ -4425,7 +4425,7 @@
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "None",
-          "offset": 917544,
+          "offset": 852008,
           "default": {
             "Cst": 0
           },
@@ -4436,7 +4436,7 @@
     {
       "name": "fifo_read",
       "description": "fifo write part",
-      "offset": 917548,
+      "offset": 852012,
       "bytes_align": 4,
       "range": 12,
       "register": [
@@ -4446,7 +4446,7 @@
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "None",
-          "offset": 917548,
+          "offset": 852012,
           "default": {
             "Cst": 0
           },
@@ -4458,7 +4458,7 @@
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "None",
-          "offset": 917552,
+          "offset": 852016,
           "default": {
             "Cst": 0
           },
@@ -4470,7 +4470,7 @@
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "None",
-          "offset": 917556,
+          "offset": 852020,
           "default": {
             "Cst": 0
           },
@@ -4481,7 +4481,7 @@
     {
       "name": "cnt",
       "description": "fifo write part",
-      "offset": 917564,
+      "offset": 852028,
       "bytes_align": 4,
       "range": 12,
       "register": [
@@ -4491,7 +4491,7 @@
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "None",
-          "offset": 917564,
+          "offset": 852028,
           "default": {
             "Cst": 0
           },
@@ -4503,7 +4503,7 @@
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "None",
-          "offset": 917568,
+          "offset": 852032,
           "default": {
             "Cst": 0
           },
@@ -4515,7 +4515,7 @@
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "None",
-          "offset": 917572,
+          "offset": 852036,
           "default": {
             "Cst": 0
           },
@@ -4526,7 +4526,7 @@
     {
       "name": "stat",
       "description": "fifo write part",
-      "offset": 917580,
+      "offset": 852044,
       "bytes_align": 4,
       "range": 28,
       "register": [
@@ -4536,7 +4536,7 @@
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "None",
-          "offset": 917580,
+          "offset": 852044,
           "default": {
             "Cst": 0
           },
@@ -4548,7 +4548,7 @@
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "None",
-          "offset": 917584,
+          "offset": 852048,
           "default": {
             "Cst": 0
           },
@@ -4560,7 +4560,7 @@
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "None",
-          "offset": 917588,
+          "offset": 852052,
           "default": {
             "Cst": 0
           },
@@ -4572,7 +4572,7 @@
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "None",
-          "offset": 917592,
+          "offset": 852056,
           "default": {
             "Cst": 0
           },
@@ -4584,7 +4584,7 @@
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "None",
-          "offset": 917596,
+          "offset": 852060,
           "default": {
             "Cst": 0
           },
@@ -4596,7 +4596,7 @@
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "None",
-          "offset": 917600,
+          "offset": 852064,
           "default": {
             "Cst": 0
           },
@@ -4608,7 +4608,7 @@
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "None",
-          "offset": 917604,
+          "offset": 852068,
           "default": {
             "Cst": 0
           },

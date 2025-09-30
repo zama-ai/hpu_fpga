@@ -1,5 +1,5 @@
 # HPU_REGIF_CORE documentation
-**Date**: 2025-09-25  
+**Date**: 2025-09-30  
 **Tool Version**: bb0db737792da6b81e69a039028c971af1627fe2  
 
 ## RegisterMap Overview
@@ -15,7 +15,7 @@ HPU top-level register interface. Used by the host to retrieve design informatio
 
 HPU ethernet configuration register interface. Will be accessed by RPU to define registers.  
 **Offset**: 0x80000 
-**Range**: 0x70000
+**Range**: 0x60000
 **Word Size (b)**: 32  
 **External Packages**: "axi_if_common_param_pkg.sv","axi_if_shell_axil_pkg.sv"
 
@@ -44,13 +44,13 @@ Below is a summary of all the registers in the current register map:
 | [status_3in3](#section-status-3in3) | 0xb0010 | 0x4 | HPU status of parts 2in3 and 3in3 |
 | [bsk_avail](#section-bsk-avail) | 0xb1000 | 0x8 | BSK availability configuration |
 | [runtime_3in3](#section-runtime-3in3) | 0xb2000 | 0x48 | Runtime information |
-| [entry_eth_2in3](#section-entry-eth-2in3) | 0xe0000 | 0x10 | entry_eth_2in3 section with known value used for debug. |
-| [line](#section-line) | 0xe0010 | 0x4 | Line parameter sections |
-| [reset](#section-reset) | 0xe0014 | 0x8 | different resets are available |
-| [fifo_write](#section-fifo-write) | 0xe001c | 0x10 | fifo write part |
-| [fifo_read](#section-fifo-read) | 0xe002c | 0xc | fifo write part |
-| [cnt](#section-cnt) | 0xe003c | 0xc | fifo write part |
-| [stat](#section-stat) | 0xe004c | 0x1c | fifo write part |
+| [entry_eth_2in3](#section-entry-eth-2in3) | 0xd0000 | 0x10 | entry_eth_2in3 section with known value used for debug. |
+| [line](#section-line) | 0xd0010 | 0x4 | Line parameter sections |
+| [reset](#section-reset) | 0xd0014 | 0x8 | different resets are available |
+| [fifo_write](#section-fifo-write) | 0xd001c | 0x10 | fifo write part |
+| [fifo_read](#section-fifo-read) | 0xd002c | 0xc | fifo write part |
+| [cnt](#section-cnt) | 0xd003c | 0xc | fifo write part |
+| [stat](#section-stat) | 0xd004c | 0x1c | fifo write part |
 
 
 ---
@@ -4037,10 +4037,10 @@ Below is a summary of all the registers in the current section entry_eth_2in3:
 
 | Name             | Offset | Access | Description |
 |-----------------:|:------:|:------:|:------------|
-| [dummy_val0](#register-entry-eth-2in3dummy-val0) | 0xe0000 | R. |  RTL version |
-| [dummy_val1](#register-entry-eth-2in3dummy-val1) | 0xe0004 | R. |  RTL version |
-| [dummy_val2](#register-entry-eth-2in3dummy-val2) | 0xe0008 | R. |  RTL version |
-| [dummy_val3](#register-entry-eth-2in3dummy-val3) | 0xe000c | R. |  RTL version |
+| [dummy_val0](#register-entry-eth-2in3dummy-val0) | 0xd0000 | R. |  RTL version |
+| [dummy_val1](#register-entry-eth-2in3dummy-val1) | 0xd0004 | R. |  RTL version |
+| [dummy_val2](#register-entry-eth-2in3dummy-val2) | 0xd0008 | R. |  RTL version |
+| [dummy_val3](#register-entry-eth-2in3dummy-val3) | 0xd000c | R. |  RTL version |
 
 
 ---
@@ -4052,7 +4052,7 @@ Below is a summary of all the registers in the current section entry_eth_2in3:
 - **Owner**: Parameter
 - **Read Access**: Read
 - **Write Access**: None
-- **Offset**: 0xe0000
+- **Offset**: 0xd0000
 - **Default**: 84215044 
 
 
@@ -4067,7 +4067,7 @@ Below is a summary of all the registers in the current section entry_eth_2in3:
 - **Owner**: Parameter
 - **Read Access**: Read
 - **Write Access**: None
-- **Offset**: 0xe0004
+- **Offset**: 0xd0004
 - **Default**: 353703189 
 
 
@@ -4082,7 +4082,7 @@ Below is a summary of all the registers in the current section entry_eth_2in3:
 - **Owner**: Parameter
 - **Read Access**: Read
 - **Write Access**: None
-- **Offset**: 0xe0008
+- **Offset**: 0xd0008
 - **Default**: 623191333 
 
 
@@ -4097,7 +4097,7 @@ Below is a summary of all the registers in the current section entry_eth_2in3:
 - **Owner**: Parameter
 - **Read Access**: Read
 - **Write Access**: None
-- **Offset**: 0xe000c
+- **Offset**: 0xd000c
 - **Default**: 892679477 
 
 
@@ -4116,7 +4116,7 @@ Below is a summary of all the registers in the current section line:
 
 | Name             | Offset | Access | Description |
 |-----------------:|:------:|:------:|:------------|
-| [parameter](#register-lineparameter) | 0xe0010 | RW |  Different parameters for qsfp lines |
+| [parameter](#register-lineparameter) | 0xd0010 | RW |  Different parameters for qsfp lines |
 
 
 ---
@@ -4128,7 +4128,7 @@ Below is a summary of all the registers in the current section line:
 - **Owner**: User
 - **Read Access**: Read
 - **Write Access**: Write
-- **Offset**: 0xe0010
+- **Offset**: 0xd0010
 - **Default**: C.f. fields 
 
 
@@ -4160,8 +4160,8 @@ Below is a summary of all the registers in the current section reset:
 
 | Name             | Offset | Access | Description |
 |-----------------:|:------:|:------:|:------------|
-| [datapath](#register-resetdatapath) | 0xe0014 | RW |  programmable datapath resets |
-| [monitor](#register-resetmonitor) | 0xe0018 | R. |  reset done monitoring |
+| [datapath](#register-resetdatapath) | 0xd0014 | RW |  programmable datapath resets |
+| [monitor](#register-resetmonitor) | 0xd0018 | R. |  reset done monitoring |
 
 
 ---
@@ -4173,7 +4173,7 @@ Below is a summary of all the registers in the current section reset:
 - **Owner**: User
 - **Read Access**: Read
 - **Write Access**: Write
-- **Offset**: 0xe0014
+- **Offset**: 0xd0014
 - **Default**: C.f. fields 
 
 
@@ -4198,7 +4198,7 @@ Register datapath contains following Sub-fields:
 - **Owner**: Kernel
 - **Read Access**: Read
 - **Write Access**: None
-- **Offset**: 0xe0018
+- **Offset**: 0xd0018
 - **Default**: C.f. fields 
 
 
@@ -4225,10 +4225,10 @@ Below is a summary of all the registers in the current section fifo_write:
 
 | Name             | Offset | Access | Description |
 |-----------------:|:------:|:------:|:------------|
-| [number_of_words](#register-fifo-writenumber-of-words) | 0xe001c | RW |  numbers of words in a frame |
-| [words_to_write_a](#register-fifo-writewords-to-write-a) | 0xe0020 | RW |  word that must be sent to fifo |
-| [words_to_write_b](#register-fifo-writewords-to-write-b) | 0xe0024 | RW |  word that must be sent to fifo |
-| [fifo_write_data_count](#register-fifo-writefifo-write-data-count) | 0xe0028 | R. |  numbers of words that have been written |
+| [number_of_words](#register-fifo-writenumber-of-words) | 0xd001c | RW |  numbers of words in a frame |
+| [words_to_write_a](#register-fifo-writewords-to-write-a) | 0xd0020 | RW |  word that must be sent to fifo |
+| [words_to_write_b](#register-fifo-writewords-to-write-b) | 0xd0024 | RW |  word that must be sent to fifo |
+| [fifo_write_data_count](#register-fifo-writefifo-write-data-count) | 0xd0028 | R. |  numbers of words that have been written |
 
 
 ---
@@ -4240,7 +4240,7 @@ Below is a summary of all the registers in the current section fifo_write:
 - **Owner**: User
 - **Read Access**: Read
 - **Write Access**: Write
-- **Offset**: 0xe001c
+- **Offset**: 0xd001c
 - **Default**: 0 
 
 
@@ -4255,7 +4255,7 @@ Below is a summary of all the registers in the current section fifo_write:
 - **Owner**: User
 - **Read Access**: Read
 - **Write Access**: Write
-- **Offset**: 0xe0020
+- **Offset**: 0xd0020
 - **Default**: 0 
 
 
@@ -4270,7 +4270,7 @@ Below is a summary of all the registers in the current section fifo_write:
 - **Owner**: User
 - **Read Access**: Read
 - **Write Access**: Write
-- **Offset**: 0xe0024
+- **Offset**: 0xd0024
 - **Default**: 0 
 
 
@@ -4285,7 +4285,7 @@ Below is a summary of all the registers in the current section fifo_write:
 - **Owner**: Kernel
 - **Read Access**: Read
 - **Write Access**: None
-- **Offset**: 0xe0028
+- **Offset**: 0xd0028
 - **Default**: 0 
 
 
@@ -4304,9 +4304,9 @@ Below is a summary of all the registers in the current section fifo_read:
 
 | Name             | Offset | Access | Description |
 |-----------------:|:------:|:------:|:------------|
-| [words_to_read_a](#register-fifo-readwords-to-read-a) | 0xe002c | R. |  word that must be sent to fifo |
-| [words_to_read_b](#register-fifo-readwords-to-read-b) | 0xe0030 | R. |  word that must be sent to fifo |
-| [fifo_read_data_count](#register-fifo-readfifo-read-data-count) | 0xe0034 | R. |  numbers of words that have been written |
+| [words_to_read_a](#register-fifo-readwords-to-read-a) | 0xd002c | R. |  word that must be sent to fifo |
+| [words_to_read_b](#register-fifo-readwords-to-read-b) | 0xd0030 | R. |  word that must be sent to fifo |
+| [fifo_read_data_count](#register-fifo-readfifo-read-data-count) | 0xd0034 | R. |  numbers of words that have been written |
 
 
 ---
@@ -4318,7 +4318,7 @@ Below is a summary of all the registers in the current section fifo_read:
 - **Owner**: Kernel
 - **Read Access**: Read
 - **Write Access**: None
-- **Offset**: 0xe002c
+- **Offset**: 0xd002c
 - **Default**: 0 
 
 
@@ -4333,7 +4333,7 @@ Below is a summary of all the registers in the current section fifo_read:
 - **Owner**: Kernel
 - **Read Access**: Read
 - **Write Access**: None
-- **Offset**: 0xe0030
+- **Offset**: 0xd0030
 - **Default**: 0 
 
 
@@ -4348,7 +4348,7 @@ Below is a summary of all the registers in the current section fifo_read:
 - **Owner**: Kernel
 - **Read Access**: Read
 - **Write Access**: None
-- **Offset**: 0xe0034
+- **Offset**: 0xd0034
 - **Default**: 0 
 
 
@@ -4367,9 +4367,9 @@ Below is a summary of all the registers in the current section cnt:
 
 | Name             | Offset | Access | Description |
 |-----------------:|:------:|:------:|:------------|
-| [trig_rd](#register-cnttrig-rd) | 0xe003c | R. |  trig_rd |
-| [tx_wr](#register-cnttx-wr) | 0xe0040 | R. |  tx_wr |
-| [words](#register-cntwords) | 0xe0044 | R. |  words |
+| [trig_rd](#register-cnttrig-rd) | 0xd003c | R. |  trig_rd |
+| [tx_wr](#register-cnttx-wr) | 0xd0040 | R. |  tx_wr |
+| [words](#register-cntwords) | 0xd0044 | R. |  words |
 
 
 ---
@@ -4381,7 +4381,7 @@ Below is a summary of all the registers in the current section cnt:
 - **Owner**: Kernel
 - **Read Access**: Read
 - **Write Access**: None
-- **Offset**: 0xe003c
+- **Offset**: 0xd003c
 - **Default**: 0 
 
 
@@ -4396,7 +4396,7 @@ Below is a summary of all the registers in the current section cnt:
 - **Owner**: Kernel
 - **Read Access**: Read
 - **Write Access**: None
-- **Offset**: 0xe0040
+- **Offset**: 0xd0040
 - **Default**: 0 
 
 
@@ -4411,7 +4411,7 @@ Below is a summary of all the registers in the current section cnt:
 - **Owner**: Kernel
 - **Read Access**: Read
 - **Write Access**: None
-- **Offset**: 0xe0044
+- **Offset**: 0xd0044
 - **Default**: 0 
 
 
@@ -4430,13 +4430,13 @@ Below is a summary of all the registers in the current section stat:
 
 | Name             | Offset | Access | Description |
 |-----------------:|:------:|:------:|:------------|
-| [status](#register-statstatus) | 0xe004c | R. |  fifo status |
-| [clk_a](#register-statclk-a) | 0xe0050 | R. |  clock counts |
-| [clk_b](#register-statclk-b) | 0xe0054 | R. |  clock counts |
-| [valid_words_a](#register-statvalid-words-a) | 0xe0058 | R. |  clock counts |
-| [valid_words_b](#register-statvalid-words-b) | 0xe005c | R. |  clock counts |
-| [sop_cnt_a](#register-statsop-cnt-a) | 0xe0060 | R. |  clock counts |
-| [sop_cnt_b](#register-statsop-cnt-b) | 0xe0064 | R. |  clock counts |
+| [status](#register-statstatus) | 0xd004c | R. |  fifo status |
+| [clk_a](#register-statclk-a) | 0xd0050 | R. |  clock counts |
+| [clk_b](#register-statclk-b) | 0xd0054 | R. |  clock counts |
+| [valid_words_a](#register-statvalid-words-a) | 0xd0058 | R. |  clock counts |
+| [valid_words_b](#register-statvalid-words-b) | 0xd005c | R. |  clock counts |
+| [sop_cnt_a](#register-statsop-cnt-a) | 0xd0060 | R. |  clock counts |
+| [sop_cnt_b](#register-statsop-cnt-b) | 0xd0064 | R. |  clock counts |
 
 
 ---
@@ -4448,7 +4448,7 @@ Below is a summary of all the registers in the current section stat:
 - **Owner**: Kernel
 - **Read Access**: Read
 - **Write Access**: None
-- **Offset**: 0xe004c
+- **Offset**: 0xd004c
 - **Default**: 0 
 
 
@@ -4463,7 +4463,7 @@ Below is a summary of all the registers in the current section stat:
 - **Owner**: Kernel
 - **Read Access**: Read
 - **Write Access**: None
-- **Offset**: 0xe0050
+- **Offset**: 0xd0050
 - **Default**: 0 
 
 
@@ -4478,7 +4478,7 @@ Below is a summary of all the registers in the current section stat:
 - **Owner**: Kernel
 - **Read Access**: Read
 - **Write Access**: None
-- **Offset**: 0xe0054
+- **Offset**: 0xd0054
 - **Default**: 0 
 
 
@@ -4493,7 +4493,7 @@ Below is a summary of all the registers in the current section stat:
 - **Owner**: Kernel
 - **Read Access**: Read
 - **Write Access**: None
-- **Offset**: 0xe0058
+- **Offset**: 0xd0058
 - **Default**: 0 
 
 
@@ -4508,7 +4508,7 @@ Below is a summary of all the registers in the current section stat:
 - **Owner**: Kernel
 - **Read Access**: Read
 - **Write Access**: None
-- **Offset**: 0xe005c
+- **Offset**: 0xd005c
 - **Default**: 0 
 
 
@@ -4523,7 +4523,7 @@ Below is a summary of all the registers in the current section stat:
 - **Owner**: Kernel
 - **Read Access**: Read
 - **Write Access**: None
-- **Offset**: 0xe0060
+- **Offset**: 0xd0060
 - **Default**: 0 
 
 
@@ -4538,7 +4538,7 @@ Below is a summary of all the registers in the current section stat:
 - **Owner**: Kernel
 - **Read Access**: Read
 - **Write Access**: None
-- **Offset**: 0xe0064
+- **Offset**: 0xd0064
 - **Default**: 0 
 
 
