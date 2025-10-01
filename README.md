@@ -11,7 +11,7 @@
 <hr/>
 
 <p align="center">
-<a href="https://docs.zama.ai/tfhe-rs/configuration/run_on_hpu"> 📒 Documentation</a> | <a href="https://zama.ai/community"> 💛 Community support</a> | <a href="https://github.com/zama-ai/awesome-zama"> 📚 FHE resources by Zama</a>
+<a href="https://docs.zama.ai/tfhe-rs/configuration/run_on_hpu"> 📒 Documentation</a> | <a href="https://zama.ai/community"> 💛 Community support</a> | <a href="https://github.com/zama-ai/awesome-zama"> 📚 FHE resourcess by Zama</a>
 </p>
 
 
