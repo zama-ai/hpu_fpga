@@ -84,16 +84,6 @@ proc create_root_design { parentCell ntt_psi } {
    CONFIG.FREQ_HZ [expr int($SYS_FREQ * 10**6)] \
    ] $sys_clk0_1
 
-  set hbm_ref_clk_0 [ create_bd_intf_port -mode Slave -vlnv xilinx.com:interface:diff_clock_rtl:1.0 hbm_ref_clk_0 ]
-  set_property -dict [ list \
-   CONFIG.FREQ_HZ [expr int($HBM_REF_FREQ * 10**6)] \
-   ] $hbm_ref_clk_0
-
-  set hbm_ref_clk_1 [ create_bd_intf_port -mode Slave -vlnv xilinx.com:interface:diff_clock_rtl:1.0 hbm_ref_clk_1 ]
-  set_property -dict [ list \
-   CONFIG.FREQ_HZ [expr int($HBM_REF_FREQ * 10**6)] \
-   ] $hbm_ref_clk_1
-
   set CLK_IN_D [ create_bd_intf_port -mode Slave -vlnv xilinx.com:interface:diff_clock_rtl:1.0 CLK_IN_D ]
   set_property -dict [ list \
    CONFIG.FREQ_HZ [expr int($ETH_QSFP_FREQ * 10**6)] \
@@ -573,8 +563,6 @@ proc create_root_design { parentCell ntt_psi } {
   # == Clocks
   connect_bd_intf_net -intf_net sys_clk0_0     [get_bd_intf_ports /sys_clk0_0]     [get_bd_intf_pins noc_wrapper/sys_clk0_0]
   connect_bd_intf_net -intf_net sys_clk0_1     [get_bd_intf_ports /sys_clk0_1]     [get_bd_intf_pins noc_wrapper/sys_clk0_1]
-  connect_bd_intf_net -intf_net hbm_ref_clk_0  [get_bd_intf_ports /hbm_ref_clk_0]  [get_bd_intf_pins noc_wrapper/hbm_ref_clk_0]
-  connect_bd_intf_net -intf_net hbm_ref_clk_1  [get_bd_intf_ports /hbm_ref_clk_1]  [get_bd_intf_pins noc_wrapper/hbm_ref_clk_1]
   connect_bd_intf_net -intf_net gt_pcie_refclk [get_bd_intf_ports /gt_pcie_refclk] [get_bd_intf_pins shell_wrapper/gt_pcie_refclk]
 
   connect_bd_net -net pl0_ref_clk  [get_bd_ports /pl0_ref_clk_0]  [get_bd_pins shell_wrapper/pl0_ref_clk_0]
@@ -857,10 +845,10 @@ proc create_root_design { parentCell ntt_psi } {
     set hbm_pc_idx [expr int($hbm_port_idx/2)]
     set hbm_pc_name [format "HBM%0d_PC%0d" [expr int($hbm_pc_idx/2)] [expr $hbm_pc_idx%2]]
 
-    set add_ofs [expr $_nsp_hpu::HBM_ADD_OFS + $hbm_pc_idx * $_nsp_hpu::HBM_PC_RANGE]
+    set add_ofs [expr $_nsp_hpu::HBM_ADD_OFS + $hbm_port_idx * $_nsp_hpu::HBM_PORT_RANGE]
     set noc_pin [lindex $_nsp_hpu::BSK_NOC_PINS_L $i]
 
-    assign_bd_address -offset $add_ofs -range $_nsp_hpu::HBM_PC_RANGE -target_address_space [get_bd_addr_spaces BSK_AXI_${i}] [get_bd_addr_segs noc_wrapper/axi_noc_cips/$noc_pin/$hbm_pc_name] -force
+    assign_bd_address -offset $add_ofs -range $_nsp_hpu::HBM_PORT_RANGE -target_address_space [get_bd_addr_spaces BSK_AXI_${i}] [get_bd_addr_segs noc_wrapper/axi_noc_cips/$noc_pin/$hbm_pc_name] -force
   }
   # KSK
   for { set i 0}  {$i < $_nsp_hpu::KSK_AXI_NB} {incr i} {
@@ -868,10 +856,10 @@ proc create_root_design { parentCell ntt_psi } {
     set hbm_pc_idx [expr int($hbm_port_idx/2)]
     set hbm_pc_name [format "HBM%0d_PC%0d" [expr int($hbm_pc_idx/2)] [expr $hbm_pc_idx%2]]
 
-    set add_ofs [expr $_nsp_hpu::HBM_ADD_OFS + $hbm_pc_idx * $_nsp_hpu::HBM_PC_RANGE]
+    set add_ofs [expr $_nsp_hpu::HBM_ADD_OFS + $hbm_port_idx * $_nsp_hpu::HBM_PORT_RANGE]
     set noc_pin [lindex $_nsp_hpu::KSK_NOC_PINS_L $i]
 
-    assign_bd_address -offset $add_ofs -range $_nsp_hpu::HBM_PC_RANGE -target_address_space [get_bd_addr_spaces KSK_AXI_${i}] [get_bd_addr_segs noc_wrapper/axi_noc_cips/$noc_pin/$hbm_pc_name] -force
+    assign_bd_address -offset $add_ofs -range $_nsp_hpu::HBM_PORT_RANGE -target_address_space [get_bd_addr_spaces KSK_AXI_${i}] [get_bd_addr_segs noc_wrapper/axi_noc_cips/$noc_pin/$hbm_pc_name] -force
   }
   # CT
   for { set i 0}  {$i < $_nsp_hpu::CT_AXI_NB} {incr i} {
@@ -879,10 +867,10 @@ proc create_root_design { parentCell ntt_psi } {
     set hbm_pc_idx [expr int($hbm_port_idx/2)]
     set hbm_pc_name [format "HBM%0d_PC%0d" [expr int($hbm_pc_idx/2)] [expr $hbm_pc_idx%2]]
 
-    set add_ofs [expr $_nsp_hpu::HBM_ADD_OFS + $hbm_pc_idx * $_nsp_hpu::HBM_PC_RANGE]
+    set add_ofs [expr $_nsp_hpu::HBM_ADD_OFS + $hbm_port_idx * $_nsp_hpu::HBM_PORT_RANGE]
     set noc_pin [lindex $_nsp_hpu::CT_NOC_PINS_L $i]
 
-    assign_bd_address -offset $add_ofs -range $_nsp_hpu::HBM_PC_RANGE -target_address_space [get_bd_addr_spaces CT_AXI_${i}] [get_bd_addr_segs noc_wrapper/axi_noc_cips/$noc_pin/$hbm_pc_name] -force
+    assign_bd_address -offset $add_ofs -range $_nsp_hpu::HBM_PORT_RANGE -target_address_space [get_bd_addr_spaces CT_AXI_${i}] [get_bd_addr_segs noc_wrapper/axi_noc_cips/$noc_pin/$hbm_pc_name] -force
   }
   # TRC
   for { set i 0}  {$i < $_nsp_hpu::TRC_AXI_NB} {incr i} {
@@ -890,10 +878,10 @@ proc create_root_design { parentCell ntt_psi } {
     set hbm_pc_idx [expr int($hbm_port_idx/2)]
     set hbm_pc_name [format "HBM%0d_PC%0d" [expr int($hbm_pc_idx/2)] [expr $hbm_pc_idx%2]]
 
-    set add_ofs [expr $_nsp_hpu::HBM_ADD_OFS + $hbm_pc_idx * $_nsp_hpu::HBM_PC_RANGE]
+    set add_ofs [expr $_nsp_hpu::HBM_ADD_OFS + $hbm_port_idx * $_nsp_hpu::HBM_PORT_RANGE]
     set noc_pin [lindex $_nsp_hpu::TRC_NOC_PINS_L $i]
 
-    assign_bd_address -offset $add_ofs -range $_nsp_hpu::HBM_PC_RANGE -target_address_space [get_bd_addr_spaces TRC_AXI_${i}] [get_bd_addr_segs noc_wrapper/axi_noc_cips/$noc_pin/$hbm_pc_name] -force
+    assign_bd_address -offset $add_ofs -range $_nsp_hpu::HBM_PORT_RANGE -target_address_space [get_bd_addr_spaces TRC_AXI_${i}] [get_bd_addr_segs noc_wrapper/axi_noc_cips/$noc_pin/$hbm_pc_name] -force
   }
   # GLWE
   for { set i 0}  {$i < $_nsp_hpu::GLWE_AXI_NB} {incr i} {
@@ -901,10 +889,10 @@ proc create_root_design { parentCell ntt_psi } {
     set hbm_pc_idx [expr int($hbm_port_idx/2)]
     set hbm_pc_name [format "HBM%0d_PC%0d" [expr int($hbm_pc_idx/2)] [expr $hbm_pc_idx%2]]
 
-    set add_ofs [expr $_nsp_hpu::HBM_ADD_OFS + $hbm_pc_idx * $_nsp_hpu::HBM_PC_RANGE]
+    set add_ofs [expr $_nsp_hpu::HBM_ADD_OFS + $hbm_port_idx * $_nsp_hpu::HBM_PORT_RANGE]
     set noc_pin [lindex $_nsp_hpu::GLWE_NOC_PINS_L $i]
 
-    assign_bd_address -offset $add_ofs -range $_nsp_hpu::HBM_PC_RANGE -target_address_space [get_bd_addr_spaces GLWE_AXI_${i}] [get_bd_addr_segs noc_wrapper/axi_noc_cips/$noc_pin/$hbm_pc_name] -force
+    assign_bd_address -offset $add_ofs -range $_nsp_hpu::HBM_PORT_RANGE -target_address_space [get_bd_addr_spaces GLWE_AXI_${i}] [get_bd_addr_segs noc_wrapper/axi_noc_cips/$noc_pin/$hbm_pc_name] -force
   }
 
   # tandem mode

@@ -391,7 +391,7 @@ module hpu_3parts
   generate
     if (INTER_PART_PIPE > 0) begin : gen_inter_part_pipe
       // ----------------------------------------------------------------------------------------- //
-      // Interpart Resetable output flops
+      // Interpart Resettable output flops
       // ----------------------------------------------------------------------------------------- //
       // Part 1
       always_ff @(posedge prc_clk)
@@ -444,18 +444,22 @@ module hpu_3parts
     if (PEM_PC < PEM_PC_MAX) begin : gen_tie_unused_pem_pc
       `HPU_AXI4_TIE_WR_UNUSED(pem, [PEM_PC_MAX-1:PEM_PC])
       `HPU_AXI4_TIE_RD_UNUSED(pem, [PEM_PC_MAX-1:PEM_PC])
+      `HPU_AXI4_TIE_GL_UNUSED(pem, [PEM_PC_MAX-1:PEM_PC], (PEM_PC_MAX-PEM_PC))
     end
     if (GLWE_PC < GLWE_PC_MAX) begin : gen_tie_unused_glwe_pc
       `HPU_AXI4_TIE_WR_UNUSED(glwe, [GLWE_PC_MAX-1:GLWE_PC])
       `HPU_AXI4_TIE_RD_UNUSED(glwe, [GLWE_PC_MAX-1:GLWE_PC])
+      `HPU_AXI4_TIE_GL_UNUSED(glwe, [GLWE_PC_MAX-1:GLWE_PC], (GLWE_PC_MAX-GLWE_PC))
     end
     if (BSK_PC < BSK_PC_MAX) begin : gen_tie_unused_bsk_pc
       `HPU_AXI4_TIE_WR_UNUSED(bsk, [BSK_PC_MAX-1:BSK_PC])
       `HPU_AXI4_TIE_RD_UNUSED(bsk, [BSK_PC_MAX-1:BSK_PC])
+      `HPU_AXI4_TIE_GL_UNUSED(bsk, [BSK_PC_MAX-1:BSK_PC], (BSK_PC_MAX-BSK_PC))
     end
     if (KSK_PC < KSK_PC_MAX) begin : gen_tie_unused_ksk_pc
       `HPU_AXI4_TIE_WR_UNUSED(ksk, [KSK_PC_MAX-1:KSK_PC])
       `HPU_AXI4_TIE_RD_UNUSED(ksk, [KSK_PC_MAX-1:KSK_PC])
+      `HPU_AXI4_TIE_GL_UNUSED(ksk, [KSK_PC_MAX-1:KSK_PC], (KSK_PC_MAX-KSK_PC))
     end
   endgenerate
 

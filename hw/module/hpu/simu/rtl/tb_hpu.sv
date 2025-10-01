@@ -121,7 +121,6 @@ module tb_hpu;
   parameter bit USE_BPIP_OPPORTUNISM = 1'b0;
   parameter int BPIP_TIMEOUT = BATCH_PBS_NB * 128;
   parameter int INTER_PART_PIPE = 1;
-  parameter bit MOD_SWITCH_MEAN_COMP = 1'b1;
 
   parameter bit DO_CHECK     = USE_BPIP;
   parameter int SIMU_ITERATION_NB = 2;
@@ -1219,7 +1218,6 @@ endtask
 task automatic configure_hpu;
 begin
   bpip_use_t bpip_use;
-  keyswitch_config_t ks_config;
 
   $display("%t > INFO: Configure HPU",$time);
 
@@ -1228,9 +1226,6 @@ begin
 
   gen_cfg_axil_loop[P1_OFS].maxil_drv_if.write_trans(BPIP_USE_OFS, bpip_use);
   gen_cfg_axil_loop[P1_OFS].maxil_drv_if.write_trans(BPIP_TIMEOUT_OFS, BPIP_TIMEOUT);
-
-  ks_config.mod_switch_mean_comp = MOD_SWITCH_MEAN_COMP;
-  gen_cfg_axil_loop[P1_OFS].maxil_drv_if.write_trans(KEYSWITCH_CONFIG_OFS, ks_config);
 end
 endtask
 

@@ -32,6 +32,7 @@ echo "-z                       : Do not generate stimuli."
 echo "-C                       : Clean gen directory once the simulation is done."
 echo "-K                       : LWE_K."
 echo "-s                       : seed (if not given, random value.)"
+echo "-d                       : USE_MEAN_COMP (default 1)"
 echo "-- <run_edalize options> : run_edalize options."
 
 }
@@ -48,9 +49,9 @@ GEN_STIMULI=1
 SEED=-1
 CLEAN=0
 LWE_K=30
-
+USE_MEAN_COMP=1
 # Initialize your own variables here:
-while getopts "hzs:K:C" opt; do
+while getopts "hzs:K:Cd:" opt; do
   case "$opt" in
     h)
       usage
@@ -69,6 +70,9 @@ while getopts "hzs:K:C" opt; do
       ;;
     K)
       LWE_K=$OPTARG
+      ;;
+    d)
+      USE_MEAN_COMP=$OPTARG
       ;;
     :)
       echo "$0: Must supply an argument to -$OPTARG." >&2
@@ -135,9 +139,9 @@ mkdir -p $RTL_DIR
 # Create package
 if [ $GEN_STIMULI -eq 1 ] ; then
   pkg_cmd="python3 ${PROJECT_DIR}/hw/module/param/scripts/gen_param_tfhe_definition_pkg.py -f \
-                  -K $LWE_K \
+                  -K $LWE_K -d $USE_MEAN_COMP \
                   -o ${RTL_DIR}/param_tfhe_definition_pkg.sv"
-  echo "INFO> LWE_K=${LWE_K}"
+  echo "INFO> LWE_K=${LWE_K} USE_MEAN_COMP=$USE_MEAN_COMP"
   echo "INFO> Creating param_tfhe_definition_pkg.sv"
   echo "INFO> Running : $pkg_cmd"
   $pkg_cmd || exit 1

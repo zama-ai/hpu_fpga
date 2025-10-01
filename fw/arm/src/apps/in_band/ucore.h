@@ -5,6 +5,7 @@
 // Header and constants used by ucore firmware
 // ==============================================================================================
 
+#include "pll.h"
 #include "hpu_dop_fmt.h"
 #include "hpu_iop_fmt.h"
 
@@ -24,7 +25,7 @@
 
 #define OFFSET_FROM_AMI_IOPQ_HEAD        (0x7000000)
 #define OFFSET_FROM_AMI_IOPQ_DATA_START  (0x7000004)
-#define OFFSET_FROM_AMI_IOPQ_TAIL        (0x7010004)
+#define OFFSET_FROM_AMI_IOPQ_TAIL        (0x7020000)
 #define AMI_IOPQ_MAX_BYTES               (0x10000)
 
 #define DOP_LUT_ADDR  ((size_t) 0x39000000)
@@ -70,7 +71,7 @@ uint32_t parse_iop(
      OperandBundle_t* dst,
      OperandBundle_t* src,
      ImmediatBundle_t* imm);
-void get_lookup(IOpHeader_t header, Lookup_t* lookup);
+uint32_t get_lookup(IOpHeader_t header, Lookup_t* lookup);
 void patch_mem_dop(DOpu_t *dop, OperandBundle_t *iop_dst, OperandBundle_t *iop_src);
 void patch_imm_dop(DOpu_t *dop, ImmediatBundle_t *iop_imm);
 void patch_dop(DOpu_t *dop,

@@ -217,7 +217,6 @@ module hpu_3parts_1in3_core
   logic                                                        use_bpip;
   logic                                                        use_bpip_opportunism;
   logic [TIMEOUT_CNT_W-1:0]                                    bpip_timeout;
-  logic                                                        mod_switch_mean_comp;
 
   // seq <-> pe_pbs
   logic [PE_INST_W-1:0]                   isc_pep_insn;
@@ -454,7 +453,6 @@ module hpu_3parts_1in3_core
     .use_bpip                  (use_bpip),
     .use_bpip_opportunism      (use_bpip_opportunism),
     .bpip_timeout              (bpip_timeout),
-    .mod_switch_mean_comp      (mod_switch_mean_comp),
 
     // To PE_MEM
     .isc_pem_insn              (isc_pem_insn),
@@ -957,7 +955,6 @@ module hpu_3parts_1in3_core
     .ks_batch_cmd_avail       (ks_batch_cmd_avail),
 
     .reset_cache              (reset_ks),
-    .mod_switch_mean_comp     (mod_switch_mean_comp),
 
     .pep_error                (pep_ks_error),
     .pep_rif_info             (pep_ks_rif_info),

@@ -106,8 +106,8 @@ for i in `seq 1 5`; do
           -H $TOTAL_PBS_NB \
           -x $KS_IF_SUBW_NB \
           -y $KS_IF_COEF_NB \
-          -- -P USE_MEAN_COMP int $USE_MEAN_COMP \
-          $args "
+          -d $USE_MEAN_COMP \
+          -- $args "
 
     echo "==========================================================="
     echo "INFO> Running : $cmd"

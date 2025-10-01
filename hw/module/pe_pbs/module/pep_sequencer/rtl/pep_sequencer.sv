@@ -77,7 +77,7 @@ module pep_sequencer
 
   // Wr correction to body RAM
   output logic                        seq_boram_corr_wr_en,
-  output logic [KS_MAX_ERROR_W-1:0]   seq_boram_corr_data,
+  output logic [KS_CORR_W-1:0]        seq_boram_corr_data,
   output logic [PID_W-1:0]            seq_boram_corr_pid,
 
   // Error
@@ -131,19 +131,19 @@ module pep_sequencer
     logic                      br_loop_avail;
     logic                      force_pbs;
     logic [LWE_COEF_W-1:0]     lwe;
-    logic [KS_MAX_ERROR_W-1:0] corr;
+    logic [KS_CORR_W-1:0]      corr;
     logic [RID_W-1:0]          dst_rid;
     logic [LOG_LUT_NB_W-1:0]   log_lut_nb;
     logic                      br_loop_c; // start loop parity
     logic [LWE_K_W-1:0]        br_loop; // start loop index
-    logic [PID_W-1:0]          pid;
+    pid_t                      pid;
   } ct_info_t;
 
   localparam int CT_INFO_W = $bits(ct_info_t);
 
   typedef struct packed {
     logic                      avail;
-    logic [KS_MAX_ERROR_W-1:0] corr;
+    logic [KS_CORR_W-1:0]      corr;
     logic [PID_W-1:0]          pid;
   } corr_elt_t;
 
@@ -402,7 +402,7 @@ module pep_sequencer
       for (int i=0; i<TOTAL_PBS_NB; i=i+1) begin
         ct_info_t c;
         c       = 'x;
-        c.pid   = i;
+        c.pid   = '{i, i / GRAM_NB, i % GRAM_NB};
         c.avail = 1'b0;
         ct_pool[i] <= c;
       end
@@ -477,8 +477,10 @@ module pep_sequencer
   assign s0_ldb_cmd_vld = s0_load_ct_tmp & s0_ldg_cmd_rdy;
   assign s0_inst_rdy    = ~pool_full & s0_ldg_cmd_rdy & s0_ldb_cmd_rdy;
 
-  assign s0_ldg_cmd.gid = s0_inst.gid;
-  assign s0_ldg_cmd.pid = pool_wp.pt;
+  assign s0_ldg_cmd.gid      = s0_inst.gid;
+  assign s0_ldg_cmd.pid.pid  = pool_wp.pt;
+  assign s0_ldg_cmd.pid.grof = pool_wp.pt / GRAM_NB;
+  assign s0_ldg_cmd.pid.grid = pool_wp.pt % GRAM_NB;
 
   assign s0_ldb_cmd.src_rid = s0_inst.src_rid;
   assign s0_ldb_cmd.pid     = pool_wp.pt;
@@ -1246,8 +1248,8 @@ module pep_sequencer
   always_comb
     for (int i=0; i<RANK_NB; i=i+1)
       for (int j=0; j<GRAM_NB; j=j+1) begin
-        r1_map_tmp[i][j].pid     = r1_pool_wrap[i][j].pid;
-        r1_map_tmp[i][j].avail   = r1_pool_wrap[i][j].avail; // Note : if not avail, this has been set to 0 by the mask.
+        r1_map_tmp[i][j].pid            = r1_pool_wrap[i][j].pid;
+        r1_map_tmp[i][j].avail          = r1_pool_wrap[i][j].avail; // Note : if not avail, this has been set to 0 by the mask.
         r1_map_tmp[i][j].br_loop_parity = r1_pool_wrap[i][j].br_loop_c;
         r1_map_tmp[i][j].last           = r1_pool_wrap[i][j].br_loop == pbs_in_last_loop;
         r1_map_tmp[i][j].first          = r1_pool_wrap[i][j].br_loop == pbs_in_loop;
@@ -1257,7 +1259,7 @@ module pep_sequencer
 
         r1_corr_map[i][j].avail         = r1_pool_wrap[i][j].avail;
         r1_corr_map[i][j].corr          = r1_pool_wrap[i][j].corr;
-        r1_corr_map[i][j].pid           = r1_pool_wrap[i][j].pid;
+        r1_corr_map[i][j].pid           = r1_pool_wrap[i][j].pid.pid;
       end
 
   // Rotate
@@ -1402,11 +1404,11 @@ module pep_sequencer
   logic [TOTAL_PBS_NB-1:0]                                 t0_upd_mask_wp;
   logic [TOTAL_PBS_NB-1:0]                                 t0_upd_mask_rpB;
   logic [TOTAL_PBS_NB-1:0][LWE_COEF_W-1:0]                 t0_upd_pool_lwe;
-  logic [TOTAL_PBS_NB-1:0][KS_MAX_ERROR_W-1:0]             t0_upd_pool_corr;
+  logic [TOTAL_PBS_NB-1:0][KS_CORR_W-1:0]                  t0_upd_pool_corr;
   logic [TOTAL_PBS_NB-1:-TOTAL_PBS_NB][LWE_COEF_W-1:0]     t0_upd_pool_lwe_tmp;
-  logic [TOTAL_PBS_NB-1:-TOTAL_PBS_NB][KS_MAX_ERROR_W-1:0] t0_upd_pool_corr_tmp;
+  logic [TOTAL_PBS_NB-1:-TOTAL_PBS_NB][KS_CORR_W-1:0]      t0_upd_pool_corr_tmp;
   logic [TOTAL_PBS_NB-1:0][LWE_COEF_W-1:0]                 t0_ks_res_lwe_ext;
-  logic [TOTAL_PBS_NB-1:0][KS_MAX_ERROR_W-1:0]             t0_ks_res_corr_ext;
+  logic [TOTAL_PBS_NB-1:0][KS_CORR_W-1:0]                  t0_ks_res_corr_ext;
   logic [TOTAL_PBS_NB-1:0]                                 t1_upd_pool_lwe_mh;
   logic [TOTAL_PBS_NB-1:0]                                 t1_upd_pool_lwe_mhD;
 
@@ -1436,7 +1438,7 @@ module pep_sequencer
   // Update ks_out pointers
   // Update ct_pool lwe field
   logic [TOTAL_PBS_NB-1:0][LWE_COEF_W-1:0]     t1_upd_pool_lwe;
-  logic [TOTAL_PBS_NB-1:0][KS_MAX_ERROR_W-1:0] t1_upd_pool_corr;
+  logic [TOTAL_PBS_NB-1:0][KS_CORR_W-1:0]      t1_upd_pool_corr;
   pointer_t              ks_out_wpD;
   pointer_t              ks_out_rpD;
   logic [LWE_K_P1_W-1:0] ks_out_loopD;
@@ -1751,7 +1753,7 @@ module pep_sequencer
 
   // Send correction
   logic                        seq_boram_corr_wr_enD;
-  logic [KS_MAX_ERROR_W-1:0]   seq_boram_corr_dataD;
+  logic [KS_CORR_W-1:0]        seq_boram_corr_dataD;
   logic [PID_W-1:0]            seq_boram_corr_pidD;
 
   assign seq_boram_corr_wr_enD = corr_sr_avail[0];

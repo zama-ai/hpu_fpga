@@ -35,7 +35,7 @@ module tb_pep_load_glwe;
   localparam int MAX_COEF_NB = N;
   localparam int COEF_ID_W   = $clog2(MAX_COEF_NB) == 0 ? 1 : $clog2(MAX_COEF_NB);
 
-  localparam int TOTAL_GID_NB = 64;
+  localparam int TOTAL_GID_NB = int'($ceil(64.0/GRAM_NB) * GRAM_NB);
 
   localparam int PROC_CYCLE_NB = 100;
 
@@ -431,9 +431,11 @@ module tb_pep_load_glwe;
   integer         cmd_gid;
   load_glwe_cmd_t cmd;
 
-  assign cmd.gid     = cmd_gid % TOTAL_GID_NB;
-  assign cmd.pid     = (cmd.gid + 1) % TOTAL_PBS_NB;
-  assign seq_ldg_cmd = cmd;
+  assign cmd.gid      = cmd_gid % TOTAL_GID_NB;
+  assign cmd.pid.pid  = cmd.gid % TOTAL_PBS_NB;
+  assign cmd.pid.grid = cmd.pid.pid % GRAM_NB;
+  assign cmd.pid.grof = cmd.pid.pid / GRAM_NB;
+  assign seq_ldg_cmd  = cmd;
   stream_source
   #(
     .FILENAME   ("counter"),
@@ -479,7 +481,6 @@ module tb_pep_load_glwe;
 
   generate
       for (genvar gen_g=0; gen_g < GRAM_NB; gen_g = gen_g + 1) begin : gen_gram_loop
-
         for (genvar gen_p=0; gen_p < PSI; gen_p = gen_p + 1) begin : gen_psi_loop
           for (genvar gen_r=0; gen_r < R; gen_r = gen_r + 1) begin : gen_r_loop
 
@@ -495,12 +496,12 @@ module tb_pep_load_glwe;
             assign glwe_last_stg_iter = glwe_stg_iter == STG_ITER_NB-1;
             assign glwe_stg_iterD     = wr_en ? glwe_last_stg_iter ? '0 : glwe_stg_iter + 1 : glwe_stg_iter;
             assign glwe_gidD          = wr_en && glwe_last_stg_iter ? (glwe_gid + GRAM_NB)%TOTAL_GID_NB : glwe_gid;
-            assign glwe_pid           = (glwe_gid + 1) % TOTAL_PBS_NB;
+            assign glwe_pid           = glwe_gid % TOTAL_PBS_NB;
 
             always_ff @(posedge clk)
               if (!s_rst_n) begin
                 glwe_stg_iter <= '0;
-                glwe_gid      <= (gen_g+GRAM_NB-1)%GRAM_NB;
+                glwe_gid      <= gen_g;
               end
               else begin
                 glwe_stg_iter <= glwe_stg_iterD;

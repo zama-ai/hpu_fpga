@@ -31,6 +31,7 @@ echo "-P                       : PSI: Number of butterflies (default 8)"
 echo "-K                       : LWE_K: LWE dimension (default 12)"
 echo "-c                       : BATCH_PBS_NB (default : 12)"
 echo "-H                       : TOTAL_PBS_NB (default : 16)"
+echo "-G                       : GRAM_NB      (default : 4)"
 echo "-X                       : LBX (default 3)"
 
 echo "-- <run_edalize options> : run_edalize options."
@@ -52,11 +53,12 @@ R=2
 S=12
 PSI=8
 LWE_K=12
+GRAM_NB=4
 BATCH_PBS_NB=12
 TOTAL_PBS_NB=16
 LBX=3
 # Initialize your own variables here:
-while getopts "hzg:R:S:P:c:H:K:X:" opt; do
+while getopts "hzg:R:S:P:c:H:K:X:G:" opt; do
   case "$opt" in
     h)
       usage
@@ -89,6 +91,9 @@ while getopts "hzg:R:S:P:c:H:K:X:" opt; do
     z)
       echo "Do not generate stimuli."
       GEN_STIMULI=0
+      ;;
+    G)
+      GRAM_NB=$OPTARG
       ;;
     :)
       echo "$0: Must supply an argument to -$OPTARG." >&2
@@ -146,7 +151,7 @@ if [ $GEN_STIMULI -eq 1 ] ; then
 
   echo ""
   pkg_cmd="python3 ${PROJECT_DIR}/hw/module/pe_pbs/module/pep_common/scripts/gen_pep_batch_definition_pkg.py\
-          -f -c $BATCH_PBS_NB -H $TOTAL_PBS_NB -o ${RTL_DIR}/pep_batch_definition_pkg.sv"
+          -f -c $BATCH_PBS_NB -H $TOTAL_PBS_NB -g $GRAM_NB -o ${RTL_DIR}/pep_batch_definition_pkg.sv"
   echo "INFO> BATCH_PBS_NB=$BATCH_PBS_NB TOTAL_PBS_NB=$TOTAL_PBS_NB"
   echo "INFO> pep_batch_definition_pkg.sv"
   echo "INFO> Running : $pkg_cmd"

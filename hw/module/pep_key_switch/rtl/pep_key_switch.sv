@@ -62,7 +62,6 @@ module pep_key_switch
   output logic                                                      boram_parity,
 
   input  logic                                                      reset_cache,
-  input  logic                                                      mod_switch_mean_comp,
 
   // Error
   output pep_ks_error_t                                             ks_error
@@ -120,7 +119,7 @@ module pep_key_switch
   logic [TOTAL_BATCH_NB-1:0]                   outp_ks_loop_done_mh;
 
   logic [LWE_COEF_W-1:0]                       br_proc_lwe;
-  logic [KS_MAX_ERROR_W-1:0]                   br_proc_corr;
+  logic [KS_CORR_W-1:0]                        br_proc_corr;
   logic                                        br_proc_vld;
   logic                                        br_proc_rdy;
 
@@ -289,7 +288,6 @@ module pep_key_switch
     .br_proc_rdy           (br_proc_rdy),
 
     .reset_cache           (reset_cache),
-    .mod_switch_mean_comp  (mod_switch_mean_comp),
 
     .br_bfifo_wr_en        (boram_wr_en),
     .br_bfifo_data         (boram_data),

@@ -13,6 +13,7 @@ extend-ignore-identifiers-re = [
     "(Pnr|PnR|PNR)",
     "(DELTA|delta)",
     "2nd",
+    "ND",
     "_DDR4_[0-9]_[0-9]_*",
 ]
 

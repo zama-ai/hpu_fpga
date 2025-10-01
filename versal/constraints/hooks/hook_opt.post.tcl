@@ -25,3 +25,5 @@ set_property bitstream.general.compress true [current_design]
 set_param place.runBufgInsertion false
 set_param place.runBufgInsertionVersal false
 
+# Re-run optimization phase
+opt_design -merge_equivalent_drivers

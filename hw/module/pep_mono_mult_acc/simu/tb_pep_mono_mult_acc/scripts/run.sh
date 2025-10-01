@@ -33,6 +33,7 @@ echo "-q                       : MOD_Q: modulo (default : 2**64)"
 echo "-W                       : MOD_Q_W: modulo width (default 64)"
 echo "-c                       : BATCH_PBS_NB (default : 12)"
 echo "-H                       : TOTAL_PBS_NB (default : 16)"
+echo "-G                       : GRAM_NB      (default : 4)"
 echo "-X                       : LBX (default 3)"
 
 echo "-- <run_edalize options> : run_edalize options."
@@ -56,11 +57,12 @@ PSI=8
 LWE_K=12
 BATCH_PBS_NB=12
 TOTAL_PBS_NB=16
+GRAM_NB=4
 MOD_Q="2**64"
 MOD_Q_W=64
 LBX=3
 # Initialize your own variables here:
-while getopts "hzg:R:S:P:c:H:K:X:q:W:" opt; do
+while getopts "hzg:R:S:P:c:H:K:X:q:W:G:" opt; do
   case "$opt" in
     h)
       usage
@@ -92,6 +94,9 @@ while getopts "hzg:R:S:P:c:H:K:X:q:W:" opt; do
       ;;
     H)
       TOTAL_PBS_NB=$OPTARG
+      ;;
+    G)
+      GRAM_NB=$OPTARG
       ;;
     X)
       LBX=$OPTARG
@@ -161,7 +166,7 @@ if [ $GEN_STIMULI -eq 1 ] ; then
 
   echo ""
   pkg_cmd="python3 ${PROJECT_DIR}/hw/module/pe_pbs/module/pep_common/scripts/gen_pep_batch_definition_pkg.py\
-          -f -c $BATCH_PBS_NB -H $TOTAL_PBS_NB -o ${RTL_DIR}/pep_batch_definition_pkg.sv"
+          -f -c $BATCH_PBS_NB -H $TOTAL_PBS_NB -g $GRAM_NB -o ${RTL_DIR}/pep_batch_definition_pkg.sv"
   echo "INFO> BATCH_PBS_NB=$BATCH_PBS_NB TOTAL_PBS_NB=$TOTAL_PBS_NB"
   echo "INFO> pep_batch_definition_pkg.sv"
   echo "INFO> Running : $pkg_cmd"

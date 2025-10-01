@@ -33,6 +33,7 @@ namespace eval _nsp_hpu {
     # Do not modify : HBM
     variable HBM_ADD_OFS 0x0000004000000000
     variable HBM_PC_RANGE 0x40000000
+    variable HBM_PORT_RANGE [expr $HBM_PC_RANGE/2]
 
     #========================
     # Clock frequencies (MHZ)
@@ -43,7 +44,7 @@ namespace eval _nsp_hpu {
     variable PCIE_EXT_CFG_FREQ 250.000
 
     # HBM
-    variable HBM_REF_FREQ 200.000
+    variable HBM_REF_FREQ 100.000
     variable HBM_FREQ 1600.000
 
     # DDR
@@ -51,7 +52,7 @@ namespace eval _nsp_hpu {
     variable PCIE_REF_FREQ 100.000
 
     # User
-    set freq 350.000
+    set freq 400.000
     variable USER_0_FREQ $freq
     variable USER_1_FREQ 100.000
 
@@ -103,8 +104,8 @@ namespace eval _nsp_hpu {
     variable RPU_ISC_WR_BURST_AVG 8
 
     # PCIE <-> HBM DMA
-    variable PCIE_HBM_DMA_RD_BW 340
-    variable PCIE_HBM_DMA_WR_BW 340
+    variable PCIE_HBM_DMA_RD_BW 256
+    variable PCIE_HBM_DMA_WR_BW 256
     variable PCIE_HBM_DMA_RD_BURST_AVG 256
     variable PCIE_HBM_DMA_WR_BURST_AVG 256
     variable PCIE_HBM_DMA_DATA_W 128
@@ -116,8 +117,8 @@ namespace eval _nsp_hpu {
     variable PCIE_AXIL_WR_BURST_AVG 1
 
     # PCIE <-> DDR DMA
-    variable PCIE_DDR_DMA_RD_BW 500
-    variable PCIE_DDR_DMA_WR_BW 500
+    variable PCIE_DDR_DMA_RD_BW 100
+    variable PCIE_DDR_DMA_WR_BW 100
     variable PCIE_DDR_DMA_RD_BURST_AVG 256
     variable PCIE_DDR_DMA_WR_BURST_AVG 256
 
@@ -128,13 +129,28 @@ namespace eval _nsp_hpu {
     variable PMC_DDR_WR_BURST_AVG 256
 
     # Key <-> HBM
-    variable HPU_BSK_HBM_RD_BW 11000
+    # WARNING:
+    # The current BW requirements assume a 400MHz clock, the
+    # APPLICATION_NAME_MSG2_CARRY2_PFAIL128_132B_TUNIFORM_144A47 parameter set and 16 NMUs for KSK
+    # and BSK. If any of those assumptions change this needs to be revised.
+    #
+    # NOTE: The BSK needs a minimum of 5000Mbps. The NOC bandwidth across all SLRs is roughly half
+    # of the normal physical lane bandwidth because of a limit in the number of outstanding
+    # transactions in the NMU. So, we would only get roughly 5960Mbps per NMU, which is good enough.
+    # However, the HBM access pattern is now adapted to having two NMUs connected directly to a single
+    # pseudo-channel, so to avoid more "creative" solutions from the NOC router, we're forcing
+    # exactly two NMUs to use the same NOC lane by setting them to the NOC lane bandwidth divided by
+    # two.
+    variable HPU_BSK_HBM_RD_BW 6000
     variable HPU_BSK_HBM_WR_BW 0
     variable HPU_BSK_HBM_RD_BURST_AVG 128
     variable HPU_BSK_HBM_WR_BURST_AVG 128
     variable HPU_BSK_HBM_BURST_MAX 128
     variable HPU_BSK_HBM_DATA_W 256
 
+    # The KSK needs a minimum of 4000Mbps. But, similarly to the BSK, the HBM access pattern is
+    # important. To avoid the NOC router from getting creative, we're asking for the maximum
+    # bandwidth to force the router to use separate lanes for each connection.
     variable HPU_KSK_HBM_RD_BW 12000
     variable HPU_KSK_HBM_WR_BW 0
     variable HPU_KSK_HBM_RD_BURST_AVG 128
@@ -164,14 +180,14 @@ namespace eval _nsp_hpu {
     variable HPU_TRC_HBM_RD_BURST_AVG 8
     variable HPU_TRC_HBM_WR_BURST_AVG 8
     variable HPU_TRC_HBM_BURST_MAX 32
-    variable HPU_TRC_HBM_DATA_W 32
+    variable HPU_TRC_HBM_DATA_W 128
 
     #========================
     # HPU NOC ports
     #========================
     # NOC PORT NB
     variable KSK_AXI_NB 16
-    variable BSK_AXI_NB 8
+    variable BSK_AXI_NB 16
     variable CT_AXI_NB 2
     variable GLWE_AXI_NB 1
     variable TRC_AXI_NB 1

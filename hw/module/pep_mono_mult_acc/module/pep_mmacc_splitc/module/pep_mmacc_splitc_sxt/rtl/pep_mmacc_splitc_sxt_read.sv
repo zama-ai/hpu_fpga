@@ -322,7 +322,7 @@ module pep_mmacc_splitc_sxt_read
 // --------------------------------------------------------------------------------------------- --
   logic [GLWE_RAM_ADD_W-1:0] s0_add_ofs;
 
-  assign s0_add_ofs = s0_icmd.map_elt.pid[PID_W-1:GRAM_ID_W] * GLWE_RAM_DEPTH_PBS;
+  assign s0_add_ofs = s0_icmd.map_elt.pid.grof * GLWE_RAM_DEPTH_PBS;
 
 // --------------------------------------------------------------------------------------------- --
 // Regfile ID
@@ -359,7 +359,7 @@ module pep_mmacc_splitc_sxt_read
   logic    s1_vld;
   logic    s1_rdy;
 
-  assign s0_s1_cmd.pid        = s0_icmd.map_elt.pid;
+  assign s0_s1_cmd.pid        = s0_icmd.map_elt.pid.pid;
   assign s0_s1_cmd.dst_rid    = s0_dst_rid;
   assign s0_s1_cmd.is_body    = s0_is_body;
   assign s0_s1_cmd.is_last    = s0_last_lut;
@@ -367,7 +367,7 @@ module pep_mmacc_splitc_sxt_read
   assign s0_s1_cmd.poly_id    = s0_poly_id;
   assign s0_s1_cmd.stg_iter   = s0_stg_iter;
   assign s0_s1_cmd.rot_factor = s0_rot_factor;
-  assign s0_s1_cmd.grid       = s0_icmd.map_elt.pid[GRAM_ID_W-1:0];
+  assign s0_s1_cmd.grid       = s0_icmd.map_elt.pid.grid;
 
   fifo_element #(
     .WIDTH          (CMD_S1_W),

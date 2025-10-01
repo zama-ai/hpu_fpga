@@ -76,7 +76,7 @@ REGF_SEQ=4
 AXI_DATA_W=512
 FPGA="u55c"
 
-MOD_SWITCH_MEAN_COMP=1
+USE_MEAN_COMP=1
 
 DOP_IMPLEM="Ilp"
 
@@ -143,8 +143,10 @@ echo "-x                       : software top file (default = \"${SOFT_NAME}\")"
 echo "-y                       : directory containing microcode files. (default = \"${UCODE_DIR}\")"
 echo "-a                       : default ucode IOP (default CUST_0)"
 echo "-M                       : ISC depth (default $ISC_DEPTH)"
+echo "-d                       : USE_MEAN_COMP (default 1)"
 echo "-T                       : Toml regif definition file (default \"$REGIF_FILE_S\"). Use several times to give all the regfiles, if several."
 echo "-p                       : Dop implementation (default Ilp)"
+echo "-D                       : GRAM_NB (default: $GRAM_NB)"
 echo "-- <run_edalize options> : run_edalize options."
 
 
@@ -162,7 +164,7 @@ echo "INFO> Parse command line"
 # Initialize your own variables here:
 NTT_RDX_CUT_S_TMP=()
 REGIF_FILE_S_TMP=()
-while getopts "Chzg:l:R:P:S:w:t:m:c:H:K:s:e:b:q:W:A:J:I:L:B:r:V:X:Y:Z:G:o:u:f:O:U:F:i:j:k:x:E:y:n:a:M:T:p:" opt; do
+while getopts "Chzg:l:R:P:S:w:t:m:c:H:K:s:e:b:q:W:A:J:I:L:B:r:V:X:Y:Z:G:o:u:f:O:U:F:i:j:k:x:E:y:n:a:M:T:p:d:D:" opt; do
   case "$opt" in
     h)
       usage
@@ -310,6 +312,12 @@ while getopts "Chzg:l:R:P:S:w:t:m:c:H:K:s:e:b:q:W:A:J:I:L:B:r:V:X:Y:Z:G:o:u:f:O:
       ;;
     p)
       DOP_IMPLEM=$OPTARG
+      ;;
+    d)
+      USE_MEAN_COMP=$OPTARG
+      ;;
+    D)
+      GRAM_NB=$OPTARG
       ;;
     :)
       echo "$0: Must supply an argument to -$OPTARG." >&2
@@ -611,10 +619,10 @@ if [ $GEN_STIMULI -eq 1 ] ; then
 
   pkg_cmd="python3 ${PROJECT_DIR}/hw/module/param/scripts/gen_param_tfhe_definition_pkg.py -f \
                   -N $N -g $GLWE_K -l $PBS_L -K $LWE_K -b $PBS_B_W -q $MOD_Q -W $MOD_Q_W \
-                  -L $KS_L -B $KS_B_W -r $MOD_KSK -V $MOD_KSK_W \
+                  -L $KS_L -B $KS_B_W -r $MOD_KSK -V $MOD_KSK_W -d $USE_MEAN_COMP \
                   -o ${RTL_DIR}/param_tfhe_definition_pkg.sv -n $APPLICATION_NAME"
   echo "INFO> N=${N}, GLWE_K=${GLWE_K}, PBS_L=${PBS_L} LWE_K=${LWE_K} PBS_B_W=${PBS_B_W} MOD_Q=${MOD_Q}\
-  MOD_Q_W=${MOD_Q_W} APPLICATION_NAME=${APPLICATION_NAME} KS_L=${KS_L} KS_B_W=${KS_B_W} MOD_KSK=${MOD_KSK} MOD_KSK_W=${MOD_KSK_W}"
+  MOD_Q_W=${MOD_Q_W} APPLICATION_NAME=${APPLICATION_NAME} KS_L=${KS_L} KS_B_W=${KS_B_W} MOD_KSK=${MOD_KSK} MOD_KSK_W=${MOD_KSK_W} USE_MEAN_COMP=${USE_MEAN_COMP}"
   echo "INFO> Creating param_tfhe_definition_pkg.sv"
   echo "INFO> Running : $pkg_cmd"
   $pkg_cmd || exit 1
@@ -660,7 +668,7 @@ if [ $GEN_STIMULI -eq 1 ] ; then
 
   echo ""
   pkg_cmd="python3 ${PROJECT_DIR}/hw/module/pe_pbs/module/pep_common/scripts/gen_pep_batch_definition_pkg.py\
-          -f -c $BATCH_PBS_NB -H $TOTAL_PBS_NB -o ${RTL_DIR}/pep_batch_definition_pkg.sv"
+          -f -c $BATCH_PBS_NB -H $TOTAL_PBS_NB -g $GRAM_NB -o ${RTL_DIR}/pep_batch_definition_pkg.sv"
   echo "INFO> BATCH_PBS_NB=$BATCH_PBS_NB TOTAL_PBS_NB=$TOTAL_PBS_NB"
   echo "INFO> pep_batch_definition_pkg.sv"
   echo "INFO> Running : $pkg_cmd"
@@ -949,7 +957,6 @@ if [ $GEN_STIMULI -eq 1 ] ; then
                 --dop_implementation $DOP_IMPLEM \
                 $gen_cfg_args \
                 -o ${INPUT_DIR}/hpu_cfg.toml \
-                -m $MOD_SWITCH_MEAN_COMP \
                 -f"
   echo "INFO> Running $gen_cfg_cmd"
   $gen_cfg_cmd || exit 1
@@ -988,6 +995,7 @@ if [ $GEN_STIMULI -eq 1 ] ; then
                 -bsk_bytes_w $AXI_DATA_BYTES \
                 -ksk_bytes_w $AXI_DATA_BYTES \
                 -isc_depth $ISC_DEPTH \
+                -use_mean_comp $USE_MEAN_COMP \
                 $ntt_cut_arg \
                 -z $DELTA \
                 -o ${INPUT_DIR}/hpu_mockup_cfg.toml \

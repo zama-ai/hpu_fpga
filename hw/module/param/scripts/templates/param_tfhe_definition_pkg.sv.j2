@@ -41,5 +41,6 @@ package param_tfhe_definition_pkg;
   // Useful message bit (padding + payload)
   localparam int           PAYLOAD_BIT = {{payload_bit}};
   localparam int           PADDING_BIT = {{padding_bit}};
-
+  // Use mean compensation
+  localparam bit           USE_MEAN_COMP = 1'b{{use_mean_comp}};
 endpackage

@@ -60,7 +60,6 @@ echo -n "" > $SEED_FILE
 echo -n "" > $TMP_FILE
 
 
-GRAM_NB=4
 INST_THROUGHPUT_L=("10" "50" "100")
 PHYS_RAM_DEPTH=1024
 MIN_INFIFO_CT_NB=3
@@ -86,6 +85,7 @@ for i in `seq 1 5`; do
 
     MOD_Q_W=$((32+$RANDOM % 33))
 
+    GRAM_NB=$((3+$RANDOM % 2))
     BATCH_PBS_NB=$((1+$RANDOM % 8))
     BATCH_PBS_NB=$(($GRAM_NB * $BATCH_PBS_NB))
     TOTAL_PBS_NB=$((1 + $RANDOM % 5))
@@ -119,6 +119,7 @@ for i in `seq 1 5`; do
                     -q 2**$MOD_Q_W \
                     -c $BATCH_PBS_NB \
                     -H $TOTAL_PBS_NB \
+                    -G $GRAM_NB \
                     -K $LWE_K \
                     -X $LBX \
                     --  -P INST_THROUGHPUT int $INST_THROUGHPUT \

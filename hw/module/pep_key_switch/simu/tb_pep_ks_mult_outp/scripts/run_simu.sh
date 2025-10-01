@@ -126,7 +126,8 @@ for i in `seq 1 5`; do
           -Y $LBY \
           -Z $LBZ \
           -c $BATCH_PBS_NB \
-          -- -P USE_MEAN_COMPENSATION int $USE_MEAN_COMPENSATION \
+          -d $USE_MEAN_COMPENSATION \
+          -- \
           $args "
 
     echo "==========================================================="

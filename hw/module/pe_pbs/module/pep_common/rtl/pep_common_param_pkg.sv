@@ -35,16 +35,18 @@ package pep_common_param_pkg;
   export pep_batch_definition_pkg::BATCH_NB;
   // Total number of batches
   export pep_batch_definition_pkg::TOTAL_BATCH_NB;
+  // Total number of GRAMs
+  export pep_batch_definition_pkg::GRAM_NB;
 
 //==================================================
 // Parameters
 //==================================================
-  localparam int GRAM_NB           = 4; // 4 due to the number of access actors. The design only supports power of 2
-                                        // MSPLIT_DIV should divide this value
   localparam int GRAM_ID_W         = $clog2(GRAM_NB) == 0 ? 1 : $clog2(GRAM_NB);
 
   localparam int RANK_NB           = BATCH_PBS_NB / GRAM_NB;
   localparam int RANK_W            = $clog2(RANK_NB) == 0 ? 1 : $clog2(RANK_NB);
+  localparam int PID_GRP_NB        = TOTAL_PBS_NB / GRAM_NB;
+  localparam int PID_GRP_W         = $clog2(PID_GRP_NB) == 0 ? 1 : $clog2(PID_GRP_NB);
   localparam int GRAM_NB_W         = $clog2(GRAM_NB) == 0 ? 1 : $clog2(GRAM_NB);
   localparam int GRAM_NB_SZ        = $clog2(GRAM_NB);
 
@@ -95,6 +97,7 @@ package pep_common_param_pkg;
   // Mean correction related
   localparam logic [127:0] KS_MAX_ABS_ERROR = (2**(MOD_KSK_W - LWE_COEF_W - 1) * LWE_K);
   localparam int unsigned KS_MAX_ERROR_W    = unsigned'($clog2(KS_MAX_ABS_ERROR+1) + 1); // The mod_switch_error is signed
+  localparam int KS_CORR_W = MOD_KSK_W - LWE_COEF_W + 2; // 1 additional bit + 1 sign bit (2s complement)
 
   // The KS key mean is encoded in fixed point. The final encoded value is:
   //  KS_KEY_MEAN * 2**-KS_KEY_MEAN_F
@@ -102,7 +105,7 @@ package pep_common_param_pkg;
   localparam int unsigned KS_KEY_MEAN_W = 1;
   localparam int unsigned KS_KEY_MEAN_F = 1; // Fixed point location index
   localparam int unsigned KS_KEY_MEAN   = KS_KEY_MEAN_R * (1 << KS_KEY_MEAN_F);
-  // Note: An implicit convertion from a floating point value to an integer is implicitly
+  // Note: An implicit conversion from a floating point value to an integer is implicitly
   // rounded as stated in the system verilog standard.
   // "Implicit conversion shall take place when a real number is assigned to an integer. The ties
   // shall be rounded away from zero."
@@ -117,8 +120,14 @@ package pep_common_param_pkg;
   localparam int BR_BATCH_CMD_W = $bits(br_batch_cmd_t);
 
   typedef struct packed {
-    logic [GID_W-1:0] gid;
-    logic [PID_W-1:0] pid;
+    logic [PID_W-1:0]     pid;
+    logic [PID_GRP_W-1:0] grof;
+    logic [GRAM_ID_W-1:0] grid;
+  } pid_t;
+
+  typedef struct packed {
+    logic [GID_W-1:0]     gid;
+    pid_t                 pid;
   } load_glwe_cmd_t;
 
   localparam int LOAD_GLWE_CMD_W = $bits(load_glwe_cmd_t);
@@ -145,7 +154,7 @@ package pep_common_param_pkg;
   localparam int KS_CMD_W = $bits(ks_cmd_t);
 
   typedef struct packed {
-    logic [BATCH_PBS_NB-1:0][KS_MAX_ERROR_W-1:0] corr_a;
+    logic [BATCH_PBS_NB-1:0][KS_CORR_W-1:0]  corr_a;
     logic [BATCH_PBS_NB-1:0][LWE_COEF_W-1:0] lwe_a;
     logic [LWE_K_P1_W-1:0]                   ks_loop;
     pointer_t                                wp;
@@ -162,7 +171,7 @@ package pep_common_param_pkg;
     logic [LOG_LUT_NB_W-1:0] log_lut_nb;
     logic [RID_W-1:0]        dst_rid;
     logic [LWE_COEF_W-1:0]   lwe;
-    logic [PID_W-1:0]        pid;
+    pid_t                    pid;
   } map_elt_t;
 
   localparam int MAP_ELT_W = $bits(map_elt_t);

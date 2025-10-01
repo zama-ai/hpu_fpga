@@ -37,6 +37,7 @@ if __name__ == '__main__':
     parser.add_argument('-V',       dest='mod_ksk_w',    type=int, help="MOD_KSK_W.", default=32)
     parser.add_argument('-Q',       dest='payload_bit',  type=int, help="PAYLOAD_BIT.", default=4)
     parser.add_argument('-D',       dest='padding_bit',  type=int, help="PADDING_BIT.", default=1)
+    parser.add_argument('-d',       dest='use_mean_comp',type=int, help="USE_MEAN_COMP.", default=1)
     parser.add_argument('-n',       dest='name',         type=str, help="APPLICATION_NAME.", default="APPLICATION_NAME_SIMU")
     parser.add_argument('-o',       dest='outfile',      type=str, help="Output filename.", required=True)
     parser.add_argument('-f',       dest='force',        help="Overwrite if file already exists", action="store_true", default=False)
@@ -63,6 +64,7 @@ if __name__ == '__main__':
               "mod_ksk_w"    : args.mod_ksk_w,
               "payload_bit"  : args.payload_bit,
               "padding_bit"  : args.padding_bit,
+              "use_mean_comp": args.use_mean_comp,
               "name"         : args.name}
 
 

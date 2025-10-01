@@ -275,6 +275,11 @@ if [[ $PROJECT_SIMU_TOOL == "xsim" ]]; then
     escape_char='\'
 fi
 
+if [[ $IOP_NB -eq 0 ]]; then
+    echo "ERROR> no iop to test, something failed in stimulus generation"
+    exit 1
+fi
+
 eda_args="$eda_args \
             -P IOP_NB int $IOP_NB \
             -P IOP_INT_SIZE int $INT_SIZE \

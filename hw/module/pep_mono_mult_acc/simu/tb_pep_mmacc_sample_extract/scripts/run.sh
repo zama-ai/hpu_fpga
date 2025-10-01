@@ -31,7 +31,8 @@ echo "-S                       : S: Number of stages (default 6)"
 echo "-q                       : MOD_Q: modulo (default : 2**64)"
 echo "-W                       : MOD_Q_W: modulo width (default 64)"
 echo "-c                       : BATCH_PBS_NB (default : 12)"
-echo "-H                       : TOTAL_PBS_NB (default : 16)"
+echo "-H                       : TOTAL_PBS_NB (default : 18)"
+echo "-G                       : GRAM_NB      (default : 4)"
 echo "-w                       : MOD_NTT_W: NTT modulo width / NTT operand width (default 64)"
 echo "-m                       : MOD_NTT: NTT modulo (default 'GOLDILOCK': 2**64-2**32+1)"
 echo "-t                       : MOD_NTT_TYPE: NTT modulo type (default : GOLDILOCKS)"
@@ -57,11 +58,12 @@ MOD_Q_W=64
 MOD_NTT_W=-1 #MOD_NTT_W=64
 MOD_NTT=-1 #MOD_NTT="2**64-2**32+1"
 MOD_NTT_TYPE=-1 #MOD_NTT_TYPE="GOLDILOCKS"
+GRAM_NB=4
 BATCH_PBS_NB=12
 TOTAL_PBS_NB=16
 NTT_CORE_ARCH="NTT_CORE_ARCH_wmm_unfold_pcg"
 # Initialize your own variables here:
-while getopts "hg:R:P:S:q:W:c:A:H:" opt; do
+while getopts "hg:R:P:S:q:W:c:A:H:G:" opt; do
   case "$opt" in
     h)
       usage
@@ -90,6 +92,9 @@ while getopts "hg:R:P:S:q:W:c:A:H:" opt; do
       ;;
     c)
       BATCH_PBS_NB=$OPTARG
+      ;;
+    G)
+      GRAM_NB=$OPTARG
       ;;
     H)
       TOTAL_PBS_NB=$OPTARG
@@ -192,7 +197,7 @@ if [ $GEN_STIMULI -eq 1 ] ; then
 
   echo ""
   pkg_cmd="python3 ${PROJECT_DIR}/hw/module/pe_pbs/module/pep_common/scripts/gen_pep_batch_definition_pkg.py\
-          -f -c $BATCH_PBS_NB -H $TOTAL_PBS_NB -o ${RTL_DIR}/pep_batch_definition_pkg.sv"
+          -f -c $BATCH_PBS_NB -H $TOTAL_PBS_NB -g $GRAM_NB -o ${RTL_DIR}/pep_batch_definition_pkg.sv"
   echo "INFO> BATCH_PBS_NB=$BATCH_PBS_NB TOTAL_PBS_NB=$TOTAL_PBS_NB"
   echo "INFO> pep_batch_definition_pkg.sv"
   echo "INFO> Running : $pkg_cmd"

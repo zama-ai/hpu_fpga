@@ -263,10 +263,10 @@ set_property -dict { PACKAGE_PIN CC15    IOSTANDARD LVCMOS12                    
 set_property -dict { PACKAGE_PIN BY9     IOSTANDARD LVDS15                            } [get_ports "top_sys_clk0_0_clk_p"]          ;# Bank 701 VCCO - VR_1V2_VCCO_DDR4                       - IO_L24P_GC_XCC_N8P0_M0P102_701
 set_property -dict { PACKAGE_PIN CB15    IOSTANDARD LVDS15                            } [get_ports "top_sys_clk0_1_clk_p"]          ;# Bank 703 VCCO - VR_1V2_VCCO_DIMM                       - IO_L24P_GC_XCC_N8P0_M1P48_703
 
-set_property -dict { PACKAGE_PIN N18                                                  } [get_ports "top_hbm_ref_clk_0_clk_p"]   ;# Bank 800 " C4CCIO_PAD1_0_800
-set_property -dict { PACKAGE_PIN N19                                                  } [get_ports "top_hbm_ref_clk_0_clk_n"]   ;# Bank 800 " C4CCIO_PAD1_0_800
-set_property -dict { PACKAGE_PIN N38                                                  } [get_ports "top_hbm_ref_clk_1_clk_p"]   ;# Bank 801 " C4CCIO_PAD1_1_801
-set_property -dict { PACKAGE_PIN N37                                                  } [get_ports "top_hbm_ref_clk_1_clk_n"]   ;# Bank 801 " C4CCIO_PAD1_1_801
+#set_property -dict { PACKAGE_PIN N18                                                  } [get_ports "top_hbm_ref_clk_0_clk_p"]   ;# Bank 800 " C4CCIO_PAD1_0_800
+#set_property -dict { PACKAGE_PIN N19                                                  } [get_ports "top_hbm_ref_clk_0_clk_n"]   ;# Bank 800 " C4CCIO_PAD1_0_800
+#set_property -dict { PACKAGE_PIN N38                                                  } [get_ports "top_hbm_ref_clk_1_clk_p"]   ;# Bank 801 " C4CCIO_PAD1_1_801
+#set_property -dict { PACKAGE_PIN N37                                                  } [get_ports "top_hbm_ref_clk_1_clk_n"]   ;# Bank 801 " C4CCIO_PAD1_1_801
 
 # Uncomment 2 next lines if SMBus ctrl is needed
 # set_property -dict { PACKAGE_PIN CG6     IOSTANDARD LVCMOS12    SLEW SLOW   DRIVE 8   } [get_ports "top_smbus_0_scl_io"]        ;# Bank 702 VCCO - VR_1V2_VCCO_DDR4

@@ -164,7 +164,7 @@ module tb_pep_mmacc_gram_arb;
       assign do_req = after_grant_cnt >= (GLWE_SLOT_NB-1)*GARB_SLOT_CYCLE;
       assign garb_req_vld[gen_i]     = req_vld & do_req;
       assign req_rdy                 = garb_req_rdy[gen_i] & do_req;
-      assign garb_req[gen_i].grid    = req_cnt[GRAM_ID_W-1:0];
+      assign garb_req[gen_i].grid    = req_cnt % GRAM_NB;
       assign garb_req[gen_i].critical = ^req_cnt; // random value
 
       stream_source

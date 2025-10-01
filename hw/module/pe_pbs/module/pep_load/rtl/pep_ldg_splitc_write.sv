@@ -86,7 +86,7 @@ module pep_ldg_splitc_write
   logic [GLWE_RAM_ADD_W-1:0] rcp_pid_add_ofs;
   logic [GLWE_RAM_ADD_W-1:0] rcp_pid_add_ofs_tmp;
   // Address in the GRAM : precompute to ease timing
-  assign rcp_pid_add_ofs_tmp = (rcp_cmd_tmp.pid >> GRAM_NB_SZ)  * RAM_PBS_ADD_OFS + RAM_PBS_BODY_ADD_OFS; // We only write the body part.
+  assign rcp_pid_add_ofs_tmp = rcp_cmd_tmp.pid.grof * RAM_PBS_ADD_OFS + RAM_PBS_BODY_ADD_OFS; // We only write the body part.
 
   fifo_element #(
     .WIDTH          (LOAD_GLWE_CMD_W),
@@ -219,8 +219,10 @@ module pep_ldg_splitc_write
       r0_stg_iter <= r0_stg_iterD;
     end
 
-  assign r0_rdy  = r0_gram_avail_1h[rcp_cmd.pid[GRAM_ID_W-1:0]] & rcp_vld;
-  assign rcp_rdy = r0_gram_avail_1h[rcp_cmd.pid[GRAM_ID_W-1:0]] & r0_vld & r0_pbs_last;
+  assign r0_rdy  = r0_gram_avail_1h[rcp_cmd.pid.grid] & rcp_vld;
+  assign rcp_rdy = r0_gram_avail_1h[rcp_cmd.pid.grid] & r0_vld & r0_pbs_last;
+                   // We might have lint errors here because "grid" can index more than the width
+                   // of the indexed vector. Still, this won't happen by construction.
 
   //== Output
   // NOTE : arbiter access authorization used here. Command must be sent in 2 cycles exactly.
@@ -232,7 +234,7 @@ module pep_ldg_splitc_write
 
 
   assign r0_ram_wr_en   = r0_vld & r0_rdy;
-  assign r0_ram_wr_grid = rcp_cmd.pid[GRAM_ID_W-1:0];
+  assign r0_ram_wr_grid = rcp_cmd.pid.grid;
   assign r0_ram_wr_data = r0_data;
   assign r0_ram_wr_add  = r0_add;
 

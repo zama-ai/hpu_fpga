@@ -388,10 +388,10 @@ static void vTaskFuncMain( void )
 
     Lookup_t dop_entry;
     DOpu_t   dop;
+    bool stop_consuming_iop = false;
 
     FOREVER {
         uint32_t write_isc_rv = OK;
-
 
         // ----------------------------------------------------------------------------------------
         // First forward Isc Ack to Host if any
@@ -441,7 +441,7 @@ static void vTaskFuncMain( void )
         //      they are copied in a continuous buffer before parsing.
         //      This buffer have the depth of the longest supported IOp (Currently fixed at compile time)
         //      After parsing only the used bytes are consumed from the queue
-        if (iopq_used_bytes != 0) {
+        if (iopq_used_bytes != 0 && !stop_consuming_iop) {
             PLL_INF("AMC", "Fw received IOP request, translation into DOP needed [head 0x%x; tail 0x%x]", iopq_head, iopq_tail);
 
             // 1. Compute bytes to read from queue
@@ -456,12 +456,20 @@ static void vTaskFuncMain( void )
             if (chunk_size > 0) {
                 volatile uintptr_t data_ptr = fromAmiIopqData + chunk_idx;
                 HAL_INVALIDATE_CACHE_DATA(data_ptr, chunk_size);
-                pvOSAL_MemCpy( (void*)iop_buffer,(void*)data_ptr, chunk_size);
+                for (uint32_t i =0; i < chunk_size/sizeof(uint32_t); i++) {
+                    iop_buffer[i] = * (uint32_t *)(data_ptr + i*sizeof(uint32_t));
+                }
+            } else {
+                if (iopq_used_bytes > 0) {
+                    PLL_ERR("IOpQ", "iopq_used_bytes %d > 0 but chunk_size = %d (tail %x head %x)", iopq_used_bytes, chunk_size, iopq_tail, iopq_head);
+                }
             }
             if (wrap_chunk_size > 0) {
                 volatile uintptr_t data_ptr = fromAmiIopqData;
                 HAL_INVALIDATE_CACHE_DATA( data_ptr, wrap_chunk_size);
-                pvOSAL_MemCpy( (void*)iop_buffer+chunk_size, (void*) data_ptr, wrap_chunk_size);
+                for (uint32_t i = 0; i < wrap_chunk_size/sizeof(uint32_t); i++) {
+                    iop_buffer[i+chunk_size/sizeof(uint32_t)] = * (uint32_t *)(data_ptr + i*sizeof(uint32_t));
+                }
             }
             for (int i =0; i < IOP_MAX_WORDS; i++) {
                 PLL_DBG("IOpQ", "@%d -> 0x%x", i, iop_buffer[i]);
@@ -482,7 +490,18 @@ static void vTaskFuncMain( void )
 
 
                 // Retrieved DOp stream, patch it and send it to Isc
-                get_lookup(header, &dop_entry);
+                if (get_lookup(header, &dop_entry)) {
+                    PLL_ERR("IOpQ", "Incorrect IOp processed [head 0x%x, last-tail 0x%x, current-tail 0x%x]", iopq_head, iopq_tail, (iopq_tail - iop_complete_len));
+                    PLL_ERR("IOpQ", "chunk_idx %x chunk_size %d iop_complete_len %d", chunk_idx, chunk_size, iop_complete_len);
+                    iOSAL_Task_SleepTicks(2000);
+                    for (int i =0; i < 7; i++) {
+                        PLL_ERR("IOpQ", "@%d -> 0x%x", i, Xil_EndianSwap32(iop_buffer[i]));
+                        iOSAL_Task_SleepTicks(2000);
+                    }
+                    stop_consuming_iop = true;
+                    iOSAL_Task_SleepTicks(2000);
+                }
+
                 PLL_DBG("UCORE", "Translation will patch and push %d dops @0x%x", dop_entry.len, dop_entry.ptr);
                 // Patch and stream DOps to HW
                 for (int i=0; i< dop_entry.len; i++) {
@@ -515,11 +534,17 @@ static void vTaskFuncMain( void )
                     write_isc_rv = write_isc(dop_buffer, (uint32_t) (remaining_dop * sizeof(uint32_t)));
                 }
             } else {
-                PLL_ERR("ParseIOp", "Invalid IOp stream ABORT dequeue");
+                PLL_ERR("IOpQ", "Invalid IOp at %x stream ABORT dequeue (%d, %d, tail %x, head %x))", chunk_idx, chunk_size, wrap_chunk_size, iopq_tail, iopq_head);
+                for (int i =0; i < 7; i++) {
+                    PLL_ERR("IOpQ", "invalid @%d -> 0x%x", i, Xil_EndianSwap32(iop_buffer[i]));
+                    iOSAL_Task_SleepTicks(2000);
+                }
+                stop_consuming_iop = true;
+                iOSAL_Task_SleepTicks(2000);
             }
         }
         // Give hand back to scheduler for other tasks
-        iOSAL_Task_SleepTicks(20);
+        iOSAL_Task_SleepTicks(1);
     }
 }
 

@@ -63,7 +63,7 @@ package hpu_common_param_pkg;
   //== RAM latency
   localparam int               RAM_LATENCY          = 2;
   localparam int               ROM_LATENCY          = 2;
-  localparam int               URAM_LATENCY         = RAM_LATENCY + 1;
+  localparam int               URAM_LATENCY         = RAM_LATENCY + 2;
   localparam int               PHYS_RAM_DEPTH       = 1024; // Physical RAM depth. Should be a power of 2. In Xilinx is BRAM depth for 32b words
   localparam int               DESYNC_DEPTH         = 2; // Maximum desynchronization introduced when crossing the SLR
 

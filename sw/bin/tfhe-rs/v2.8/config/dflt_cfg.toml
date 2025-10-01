@@ -19,7 +19,7 @@
   lut_mem = 256
   lut_pc = {Hbm={pc=12}}
 
-  fw_size= 65536
+  fw_size= 131072
   fw_pc = {Hbm={pc=1}}
    bsk_pc = [
     {Hbm={pc=2}},

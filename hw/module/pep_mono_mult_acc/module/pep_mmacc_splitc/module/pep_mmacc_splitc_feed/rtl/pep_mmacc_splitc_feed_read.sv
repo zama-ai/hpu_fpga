@@ -341,7 +341,7 @@ module pep_mmacc_splitc_feed_read
   //== To GRAM arbiter
   garb_cmd_t fm1_garb_req;
 
-  assign fm1_garb_req.grid     = fm1_mcmd.map_elt.pid[GRAM_ID_W-1:0];
+  assign fm1_garb_req.grid     = fm1_mcmd.map_elt.pid.grid;
   assign fm1_garb_req.critical = 1'b0;
 
   fifo_element #(
@@ -497,7 +497,7 @@ module pep_mmacc_splitc_feed_read
   // Add offset
   logic [GLWE_RAM_ADD_W-1:0] f0_add_ofs;
 
-  assign f0_add_ofs = f0_mcmd.map_elt.pid[PID_W-1:GRAM_ID_W] * GLWE_RAM_DEPTH_PBS;
+  assign f0_add_ofs = f0_mcmd.map_elt.pid.grof * GLWE_RAM_DEPTH_PBS;
 
   assign f0_f1_rcmd.batch_first_ct = f0_mcmd.batch_first_ct;
   assign f0_f1_rcmd.batch_last_ct  = f0_mcmd.batch_last_ct;
@@ -596,7 +596,7 @@ module pep_mmacc_splitc_feed_read
   // This is done in all the GRAM masters.
   logic f1_rdy_tmp;
 
-  assign f1_rdy_tmp = garb_rot_avail_1h[f1_rcmd.map_elt.pid[GRAM_ID_W-1:0]];
+  assign f1_rdy_tmp = garb_rot_avail_1h[f1_rcmd.map_elt.pid.grid];
   assign f1_rdy     = f1_rdy_tmp & f1_last_chk;
   assign f1_avail   = f1_vld & f1_rdy_tmp & f1_first_chk;
 
@@ -615,7 +615,7 @@ module pep_mmacc_splitc_feed_read
         $fatal(1,"%t > ERROR: Arbitration enabled, but no command valid!",$time);
       end
 
-      assert(garb_rot_avail_1h[f1_rcmd.map_elt.pid[GRAM_ID_W-1:0]])
+      assert(garb_rot_avail_1h[f1_rcmd.map_elt.pid.grid])
       else begin
         $fatal(1,"%t > ERROR: Arbitration GRAM id is not the one needed by the command!",$time);
       end
@@ -625,7 +625,7 @@ module pep_mmacc_splitc_feed_read
   // Output
   assign out_f1_rd_en   = f1_avail;
   assign out_f1_rd_add  = f1_rd_add_0;
-  assign out_f1_rd_grid = f1_rcmd.map_elt.pid[GRAM_ID_W-1:0];
+  assign out_f1_rd_grid = f1_rcmd.map_elt.pid.grid;
 
 //=================================================================================================
 // FF2
@@ -665,7 +665,7 @@ module pep_mmacc_splitc_feed_read
   assign ff3_avail = ff2_avail_sr[RD_DATA_CYCLE-1];
   assign ff3_rcmd  = ff2_rcmd_sr[RD_DATA_CYCLE-1];
 
-  assign ff3_rd_en = ff3_avail & garb_dat_avail_1h[ff3_rcmd.map_elt.pid[GRAM_ID_W-1:0]];
+  assign ff3_rd_en = ff3_avail & garb_dat_avail_1h[ff3_rcmd.map_elt.pid.grid];
 
   assign ff3_rd_add_1 = {ff3_rcmd.poly_id,ff3_rcmd.stg_iter} + ff3_rcmd.add_ofs;
 
@@ -673,7 +673,7 @@ module pep_mmacc_splitc_feed_read
 // check that the arbitration is available when needed.
   always_ff @(posedge clk)
     if (ff3_avail)
-      assert(garb_dat_avail_1h[ff3_rcmd.map_elt.pid[GRAM_ID_W-1:0]])
+      assert(garb_dat_avail_1h[ff3_rcmd.map_elt.pid.grid])
       else begin
         $fatal(1,"%t > ERROR: garb_dat_avail_1h not valid when needed for the read of non rotated data!",$time);
       end
@@ -682,7 +682,7 @@ module pep_mmacc_splitc_feed_read
   // Output
   assign out_ff3_rd_en   = ff3_rd_en;
   assign out_ff3_rd_add  = ff3_rd_add_1;
-  assign out_ff3_rd_grid = ff3_rcmd.map_elt.pid[GRAM_ID_W-1:0];
+  assign out_ff3_rd_grid = ff3_rcmd.map_elt.pid.grid;
 
 //=================================================================================================
 // Output

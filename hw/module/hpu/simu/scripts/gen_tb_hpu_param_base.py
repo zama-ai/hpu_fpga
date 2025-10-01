@@ -177,6 +177,7 @@ if __name__ == '__main__':
     parser.add_argument('-V', dest='mod_ksk_w',    type=int, help="MOD_KSK_W.",                                      default=-1)
     parser.add_argument('-w', dest='mod_ntt_w',    type=int, help="MOD_NTT_W: Modulo width.",                        default=-1)
     parser.add_argument('-D', dest='axi_w',        type=int, help="AXI4_DATA_W: Axi4 bus data width.",               default=512)
+    parser.add_argument('-d', dest='use_mean_comp',type=int, help="USE_MEAN_COMP.",                                  default=-1)
     parser.add_argument('-out_bash',               type=str, help="Output in bash format.", required=True)
     parser.add_argument('-s', dest='seed',         type=int, help="Seed.",                                           default=int(datetime.datetime.utcnow().timestamp()))
     parser.add_argument('-v', dest='verbose',                help="Run in verbose mode.", action="store_true",       default=False)
@@ -217,6 +218,7 @@ if __name__ == '__main__':
     r1.add_rand_var("LBZ"           , domain=range(1,4+1), order=1)
     r1.add_rand_var("REGF_COEF_NB"  , fn=rand_power_of, args=(2,4,64), order=1)
     r1.add_rand_var("REGF_SEQ"      , fn=rand_power_of, args=(2,1,8), order=1)
+    r1.add_rand_var("USE_MEAN_COMP" , domain=range(set_val(args.use_mean_comp,0),set_val(args.use_mean_comp,1)+1), order=0)
 
     r3.add_rand_var("USE_BPIP"      , domain={0: 1,1: 4}) # To keep some runs with IPIP (20%)
     r3.add_rand_var("RAM_LATENCY"   , domain=range(1,3+1))

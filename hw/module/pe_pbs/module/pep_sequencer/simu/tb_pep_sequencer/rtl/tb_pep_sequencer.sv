@@ -524,7 +524,7 @@ module tb_pep_sequencer;
   assign sxt_out_rdy = sxt_ct_cnt == BATCH_PBS_NB-1;
 
   assign sxt_seq_done     = sxt_out_vld & sxt_out.map[sxt_ct_cnt/GRAM_NB][sxt_ct_cnt%GRAM_NB].avail & sxt_out.map[sxt_ct_cnt/GRAM_NB][sxt_ct_cnt%GRAM_NB].last;
-  assign sxt_seq_done_pid = sxt_out.map[sxt_ct_cnt/GRAM_NB][sxt_ct_cnt%GRAM_NB].pid;
+  assign sxt_seq_done_pid = sxt_out.map[sxt_ct_cnt/GRAM_NB][sxt_ct_cnt%GRAM_NB].pid.pid;
 
   always_ff @(posedge clk)
     if (!s_rst_n) begin
@@ -629,8 +629,8 @@ module tb_pep_sequencer;
       for (int i=0; i<RANK_NB; i=i+1)
         for (int j=0; j<GRAM_NB; j=j+1)
           if (seq_pbs_cmd_s.map[i][j].avail && seq_pbs_cmd_s.map[i][j].last) begin
-            ref_ct_rankD[seq_pbs_cmd_s.map[i][j].pid] = (ref_ct_rank[seq_pbs_cmd_s.map[i][j].pid] + ((TOTAL_PBS_NB/GRAM_NB) % RANK_NB))%RANK_NB;
-            ref_iterationD[seq_pbs_cmd_s.map[i][j].pid] = ref_iteration[seq_pbs_cmd_s.map[i][j].pid] + 1;
+            ref_ct_rankD[seq_pbs_cmd_s.map[i][j].pid.pid] = (ref_ct_rank[seq_pbs_cmd_s.map[i][j].pid.pid] + ((TOTAL_PBS_NB/GRAM_NB) % RANK_NB))%RANK_NB;
+            ref_iterationD[seq_pbs_cmd_s.map[i][j].pid.pid] = ref_iteration[seq_pbs_cmd_s.map[i][j].pid.pid] + 1;
           end
   end
 
@@ -642,11 +642,11 @@ module tb_pep_sequencer;
         for (int i=0; i<RANK_NB; i=i+1)
           for (int j=0; j<GRAM_NB; j=j+1)
             if (seq_pbs_cmd_s.map[i][j].avail) begin
-              assert((i == ref_ct_rank[seq_pbs_cmd_s.map[i][j].pid]) && (j == seq_pbs_cmd_s.map[i][j].pid[GRAM_NB_SZ-1:0]))
+              assert((i == ref_ct_rank[seq_pbs_cmd_s.map[i][j].pid.pid]) && (j == seq_pbs_cmd_s.map[i][j].pid.grid))
               else begin
                 $display("%t > ERROR: ITER[%0d] pbs_id[%0d] is not at its correct location. exp=(rk=%0d, grid=%0d) seen=(rk=%0d, grid=%0d)",
-                          $time,ref_iteration[seq_pbs_cmd_s.map[i][j].pid], seq_pbs_cmd_s.map[i][j].pid,
-                          ref_ct_rank[seq_pbs_cmd_s.map[i][j].pid], seq_pbs_cmd_s.map[i][j].pid[GRAM_NB_SZ-1:0],i,j);
+                          $time,ref_iteration[seq_pbs_cmd_s.map[i][j].pid.pid], seq_pbs_cmd_s.map[i][j].pid.pid,
+                          ref_ct_rank[seq_pbs_cmd_s.map[i][j].pid.pid], seq_pbs_cmd_s.map[i][j].pid.grid,i,j);
                 error_map2 <= 1'b1;
               end
             end

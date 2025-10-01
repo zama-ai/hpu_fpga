@@ -27,7 +27,7 @@ module pep_ks_result_format
   output logic                    ctrl_res_cmd_rdy,
 
   input  logic [LWE_COEF_W-1:0]   br_proc_lwe,
-  input  logic [KS_MAX_ERROR_W-1:0] br_proc_corr,
+  input  logic [KS_CORR_W-1:0]    br_proc_corr,
   input  logic                    br_proc_vld,
   output logic                    br_proc_rdy,
 
@@ -49,7 +49,7 @@ module pep_ks_result_format
   localparam int LAST_X            = (LWE_K_P1 % LBX) == 0 ? LBX - 1 : (LWE_K_P1 % LBX) - 1;
 
   typedef struct packed {
-    logic [KS_MAX_ERROR_W-1:0] corr; // mean compensation correction.
+    logic [KS_CORR_W-1:0]      corr; // mean compensation correction.
     logic [LWE_COEF_W-1:0]     lwe;
   } coef_t;
 

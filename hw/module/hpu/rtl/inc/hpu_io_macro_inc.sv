@@ -102,16 +102,16 @@
   output logic ``BUS_WIDTH``[AXI4_ARREGION_W-1:0]              m_axi4_``name``_arregion,/*UNUSED*/ \
 
   `define HPU_AXI4_TIE_GL_UNUSED(name, BUS_WIDTH, SIZE = 1) \
-  assign m_axi4_``name``_awlock  ``BUS_WIDTH`` = {SIZE{AXI4_AWLOCK_W'(0)}}; \
-  assign m_axi4_``name``_awcache ``BUS_WIDTH`` = {SIZE{AXI4_AWCACHE_DEFAULT}}; \
-  assign m_axi4_``name``_awprot  ``BUS_WIDTH`` = {SIZE{AXI4_AWPROT_W'(0)}}  ; \
-  assign m_axi4_``name``_awqos   ``BUS_WIDTH`` = {SIZE{AXI4_AWQOS_W'(0)}}   ; \
-  assign m_axi4_``name``_awregion``BUS_WIDTH`` = {SIZE{AXI4_AWREGION_W'(0)}}; \
-  assign m_axi4_``name``_arlock  ``BUS_WIDTH`` = {SIZE{AXI4_ARLOCK_W'(0)}}; \
-  assign m_axi4_``name``_arcache ``BUS_WIDTH`` = {SIZE{AXI4_ARCACHE_DEFAULT}}; \
-  assign m_axi4_``name``_arprot  ``BUS_WIDTH`` = {SIZE{AXI4_ARPROT_W'(0)}}  ; \
-  assign m_axi4_``name``_arqos   ``BUS_WIDTH`` = {SIZE{AXI4_ARQOS_W'(0)}}   ; \
-  assign m_axi4_``name``_arregion``BUS_WIDTH`` = {SIZE{AXI4_ARREGION_W'(0)}}; \
+  assign m_axi4_``name``_awlock   BUS_WIDTH = {SIZE{AXI4_AWLOCK_W'(0)}}; \
+  assign m_axi4_``name``_awcache  BUS_WIDTH = {SIZE{AXI4_AWCACHE_DEFAULT}}; \
+  assign m_axi4_``name``_awprot   BUS_WIDTH = {SIZE{AXI4_AWPROT_W'(0)}}  ; \
+  assign m_axi4_``name``_awqos    BUS_WIDTH = {SIZE{AXI4_AWQOS_W'(0)}}   ; \
+  assign m_axi4_``name``_awregion BUS_WIDTH = {SIZE{AXI4_AWREGION_W'(0)}}; \
+  assign m_axi4_``name``_arlock   BUS_WIDTH = {SIZE{AXI4_ARLOCK_W'(0)}}; \
+  assign m_axi4_``name``_arcache  BUS_WIDTH = {SIZE{AXI4_ARCACHE_DEFAULT}}; \
+  assign m_axi4_``name``_arprot   BUS_WIDTH = {SIZE{AXI4_ARPROT_W'(0)}}  ; \
+  assign m_axi4_``name``_arqos    BUS_WIDTH = {SIZE{AXI4_ARQOS_W'(0)}}   ; \
+  assign m_axi4_``name``_arregion BUS_WIDTH = {SIZE{AXI4_ARREGION_W'(0)}}; \
 
   `define HPU_AXI4_TIE_WR_UNUSED(name, BUS_WIDTH) \
   assign m_axi4_``name``_awid   ``BUS_WIDTH`` = '0; \

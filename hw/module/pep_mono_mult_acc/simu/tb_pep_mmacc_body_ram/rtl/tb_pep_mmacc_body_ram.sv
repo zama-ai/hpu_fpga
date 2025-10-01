@@ -34,7 +34,8 @@ module tb_pep_mmacc_body_ram;
 
   typedef logic        [LWE_COEF_W-1:0]     modsw_coeff_t;
   typedef logic        [MOD_KSK_W-1:0]      ks_coeff_t;
-  typedef logic signed [KS_MAX_ERROR_W-1:0] seq_corr_t;
+  typedef logic signed [KS_CORR_W-1:0]      seq_corr_t;
+  typedef logic signed [KS_MAX_ERROR_W-1:0] corr_t;
   typedef logic        [PID_W-1:0]          pid_t;
 
   typedef enum logic [1:0] {
@@ -275,7 +276,7 @@ module tb_pep_mmacc_body_ram;
   end
 
   integer     seq_corr_wr_cnt [TOTAL_PBS_NB];
-  seq_corr_t  seq_corr_acc    [TOTAL_PBS_NB];
+  corr_t      seq_corr_acc    [TOTAL_PBS_NB];
 
   generate for (genvar i = 0; i < TOTAL_PBS_NB; i++) begin: gen_seq_corr_wr_cnt
     always_ff @(posedge clk) begin
@@ -284,7 +285,7 @@ module tb_pep_mmacc_body_ram;
         seq_corr_acc[i]    <= '0;
       end else if(seq_boram_corr_wr_en && seq_boram_corr_wr_pid == pid_t'(i)) begin
         seq_corr_wr_cnt[i] <= seq_corr_wr_cnt[i] + 1;
-        seq_corr_acc[i]    <= seq_corr_acc[i] + seq_boram_corr_wr_data;
+        seq_corr_acc[i]    <= seq_corr_acc[i] + {{KS_MAX_ERROR_W-KS_CORR_W{seq_boram_corr_wr_data[KS_CORR_W-1]}}, seq_boram_corr_wr_data};
       end
     end
   end endgenerate
@@ -416,7 +417,10 @@ module tb_pep_mmacc_body_ram;
   end
 
   function ks_coeff_t center(input ks_coeff_t value); // For the shifted modulo switch
-    return (value - (MOD_KSK / (2*2*N))) % MOD_KSK;
+    if (USE_MEAN_COMP)
+      return (value - (MOD_KSK / (2*2*N))) % MOD_KSK;
+    else
+      return value;
   endfunction
 
   function modsw_coeff_t mod_switch(input real value);

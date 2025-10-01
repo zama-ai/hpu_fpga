@@ -36,7 +36,7 @@ module pep_ks_out_process
 
   // LWE coeff
   output logic [TOTAL_BATCH_NB-1:0][LWE_COEF_W-1:0]     br_proc_lwe,
-  output logic [TOTAL_BATCH_NB-1:0][KS_MAX_ERROR_W-1:0] br_proc_corr, // mean compensation correction
+  output logic [TOTAL_BATCH_NB-1:0][KS_CORR_W-1:0]      br_proc_corr, // mean compensation correction
   output logic [TOTAL_BATCH_NB-1:0]                     br_proc_vld,
   input  logic [TOTAL_BATCH_NB-1:0]                     br_proc_rdy,
 
@@ -48,9 +48,6 @@ module pep_ks_out_process
 
   // reset cache
   input  logic                                          reset_cache,
-
-  // Config (quasi static)
-  input  logic                                          mod_switch_mean_comp,
 
   // BCOL done
   output logic [TOTAL_BATCH_NB-1:0]                     outp_ks_loop_done_mh,
@@ -89,7 +86,7 @@ module pep_ks_out_process
 // typedef
 // ============================================================================================== --
   typedef struct packed {
-    logic [KS_MAX_ERROR_W-1:0] corr; // mean compensation correction.
+    logic [KS_CORR_W-1:0]      corr; // mean compensation correction.
     logic [TOTAL_BATCH_NB-1:0] batch_id_1h;
     logic                      last_pbs;
     logic                      last_mask;
@@ -356,10 +353,10 @@ module pep_ks_out_process
         logic [LWE_COEF_W-1:0] s1_lwe_mdsw;
         assign s1_lwe_mdsw = s1_lwe_coef[OP_W-1-:LWE_COEF_W] + s1_lwe_coef[OP_W-1-LWE_COEF_W];
 
-        logic [KS_MAX_ERROR_W-1:0] s1_lwe_mod_switch_err; // signed
-        assign s1_lwe_mod_switch_err  = s1_mask_avail && mod_switch_mean_comp ?
-                                        KS_MAX_ERROR_W'(s1_lwe_coef[ABS_ERROR_W-1:0])
-                                      - KS_MAX_ERROR_W'((s1_lwe_coef[ABS_ERROR_W-1] << ABS_ERROR_W))
+        logic [KS_CORR_W-1:0] s1_lwe_mod_switch_err; // signed
+        assign s1_lwe_mod_switch_err  = s1_mask_avail && USE_MEAN_COMP ?
+                                        KS_CORR_W'(s1_lwe_coef[ABS_ERROR_W-1:0])
+                                      - KS_CORR_W'((s1_lwe_coef[ABS_ERROR_W-1] << ABS_ERROR_W))
                                       : '0;
 
         // ----------------------------------------------
@@ -367,7 +364,7 @@ module pep_ks_out_process
         // ----------------------------------------------
         logic [LWE_COEF_W-1:0]       s2_lwe_mdsw;
         logic [OP_W-1:0]             s2_lwe_coef;
-        logic [KS_MAX_ERROR_W-1:0]   s2_lwe_corr;
+        logic [KS_CORR_W-1:0]        s2_lwe_corr;
         logic                        s2_mask_avail;
         logic                        s2_body_avail;
         logic                        s2_last_pbs;
@@ -502,12 +499,12 @@ module pep_ks_out_process
         // Instances
         //---------------------------------------------
         logic [LWE_COEF_W-1:0] lfifo_in_data;
-        logic [KS_MAX_ERROR_W-1:0] lfifo_in_corr;
+        logic [KS_CORR_W-1:0]  lfifo_in_corr;
         logic                  lfifo_in_ks_loop_done;
         logic                  lfifo_in_vld;
         logic                  lfifo_in_rdy;
         logic [LWE_COEF_W-1:0] lfifo_out_data;
-        logic [KS_MAX_ERROR_W-1:0] lfifo_out_corr;
+        logic [KS_CORR_W-1:0]  lfifo_out_corr;
         logic                  lfifo_out_ks_loop_done;
         logic                  lfifo_out_vld;
         logic                  lfifo_out_rdy;
@@ -520,7 +517,7 @@ module pep_ks_out_process
 
         assign l_wr_en       = lfifo_in_vld & lfifo_in_rdy;
         fifo_reg #(
-          .WIDTH       (KS_MAX_ERROR_W+LWE_COEF_W + 1),
+          .WIDTH       (KS_CORR_W+LWE_COEF_W + 1),
           .DEPTH       (LFIFO_DEPTH),
           .LAT_PIPE_MH (2'b11)
         ) lfifo (

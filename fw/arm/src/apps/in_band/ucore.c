@@ -46,6 +46,7 @@ uint32_t parse_iop(
   stream_pos++;
 
   if ((stream_pos*sizeof(uint32_t)) > iop_pending_bytes) {
+    PLL_ERR("parse_iop", "not enough bytes after header");
     return 0;
   }
 
@@ -55,6 +56,10 @@ uint32_t parse_iop(
     operand->raw = stream[stream_pos];
     stream_pos++;
     if ((stream_pos*sizeof(uint32_t)) > iop_pending_bytes) {
+      for (int i =0; i < 7; i++) {
+          PLL_ERR("parse_iop", "Fail parse_iop dsts", "@%d -> 0x%x", i, Xil_EndianSwap32(stream[i]));
+      }
+      PLL_ERR("parse_iop", "not enough bytes to reach last destination");
       return 0;
     }
 
@@ -74,6 +79,10 @@ uint32_t parse_iop(
     stream_pos++;
 
     if ((stream_pos*sizeof(uint32_t)) > iop_pending_bytes) {
+      for (int i =0; i < 7; i++) {
+          PLL_ERR("parse_iop", "Fail parse_iop srcs", "@%d -> 0x%x", i, Xil_EndianSwap32(stream[i]));
+      }
+      PLL_ERR("parse_iop", "not enough bytes to reach last source");
       return 0;
     }
 
@@ -95,6 +104,10 @@ uint32_t parse_iop(
       stream_pos++;
 
       if ((stream_pos*sizeof(uint32_t)) > iop_pending_bytes) {
+        for (int i =0; i < 7; i++) {
+            PLL_ERR("parse_iop", "Fail parse_iop imms", "@%d -> 0x%x", i, Xil_EndianSwap32(stream[i]));
+        }
+        PLL_ERR("parse_iop", "not enough bytes to reach last immediate");
         return 0;
       }
 
@@ -123,13 +136,33 @@ uint32_t parse_iop(
   return (stream_pos*sizeof(uint32_t));
 }
 
-void get_lookup(IOpHeader_t header, Lookup_t* lookup){
+uint32_t get_lookup(IOpHeader_t header, Lookup_t* lookup){
   // Read translation offset for the given entry
   // Offset is computed based on max blk_width to correctly handle asym IOp such as Cmp
   uint8_t max_align = (header.header.dst_align > header.header.src_align)? header.header.dst_align: header.header.src_align;
+  if (max_align > 127) {
+    PLL_ERR("get_lookup", "max_align is wrong src %d dst %d", header.header.src_align, header.header.dst_align);
+    lookup->len = 0;
+    lookup->ptr = NULL;
+    return 1;
+  }
   uintptr_t entry_addr = (uintptr_t) (DOP_LUT_ADDR + ((DOP_LUT_RANGE *max_align) + (header.header.opcode)) * sizeof(uint32_t));
+  if ( (entry_addr < DOP_LUT_ADDR) ||
+       (entry_addr > (DOP_LUT_ADDR + 0x20000))) {
+    PLL_ERR("get_lookup", "entry_addr is not in expected range %x, max_align %d, opcode %d header %x", entry_addr, max_align, header.header.opcode, header.raw);
+    lookup->len = 0;
+    lookup->ptr = NULL;
+    return 1;
+  }
   HAL_INVALIDATE_CACHE_DATA(entry_addr, sizeof(uint32_t));
   size_t entry = *((uint32_t* ) entry_addr);
+  if ( (entry < 0x20000) ||
+       (entry > 0x2000000) ) {
+    PLL_ERR("get_lookup", "entry offset if wrong %x", entry);
+    lookup->len = 0;
+    lookup->ptr = NULL;
+    return 1;
+  }
 
   // Each translation slot start with translation unit length
   // Invalidate the associated word from the cache, retrieved the entry length
@@ -138,6 +171,8 @@ void get_lookup(IOpHeader_t header, Lookup_t* lookup){
   lookup->len = *((volatile uint32_t*) (DOP_LUT_ADDR + entry));
   lookup->ptr =  (volatile uint32_t*) (DOP_LUT_ADDR + entry + sizeof(uint32_t));
   HAL_INVALIDATE_CACHE_DATA( (uintptr_t) lookup->ptr, lookup->len*sizeof(uint32_t));
+
+  return 0;
 }
 
 

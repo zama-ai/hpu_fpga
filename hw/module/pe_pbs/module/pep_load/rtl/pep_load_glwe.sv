@@ -203,7 +203,7 @@ module pep_load_glwe
 
   assign c0_gid_add_ofs = gid_offset + c0_cmd.gid * GLWE_BODY_BYTES;
   // Address in the GRAM
-  assign c0_pid_add_ofs = (c0_cmd.pid >> GRAM_NB_SZ)  * RAM_PBS_ADD_OFS + RAM_PBS_BODY_ADD_OFS; // We only write the body part.
+  assign c0_pid_add_ofs = c0_cmd.pid.grof * RAM_PBS_ADD_OFS + RAM_PBS_BODY_ADD_OFS; // We only write the body part.
 
   fifo_element #(
     .WIDTH          (AXI4_ADD_W + LOAD_GLWE_CMD_W),
@@ -487,14 +487,14 @@ module pep_load_glwe
     if (!s_rst_n) r1_subw_cnt    <= '0;
     else          r1_subw_cnt    <= r1_subw_cntD;
 
-  assign r1_gram_avail = gram_avail_1h[r1_cmd.pid[GRAM_ID_W-1:0]];
+  assign r1_gram_avail = gram_avail_1h[r1_cmd.pid.grid];
   assign r1_data_rdy   = r1_gram_avail;
 
   //== Output
   // NOTE : arbiter access authorization used here. Command must be sent in 2 cycles exactly.
   // This is done in all the GRAM masters.
   assign r1_ram_wr_en         = r1_data_vld & r1_gram_avail;
-  assign r1_ram_wr_grid       = r1_cmd.pid[GRAM_ID_W-1:0];
+  assign r1_ram_wr_grid       = r1_cmd.pid.grid;
   assign r1_ram_wr_data       = r1_data;
   assign r1_ram_wr_batch_last = r1_batch_last;
   assign r1_ram_wr_pbs_last   = r1_pbs_last;

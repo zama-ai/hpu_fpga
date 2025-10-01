@@ -1,7 +1,7 @@
 // ============================================================================================== //
 // Description  : register  map address definition package
 // This file was generated with rust regmap generator:
-//  * Date:  2025-09-30
+//  * Date:  2025-07-28
 //  * Tool_version: bb0db737792da6b81e69a039028c971af1627fe2
 // ---------------------------------------------------------------------------------------------- //
 //
@@ -146,11 +146,6 @@ package hpu_regif_core_cfg_1in3_pkg;
     logic [(1-1):0] use_opportunism;
     logic [(1-1):0] use_bpip;
    } bpip_use_t;
-  localparam int BPIP_USE_OFS = 'h82000;
-  localparam int BPIP_TIMEOUT_OFS = 'h82004;
-  typedef struct packed {
-    logic [(31-1):0] padding_1;
-    logic [(1-1):0] mod_switch_mean_comp;
-   } keyswitch_config_t;
-  localparam int KEYSWITCH_CONFIG_OFS = 'h83000;
+  localparam int BPIP_USE_OFS = 'h2000;
+  localparam int BPIP_TIMEOUT_OFS = 'h2004;
 endpackage

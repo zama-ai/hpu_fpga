@@ -30,8 +30,6 @@ module tb_pep_ks_mult_outp;
 
   parameter  int BATCH_IN_PARALLEL = TOTAL_BATCH_NB;
 
-  parameter  bit USE_MEAN_COMPENSATION = 1'b0;
-
   localparam int OUT_FIFO_DEPTH = 4;
   localparam int DROP_COL_NB    = LBX == 1 ? 0 : (LBX - (LWE_K_P1 % LBX)) % LBX;
   initial begin
@@ -141,7 +139,7 @@ module tb_pep_ks_mult_outp;
 
   // LWE coeff
   logic [TOTAL_BATCH_NB-1:0][LWE_COEF_W-1:0]  br_proc_lwe;
-  logic [TOTAL_BATCH_NB-1:0][KS_MAX_ERROR_W-1:0] br_proc_corr; // mean compensation correction
+  logic [TOTAL_BATCH_NB-1:0][KS_CORR_W-1:0]   br_proc_corr; // mean compensation correction
   logic [TOTAL_BATCH_NB-1:0]                  br_proc_vld;
   logic [TOTAL_BATCH_NB-1:0]                  br_proc_rdy;
 
@@ -216,8 +214,6 @@ module tb_pep_ks_mult_outp;
     .br_bfifo_data         (br_bfifo_data),
     .br_bfifo_pid          (/*UNUSED*/), // Not tested here
     .br_bfifo_parity       (/*UNUSED*/), // Not tested here
-
-    .mod_switch_mean_comp  (USE_MEAN_COMPENSATION),
 
     .reset_cache           (reset_cache),
     .outp_ks_loop_done_mh  (outp_ks_loop_done_mh),
@@ -723,7 +719,7 @@ module tb_pep_ks_mult_outp;
   logic [OP_W-1:0] out_body_q     [TOTAL_BATCH_NB-1:0][$];
   logic [OP_W-1:0] br_bfifo_data_q[TOTAL_BATCH_NB-1:0][$];
   logic [LWE_COEF_W-1:0] br_proc_lwe_q  [TOTAL_BATCH_NB-1:0][$];
-  logic [KS_MAX_ERROR_W-1:0] br_proc_corr_q  [TOTAL_BATCH_NB-1:0][$];
+  logic [KS_CORR_W-1:0]  br_proc_corr_q [TOTAL_BATCH_NB-1:0][$];
 
   always_ff @(posedge clk)
     if (in_run_column && in_bline_cnt==0 && in_bcol_cnt==0 && in_lvl_cnt==0) begin
@@ -767,8 +763,8 @@ module tb_pep_ks_mult_outp;
             || ((out_x_cnt[b] == LWE_K-1) && mult_res_q[x_col][b].size() > pbs_nb*(1 + DROP_COL_NB)))) begin
           logic [OP_W-1:0]       mult_res_org;
           logic [OP_W-1:0]       mult_res;
-          logic [KS_MAX_ERROR_W-1:0] corr_res;
-          logic [KS_MAX_ERROR_W-1:0] br_proc_corr_res;
+          logic [KS_CORR_W-1:0]  corr_res;
+          logic [KS_CORR_W-1:0]  br_proc_corr_res;
           logic [LWE_COEF_W-1:0] br_proc_res;
 
           mult_res_org = mult_res_q[x_col][b].pop_front();
@@ -779,7 +775,7 @@ module tb_pep_ks_mult_outp;
           mult_res_org = 0 - mult_res_org;
           mult_res = (mult_res_org >> (OP_W-LWE_COEF_W)) + mult_res_org[OP_W-LWE_COEF_W-1]; // mod switch
 
-          if (USE_MEAN_COMPENSATION)
+          if (USE_MEAN_COMP)
             corr_res = mult_res_org - (mult_res << (OP_W-LWE_COEF_W));
           else
             corr_res = '0;

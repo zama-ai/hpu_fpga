@@ -232,7 +232,7 @@ module pep_mmacc_splitc_acc_read
   //= GRAM arbiter
   garb_cmd_t am1_garb_req;
 
-  assign am1_garb_req.grid     = afifo_acc_icmd_s.map_elt.pid[GRAM_ID_W-1:0];
+  assign am1_garb_req.grid     = afifo_acc_icmd_s.map_elt.pid.grid;
   assign am1_garb_req.critical = am1_ct_pending_cnt > INFIFO_CT_THRES;
 
 
@@ -263,7 +263,7 @@ module pep_mmacc_splitc_acc_read
   logic [GLWE_RAM_ADD_W-1:0] am1_add_ofs;
   logic [GLWE_RAM_ADD_W-1:0] a0_add_ofs;
 
-  assign am1_add_ofs = afifo_acc_icmd_s.map_elt.pid[PID_W-1:GRAM_ID_W] * GLWE_RAM_DEPTH_PBS;
+  assign am1_add_ofs = afifo_acc_icmd_s.map_elt.pid.grof * GLWE_RAM_DEPTH_PBS;
 
   fifo_element #(
     .WIDTH          (GLWE_RAM_ADD_W+MMACC_INTERN_CMD_W),
@@ -348,6 +348,7 @@ module pep_mmacc_splitc_acc_read
 
   logic [GLWE_RAM_ADD_W-1:0] a0_rd_add;
   logic                      a0_do_read; // do the reading in GRAM
+  logic [GRAM_ID_W-1:0]      a0_gram_id;
 
   assign a0_last_poly_id  = a0_poly_id == (GLWE_K_P1-1);
   assign a0_last_stg_iter = a0_stg_iter == (STG_ITER_NB-1);
@@ -370,7 +371,8 @@ module pep_mmacc_splitc_acc_read
   logic a0_garb_en;
   logic a0_mask_null;
 
-  assign a0_garb_en          = garb_rd_avail_1h[a0_icmd.map_elt.pid[GRAM_ID_W-1:0]] & a0_garb_rd_avail_mask[a0_icmd.map_elt.pid[GRAM_ID_W-1:0]];
+  assign a0_gram_id          = a0_icmd.map_elt.pid.grid;
+  assign a0_garb_en          = garb_rd_avail_1h[a0_gram_id] & a0_garb_rd_avail_mask[a0_gram_id];
   assign a0_do_read          = a0_vld & ~a0_ntt_data_empty & a0_garb_en;
   assign a0_rdy              = ~a0_ntt_data_empty & a0_garb_en & a0_last_poly_id & a0_last_stg_iter;
   assign a0_ntt_data_dec     = a0_vld & a0_garb_en & ~a0_ntt_data_empty;
@@ -391,7 +393,7 @@ module pep_mmacc_splitc_acc_read
         $fatal(1,"%t > ERROR: Arbitration enabled for acc reading, but no command or data valid!",$time);
       end
 
-      assert(garb_rd_avail_1h[a0_icmd.map_elt.pid[GRAM_ID_W-1:0]])
+      assert(garb_rd_avail_1h[a0_gram_id])
       else begin
         $fatal(1,"%t > ERROR: Arbitration GRAM id is not the one needed by the command!",$time);
       end
@@ -501,14 +503,14 @@ module pep_mmacc_splitc_acc_read
 //=================================================================================================
   assign out_a0_do_read = a0_do_read;
   assign out_a0_rd_add  = a0_rd_add;
-  assign out_a0_rd_grid = a0_icmd.map_elt.pid[GRAM_ID_W-1:0];
+  assign out_a0_rd_grid = a0_gram_id;
 
   assign out_s0_mask_null = aa1_mask_null_sr[SR_DEPTH-2];
 
   assign out_s1_ntt_acc_data = s1_ntt_acc_data;
   assign out_s1_avail        = s1_avail       ;
   assign out_s1_add          = s1_add         ;
-  assign out_s1_grid         = s1_icmd.map_elt.pid[GRAM_ID_W-1:0];
+  assign out_s1_grid         = s1_icmd.map_elt.pid.grid;
 
 //=================================================================================================
 // error

@@ -61,7 +61,6 @@ echo -n "" > $TMP_FILE
 
 R=2
 
-GRAM_NB=4
 RAND_RANGE=$((1024-1))
 INST_THROUGHPUT_L=("0" "$(($RAND_RANGE/2))" "$((RAND_RANGE/10))" "$((RAND_RANGE/100))" "$RAND_RANGE")
 
@@ -87,6 +86,7 @@ for i in `seq 1 5`; do
     LBX=$((1+$RANDOM % 5))
     LWE_K=$((5*$LBX + $RANDOM % 30))
 
+    GRAM_NB=$((3+$RANDOM%2))
     BATCH_PBS_NB=$((1+$RANDOM % 10))
     BATCH_PBS_NB=$(($GRAM_NB * $BATCH_PBS_NB))
     TOTAL_PBS_NB=$((1 + $RANDOM % 5))
@@ -100,6 +100,7 @@ for i in `seq 1 5`; do
           -X $LBX \
           -c $BATCH_PBS_NB \
           -H $TOTAL_PBS_NB \
+          -G $GRAM_NB \
           -- \
           -P USE_BPIP int $USE_BPIP \
           -P USE_OPPORTUNISM int $USE_OPPORTUNISM \

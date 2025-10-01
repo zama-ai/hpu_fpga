@@ -31,9 +31,6 @@ if __name__ == '__main__':
     parser.add_argument('--min_batch_size',  dest='min_batch_size', type=int, help="Minimal batch size", default=4)
     parser.add_argument('--dop_implementation',  dest='dop_implementation', type=str, help="DOp implementation", choices=["Ilp", "Llt"], default="Ilp")
     parser.add_argument('-f',  dest='force',        help="Overwrite if file already exists", action="store_true", default=False)
-    parser.add_argument('-m',  dest='mod_switch_mean_comp',
-                        help="Sets whether to use mean compensation in the mockup",
-                        type=lambda x: "true" if bool(x) else "false", default=False)
 
     args = parser.parse_args()
 

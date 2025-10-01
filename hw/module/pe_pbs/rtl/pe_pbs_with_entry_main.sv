@@ -236,7 +236,7 @@ module pe_pbs_with_entry_main
 
   // SEQ <-> Body correction RAM
   logic                                                       seq_boram_corr_wr_en;
-  logic [KS_MAX_ERROR_W-1:0]                                  seq_boram_corr_data;
+  logic [KS_CORR_W-1:0]                                       seq_boram_corr_data;
   logic [PID_W-1:0]                                           seq_boram_corr_pid;
 
 // ============================================================================================== --

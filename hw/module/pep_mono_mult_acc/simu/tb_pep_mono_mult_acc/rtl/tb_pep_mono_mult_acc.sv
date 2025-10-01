@@ -734,8 +734,8 @@ module tb_pep_mono_mult_acc;
             logic [PSI-1:0][R-1:0][MOD_Q_W-1:0] wr_data;
 
             pid = wr_gram_pid;
-            wr_gram_wr_en_l   <= 1 << pid[GRAM_ID_W-1:0];
-            wr_gram_add_ofs_l <= pid[PID_W-1:GRAM_ID_W] * GLWE_WORD_NB_IN_GRAM;
+            wr_gram_wr_en_l   <= 1 << (pid % GRAM_NB);
+            wr_gram_add_ofs_l <= (pid / GRAM_NB) * GLWE_WORD_NB_IN_GRAM;
 
             for (int p=0; p<PSI; p=p+1)
               for (int r=0; r<R; r=r+1) begin

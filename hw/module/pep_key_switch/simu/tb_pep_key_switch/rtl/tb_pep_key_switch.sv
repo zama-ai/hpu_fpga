@@ -32,8 +32,6 @@ module tb_pep_key_switch;
 
   parameter  int SAMPLE_CMD_NB   = ((LWE_K_P1 + LBX-1) / LBX) * 4;
 
-  parameter  bit USE_MEAN_COMP = 1'b0;
-
   localparam int PBS_SUBW_NB     = (BLWE_K_P1+BLWE_SUBW_COEF_NB-1)/BLWE_SUBW_COEF_NB;
   localparam int KSK_BLOCK_NB_PER_SLOT = KS_LG_NB * KS_BLOCK_LINE_NB * LBX;
 
@@ -256,7 +254,6 @@ module tb_pep_key_switch;
     .boram_parity          (boram_parity),
 
     .reset_cache           ('0), // Not checked here
-    .mod_switch_mean_comp  (USE_MEAN_COMP),
 
     .ks_error              (error_ks)
   );

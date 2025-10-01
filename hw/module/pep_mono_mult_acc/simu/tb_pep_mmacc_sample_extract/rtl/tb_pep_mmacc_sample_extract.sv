@@ -528,8 +528,8 @@ module tb_pep_mmacc_sample_extract;
         logic [PSI-1:0][R-1:0][OP_W-1:0] wr_data;
 
         pid = gram_free_pid_q[0];
-        wr_gram_wr_en   <= 1 << pid[GRAM_ID_W-1:0];
-        wr_gram_add_ofs <= pid[PID_W-1:GRAM_ID_W] * GLWE_WORD_NB_IN_GRAM;
+        wr_gram_wr_en   <= 1 << (pid % GRAM_NB);
+        wr_gram_add_ofs <= (pid / GRAM_NB) * GLWE_WORD_NB_IN_GRAM;
 
         for (int p=0; p<PSI; p=p+1)
           for (int r=0; r<R; r=r+1) begin
@@ -559,7 +559,9 @@ module tb_pep_mmacc_sample_extract;
           reg_mask = {REGF_REGID_W{1'b1}} << icmd.map_elt.log_lut_nb;
           icmd.map_elt.dst_rid = ((pid + 1) % REGF_REG_NB) & reg_mask;
           icmd.map_elt.lwe     = '0; // UNUSED
-          icmd.map_elt.pid     = pid;
+          icmd.map_elt.pid.pid = pid;
+          icmd.map_elt.pid.grid = pid % GRAM_NB;
+          icmd.map_elt.pid.grof = pid / GRAM_NB;
 
           begin
             sxt_icmd_q.push_back(icmd);

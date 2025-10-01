@@ -60,6 +60,38 @@
             "PEP_BATCH":"PEP_BATCH_bpbs8_tpbs16"
         },
         {
+            "name": "hw/module/pe_pbs/module/pep_common/rtl/PEP_BATCH/PEP_BATCH_bpbs9_tpbs27/pep_batch_definition_pkg.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false,
+            "PEP_BATCH":"PEP_BATCH_bpbs9_tpbs27"
+        },
+        {
+            "name": "hw/module/pe_pbs/module/pep_common/rtl/PEP_BATCH/PEP_BATCH_bpbs12_tpbs27/pep_batch_definition_pkg.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false,
+            "PEP_BATCH":"PEP_BATCH_bpbs12_tpbs27"
+        },
+        {
+            "name": "hw/module/pe_pbs/module/pep_common/rtl/PEP_BATCH/PEP_BATCH_bpbs18_tpbs27/pep_batch_definition_pkg.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false,
+            "PEP_BATCH":"PEP_BATCH_bpbs18_tpbs27"
+        },
+        {
+            "name": "hw/module/pe_pbs/module/pep_common/rtl/PEP_BATCH/PEP_BATCH_bpbs9_tpbs18/pep_batch_definition_pkg.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false,
+            "PEP_BATCH":"PEP_BATCH_bpbs9_tpbs18"
+        },
+        {
             "name": "hw/module/pe_pbs/module/pep_common/rtl/pep_common_param_pkg.sv",
             "library": "work",
             "env": ["all"],

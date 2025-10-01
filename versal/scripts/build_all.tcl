@@ -78,13 +78,9 @@ proc import_all { } {
   import_files -fileset utils_1   -norecurse "$constraints_path/hooks/hook_route.post.tcl"
   import_files -fileset utils_1   -norecurse "$constraints_path/hooks/hook_write_device_image.pre.tcl"
 
-  set_property STEPS.SYNTH_DESIGN.ARGS.NO_SRLEXTRACT true                               [get_runs synth_1]
   set_property STEPS.SYNTH_DESIGN.TCL.PRE       [get_files *syn.pre.tcl]                [get_runs synth_1]
   set_property STEPS.SYNTH_DESIGN.TCL.POST      [get_files *syn.post.tcl]               [get_runs synth_1]
-  set_property strategy Performance_HighUtilSLRs                                        [get_runs impl_1]
-  # set_property STEPS.PLACE_DESIGN.ARGS.DIRECTIVE AggressiveExplore                      [get_runs impl_1]
-  # set_property STEPS.PHYS_OPT_DESIGN.ARGS.DIRECTIVE AggressiveExplore                   [get_runs impl_1]
-  # set_property STEPS.ROUTE_DESIGN.ARGS.DIRECTIVE AggressiveExplore                      [get_runs impl_1]
+  set_property strategy Performance_ExtraTimingOpt                                   [get_runs impl_1]
   set_property STEPS.OPT_DESIGN.TCL.PRE         [get_files *opt.pre.tcl]                [get_runs impl_1]
   set_property STEPS.OPT_DESIGN.TCL.POST        [get_files *opt.post.tcl]               [get_runs impl_1]
   set_property STEPS.PLACE_DESIGN.TCL.PRE       [get_files *place.pre.tcl]              [get_runs impl_1]
@@ -296,7 +292,7 @@ proc main { } {
   global PROJECT_DIR
   global SKIP_PRJ_SHELL
 
-  if {$STEP eq "new"} {
+  if {$STEP eq "new" || $STEP eq "gen"} {
     create_project prj "$OUTDIR/${TOP_NAME}" -part $XIL_PART -force
   } else {
     open_project "${OUTDIR}/${TOP_NAME}/prj.xpr"
@@ -327,6 +323,17 @@ proc main { } {
     reimport_files -force
     reset_run impl_1
     implementation $ntt_psi
+  } elseif {$STEP eq "gen"} {
+    import_all
+    # create_shell.tcl needs arguments that are passed with argc and argv.
+    set argv $::argv
+    set argc $::argc
+    set ::argv [list $ntt_psi]
+    set ::argc 1
+    source "$PROJECT_DIR/versal/scripts/create_shell.tcl"
+    set ::argv $argv
+    set ::argc $argc
+    write_hw_platform -force -fixed -minimal "$OUTDIR/${SHELL_VER}.xsa"
   } else {
     puts "ERROR: unknown step have been chosen by user"
     exit 1

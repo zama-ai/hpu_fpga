@@ -77,7 +77,7 @@ typedef union {
 // Fw must retrived those value from configuration structure. Then two solutions:
 // * Dynamic allocation if Rtos is capable
 // * Runtime check that user configuration don't overflow with static allocation
-#define OPERAND_BUNDLE_MAX_SLOT 4
+#define OPERAND_BUNDLE_MAX_SLOT 32
 #define IMMEDIAT_BUNDLE_MAX_SLOT 4
 #define IMMEDIAT_MSG_MAX_SLOT 6
 #define IOP_MAX_WORDS (2 + 2*OPERAND_BUNDLE_MAX_SLOT + IMMEDIAT_BUNDLE_MAX_SLOT*(IMMEDIAT_MSG_MAX_SLOT/2))

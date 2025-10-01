@@ -122,7 +122,6 @@ module hpu_with_entry_1in3
   output logic                                                         use_bpip,
   output logic                                                         use_bpip_opportunism,
   output logic [TIMEOUT_CNT_W-1: 0]                                    bpip_timeout,
-  output logic                                                         mod_switch_mean_comp,
 
   // Pe MEM -----------------------------------------------------------------------------------------
   output logic [PE_INST_W-1:0]                                         isc_pem_insn,
@@ -211,7 +210,6 @@ module hpu_with_entry_1in3
     .ksk_mem_addr              (ksk_mem_addr),
     .use_bpip                  (use_bpip),
     .use_bpip_opportunism      (use_bpip_opportunism),
-    .mod_switch_mean_comp      (mod_switch_mean_comp),
     .bpip_timeout              (bpip_timeout),
     .trc_mem_addr              (trc_mem_addr)
   );

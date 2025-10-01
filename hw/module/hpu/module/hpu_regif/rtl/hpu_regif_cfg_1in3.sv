@@ -59,8 +59,7 @@ module hpu_regif_cfg_1in3
   output logic [axi_if_trc_axi_pkg::AXI4_ADD_W-1:0]                   trc_mem_addr,
   output logic                                                        use_bpip,
   output logic                                                        use_bpip_opportunism,
-  output logic [TIMEOUT_CNT_W-1: 0]                                   bpip_timeout,
-  output logic                                                        mod_switch_mean_comp
+  output logic [TIMEOUT_CNT_W-1: 0]                                   bpip_timeout
 );
 // ============================================================================================== --
 // localparam
@@ -92,7 +91,6 @@ module hpu_regif_cfg_1in3
 
   logic [REG_DATA_W-1:0]                             r_bpip_timeout;
   bpip_use_t                                         r_bpip_use;
-  keyswitch_config_t                                 r_keyswitch_config;
 
 // ============================================================================================== --
 // hpu_regif_core
@@ -101,7 +99,6 @@ module hpu_regif_cfg_1in3
   assign use_bpip             = r_bpip_use.use_bpip;
   assign use_bpip_opportunism = r_bpip_use.use_opportunism;
   assign bpip_timeout         = r_bpip_timeout[TIMEOUT_CNT_W-1:0];
-  assign mod_switch_mean_comp = r_keyswitch_config.mod_switch_mean_comp;
 
   always_comb
     for (int j=0; j<PEM_PC_MAX; j=j+1)
@@ -227,7 +224,6 @@ module hpu_regif_cfg_1in3
       .r_hbm_axi4_addr_1in3_ksk_pc15_msb  (r_ksk_mem_addr[15][1*REG_DATA_W+:REG_DATA_W]),
       .r_bpip_use                         (r_bpip_use),
       .r_bpip_timeout                     (r_bpip_timeout),
-      .r_keyswitch_config                 (r_keyswitch_config),
       .r_hbm_axi4_addr_1in3_trc_pc0_lsb   (r_trc_mem_addr[0*REG_DATA_W+:REG_DATA_W]),
       .r_hbm_axi4_addr_1in3_trc_pc0_msb   (r_trc_mem_addr[1*REG_DATA_W+:REG_DATA_W])
   );

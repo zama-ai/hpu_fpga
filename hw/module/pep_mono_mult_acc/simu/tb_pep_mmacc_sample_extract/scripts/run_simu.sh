@@ -59,7 +59,6 @@ TMP_FILE="${PROJECT_DIR}/hw/output/${RANDOM}${RANDOM}._tmp"
 echo -n "" > $SEED_FILE
 echo -n "" > $TMP_FILE
 
-GRAM_NB=4
 PSI_MIN=2
 MSPLIT_TYPE_L=("PEP_MSPLIT_main2_subs2" "PEP_MSPLIT_main1_subs3" "PEP_MSPLIT_main3_subs1")
 SLR_LATENCY_L=(0 4 6)
@@ -80,6 +79,7 @@ for i in `seq 1 5`; do
 
     MOD_Q_W=$((32+$RANDOM % 33))
 
+    GRAM_NB=$((3+$RANDOM % 2))
     BATCH_PBS_NB=$((1+$RANDOM % 10))
     BATCH_PBS_NB=$(($GRAM_NB * $BATCH_PBS_NB))
     TOTAL_PBS_NB=$((1 + $RANDOM % 5))
@@ -104,6 +104,7 @@ for i in `seq 1 5`; do
                     -q 2**$MOD_Q_W \
                     -c $BATCH_PBS_NB \
                     -H $TOTAL_PBS_NB \
+                    -G $GRAM_NB \
                     --  -F PEP_MSPLIT $MSPLIT_TYPE \
                         -P SLR_LATENCY int $SLR_LATENCY \
                         $args"

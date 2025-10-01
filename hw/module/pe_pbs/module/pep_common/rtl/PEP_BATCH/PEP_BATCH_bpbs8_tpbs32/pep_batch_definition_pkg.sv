@@ -13,6 +13,10 @@
 package pep_batch_definition_pkg;
   import common_definition_pkg::*;
 
+  localparam int GRAM_NB = 4; // This value is the one that better overlaps the read and
+                              // write processes in the mmacc. Doesn't have to be a
+                              // power of two.
+
   // Number of batches in the processing pipe
   localparam int BATCH_NB = 1;
   localparam int TOTAL_BATCH_NB = 1;

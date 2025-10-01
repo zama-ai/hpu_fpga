@@ -94,7 +94,7 @@ build TOP_IP STEP=DEFAULT_STEP RTL_FLAGS=DEFAULT_RTL_FLAGS VIVADO_OPT=DEFAULT_VI
   export DESIGN_NAME={{TOP_IP}}
   vivado -log {{OUTDIR}}/vivado_integration_{{STEP}}.log -nojournal -mode batch -source {{SCRIPT_DIR}}/build_all.tcl -tclargs {{OUTDIR}} {{STEP}} "{{VIVADO_OPT}}" | tee {{OUTDIR}}/just_build_{{TOP_IP}}.log
 
-program TOP_IP STAGE=DEFAULT_STAGE:
+program TOP_IP SERIAL_NUMBER STAGE=DEFAULT_STAGE:
   #!/usr/bin/env bash
   TOP_IP={{TOP_IP}}
   STAGE={{STAGE}}
@@ -122,7 +122,7 @@ program TOP_IP STAGE=DEFAULT_STAGE:
     check_driver
     [ ! -f "$STAGE1_PATH" ] && { echo "[ERROR] $STAGE1_PATH not found" && exit 1; } || { echo "[INFO] Found $STAGE1_PATH"; }
 
-    vivado -mode batch -source scripts/jtag/program_stage1.tcl -tclargs $STAGE1_PATH
+    vivado -mode batch -source scripts/jtag/program_stage1.tcl -tclargs $STAGE1_PATH {{SERIAL_NUMBER}}
   fi
 
   if [[ "$STAGE" = "all" || "$STAGE" = "stage2" ]]; then

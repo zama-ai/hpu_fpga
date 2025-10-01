@@ -139,9 +139,6 @@ proc create_hier_cell_noc_wrapper { parentCell nameHier ntt_psi } {
   # Create pins
   ####################################
   puts ">>>>>>>> Create Pin >>>>>>>>>"
-  # Create pins connected to ports
-  set hbm_ref_clk_0 [ create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:diff_clock_rtl:1.0 hbm_ref_clk_0 ]
-  set hbm_ref_clk_1 [ create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:diff_clock_rtl:1.0 hbm_ref_clk_1 ]
 
   for { set i 0}  {$i < $TRC_AXI_NB} {incr i} {
     create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:aximm_rtl:1.0 TRC_AXI_${i}
@@ -258,7 +255,7 @@ proc create_hier_cell_noc_wrapper { parentCell nameHier ntt_psi } {
     CONFIG.HBM_NUM_CHNL {16} \
     CONFIG.HBM_REF_CLK_FREQ0 $HBM_REF_FREQ \
     CONFIG.HBM_REF_CLK_FREQ1 $HBM_REF_FREQ \
-    CONFIG.HBM_REF_CLK_SELECTION {External} \
+    CONFIG.HBM_REF_CLK_SELECTION {Internal} \
     CONFIG.NUM_CLKS [expr 8 + $LPD_AXI_NB + $REGIF_CLK_NB] \
     CONFIG.NUM_HBM_BLI $HNMU_AXI_NB \
     CONFIG.NUM_MI [expr $AXI_PCIE_NB + $REGIF_NB*$REGIF_CLK_NB + $ETH_AXI_NB] \
@@ -266,6 +263,61 @@ proc create_hier_cell_noc_wrapper { parentCell nameHier ntt_psi } {
     CONFIG.NUM_NSI {0} \
     CONFIG.NUM_SI [expr $NMU_AXI_NB + $LPD_AXI_NB] \
   ] $axi_noc_cips
+
+  # The KSK/BSK cache access pattern is such that it always has two linearly rising accesses, one
+  # for each NMU connected to a pseudo-channel. Since the address space of a single pseudo-channel
+  # is divided equally amongst the two NMUs, we then have two linear patterns that differ from the
+  # MSB. Since the default address map is to have some row bit connected to the MSB, this means that
+  # with it, the HBM would be constantly pre-charging and switching rows at each HPU cycle. This was
+  # halving the bandwidth. This address map puts one of the bank group bit in the MSB, which
+  # optimizes this access pattern.
+  # Note that we only need to configure channel 0. All others follow automatically. The other
+  # settings are still in the default value, but we have to write them all again.
+  set_property CONFIG.HBM_CHNL0_CONFIG { \
+        HBM_REORDER_EN FALSE \
+        HBM_MAINTAIN_COHERENCY TRUE \
+        HBM_Q_AGE_LIMIT 0x7F \
+        HBM_CLOSE_PAGE_REORDER FALSE \
+        HBM_LOOKAHEAD_PCH TRUE \
+        HBM_COMMAND_PARITY FALSE \
+        HBM_DQ_WR_PARITY FALSE \
+        HBM_DQ_RD_PARITY FALSE \
+        HBM_RD_DBI TRUE \
+        HBM_WR_DBI TRUE \
+        HBM_REFRESH_MODE ALL_BANK_REFRESH \
+        HBM_PC0_PRE_DEFINED_ADDRESS_MAP USER_DEFINED_ADDRESS_MAP \
+        HBM_PC1_PRE_DEFINED_ADDRESS_MAP USER_DEFINED_ADDRESS_MAP \
+        HBM_PC0_USER_DEFINED_ADDRESS_MAP 1BG-15RA-1SID-2BA-5CA-1BG \
+        HBM_PC1_USER_DEFINED_ADDRESS_MAP 1BG-15RA-1SID-2BA-5CA-1BG \
+        HBM_PC0_ADDRESS_MAP BA3,RA14,RA13,RA12,RA11,RA10,RA9,RA8,RA7,RA6,RA5,RA4,RA3,RA2,RA1,RA0,SID,BA1,BA0,CA5,CA4,CA3,CA2,CA1,BA2,NC,NA,NA,NA,NA \
+        HBM_PC1_ADDRESS_MAP BA3,RA14,RA13,RA12,RA11,RA10,RA9,RA8,RA7,RA6,RA5,RA4,RA3,RA2,RA1,RA0,SID,BA1,BA0,CA5,CA4,CA3,CA2,CA1,BA2,NC,NA,NA,NA,NA \
+        HBM_PWR_DWN_IDLE_TIMEOUT_ENTRY FALSE \
+        HBM_SELF_REF_IDLE_TIMEOUT_ENTRY FALSE \
+        HBM_IDLE_TIME_TO_ENTER_PWR_DWN_MODE 0x0001000 \
+        HBM_IDLE_TIME_TO_ENTER_SELF_REF_MODE 1X \
+        HBM_ECC_CORRECTION_EN FALSE \
+        HBM_WRITE_BACK_CORRECTED_DATA TRUE \
+        HBM_ECC_SCRUBBING FALSE \
+        HBM_ECC_INITIALIZE_EN FALSE \
+        HBM_ECC_SCRUB_SIZE 1092 \
+        HBM_WRITE_DATA_MASK TRUE \
+        HBM_REF_PERIOD_TEMP_COMP FALSE \
+        HBM_PARITY_LATENCY 3 \
+        HBM_PC0_PAGE_HIT 100.000 \
+        HBM_PC1_PAGE_HIT 100.000 \
+        HBM_PC0_READ_RATE 25.000 \
+        HBM_PC1_READ_RATE 25.000 \
+        HBM_PC0_WRITE_RATE 25.000 \
+        HBM_PC1_WRITE_RATE 25.000 \
+        HBM_PC0_PHY_ACTIVE ENABLED \
+        HBM_PC1_PHY_ACTIVE ENABLED \
+        HBM_PC0_SCRUB_START_ADDRESS 0x00000000 \
+        HBM_PC0_SCRUB_END_ADDRESS 0x03FFFBFF \
+        HBM_PC0_SCRUB_INTERVAL 24.000 \
+        HBM_PC1_SCRUB_START_ADDRESS 0x00000000 \
+        HBM_PC1_SCRUB_END_ADDRESS 0x03FFFBFF \
+        HBM_PC1_SCRUB_INTERVAL 24.000\
+    } $axi_noc_cips
 
   #===================================
   # NOC pin assignment
@@ -414,7 +466,7 @@ proc create_hier_cell_noc_wrapper { parentCell nameHier ntt_psi } {
   puts ">>>>>>>> Create noc properties >>>>>>>>>"
   # Note : for simplicity and comprehension, HBM are numbered according to their ports.
   # In V80, there are 2 HBM, with 8 channels each. Each channel has 2 pseudo-channel (PC).
-  # Each PC has 2 ports. Therefore there is a total of 32 HBM ports.
+  # Each PC has 2 ports. Therefore there is a total of 64 HBM ports.
   set HBM_PORT_NB 64
   # Note that the HBM ports have been attributed to the different PL usage, so that
   # the highest BW is ensured.
@@ -426,8 +478,8 @@ proc create_hier_cell_noc_wrapper { parentCell nameHier ntt_psi } {
   set glwe_hbm_ports_l [list 34]
   # TRC : Use HBM_PORT 35
   set trc_hbm_ports_l [list 35]
-  # BSK : Use 8 12 24 28 40 44 56 60
-  set bsk_hbm_ports_l [list 8 12 24 28 40 44 56 60]
+  # BSK : Use 8 10 12 14 24 26 28 30 40 42 44 46 56 58 60 62
+  set bsk_hbm_ports_l [list 8 10 12 14 24 26 28 30 40 42 44 46 56 58 60 62]
 
   # Check NOC config
   if {[llength $ksk_hbm_ports_l] < $KSK_AXI_NB} {
@@ -778,9 +830,6 @@ proc create_hier_cell_noc_wrapper { parentCell nameHier ntt_psi } {
   connect_bd_intf_net -intf_net axi_noc_cips_M02_INI [get_bd_intf_pins axi_noc_cips/M02_INI] [get_bd_intf_pins ddr_noc/S00_INI_1]
   connect_bd_intf_net -intf_net axi_noc_cips_M03_INI [get_bd_intf_pins axi_noc_cips/M03_INI] [get_bd_intf_pins ddr_noc/S01_INI_1]
 
-  connect_bd_intf_net -intf_net hbm_ref_clk_0 [get_bd_intf_pins hbm_ref_clk_0] [get_bd_intf_pins axi_noc_cips/hbm_ref_clk0]
-  connect_bd_intf_net -intf_net hbm_ref_clk_1 [get_bd_intf_pins hbm_ref_clk_1] [get_bd_intf_pins axi_noc_cips/hbm_ref_clk1]
-
   connect_bd_intf_net -intf_net CH0_DDR4_0_0 [get_bd_intf_pins ddr_noc/CH0_DDR4_0_0] [get_bd_intf_pins CH0_DDR4_0_0]
   connect_bd_intf_net -intf_net CH0_DDR4_0_1 [get_bd_intf_pins ddr_noc/CH0_DDR4_0_1] [get_bd_intf_pins CH0_DDR4_0_1]
   connect_bd_intf_net -intf_net sys_clk0_0   [get_bd_intf_pins ddr_noc/sys_clk0_0]   [get_bd_intf_pins sys_clk0_0]
@@ -836,28 +885,25 @@ proc create_hier_cell_noc_wrapper { parentCell nameHier ntt_psi } {
   puts ">>> Set physical placement"
   puts ">>> NTT PSI: $ntt_psi"
 
-  # BSK
-  # in this case BSK IF is in SLR0
-  set_property CONFIG.PHYSICAL_LOC NOC_NMU512_X0Y2 [get_bd_intf_pins axi_noc_cips/S05_AXI]
-  set_property CONFIG.PHYSICAL_LOC NOC_NMU512_X0Y3 [get_bd_intf_pins axi_noc_cips/S06_AXI]
-
-  set_property CONFIG.PHYSICAL_LOC NOC_NMU512_X1Y2 [get_bd_intf_pins axi_noc_cips/S07_AXI]
-  set_property CONFIG.PHYSICAL_LOC NOC_NMU512_X1Y3 [get_bd_intf_pins axi_noc_cips/S08_AXI]
-
-  set_property CONFIG.PHYSICAL_LOC NOC_NMU512_X2Y2 [get_bd_intf_pins axi_noc_cips/S09_AXI]
-  set_property CONFIG.PHYSICAL_LOC NOC_NMU512_X2Y3 [get_bd_intf_pins axi_noc_cips/S10_AXI]
-
-  set_property CONFIG.PHYSICAL_LOC NOC_NMU512_X3Y2 [get_bd_intf_pins axi_noc_cips/S11_AXI]
-  set_property CONFIG.PHYSICAL_LOC NOC_NMU512_X3Y3 [get_bd_intf_pins axi_noc_cips/S12_AXI]
+  # BSK, we need up to 4 NMUs onto the same Y to saturate the VNOC link
+  set bsk_x_start 0
+  set bsk_y_start 2
+  set bsk_y_max   4
+  for { set i 0}  {$i < $BSK_AXI_NB} {incr i} {
+    set y [expr $bsk_y_start + $i % $bsk_y_max]
+    set x [expr $bsk_x_start + $i / $bsk_y_max]
+    set intf [get_bd_intf_pins axi_noc_cips/[format "S%02d_AXI" [expr $i + $bsk_ofs]]]
+    set_property CONFIG.PHYSICAL_LOC NOC_NMU512_X${x}Y${y} $intf
+  }
 
   # REGIF
   # connected to RPU
   set_property CONFIG.PHYSICAL_LOC NOC_NMU512_X2Y1  [get_bd_intf_pins axi_noc_cips/S04_AXI]
-# 2 are used in SLR0, and 2 in SLR2
-set_property CONFIG.PHYSICAL_LOC NOC_NSU512_X2Y1 [get_bd_intf_pins axi_noc_cips/M04_AXI]
-set_property CONFIG.PHYSICAL_LOC NOC_NSU512_X2Y2 [get_bd_intf_pins axi_noc_cips/M05_AXI]
-set_property CONFIG.PHYSICAL_LOC NOC_NSU512_X2Y16 [get_bd_intf_pins axi_noc_cips/M02_AXI]
-set_property CONFIG.PHYSICAL_LOC NOC_NSU512_X2Y13 [get_bd_intf_pins axi_noc_cips/M03_AXI]
+  # 2 are used in SLR0, and 2 in SLR2
+  set_property CONFIG.PHYSICAL_LOC NOC_NSU512_X2Y1 [get_bd_intf_pins axi_noc_cips/M04_AXI]
+  set_property CONFIG.PHYSICAL_LOC NOC_NSU512_X2Y2 [get_bd_intf_pins axi_noc_cips/M05_AXI]
+  set_property CONFIG.PHYSICAL_LOC NOC_NSU512_X2Y16 [get_bd_intf_pins axi_noc_cips/M02_AXI]
+  set_property CONFIG.PHYSICAL_LOC NOC_NSU512_X2Y13 [get_bd_intf_pins axi_noc_cips/M03_AXI]
 
   # MGMT (to UUID, GCQ...)
   set_property CONFIG.PHYSICAL_LOC NOC_NSU512_X2Y0 [get_bd_intf_pins axi_noc_cips/M00_AXI]

@@ -1433,45 +1433,6 @@
       ]
     },
     {
-      "name": "keyswitch",
-      "description": "Keyswitch Configuration",
-      "offset": 536576,
-      "bytes_align": 4,
-      "range": 4,
-      "register": [
-        {
-          "name": "config",
-          "description": "(1) Use use modulus switching mean compensation. (default), (0) Don't use modulus switching mean compensation.",
-          "owner": "User",
-          "read_access": "Read",
-          "write_access": "Write",
-          "offset": 536576,
-          "default": {
-            "ParamsField": {
-              "params": [],
-              "name_val": [
-                [
-                  "mod_switch_mean_comp",
-                  "'h1"
-                ]
-              ]
-            }
-          },
-          "field": [
-            {
-              "name": "mod_switch_mean_comp",
-              "description": "Controls whether to use modulus switch mean compensation.",
-              "size_b": 1,
-              "offset_b": 0,
-              "default": {
-                "Cst": 1
-              }
-            }
-          ]
-        }
-      ]
-    },
-    {
       "name": "entry_prc_1in3",
       "description": "entry_prc_1in3 section with known value used for debug.",
       "offset": 589824,

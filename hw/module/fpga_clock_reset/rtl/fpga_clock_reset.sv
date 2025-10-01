@@ -29,9 +29,9 @@
 
 (* keep_hierarchy = "yes" *)
 module fpga_clock_reset #(
-  parameter int unsigned HOLD_MARGIN  = 5, // Make sure to exagerate here, There's no point in
+  parameter int unsigned HOLD_MARGIN  = 5, // Make sure to exaggerate here, There's no point in
                                            // making synthesis struggle with something unimportant.
-  parameter int unsigned SETUP_MARGIN = 5, // Make sure to exagerate here
+  parameter int unsigned SETUP_MARGIN = 5, // Make sure to exaggerate here
   parameter int unsigned CE_MARGIN    = 5, // The maximum latency allowed from clock enable flop to clock gate
 
   parameter bit          RST_POL         = 1'b0, // Active low = 0 or high = 1

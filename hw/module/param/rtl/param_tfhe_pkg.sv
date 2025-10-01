@@ -25,6 +25,7 @@ package param_tfhe_pkg;
   export param_tfhe_definition_pkg::PAYLOAD_BIT;
   export param_tfhe_definition_pkg::PADDING_BIT;
   export param_tfhe_definition_pkg::APPLICATION_NAME;
+  export param_tfhe_definition_pkg::USE_MEAN_COMP;
 
   // ------------------------------------------------------------------------------------------- --
   // Create localparam for constants that are often used.

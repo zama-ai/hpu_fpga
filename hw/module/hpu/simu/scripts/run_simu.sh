@@ -207,6 +207,9 @@ for ((j = 0; j < 1; j++)); do
     USE_BPIP_OPPORTUNISM=0
   fi
 
+  # TODO : remove this, once the sw is ready
+  USE_MEAN_COMP=1
+
   cmd="${SCRIPT_DIR}/run.sh \
                   -C \
                   -R $R \
@@ -237,6 +240,7 @@ for ((j = 0; j < 1; j++)); do
                   -j $REGF_COEF_NB \
                   -k $REGF_SEQ \
                   -p $DOP_IMPLEM \
+                  -d $USE_MEAN_COMP \
                   $run_args \
                   -- -P RAM_LATENCY int $RAM_LATENCY \
                   -P USE_BPIP int $USE_BPIP \

@@ -56,6 +56,7 @@ if __name__ == '__main__':
     parser.add_argument('-ksk_pc',dest='ksk_pc',    type=int, help="Number of PC for KSK", default=1)
     parser.add_argument('-ksk_bytes_w',dest='ksk_bytes_w',    type=int, help="ksk bus width [BYTES]", default=64)
     parser.add_argument('-isc_depth',    dest='isc_depth',   type=int, help="ISC_POOL_SLOT_NB: ISC depth.", default=32)
+    parser.add_argument('-use_mean_comp',    dest='use_mean_comp',   type=int, help="USE_MEAN_COMP.", default=1)
     parser.add_argument('-o',  dest='outfile',      type=str, help="Output filename.", required=True)
     parser.add_argument('-f',  dest='force',        help="Overwrite if file already exists", action="store_true", default=False)
 
@@ -127,6 +128,7 @@ if __name__ == '__main__':
               "pem_pc"       : args.pem_pc,
               "pem_bytes_w"  : args.pem_bytes_w,
               "core_arch"    : core_arch,
+              "USE_MEAN_COMP": args.use_mean_comp,
               "cut_l"        : f"{args.cut_l}"}
 
 

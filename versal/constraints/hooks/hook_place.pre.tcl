@@ -57,7 +57,7 @@ add_cells_to_pblock [get_pblocks pblock_SLR0] \
     [get_cells -hier -regexp -filter {NAME =~ .*/clock_reset/usr_._psr \
                                    || NAME =~ .*/hpu_soft_reset}]
 
-# And pin each reset distribution logic to the rigth SLR
+# And pin each reset distribution logic to the right SLR
 add_cells_to_pblock [get_pblocks pblock_SLR2] \
     [get_cells -hier -regexp -filter {NAME =~ .*/prc1_clk_rst}]
 add_cells_to_pblock [get_pblocks pblock_SLR1] \

@@ -61,8 +61,11 @@ echo -n "" > $TMP_FILE
 
 for i in `seq 1 5`; do
   LWE_K=$((2+$RANDOM % 50))
+  USE_MEAN_COMP=$(($RANDOM %2))
 
-  cmd="${SCRIPT_DIR}/run.sh -K $LWE_K -- $args"
+  cmd="${SCRIPT_DIR}/run.sh -K $LWE_K \
+          -d $USE_MEAN_COMP \
+          -- $args"
 
   echo "==========================================================="
   echo "INFO> Running : $cmd"

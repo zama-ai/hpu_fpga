@@ -38,6 +38,7 @@ echo "-V                       : MOD_KSK_W: modulo width (default 16)"
 echo "-X                       : LBX: Number of coefficients columns processed in parallel (default 1)"
 echo "-Y                       : LBY: Number of coefficients lines processed in parallel (default 48)"
 echo "-Z                       : LBZ: Number of coefficients lines processed in parallel (default 1)"
+echo "-d                       : USE_MEAN_COMP (default 1)"
 echo "-- <run_edalize options> : run_edalize options."
 
 }
@@ -66,8 +67,9 @@ KS_L=1
 KS_B_W=31
 MOD_KSK_W=16
 MOD_KSK="2**16"
+USE_MEAN_COMP=1
 # Initialize your own variables here:
-while getopts "hg:R:S:q:W:c:K:X:Y:Z:B:L:V:r:" opt; do
+while getopts "hg:R:S:q:W:c:K:X:Y:Z:B:L:V:r:d:" opt; do
   case "$opt" in
     h)
       usage
@@ -115,6 +117,9 @@ while getopts "hg:R:S:q:W:c:K:X:Y:Z:B:L:V:r:" opt; do
     V)
       MOD_KSK_W=$OPTARG
       ;;
+    d)
+      USE_MEAN_COMP=$OPTARG
+      ;;
     :)
       echo "$0: Must supply an argument to -$OPTARG." >&2
       exit 1
@@ -149,8 +154,9 @@ mkdir -p $RTL_DIR
 if [ $GEN_STIMULI -eq 1 ] ; then
   pkg_cmd="python3 ${PROJECT_DIR}/hw/module/param/scripts/gen_param_tfhe_definition_pkg.py -f \
                   -N $N -g $GLWE_K -K $LWE_K -q $MOD_Q -W $MOD_Q_W -L $KS_L -B $KS_B_W -r $MOD_KSK -V $MOD_KSK_W  \
+                  -d $USE_MEAN_COMP \
                   -o ${RTL_DIR}/param_tfhe_definition_pkg.sv"
-  echo "INFO> N=${N}, GLWE_K=${GLWE_K} MOD_Q=${MOD_Q} MOD_Q_W=${MOD_Q_W} LWE_K=${LWE_K} KS_L=${KS_L} KS_B_W=${KS_B_W} MOD_KSK=${MOD_KSK} MOD_KSK_W=${MOD_KSK_W}"
+  echo "INFO> N=${N}, GLWE_K=${GLWE_K} MOD_Q=${MOD_Q} MOD_Q_W=${MOD_Q_W} LWE_K=${LWE_K} KS_L=${KS_L} KS_B_W=${KS_B_W} MOD_KSK=${MOD_KSK} MOD_KSK_W=${MOD_KSK_W} USE_MEAN_COMP=${USE_MEAN_COMP}"
   echo "INFO> Creating param_tfhe_definition_pkg.sv"
   echo "INFO> Running : $pkg_cmd"
   $pkg_cmd || exit 1

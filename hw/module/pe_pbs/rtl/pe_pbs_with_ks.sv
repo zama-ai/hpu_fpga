@@ -112,9 +112,6 @@ module pe_pbs_with_ks
   //== reset cache
   input  logic                                                         reset_cache,
 
-  //== configuration
-  input  logic                                                         mod_switch_mean_comp,
-
   //== To rif
   output pep_error_t                                                   pep_error,
   output pep_info_t                                                    pep_rif_info,
@@ -241,7 +238,6 @@ module pe_pbs_with_ks
     .boram_parity          (ks_boram_parity),
 
     .reset_cache           (reset_cache),
-    .mod_switch_mean_comp  (mod_switch_mean_comp),
 
     .ks_error              (ks_error)
   );

@@ -63,7 +63,6 @@ R=2
 S=12
 N=$(($R ** $S))
 
-GRAM_NB=4
 RAND_RANGE=$((1024-1))
 INST_THROUGHPUT_L=("0" "$(($RAND_RANGE/2))" "$((RAND_RANGE/10))" "$((RAND_RANGE/100))" "$RAND_RANGE")
 for i in `seq 1 5`; do
@@ -109,6 +108,7 @@ for i in `seq 1 5`; do
       LBY=$(($LBY * ($REGF_COEF_NB / $REGF_SEQ)))
     done
 
+    GRAM_NB=$((3+$RANDOM%2))
     BATCH_PBS_NB=$((1+$RANDOM % 10))
     BATCH_PBS_NB=$(($GRAM_NB * $BATCH_PBS_NB))
     TOTAL_PBS_NB=$((1 + $RANDOM % 5))
@@ -126,6 +126,7 @@ for i in `seq 1 5`; do
           -k $REGF_SEQ \
           -c $BATCH_PBS_NB \
           -H $TOTAL_PBS_NB \
+          -G $GRAM_NB \
           -- \
           -P INST_THROUGHPUT int $INST_THROUGHPUT \
           -P RAND_RANGE int $RAND_RANGE \

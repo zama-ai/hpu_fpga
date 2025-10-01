@@ -23,7 +23,7 @@ module pep_mmacc_body_ram
   input  logic                      ks_boram_wr_parity,
 
   input  logic                      seq_boram_corr_wr_en,
-  input  logic [KS_MAX_ERROR_W-1:0] seq_boram_corr_wr_data,
+  input  logic [KS_CORR_W-1:0]      seq_boram_corr_wr_data,
   input  logic [PID_W-1:0]          seq_boram_corr_wr_pid,
 
   input  logic [PID_W-1:0]          boram_rd_pid,
@@ -62,7 +62,7 @@ module pep_mmacc_body_ram
 
   // Correction signals
   logic                      corr_ram_wr_en;
-  logic [KS_MAX_ERROR_W-1:0] corr_ram_wr_data;
+  logic [KS_CORR_W-1:0]      corr_ram_wr_data;
   logic [PID_W-1:0]          corr_ram_wr_pid;
 
   always_ff @(posedge clk)
@@ -136,7 +136,14 @@ module pep_mmacc_body_ram
   logic                  ram_wr_parity;
 
   logic [MOD_KSK_W-1:0]  sm1_wr_data_centered;
-  assign sm1_wr_data_centered = sm1_wr_data - CENTER_CORR;
+  generate
+    if (USE_MEAN_COMP) begin : gen_use_mean_comp
+      assign sm1_wr_data_centered = sm1_wr_data - CENTER_CORR;
+    end
+    else begin : gen_no_use_mean_comp
+      assign sm1_wr_data_centered = sm1_wr_data;
+    end
+  endgenerate
 
   always_ff @(posedge clk)
     if (!s_rst_n) ram_wr_en <= 1'b0;
@@ -240,6 +247,7 @@ module pep_mmacc_body_ram
   logic [KS_MAX_ERROR_W-1:0] corr_data;        // Old value at the write address
   logic [KS_MAX_ERROR_W-1:0] corr_dataD;       // New write address
   logic [KS_MAX_ERROR_W-1:0] corr_ram_rd_data; // Read value
+  logic [KS_MAX_ERROR_W-1:0] corr_ram_wr_data_ext;
 
   logic [LWE_K_WW-1:0] corr_cnt;         // Old value at the write address
   logic [LWE_K_WW-1:0] corr_cntD;        // New value at the write address
@@ -285,7 +293,9 @@ module pep_mmacc_body_ram
     .rd_data ( '{corr_present, corr_present_rd_data} )
   );
 
-  assign corr_dataD        = corr_present ? corr_ram_wr_data + corr_data : corr_ram_wr_data;
+  // Sign extension
+  assign corr_ram_wr_data_ext = {{KS_MAX_ERROR_W-KS_CORR_W{corr_ram_wr_data[KS_CORR_W-1]}},corr_ram_wr_data};
+  assign corr_dataD        = corr_present ? corr_ram_wr_data_ext + corr_data : corr_ram_wr_data_ext;
   // First element is caught by corr_present.
   // The counter starts to count with the 2nd element. Therefore initialized with value 1.
   assign corr_cntD         = corr_present ? LWE_K_WW'(corr_cnt + 1'b1) : LWE_K_WW'(1);
