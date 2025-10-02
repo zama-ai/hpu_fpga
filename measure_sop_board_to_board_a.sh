@@ -1,7 +1,7 @@
 echo "RX to TX board"
-./app/build/ami_tool poke -d a1:00.0 -a 0x60010 -i 0x80000000
+./app/build/ami_tool poke -d a1:00.0 -a 0x50010 -i 0x80000000
 #  GT conf - near end pcs lane0
-./app/build/ami_tool poke -d a1:00.0 -a 0x60010 -i 0x20000000
+./app/build/ami_tool poke -d a1:00.0 -a 0x50010 -i 0x20000000
 
 # Reset all ports
 ./app/build/ami_tool poke -d a1:00.0 -a 0x40004 -i 0xFFFFFFFF
@@ -50,9 +50,9 @@ echo "RX to TX board"
 ./app/build/ami_tool poke -d a1:00.0 -a 0x43004 -i 0x0
 
 # Reset from DMA rtl
-./app/build/ami_tool poke -d a1:00.0 -a 0x60014 -i 0xFFF
-./app/build/ami_tool poke -d a1:00.0 -a 0x60014 -i 0x0
-./app/build/ami_tool peek -d a1:00.0 -a 0x60018 -l 1
+./app/build/ami_tool poke -d a1:00.0 -a 0x50014 -i 0xFFF
+./app/build/ami_tool poke -d a1:00.0 -a 0x50014 -i 0x0
+./app/build/ami_tool peek -d a1:00.0 -a 0x50018 -l 1
 
 sleep 1
 # -----------------------------------------------------------------------------

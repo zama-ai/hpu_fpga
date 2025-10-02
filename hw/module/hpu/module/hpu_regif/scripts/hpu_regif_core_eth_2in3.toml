@@ -6,54 +6,40 @@ range = 0x10000
 ext_pkg = ["axi_if_common_param_pkg", "axi_if_shell_axil_pkg"]
 
 # =====================================================================================================================
-[section.entry_eth_2in3]
-description="entry_eth_2in3 section with known value used for debug."
+[section.system]
+description="system configuration"
 offset= 0x0
 
-[section.entry_eth_2in3.register.dummy_val0]
-  description="RTL version"
-  owner="Parameter"
+[section.system.register.src_mac_addr]
+  description="Source mac address: this Hpu mac address"
+  owner="User"
   read_access="Read"
-  write_access="None"
-  default={Cst=0x05050504}
+  write_access="Write"
+  default={Cst=0x0}
 
-[section.entry_eth_2in3.register.dummy_val1]
-  description="RTL version"
-  owner="Parameter"
+[section.system.register.dst_mac_addr]
+  description="Target mac address"
+  owner="User"
   read_access="Read"
-  write_access="None"
-  default={Cst=0x15151515}
+  write_access="Write"
+  default={Cst=0x0}
 
-[section.entry_eth_2in3.register.dummy_val2]
-  description="RTL version"
-  owner="Parameter"
-  read_access="Read"
-  write_access="None"
-  default={Cst=0x25252525}
-
-[section.entry_eth_2in3.register.dummy_val3]
-  description="RTL version"
-  owner="Parameter"
-  read_access="Read"
-  write_access="None"
-  default={Cst=0x35353535}
-
-# =====================================================================================================================
-[section.line]
-offset= 0x10
-description="Line parameter sections"
-
-[section.line.register.parameter]
+[section.system.register.line]
   description="Different parameters for qsfp lines"
   owner="User"
   read_access="Read"
   write_access="Write"
-  field.select    = {size_b=2, offset_b=0, default={Cst=0x0}, description="line selection"}
-  field.loopback  = {size_b=3, offset_b=2, default={Cst=0x0}, description="line loopback configurations"}
-  field.rate      = {size_b=8, offset_b=5, default={Cst=0x0}, description="line rates"}
-  field.rx_to_tx        = {size_b=1, offset_b=29, default={Cst=0x0}, description="a"}
-  field.tx_loop         = {size_b=1, offset_b=30, default={Cst=0x0}, description="b"}
-  field.reset_registers = {size_b=1, offset_b=31, default={Cst=0x0}, description="c"}
+  field.select    = {size_b=2, offset_b=0,  default={Cst=0x0}, description="line selection"}
+  field.loopback  = {size_b=3, offset_b=2,  default={Cst=0x0}, description="line loopback configurations"}
+  field.rate      = {size_b=8, offset_b=5,  default={Cst=0x0}, description="line rates"}
+  field.debug     = {size_b=1, offset_b=31, default={Cst=0x0}, description="States wherether we are in debug mode"}
+
+[section.system.register.dummy_val3]
+  description="Place-holder"
+  owner="Parameter"
+  read_access="Read"
+  write_access="None"
+  default={Cst=0x35353535}
 
 # =====================================================================================================================
 [section.reset]
@@ -77,8 +63,22 @@ description="different resets are available"
   field.rst_done={size_b=8, offset_b=0, default={Cst=0x0}, description="rst done monitoring"}
 
 # =====================================================================================================================
+[section.line]
+offset= 0x1000
+description="Line parameter sections"
+
+[section.line.register.debug]
+  description="Different parameters for debuging qsfp lines"
+  owner="User"
+  read_access="Read"
+  write_access="Write"
+  field.rx_to_tx        = {size_b=1, offset_b=29, default={Cst=0x0}, description="a"}
+  field.tx_loop         = {size_b=1, offset_b=30, default={Cst=0x0}, description="b"}
+  field.reset_registers = {size_b=1, offset_b=31, default={Cst=0x0}, description="c"}
+
+# =====================================================================================================================
 [section.fifo_write]
-offset= 0x1C
+offset= 0x101C
 description="fifo write part"
 
 [section.fifo_write.register.number_of_words]
@@ -111,7 +111,7 @@ description="fifo write part"
 
 # =====================================================================================================================
 [section.fifo_read]
-offset= 0x2C
+offset= 0x102C
 description="fifo write part"
 
 [section.fifo_read.register.words_to_read_a]
@@ -138,7 +138,7 @@ description="fifo write part"
 
 # =====================================================================================================================
 [section.cnt]
-offset= 0x3C
+offset= 0x103C
 description="fifo write part"
 
 [section.cnt.register.trig_rd]
@@ -164,7 +164,7 @@ description="fifo write part"
 
 # =====================================================================================================================
 [section.stat]
-offset= 0x4C
+offset= 0x104C
 description="fifo write part"
 
 [section.stat.register.status]

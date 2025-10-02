@@ -34,6 +34,9 @@ module tb_dma;
   // stalls for an arbitrary number of clock cycles
   localparam int ARBITRARY_STALL = 55;
 
+  // OUI is not part of this mac address
+  localparam [31:0] DEFAULT_SRC_MAC_ADDR_OFS = 'h2418F0;
+  localparam [31:0] DEFAULT_DST_MAC_ADDR_OFS = 'h265A0D;
 // ============================================================================================== --
 // clock, reset
 // ============================================================================================== --
@@ -135,12 +138,48 @@ module tb_dma;
   logic [LINE_NB-1:0] gt_rx_reset_done;
   logic [LINE_NB-1:0] gt_tx_reset_done;
 
+  // [section] line parameter -------------------------------------------------
+  logic [31:0] line_parameter;
+  logic        debug_flag;
+  logic [2:0]  line_loopback;
+  logic [7:0]  line_rate;
+  logic [1:0]  line_select;
+
+  assign line_parameter[1:0]   = line_select;
+  assign line_parameter[4:2]   = line_loopback;
+  assign line_parameter[12:5]  = line_rate;
+  assign line_parameter[27:13] = 'h0;
+  assign line_parameter[31]    = debug_flag;
+
+  // [section] line parameter -------------------------------------------------
+  logic [31:0] line_debug;
+  logic        reset_registers;
+  logic        tx_loop;
+  logic        rx_to_tx;
+
+  assign line_debug[28:0] = 'h0;
+  assign line_debug[29]   = rx_to_tx;
+  assign line_debug[30]   = tx_loop;
+  assign line_debug[31]   = reset_registers;
+
+  // [section] reset ----------------------------------------------------------
+  logic [31:0]        reset_parameter;
+  logic [LINE_NB-1:0] rst_rx_datapath;
+  logic [LINE_NB-1:0] rst_tx_datapath;
+  logic [LINE_NB-1:0] rst_all;
+
+  assign reset_parameter = {20'h0, rst_rx_datapath, rst_tx_datapath, rst_all};
+
+  // monitoring of reset done
+  logic [31:0] reset_monitor;
+
+  // DUT ------------------------------------------------------------------------------------------
   dma #(
     .LINE_NB(LINE_NB),
     .AXIS_TDATA_W(AXIS_TDATA_W),
     .AXIS_TKEEP_W(AXIS_TKEEP_W),
     .FIFO_DEPTH(FIFO_DEPTH)
-  ) dut (
+  ) dma (
     .clk_eth_cfg   (clk_control    ),
     .resetn_eth_cfg(s_rstn_control ),
 
@@ -185,6 +224,36 @@ module tb_dma;
     .gt_tx_reset_done(gt_tx_reset_done)
 );
 
+  logic [LINE_NB-1:0][AXIS_TDATA_W-1:0] rx_tdata;
+  logic [LINE_NB-1:0][AXIS_TKEEP_W-1:0] rx_tkeep_user;
+  logic [LINE_NB-1:0]                   rx_tlast;
+  logic [LINE_NB-1:0]                   rx_tvalid;
+
+  // ----------------------------------------------------------------------------------------------
+  model_qsfp_lines # (
+    .LINE_NB     (LINE_NB     ),
+    .AXIS_TDATA_W(AXIS_TDATA_W),
+    .AXIS_TKEEP_W(AXIS_TKEEP_W)
+  ) model_qsfp_lines (
+    .clk_eth_mrmac   (clk_mrmac),
+    .resetn_eth_mrmac(s_rstn_mrmac),
+
+    // from DMA
+    .qsfp_tx_tdata     (qsfp_tx_tdata),
+    .qsfp_tx_tkeep_user(qsfp_tx_tkeep_user),
+    .qsfp_tx_tlast     (qsfp_tx_tlast),
+    .qsfp_tx_tvalid    (qsfp_tx_tvalid),
+    .qsfp_tx_tready    (qsfp_tx_tready),
+
+    // to DMA
+    .qsfp_rx_tdata     (rx_tdata),
+    .qsfp_rx_tkeep_user(rx_tkeep_user),
+    .qsfp_rx_tlast     (rx_tlast),
+    .qsfp_rx_tvalid    (rx_tvalid),
+
+    .loopback          (line_loopback)
+  );
+
 // ============================================================================================== --
 // Scenario
 // ============================================================================================== --
@@ -226,47 +295,29 @@ module tb_dma;
     end
   endgenerate
 
-  logic [7:0]  line_rate;
-  logic [2:0]  line_loopback;
-  logic [1:0]  line_select;
-  logic [31:0] line_parameter;
-
-  logic [LINE_NB-1:0] rst_rx_datapath;
-  logic [LINE_NB-1:0] rst_tx_datapath;
-  logic [LINE_NB-1:0] rst_all;
-  logic [31:0]        reset_datpath;
-
-  logic reset_registers;
-  logic tx_loop;
-  logic rx_to_tx;
   logic [63:0] clk_count;
   logic [63:0] valid_words_count;
   logic [63:0] sop_count;
 
-  logic [31:0]        reset_monitor;
+  logic [AXIS_TDATA_W-1:0] data_noise_ref_rx_q[LINE_NB-1:0][$];
+  logic [AXIS_TDATA_W-1:0] data_lb_ref_rx_q[LINE_NB-1:0][$];
 
-  logic [1:0] line_ref_tx_q[$:FIFO_DEPTH];
-  logic [AXIS_TDATA_W-1:0] data_ref_tx_q[$:FIFO_DEPTH];
-  logic [AXIS_TDATA_W-1:0] data_ref_rx_q[LINE_NB-1:0][$];
-
-  logic en_rx_datapath;
-  logic [AXIS_TDATA_W-1:0] expected_data;
+  logic enable_noise_on_rx;
+  logic [AXIS_TDATA_W-1:0] expected_data[LINE_NB-1:0];
   logic [AXIS_TDATA_W-1:0] read_data;
 
+  logic [31:0] rdata;
   initial begin
-    logic [31:0] rdata;
-    logic [AXIS_TDATA_W:0] tx_tdata;
-
-    $display("%t > INFO: Initialization",$time);
-    init_axis;
     maxil_drv_if.init();
-    gt_rx_reset_done = 'h0;
-    gt_tx_reset_done = 'h0;
-    en_rx_datapath = 1'b0;
+    enable_noise_on_rx = 1'b0;
+
+    reset_registers = 'h0;
+    tx_loop         = 'h0;
+    rx_to_tx        = 'h0;
     repeat(20) @(posedge clk_control);
+    $display("\n"); // just to unclog view from FIFO warnings
 
     // --------------------------------------------------------------------------------------------
-    $display("%t > INFO: Register configuration",$time);
     //  We need to configure correctly different signals.
     //  By doing this we will verify axi4-lite communication with regfile
     //
@@ -278,258 +329,20 @@ module tb_dma;
     // 5 - reading that the fifo depths are accessible and has changed, that means not zeros
     // --------------------------------------------------------------------------------------------
 
-    // (1) Reading dummy values -------------------------------------------------------------------
-    maxil_drv_if.read_trans(ENTRY_ETH_2IN3_DUMMY_VAL0_OFS, rdata);
-    if (rdata != 'h05050504) begin
-      $display("%t >    ERROR: ENTRY_ETH_2IN3_DUMMY_VAL0_OFS: %x != h05050504",$time, rdata);
-      error = 1'b1;
-    end
-    maxil_drv_if.read_trans(ENTRY_ETH_2IN3_DUMMY_VAL1_OFS, rdata);
-    if (rdata != 'h15151515) begin
-      $display("%t >    ERROR: ENTRY_ETH_2IN3_DUMMY_VAL1_OFS: %x != h15151515",$time, rdata);
-      error = 1'b1;
-    end
-    maxil_drv_if.read_trans(ENTRY_ETH_2IN3_DUMMY_VAL2_OFS, rdata);
-    if (rdata != 'h25252525) begin
-      $display("%t >    ERROR: ENTRY_ETH_2IN3_DUMMY_VAL2_OFS: %x != h25252525",$time, rdata);
-      error = 1'b1;
-    end
-    maxil_drv_if.read_trans(ENTRY_ETH_2IN3_DUMMY_VAL3_OFS, rdata);
-    if (rdata != 'h35353535) begin
-      $display("%t >    ERROR: ENTRY_ETH_2IN3_DUMMY_VAL3_OFS: %x != h35353535",$time, rdata);
-      error = 1'b1;
-    end
-    $display("%t >    INFO: dummy section correctly read",$time);
+    $display("A - Initial register check and definition");
+    init_registers();
 
-    // (2) Applying configuration & checking signals are correctly set ----------------------------
-    line_rate     = 8'hAB;  // random, no idea what it should be
-    line_loopback = 3'b100; // 3 near end pcs loopback
-    line_select   = 2'b10;  // 2nd line selected
-    line_parameter = {19'b0, line_rate, line_loopback , line_select};
-    maxil_drv_if.write_trans(LINE_PARAMETER_OFS, line_parameter);
-    repeat(5) @(posedge clk_control);
+    $display("B - Setting near end pcs and launching a frame - receiving data");
+    test_lb_near_end_pcs();
 
-    rst_rx_datapath = 4'b0100;
-    rst_tx_datapath = 4'b1011;
-    rst_all         = 4'b0101;
-    reset_datpath = {20'h0, rst_rx_datapath, rst_tx_datapath, rst_all};
-    maxil_drv_if.write_trans(RESET_DATAPATH_OFS, reset_datpath);
-    repeat(5) @(posedge clk_control);
+    $display("C - looping over tx to measure throughput");
+    debug_mode_tx_loop();
 
-    if ((gt_line_rate == line_rate) && (gt_loopback == line_loopback) && (dut.line_sel == line_select)) begin
-      $display("%t >    INFO: line parameter correctly configured",$time);
-    end else begin
-      $display("%t >    ERROR: configuration doesn't match to what have been selected",$time);
-      error = 1'b1;
-    end
+    $display("D - Sending to TX all the values we receive from RX");
+    debug_mode_rx_2_tx();
 
-    if ((gt_reset_rx_datapath == rst_rx_datapath) && (gt_reset_tx_datapath == rst_tx_datapath) && (gt_reset_all == rst_all)) begin
-      $display("%t >    INFO: reset lines have been triggered correctly",$time);
-    end else begin
-      $display("%t >    ERROR: reset configuration has not been applied correctly",$time);
-      error = 1'b1;
-    end
-
-    // read reset register
-    gt_rx_reset_done= 4'b0101;
-    gt_tx_reset_done= 4'b1010;
-    repeat(5) @(posedge clk_control);
-    maxil_drv_if.read_trans(RESET_MONITOR_OFS, reset_monitor);
-
-    if(( reset_monitor[3:0] == gt_tx_reset_done) && ( reset_monitor[7:4] == gt_rx_reset_done)) begin
-      $display("%t >    INFO: reset monitor register correctly read",$time);
-    end else begin
-      $display("%t >    ERROR: reset monitor has not been read correctly",$time);
-      $display(" %x %x", gt_tx_reset_done, reset_monitor[3:0]);
-      $display(" %x %x", gt_rx_reset_done, reset_monitor[7:4]);
-      error = 1'b1;
-    end
-
-    $display("%t > INFO: Configuration successful\n",$time);
-
-    // (3) Send a frame through regif -------------------------------------------------------------
-    // On lane 2 we send a frame with known words: from 0 to wr_frame
-
-    // lane qsfp tx ready must be 1 from here
-    qsfp_tx_tready[line_select] = 1'b1;
-    @(posedge clk_mrmac);
-
-    maxil_drv_if.write_trans(FIFO_WRITE_NUMBER_OF_WORDS_OFS, NB_WORDS_FRAME);
-    for (int wr_frame = 0; wr_frame < NB_WORDS_FRAME+1; wr_frame++) begin
-      tx_tdata = {$urandom, $urandom};
-      maxil_drv_if.write_trans(FIFO_WRITE_WORDS_TO_WRITE_A_OFS, tx_tdata[AXIL_DATA_W-1:0]);
-      maxil_drv_if.write_trans(FIFO_WRITE_WORDS_TO_WRITE_B_OFS, tx_tdata[2*AXIL_DATA_W-1:AXIL_DATA_W]);
-      data_ref_tx_q.push_front(tx_tdata);
-      line_ref_tx_q.push_front(line_select);
-      if (wr_frame == NB_WORDS_FRAME-1) begin
-        repeat(11) @(posedge clk_mrmac);
-        qsfp_tx_tready[line_select] = 1'b0;
-        repeat(5) @(posedge clk_mrmac);
-        qsfp_tx_tready[line_select] = 1'b1;
-      end
-    end
-
-    // (4) Checks the rx datapath -----------------------------------------------------------------
-    en_rx_datapath = 1'b1;
-    repeat(3*NB_WORDS_FRAME) @(posedge clk_mrmac);
-    en_rx_datapath = 1'b0;
-    repeat(20) @(posedge clk_control);
-    // read the first value to trigger fifo pull
-    maxil_drv_if.read_trans(FIFO_READ_WORDS_TO_READ_B_OFS, read_data);
-    repeat(20) @(posedge clk_control);
-
-    for (int rd_i = 0; rd_i< NB_WORDS_FRAME; rd_i++ ) begin
-      maxil_drv_if.read_trans(FIFO_READ_WORDS_TO_READ_A_OFS, read_data[AXIL_DATA_W-1:0]);
-      maxil_drv_if.read_trans(FIFO_READ_WORDS_TO_READ_B_OFS, read_data[2*AXIL_DATA_W-1:AXIL_DATA_W]);
-      expected_data = data_ref_rx_q[line_select].pop_back();
-
-      if (expected_data == read_data) begin
-        $display("%t >    INFO: rx datapath checked",$time);
-      end else begin
-        $display("%t >    ERROR: aaaah %x %x",$time, expected_data, read_data);
-        error = 1'b1;
-      end
-
-      repeat(20) @(posedge clk_control);
-    end
-
-    // (5) Checks that fifo depths are accessible -------------------------------------------------
-    maxil_drv_if.read_trans(FIFO_WRITE_FIFO_WRITE_DATA_COUNT_OFS, read_data);
-
-    if(read_data == 0) begin
-      $display("%t >    ERROR: FIFO write data count has not been changed",$time);
-      error = 1'b1;
-    end
-
-    maxil_drv_if.read_trans(FIFO_READ_FIFO_READ_DATA_COUNT_OFS, read_data);
-
-    if(read_data == 0) begin
-      $display("%t >    ERROR: FIFO read data count has not been changed",$time);
-      error = 1'b1;
-    end
-
-
-    // (6) enter in tx_loop mode ------------------------------------------------------------------
-    // needs to be checked that
-    //  + we are indeed going into tx_loop mode
-    //  + we can stop properly the mode
-    //  + the counters works ?
-    line_rate       = 8'h0;
-    line_loopback   = 3'b010; // 3 near end pcs loopback
-    line_select     = 2'b01;  // 1st line selected
-    reset_registers = 1'b0;
-    tx_loop         = 1'b1;
-    rx_to_tx        = 1'b0;
-    line_parameter = {reset_registers, tx_loop, rx_to_tx , 16'b0, line_rate, line_loopback , line_select};
-
-    qsfp_tx_tready[line_select] = 1'b1;
-
-    $display(" sending %0x", line_parameter);
-
-    maxil_drv_if.write_trans(LINE_PARAMETER_OFS, line_parameter);
-    maxil_drv_if.write_trans(FIFO_WRITE_NUMBER_OF_WORDS_OFS, 64);
-    // what values are clk_count and valid_words_count?
-    maxil_drv_if.read_trans(STAT_CLK_A_OFS, clk_count[31:00]);
-    maxil_drv_if.read_trans(STAT_CLK_B_OFS, clk_count[63:32]);
-    maxil_drv_if.read_trans(STAT_VALID_WORDS_A_OFS, valid_words_count[31:00]);
-    maxil_drv_if.read_trans(STAT_VALID_WORDS_B_OFS, valid_words_count[63:32]);
-
-    $display(" nb of valid words %0d and nb of clock went by %0d before sending any value to the fifo", valid_words_count, clk_count);
-
-    for (int wr_frame = 0; wr_frame < 64; wr_frame++) begin
-      tx_tdata = {$urandom, $urandom};
-      maxil_drv_if.write_trans(FIFO_WRITE_WORDS_TO_WRITE_A_OFS, tx_tdata[AXIL_DATA_W-1:0]);
-      maxil_drv_if.write_trans(FIFO_WRITE_WORDS_TO_WRITE_B_OFS, tx_tdata[2*AXIL_DATA_W-1:AXIL_DATA_W]);
-    end
-    en_rx_datapath = 1'b1;
-
-    repeat(50) @(clk_control);
-    // stop
-    en_rx_datapath = 1'b0;
-    tx_loop         = 1'b0;
-    line_parameter = {reset_registers, tx_loop, rx_to_tx , 16'b0, line_rate, line_loopback , line_select};
-    maxil_drv_if.write_trans(LINE_PARAMETER_OFS, line_parameter);
-
-    repeat(50) @(clk_control);
-    maxil_drv_if.read_trans(STAT_CLK_A_OFS, clk_count[31:00]);
-    maxil_drv_if.read_trans(STAT_CLK_B_OFS, clk_count[63:32]);
-    maxil_drv_if.read_trans(STAT_VALID_WORDS_A_OFS, valid_words_count[31:00]);
-    maxil_drv_if.read_trans(STAT_VALID_WORDS_B_OFS, valid_words_count[63:32]);
-    $display(" nb of valid words %0d and nb of clock went by %0d after stopping tx loop", valid_words_count, clk_count);
-
-    $display("resetting registers");
-    reset_registers = 1'b1;
-    line_parameter = {reset_registers, tx_loop, rx_to_tx , 16'b0, line_rate, line_loopback , line_select};
-    $display(" sending %0x", line_parameter);
-    maxil_drv_if.write_trans(LINE_PARAMETER_OFS, line_parameter);
-    reset_registers = 1'b0;
-    line_parameter = {reset_registers, tx_loop, rx_to_tx , 16'b0, line_rate, line_loopback , line_select};
-    maxil_drv_if.read_trans(STAT_CLK_A_OFS, clk_count[31:00]);
-    maxil_drv_if.read_trans(STAT_CLK_B_OFS, clk_count[63:32]);
-    maxil_drv_if.read_trans(STAT_VALID_WORDS_A_OFS, valid_words_count[31:00]);
-    maxil_drv_if.read_trans(STAT_VALID_WORDS_B_OFS, valid_words_count[63:32]);
-    $display(" nb of valid words %0d and nb of clock went by %0d after reset", valid_words_count, clk_count);
-
-
-    // (7) enter in rx to tx mode -----------------------------------------------------------------
-    rx_to_tx       = 1'b1;
-    en_rx_datapath = 1'b1;
-    line_parameter = {reset_registers, tx_loop, rx_to_tx , 16'b0, line_rate, line_loopback , line_select};
-    maxil_drv_if.write_trans(LINE_PARAMETER_OFS, line_parameter);
-
-    repeat(50) @(posedge clk_control);
-
-    en_rx_datapath = 1'b0;
-    line_parameter = {reset_registers, tx_loop, rx_to_tx , 16'b0, line_rate, line_loopback , line_select};
-    maxil_drv_if.write_trans(LINE_PARAMETER_OFS, line_parameter);
-    maxil_drv_if.read_trans(STAT_CLK_A_OFS, clk_count[31:00]);
-    maxil_drv_if.read_trans(STAT_CLK_B_OFS, clk_count[63:32]);
-    maxil_drv_if.read_trans(STAT_VALID_WORDS_A_OFS, valid_words_count[31:00]);
-    maxil_drv_if.read_trans(STAT_VALID_WORDS_B_OFS, valid_words_count[63:32]);
-    $display(" nb of valid words %0d and nb of clock went by %0d after rx to tx mode", valid_words_count, clk_count);
-
-    // (8) send one frame in loopback and expect register to change -------------------------------
-    line_rate       = 8'h0;
-    line_loopback   = 3'b010; // 3 near end pcs loopback
-    line_select     = 2'b01;  // 1st line selected
-    reset_registers = 1'b0;
-    tx_loop         = 1'b0;
-    rx_to_tx        = 1'b0;
-    en_rx_datapath  = 1'b1;
-    line_parameter = {reset_registers, tx_loop, rx_to_tx , 16'b0, line_rate, line_loopback , line_select};
-    maxil_drv_if.write_trans(LINE_PARAMETER_OFS, line_parameter);
-
-    maxil_drv_if.write_trans(FIFO_WRITE_NUMBER_OF_WORDS_OFS, 13);
-    for (int wr_frame = 0; wr_frame < 13; wr_frame++) begin
-      tx_tdata = {$urandom, $urandom};
-      maxil_drv_if.write_trans(FIFO_WRITE_WORDS_TO_WRITE_A_OFS, tx_tdata[AXIL_DATA_W-1:0]);
-      maxil_drv_if.write_trans(FIFO_WRITE_WORDS_TO_WRITE_B_OFS, tx_tdata[2*AXIL_DATA_W-1:AXIL_DATA_W]);
-    end
-    repeat(5) @(posedge clk_control);
-
-    maxil_drv_if.read_trans(STAT_SOP_CNT_A_OFS, sop_count[31:0]);
-    maxil_drv_if.read_trans(STAT_SOP_CNT_B_OFS, sop_count[63:32]);
-    $display(" sop count %0d", sop_count);
-
-    reset_registers = 1'b1;
-    line_parameter = {reset_registers, tx_loop, rx_to_tx , 16'b0, line_rate, line_loopback , line_select};
-    maxil_drv_if.write_trans(LINE_PARAMETER_OFS, line_parameter);
-
-    maxil_drv_if.read_trans(STAT_SOP_CNT_A_OFS, sop_count[31:0]);
-    maxil_drv_if.read_trans(STAT_SOP_CNT_B_OFS, sop_count[63:32]);
-
-    $display(" sop count after reset %0d", sop_count);
-
-    // maxil_drv_if.read_trans(STAT_CLK_A_OFS, read_data);
-    // maxil_drv_if.read_trans(STAT_CLK_B_OFS, read_data);
-
-    // maxil_drv_if.read_trans(STAT_VALID_WORDS_A_OFS, read_data);
-    // maxil_drv_if.read_trans(STAT_VALID_WORDS_B_OFS, read_data);
-
-    // maxil_drv_if.read_trans(CNT_TRIG_RD_OFS, read_data);
-    // maxil_drv_if.read_trans(CNT_TX_WR_OFS, read_data);
-    // maxil_drv_if.read_trans(CNT_WORDS_OFS, read_data);
-    // maxil_drv_if.read_trans(STAT_STATUS_OFS, read_data);
+    $display("E - When we receive noise on RX, do we see it correctly in the fifo ?");
+    test_receive_noise_rx();
 
     $display("%t > INFO: End simulation",$time);
     repeat(20) @(posedge clk_control);
@@ -539,19 +352,300 @@ module tb_dma;
 // ============================================================================================== --
 // Tasks
 // ============================================================================================== --
+  task automatic init_registers;
+    begin
+    // (1) Reading MAC REGISTERS ------------------------------------------------------------------
+      maxil_drv_if.read_trans(SYSTEM_SRC_MAC_ADDR_OFS, rdata);
+      assert (rdata == 'h0) else begin
+        $display("%t > ERROR:register SYSTEM_SRC_MAC_ADDR_OFS not correctly read %h",$time, rdata);
+        error = 1'b1;
+      end
+      maxil_drv_if.read_trans(SYSTEM_DST_MAC_ADDR_OFS, rdata);
+      assert (rdata == 'h0) else begin
+        $display("%t > ERROR:register SYSTEM_DST_MAC_ADDR_OFS not correctly read %h",$time, rdata);
+        error = 1'b1;
+      end
+      maxil_drv_if.read_trans(SYSTEM_LINE_OFS, rdata);
+      assert (rdata == 'h0) else begin
+        $display("%t > ERROR:register SYSTEM_LINE_OFS not correctly read %h",$time, rdata);
+        error = 1'b1;
+      end
+      // (2) ASSIGN MAC REGISTERS ------------------------------------------------------------------
+      maxil_drv_if.write_trans(SYSTEM_SRC_MAC_ADDR_OFS, DEFAULT_SRC_MAC_ADDR_OFS);
+      maxil_drv_if.write_trans(SYSTEM_DST_MAC_ADDR_OFS, DEFAULT_DST_MAC_ADDR_OFS);
+      // (3) ASSGIN REGISTERS & CHECK -------------------------------------------------------------
+    line_rate     = 8'hAB;  // random, no idea what it should be
+    line_loopback = 3'b100; // 3 near end pcs loopback
+    line_select   = 2'b10;  // 2nd line selected
+    debug_flag    = 1'b0;
+    @(posedge clk_control);
 
-// initialize qsfp link
-  task automatic init_axis;
-  int lanes;
-    for (lanes = '0; lanes < LINE_NB ; lanes++) begin
-      qsfp_rx_tdata = 'h0;
-      qsfp_rx_tkeep_user = 'h0;
-      qsfp_rx_tlast = 'h0;
-      qsfp_rx_tvalid = 'h0;
-      qsfp_tx_tready = 'h0;
+    maxil_drv_if.write_trans(SYSTEM_LINE_OFS, line_parameter);
+
+    rst_rx_datapath = 4'b0100;
+    rst_tx_datapath = 4'b1011;
+    rst_all         = 4'b0101;
+    @(posedge clk_control);
+
+    maxil_drv_if.write_trans(RESET_DATAPATH_OFS, reset_parameter);
+
+    if ((gt_line_rate == line_rate) && (gt_loopback == line_loopback) && (dma.line_sel == line_select)) begin
+      $display("    > line parameter correctly configured");
+    end else begin
+      $display("%t >    ERROR: configuration doesn't match to what have been selected",$time);
+      error = 1'b1;
+    end
+
+    if ((gt_reset_rx_datapath == rst_rx_datapath) && (gt_reset_tx_datapath == rst_tx_datapath) && (gt_reset_all == rst_all)) begin
+      $display("    > reset lines have been triggered correctly");
+    end else begin
+      $display("%t >    ERROR: reset configuration has not been applied correctly",$time);
+      error = 1'b1;
+    end
+
+    // read reset register
+    gt_rx_reset_done= 4'b1111;
+    gt_tx_reset_done= 4'b1111;
+    @(posedge clk_control);
+
+    maxil_drv_if.read_trans(RESET_MONITOR_OFS, reset_monitor);
+
+    if(( reset_monitor[3:0] == gt_tx_reset_done) && ( reset_monitor[7:4] == gt_rx_reset_done)) begin
+      $display("    > reset monitor register correctly read");
+    end else begin
+      $display("%t >    ERROR: reset monitor has not been read correctly",$time);
+      error = 1'b1;
+    end
+
+    // (4) Setting up credible values -------------------------------------------------------------
+    // no loopback, no reset, not in debug lane0 selected
+    line_rate     = 8'h0;
+    line_loopback = 3'b000;
+    line_select   = 2'b00;
+    debug_flag    = 1'b0;
+    rst_rx_datapath = 4'b0000;
+    rst_tx_datapath = 4'b0000;
+    rst_all         = 4'b0000;
+    @(posedge clk_control);
+
+    $display("%t > INFO: Configuration successful\n",$time);
     end
   endtask
 
+  task automatic test_lb_near_end_pcs;
+    logic [AXIS_TDATA_W:0] tx_tdata;
+    begin
+      // (1) setting up configuration -------------------------------------------------------------
+      $display("    > Configuration: Debug mode - Lane 0 - near end pcs");
+      debug_flag    = 1'b1;
+      line_select   = 2'b00;
+      line_loopback = 3'b010;
+      @(posedge clk_control);
+
+      maxil_drv_if.write_trans(SYSTEM_LINE_OFS, line_parameter);
+
+      // ready starts
+      qsfp_tx_tready[line_select] = 1'b1;
+      @(posedge clk_control);
+
+    // (2) write to the fifo ----------------------------------------------------------------------
+      $display("    > writing NB_WORDS_FRAME %0x words into FIFO", NB_WORDS_FRAME);
+      maxil_drv_if.write_trans(FIFO_WRITE_NUMBER_OF_WORDS_OFS, NB_WORDS_FRAME);
+      for (int wr_frame = 0; wr_frame < NB_WORDS_FRAME; wr_frame++) begin
+        tx_tdata = {$urandom, $urandom};
+        maxil_drv_if.write_trans(FIFO_WRITE_WORDS_TO_WRITE_A_OFS, tx_tdata[AXIL_DATA_W-1:0]);
+        maxil_drv_if.write_trans(FIFO_WRITE_WORDS_TO_WRITE_B_OFS, tx_tdata[2*AXIL_DATA_W-1:AXIL_DATA_W]);
+        if (wr_frame == NB_WORDS_FRAME-1) begin
+          repeat(11) @(posedge clk_mrmac);
+          qsfp_tx_tready[line_select] = 1'b0;
+          repeat(5) @(posedge clk_mrmac);
+          qsfp_tx_tready[line_select] = 1'b1;
+        end
+      end
+
+      // (3) Checks that fifo depths are accessible and has changed -----------------------------
+      $display("    > check that FIFO depth registers are accessible and not zeros");
+      maxil_drv_if.read_trans(FIFO_WRITE_FIFO_WRITE_DATA_COUNT_OFS, read_data);
+
+      if(read_data == 0) begin
+        $display("%t >    ERROR: FIFO write data count has not changed",$time);
+        error = 1'b1;
+      end
+
+      maxil_drv_if.read_trans(FIFO_READ_FIFO_READ_DATA_COUNT_OFS, read_data);
+
+      if(read_data == 0) begin
+        $display("%t >    ERROR: FIFO read data count has not changed",$time);
+        error = 1'b1;
+      end
+
+      // has the register count from start of packet to start of packet changed ?
+      maxil_drv_if.read_trans(STAT_SOP_CNT_A_OFS, sop_count[31:0]);
+      maxil_drv_if.read_trans(STAT_SOP_CNT_B_OFS, sop_count[63:32]);
+
+
+      assert (sop_count != 11) else begin
+        $display("%t >    ERROR: unexpected sop count %0d", $time, sop_count);
+        error = 1'b1;
+      end
+
+      empty_fifo();
+    end
+  endtask
+
+  task automatic test_receive_noise_rx;
+    begin
+      // setting up configuration -----------------------------------------------------------------
+      // Debug mode - Lane 0 - near end pcs
+      debug_flag    = 1'b1;
+      line_select   = 2'b00;
+      line_loopback = 3'b000;
+      @(posedge clk_control);
+
+      maxil_drv_if.write_trans(SYSTEM_LINE_OFS, line_parameter);
+
+      // Checks the rx datapath -------------------------------------------------------------------
+      enable_noise_on_rx = 1'b1;
+      repeat(3*NB_WORDS_FRAME) @(posedge clk_mrmac);
+      enable_noise_on_rx = 1'b0;
+      repeat(20) @(posedge clk_control);
+      // read the first value to trigger fifo pull
+      maxil_drv_if.read_trans(FIFO_READ_WORDS_TO_READ_B_OFS, read_data);
+      repeat(20) @(posedge clk_control);
+
+      for (int rd_i = 0; rd_i< NB_WORDS_FRAME; rd_i++ ) begin
+        maxil_drv_if.read_trans(FIFO_READ_WORDS_TO_READ_A_OFS, read_data[AXIL_DATA_W-1:0]);
+        maxil_drv_if.read_trans(FIFO_READ_WORDS_TO_READ_B_OFS, read_data[2*AXIL_DATA_W-1:AXIL_DATA_W]);
+        expected_data[line_select] = data_noise_ref_rx_q[line_select].pop_back();
+
+        assert (expected_data[line_select] == read_data) else begin
+          $display("%t >    ERROR: error while reading into the fifo: unexpected value %x %x",$time, expected_data[line_select], read_data);
+          error = 1'b1;
+        end
+
+        repeat(20) @(posedge clk_control);
+      end
+    end
+  endtask
+
+
+  // task automatic measure_sop_2_sop();
+  // endtask
+
+  task automatic debug_mode_tx_loop();
+    // needs to be checked that
+    //  1 configuration of tx_loop mode
+    //  2 send an ethernet frame that will be looped
+    //  3 we can stop properly the mode
+    //  x do we see the correct values in loopback ?
+    //  x do the counters properly works ?
+    //  x reset the register and check their value are now zero
+    logic [AXIS_TDATA_W:0] tx_tdata;
+   begin
+      // (1) setting tx_loop configuration --------------------------------------------------------
+      debug_flag    = 1'b1;
+      line_loopback = 3'b010; // 3 near end pcs loopback
+      line_select   = 2'b01;  // 1st line selected
+      tx_loop       = 1'b1;
+
+      maxil_drv_if.write_trans(SYSTEM_LINE_OFS, line_parameter);
+      maxil_drv_if.write_trans(LINE_DEBUG_OFS,  line_debug);
+
+      qsfp_tx_tready[line_select] = 1'b1;
+
+      // what values are clk_count and valid_words_count?
+      maxil_drv_if.read_trans(STAT_CLK_A_OFS, clk_count[31:00]);
+      maxil_drv_if.read_trans(STAT_CLK_B_OFS, clk_count[63:32]);
+      maxil_drv_if.read_trans(STAT_VALID_WORDS_A_OFS, valid_words_count[31:00]);
+      maxil_drv_if.read_trans(STAT_VALID_WORDS_B_OFS, valid_words_count[63:32]);
+
+      $display("    >  @ init nb valid words %0d and nb of clock went by %0d", valid_words_count, clk_count);
+
+      // (2) sending ethernet frame ---------------------------------------------------------------
+      maxil_drv_if.write_trans(FIFO_WRITE_NUMBER_OF_WORDS_OFS, 64);
+
+      for (int wr_frame = 0; wr_frame < 64; wr_frame++) begin
+        tx_tdata = {$urandom, $urandom};
+        maxil_drv_if.write_trans(FIFO_WRITE_WORDS_TO_WRITE_A_OFS, tx_tdata[AXIL_DATA_W-1:0]);
+        maxil_drv_if.write_trans(FIFO_WRITE_WORDS_TO_WRITE_B_OFS, tx_tdata[2*AXIL_DATA_W-1:AXIL_DATA_W]);
+      end
+
+      repeat(50) @(clk_control);
+
+      // (3) stopping mode ------------------------------------------------------------------------
+      tx_loop = 1'b0;
+      @(clk_control);
+
+      maxil_drv_if.write_trans(LINE_DEBUG_OFS,  line_debug);
+
+      maxil_drv_if.read_trans(STAT_CLK_A_OFS, clk_count[31:00]);
+      maxil_drv_if.read_trans(STAT_CLK_B_OFS, clk_count[63:32]);
+      maxil_drv_if.read_trans(STAT_VALID_WORDS_A_OFS, valid_words_count[31:00]);
+      maxil_drv_if.read_trans(STAT_VALID_WORDS_B_OFS, valid_words_count[63:32]);
+
+      $display("    >  after 50cc: nb valid words %0d and nb of clock went by %0d", valid_words_count, clk_count);
+
+      assert ((valid_words_count != 0) || ( clk_count != 0  )) else begin
+              $display("%t >    ERROR: error while reading txloop registers, they have not moved",$time);
+              error = 1'b1;
+            end
+      // emptying the FIFO
+      empty_fifo();
+   end
+
+  endtask
+
+  task automatic debug_mode_rx_2_tx();
+    begin
+      // let's reset the registers
+      reset_registers = 1'b1;
+      @(posedge clk_control);
+
+      maxil_drv_if.write_trans(LINE_DEBUG_OFS,  line_debug);
+
+      line_loopback      = 3'b000;
+      reset_registers    = 1'b0;
+      rx_to_tx           = 1'b1;
+
+      @(posedge clk_control);
+      maxil_drv_if.write_trans(LINE_DEBUG_OFS,  line_debug);
+      maxil_drv_if.write_trans(SYSTEM_LINE_OFS, line_parameter);
+
+
+      enable_noise_on_rx = 1'b1;
+
+      repeat(50) @(posedge clk_control);
+
+      enable_noise_on_rx = 1'b0;
+      rx_to_tx           = 1'b0;
+
+      @(posedge clk_control);
+      maxil_drv_if.write_trans(LINE_DEBUG_OFS,  line_debug);
+
+      maxil_drv_if.read_trans(STAT_CLK_A_OFS, clk_count[31:00]);
+      maxil_drv_if.read_trans(STAT_CLK_B_OFS, clk_count[63:32]);
+      maxil_drv_if.read_trans(STAT_VALID_WORDS_A_OFS, valid_words_count[31:00]);
+      maxil_drv_if.read_trans(STAT_VALID_WORDS_B_OFS, valid_words_count[63:32]);
+      $display(" nb of valid words %0d and nb of clock went by %0d after rx to tx mode", valid_words_count, clk_count);
+
+      empty_fifo();
+      for (int lane = 0; lane < LINE_NB ; lane++) begin
+        data_noise_ref_rx_q[lane].delete();
+      end
+    end
+  endtask
+
+  task automatic empty_fifo();
+    $display("    > emptying FIFO for next test");
+    // this task is testing the loopback and we check that the values are back on rx
+    // Let's empty the fifo in order to start clean for the next test that will check FIFO values
+    // TODO: create a way to empty the debug fifo more cleanly
+    // TODO: When there is a stall in t_ready we see duplicated words in the FIFO
+    maxil_drv_if.read_trans(FIFO_READ_WORDS_TO_READ_B_OFS, read_data);
+    for (int rd_i = 0; rd_i< 512; rd_i++ ) begin
+      maxil_drv_if.read_trans(FIFO_READ_WORDS_TO_READ_B_OFS, read_data[2*AXIL_DATA_W-1:AXIL_DATA_W]);
+    end
+  endtask //automatic
 // ---------------------------------------------------------------------------------------------- --
 // AXI4-stream
 // ---------------------------------------------------------------------------------------------- --
@@ -584,7 +678,7 @@ module tb_dma;
             automatic int i;
             @(posedge clk_mrmac);
             for (i = 0; i < WORD_NB; i++) begin
-              if (en_rx_datapath == 1'b1) begin
+              if (enable_noise_on_rx == 1'b1) begin
                 tdata[lanes] = {$urandom,$urandom};
                 tkeep_user[lanes] = $urandom;
                 tlast[lanes] = (i == WORD_NB-1);
@@ -611,18 +705,52 @@ module tb_dma;
     join_none
   end
 
-always_ff @(posedge clk_mrmac)
-  for (int i=1; i<LINE_NB; i=i+1)
-    if (qsfp_rx_tvalid[i])
-      data_ref_rx_q[i].push_front(qsfp_rx_tdata[i]);
+  // checker: push noise into queue when signal is up
+  // assert is directly in the task
+  always_ff @(posedge clk_mrmac)
+    for (int i=0; i<LINE_NB; i=i+1)
+      if (qsfp_rx_tvalid[i])
+        if (enable_noise_on_rx)
+          data_noise_ref_rx_q[i].push_front(qsfp_rx_tdata[i]);
+
+  // Loopback -------------------------------------------------------------------------------------
+  // checker: push loopback values into queue
+  always_ff @(posedge clk_mrmac)
+    for (int i=0; i<LINE_NB; i=i+1)
+      if (qsfp_tx_tvalid[i] && (gt_loopback != 0))
+          data_lb_ref_rx_q[i].push_front(qsfp_tx_tdata[i]);
+
+  // checker: are values from loopback correct ?
+  generate
+    for (genvar lanes = '0; lanes < LINE_NB ; lanes++) begin
+      always_ff @(posedge clk_mrmac) begin
+        if (gt_loopback != 0) begin
+          if (qsfp_rx_tvalid[lanes] == 1'b1) begin
+            expected_data[lanes] = data_lb_ref_rx_q[lanes].pop_back();
+
+            assert (expected_data[lanes] == qsfp_rx_tdata[lanes]) else begin
+              $display("%t >    ERROR: error while reading into the fifo: unexpected value %x %x",$time, expected_data[lanes], read_data[lanes]);
+              error = 1'b1;
+            end
+          end
+        end
+      end
+    end
+  endgenerate
 
   always_comb begin
     for (int lanes = '0; lanes < LINE_NB ; lanes++) begin
-      qsfp_rx_tdata[lanes]      = tdata[lanes];
-      qsfp_rx_tkeep_user[lanes] = tkeep_user[lanes];
-      qsfp_rx_tlast[lanes]      = tlast[lanes];
-      qsfp_rx_tvalid[lanes]     = tvalid[lanes];
+      if (enable_noise_on_rx) begin
+        qsfp_rx_tdata[lanes]      = tdata[lanes];
+        qsfp_rx_tkeep_user[lanes] = tkeep_user[lanes];
+        qsfp_rx_tlast[lanes]      = tlast[lanes];
+        qsfp_rx_tvalid[lanes]     = tvalid[lanes];
+      end else begin
+        qsfp_rx_tdata[lanes]      = rx_tdata[lanes];
+        qsfp_rx_tkeep_user[lanes] = rx_tkeep_user[lanes];
+        qsfp_rx_tlast[lanes]      = rx_tlast[lanes];
+        qsfp_rx_tvalid[lanes]     = rx_tvalid[lanes];
+      end
     end
   end
-
 endmodule

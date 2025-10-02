@@ -1,7 +1,7 @@
 // ============================================================================================== //
 // Description  : Axi4-lite register bank
 // This file was generated with rust regmap generator:
-//  * Date:  2025-09-30
+//  * Date:  2025-10-01
 //  * Tool_version: bb0db737792da6b81e69a039028c971af1627fe2
 // ---------------------------------------------------------------------------------------------- //
 // xR[n]W[na]
@@ -55,13 +55,19 @@ import hpu_regif_core_eth_2in3_pkg::*;
   input  logic                          s_axil_rready,
   // Registered version of wdata
   output logic [AXIL_DATA_W-1:0]        r_axil_wdata
-  // Register IO: line_parameter
-    , output line_parameter_t r_line_parameter
+  // Register IO: system_src_mac_addr
+    , output logic [REG_DATA_W-1: 0] r_system_src_mac_addr
+  // Register IO: system_dst_mac_addr
+    , output logic [REG_DATA_W-1: 0] r_system_dst_mac_addr
+  // Register IO: system_line
+    , output system_line_t r_system_line
   // Register IO: reset_datapath
     , output reset_datapath_t r_reset_datapath
   // Register IO: reset_monitor
     , output reset_monitor_t r_reset_monitor
         , input reset_monitor_t r_reset_monitor_upd
+  // Register IO: line_debug
+    , output line_debug_t r_line_debug
   // Register IO: fifo_write_number_of_words
     , output logic [REG_DATA_W-1: 0] r_fifo_write_number_of_words
   // Register IO: fifo_write_words_to_write_a
@@ -239,29 +245,24 @@ import hpu_regif_core_eth_2in3_pkg::*;
 // ============================================================================================== --
 // Default value signals
 // ============================================================================================== --
-//-- Default entry_eth_2in3_dummy_val0
-  logic [REG_DATA_W-1:0]entry_eth_2in3_dummy_val0_default;
-  assign entry_eth_2in3_dummy_val0_default = 'h5050504;
-//-- Default entry_eth_2in3_dummy_val1
-  logic [REG_DATA_W-1:0]entry_eth_2in3_dummy_val1_default;
-  assign entry_eth_2in3_dummy_val1_default = 'h15151515;
-//-- Default entry_eth_2in3_dummy_val2
-  logic [REG_DATA_W-1:0]entry_eth_2in3_dummy_val2_default;
-  assign entry_eth_2in3_dummy_val2_default = 'h25252525;
-//-- Default entry_eth_2in3_dummy_val3
-  logic [REG_DATA_W-1:0]entry_eth_2in3_dummy_val3_default;
-  assign entry_eth_2in3_dummy_val3_default = 'h35353535;
-//-- Default line_parameter
-  line_parameter_t line_parameter_default;
+//-- Default system_src_mac_addr
+  logic [REG_DATA_W-1:0]system_src_mac_addr_default;
+  assign system_src_mac_addr_default = 'h0;
+//-- Default system_dst_mac_addr
+  logic [REG_DATA_W-1:0]system_dst_mac_addr_default;
+  assign system_dst_mac_addr_default = 'h0;
+//-- Default system_line
+  system_line_t system_line_default;
   always_comb begin
-    line_parameter_default = 'h0;
-    line_parameter_default.select = 'h0;
-    line_parameter_default.loopback = 'h0;
-    line_parameter_default.rate = 'h0;
-    line_parameter_default.rx_to_tx = 'h0;
-    line_parameter_default.tx_loop = 'h0;
-    line_parameter_default.reset_registers = 'h0;
+    system_line_default = 'h0;
+    system_line_default.select = 'h0;
+    system_line_default.loopback = 'h0;
+    system_line_default.rate = 'h0;
+    system_line_default.debug = 'h0;
   end
+//-- Default system_dummy_val3
+  logic [REG_DATA_W-1:0]system_dummy_val3_default;
+  assign system_dummy_val3_default = 'h35353535;
 //-- Default reset_datapath
   reset_datapath_t reset_datapath_default;
   always_comb begin
@@ -275,6 +276,14 @@ import hpu_regif_core_eth_2in3_pkg::*;
   always_comb begin
     reset_monitor_default = 'h0;
     reset_monitor_default.rst_done = 'h0;
+  end
+//-- Default line_debug
+  line_debug_t line_debug_default;
+  always_comb begin
+    line_debug_default = 'h0;
+    line_debug_default.rx_to_tx = 'h0;
+    line_debug_default.tx_loop = 'h0;
+    line_debug_default.reset_registers = 'h0;
   end
 //-- Default fifo_write_number_of_words
   logic [REG_DATA_W-1:0]fifo_write_number_of_words_default;
@@ -332,15 +341,37 @@ import hpu_regif_core_eth_2in3_pkg::*;
 // ============================================================================================== --
   // To ease the code, use REG_DATA_W as register size.
   // Unused bits will be simplified by the synthesizer
-// Register FF: line_parameter
-  logic [REG_DATA_W-1:0] r_line_parameterD;
-  assign r_line_parameterD = (wr_en_ok && (wr_add[AXIL_ADD_RANGE_W-1:0] == LINE_PARAMETER_OFS[AXIL_ADD_RANGE_W-1:0]))? wr_data: r_line_parameter;
+// Register FF: system_src_mac_addr
+  logic [REG_DATA_W-1:0] r_system_src_mac_addrD;
+  assign r_system_src_mac_addrD = (wr_en_ok && (wr_add[AXIL_ADD_RANGE_W-1:0] == SYSTEM_SRC_MAC_ADDR_OFS[AXIL_ADD_RANGE_W-1:0]))? wr_data: r_system_src_mac_addr;
   always_ff @(posedge clk) begin
     if (!s_rst_n) begin
-      r_line_parameter       <= line_parameter_default;
+      r_system_src_mac_addr       <= system_src_mac_addr_default;
     end
     else begin
-      r_line_parameter       <= r_line_parameterD;
+      r_system_src_mac_addr       <= r_system_src_mac_addrD;
+    end
+  end
+// Register FF: system_dst_mac_addr
+  logic [REG_DATA_W-1:0] r_system_dst_mac_addrD;
+  assign r_system_dst_mac_addrD = (wr_en_ok && (wr_add[AXIL_ADD_RANGE_W-1:0] == SYSTEM_DST_MAC_ADDR_OFS[AXIL_ADD_RANGE_W-1:0]))? wr_data: r_system_dst_mac_addr;
+  always_ff @(posedge clk) begin
+    if (!s_rst_n) begin
+      r_system_dst_mac_addr       <= system_dst_mac_addr_default;
+    end
+    else begin
+      r_system_dst_mac_addr       <= r_system_dst_mac_addrD;
+    end
+  end
+// Register FF: system_line
+  logic [REG_DATA_W-1:0] r_system_lineD;
+  assign r_system_lineD = (wr_en_ok && (wr_add[AXIL_ADD_RANGE_W-1:0] == SYSTEM_LINE_OFS[AXIL_ADD_RANGE_W-1:0]))? wr_data: r_system_line;
+  always_ff @(posedge clk) begin
+    if (!s_rst_n) begin
+      r_system_line       <= system_line_default;
+    end
+    else begin
+      r_system_line       <= r_system_lineD;
     end
   end
 // Register FF: reset_datapath
@@ -363,6 +394,17 @@ import hpu_regif_core_eth_2in3_pkg::*;
     end
     else begin
       r_reset_monitor       <= r_reset_monitorD;
+    end
+  end
+// Register FF: line_debug
+  logic [REG_DATA_W-1:0] r_line_debugD;
+  assign r_line_debugD = (wr_en_ok && (wr_add[AXIL_ADD_RANGE_W-1:0] == LINE_DEBUG_OFS[AXIL_ADD_RANGE_W-1:0]))? wr_data: r_line_debug;
+  always_ff @(posedge clk) begin
+    if (!s_rst_n) begin
+      r_line_debug       <= line_debug_default;
+    end
+    else begin
+      r_line_debug       <= r_line_debugD;
     end
   end
 // Register FF: fifo_write_number_of_words
@@ -571,26 +613,26 @@ import hpu_regif_core_eth_2in3_pkg::*;
         else begin
           axil_rrespD = AXI4_OKAY;
           case(rd_add[AXIL_ADD_RANGE_W-1:0])
-          ENTRY_ETH_2IN3_DUMMY_VAL0_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register entry_eth_2in3_dummy_val0
-            axil_rdataD = entry_eth_2in3_dummy_val0_default;
+          SYSTEM_SRC_MAC_ADDR_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register system_src_mac_addr
+            axil_rdataD = r_system_src_mac_addr;
           end
-          ENTRY_ETH_2IN3_DUMMY_VAL1_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register entry_eth_2in3_dummy_val1
-            axil_rdataD = entry_eth_2in3_dummy_val1_default;
+          SYSTEM_DST_MAC_ADDR_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register system_dst_mac_addr
+            axil_rdataD = r_system_dst_mac_addr;
           end
-          ENTRY_ETH_2IN3_DUMMY_VAL2_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register entry_eth_2in3_dummy_val2
-            axil_rdataD = entry_eth_2in3_dummy_val2_default;
+          SYSTEM_LINE_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register system_line
+            axil_rdataD = r_system_line;
           end
-          ENTRY_ETH_2IN3_DUMMY_VAL3_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register entry_eth_2in3_dummy_val3
-            axil_rdataD = entry_eth_2in3_dummy_val3_default;
-          end
-          LINE_PARAMETER_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register line_parameter
-            axil_rdataD = r_line_parameter;
+          SYSTEM_DUMMY_VAL3_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register system_dummy_val3
+            axil_rdataD = system_dummy_val3_default;
           end
           RESET_DATAPATH_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register reset_datapath
             axil_rdataD = r_reset_datapath;
           end
           RESET_MONITOR_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register reset_monitor
             axil_rdataD = r_reset_monitor;
+          end
+          LINE_DEBUG_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register line_debug
+            axil_rdataD = r_line_debug;
           end
           FIFO_WRITE_NUMBER_OF_WORDS_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register fifo_write_number_of_words
             axil_rdataD = r_fifo_write_number_of_words;

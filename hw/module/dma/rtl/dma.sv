@@ -80,21 +80,61 @@ module dma
   // Register file
   // =============
   // What needs to be controlled through axi4-lite
-  //  = MRMAC =================================================================
-  //  * line selection            : 2b : rw : line_select
+  //  = SYSTEM ================================================================
+  //  * Source MAC address        : 24b : rw : MAC address of this HPU, without OUI
+  //  * Target MAC address        : 24b : rw : MAC address of target HPU, without OUI
+  //  * Line parametrization      : 14b : rw : general parameters for line communication
+  //  = RESET =================================================================
   //  * rx datapath reset         : 4b : rw : gt_reset_rx_datapath
   //  * tx datapath reset         : 4b : rw : gt_reset_tx_datapath
   //  * GT PLL and datapath reset : 4b : rw : gt_reset_all
   //  * reset done monitoring     : 8b : r  : gt_{rx;tx}_reset_done
-  //  = GTM ===================================================================
-  //  * channel line rate         : 8b : rw : gt_line_rate
-  //  * loopback                  : 3b : rw : gt_loopback
   // ============================================================================================ //
   // Registers
-  logic [31:0] r_line_parameter;
+  logic [31:0] r_system_src_mac_addr;
+  logic [31:0] r_system_dst_mac_addr;
+  logic [31:0] r_system_line;
   logic [31:0] r_reset_datapath;
   logic [31:0] r_reset_monitor;
-  // for fifo handler
+  logic [31:0] r_line_debug;
+  logic [31:0] r_status_debug;
+  // signals derived from registers
+  logic                 tx_loop;
+  logic                 rx_to_tx;
+  logic                 reset_registers;
+  logic                 debug;
+
+  logic                 stat_tx_empty;
+  logic                 stat_tx_rd_rst_busy;
+  logic                 stat_tx_data_valid;
+  logic [NB_WORD_W-1:0] stat_rd_data_count;
+  logic                 stat_tx_full;
+  logic                 stat_tx_wr_rst_busy;
+  logic                 stat_qsfp_tx_tready;
+
+  assign line_sel      = r_system_line[1:0];
+  assign gt_loopback   = r_system_line[4:2];
+  assign gt_line_rate  = r_system_line[13:5];
+  assign debug         = r_system_line[31];
+
+  assign gt_reset_all         = r_reset_datapath[3:0];
+  assign gt_reset_tx_datapath = r_reset_datapath[7:4];
+  assign gt_reset_rx_datapath = r_reset_datapath[11:8];
+
+  assign r_reset_monitor[3:0] = gt_tx_reset_done;
+  assign r_reset_monitor[7:4] = gt_rx_reset_done;
+  assign r_reset_monitor[31:8] = 'h0;
+
+  assign rx_to_tx        = r_line_debug[29];
+  assign tx_loop         = r_line_debug[30];
+  assign reset_registers = r_line_debug[31];
+
+  assign r_status_debug = {stat_tx_empty, stat_tx_rd_rst_busy, stat_tx_data_valid,
+                          stat_tx_full, stat_tx_wr_rst_busy, stat_qsfp_tx_tready,
+                          {(AXIL_DATA_W-NB_WORD_W-6){1'b0}},
+                          stat_rd_data_count};
+
+  // status directly from fifo
   logic [NB_WORD_W-1:0]    r_nb_word;
   logic [AXIS_TDATA_W-1:0] r_wr_word;
   logic [AXIL_DATA_W-1:0]  r_wr_word_a;
@@ -108,17 +148,6 @@ module dma
   logic [63:0]             sop_cnt_out;
   logic [31:0]             trigger_rd_cnt_out;
   logic [31:0]             tx_wr_en_cnt;
-  logic                    stat_tx_empty;
-  logic                    stat_tx_rd_rst_busy;
-  logic                    stat_tx_data_valid;
-  logic [NB_WORD_W-1:0]    stat_rd_data_count;
-  logic                    stat_tx_full;
-  logic                    stat_tx_wr_rst_busy;
-  logic                    stat_qsfp_tx_tready;
-
-  logic tx_loop;
-  logic rx_to_tx;
-  logic reset_registers;
 
   hpu_regif_core_eth_2in3  hpu_regif_core_eth_2in3 (
     // configuration interface
@@ -142,31 +171,29 @@ module dma
     .s_axil_rvalid (s_axil_dma_rvalid),
     .s_axil_rready (s_axil_dma_rready),
     .r_axil_wdata  (/* */),
-    // [section.line]
-    .r_line_parameter(r_line_parameter),
-    // [section.reset]
-    .r_reset_datapath(r_reset_datapath),
-    .r_reset_monitor_upd(r_reset_monitor),
-    // [section.fifo_write]
-    .r_fifo_write_number_of_words(r_nb_word),
-    .r_fifo_write_words_to_write_a(r_wr_word_a),
-    .r_fifo_write_words_to_write_b(r_wr_word_b),
+    // registers
+    .r_system_src_mac_addr                 (r_system_src_mac_addr),
+    .r_system_dst_mac_addr                 (r_system_dst_mac_addr),
+    .r_system_line                         (r_system_line),
+    .r_reset_datapath                      (r_reset_datapath),
+    .r_reset_monitor_upd                   (r_reset_monitor),
+    .r_line_debug                          (r_line_debug),
+    .r_fifo_write_number_of_words          (r_nb_word),
+    .r_fifo_write_words_to_write_a         (r_wr_word_a),
+    .r_fifo_write_words_to_write_b         (r_wr_word_b),
     .r_fifo_write_fifo_write_data_count_upd({ {(AXIL_DATA_W-NB_WORD_W){1'b0}}, r_wr_data_count}),
-    // [section.fifo_read]
-    .r_fifo_read_words_to_read_a_upd(r_rd_word[AXIL_DATA_W-1:0]),
-    .r_fifo_read_words_to_read_b_upd(r_rd_word[2*AXIL_DATA_W-1:AXIL_DATA_W]),
-    .r_fifo_read_fifo_read_data_count_upd({ {(AXIL_DATA_W-NB_WORD_W){1'b0}}, r_rd_data_count}),
-    // [section.cnt]
-    .r_cnt_trig_rd_upd(trigger_rd_cnt_out),
-    .r_cnt_tx_wr_upd(tx_wr_en_cnt),
-    // [section.stat]
-    .r_stat_clk_a_upd(clk_cnt_out[31:0] ),
-    .r_stat_clk_b_upd(clk_cnt_out[63:32]),
-    .r_stat_valid_words_a_upd(valid_words_out[31:0] ),
-    .r_stat_valid_words_b_upd(valid_words_out[63:32]),
-    .r_stat_sop_cnt_a_upd(sop_cnt_out[31:0]),
-    .r_stat_sop_cnt_b_upd(sop_cnt_out[63:32]),
-    .r_stat_status_upd({stat_tx_empty, stat_tx_rd_rst_busy, stat_tx_data_valid, stat_tx_full, stat_tx_wr_rst_busy, stat_qsfp_tx_tready, {(AXIL_DATA_W-NB_WORD_W-6){1'b0}}, stat_rd_data_count})
+    .r_fifo_read_words_to_read_a_upd       (r_rd_word[AXIL_DATA_W-1:0]),
+    .r_fifo_read_words_to_read_b_upd       (r_rd_word[2*AXIL_DATA_W-1:AXIL_DATA_W]),
+    .r_fifo_read_fifo_read_data_count_upd  ({ {(AXIL_DATA_W-NB_WORD_W){1'b0}}, r_rd_data_count}),
+    .r_cnt_trig_rd_upd                     (trigger_rd_cnt_out),
+    .r_cnt_tx_wr_upd                       (tx_wr_en_cnt),
+    .r_stat_clk_a_upd                      (clk_cnt_out[31:0] ),
+    .r_stat_clk_b_upd                      (clk_cnt_out[63:32]),
+    .r_stat_valid_words_a_upd              (valid_words_out[31:0] ),
+    .r_stat_valid_words_b_upd              (valid_words_out[63:32]),
+    .r_stat_sop_cnt_a_upd                  (sop_cnt_out[31:0]),
+    .r_stat_sop_cnt_b_upd                  (sop_cnt_out[63:32]),
+    .r_stat_status_upd                     (r_status_debug)
   );
 
   // Logic around regfile -------------------------------------------------------------------------
@@ -330,22 +357,5 @@ module dma
 
     .line_sel(line_sel)
   );
-
-  // assigning outputs
-  assign line_sel      = r_line_parameter[1:0];
-  assign gt_loopback   = r_line_parameter[4:2];
-  assign gt_line_rate  = r_line_parameter[13:5];
-
-  assign rx_to_tx        = r_line_parameter[29];
-  assign tx_loop         = r_line_parameter[30];
-  assign reset_registers = r_line_parameter[31];
-
-  assign gt_reset_all         = r_reset_datapath[3:0];
-  assign gt_reset_tx_datapath = r_reset_datapath[7:4];
-  assign gt_reset_rx_datapath = r_reset_datapath[11:8];
-
-  assign r_reset_monitor[3:0] = gt_tx_reset_done;
-  assign r_reset_monitor[7:4] = gt_rx_reset_done;
-  assign r_reset_monitor[31:8] = 'h0;
 
 endmodule
