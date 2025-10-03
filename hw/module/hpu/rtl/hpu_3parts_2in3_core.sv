@@ -449,18 +449,18 @@ module hpu_3parts_2in3_core
 
 
 // ---------------------------------------------------------------------------------------------- --
-// DMA
+// multi HPU DMA
 // contains:
 // * control register file for MAC+PCS & GT
 // * axi4-stream switch in order to toggle between each line for RPU connection
 // TODO: WIP
 //
 // ---------------------------------------------------------------------------------------------- --
-  dma #(
+  multi_hpu_dma #(
     .LINE_NB     (LINE_NB),
     .AXIS_TDATA_W(AXIS_TDATA_W),
     .AXIS_TKEEP_W(AXIS_TKEEP_W)
-  ) dma (
+  ) multi_hpu_dma (
     // configration interface: regif
     .clk_eth_cfg   (cfg_eth_clk),
     .resetn_eth_cfg(cfg_eth_srst_n),

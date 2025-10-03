@@ -7,7 +7,7 @@
 //
 // ==============================================================================================
 
-module fifo_handle #(
+module debug_lane #(
   parameter int AXIS_TDATA_W  = 64,
   parameter int AXIS_TKEEP_W  = 11,
 

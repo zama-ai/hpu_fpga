@@ -2,14 +2,14 @@
 // BSD 3-Clause Clear License
 // Copyright © 2025 ZAMA. All rights reserved.
 // ----------------------------------------------------------------------------------------------
-// Description  : This is the explicit title of the testbench module
-// ----------------------------------------------------------------------------------------------
+// Description  : This testbench only tests debug mode
+// Debug mode corresponds to the control of one lane through register file
 //
 // ==============================================================================================
 
 `resetall
 `timescale 1ns/10ps
-module tb_dma;
+module tb_debug_mode;
   import axi_if_common_param_pkg::*;
   import axi_if_shell_axil_pkg::*;
   import hpu_regif_core_eth_2in3_pkg::*;
@@ -21,7 +21,7 @@ module tb_dma;
   localparam int CLK_HALF_PERIOD_B = 1;
   localparam int ARST_ACTIVATION = 17;
 
-  localparam int LINE_NB = 4;
+  localparam int LANE_NB = 4;
   localparam int AXIS_TDATA_W = 64;
   localparam int AXIS_TKEEP_W = 11;
 
@@ -115,16 +115,16 @@ module tb_dma;
   logic                       s_axil_dma_rready;
   // QSFP system interface ----------------------------------------------------
   // == TX
-  logic [LINE_NB-1:0][AXIS_TDATA_W-1:0] qsfp_tx_tdata;
-  logic [LINE_NB-1:0][AXIS_TKEEP_W-1:0] qsfp_tx_tkeep_user;
-  logic [LINE_NB-1:0]                   qsfp_tx_tlast;
-  logic [LINE_NB-1:0]                   qsfp_tx_tvalid;
-  logic [LINE_NB-1:0]                   qsfp_tx_tready;
+  logic [LANE_NB-1:0][AXIS_TDATA_W-1:0] qsfp_tx_tdata;
+  logic [LANE_NB-1:0][AXIS_TKEEP_W-1:0] qsfp_tx_tkeep_user;
+  logic [LANE_NB-1:0]                   qsfp_tx_tlast;
+  logic [LANE_NB-1:0]                   qsfp_tx_tvalid;
+  logic [LANE_NB-1:0]                   qsfp_tx_tready;
   // == RX
-  logic [LINE_NB-1:0][AXIS_TDATA_W-1:0] qsfp_rx_tdata;
-  logic [LINE_NB-1:0][AXIS_TKEEP_W-1:0] qsfp_rx_tkeep_user;
-  logic [LINE_NB-1:0]                   qsfp_rx_tlast;
-  logic [LINE_NB-1:0]                   qsfp_rx_tvalid;
+  logic [LANE_NB-1:0][AXIS_TDATA_W-1:0] qsfp_rx_tdata;
+  logic [LANE_NB-1:0][AXIS_TKEEP_W-1:0] qsfp_rx_tkeep_user;
+  logic [LANE_NB-1:0]                   qsfp_rx_tlast;
+  logic [LANE_NB-1:0]                   qsfp_rx_tvalid;
 
   // ============================================================================================== --
   // Design under test instance
@@ -132,11 +132,11 @@ module tb_dma;
   // gt configuration signals
   logic [7:0]         gt_line_rate;
   logic [2:0]         gt_loopback;
-  logic [LINE_NB-1:0] gt_reset_rx_datapath;
-  logic [LINE_NB-1:0] gt_reset_tx_datapath;
-  logic [LINE_NB-1:0] gt_reset_all;
-  logic [LINE_NB-1:0] gt_rx_reset_done;
-  logic [LINE_NB-1:0] gt_tx_reset_done;
+  logic [LANE_NB-1:0] gt_reset_rx_datapath;
+  logic [LANE_NB-1:0] gt_reset_tx_datapath;
+  logic [LANE_NB-1:0] gt_reset_all;
+  logic [LANE_NB-1:0] gt_rx_reset_done;
+  logic [LANE_NB-1:0] gt_tx_reset_done;
 
   // [section] line parameter -------------------------------------------------
   logic [31:0] line_parameter;
@@ -164,9 +164,9 @@ module tb_dma;
 
   // [section] reset ----------------------------------------------------------
   logic [31:0]        reset_parameter;
-  logic [LINE_NB-1:0] rst_rx_datapath;
-  logic [LINE_NB-1:0] rst_tx_datapath;
-  logic [LINE_NB-1:0] rst_all;
+  logic [LANE_NB-1:0] rst_rx_datapath;
+  logic [LANE_NB-1:0] rst_tx_datapath;
+  logic [LANE_NB-1:0] rst_all;
 
   assign reset_parameter = {20'h0, rst_rx_datapath, rst_tx_datapath, rst_all};
 
@@ -174,12 +174,12 @@ module tb_dma;
   logic [31:0] reset_monitor;
 
   // DUT ------------------------------------------------------------------------------------------
-  dma #(
-    .LINE_NB(LINE_NB),
+  multi_hpu_dma #(
+    .LANE_NB(LANE_NB),
     .AXIS_TDATA_W(AXIS_TDATA_W),
     .AXIS_TKEEP_W(AXIS_TKEEP_W),
     .FIFO_DEPTH(FIFO_DEPTH)
-  ) dma (
+  ) dut (
     .clk_eth_cfg   (clk_control    ),
     .resetn_eth_cfg(s_rstn_control ),
 
@@ -224,14 +224,14 @@ module tb_dma;
     .gt_tx_reset_done(gt_tx_reset_done)
 );
 
-  logic [LINE_NB-1:0][AXIS_TDATA_W-1:0] rx_tdata;
-  logic [LINE_NB-1:0][AXIS_TKEEP_W-1:0] rx_tkeep_user;
-  logic [LINE_NB-1:0]                   rx_tlast;
-  logic [LINE_NB-1:0]                   rx_tvalid;
+  logic [LANE_NB-1:0][AXIS_TDATA_W-1:0] rx_tdata;
+  logic [LANE_NB-1:0][AXIS_TKEEP_W-1:0] rx_tkeep_user;
+  logic [LANE_NB-1:0]                   rx_tlast;
+  logic [LANE_NB-1:0]                   rx_tvalid;
 
   // ----------------------------------------------------------------------------------------------
   model_qsfp_lines # (
-    .LINE_NB     (LINE_NB     ),
+    .LANE_NB     (LANE_NB     ),
     .AXIS_TDATA_W(AXIS_TDATA_W),
     .AXIS_TKEEP_W(AXIS_TKEEP_W)
   ) model_qsfp_lines (
@@ -283,7 +283,7 @@ module tb_dma;
   assign maxil_drv_if.rvalid  = s_axil_dma_rvalid;
 
   generate
-    for (genvar gen_i=0 ; gen_i<LINE_NB; gen_i++ ) begin
+    for (genvar gen_i=0 ; gen_i<LANE_NB; gen_i++ ) begin
       // Axi4-stream tx driver
       axis_drv_if #(
       .AXIS_DATA_W(AXIS_TDATA_W)
@@ -299,11 +299,11 @@ module tb_dma;
   logic [63:0] valid_words_count;
   logic [63:0] sop_count;
 
-  logic [AXIS_TDATA_W-1:0] data_noise_ref_rx_q[LINE_NB-1:0][$];
-  logic [AXIS_TDATA_W-1:0] data_lb_ref_rx_q[LINE_NB-1:0][$];
+  logic [AXIS_TDATA_W-1:0] data_noise_ref_rx_q[LANE_NB-1:0][$];
+  logic [AXIS_TDATA_W-1:0] data_lb_ref_rx_q[LANE_NB-1:0][$];
 
   logic enable_noise_on_rx;
-  logic [AXIS_TDATA_W-1:0] expected_data[LINE_NB-1:0];
+  logic [AXIS_TDATA_W-1:0] expected_data[LANE_NB-1:0];
   logic [AXIS_TDATA_W-1:0] read_data;
 
   logic [31:0] rdata;
@@ -316,18 +316,6 @@ module tb_dma;
     rx_to_tx        = 'h0;
     repeat(20) @(posedge clk_control);
     $display("\n"); // just to unclog view from FIFO warnings
-
-    // --------------------------------------------------------------------------------------------
-    //  We need to configure correctly different signals.
-    //  By doing this we will verify axi4-lite communication with regfile
-    //
-    // 1 - we will read the first register segment, with dummy default values we know
-    // 2 - we will setup line rate, loopback and line selection
-    // once everything setup we can try to send a frame through register file on the correct lane
-    // 3 - Send a frame using register file
-    // 4 - trigger all qsfp-rx lanes + check that we read into fifo correct value on selected lane
-    // 5 - reading that the fifo depths are accessible and has changed, that means not zeros
-    // --------------------------------------------------------------------------------------------
 
     $display("A - Initial register check and definition");
     init_registers();
@@ -389,7 +377,7 @@ module tb_dma;
 
     maxil_drv_if.write_trans(RESET_DATAPATH_OFS, reset_parameter);
 
-    if ((gt_line_rate == line_rate) && (gt_loopback == line_loopback) && (dma.line_sel == line_select)) begin
+    if ((gt_line_rate == line_rate) && (gt_loopback == line_loopback) && (dut.line_sel == line_select)) begin
       $display("    > line parameter correctly configured");
     end else begin
       $display("%t >    ERROR: configuration doesn't match to what have been selected",$time);
@@ -484,7 +472,7 @@ module tb_dma;
       maxil_drv_if.read_trans(STAT_SOP_CNT_B_OFS, sop_count[63:32]);
 
 
-      assert (sop_count != 11) else begin
+      assert (sop_count == 11) else begin
         $display("%t >    ERROR: unexpected sop count %0d", $time, sop_count);
         error = 1'b1;
       end
@@ -592,7 +580,6 @@ module tb_dma;
       // emptying the FIFO
       empty_fifo();
    end
-
   endtask
 
   task automatic debug_mode_rx_2_tx();
@@ -629,7 +616,7 @@ module tb_dma;
       $display(" nb of valid words %0d and nb of clock went by %0d after rx to tx mode", valid_words_count, clk_count);
 
       empty_fifo();
-      for (int lane = 0; lane < LINE_NB ; lane++) begin
+      for (int lane = 0; lane < LANE_NB ; lane++) begin
         data_noise_ref_rx_q[lane].delete();
       end
     end
@@ -646,18 +633,19 @@ module tb_dma;
       maxil_drv_if.read_trans(FIFO_READ_WORDS_TO_READ_B_OFS, read_data[2*AXIL_DATA_W-1:AXIL_DATA_W]);
     end
   endtask //automatic
+
 // ---------------------------------------------------------------------------------------------- --
 // AXI4-stream
 // ---------------------------------------------------------------------------------------------- --
-  // we have LINE_NB lines + the tx one in input !
-  logic [LINE_NB-1 + 1 :0][AXIS_TDATA_W-1:0] tdata;
-  logic [LINE_NB-1 + 1 :0][AXIS_TKEEP_W-1:0] tkeep_user;
-  logic [LINE_NB-1 + 1 :0]                   tlast;
-  logic [LINE_NB-1 + 1 :0]                   tvalid;
+  // we have LANE_NB lines + the tx one in input !
+  logic [LANE_NB-1 + 1 :0][AXIS_TDATA_W-1:0] tdata;
+  logic [LANE_NB-1 + 1 :0][AXIS_TKEEP_W-1:0] tkeep_user;
+  logic [LANE_NB-1 + 1 :0]                   tlast;
+  logic [LANE_NB-1 + 1 :0]                   tvalid;
 
   // for initialization
   initial begin
-    for (int lanes = '0; lanes < LINE_NB+1 ; lanes++) begin
+    for (int lanes = '0; lanes < LANE_NB+1 ; lanes++) begin
       tdata[lanes]      = 'h0;
       tkeep_user[lanes] = 'h0;
       tlast[lanes]      = 'h0;
@@ -671,7 +659,7 @@ module tb_dma;
     // Launch all lanes concurrently
     // each iterators needs an automatic copy for each forked process
     fork
-      for (int lane = 0; lane <= LINE_NB; lane++) begin
+      for (int lane = 0; lane <= LANE_NB; lane++) begin
         automatic int lanes = lane;
         fork
           forever begin
@@ -684,7 +672,7 @@ module tb_dma;
                 tlast[lanes] = (i == WORD_NB-1);
                 tvalid[lanes] = 1'b1;
 
-                if (lanes == LINE_NB) begin
+                if (lanes == LANE_NB) begin
                   do @(posedge clk_mrmac); while (!(tvalid[lanes]));
                 end else begin
                   @(posedge clk_mrmac);
@@ -708,7 +696,7 @@ module tb_dma;
   // checker: push noise into queue when signal is up
   // assert is directly in the task
   always_ff @(posedge clk_mrmac)
-    for (int i=0; i<LINE_NB; i=i+1)
+    for (int i=0; i<LANE_NB; i=i+1)
       if (qsfp_rx_tvalid[i])
         if (enable_noise_on_rx)
           data_noise_ref_rx_q[i].push_front(qsfp_rx_tdata[i]);
@@ -716,13 +704,13 @@ module tb_dma;
   // Loopback -------------------------------------------------------------------------------------
   // checker: push loopback values into queue
   always_ff @(posedge clk_mrmac)
-    for (int i=0; i<LINE_NB; i=i+1)
+    for (int i=0; i<LANE_NB; i=i+1)
       if (qsfp_tx_tvalid[i] && (gt_loopback != 0))
           data_lb_ref_rx_q[i].push_front(qsfp_tx_tdata[i]);
 
   // checker: are values from loopback correct ?
   generate
-    for (genvar lanes = '0; lanes < LINE_NB ; lanes++) begin
+    for (genvar lanes = '0; lanes < LANE_NB ; lanes++) begin
       always_ff @(posedge clk_mrmac) begin
         if (gt_loopback != 0) begin
           if (qsfp_rx_tvalid[lanes] == 1'b1) begin
@@ -739,7 +727,7 @@ module tb_dma;
   endgenerate
 
   always_comb begin
-    for (int lanes = '0; lanes < LINE_NB ; lanes++) begin
+    for (int lanes = '0; lanes < LANE_NB ; lanes++) begin
       if (enable_noise_on_rx) begin
         qsfp_rx_tdata[lanes]      = tdata[lanes];
         qsfp_rx_tkeep_user[lanes] = tkeep_user[lanes];

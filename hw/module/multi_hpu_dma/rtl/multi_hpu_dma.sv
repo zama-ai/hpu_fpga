@@ -2,17 +2,17 @@
 // BSD 3-Clause Clear License
 // Copyright © 2025 ZAMA. All rights reserved.
 // ----------------------------------------------------------------------------------------------
-// Description  : Top of DMA
+// Description  : multi-HPU DMA
 // ----------------------------------------------------------------------------------------------
 //
 // ==============================================================================================
 
-module dma
+module multi_hpu_dma
   import axi_if_common_param_pkg::*;
   import axi_if_shell_axil_pkg::*;
   import hpu_regif_core_eth_2in3_pkg::*;
 #(
-  parameter int LINE_NB       = 4,  // number of QSFP lines
+  parameter int LANE_NB       = 4,  // number of QSFP lines
   parameter int AXIS_TDATA_W  = 64, // must match MAC+PCS configuration from bd
   parameter int AXIS_TKEEP_W  = 11,
 
@@ -45,16 +45,16 @@ module dma
   input  logic                       s_axil_dma_rready,
   // QSFP system interface ----------------------------------------------------
   // == TX
-  output[LINE_NB-1:0][AXIS_TDATA_W-1:0  ] qsfp_tx_tdata,
-  output[LINE_NB-1:0][AXIS_TKEEP_W-1:0 ]  qsfp_tx_tkeep_user,
-  output[LINE_NB-1:0]                     qsfp_tx_tlast,
-  output[LINE_NB-1:0]                     qsfp_tx_tvalid,
-  input [LINE_NB-1:0]                     qsfp_tx_tready,
+  output[LANE_NB-1:0][AXIS_TDATA_W-1:0  ] qsfp_tx_tdata,
+  output[LANE_NB-1:0][AXIS_TKEEP_W-1:0 ]  qsfp_tx_tkeep_user,
+  output[LANE_NB-1:0]                     qsfp_tx_tlast,
+  output[LANE_NB-1:0]                     qsfp_tx_tvalid,
+  input [LANE_NB-1:0]                     qsfp_tx_tready,
   // == RX
-  input [LINE_NB-1:0][AXIS_TDATA_W-1:0  ] qsfp_rx_tdata,
-  input [LINE_NB-1:0][AXIS_TKEEP_W-1:0 ]  qsfp_rx_tkeep_user,
-  input [LINE_NB-1:0]                     qsfp_rx_tlast,
-  input [LINE_NB-1:0]                     qsfp_rx_tvalid,
+  input [LANE_NB-1:0][AXIS_TDATA_W-1:0  ] qsfp_rx_tdata,
+  input [LANE_NB-1:0][AXIS_TKEEP_W-1:0 ]  qsfp_rx_tkeep_user,
+  input [LANE_NB-1:0]                     qsfp_rx_tlast,
+  input [LANE_NB-1:0]                     qsfp_rx_tvalid,
   // control interface --------------------------------------------------------
   // loopback mode, will be applied to all channels
   //  * 000: disabled
@@ -64,17 +64,17 @@ module dma
   // Line rate TBD
   output [7:0] gt_line_rate,
   // resets
-  output [LINE_NB-1:0] gt_reset_rx_datapath,
-  output [LINE_NB-1:0] gt_reset_tx_datapath,
-  output [LINE_NB-1:0] gt_reset_all,
-  input  [LINE_NB-1:0] gt_rx_reset_done,
-  input  [LINE_NB-1:0] gt_tx_reset_done
+  output [LANE_NB-1:0] gt_reset_rx_datapath,
+  output [LANE_NB-1:0] gt_reset_tx_datapath,
+  output [LANE_NB-1:0] gt_reset_all,
+  input  [LANE_NB-1:0] gt_rx_reset_done,
+  input  [LANE_NB-1:0] gt_tx_reset_done
 );
 
   // ============================================================================================ --
   // Signal
   // ============================================================================================ --
-  logic [$clog2(LINE_NB):0] line_sel;
+  logic [$clog2(LANE_NB):0] line_sel;
 
   // ============================================================================================ //
   // Register file
@@ -274,12 +274,12 @@ module dma
   logic                    axis_tx_tvalid;
   logic                    axis_tx_tready;
 
-  fifo_handle # (
+  debug_lane # (
     .AXIS_TDATA_W(AXIS_TDATA_W),
     .AXIS_TKEEP_W(AXIS_TKEEP_W),
     .FIFO_DEPTH(FIFO_DEPTH),
     .SIM_ASSERT_CHK(0)
-  ) fifo_handle (
+  ) debug_lane (
     // system interface
     .clk_control        (clk_eth_cfg),
     .s_rstn_control     (resetn_eth_cfg),
@@ -328,11 +328,11 @@ module dma
   // depending on line_sel signal, selects and outputs the correct line
   // this module is fully combinatory
   // ============================================================================================ //
-  axis_switch # (
-    .LINE_NB            (LINE_NB),
+  axis_switch_lane_to_1 # (
+    .LANE_NB            (LANE_NB),
     .AXIS_TDATA_W       (AXIS_TDATA_W),
     .AXIS_TKEEP_W       (AXIS_TKEEP_W)
-  ) axis_switch (
+  ) axis_switch_lane_to_1 (
     .qsfp_rx_tdata      (qsfp_rx_tdata),
     .qsfp_rx_tkeep_user (qsfp_rx_tkeep_user),
     .qsfp_rx_tlast      (qsfp_rx_tlast),

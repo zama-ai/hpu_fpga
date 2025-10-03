@@ -9,7 +9,7 @@
 
 `resetall
 `timescale 1ns/10ps
-module tb_fifo_handle;
+module tb_debug_lane;
   import axi_if_common_param_pkg::*;
   import axi_if_shell_axil_pkg::*;
   import hpu_regif_core_eth_2in3_pkg::*;
@@ -21,7 +21,7 @@ module tb_fifo_handle;
   localparam int CLK_HALF_PERIOD_B = 1;
   localparam int ARST_ACTIVATION = 17;
 
-  localparam int LINE_NB = 4;
+  localparam int LANE_NB = 4;
   localparam int AXIS_TDATA_W  = 64;
   localparam int AXIS_TKEEP_W  = 11;
 
@@ -118,11 +118,11 @@ module tb_fifo_handle;
   // ============================================================================================== --
   // Design under test instance
   // ============================================================================================== --
-  fifo_handle # (
+  debug_lane # (
     .AXIS_TDATA_W(AXIS_TDATA_W),
     .AXIS_TKEEP_W(AXIS_TKEEP_W),
     .SIM_ASSERT_CHK(1)
-  ) fifo_handle (
+  ) debug_lane (
     // system interface
     .clk_control       (clk_control),
     .s_rstn_control    (s_rstn_control),

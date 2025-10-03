@@ -3,21 +3,21 @@
     "dep_root_path"  : "${PROJECT_DIR}",
     "rtl_files": [
         {
-            "name": "hw/module/dma/simu/rtl/tb_dma.sv",
+            "name": "hw/module/multi_hpu_dma/simu/rtl/tb_debug_mode.sv",
             "library": "work",
             "env": ["simu"],
             "target": ["all"],
             "is_include_file": false
         },
         {
-            "name": "hw/module/dma/simu/rtl/tb_fifo_handle.sv",
+            "name": "hw/module/multi_hpu_dma/simu/rtl/tb_debug_lane.sv",
             "library": "work",
             "env": ["simu"],
             "target": ["all"],
             "is_include_file": false
         },
         {
-            "name": "hw/module/dma/simu/rtl/model_qsfp_lines.sv",
+            "name": "hw/module/multi_hpu_dma/simu/rtl/model_qsfp_lines.sv",
             "library": "work",
             "env": ["simu"],
             "target": ["all"],
@@ -28,7 +28,7 @@
         "hw/simu_lib/simu_base",
         "hw/simu_lib/stream_lib",
         "hw/simu_lib/axi4_lib",
-        "hw/module/dma"
+        "hw/module/multi_hpu_dma"
     ],
     "include_dir": []
 }
