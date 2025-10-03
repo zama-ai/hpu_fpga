@@ -43,7 +43,7 @@ module hpu_3parts_2in3_core
   parameter int    AXI4_KSK_ADD_W   = 64,
 
   // Ethernet configuration
-  parameter int LINE_NB       = 4,  // number of QSFP lines
+  parameter int LANE_NB       = 4,  // number of QSFP lines
   parameter int AXIS_TDATA_W  = 64, // must match MAC+PCS configuration from bd
   parameter int AXIS_TKEEP_W  = 11,
 
@@ -126,25 +126,25 @@ module hpu_3parts_2in3_core
 
   // QSFP system interface
   // == TX
-  output[LINE_NB-1:0][AXIS_TDATA_W-1:0  ] qsfp_tx_tdata,
-  output[LINE_NB-1:0][AXIS_TKEEP_W-1:0 ]  qsfp_tx_tkeep_user,
-  output[LINE_NB-1:0]                     qsfp_tx_tlast,
-  output[LINE_NB-1:0]                     qsfp_tx_tvalid,
-  input [LINE_NB-1:0]                     qsfp_tx_tready,
+  output[LANE_NB-1:0][AXIS_TDATA_W-1:0  ] qsfp_tx_tdata,
+  output[LANE_NB-1:0][AXIS_TKEEP_W-1:0 ]  qsfp_tx_tkeep_user,
+  output[LANE_NB-1:0]                     qsfp_tx_tlast,
+  output[LANE_NB-1:0]                     qsfp_tx_tvalid,
+  input [LANE_NB-1:0]                     qsfp_tx_tready,
   // == RX
-  input [LINE_NB-1:0][AXIS_TDATA_W-1:0  ] qsfp_rx_tdata,
-  input [LINE_NB-1:0][AXIS_TKEEP_W-1:0 ]  qsfp_rx_tkeep_user,
-  input [LINE_NB-1:0]                     qsfp_rx_tlast,
-  input [LINE_NB-1:0]                     qsfp_rx_tvalid,
+  input [LANE_NB-1:0][AXIS_TDATA_W-1:0  ] qsfp_rx_tdata,
+  input [LANE_NB-1:0][AXIS_TKEEP_W-1:0 ]  qsfp_rx_tkeep_user,
+  input [LANE_NB-1:0]                     qsfp_rx_tlast,
+  input [LANE_NB-1:0]                     qsfp_rx_tvalid,
 
   // transceiver control
   output [2:0]         gt_loopback,
   output [7:0]         gt_line_rate,
-  output [LINE_NB-1:0] gt_reset_rx_datapath,
-  output [LINE_NB-1:0] gt_reset_tx_datapath,
-  output [LINE_NB-1:0] gt_reset_all,
-  input  [LINE_NB-1:0] gt_rx_reset_done,
-  input  [LINE_NB-1:0] gt_tx_reset_done
+  output [LANE_NB-1:0] gt_reset_rx_datapath,
+  output [LANE_NB-1:0] gt_reset_tx_datapath,
+  output [LANE_NB-1:0] gt_reset_all,
+  input  [LANE_NB-1:0] gt_rx_reset_done,
+  input  [LANE_NB-1:0] gt_tx_reset_done
 );
 
 // ============================================================================================== --
@@ -457,7 +457,7 @@ module hpu_3parts_2in3_core
 //
 // ---------------------------------------------------------------------------------------------- --
   multi_hpu_dma #(
-    .LINE_NB     (LINE_NB),
+    .LANE_NB     (LANE_NB),
     .AXIS_TDATA_W(AXIS_TDATA_W),
     .AXIS_TKEEP_W(AXIS_TKEEP_W)
   ) multi_hpu_dma (

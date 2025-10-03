@@ -109,7 +109,7 @@ module top_hpu #(
   localparam int AXI4_KSK_ID_W        = axi_if_ksk_axi_pkg::AXI4_ID_W;
 
   // number of QSFP lines: do not modify
-  localparam int LINE_NB = 4;
+  localparam int LANE_NB = 4;
   // Ethernet preamble
   localparam [7:0]  START_FRAME_DELIMITER = 'hD5;
   localparam [47:0] PREAMBLE = 'h555555555555;
@@ -588,24 +588,24 @@ module top_hpu #(
   // loopback
   logic [2:0]         gt_loopback;
   // asynchronous resets
-  logic [LINE_NB-1:0] gt_reset_rx_datapath;
-  logic [LINE_NB-1:0] gt_reset_tx_datapath;
-  logic [LINE_NB-1:0] gt_reset_all;
+  logic [LANE_NB-1:0] gt_reset_rx_datapath;
+  logic [LANE_NB-1:0] gt_reset_tx_datapath;
+  logic [LANE_NB-1:0] gt_reset_all;
   // reset monitoring
-  logic [LINE_NB-1:0] gt_rx_reset_done;
-  logic [LINE_NB-1:0] gt_tx_reset_done;
+  logic [LANE_NB-1:0] gt_rx_reset_done;
+  logic [LANE_NB-1:0] gt_tx_reset_done;
   // ----------------------------------------------------------------------- //
   // QSFP RX axi4-stream
-  logic [LINE_NB-1:0][AXIS_TDATA_W-1:0] qsfp_rx_tdata;
-  logic [LINE_NB-1:0][AXIS_TKEEP_W-1:0] qsfp_rx_tkeep_user;
-  logic [LINE_NB-1:0]                   qsfp_rx_tlast;
-  logic [LINE_NB-1:0]                   qsfp_rx_tvalid;
+  logic [LANE_NB-1:0][AXIS_TDATA_W-1:0] qsfp_rx_tdata;
+  logic [LANE_NB-1:0][AXIS_TKEEP_W-1:0] qsfp_rx_tkeep_user;
+  logic [LANE_NB-1:0]                   qsfp_rx_tlast;
+  logic [LANE_NB-1:0]                   qsfp_rx_tvalid;
   // QSFP TX axi4-stream
-  logic [LINE_NB-1:0][AXIS_TDATA_W-1:0] qsfp_tx_tdata;
-  logic [LINE_NB-1:0][AXIS_TKEEP_W-1:0] qsfp_tx_tkeep_user;
-  logic [LINE_NB-1:0]                   qsfp_tx_tlast;
-  logic [LINE_NB-1:0]                   qsfp_tx_tvalid;
-  logic [LINE_NB-1:0]                   qsfp_tx_tready;
+  logic [LANE_NB-1:0][AXIS_TDATA_W-1:0] qsfp_tx_tdata;
+  logic [LANE_NB-1:0][AXIS_TKEEP_W-1:0] qsfp_tx_tkeep_user;
+  logic [LANE_NB-1:0]                   qsfp_tx_tlast;
+  logic [LANE_NB-1:0]                   qsfp_tx_tvalid;
+  logic [LANE_NB-1:0]                   qsfp_tx_tready;
   // ----------------------------------------------------------------------- //
   // TODO: define what to do with statistics
   logic         stat_rx_aligned_0;
@@ -2870,7 +2870,7 @@ module top_hpu #(
     .AXI4_BSK_ADD_W   (AXI4_BSK_ADD_W),
     .AXI4_KSK_ADD_W   (AXI4_KSK_ADD_W),
     .INTER_PART_PIPE  (INTER_PART_PIPE),
-    .LINE_NB          (LINE_NB),
+    .LANE_NB          (LANE_NB),
     .AXIS_TDATA_W     (AXIS_TDATA_W),
     .AXIS_TKEEP_W     (AXIS_TKEEP_W)
   ) hpu_3parts (
