@@ -13,7 +13,7 @@
 # (Check preamble, Check start frame delimiter, FCS removal enabled, Enable RX)
 # (IPG = 12 bytes,  FCS insertion enabled, No local fault, No remote fault, Enable TX)
 # (No FEC)
-./app/build/ami_tool poke -d 01:00.0 -a 0x41008 -i 0x40000221
+./app/build/ami_tool poke -d 01:00.0 -a 0x40008 -i 0x40000221
 ./app/build/ami_tool poke -d 01:00.0 -a 0x40010 -i 0x00000003
 ./app/build/ami_tool poke -d 01:00.0 -a 0x4000C -i 0x00000c03
 ./app/build/ami_tool poke -d 01:00.0 -a 0x400D0 -i 0x00000000

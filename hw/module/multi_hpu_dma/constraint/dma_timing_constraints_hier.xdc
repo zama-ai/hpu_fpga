@@ -11,21 +11,21 @@
 # ----------------------------------------------------------------------------------------------
 # Create clock
 # ==============================================================================================
-set_false_path -to [get_cells -hierarchical -filter {NAME =~ *fifo_handle/nb_word_mrmac_reg[0]*}]
+set_false_path -to [get_cells -hierarchical -filter {NAME =~ *debug_lane/nb_word_mrmac_reg[0]*}]
 
-set_false_path -to [get_cells -hierarchical -filter {NAME =~ *fifo_handle/cdc_tx_empty_reg[0]*}]
-set_false_path -to [get_cells -hierarchical -filter {NAME =~ *fifo_handle/cdc_tx_rd_rst_busy_reg[0]*}]
-set_false_path -to [get_cells -hierarchical -filter {NAME =~ *fifo_handle/cdc_tx_data_valid_reg[0]*}]
-set_false_path -to [get_cells -hierarchical -filter {NAME =~ *fifo_handle/cdc_rd_data_count_reg[0]*}]
+set_false_path -to [get_cells -hierarchical -filter {NAME =~ *debug_lane/cdc_tx_empty_reg[0]*}]
+set_false_path -to [get_cells -hierarchical -filter {NAME =~ *debug_lane/cdc_tx_rd_rst_busy_reg[0]*}]
+set_false_path -to [get_cells -hierarchical -filter {NAME =~ *debug_lane/cdc_tx_data_valid_reg[0]*}]
+set_false_path -to [get_cells -hierarchical -filter {NAME =~ *debug_lane/cdc_rd_data_count_reg[0]*}]
 
-set_false_path -to [get_cells -hierarchical -filter {NAME =~ *fifo_handle/cdc_clk_cnt_reg[0]*}]
-set_false_path -to [get_cells -hierarchical -filter {NAME =~ *fifo_handle/cdc_trigger_rd_cnt_reg[0]*}]
+set_false_path -to [get_cells -hierarchical -filter {NAME =~ *debug_lane/cdc_clk_cnt_reg[0]*}]
+set_false_path -to [get_cells -hierarchical -filter {NAME =~ *debug_lane/cdc_trigger_rd_cnt_reg[0]*}]
 
-set_false_path -to [get_cells -hierarchical -filter {NAME =~ *fifo_handle/cdc_tx_rd_rst_busy_reg[0]*}]
-set_false_path -to [get_cells -hierarchical -filter {NAME =~ *fifo_handle/cdc_tx_data_valid_reg[0]*}]
-set_false_path -to [get_cells -hierarchical -filter {NAME =~ *fifo_handle/cdc_qsfp_tx_tready_reg[0]*}]
+set_false_path -to [get_cells -hierarchical -filter {NAME =~ *debug_lane/cdc_tx_rd_rst_busy_reg[0]*}]
+set_false_path -to [get_cells -hierarchical -filter {NAME =~ *debug_lane/cdc_tx_data_valid_reg[0]*}]
+set_false_path -to [get_cells -hierarchical -filter {NAME =~ *debug_lane/cdc_qsfp_tx_tready_reg[0]*}]
 
 
-set_false_path -to [get_cells -hierarchical -filter {NAME =~ *fifo_handle/cdc_valid_words_reg[0]*}]
-set_false_path -to [get_cells -hierarchical -filter {NAME =~ *fifo_handle/reset_registers_cdc_reg[0]*}]
-set_false_path -to [get_cells -hierarchical -filter {NAME =~ *fifo_handle/cdc_sop_cnt_reg[0]*}]
+set_false_path -to [get_cells -hierarchical -filter {NAME =~ *debug_lane/cdc_valid_words_reg[0]*}]
+set_false_path -to [get_cells -hierarchical -filter {NAME =~ *debug_lane/reset_registers_cdc_reg[0]*}]
+set_false_path -to [get_cells -hierarchical -filter {NAME =~ *debug_lane/cdc_sop_cnt_reg[0]*}]

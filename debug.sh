@@ -1,6 +1,6 @@
 
 # FIFO_WRITE_FIFO_WRITE_DATA_COUNT_OFS
-./app/build/ami_tool peek -d 01:00.0 -a 0x60028 -l 1
+./app/build/ami_tool peek -d 01:00.0 -a 0x50028 -l 1
 
 # -----------------------------------------------------------------------------
 # debug
@@ -22,15 +22,15 @@
 ./app/build/ami_tool peek -d 01:00.0 -a 0x40804 -l 1
 
 # CNT_CLK_OFS
-./app/build/ami_tool peek -d 01:00.0 -a 0x6003c -l 1
+./app/build/ami_tool peek -d 01:00.0 -a 0x5003c -l 1
 # CNT_TRIG_RD_OFS
-./app/build/ami_tool peek -d 01:00.0 -a 0x60040 -l 1
+./app/build/ami_tool peek -d 01:00.0 -a 0x50040 -l 1
 # CNT_TX_WR_OFS
-./app/build/ami_tool peek -d 01:00.0 -a 0x60044 -l 1
+./app/build/ami_tool peek -d 01:00.0 -a 0x50044 -l 1
 # CNT_WORDS_OFS
-./app/build/ami_tool peek -d 01:00.0 -a 0x60048 -l 1
+./app/build/ami_tool peek -d 01:00.0 -a 0x50048 -l 1
 # STAT_STATUS_OFS
-./app/build/ami_tool peek -d 01:00.0 -a 0x6004c -l 1
+./app/build/ami_tool peek -d 01:00.0 -a 0x5004c -l 1
 
 # total tx packet
 ./app/build/ami_tool peek -d 01:00.0 -a 0x40818 -l 2
