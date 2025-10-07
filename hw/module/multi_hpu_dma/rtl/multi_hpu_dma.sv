@@ -197,17 +197,6 @@ module multi_hpu_dma
   );
 
   // Logic around regfile -------------------------------------------------------------------------
-  // merging half words into a single one
-  always_ff @(posedge clk_eth_cfg) begin
-    if (~resetn_eth_cfg) begin
-      r_wr_word <= 'h0;
-    end else begin
-      if ((s_axil_dma_awaddr == FIFO_WRITE_WORDS_TO_WRITE_B_OFS) && s_axil_dma_awready) begin
-        r_wr_word <= {r_wr_word_a, r_wr_word_b};
-      end
-    end
-  end
-
   // read_ack is a pulse that partly controls the rx_fifo read, must be in configuration clock freq
   // because axi4-lite is limited in word number, the ack is triggered only when the second word is read
   logic read_ack;
@@ -237,6 +226,9 @@ module multi_hpu_dma
       end
     end
   end
+
+  // merging half words into a single one
+  assign r_wr_word = write_ack ? {r_wr_word_a, r_wr_word_b} :0;
 
   // ============================================================================================ //
   // Fifo Handle

@@ -7,7 +7,7 @@ set_clock_groups -quiet -name pl0_ref_clk_0 -asynchronous -group [get_clocks -of
 set_false_path -through [get_nets -hierarchical -regexp -filter { NAME =~ ".*multi_hpu_dma/gt_line_rate.*"}]
 set_false_path -through [get_nets -hierarchical -regexp -filter { NAME =~ ".*multi_hpu_dma/gt_loopback.*"}]
 set_false_path -from [get_cells -hierarchical -regexp -filter { NAME =~ ".*/r_line_debug_reg.*"}]
-set_false_path -to   [get_cells -hierarchical -regexp -filter { NAME =~ ".*/r_system_line_reg.*"}]
+set_false_path -through   [get_cells -hierarchical -regexp -filter { NAME =~ ".*/r_system_line_reg.*"}]
 
 # asynchronous reset signals
 set_false_path -through [get_nets  -hierarchical -regexp -filter { NAME =~ ".*gt_reset_rx_datapath.*"}]
