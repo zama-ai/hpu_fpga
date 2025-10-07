@@ -1,10 +1,10 @@
 # HPU_REGIF_CORE documentation
-**Date**: 2025-10-01
-**Tool Version**: bb0db737792da6b81e69a039028c971af1627fe2
+**Date**: 2025-10-06  
+**Tool Version**: bb0db737792da6b81e69a039028c971af1627fe2  
 
 ## RegisterMap Overview
 
-**Module Name**: hpu_regif_core
+**Module Name**: hpu_regif_core  
 **Description**: HPU top-level register interface. Used by the host to retrieve design information, and to configure it.
 
 HPU top-level register interface. Used by the host to retrieve design information, and to configure it.
@@ -13,10 +13,10 @@ HPU top-level register interface. Used by the host to retrieve design informatio
 
 HPU top-level register interface. Used by the host to retrieve design information, and to configure it.
 
-HPU ethernet configuration register interface. Will be accessed by RPU to define registers.
-**Offset**: 0x80000
+HPU ethernet configuration register interface. Will be accessed by RPU to define registers.  
+**Offset**: 0x0 
 **Range**: 0x60000
-**Word Size (b)**: 32
+**Word Size (b)**: 32  
 **External Packages**: "axi_if_shell_axil_pkg.sv","axi_if_common_param_pkg.sv"
 
 
@@ -28,29 +28,28 @@ Below is a summary of all the registers in the current register map:
 
 | Section Name | Offset | Range | Description |
 |-------------:|:------:|:-----:|:------------|
-| [entry_cfg_1in3](#section-entry-cfg-1in3) | 0x80000 | 0x10 | entry_cfg_1in3 section with known value used for debug. |
-| [info](#section-info) | 0x80010 | 0x4c | RTL architecture parameters |
-| [hbm_axi4_addr_1in3](#section-hbm-axi4-addr-1in3) | 0x81000 | 0xa0 | HBM AXI4 connection address offset |
-| [bpip](#section-bpip) | 0x82000 | 0x8 | BPIP configuration |
-| [keyswitch](#section-keyswitch) | 0x83000 | 0x4 | Keyswitch Configuration |
-| [entry_prc_1in3](#section-entry-prc-1in3) | 0x90000 | 0x10 | entry_prc_1in3 section with known value used for debug. |
-| [status_1in3](#section-status-1in3) | 0x90010 | 0x4 | HPU status of part 1in3 |
-| [ksk_avail](#section-ksk-avail) | 0x91000 | 0x8 | KSK availability configuration |
-| [runtime_1in3](#section-runtime-1in3) | 0x92000 | 0x13c | Runtime information |
-| [entry_cfg_3in3](#section-entry-cfg-3in3) | 0xa0000 | 0x10 | entry_cfg_3in3 section with known value used for debug. |
-| [hbm_axi4_addr_3in3](#section-hbm-axi4-addr-3in3) | 0xa0010 | 0x80 | HBM AXI4 connection address offset |
-| [hpu_reset](#section-hpu-reset) | 0xa0100 | 0x4 | Used to control the HPU soft reset |
-| [entry_prc_3in3](#section-entry-prc-3in3) | 0xb0000 | 0x10 | entry_prc_3in3 section with known value used for debug. |
-| [status_3in3](#section-status-3in3) | 0xb0010 | 0x4 | HPU status of parts 2in3 and 3in3 |
-| [bsk_avail](#section-bsk-avail) | 0xb1000 | 0x8 | BSK availability configuration |
-| [runtime_3in3](#section-runtime-3in3) | 0xb2000 | 0x48 | Runtime information |
-| [system](#section-system) | 0xd0000 | 0x10 | system configuration |
-| [reset](#section-reset) | 0xd0014 | 0x8 | different resets are available |
-| [line](#section-line) | 0xd1000 | 0x4 | Line parameter sections |
-| [fifo_write](#section-fifo-write) | 0xd101c | 0x10 | fifo write part |
-| [fifo_read](#section-fifo-read) | 0xd102c | 0xc | fifo write part |
-| [cnt](#section-cnt) | 0xd103c | 0xc | fifo write part |
-| [stat](#section-stat) | 0xd104c | 0x1c | fifo write part |
+| [entry_cfg_1in3](#section-entry-cfg-1in3) | 0x0 | 0x10 | entry_cfg_1in3 section with known value used for debug. |
+| [info](#section-info) | 0x10 | 0x4c | RTL architecture parameters |
+| [hbm_axi4_addr_1in3](#section-hbm-axi4-addr-1in3) | 0x1000 | 0xa0 | HBM AXI4 connection address offset |
+| [bpip](#section-bpip) | 0x2000 | 0x8 | BPIP configuration |
+| [entry_prc_1in3](#section-entry-prc-1in3) | 0x10000 | 0x10 | entry_prc_1in3 section with known value used for debug. |
+| [status_1in3](#section-status-1in3) | 0x10010 | 0x4 | HPU status of part 1in3 |
+| [ksk_avail](#section-ksk-avail) | 0x11000 | 0x8 | KSK availability configuration |
+| [runtime_1in3](#section-runtime-1in3) | 0x12000 | 0x13c | Runtime information |
+| [entry_cfg_3in3](#section-entry-cfg-3in3) | 0x20000 | 0x10 | entry_cfg_3in3 section with known value used for debug. |
+| [hbm_axi4_addr_3in3](#section-hbm-axi4-addr-3in3) | 0x20010 | 0x80 | HBM AXI4 connection address offset |
+| [hpu_reset](#section-hpu-reset) | 0x20100 | 0x4 | Used to control the HPU soft reset |
+| [entry_prc_3in3](#section-entry-prc-3in3) | 0x30000 | 0x10 | entry_prc_3in3 section with known value used for debug. |
+| [status_3in3](#section-status-3in3) | 0x30010 | 0x4 | HPU status of parts 2in3 and 3in3 |
+| [bsk_avail](#section-bsk-avail) | 0x31000 | 0x8 | BSK availability configuration |
+| [runtime_3in3](#section-runtime-3in3) | 0x32000 | 0x48 | Runtime information |
+| [system](#section-system) | 0x50000 | 0x10 | system configuration |
+| [reset](#section-reset) | 0x50014 | 0x8 | different resets are available |
+| [line](#section-line) | 0x51000 | 0x4 | Line parameter sections |
+| [fifo_write](#section-fifo-write) | 0x5101c | 0x10 | fifo write part |
+| [fifo_read](#section-fifo-read) | 0x5102c | 0xc | fifo write part |
+| [cnt](#section-cnt) | 0x5103c | 0xc | fifo write part |
+| [stat](#section-stat) | 0x5104c | 0x1c | fifo write part |
 
 
 ---
@@ -64,10 +63,10 @@ Below is a summary of all the registers in the current section entry_cfg_1in3:
 
 | Name             | Offset | Access | Description |
 |-----------------:|:------:|:------:|:------------|
-| [dummy_val0](#register-entry-cfg-1in3dummy-val0) | 0x80000 | R. |  RTL version |
-| [dummy_val1](#register-entry-cfg-1in3dummy-val1) | 0x80004 | R. |  RTL version |
-| [dummy_val2](#register-entry-cfg-1in3dummy-val2) | 0x80008 | R. |  RTL version |
-| [dummy_val3](#register-entry-cfg-1in3dummy-val3) | 0x8000c | R. |  RTL version |
+| [dummy_val0](#register-entry-cfg-1in3dummy-val0) | 0x0 | R. |  RTL version |
+| [dummy_val1](#register-entry-cfg-1in3dummy-val1) | 0x4 | R. |  RTL version |
+| [dummy_val2](#register-entry-cfg-1in3dummy-val2) | 0x8 | R. |  RTL version |
+| [dummy_val3](#register-entry-cfg-1in3dummy-val3) | 0xc | R. |  RTL version |
 
 
 ---
@@ -79,8 +78,8 @@ Below is a summary of all the registers in the current section entry_cfg_1in3:
 - **Owner**: Parameter
 - **Read Access**: Read
 - **Write Access**: None
-- **Offset**: 0x80000
-- **Default**: 16843009
+- **Offset**: 0x0
+- **Default**: 16843009 
 
 
 
@@ -94,8 +93,8 @@ Below is a summary of all the registers in the current section entry_cfg_1in3:
 - **Owner**: Parameter
 - **Read Access**: Read
 - **Write Access**: None
-- **Offset**: 0x80004
-- **Default**: 286331153
+- **Offset**: 0x4
+- **Default**: 286331153 
 
 
 
@@ -109,8 +108,8 @@ Below is a summary of all the registers in the current section entry_cfg_1in3:
 - **Owner**: Parameter
 - **Read Access**: Read
 - **Write Access**: None
-- **Offset**: 0x80008
-- **Default**: 555819297
+- **Offset**: 0x8
+- **Default**: 555819297 
 
 
 
@@ -124,15 +123,15 @@ Below is a summary of all the registers in the current section entry_cfg_1in3:
 - **Owner**: Parameter
 - **Read Access**: Read
 - **Write Access**: None
-- **Offset**: 0x8000c
-- **Default**: 825307441
+- **Offset**: 0xc
+- **Default**: 825307441 
 
 
 
 
 ---
 
-
+ 
 
 
 ## Section info
@@ -143,25 +142,25 @@ Below is a summary of all the registers in the current section info:
 
 | Name             | Offset | Access | Description |
 |-----------------:|:------:|:------:|:------------|
-| [version](#register-infoversion) | 0x80010 | R. |  RTL version |
-| [ntt_architecture](#register-infontt-architecture) | 0x80014 | R. |  NTT architecture |
-| [ntt_structure](#register-infontt-structure) | 0x80018 | R. |  NTT structure parameters |
-| [ntt_rdx_cut](#register-infontt-rdx-cut) | 0x8001c | R. |  NTT radix cuts, in log2 unit (for gf64 arch) |
-| [ntt_pbs](#register-infontt-pbs) | 0x80020 | R. |  Maximum number of PBS in the NTT pipeline |
-| [ntt_modulo](#register-infontt-modulo) | 0x80024 | R. |  Code associated to the NTT prime |
-| [application](#register-infoapplication) | 0x80028 | R. |  Code associated with the application |
-| [ks_structure](#register-infoks-structure) | 0x8002c | R. |  Key-switch structure parameters |
-| [ks_crypto_param](#register-infoks-crypto-param) | 0x80030 | R. |  Key-switch crypto parameters |
-| [regf_structure](#register-inforegf-structure) | 0x80034 | R. |  Register file structure parameters |
-| [isc_structure](#register-infoisc-structure) | 0x80038 | R. |  Instruction scheduler structure parameters |
-| [pe_properties](#register-infope-properties) | 0x8003c | R. |  Processing elements parameters |
-| [bsk_structure](#register-infobsk-structure) | 0x80040 | R. |  BSK manager structure parameters |
-| [ksk_structure](#register-infoksk-structure) | 0x80044 | R. |  KSK manager structure parameters |
-| [hbm_axi4_nb](#register-infohbm-axi4-nb) | 0x80048 | R. |  Number of AXI4 connections to HBM |
-| [hbm_axi4_dataw_pem](#register-infohbm-axi4-dataw-pem) | 0x8004c | R. |  Ciphertext HBM AXI4 connection data width |
-| [hbm_axi4_dataw_glwe](#register-infohbm-axi4-dataw-glwe) | 0x80050 | R. |  GLWE HBM AXI4 connection data width |
-| [hbm_axi4_dataw_bsk](#register-infohbm-axi4-dataw-bsk) | 0x80054 | R. |  BSK HBM AXI4 connection data width |
-| [hbm_axi4_dataw_ksk](#register-infohbm-axi4-dataw-ksk) | 0x80058 | R. |  KSK HBM AXI4 connection data width |
+| [version](#register-infoversion) | 0x10 | R. |  RTL version |
+| [ntt_architecture](#register-infontt-architecture) | 0x14 | R. |  NTT architecture |
+| [ntt_structure](#register-infontt-structure) | 0x18 | R. |  NTT structure parameters |
+| [ntt_rdx_cut](#register-infontt-rdx-cut) | 0x1c | R. |  NTT radix cuts, in log2 unit (for gf64 arch) |
+| [ntt_pbs](#register-infontt-pbs) | 0x20 | R. |  Maximum number of PBS in the NTT pipeline |
+| [ntt_modulo](#register-infontt-modulo) | 0x24 | R. |  Code associated to the NTT prime |
+| [application](#register-infoapplication) | 0x28 | R. |  Code associated with the application |
+| [ks_structure](#register-infoks-structure) | 0x2c | R. |  Key-switch structure parameters |
+| [ks_crypto_param](#register-infoks-crypto-param) | 0x30 | R. |  Key-switch crypto parameters |
+| [regf_structure](#register-inforegf-structure) | 0x34 | R. |  Register file structure parameters |
+| [isc_structure](#register-infoisc-structure) | 0x38 | R. |  Instruction scheduler structure parameters |
+| [pe_properties](#register-infope-properties) | 0x3c | R. |  Processing elements parameters |
+| [bsk_structure](#register-infobsk-structure) | 0x40 | R. |  BSK manager structure parameters |
+| [ksk_structure](#register-infoksk-structure) | 0x44 | R. |  KSK manager structure parameters |
+| [hbm_axi4_nb](#register-infohbm-axi4-nb) | 0x48 | R. |  Number of AXI4 connections to HBM |
+| [hbm_axi4_dataw_pem](#register-infohbm-axi4-dataw-pem) | 0x4c | R. |  Ciphertext HBM AXI4 connection data width |
+| [hbm_axi4_dataw_glwe](#register-infohbm-axi4-dataw-glwe) | 0x50 | R. |  GLWE HBM AXI4 connection data width |
+| [hbm_axi4_dataw_bsk](#register-infohbm-axi4-dataw-bsk) | 0x54 | R. |  BSK HBM AXI4 connection data width |
+| [hbm_axi4_dataw_ksk](#register-infohbm-axi4-dataw-ksk) | 0x58 | R. |  KSK HBM AXI4 connection data width |
 
 
 ---
@@ -173,8 +172,8 @@ Below is a summary of all the registers in the current section info:
 - **Owner**: Parameter
 - **Read Access**: Read
 - **Write Access**: None
-- **Offset**: 0x80010
-- **Default**: C.f. fields
+- **Offset**: 0x10
+- **Default**: C.f. fields 
 
 
 #### Field Details
@@ -197,8 +196,8 @@ Register version contains following Sub-fields:
 - **Owner**: Parameter
 - **Read Access**: Read
 - **Write Access**: None
-- **Offset**: 0x80014
-- **Default**: NTT_CORE_ARCH
+- **Offset**: 0x14
+- **Default**: NTT_CORE_ARCH 
 
 
 
@@ -212,8 +211,8 @@ Register version contains following Sub-fields:
 - **Owner**: Parameter
 - **Read Access**: Read
 - **Write Access**: None
-- **Offset**: 0x80018
-- **Default**: C.f. fields
+- **Offset**: 0x18
+- **Default**: C.f. fields 
 
 
 #### Field Details
@@ -238,8 +237,8 @@ Register ntt_structure contains following Sub-fields:
 - **Owner**: Parameter
 - **Read Access**: Read
 - **Write Access**: None
-- **Offset**: 0x8001c
-- **Default**: C.f. fields
+- **Offset**: 0x1c
+- **Default**: C.f. fields 
 
 
 #### Field Details
@@ -268,8 +267,8 @@ Register ntt_rdx_cut contains following Sub-fields:
 - **Owner**: Parameter
 - **Read Access**: Read
 - **Write Access**: None
-- **Offset**: 0x80020
-- **Default**: C.f. fields
+- **Offset**: 0x20
+- **Default**: C.f. fields 
 
 
 #### Field Details
@@ -292,8 +291,8 @@ Register ntt_pbs contains following Sub-fields:
 - **Owner**: Parameter
 - **Read Access**: Read
 - **Write Access**: None
-- **Offset**: 0x80024
-- **Default**: MOD_NTT_NAME
+- **Offset**: 0x24
+- **Default**: MOD_NTT_NAME 
 
 
 
@@ -307,8 +306,8 @@ Register ntt_pbs contains following Sub-fields:
 - **Owner**: Parameter
 - **Read Access**: Read
 - **Write Access**: None
-- **Offset**: 0x80028
-- **Default**: APPLICATION_NAME
+- **Offset**: 0x28
+- **Default**: APPLICATION_NAME 
 
 
 
@@ -322,8 +321,8 @@ Register ntt_pbs contains following Sub-fields:
 - **Owner**: Parameter
 - **Read Access**: Read
 - **Write Access**: None
-- **Offset**: 0x8002c
-- **Default**: C.f. fields
+- **Offset**: 0x2c
+- **Default**: C.f. fields 
 
 
 #### Field Details
@@ -347,8 +346,8 @@ Register ks_structure contains following Sub-fields:
 - **Owner**: Parameter
 - **Read Access**: Read
 - **Write Access**: None
-- **Offset**: 0x80030
-- **Default**: C.f. fields
+- **Offset**: 0x30
+- **Default**: C.f. fields 
 
 
 #### Field Details
@@ -372,8 +371,8 @@ Register ks_crypto_param contains following Sub-fields:
 - **Owner**: Parameter
 - **Read Access**: Read
 - **Write Access**: None
-- **Offset**: 0x80034
-- **Default**: C.f. fields
+- **Offset**: 0x34
+- **Default**: C.f. fields 
 
 
 #### Field Details
@@ -396,8 +395,8 @@ Register regf_structure contains following Sub-fields:
 - **Owner**: Parameter
 - **Read Access**: Read
 - **Write Access**: None
-- **Offset**: 0x80038
-- **Default**: C.f. fields
+- **Offset**: 0x38
+- **Default**: C.f. fields 
 
 
 #### Field Details
@@ -420,8 +419,8 @@ Register isc_structure contains following Sub-fields:
 - **Owner**: Parameter
 - **Read Access**: Read
 - **Write Access**: None
-- **Offset**: 0x8003c
-- **Default**: C.f. fields
+- **Offset**: 0x3c
+- **Default**: C.f. fields 
 
 
 #### Field Details
@@ -446,8 +445,8 @@ Register pe_properties contains following Sub-fields:
 - **Owner**: Parameter
 - **Read Access**: Read
 - **Write Access**: None
-- **Offset**: 0x80040
-- **Default**: C.f. fields
+- **Offset**: 0x40
+- **Default**: C.f. fields 
 
 
 #### Field Details
@@ -469,8 +468,8 @@ Register bsk_structure contains following Sub-fields:
 - **Owner**: Parameter
 - **Read Access**: Read
 - **Write Access**: None
-- **Offset**: 0x80044
-- **Default**: C.f. fields
+- **Offset**: 0x44
+- **Default**: C.f. fields 
 
 
 #### Field Details
@@ -492,8 +491,8 @@ Register ksk_structure contains following Sub-fields:
 - **Owner**: Parameter
 - **Read Access**: Read
 - **Write Access**: None
-- **Offset**: 0x80048
-- **Default**: C.f. fields
+- **Offset**: 0x48
+- **Default**: C.f. fields 
 
 
 #### Field Details
@@ -518,8 +517,8 @@ Register hbm_axi4_nb contains following Sub-fields:
 - **Owner**: Parameter
 - **Read Access**: Read
 - **Write Access**: None
-- **Offset**: 0x8004c
-- **Default**: AXI4_PEM_DATA_W
+- **Offset**: 0x4c
+- **Default**: AXI4_PEM_DATA_W 
 
 
 
@@ -533,8 +532,8 @@ Register hbm_axi4_nb contains following Sub-fields:
 - **Owner**: Parameter
 - **Read Access**: Read
 - **Write Access**: None
-- **Offset**: 0x80050
-- **Default**: AXI4_GLWE_DATA_W
+- **Offset**: 0x50
+- **Default**: AXI4_GLWE_DATA_W 
 
 
 
@@ -548,8 +547,8 @@ Register hbm_axi4_nb contains following Sub-fields:
 - **Owner**: Parameter
 - **Read Access**: Read
 - **Write Access**: None
-- **Offset**: 0x80054
-- **Default**: AXI4_BSK_DATA_W
+- **Offset**: 0x54
+- **Default**: AXI4_BSK_DATA_W 
 
 
 
@@ -563,15 +562,15 @@ Register hbm_axi4_nb contains following Sub-fields:
 - **Owner**: Parameter
 - **Read Access**: Read
 - **Write Access**: None
-- **Offset**: 0x80058
-- **Default**: AXI4_KSK_DATA_W
+- **Offset**: 0x58
+- **Default**: AXI4_KSK_DATA_W 
 
 
 
 
 ---
 
-
+ 
 
 
 ## Section hbm-axi4-addr-1in3
@@ -582,46 +581,46 @@ Below is a summary of all the registers in the current section hbm_axi4_addr_1in
 
 | Name             | Offset | Access | Description |
 |-----------------:|:------:|:------:|:------------|
-| [ct_pc0_lsb](#register-hbm-axi4-addr-1in3ct-pc0-lsb) | 0x81000 | RW |  Address offset for each ciphertext HBM AXI4 connection |
-| [ct_pc0_msb](#register-hbm-axi4-addr-1in3ct-pc0-msb) | 0x81004 | RW |  Address offset for each ciphertext HBM AXI4 connection |
-| [ct_pc1_lsb](#register-hbm-axi4-addr-1in3ct-pc1-lsb) | 0x81008 | RW |  Address offset for each ciphertext HBM AXI4 connection |
-| [ct_pc1_msb](#register-hbm-axi4-addr-1in3ct-pc1-msb) | 0x8100c | RW |  Address offset for each ciphertext HBM AXI4 connection |
-| [glwe_pc0_lsb](#register-hbm-axi4-addr-1in3glwe-pc0-lsb) | 0x81010 | RW |  Address offset for each GLWE HBM AXI4 connection |
-| [glwe_pc0_msb](#register-hbm-axi4-addr-1in3glwe-pc0-msb) | 0x81014 | RW |  Address offset for each GLWE HBM AXI4 connection |
-| [ksk_pc0_lsb](#register-hbm-axi4-addr-1in3ksk-pc0-lsb) | 0x81018 | RW |  Address offset for each KSK HBM AXI4 connection |
-| [ksk_pc0_msb](#register-hbm-axi4-addr-1in3ksk-pc0-msb) | 0x8101c | RW |  Address offset for each KSK HBM AXI4 connection |
-| [ksk_pc1_lsb](#register-hbm-axi4-addr-1in3ksk-pc1-lsb) | 0x81020 | RW |  Address offset for each KSK HBM AXI4 connection |
-| [ksk_pc1_msb](#register-hbm-axi4-addr-1in3ksk-pc1-msb) | 0x81024 | RW |  Address offset for each KSK HBM AXI4 connection |
-| [ksk_pc2_lsb](#register-hbm-axi4-addr-1in3ksk-pc2-lsb) | 0x81028 | RW |  Address offset for each KSK HBM AXI4 connection |
-| [ksk_pc2_msb](#register-hbm-axi4-addr-1in3ksk-pc2-msb) | 0x8102c | RW |  Address offset for each KSK HBM AXI4 connection |
-| [ksk_pc3_lsb](#register-hbm-axi4-addr-1in3ksk-pc3-lsb) | 0x81030 | RW |  Address offset for each KSK HBM AXI4 connection |
-| [ksk_pc3_msb](#register-hbm-axi4-addr-1in3ksk-pc3-msb) | 0x81034 | RW |  Address offset for each KSK HBM AXI4 connection |
-| [ksk_pc4_lsb](#register-hbm-axi4-addr-1in3ksk-pc4-lsb) | 0x81038 | RW |  Address offset for each KSK HBM AXI4 connection |
-| [ksk_pc4_msb](#register-hbm-axi4-addr-1in3ksk-pc4-msb) | 0x8103c | RW |  Address offset for each KSK HBM AXI4 connection |
-| [ksk_pc5_lsb](#register-hbm-axi4-addr-1in3ksk-pc5-lsb) | 0x81040 | RW |  Address offset for each KSK HBM AXI4 connection |
-| [ksk_pc5_msb](#register-hbm-axi4-addr-1in3ksk-pc5-msb) | 0x81044 | RW |  Address offset for each KSK HBM AXI4 connection |
-| [ksk_pc6_lsb](#register-hbm-axi4-addr-1in3ksk-pc6-lsb) | 0x81048 | RW |  Address offset for each KSK HBM AXI4 connection |
-| [ksk_pc6_msb](#register-hbm-axi4-addr-1in3ksk-pc6-msb) | 0x8104c | RW |  Address offset for each KSK HBM AXI4 connection |
-| [ksk_pc7_lsb](#register-hbm-axi4-addr-1in3ksk-pc7-lsb) | 0x81050 | RW |  Address offset for each KSK HBM AXI4 connection |
-| [ksk_pc7_msb](#register-hbm-axi4-addr-1in3ksk-pc7-msb) | 0x81054 | RW |  Address offset for each KSK HBM AXI4 connection |
-| [ksk_pc8_lsb](#register-hbm-axi4-addr-1in3ksk-pc8-lsb) | 0x81058 | RW |  Address offset for each KSK HBM AXI4 connection |
-| [ksk_pc8_msb](#register-hbm-axi4-addr-1in3ksk-pc8-msb) | 0x8105c | RW |  Address offset for each KSK HBM AXI4 connection |
-| [ksk_pc9_lsb](#register-hbm-axi4-addr-1in3ksk-pc9-lsb) | 0x81060 | RW |  Address offset for each KSK HBM AXI4 connection |
-| [ksk_pc9_msb](#register-hbm-axi4-addr-1in3ksk-pc9-msb) | 0x81064 | RW |  Address offset for each KSK HBM AXI4 connection |
-| [ksk_pc10_lsb](#register-hbm-axi4-addr-1in3ksk-pc10-lsb) | 0x81068 | RW |  Address offset for each KSK HBM AXI4 connection |
-| [ksk_pc10_msb](#register-hbm-axi4-addr-1in3ksk-pc10-msb) | 0x8106c | RW |  Address offset for each KSK HBM AXI4 connection |
-| [ksk_pc11_lsb](#register-hbm-axi4-addr-1in3ksk-pc11-lsb) | 0x81070 | RW |  Address offset for each KSK HBM AXI4 connection |
-| [ksk_pc11_msb](#register-hbm-axi4-addr-1in3ksk-pc11-msb) | 0x81074 | RW |  Address offset for each KSK HBM AXI4 connection |
-| [ksk_pc12_lsb](#register-hbm-axi4-addr-1in3ksk-pc12-lsb) | 0x81078 | RW |  Address offset for each KSK HBM AXI4 connection |
-| [ksk_pc12_msb](#register-hbm-axi4-addr-1in3ksk-pc12-msb) | 0x8107c | RW |  Address offset for each KSK HBM AXI4 connection |
-| [ksk_pc13_lsb](#register-hbm-axi4-addr-1in3ksk-pc13-lsb) | 0x81080 | RW |  Address offset for each KSK HBM AXI4 connection |
-| [ksk_pc13_msb](#register-hbm-axi4-addr-1in3ksk-pc13-msb) | 0x81084 | RW |  Address offset for each KSK HBM AXI4 connection |
-| [ksk_pc14_lsb](#register-hbm-axi4-addr-1in3ksk-pc14-lsb) | 0x81088 | RW |  Address offset for each KSK HBM AXI4 connection |
-| [ksk_pc14_msb](#register-hbm-axi4-addr-1in3ksk-pc14-msb) | 0x8108c | RW |  Address offset for each KSK HBM AXI4 connection |
-| [ksk_pc15_lsb](#register-hbm-axi4-addr-1in3ksk-pc15-lsb) | 0x81090 | RW |  Address offset for each KSK HBM AXI4 connection |
-| [ksk_pc15_msb](#register-hbm-axi4-addr-1in3ksk-pc15-msb) | 0x81094 | RW |  Address offset for each KSK HBM AXI4 connection |
-| [trc_pc0_lsb](#register-hbm-axi4-addr-1in3trc-pc0-lsb) | 0x81098 | RW |  Address offset for each trace HBM AXI4 connection |
-| [trc_pc0_msb](#register-hbm-axi4-addr-1in3trc-pc0-msb) | 0x8109c | RW |  Address offset for each trace HBM AXI4 connection |
+| [ct_pc0_lsb](#register-hbm-axi4-addr-1in3ct-pc0-lsb) | 0x1000 | RW |  Address offset for each ciphertext HBM AXI4 connection |
+| [ct_pc0_msb](#register-hbm-axi4-addr-1in3ct-pc0-msb) | 0x1004 | RW |  Address offset for each ciphertext HBM AXI4 connection |
+| [ct_pc1_lsb](#register-hbm-axi4-addr-1in3ct-pc1-lsb) | 0x1008 | RW |  Address offset for each ciphertext HBM AXI4 connection |
+| [ct_pc1_msb](#register-hbm-axi4-addr-1in3ct-pc1-msb) | 0x100c | RW |  Address offset for each ciphertext HBM AXI4 connection |
+| [glwe_pc0_lsb](#register-hbm-axi4-addr-1in3glwe-pc0-lsb) | 0x1010 | RW |  Address offset for each GLWE HBM AXI4 connection |
+| [glwe_pc0_msb](#register-hbm-axi4-addr-1in3glwe-pc0-msb) | 0x1014 | RW |  Address offset for each GLWE HBM AXI4 connection |
+| [ksk_pc0_lsb](#register-hbm-axi4-addr-1in3ksk-pc0-lsb) | 0x1018 | RW |  Address offset for each KSK HBM AXI4 connection |
+| [ksk_pc0_msb](#register-hbm-axi4-addr-1in3ksk-pc0-msb) | 0x101c | RW |  Address offset for each KSK HBM AXI4 connection |
+| [ksk_pc1_lsb](#register-hbm-axi4-addr-1in3ksk-pc1-lsb) | 0x1020 | RW |  Address offset for each KSK HBM AXI4 connection |
+| [ksk_pc1_msb](#register-hbm-axi4-addr-1in3ksk-pc1-msb) | 0x1024 | RW |  Address offset for each KSK HBM AXI4 connection |
+| [ksk_pc2_lsb](#register-hbm-axi4-addr-1in3ksk-pc2-lsb) | 0x1028 | RW |  Address offset for each KSK HBM AXI4 connection |
+| [ksk_pc2_msb](#register-hbm-axi4-addr-1in3ksk-pc2-msb) | 0x102c | RW |  Address offset for each KSK HBM AXI4 connection |
+| [ksk_pc3_lsb](#register-hbm-axi4-addr-1in3ksk-pc3-lsb) | 0x1030 | RW |  Address offset for each KSK HBM AXI4 connection |
+| [ksk_pc3_msb](#register-hbm-axi4-addr-1in3ksk-pc3-msb) | 0x1034 | RW |  Address offset for each KSK HBM AXI4 connection |
+| [ksk_pc4_lsb](#register-hbm-axi4-addr-1in3ksk-pc4-lsb) | 0x1038 | RW |  Address offset for each KSK HBM AXI4 connection |
+| [ksk_pc4_msb](#register-hbm-axi4-addr-1in3ksk-pc4-msb) | 0x103c | RW |  Address offset for each KSK HBM AXI4 connection |
+| [ksk_pc5_lsb](#register-hbm-axi4-addr-1in3ksk-pc5-lsb) | 0x1040 | RW |  Address offset for each KSK HBM AXI4 connection |
+| [ksk_pc5_msb](#register-hbm-axi4-addr-1in3ksk-pc5-msb) | 0x1044 | RW |  Address offset for each KSK HBM AXI4 connection |
+| [ksk_pc6_lsb](#register-hbm-axi4-addr-1in3ksk-pc6-lsb) | 0x1048 | RW |  Address offset for each KSK HBM AXI4 connection |
+| [ksk_pc6_msb](#register-hbm-axi4-addr-1in3ksk-pc6-msb) | 0x104c | RW |  Address offset for each KSK HBM AXI4 connection |
+| [ksk_pc7_lsb](#register-hbm-axi4-addr-1in3ksk-pc7-lsb) | 0x1050 | RW |  Address offset for each KSK HBM AXI4 connection |
+| [ksk_pc7_msb](#register-hbm-axi4-addr-1in3ksk-pc7-msb) | 0x1054 | RW |  Address offset for each KSK HBM AXI4 connection |
+| [ksk_pc8_lsb](#register-hbm-axi4-addr-1in3ksk-pc8-lsb) | 0x1058 | RW |  Address offset for each KSK HBM AXI4 connection |
+| [ksk_pc8_msb](#register-hbm-axi4-addr-1in3ksk-pc8-msb) | 0x105c | RW |  Address offset for each KSK HBM AXI4 connection |
+| [ksk_pc9_lsb](#register-hbm-axi4-addr-1in3ksk-pc9-lsb) | 0x1060 | RW |  Address offset for each KSK HBM AXI4 connection |
+| [ksk_pc9_msb](#register-hbm-axi4-addr-1in3ksk-pc9-msb) | 0x1064 | RW |  Address offset for each KSK HBM AXI4 connection |
+| [ksk_pc10_lsb](#register-hbm-axi4-addr-1in3ksk-pc10-lsb) | 0x1068 | RW |  Address offset for each KSK HBM AXI4 connection |
+| [ksk_pc10_msb](#register-hbm-axi4-addr-1in3ksk-pc10-msb) | 0x106c | RW |  Address offset for each KSK HBM AXI4 connection |
+| [ksk_pc11_lsb](#register-hbm-axi4-addr-1in3ksk-pc11-lsb) | 0x1070 | RW |  Address offset for each KSK HBM AXI4 connection |
+| [ksk_pc11_msb](#register-hbm-axi4-addr-1in3ksk-pc11-msb) | 0x1074 | RW |  Address offset for each KSK HBM AXI4 connection |
+| [ksk_pc12_lsb](#register-hbm-axi4-addr-1in3ksk-pc12-lsb) | 0x1078 | RW |  Address offset for each KSK HBM AXI4 connection |
+| [ksk_pc12_msb](#register-hbm-axi4-addr-1in3ksk-pc12-msb) | 0x107c | RW |  Address offset for each KSK HBM AXI4 connection |
+| [ksk_pc13_lsb](#register-hbm-axi4-addr-1in3ksk-pc13-lsb) | 0x1080 | RW |  Address offset for each KSK HBM AXI4 connection |
+| [ksk_pc13_msb](#register-hbm-axi4-addr-1in3ksk-pc13-msb) | 0x1084 | RW |  Address offset for each KSK HBM AXI4 connection |
+| [ksk_pc14_lsb](#register-hbm-axi4-addr-1in3ksk-pc14-lsb) | 0x1088 | RW |  Address offset for each KSK HBM AXI4 connection |
+| [ksk_pc14_msb](#register-hbm-axi4-addr-1in3ksk-pc14-msb) | 0x108c | RW |  Address offset for each KSK HBM AXI4 connection |
+| [ksk_pc15_lsb](#register-hbm-axi4-addr-1in3ksk-pc15-lsb) | 0x1090 | RW |  Address offset for each KSK HBM AXI4 connection |
+| [ksk_pc15_msb](#register-hbm-axi4-addr-1in3ksk-pc15-msb) | 0x1094 | RW |  Address offset for each KSK HBM AXI4 connection |
+| [trc_pc0_lsb](#register-hbm-axi4-addr-1in3trc-pc0-lsb) | 0x1098 | RW |  Address offset for each trace HBM AXI4 connection |
+| [trc_pc0_msb](#register-hbm-axi4-addr-1in3trc-pc0-msb) | 0x109c | RW |  Address offset for each trace HBM AXI4 connection |
 
 
 ---
@@ -633,8 +632,8 @@ Below is a summary of all the registers in the current section hbm_axi4_addr_1in
 - **Owner**: User
 - **Read Access**: Read
 - **Write Access**: Write
-- **Offset**: 0x81000
-- **Default**: 0
+- **Offset**: 0x1000
+- **Default**: 0 
 
 
 
@@ -648,8 +647,8 @@ Below is a summary of all the registers in the current section hbm_axi4_addr_1in
 - **Owner**: User
 - **Read Access**: Read
 - **Write Access**: Write
-- **Offset**: 0x81004
-- **Default**: 0
+- **Offset**: 0x1004
+- **Default**: 0 
 
 
 
@@ -663,8 +662,8 @@ Below is a summary of all the registers in the current section hbm_axi4_addr_1in
 - **Owner**: User
 - **Read Access**: Read
 - **Write Access**: Write
-- **Offset**: 0x81008
-- **Default**: 0
+- **Offset**: 0x1008
+- **Default**: 0 
 
 
 
@@ -678,8 +677,8 @@ Below is a summary of all the registers in the current section hbm_axi4_addr_1in
 - **Owner**: User
 - **Read Access**: Read
 - **Write Access**: Write
-- **Offset**: 0x8100c
-- **Default**: 0
+- **Offset**: 0x100c
+- **Default**: 0 
 
 
 
@@ -693,8 +692,8 @@ Below is a summary of all the registers in the current section hbm_axi4_addr_1in
 - **Owner**: User
 - **Read Access**: Read
 - **Write Access**: Write
-- **Offset**: 0x81010
-- **Default**: 0
+- **Offset**: 0x1010
+- **Default**: 0 
 
 
 
@@ -708,8 +707,8 @@ Below is a summary of all the registers in the current section hbm_axi4_addr_1in
 - **Owner**: User
 - **Read Access**: Read
 - **Write Access**: Write
-- **Offset**: 0x81014
-- **Default**: 0
+- **Offset**: 0x1014
+- **Default**: 0 
 
 
 
@@ -723,8 +722,8 @@ Below is a summary of all the registers in the current section hbm_axi4_addr_1in
 - **Owner**: User
 - **Read Access**: Read
 - **Write Access**: Write
-- **Offset**: 0x81018
-- **Default**: 0
+- **Offset**: 0x1018
+- **Default**: 0 
 
 
 
@@ -738,8 +737,8 @@ Below is a summary of all the registers in the current section hbm_axi4_addr_1in
 - **Owner**: User
 - **Read Access**: Read
 - **Write Access**: Write
-- **Offset**: 0x8101c
-- **Default**: 0
+- **Offset**: 0x101c
+- **Default**: 0 
 
 
 
@@ -753,8 +752,8 @@ Below is a summary of all the registers in the current section hbm_axi4_addr_1in
 - **Owner**: User
 - **Read Access**: Read
 - **Write Access**: Write
-- **Offset**: 0x81020
-- **Default**: 0
+- **Offset**: 0x1020
+- **Default**: 0 
 
 
 
@@ -768,8 +767,8 @@ Below is a summary of all the registers in the current section hbm_axi4_addr_1in
 - **Owner**: User
 - **Read Access**: Read
 - **Write Access**: Write
-- **Offset**: 0x81024
-- **Default**: 0
+- **Offset**: 0x1024
+- **Default**: 0 
 
 
 
@@ -783,8 +782,8 @@ Below is a summary of all the registers in the current section hbm_axi4_addr_1in
 - **Owner**: User
 - **Read Access**: Read
 - **Write Access**: Write
-- **Offset**: 0x81028
-- **Default**: 0
+- **Offset**: 0x1028
+- **Default**: 0 
 
 
 
@@ -798,8 +797,8 @@ Below is a summary of all the registers in the current section hbm_axi4_addr_1in
 - **Owner**: User
 - **Read Access**: Read
 - **Write Access**: Write
-- **Offset**: 0x8102c
-- **Default**: 0
+- **Offset**: 0x102c
+- **Default**: 0 
 
 
 
@@ -813,8 +812,8 @@ Below is a summary of all the registers in the current section hbm_axi4_addr_1in
 - **Owner**: User
 - **Read Access**: Read
 - **Write Access**: Write
-- **Offset**: 0x81030
-- **Default**: 0
+- **Offset**: 0x1030
+- **Default**: 0 
 
 
 
@@ -828,8 +827,8 @@ Below is a summary of all the registers in the current section hbm_axi4_addr_1in
 - **Owner**: User
 - **Read Access**: Read
 - **Write Access**: Write
-- **Offset**: 0x81034
-- **Default**: 0
+- **Offset**: 0x1034
+- **Default**: 0 
 
 
 
@@ -843,8 +842,8 @@ Below is a summary of all the registers in the current section hbm_axi4_addr_1in
 - **Owner**: User
 - **Read Access**: Read
 - **Write Access**: Write
-- **Offset**: 0x81038
-- **Default**: 0
+- **Offset**: 0x1038
+- **Default**: 0 
 
 
 
@@ -858,8 +857,8 @@ Below is a summary of all the registers in the current section hbm_axi4_addr_1in
 - **Owner**: User
 - **Read Access**: Read
 - **Write Access**: Write
-- **Offset**: 0x8103c
-- **Default**: 0
+- **Offset**: 0x103c
+- **Default**: 0 
 
 
 
@@ -873,8 +872,8 @@ Below is a summary of all the registers in the current section hbm_axi4_addr_1in
 - **Owner**: User
 - **Read Access**: Read
 - **Write Access**: Write
-- **Offset**: 0x81040
-- **Default**: 0
+- **Offset**: 0x1040
+- **Default**: 0 
 
 
 
@@ -888,8 +887,8 @@ Below is a summary of all the registers in the current section hbm_axi4_addr_1in
 - **Owner**: User
 - **Read Access**: Read
 - **Write Access**: Write
-- **Offset**: 0x81044
-- **Default**: 0
+- **Offset**: 0x1044
+- **Default**: 0 
 
 
 
@@ -903,8 +902,8 @@ Below is a summary of all the registers in the current section hbm_axi4_addr_1in
 - **Owner**: User
 - **Read Access**: Read
 - **Write Access**: Write
-- **Offset**: 0x81048
-- **Default**: 0
+- **Offset**: 0x1048
+- **Default**: 0 
 
 
 
@@ -918,8 +917,8 @@ Below is a summary of all the registers in the current section hbm_axi4_addr_1in
 - **Owner**: User
 - **Read Access**: Read
 - **Write Access**: Write
-- **Offset**: 0x8104c
-- **Default**: 0
+- **Offset**: 0x104c
+- **Default**: 0 
 
 
 
@@ -933,8 +932,8 @@ Below is a summary of all the registers in the current section hbm_axi4_addr_1in
 - **Owner**: User
 - **Read Access**: Read
 - **Write Access**: Write
-- **Offset**: 0x81050
-- **Default**: 0
+- **Offset**: 0x1050
+- **Default**: 0 
 
 
 
@@ -948,8 +947,8 @@ Below is a summary of all the registers in the current section hbm_axi4_addr_1in
 - **Owner**: User
 - **Read Access**: Read
 - **Write Access**: Write
-- **Offset**: 0x81054
-- **Default**: 0
+- **Offset**: 0x1054
+- **Default**: 0 
 
 
 
@@ -963,8 +962,8 @@ Below is a summary of all the registers in the current section hbm_axi4_addr_1in
 - **Owner**: User
 - **Read Access**: Read
 - **Write Access**: Write
-- **Offset**: 0x81058
-- **Default**: 0
+- **Offset**: 0x1058
+- **Default**: 0 
 
 
 
@@ -978,8 +977,8 @@ Below is a summary of all the registers in the current section hbm_axi4_addr_1in
 - **Owner**: User
 - **Read Access**: Read
 - **Write Access**: Write
-- **Offset**: 0x8105c
-- **Default**: 0
+- **Offset**: 0x105c
+- **Default**: 0 
 
 
 
@@ -993,8 +992,8 @@ Below is a summary of all the registers in the current section hbm_axi4_addr_1in
 - **Owner**: User
 - **Read Access**: Read
 - **Write Access**: Write
-- **Offset**: 0x81060
-- **Default**: 0
+- **Offset**: 0x1060
+- **Default**: 0 
 
 
 
@@ -1008,8 +1007,8 @@ Below is a summary of all the registers in the current section hbm_axi4_addr_1in
 - **Owner**: User
 - **Read Access**: Read
 - **Write Access**: Write
-- **Offset**: 0x81064
-- **Default**: 0
+- **Offset**: 0x1064
+- **Default**: 0 
 
 
 
@@ -1023,8 +1022,8 @@ Below is a summary of all the registers in the current section hbm_axi4_addr_1in
 - **Owner**: User
 - **Read Access**: Read
 - **Write Access**: Write
-- **Offset**: 0x81068
-- **Default**: 0
+- **Offset**: 0x1068
+- **Default**: 0 
 
 
 
@@ -1038,8 +1037,8 @@ Below is a summary of all the registers in the current section hbm_axi4_addr_1in
 - **Owner**: User
 - **Read Access**: Read
 - **Write Access**: Write
-- **Offset**: 0x8106c
-- **Default**: 0
+- **Offset**: 0x106c
+- **Default**: 0 
 
 
 
@@ -1053,8 +1052,8 @@ Below is a summary of all the registers in the current section hbm_axi4_addr_1in
 - **Owner**: User
 - **Read Access**: Read
 - **Write Access**: Write
-- **Offset**: 0x81070
-- **Default**: 0
+- **Offset**: 0x1070
+- **Default**: 0 
 
 
 
@@ -1068,8 +1067,8 @@ Below is a summary of all the registers in the current section hbm_axi4_addr_1in
 - **Owner**: User
 - **Read Access**: Read
 - **Write Access**: Write
-- **Offset**: 0x81074
-- **Default**: 0
+- **Offset**: 0x1074
+- **Default**: 0 
 
 
 
@@ -1083,8 +1082,8 @@ Below is a summary of all the registers in the current section hbm_axi4_addr_1in
 - **Owner**: User
 - **Read Access**: Read
 - **Write Access**: Write
-- **Offset**: 0x81078
-- **Default**: 0
+- **Offset**: 0x1078
+- **Default**: 0 
 
 
 
@@ -1098,8 +1097,8 @@ Below is a summary of all the registers in the current section hbm_axi4_addr_1in
 - **Owner**: User
 - **Read Access**: Read
 - **Write Access**: Write
-- **Offset**: 0x8107c
-- **Default**: 0
+- **Offset**: 0x107c
+- **Default**: 0 
 
 
 
@@ -1113,8 +1112,8 @@ Below is a summary of all the registers in the current section hbm_axi4_addr_1in
 - **Owner**: User
 - **Read Access**: Read
 - **Write Access**: Write
-- **Offset**: 0x81080
-- **Default**: 0
+- **Offset**: 0x1080
+- **Default**: 0 
 
 
 
@@ -1128,8 +1127,8 @@ Below is a summary of all the registers in the current section hbm_axi4_addr_1in
 - **Owner**: User
 - **Read Access**: Read
 - **Write Access**: Write
-- **Offset**: 0x81084
-- **Default**: 0
+- **Offset**: 0x1084
+- **Default**: 0 
 
 
 
@@ -1143,8 +1142,8 @@ Below is a summary of all the registers in the current section hbm_axi4_addr_1in
 - **Owner**: User
 - **Read Access**: Read
 - **Write Access**: Write
-- **Offset**: 0x81088
-- **Default**: 0
+- **Offset**: 0x1088
+- **Default**: 0 
 
 
 
@@ -1158,8 +1157,8 @@ Below is a summary of all the registers in the current section hbm_axi4_addr_1in
 - **Owner**: User
 - **Read Access**: Read
 - **Write Access**: Write
-- **Offset**: 0x8108c
-- **Default**: 0
+- **Offset**: 0x108c
+- **Default**: 0 
 
 
 
@@ -1173,8 +1172,8 @@ Below is a summary of all the registers in the current section hbm_axi4_addr_1in
 - **Owner**: User
 - **Read Access**: Read
 - **Write Access**: Write
-- **Offset**: 0x81090
-- **Default**: 0
+- **Offset**: 0x1090
+- **Default**: 0 
 
 
 
@@ -1188,8 +1187,8 @@ Below is a summary of all the registers in the current section hbm_axi4_addr_1in
 - **Owner**: User
 - **Read Access**: Read
 - **Write Access**: Write
-- **Offset**: 0x81094
-- **Default**: 0
+- **Offset**: 0x1094
+- **Default**: 0 
 
 
 
@@ -1203,8 +1202,8 @@ Below is a summary of all the registers in the current section hbm_axi4_addr_1in
 - **Owner**: User
 - **Read Access**: Read
 - **Write Access**: Write
-- **Offset**: 0x81098
-- **Default**: 0
+- **Offset**: 0x1098
+- **Default**: 0 
 
 
 
@@ -1218,15 +1217,15 @@ Below is a summary of all the registers in the current section hbm_axi4_addr_1in
 - **Owner**: User
 - **Read Access**: Read
 - **Write Access**: Write
-- **Offset**: 0x8109c
-- **Default**: 0
+- **Offset**: 0x109c
+- **Default**: 0 
 
 
 
 
 ---
 
-
+ 
 
 
 ## Section bpip
@@ -1237,8 +1236,8 @@ Below is a summary of all the registers in the current section bpip:
 
 | Name             | Offset | Access | Description |
 |-----------------:|:------:|:------:|:------------|
-| [use](#register-bpipuse) | 0x82000 | RW |  (1) Use BPIP mode, (0) use IPIP mode (default) |
-| [timeout](#register-bpiptimeout) | 0x82004 | RW |  Timeout for BPIP mode |
+| [use](#register-bpipuse) | 0x2000 | RW |  (1) Use BPIP mode, (0) use IPIP mode (default) |
+| [timeout](#register-bpiptimeout) | 0x2004 | RW |  Timeout for BPIP mode |
 
 
 ---
@@ -1250,8 +1249,8 @@ Below is a summary of all the registers in the current section bpip:
 - **Owner**: User
 - **Read Access**: Read
 - **Write Access**: Write
-- **Offset**: 0x82000
-- **Default**: C.f. fields
+- **Offset**: 0x2000
+- **Default**: C.f. fields 
 
 
 #### Field Details
@@ -1274,15 +1273,15 @@ Register use contains following Sub-fields:
 - **Owner**: User
 - **Read Access**: Read
 - **Write Access**: Write
-- **Offset**: 0x82004
-- **Default**: 4294967295
+- **Offset**: 0x2004
+- **Default**: 4294967295 
 
 
 
 
 ---
 
-
+ 
 
 
 ## Section entry-prc-1in3
@@ -1293,10 +1292,10 @@ Below is a summary of all the registers in the current section entry_prc_1in3:
 
 | Name             | Offset | Access | Description |
 |-----------------:|:------:|:------:|:------------|
-| [dummy_val0](#register-entry-prc-1in3dummy-val0) | 0x90000 | R. |  RTL version |
-| [dummy_val1](#register-entry-prc-1in3dummy-val1) | 0x90004 | R. |  RTL version |
-| [dummy_val2](#register-entry-prc-1in3dummy-val2) | 0x90008 | R. |  RTL version |
-| [dummy_val3](#register-entry-prc-1in3dummy-val3) | 0x9000c | R. |  RTL version |
+| [dummy_val0](#register-entry-prc-1in3dummy-val0) | 0x10000 | R. |  RTL version |
+| [dummy_val1](#register-entry-prc-1in3dummy-val1) | 0x10004 | R. |  RTL version |
+| [dummy_val2](#register-entry-prc-1in3dummy-val2) | 0x10008 | R. |  RTL version |
+| [dummy_val3](#register-entry-prc-1in3dummy-val3) | 0x1000c | R. |  RTL version |
 
 
 ---
@@ -1308,8 +1307,8 @@ Below is a summary of all the registers in the current section entry_prc_1in3:
 - **Owner**: Parameter
 - **Read Access**: Read
 - **Write Access**: None
-- **Offset**: 0x90000
-- **Default**: 33686018
+- **Offset**: 0x10000
+- **Default**: 33686018 
 
 
 
@@ -1323,8 +1322,8 @@ Below is a summary of all the registers in the current section entry_prc_1in3:
 - **Owner**: Parameter
 - **Read Access**: Read
 - **Write Access**: None
-- **Offset**: 0x90004
-- **Default**: 303174162
+- **Offset**: 0x10004
+- **Default**: 303174162 
 
 
 
@@ -1338,8 +1337,8 @@ Below is a summary of all the registers in the current section entry_prc_1in3:
 - **Owner**: Parameter
 - **Read Access**: Read
 - **Write Access**: None
-- **Offset**: 0x90008
-- **Default**: 572662306
+- **Offset**: 0x10008
+- **Default**: 572662306 
 
 
 
@@ -1353,15 +1352,15 @@ Below is a summary of all the registers in the current section entry_prc_1in3:
 - **Owner**: Parameter
 - **Read Access**: Read
 - **Write Access**: None
-- **Offset**: 0x9000c
-- **Default**: 842150450
+- **Offset**: 0x1000c
+- **Default**: 842150450 
 
 
 
 
 ---
 
-
+ 
 
 
 ## Section status-1in3
@@ -1372,7 +1371,7 @@ Below is a summary of all the registers in the current section status_1in3:
 
 | Name             | Offset | Access | Description |
 |-----------------:|:------:|:------:|:------------|
-| [error](#register-status-1in3error) | 0x90010 | RW |  Error register (Could be reset by user) |
+| [error](#register-status-1in3error) | 0x10010 | RW |  Error register (Could be reset by user) |
 
 
 ---
@@ -1384,8 +1383,8 @@ Below is a summary of all the registers in the current section status_1in3:
 - **Owner**: Kernel
 - **Read Access**: Read
 - **Write Access**: WriteNotify
-- **Offset**: 0x90010
-- **Default**: C.f. fields
+- **Offset**: 0x10010
+- **Default**: C.f. fields 
 
 
 #### Field Details
@@ -1400,7 +1399,7 @@ Register error contains following Sub-fields:
 
 ---
 
-
+ 
 
 
 ## Section ksk-avail
@@ -1411,8 +1410,8 @@ Below is a summary of all the registers in the current section ksk_avail:
 
 | Name             | Offset | Access | Description |
 |-----------------:|:------:|:------:|:------------|
-| [avail](#register-ksk-availavail) | 0x91000 | RW |  KSK available bit |
-| [reset](#register-ksk-availreset) | 0x91004 | RW |  KSK reset sequence |
+| [avail](#register-ksk-availavail) | 0x11000 | RW |  KSK available bit |
+| [reset](#register-ksk-availreset) | 0x11004 | RW |  KSK reset sequence |
 
 
 ---
@@ -1424,8 +1423,8 @@ Below is a summary of all the registers in the current section ksk_avail:
 - **Owner**: User
 - **Read Access**: Read
 - **Write Access**: Write
-- **Offset**: 0x91000
-- **Default**: C.f. fields
+- **Offset**: 0x11000
+- **Default**: C.f. fields 
 
 
 #### Field Details
@@ -1447,8 +1446,8 @@ Register avail contains following Sub-fields:
 - **Owner**: Kernel
 - **Read Access**: Read
 - **Write Access**: WriteNotify
-- **Offset**: 0x91004
-- **Default**: C.f. fields
+- **Offset**: 0x11004
+- **Default**: C.f. fields 
 
 
 #### Field Details
@@ -1464,7 +1463,7 @@ Register reset contains following Sub-fields:
 
 ---
 
-
+ 
 
 
 ## Section runtime-1in3
@@ -1475,85 +1474,85 @@ Below is a summary of all the registers in the current section runtime_1in3:
 
 | Name             | Offset | Access | Description |
 |-----------------:|:------:|:------:|:------------|
-| [pep_cmux_loop](#register-runtime-1in3pep-cmux-loop) | 0x92000 | R. |  PEP: CMUX iteration loop number |
-| [pep_pointer_0](#register-runtime-1in3pep-pointer-0) | 0x92004 | R. |  PEP: pointers (part 1) |
-| [pep_pointer_1](#register-runtime-1in3pep-pointer-1) | 0x92008 | R. |  PEP: pointers (part 2) |
-| [pep_pointer_2](#register-runtime-1in3pep-pointer-2) | 0x9200c | R. |  PEP: pointers (part 3) |
-| [isc_latest_instruction_0](#register-runtime-1in3isc-latest-instruction-0) | 0x92010 | R. |  ISC: 4 latest instructions received ([0] is the most recent) |
-| [isc_latest_instruction_1](#register-runtime-1in3isc-latest-instruction-1) | 0x92014 | R. |  ISC: 4 latest instructions received ([0] is the most recent) |
-| [isc_latest_instruction_2](#register-runtime-1in3isc-latest-instruction-2) | 0x92018 | R. |  ISC: 4 latest instructions received ([0] is the most recent) |
-| [isc_latest_instruction_3](#register-runtime-1in3isc-latest-instruction-3) | 0x9201c | R. |  ISC: 4 latest instructions received ([0] is the most recent) |
-| [pep_seq_bpip_batch_cnt](#register-runtime-1in3pep-seq-bpip-batch-cnt) | 0x92020 | RW |  PEP: BPIP batch counter (Could be reset by user) |
-| [pep_seq_bpip_batch_flush_cnt](#register-runtime-1in3pep-seq-bpip-batch-flush-cnt) | 0x92024 | RW |  PEP: BPIP batch triggered by a flush counter (Could be reset by user) |
-| [pep_seq_bpip_batch_timeout_cnt](#register-runtime-1in3pep-seq-bpip-batch-timeout-cnt) | 0x92028 | RW |  PEP: BPIP batch triggered by a timeout counter (Could be reset by user) |
-| [pep_seq_bpip_waiting_batch_cnt](#register-runtime-1in3pep-seq-bpip-waiting-batch-cnt) | 0x9202c | RW |  PEP: BPIP batch that waits the trigger counter (Could be reset by user) |
-| [pep_seq_bpip_batch_filling_cnt_1](#register-runtime-1in3pep-seq-bpip-batch-filling-cnt-1) | 0x92030 | RW |  PEP: Count batch with filled with a given number of CT (Could be reset by user) |
-| [pep_seq_bpip_batch_filling_cnt_2](#register-runtime-1in3pep-seq-bpip-batch-filling-cnt-2) | 0x92034 | RW |  PEP: Count batch with filled with a given number of CT (Could be reset by user) |
-| [pep_seq_bpip_batch_filling_cnt_3](#register-runtime-1in3pep-seq-bpip-batch-filling-cnt-3) | 0x92038 | RW |  PEP: Count batch with filled with a given number of CT (Could be reset by user) |
-| [pep_seq_bpip_batch_filling_cnt_4](#register-runtime-1in3pep-seq-bpip-batch-filling-cnt-4) | 0x9203c | RW |  PEP: Count batch with filled with a given number of CT (Could be reset by user) |
-| [pep_seq_bpip_batch_filling_cnt_5](#register-runtime-1in3pep-seq-bpip-batch-filling-cnt-5) | 0x92040 | RW |  PEP: Count batch with filled with a given number of CT (Could be reset by user) |
-| [pep_seq_bpip_batch_filling_cnt_6](#register-runtime-1in3pep-seq-bpip-batch-filling-cnt-6) | 0x92044 | RW |  PEP: Count batch with filled with a given number of CT (Could be reset by user) |
-| [pep_seq_bpip_batch_filling_cnt_7](#register-runtime-1in3pep-seq-bpip-batch-filling-cnt-7) | 0x92048 | RW |  PEP: Count batch with filled with a given number of CT (Could be reset by user) |
-| [pep_seq_bpip_batch_filling_cnt_8](#register-runtime-1in3pep-seq-bpip-batch-filling-cnt-8) | 0x9204c | RW |  PEP: Count batch with filled with a given number of CT (Could be reset by user) |
-| [pep_seq_bpip_batch_filling_cnt_9](#register-runtime-1in3pep-seq-bpip-batch-filling-cnt-9) | 0x92050 | RW |  PEP: Count batch with filled with a given number of CT (Could be reset by user) |
-| [pep_seq_bpip_batch_filling_cnt_10](#register-runtime-1in3pep-seq-bpip-batch-filling-cnt-10) | 0x92054 | RW |  PEP: Count batch with filled with a given number of CT (Could be reset by user) |
-| [pep_seq_bpip_batch_filling_cnt_11](#register-runtime-1in3pep-seq-bpip-batch-filling-cnt-11) | 0x92058 | RW |  PEP: Count batch with filled with a given number of CT (Could be reset by user) |
-| [pep_seq_bpip_batch_filling_cnt_12](#register-runtime-1in3pep-seq-bpip-batch-filling-cnt-12) | 0x9205c | RW |  PEP: Count batch with filled with a given number of CT (Could be reset by user) |
-| [pep_seq_bpip_batch_filling_cnt_13](#register-runtime-1in3pep-seq-bpip-batch-filling-cnt-13) | 0x92060 | RW |  PEP: Count batch with filled with a given number of CT (Could be reset by user) |
-| [pep_seq_bpip_batch_filling_cnt_14](#register-runtime-1in3pep-seq-bpip-batch-filling-cnt-14) | 0x92064 | RW |  PEP: Count batch with filled with a given number of CT (Could be reset by user) |
-| [pep_seq_bpip_batch_filling_cnt_15](#register-runtime-1in3pep-seq-bpip-batch-filling-cnt-15) | 0x92068 | RW |  PEP: Count batch with filled with a given number of CT (Could be reset by user) |
-| [pep_seq_bpip_batch_filling_cnt_16](#register-runtime-1in3pep-seq-bpip-batch-filling-cnt-16) | 0x9206c | RW |  PEP: Count batch with filled with a given number of CT (Could be reset by user) |
-| [pep_seq_ld_ack_cnt](#register-runtime-1in3pep-seq-ld-ack-cnt) | 0x92070 | RW |  PEP: load BLWE ack counter (Could be reset by user) |
-| [pep_seq_cmux_not_full_batch_cnt](#register-runtime-1in3pep-seq-cmux-not-full-batch-cnt) | 0x92074 | RW |  PEP: not full batch CMUX counter (Could be reset by user) |
-| [pep_seq_ipip_flush_cnt](#register-runtime-1in3pep-seq-ipip-flush-cnt) | 0x92078 | RW |  PEP: IPIP flush CMUX counter (Could be reset by user) |
-| [pep_ldb_rcp_dur](#register-runtime-1in3pep-ldb-rcp-dur) | 0x9207c | RW |  PEP: load BLWE reception max duration (Could be reset by user) |
-| [pep_ldg_req_dur](#register-runtime-1in3pep-ldg-req-dur) | 0x92080 | RW |  PEP: load GLWE request max duration (Could be reset by user) |
-| [pep_ldg_rcp_dur](#register-runtime-1in3pep-ldg-rcp-dur) | 0x92084 | RW |  PEP: load GLWE reception max duration (Could be reset by user) |
-| [pep_load_ksk_rcp_dur_pc0](#register-runtime-1in3pep-load-ksk-rcp-dur-pc0) | 0x92088 | RW |  PEP: load KSK slice reception max duration (Could be reset by user) |
-| [pep_load_ksk_rcp_dur_pc1](#register-runtime-1in3pep-load-ksk-rcp-dur-pc1) | 0x9208c | RW |  PEP: load KSK slice reception max duration (Could be reset by user) |
-| [pep_load_ksk_rcp_dur_pc2](#register-runtime-1in3pep-load-ksk-rcp-dur-pc2) | 0x92090 | RW |  PEP: load KSK slice reception max duration (Could be reset by user) |
-| [pep_load_ksk_rcp_dur_pc3](#register-runtime-1in3pep-load-ksk-rcp-dur-pc3) | 0x92094 | RW |  PEP: load KSK slice reception max duration (Could be reset by user) |
-| [pep_load_ksk_rcp_dur_pc4](#register-runtime-1in3pep-load-ksk-rcp-dur-pc4) | 0x92098 | RW |  PEP: load KSK slice reception max duration (Could be reset by user) |
-| [pep_load_ksk_rcp_dur_pc5](#register-runtime-1in3pep-load-ksk-rcp-dur-pc5) | 0x9209c | RW |  PEP: load KSK slice reception max duration (Could be reset by user) |
-| [pep_load_ksk_rcp_dur_pc6](#register-runtime-1in3pep-load-ksk-rcp-dur-pc6) | 0x920a0 | RW |  PEP: load KSK slice reception max duration (Could be reset by user) |
-| [pep_load_ksk_rcp_dur_pc7](#register-runtime-1in3pep-load-ksk-rcp-dur-pc7) | 0x920a4 | RW |  PEP: load KSK slice reception max duration (Could be reset by user) |
-| [pep_load_ksk_rcp_dur_pc8](#register-runtime-1in3pep-load-ksk-rcp-dur-pc8) | 0x920a8 | RW |  PEP: load KSK slice reception max duration (Could be reset by user) |
-| [pep_load_ksk_rcp_dur_pc9](#register-runtime-1in3pep-load-ksk-rcp-dur-pc9) | 0x920ac | RW |  PEP: load KSK slice reception max duration (Could be reset by user) |
-| [pep_load_ksk_rcp_dur_pc10](#register-runtime-1in3pep-load-ksk-rcp-dur-pc10) | 0x920b0 | RW |  PEP: load KSK slice reception max duration (Could be reset by user) |
-| [pep_load_ksk_rcp_dur_pc11](#register-runtime-1in3pep-load-ksk-rcp-dur-pc11) | 0x920b4 | RW |  PEP: load KSK slice reception max duration (Could be reset by user) |
-| [pep_load_ksk_rcp_dur_pc12](#register-runtime-1in3pep-load-ksk-rcp-dur-pc12) | 0x920b8 | RW |  PEP: load KSK slice reception max duration (Could be reset by user) |
-| [pep_load_ksk_rcp_dur_pc13](#register-runtime-1in3pep-load-ksk-rcp-dur-pc13) | 0x920bc | RW |  PEP: load KSK slice reception max duration (Could be reset by user) |
-| [pep_load_ksk_rcp_dur_pc14](#register-runtime-1in3pep-load-ksk-rcp-dur-pc14) | 0x920c0 | RW |  PEP: load KSK slice reception max duration (Could be reset by user) |
-| [pep_load_ksk_rcp_dur_pc15](#register-runtime-1in3pep-load-ksk-rcp-dur-pc15) | 0x920c4 | RW |  PEP: load KSK slice reception max duration (Could be reset by user) |
-| [pep_mmacc_sxt_rcp_dur](#register-runtime-1in3pep-mmacc-sxt-rcp-dur) | 0x920c8 | RW |  PEP: MMACC SXT reception duration (Could be reset by user) |
-| [pep_mmacc_sxt_req_dur](#register-runtime-1in3pep-mmacc-sxt-req-dur) | 0x920cc | RW |  PEP: MMACC SXT request duration (Could be reset by user) |
-| [pep_mmacc_sxt_cmd_wait_b_dur](#register-runtime-1in3pep-mmacc-sxt-cmd-wait-b-dur) | 0x920d0 | RW |  PEP: MMACC SXT command wait for b duration (Could be reset by user) |
-| [pep_inst_cnt](#register-runtime-1in3pep-inst-cnt) | 0x920d4 | RW |  PEP: input instruction counter (Could be reset by user) |
-| [pep_ack_cnt](#register-runtime-1in3pep-ack-cnt) | 0x920d8 | RW |  PEP: instruction acknowledge counter (Could be reset by user) |
-| [pem_load_inst_cnt](#register-runtime-1in3pem-load-inst-cnt) | 0x920dc | RW |  PEM: load input instruction counter (Could be reset by user) |
-| [pem_load_ack_cnt](#register-runtime-1in3pem-load-ack-cnt) | 0x920e0 | RW |  PEM: load instruction acknowledge counter (Could be reset by user) |
-| [pem_store_inst_cnt](#register-runtime-1in3pem-store-inst-cnt) | 0x920e4 | RW |  PEM: store input instruction counter (Could be reset by user) |
-| [pem_store_ack_cnt](#register-runtime-1in3pem-store-ack-cnt) | 0x920e8 | RW |  PEM: store instruction acknowledge counter (Could be reset by user) |
-| [pea_inst_cnt](#register-runtime-1in3pea-inst-cnt) | 0x920ec | RW |  PEA: input instruction counter (Could be reset by user) |
-| [pea_ack_cnt](#register-runtime-1in3pea-ack-cnt) | 0x920f0 | RW |  PEA: instruction acknowledge counter (Could be reset by user) |
-| [isc_inst_cnt](#register-runtime-1in3isc-inst-cnt) | 0x920f4 | RW |  ISC: input instruction counter (Could be reset by user) |
-| [isc_ack_cnt](#register-runtime-1in3isc-ack-cnt) | 0x920f8 | RW |  ISC: instruction acknowledge counter (Could be reset by user) |
-| [pem_load_info_0_pc0_0](#register-runtime-1in3pem-load-info-0-pc0-0) | 0x920fc | R. |  PEM: load first data) |
-| [pem_load_info_0_pc0_1](#register-runtime-1in3pem-load-info-0-pc0-1) | 0x92100 | R. |  PEM: load first data) |
-| [pem_load_info_0_pc0_2](#register-runtime-1in3pem-load-info-0-pc0-2) | 0x92104 | R. |  PEM: load first data) |
-| [pem_load_info_0_pc0_3](#register-runtime-1in3pem-load-info-0-pc0-3) | 0x92108 | R. |  PEM: load first data) |
-| [pem_load_info_0_pc1_0](#register-runtime-1in3pem-load-info-0-pc1-0) | 0x9210c | R. |  PEM: load first data) |
-| [pem_load_info_0_pc1_1](#register-runtime-1in3pem-load-info-0-pc1-1) | 0x92110 | R. |  PEM: load first data) |
-| [pem_load_info_0_pc1_2](#register-runtime-1in3pem-load-info-0-pc1-2) | 0x92114 | R. |  PEM: load first data) |
-| [pem_load_info_0_pc1_3](#register-runtime-1in3pem-load-info-0-pc1-3) | 0x92118 | R. |  PEM: load first data) |
-| [pem_load_info_1_pc0_lsb](#register-runtime-1in3pem-load-info-1-pc0-lsb) | 0x9211c | R. |  PEM: load first address |
-| [pem_load_info_1_pc0_msb](#register-runtime-1in3pem-load-info-1-pc0-msb) | 0x92120 | R. |  PEM: load first address |
-| [pem_load_info_1_pc1_lsb](#register-runtime-1in3pem-load-info-1-pc1-lsb) | 0x92124 | R. |  PEM: load first address |
-| [pem_load_info_1_pc1_msb](#register-runtime-1in3pem-load-info-1-pc1-msb) | 0x92128 | R. |  PEM: load first address |
-| [pem_store_info_0](#register-runtime-1in3pem-store-info-0) | 0x9212c | R. |  PEM: store info 0) |
-| [pem_store_info_1](#register-runtime-1in3pem-store-info-1) | 0x92130 | R. |  PEM: store info 1 |
-| [pem_store_info_2](#register-runtime-1in3pem-store-info-2) | 0x92134 | R. |  PEM: store info 2 |
-| [pem_store_info_3](#register-runtime-1in3pem-store-info-3) | 0x92138 | R. |  PEM: store info 3 |
+| [pep_cmux_loop](#register-runtime-1in3pep-cmux-loop) | 0x12000 | R. |  PEP: CMUX iteration loop number |
+| [pep_pointer_0](#register-runtime-1in3pep-pointer-0) | 0x12004 | R. |  PEP: pointers (part 1) |
+| [pep_pointer_1](#register-runtime-1in3pep-pointer-1) | 0x12008 | R. |  PEP: pointers (part 2) |
+| [pep_pointer_2](#register-runtime-1in3pep-pointer-2) | 0x1200c | R. |  PEP: pointers (part 3) |
+| [isc_latest_instruction_0](#register-runtime-1in3isc-latest-instruction-0) | 0x12010 | R. |  ISC: 4 latest instructions received ([0] is the most recent) |
+| [isc_latest_instruction_1](#register-runtime-1in3isc-latest-instruction-1) | 0x12014 | R. |  ISC: 4 latest instructions received ([0] is the most recent) |
+| [isc_latest_instruction_2](#register-runtime-1in3isc-latest-instruction-2) | 0x12018 | R. |  ISC: 4 latest instructions received ([0] is the most recent) |
+| [isc_latest_instruction_3](#register-runtime-1in3isc-latest-instruction-3) | 0x1201c | R. |  ISC: 4 latest instructions received ([0] is the most recent) |
+| [pep_seq_bpip_batch_cnt](#register-runtime-1in3pep-seq-bpip-batch-cnt) | 0x12020 | RW |  PEP: BPIP batch counter (Could be reset by user) |
+| [pep_seq_bpip_batch_flush_cnt](#register-runtime-1in3pep-seq-bpip-batch-flush-cnt) | 0x12024 | RW |  PEP: BPIP batch triggered by a flush counter (Could be reset by user) |
+| [pep_seq_bpip_batch_timeout_cnt](#register-runtime-1in3pep-seq-bpip-batch-timeout-cnt) | 0x12028 | RW |  PEP: BPIP batch triggered by a timeout counter (Could be reset by user) |
+| [pep_seq_bpip_waiting_batch_cnt](#register-runtime-1in3pep-seq-bpip-waiting-batch-cnt) | 0x1202c | RW |  PEP: BPIP batch that waits the trigger counter (Could be reset by user) |
+| [pep_seq_bpip_batch_filling_cnt_1](#register-runtime-1in3pep-seq-bpip-batch-filling-cnt-1) | 0x12030 | RW |  PEP: Count batch with filled with a given number of CT (Could be reset by user) |
+| [pep_seq_bpip_batch_filling_cnt_2](#register-runtime-1in3pep-seq-bpip-batch-filling-cnt-2) | 0x12034 | RW |  PEP: Count batch with filled with a given number of CT (Could be reset by user) |
+| [pep_seq_bpip_batch_filling_cnt_3](#register-runtime-1in3pep-seq-bpip-batch-filling-cnt-3) | 0x12038 | RW |  PEP: Count batch with filled with a given number of CT (Could be reset by user) |
+| [pep_seq_bpip_batch_filling_cnt_4](#register-runtime-1in3pep-seq-bpip-batch-filling-cnt-4) | 0x1203c | RW |  PEP: Count batch with filled with a given number of CT (Could be reset by user) |
+| [pep_seq_bpip_batch_filling_cnt_5](#register-runtime-1in3pep-seq-bpip-batch-filling-cnt-5) | 0x12040 | RW |  PEP: Count batch with filled with a given number of CT (Could be reset by user) |
+| [pep_seq_bpip_batch_filling_cnt_6](#register-runtime-1in3pep-seq-bpip-batch-filling-cnt-6) | 0x12044 | RW |  PEP: Count batch with filled with a given number of CT (Could be reset by user) |
+| [pep_seq_bpip_batch_filling_cnt_7](#register-runtime-1in3pep-seq-bpip-batch-filling-cnt-7) | 0x12048 | RW |  PEP: Count batch with filled with a given number of CT (Could be reset by user) |
+| [pep_seq_bpip_batch_filling_cnt_8](#register-runtime-1in3pep-seq-bpip-batch-filling-cnt-8) | 0x1204c | RW |  PEP: Count batch with filled with a given number of CT (Could be reset by user) |
+| [pep_seq_bpip_batch_filling_cnt_9](#register-runtime-1in3pep-seq-bpip-batch-filling-cnt-9) | 0x12050 | RW |  PEP: Count batch with filled with a given number of CT (Could be reset by user) |
+| [pep_seq_bpip_batch_filling_cnt_10](#register-runtime-1in3pep-seq-bpip-batch-filling-cnt-10) | 0x12054 | RW |  PEP: Count batch with filled with a given number of CT (Could be reset by user) |
+| [pep_seq_bpip_batch_filling_cnt_11](#register-runtime-1in3pep-seq-bpip-batch-filling-cnt-11) | 0x12058 | RW |  PEP: Count batch with filled with a given number of CT (Could be reset by user) |
+| [pep_seq_bpip_batch_filling_cnt_12](#register-runtime-1in3pep-seq-bpip-batch-filling-cnt-12) | 0x1205c | RW |  PEP: Count batch with filled with a given number of CT (Could be reset by user) |
+| [pep_seq_bpip_batch_filling_cnt_13](#register-runtime-1in3pep-seq-bpip-batch-filling-cnt-13) | 0x12060 | RW |  PEP: Count batch with filled with a given number of CT (Could be reset by user) |
+| [pep_seq_bpip_batch_filling_cnt_14](#register-runtime-1in3pep-seq-bpip-batch-filling-cnt-14) | 0x12064 | RW |  PEP: Count batch with filled with a given number of CT (Could be reset by user) |
+| [pep_seq_bpip_batch_filling_cnt_15](#register-runtime-1in3pep-seq-bpip-batch-filling-cnt-15) | 0x12068 | RW |  PEP: Count batch with filled with a given number of CT (Could be reset by user) |
+| [pep_seq_bpip_batch_filling_cnt_16](#register-runtime-1in3pep-seq-bpip-batch-filling-cnt-16) | 0x1206c | RW |  PEP: Count batch with filled with a given number of CT (Could be reset by user) |
+| [pep_seq_ld_ack_cnt](#register-runtime-1in3pep-seq-ld-ack-cnt) | 0x12070 | RW |  PEP: load BLWE ack counter (Could be reset by user) |
+| [pep_seq_cmux_not_full_batch_cnt](#register-runtime-1in3pep-seq-cmux-not-full-batch-cnt) | 0x12074 | RW |  PEP: not full batch CMUX counter (Could be reset by user) |
+| [pep_seq_ipip_flush_cnt](#register-runtime-1in3pep-seq-ipip-flush-cnt) | 0x12078 | RW |  PEP: IPIP flush CMUX counter (Could be reset by user) |
+| [pep_ldb_rcp_dur](#register-runtime-1in3pep-ldb-rcp-dur) | 0x1207c | RW |  PEP: load BLWE reception max duration (Could be reset by user) |
+| [pep_ldg_req_dur](#register-runtime-1in3pep-ldg-req-dur) | 0x12080 | RW |  PEP: load GLWE request max duration (Could be reset by user) |
+| [pep_ldg_rcp_dur](#register-runtime-1in3pep-ldg-rcp-dur) | 0x12084 | RW |  PEP: load GLWE reception max duration (Could be reset by user) |
+| [pep_load_ksk_rcp_dur_pc0](#register-runtime-1in3pep-load-ksk-rcp-dur-pc0) | 0x12088 | RW |  PEP: load KSK slice reception max duration (Could be reset by user) |
+| [pep_load_ksk_rcp_dur_pc1](#register-runtime-1in3pep-load-ksk-rcp-dur-pc1) | 0x1208c | RW |  PEP: load KSK slice reception max duration (Could be reset by user) |
+| [pep_load_ksk_rcp_dur_pc2](#register-runtime-1in3pep-load-ksk-rcp-dur-pc2) | 0x12090 | RW |  PEP: load KSK slice reception max duration (Could be reset by user) |
+| [pep_load_ksk_rcp_dur_pc3](#register-runtime-1in3pep-load-ksk-rcp-dur-pc3) | 0x12094 | RW |  PEP: load KSK slice reception max duration (Could be reset by user) |
+| [pep_load_ksk_rcp_dur_pc4](#register-runtime-1in3pep-load-ksk-rcp-dur-pc4) | 0x12098 | RW |  PEP: load KSK slice reception max duration (Could be reset by user) |
+| [pep_load_ksk_rcp_dur_pc5](#register-runtime-1in3pep-load-ksk-rcp-dur-pc5) | 0x1209c | RW |  PEP: load KSK slice reception max duration (Could be reset by user) |
+| [pep_load_ksk_rcp_dur_pc6](#register-runtime-1in3pep-load-ksk-rcp-dur-pc6) | 0x120a0 | RW |  PEP: load KSK slice reception max duration (Could be reset by user) |
+| [pep_load_ksk_rcp_dur_pc7](#register-runtime-1in3pep-load-ksk-rcp-dur-pc7) | 0x120a4 | RW |  PEP: load KSK slice reception max duration (Could be reset by user) |
+| [pep_load_ksk_rcp_dur_pc8](#register-runtime-1in3pep-load-ksk-rcp-dur-pc8) | 0x120a8 | RW |  PEP: load KSK slice reception max duration (Could be reset by user) |
+| [pep_load_ksk_rcp_dur_pc9](#register-runtime-1in3pep-load-ksk-rcp-dur-pc9) | 0x120ac | RW |  PEP: load KSK slice reception max duration (Could be reset by user) |
+| [pep_load_ksk_rcp_dur_pc10](#register-runtime-1in3pep-load-ksk-rcp-dur-pc10) | 0x120b0 | RW |  PEP: load KSK slice reception max duration (Could be reset by user) |
+| [pep_load_ksk_rcp_dur_pc11](#register-runtime-1in3pep-load-ksk-rcp-dur-pc11) | 0x120b4 | RW |  PEP: load KSK slice reception max duration (Could be reset by user) |
+| [pep_load_ksk_rcp_dur_pc12](#register-runtime-1in3pep-load-ksk-rcp-dur-pc12) | 0x120b8 | RW |  PEP: load KSK slice reception max duration (Could be reset by user) |
+| [pep_load_ksk_rcp_dur_pc13](#register-runtime-1in3pep-load-ksk-rcp-dur-pc13) | 0x120bc | RW |  PEP: load KSK slice reception max duration (Could be reset by user) |
+| [pep_load_ksk_rcp_dur_pc14](#register-runtime-1in3pep-load-ksk-rcp-dur-pc14) | 0x120c0 | RW |  PEP: load KSK slice reception max duration (Could be reset by user) |
+| [pep_load_ksk_rcp_dur_pc15](#register-runtime-1in3pep-load-ksk-rcp-dur-pc15) | 0x120c4 | RW |  PEP: load KSK slice reception max duration (Could be reset by user) |
+| [pep_mmacc_sxt_rcp_dur](#register-runtime-1in3pep-mmacc-sxt-rcp-dur) | 0x120c8 | RW |  PEP: MMACC SXT reception duration (Could be reset by user) |
+| [pep_mmacc_sxt_req_dur](#register-runtime-1in3pep-mmacc-sxt-req-dur) | 0x120cc | RW |  PEP: MMACC SXT request duration (Could be reset by user) |
+| [pep_mmacc_sxt_cmd_wait_b_dur](#register-runtime-1in3pep-mmacc-sxt-cmd-wait-b-dur) | 0x120d0 | RW |  PEP: MMACC SXT command wait for b duration (Could be reset by user) |
+| [pep_inst_cnt](#register-runtime-1in3pep-inst-cnt) | 0x120d4 | RW |  PEP: input instruction counter (Could be reset by user) |
+| [pep_ack_cnt](#register-runtime-1in3pep-ack-cnt) | 0x120d8 | RW |  PEP: instruction acknowledge counter (Could be reset by user) |
+| [pem_load_inst_cnt](#register-runtime-1in3pem-load-inst-cnt) | 0x120dc | RW |  PEM: load input instruction counter (Could be reset by user) |
+| [pem_load_ack_cnt](#register-runtime-1in3pem-load-ack-cnt) | 0x120e0 | RW |  PEM: load instruction acknowledge counter (Could be reset by user) |
+| [pem_store_inst_cnt](#register-runtime-1in3pem-store-inst-cnt) | 0x120e4 | RW |  PEM: store input instruction counter (Could be reset by user) |
+| [pem_store_ack_cnt](#register-runtime-1in3pem-store-ack-cnt) | 0x120e8 | RW |  PEM: store instruction acknowledge counter (Could be reset by user) |
+| [pea_inst_cnt](#register-runtime-1in3pea-inst-cnt) | 0x120ec | RW |  PEA: input instruction counter (Could be reset by user) |
+| [pea_ack_cnt](#register-runtime-1in3pea-ack-cnt) | 0x120f0 | RW |  PEA: instruction acknowledge counter (Could be reset by user) |
+| [isc_inst_cnt](#register-runtime-1in3isc-inst-cnt) | 0x120f4 | RW |  ISC: input instruction counter (Could be reset by user) |
+| [isc_ack_cnt](#register-runtime-1in3isc-ack-cnt) | 0x120f8 | RW |  ISC: instruction acknowledge counter (Could be reset by user) |
+| [pem_load_info_0_pc0_0](#register-runtime-1in3pem-load-info-0-pc0-0) | 0x120fc | R. |  PEM: load first data) |
+| [pem_load_info_0_pc0_1](#register-runtime-1in3pem-load-info-0-pc0-1) | 0x12100 | R. |  PEM: load first data) |
+| [pem_load_info_0_pc0_2](#register-runtime-1in3pem-load-info-0-pc0-2) | 0x12104 | R. |  PEM: load first data) |
+| [pem_load_info_0_pc0_3](#register-runtime-1in3pem-load-info-0-pc0-3) | 0x12108 | R. |  PEM: load first data) |
+| [pem_load_info_0_pc1_0](#register-runtime-1in3pem-load-info-0-pc1-0) | 0x1210c | R. |  PEM: load first data) |
+| [pem_load_info_0_pc1_1](#register-runtime-1in3pem-load-info-0-pc1-1) | 0x12110 | R. |  PEM: load first data) |
+| [pem_load_info_0_pc1_2](#register-runtime-1in3pem-load-info-0-pc1-2) | 0x12114 | R. |  PEM: load first data) |
+| [pem_load_info_0_pc1_3](#register-runtime-1in3pem-load-info-0-pc1-3) | 0x12118 | R. |  PEM: load first data) |
+| [pem_load_info_1_pc0_lsb](#register-runtime-1in3pem-load-info-1-pc0-lsb) | 0x1211c | R. |  PEM: load first address |
+| [pem_load_info_1_pc0_msb](#register-runtime-1in3pem-load-info-1-pc0-msb) | 0x12120 | R. |  PEM: load first address |
+| [pem_load_info_1_pc1_lsb](#register-runtime-1in3pem-load-info-1-pc1-lsb) | 0x12124 | R. |  PEM: load first address |
+| [pem_load_info_1_pc1_msb](#register-runtime-1in3pem-load-info-1-pc1-msb) | 0x12128 | R. |  PEM: load first address |
+| [pem_store_info_0](#register-runtime-1in3pem-store-info-0) | 0x1212c | R. |  PEM: store info 0) |
+| [pem_store_info_1](#register-runtime-1in3pem-store-info-1) | 0x12130 | R. |  PEM: store info 1 |
+| [pem_store_info_2](#register-runtime-1in3pem-store-info-2) | 0x12134 | R. |  PEM: store info 2 |
+| [pem_store_info_3](#register-runtime-1in3pem-store-info-3) | 0x12138 | R. |  PEM: store info 3 |
 
 
 ---
@@ -1565,8 +1564,8 @@ Below is a summary of all the registers in the current section runtime_1in3:
 - **Owner**: Kernel
 - **Read Access**: Read
 - **Write Access**: None
-- **Offset**: 0x92000
-- **Default**: C.f. fields
+- **Offset**: 0x12000
+- **Default**: C.f. fields 
 
 
 #### Field Details
@@ -1591,8 +1590,8 @@ Register pep_cmux_loop contains following Sub-fields:
 - **Owner**: Kernel
 - **Read Access**: Read
 - **Write Access**: None
-- **Offset**: 0x92004
-- **Default**: C.f. fields
+- **Offset**: 0x12004
+- **Default**: C.f. fields 
 
 
 #### Field Details
@@ -1617,8 +1616,8 @@ Register pep_pointer_0 contains following Sub-fields:
 - **Owner**: Kernel
 - **Read Access**: Read
 - **Write Access**: None
-- **Offset**: 0x92008
-- **Default**: C.f. fields
+- **Offset**: 0x12008
+- **Default**: C.f. fields 
 
 
 #### Field Details
@@ -1643,8 +1642,8 @@ Register pep_pointer_1 contains following Sub-fields:
 - **Owner**: Kernel
 - **Read Access**: Read
 - **Write Access**: None
-- **Offset**: 0x9200c
-- **Default**: C.f. fields
+- **Offset**: 0x1200c
+- **Default**: C.f. fields 
 
 
 #### Field Details
@@ -1668,8 +1667,8 @@ Register pep_pointer_2 contains following Sub-fields:
 - **Owner**: Kernel
 - **Read Access**: Read
 - **Write Access**: None
-- **Offset**: 0x92010
-- **Default**: 0
+- **Offset**: 0x12010
+- **Default**: 0 
 
 
 
@@ -1683,8 +1682,8 @@ Register pep_pointer_2 contains following Sub-fields:
 - **Owner**: Kernel
 - **Read Access**: Read
 - **Write Access**: None
-- **Offset**: 0x92014
-- **Default**: 0
+- **Offset**: 0x12014
+- **Default**: 0 
 
 
 
@@ -1698,8 +1697,8 @@ Register pep_pointer_2 contains following Sub-fields:
 - **Owner**: Kernel
 - **Read Access**: Read
 - **Write Access**: None
-- **Offset**: 0x92018
-- **Default**: 0
+- **Offset**: 0x12018
+- **Default**: 0 
 
 
 
@@ -1713,8 +1712,8 @@ Register pep_pointer_2 contains following Sub-fields:
 - **Owner**: Kernel
 - **Read Access**: Read
 - **Write Access**: None
-- **Offset**: 0x9201c
-- **Default**: 0
+- **Offset**: 0x1201c
+- **Default**: 0 
 
 
 
@@ -1728,8 +1727,8 @@ Register pep_pointer_2 contains following Sub-fields:
 - **Owner**: Kernel
 - **Read Access**: Read
 - **Write Access**: WriteNotify
-- **Offset**: 0x92020
-- **Default**: 0
+- **Offset**: 0x12020
+- **Default**: 0 
 
 
 
@@ -1743,8 +1742,8 @@ Register pep_pointer_2 contains following Sub-fields:
 - **Owner**: Kernel
 - **Read Access**: Read
 - **Write Access**: WriteNotify
-- **Offset**: 0x92024
-- **Default**: 0
+- **Offset**: 0x12024
+- **Default**: 0 
 
 
 
@@ -1758,8 +1757,8 @@ Register pep_pointer_2 contains following Sub-fields:
 - **Owner**: Kernel
 - **Read Access**: Read
 - **Write Access**: WriteNotify
-- **Offset**: 0x92028
-- **Default**: 0
+- **Offset**: 0x12028
+- **Default**: 0 
 
 
 
@@ -1773,8 +1772,8 @@ Register pep_pointer_2 contains following Sub-fields:
 - **Owner**: Kernel
 - **Read Access**: Read
 - **Write Access**: WriteNotify
-- **Offset**: 0x9202c
-- **Default**: 0
+- **Offset**: 0x1202c
+- **Default**: 0 
 
 
 
@@ -1788,8 +1787,8 @@ Register pep_pointer_2 contains following Sub-fields:
 - **Owner**: Kernel
 - **Read Access**: Read
 - **Write Access**: WriteNotify
-- **Offset**: 0x92030
-- **Default**: 0
+- **Offset**: 0x12030
+- **Default**: 0 
 
 
 
@@ -1803,8 +1802,8 @@ Register pep_pointer_2 contains following Sub-fields:
 - **Owner**: Kernel
 - **Read Access**: Read
 - **Write Access**: WriteNotify
-- **Offset**: 0x92034
-- **Default**: 0
+- **Offset**: 0x12034
+- **Default**: 0 
 
 
 
@@ -1818,8 +1817,8 @@ Register pep_pointer_2 contains following Sub-fields:
 - **Owner**: Kernel
 - **Read Access**: Read
 - **Write Access**: WriteNotify
-- **Offset**: 0x92038
-- **Default**: 0
+- **Offset**: 0x12038
+- **Default**: 0 
 
 
 
@@ -1833,8 +1832,8 @@ Register pep_pointer_2 contains following Sub-fields:
 - **Owner**: Kernel
 - **Read Access**: Read
 - **Write Access**: WriteNotify
-- **Offset**: 0x9203c
-- **Default**: 0
+- **Offset**: 0x1203c
+- **Default**: 0 
 
 
 
@@ -1848,8 +1847,8 @@ Register pep_pointer_2 contains following Sub-fields:
 - **Owner**: Kernel
 - **Read Access**: Read
 - **Write Access**: WriteNotify
-- **Offset**: 0x92040
-- **Default**: 0
+- **Offset**: 0x12040
+- **Default**: 0 
 
 
 
@@ -1863,8 +1862,8 @@ Register pep_pointer_2 contains following Sub-fields:
 - **Owner**: Kernel
 - **Read Access**: Read
 - **Write Access**: WriteNotify
-- **Offset**: 0x92044
-- **Default**: 0
+- **Offset**: 0x12044
+- **Default**: 0 
 
 
 
@@ -1878,8 +1877,8 @@ Register pep_pointer_2 contains following Sub-fields:
 - **Owner**: Kernel
 - **Read Access**: Read
 - **Write Access**: WriteNotify
-- **Offset**: 0x92048
-- **Default**: 0
+- **Offset**: 0x12048
+- **Default**: 0 
 
 
 
@@ -1893,8 +1892,8 @@ Register pep_pointer_2 contains following Sub-fields:
 - **Owner**: Kernel
 - **Read Access**: Read
 - **Write Access**: WriteNotify
-- **Offset**: 0x9204c
-- **Default**: 0
+- **Offset**: 0x1204c
+- **Default**: 0 
 
 
 
@@ -1908,8 +1907,8 @@ Register pep_pointer_2 contains following Sub-fields:
 - **Owner**: Kernel
 - **Read Access**: Read
 - **Write Access**: WriteNotify
-- **Offset**: 0x92050
-- **Default**: 0
+- **Offset**: 0x12050
+- **Default**: 0 
 
 
 
@@ -1923,8 +1922,8 @@ Register pep_pointer_2 contains following Sub-fields:
 - **Owner**: Kernel
 - **Read Access**: Read
 - **Write Access**: WriteNotify
-- **Offset**: 0x92054
-- **Default**: 0
+- **Offset**: 0x12054
+- **Default**: 0 
 
 
 
@@ -1938,8 +1937,8 @@ Register pep_pointer_2 contains following Sub-fields:
 - **Owner**: Kernel
 - **Read Access**: Read
 - **Write Access**: WriteNotify
-- **Offset**: 0x92058
-- **Default**: 0
+- **Offset**: 0x12058
+- **Default**: 0 
 
 
 
@@ -1953,8 +1952,8 @@ Register pep_pointer_2 contains following Sub-fields:
 - **Owner**: Kernel
 - **Read Access**: Read
 - **Write Access**: WriteNotify
-- **Offset**: 0x9205c
-- **Default**: 0
+- **Offset**: 0x1205c
+- **Default**: 0 
 
 
 
@@ -1968,8 +1967,8 @@ Register pep_pointer_2 contains following Sub-fields:
 - **Owner**: Kernel
 - **Read Access**: Read
 - **Write Access**: WriteNotify
-- **Offset**: 0x92060
-- **Default**: 0
+- **Offset**: 0x12060
+- **Default**: 0 
 
 
 
@@ -1983,8 +1982,8 @@ Register pep_pointer_2 contains following Sub-fields:
 - **Owner**: Kernel
 - **Read Access**: Read
 - **Write Access**: WriteNotify
-- **Offset**: 0x92064
-- **Default**: 0
+- **Offset**: 0x12064
+- **Default**: 0 
 
 
 
@@ -1998,8 +1997,8 @@ Register pep_pointer_2 contains following Sub-fields:
 - **Owner**: Kernel
 - **Read Access**: Read
 - **Write Access**: WriteNotify
-- **Offset**: 0x92068
-- **Default**: 0
+- **Offset**: 0x12068
+- **Default**: 0 
 
 
 
@@ -2013,8 +2012,8 @@ Register pep_pointer_2 contains following Sub-fields:
 - **Owner**: Kernel
 - **Read Access**: Read
 - **Write Access**: WriteNotify
-- **Offset**: 0x9206c
-- **Default**: 0
+- **Offset**: 0x1206c
+- **Default**: 0 
 
 
 
@@ -2028,8 +2027,8 @@ Register pep_pointer_2 contains following Sub-fields:
 - **Owner**: Kernel
 - **Read Access**: Read
 - **Write Access**: WriteNotify
-- **Offset**: 0x92070
-- **Default**: 0
+- **Offset**: 0x12070
+- **Default**: 0 
 
 
 
@@ -2043,8 +2042,8 @@ Register pep_pointer_2 contains following Sub-fields:
 - **Owner**: Kernel
 - **Read Access**: Read
 - **Write Access**: WriteNotify
-- **Offset**: 0x92074
-- **Default**: 0
+- **Offset**: 0x12074
+- **Default**: 0 
 
 
 
@@ -2058,8 +2057,8 @@ Register pep_pointer_2 contains following Sub-fields:
 - **Owner**: Kernel
 - **Read Access**: Read
 - **Write Access**: WriteNotify
-- **Offset**: 0x92078
-- **Default**: 0
+- **Offset**: 0x12078
+- **Default**: 0 
 
 
 
@@ -2073,8 +2072,8 @@ Register pep_pointer_2 contains following Sub-fields:
 - **Owner**: Kernel
 - **Read Access**: Read
 - **Write Access**: WriteNotify
-- **Offset**: 0x9207c
-- **Default**: 0
+- **Offset**: 0x1207c
+- **Default**: 0 
 
 
 
@@ -2088,8 +2087,8 @@ Register pep_pointer_2 contains following Sub-fields:
 - **Owner**: Kernel
 - **Read Access**: Read
 - **Write Access**: WriteNotify
-- **Offset**: 0x92080
-- **Default**: 0
+- **Offset**: 0x12080
+- **Default**: 0 
 
 
 
@@ -2103,8 +2102,8 @@ Register pep_pointer_2 contains following Sub-fields:
 - **Owner**: Kernel
 - **Read Access**: Read
 - **Write Access**: WriteNotify
-- **Offset**: 0x92084
-- **Default**: 0
+- **Offset**: 0x12084
+- **Default**: 0 
 
 
 
@@ -2118,8 +2117,8 @@ Register pep_pointer_2 contains following Sub-fields:
 - **Owner**: Kernel
 - **Read Access**: Read
 - **Write Access**: WriteNotify
-- **Offset**: 0x92088
-- **Default**: 0
+- **Offset**: 0x12088
+- **Default**: 0 
 
 
 
@@ -2133,8 +2132,8 @@ Register pep_pointer_2 contains following Sub-fields:
 - **Owner**: Kernel
 - **Read Access**: Read
 - **Write Access**: WriteNotify
-- **Offset**: 0x9208c
-- **Default**: 0
+- **Offset**: 0x1208c
+- **Default**: 0 
 
 
 
@@ -2148,8 +2147,8 @@ Register pep_pointer_2 contains following Sub-fields:
 - **Owner**: Kernel
 - **Read Access**: Read
 - **Write Access**: WriteNotify
-- **Offset**: 0x92090
-- **Default**: 0
+- **Offset**: 0x12090
+- **Default**: 0 
 
 
 
@@ -2163,8 +2162,8 @@ Register pep_pointer_2 contains following Sub-fields:
 - **Owner**: Kernel
 - **Read Access**: Read
 - **Write Access**: WriteNotify
-- **Offset**: 0x92094
-- **Default**: 0
+- **Offset**: 0x12094
+- **Default**: 0 
 
 
 
@@ -2178,8 +2177,8 @@ Register pep_pointer_2 contains following Sub-fields:
 - **Owner**: Kernel
 - **Read Access**: Read
 - **Write Access**: WriteNotify
-- **Offset**: 0x92098
-- **Default**: 0
+- **Offset**: 0x12098
+- **Default**: 0 
 
 
 
@@ -2193,8 +2192,8 @@ Register pep_pointer_2 contains following Sub-fields:
 - **Owner**: Kernel
 - **Read Access**: Read
 - **Write Access**: WriteNotify
-- **Offset**: 0x9209c
-- **Default**: 0
+- **Offset**: 0x1209c
+- **Default**: 0 
 
 
 
@@ -2208,8 +2207,8 @@ Register pep_pointer_2 contains following Sub-fields:
 - **Owner**: Kernel
 - **Read Access**: Read
 - **Write Access**: WriteNotify
-- **Offset**: 0x920a0
-- **Default**: 0
+- **Offset**: 0x120a0
+- **Default**: 0 
 
 
 
@@ -2223,8 +2222,8 @@ Register pep_pointer_2 contains following Sub-fields:
 - **Owner**: Kernel
 - **Read Access**: Read
 - **Write Access**: WriteNotify
-- **Offset**: 0x920a4
-- **Default**: 0
+- **Offset**: 0x120a4
+- **Default**: 0 
 
 
 
@@ -2238,8 +2237,8 @@ Register pep_pointer_2 contains following Sub-fields:
 - **Owner**: Kernel
 - **Read Access**: Read
 - **Write Access**: WriteNotify
-- **Offset**: 0x920a8
-- **Default**: 0
+- **Offset**: 0x120a8
+- **Default**: 0 
 
 
 
@@ -2253,8 +2252,8 @@ Register pep_pointer_2 contains following Sub-fields:
 - **Owner**: Kernel
 - **Read Access**: Read
 - **Write Access**: WriteNotify
-- **Offset**: 0x920ac
-- **Default**: 0
+- **Offset**: 0x120ac
+- **Default**: 0 
 
 
 
@@ -2268,8 +2267,8 @@ Register pep_pointer_2 contains following Sub-fields:
 - **Owner**: Kernel
 - **Read Access**: Read
 - **Write Access**: WriteNotify
-- **Offset**: 0x920b0
-- **Default**: 0
+- **Offset**: 0x120b0
+- **Default**: 0 
 
 
 
@@ -2283,8 +2282,8 @@ Register pep_pointer_2 contains following Sub-fields:
 - **Owner**: Kernel
 - **Read Access**: Read
 - **Write Access**: WriteNotify
-- **Offset**: 0x920b4
-- **Default**: 0
+- **Offset**: 0x120b4
+- **Default**: 0 
 
 
 
@@ -2298,8 +2297,8 @@ Register pep_pointer_2 contains following Sub-fields:
 - **Owner**: Kernel
 - **Read Access**: Read
 - **Write Access**: WriteNotify
-- **Offset**: 0x920b8
-- **Default**: 0
+- **Offset**: 0x120b8
+- **Default**: 0 
 
 
 
@@ -2313,8 +2312,8 @@ Register pep_pointer_2 contains following Sub-fields:
 - **Owner**: Kernel
 - **Read Access**: Read
 - **Write Access**: WriteNotify
-- **Offset**: 0x920bc
-- **Default**: 0
+- **Offset**: 0x120bc
+- **Default**: 0 
 
 
 
@@ -2328,8 +2327,8 @@ Register pep_pointer_2 contains following Sub-fields:
 - **Owner**: Kernel
 - **Read Access**: Read
 - **Write Access**: WriteNotify
-- **Offset**: 0x920c0
-- **Default**: 0
+- **Offset**: 0x120c0
+- **Default**: 0 
 
 
 
@@ -2343,8 +2342,8 @@ Register pep_pointer_2 contains following Sub-fields:
 - **Owner**: Kernel
 - **Read Access**: Read
 - **Write Access**: WriteNotify
-- **Offset**: 0x920c4
-- **Default**: 0
+- **Offset**: 0x120c4
+- **Default**: 0 
 
 
 
@@ -2358,8 +2357,8 @@ Register pep_pointer_2 contains following Sub-fields:
 - **Owner**: Kernel
 - **Read Access**: Read
 - **Write Access**: WriteNotify
-- **Offset**: 0x920c8
-- **Default**: 0
+- **Offset**: 0x120c8
+- **Default**: 0 
 
 
 
@@ -2373,8 +2372,8 @@ Register pep_pointer_2 contains following Sub-fields:
 - **Owner**: Kernel
 - **Read Access**: Read
 - **Write Access**: WriteNotify
-- **Offset**: 0x920cc
-- **Default**: 0
+- **Offset**: 0x120cc
+- **Default**: 0 
 
 
 
@@ -2388,8 +2387,8 @@ Register pep_pointer_2 contains following Sub-fields:
 - **Owner**: Kernel
 - **Read Access**: Read
 - **Write Access**: WriteNotify
-- **Offset**: 0x920d0
-- **Default**: 0
+- **Offset**: 0x120d0
+- **Default**: 0 
 
 
 
@@ -2403,8 +2402,8 @@ Register pep_pointer_2 contains following Sub-fields:
 - **Owner**: Kernel
 - **Read Access**: Read
 - **Write Access**: WriteNotify
-- **Offset**: 0x920d4
-- **Default**: 0
+- **Offset**: 0x120d4
+- **Default**: 0 
 
 
 
@@ -2418,8 +2417,8 @@ Register pep_pointer_2 contains following Sub-fields:
 - **Owner**: Kernel
 - **Read Access**: Read
 - **Write Access**: WriteNotify
-- **Offset**: 0x920d8
-- **Default**: 0
+- **Offset**: 0x120d8
+- **Default**: 0 
 
 
 
@@ -2433,8 +2432,8 @@ Register pep_pointer_2 contains following Sub-fields:
 - **Owner**: Kernel
 - **Read Access**: Read
 - **Write Access**: WriteNotify
-- **Offset**: 0x920dc
-- **Default**: 0
+- **Offset**: 0x120dc
+- **Default**: 0 
 
 
 
@@ -2448,8 +2447,8 @@ Register pep_pointer_2 contains following Sub-fields:
 - **Owner**: Kernel
 - **Read Access**: Read
 - **Write Access**: WriteNotify
-- **Offset**: 0x920e0
-- **Default**: 0
+- **Offset**: 0x120e0
+- **Default**: 0 
 
 
 
@@ -2463,8 +2462,8 @@ Register pep_pointer_2 contains following Sub-fields:
 - **Owner**: Kernel
 - **Read Access**: Read
 - **Write Access**: WriteNotify
-- **Offset**: 0x920e4
-- **Default**: 0
+- **Offset**: 0x120e4
+- **Default**: 0 
 
 
 
@@ -2478,8 +2477,8 @@ Register pep_pointer_2 contains following Sub-fields:
 - **Owner**: Kernel
 - **Read Access**: Read
 - **Write Access**: WriteNotify
-- **Offset**: 0x920e8
-- **Default**: 0
+- **Offset**: 0x120e8
+- **Default**: 0 
 
 
 
@@ -2493,8 +2492,8 @@ Register pep_pointer_2 contains following Sub-fields:
 - **Owner**: Kernel
 - **Read Access**: Read
 - **Write Access**: WriteNotify
-- **Offset**: 0x920ec
-- **Default**: 0
+- **Offset**: 0x120ec
+- **Default**: 0 
 
 
 
@@ -2508,8 +2507,8 @@ Register pep_pointer_2 contains following Sub-fields:
 - **Owner**: Kernel
 - **Read Access**: Read
 - **Write Access**: WriteNotify
-- **Offset**: 0x920f0
-- **Default**: 0
+- **Offset**: 0x120f0
+- **Default**: 0 
 
 
 
@@ -2523,8 +2522,8 @@ Register pep_pointer_2 contains following Sub-fields:
 - **Owner**: Kernel
 - **Read Access**: Read
 - **Write Access**: WriteNotify
-- **Offset**: 0x920f4
-- **Default**: 0
+- **Offset**: 0x120f4
+- **Default**: 0 
 
 
 
@@ -2538,8 +2537,8 @@ Register pep_pointer_2 contains following Sub-fields:
 - **Owner**: Kernel
 - **Read Access**: Read
 - **Write Access**: WriteNotify
-- **Offset**: 0x920f8
-- **Default**: 0
+- **Offset**: 0x120f8
+- **Default**: 0 
 
 
 
@@ -2553,8 +2552,8 @@ Register pep_pointer_2 contains following Sub-fields:
 - **Owner**: Kernel
 - **Read Access**: Read
 - **Write Access**: None
-- **Offset**: 0x920fc
-- **Default**: 0
+- **Offset**: 0x120fc
+- **Default**: 0 
 
 
 
@@ -2568,8 +2567,8 @@ Register pep_pointer_2 contains following Sub-fields:
 - **Owner**: Kernel
 - **Read Access**: Read
 - **Write Access**: None
-- **Offset**: 0x92100
-- **Default**: 0
+- **Offset**: 0x12100
+- **Default**: 0 
 
 
 
@@ -2583,8 +2582,8 @@ Register pep_pointer_2 contains following Sub-fields:
 - **Owner**: Kernel
 - **Read Access**: Read
 - **Write Access**: None
-- **Offset**: 0x92104
-- **Default**: 0
+- **Offset**: 0x12104
+- **Default**: 0 
 
 
 
@@ -2598,8 +2597,8 @@ Register pep_pointer_2 contains following Sub-fields:
 - **Owner**: Kernel
 - **Read Access**: Read
 - **Write Access**: None
-- **Offset**: 0x92108
-- **Default**: 0
+- **Offset**: 0x12108
+- **Default**: 0 
 
 
 
@@ -2613,8 +2612,8 @@ Register pep_pointer_2 contains following Sub-fields:
 - **Owner**: Kernel
 - **Read Access**: Read
 - **Write Access**: None
-- **Offset**: 0x9210c
-- **Default**: 0
+- **Offset**: 0x1210c
+- **Default**: 0 
 
 
 
@@ -2628,8 +2627,8 @@ Register pep_pointer_2 contains following Sub-fields:
 - **Owner**: Kernel
 - **Read Access**: Read
 - **Write Access**: None
-- **Offset**: 0x92110
-- **Default**: 0
+- **Offset**: 0x12110
+- **Default**: 0 
 
 
 
@@ -2643,8 +2642,8 @@ Register pep_pointer_2 contains following Sub-fields:
 - **Owner**: Kernel
 - **Read Access**: Read
 - **Write Access**: None
-- **Offset**: 0x92114
-- **Default**: 0
+- **Offset**: 0x12114
+- **Default**: 0 
 
 
 
@@ -2658,8 +2657,8 @@ Register pep_pointer_2 contains following Sub-fields:
 - **Owner**: Kernel
 - **Read Access**: Read
 - **Write Access**: None
-- **Offset**: 0x92118
-- **Default**: 0
+- **Offset**: 0x12118
+- **Default**: 0 
 
 
 
@@ -2673,8 +2672,8 @@ Register pep_pointer_2 contains following Sub-fields:
 - **Owner**: Kernel
 - **Read Access**: Read
 - **Write Access**: None
-- **Offset**: 0x9211c
-- **Default**: 0
+- **Offset**: 0x1211c
+- **Default**: 0 
 
 
 
@@ -2688,8 +2687,8 @@ Register pep_pointer_2 contains following Sub-fields:
 - **Owner**: Kernel
 - **Read Access**: Read
 - **Write Access**: None
-- **Offset**: 0x92120
-- **Default**: 0
+- **Offset**: 0x12120
+- **Default**: 0 
 
 
 
@@ -2703,8 +2702,8 @@ Register pep_pointer_2 contains following Sub-fields:
 - **Owner**: Kernel
 - **Read Access**: Read
 - **Write Access**: None
-- **Offset**: 0x92124
-- **Default**: 0
+- **Offset**: 0x12124
+- **Default**: 0 
 
 
 
@@ -2718,8 +2717,8 @@ Register pep_pointer_2 contains following Sub-fields:
 - **Owner**: Kernel
 - **Read Access**: Read
 - **Write Access**: None
-- **Offset**: 0x92128
-- **Default**: 0
+- **Offset**: 0x12128
+- **Default**: 0 
 
 
 
@@ -2733,8 +2732,8 @@ Register pep_pointer_2 contains following Sub-fields:
 - **Owner**: Kernel
 - **Read Access**: Read
 - **Write Access**: None
-- **Offset**: 0x9212c
-- **Default**: C.f. fields
+- **Offset**: 0x1212c
+- **Default**: C.f. fields 
 
 
 #### Field Details
@@ -2766,8 +2765,8 @@ Register pem_store_info_0 contains following Sub-fields:
 - **Owner**: Kernel
 - **Read Access**: Read
 - **Write Access**: None
-- **Offset**: 0x92130
-- **Default**: C.f. fields
+- **Offset**: 0x12130
+- **Default**: C.f. fields 
 
 
 #### Field Details
@@ -2796,8 +2795,8 @@ Register pem_store_info_1 contains following Sub-fields:
 - **Owner**: Kernel
 - **Read Access**: Read
 - **Write Access**: None
-- **Offset**: 0x92134
-- **Default**: C.f. fields
+- **Offset**: 0x12134
+- **Default**: C.f. fields 
 
 
 #### Field Details
@@ -2820,8 +2819,8 @@ Register pem_store_info_2 contains following Sub-fields:
 - **Owner**: Kernel
 - **Read Access**: Read
 - **Write Access**: None
-- **Offset**: 0x92138
-- **Default**: C.f. fields
+- **Offset**: 0x12138
+- **Default**: C.f. fields 
 
 
 #### Field Details
@@ -2837,7 +2836,7 @@ Register pem_store_info_3 contains following Sub-fields:
 
 ---
 
-
+ 
 
 
 ## Section entry-cfg-3in3
@@ -2848,10 +2847,10 @@ Below is a summary of all the registers in the current section entry_cfg_3in3:
 
 | Name             | Offset | Access | Description |
 |-----------------:|:------:|:------:|:------------|
-| [dummy_val0](#register-entry-cfg-3in3dummy-val0) | 0xa0000 | R. |  RTL version |
-| [dummy_val1](#register-entry-cfg-3in3dummy-val1) | 0xa0004 | R. |  RTL version |
-| [dummy_val2](#register-entry-cfg-3in3dummy-val2) | 0xa0008 | R. |  RTL version |
-| [dummy_val3](#register-entry-cfg-3in3dummy-val3) | 0xa000c | R. |  RTL version |
+| [dummy_val0](#register-entry-cfg-3in3dummy-val0) | 0x20000 | R. |  RTL version |
+| [dummy_val1](#register-entry-cfg-3in3dummy-val1) | 0x20004 | R. |  RTL version |
+| [dummy_val2](#register-entry-cfg-3in3dummy-val2) | 0x20008 | R. |  RTL version |
+| [dummy_val3](#register-entry-cfg-3in3dummy-val3) | 0x2000c | R. |  RTL version |
 
 
 ---
@@ -2863,8 +2862,8 @@ Below is a summary of all the registers in the current section entry_cfg_3in3:
 - **Owner**: Parameter
 - **Read Access**: Read
 - **Write Access**: None
-- **Offset**: 0xa0000
-- **Default**: 50529027
+- **Offset**: 0x20000
+- **Default**: 50529027 
 
 
 
@@ -2878,8 +2877,8 @@ Below is a summary of all the registers in the current section entry_cfg_3in3:
 - **Owner**: Parameter
 - **Read Access**: Read
 - **Write Access**: None
-- **Offset**: 0xa0004
-- **Default**: 320017171
+- **Offset**: 0x20004
+- **Default**: 320017171 
 
 
 
@@ -2893,8 +2892,8 @@ Below is a summary of all the registers in the current section entry_cfg_3in3:
 - **Owner**: Parameter
 - **Read Access**: Read
 - **Write Access**: None
-- **Offset**: 0xa0008
-- **Default**: 589505315
+- **Offset**: 0x20008
+- **Default**: 589505315 
 
 
 
@@ -2908,15 +2907,15 @@ Below is a summary of all the registers in the current section entry_cfg_3in3:
 - **Owner**: Parameter
 - **Read Access**: Read
 - **Write Access**: None
-- **Offset**: 0xa000c
-- **Default**: 858993459
+- **Offset**: 0x2000c
+- **Default**: 858993459 
 
 
 
 
 ---
 
-
+ 
 
 
 ## Section hbm-axi4-addr-3in3
@@ -2927,38 +2926,38 @@ Below is a summary of all the registers in the current section hbm_axi4_addr_3in
 
 | Name             | Offset | Access | Description |
 |-----------------:|:------:|:------:|:------------|
-| [bsk_pc0_lsb](#register-hbm-axi4-addr-3in3bsk-pc0-lsb) | 0xa0010 | RW |  Address offset for each BSK HBM AXI4 connection |
-| [bsk_pc0_msb](#register-hbm-axi4-addr-3in3bsk-pc0-msb) | 0xa0014 | RW |  Address offset for each BSK HBM AXI4 connection |
-| [bsk_pc1_lsb](#register-hbm-axi4-addr-3in3bsk-pc1-lsb) | 0xa0018 | RW |  Address offset for each BSK HBM AXI4 connection |
-| [bsk_pc1_msb](#register-hbm-axi4-addr-3in3bsk-pc1-msb) | 0xa001c | RW |  Address offset for each BSK HBM AXI4 connection |
-| [bsk_pc2_lsb](#register-hbm-axi4-addr-3in3bsk-pc2-lsb) | 0xa0020 | RW |  Address offset for each BSK HBM AXI4 connection |
-| [bsk_pc2_msb](#register-hbm-axi4-addr-3in3bsk-pc2-msb) | 0xa0024 | RW |  Address offset for each BSK HBM AXI4 connection |
-| [bsk_pc3_lsb](#register-hbm-axi4-addr-3in3bsk-pc3-lsb) | 0xa0028 | RW |  Address offset for each BSK HBM AXI4 connection |
-| [bsk_pc3_msb](#register-hbm-axi4-addr-3in3bsk-pc3-msb) | 0xa002c | RW |  Address offset for each BSK HBM AXI4 connection |
-| [bsk_pc4_lsb](#register-hbm-axi4-addr-3in3bsk-pc4-lsb) | 0xa0030 | RW |  Address offset for each BSK HBM AXI4 connection |
-| [bsk_pc4_msb](#register-hbm-axi4-addr-3in3bsk-pc4-msb) | 0xa0034 | RW |  Address offset for each BSK HBM AXI4 connection |
-| [bsk_pc5_lsb](#register-hbm-axi4-addr-3in3bsk-pc5-lsb) | 0xa0038 | RW |  Address offset for each BSK HBM AXI4 connection |
-| [bsk_pc5_msb](#register-hbm-axi4-addr-3in3bsk-pc5-msb) | 0xa003c | RW |  Address offset for each BSK HBM AXI4 connection |
-| [bsk_pc6_lsb](#register-hbm-axi4-addr-3in3bsk-pc6-lsb) | 0xa0040 | RW |  Address offset for each BSK HBM AXI4 connection |
-| [bsk_pc6_msb](#register-hbm-axi4-addr-3in3bsk-pc6-msb) | 0xa0044 | RW |  Address offset for each BSK HBM AXI4 connection |
-| [bsk_pc7_lsb](#register-hbm-axi4-addr-3in3bsk-pc7-lsb) | 0xa0048 | RW |  Address offset for each BSK HBM AXI4 connection |
-| [bsk_pc7_msb](#register-hbm-axi4-addr-3in3bsk-pc7-msb) | 0xa004c | RW |  Address offset for each BSK HBM AXI4 connection |
-| [bsk_pc8_lsb](#register-hbm-axi4-addr-3in3bsk-pc8-lsb) | 0xa0050 | RW |  Address offset for each BSK HBM AXI4 connection |
-| [bsk_pc8_msb](#register-hbm-axi4-addr-3in3bsk-pc8-msb) | 0xa0054 | RW |  Address offset for each BSK HBM AXI4 connection |
-| [bsk_pc9_lsb](#register-hbm-axi4-addr-3in3bsk-pc9-lsb) | 0xa0058 | RW |  Address offset for each BSK HBM AXI4 connection |
-| [bsk_pc9_msb](#register-hbm-axi4-addr-3in3bsk-pc9-msb) | 0xa005c | RW |  Address offset for each BSK HBM AXI4 connection |
-| [bsk_pc10_lsb](#register-hbm-axi4-addr-3in3bsk-pc10-lsb) | 0xa0060 | RW |  Address offset for each BSK HBM AXI4 connection |
-| [bsk_pc10_msb](#register-hbm-axi4-addr-3in3bsk-pc10-msb) | 0xa0064 | RW |  Address offset for each BSK HBM AXI4 connection |
-| [bsk_pc11_lsb](#register-hbm-axi4-addr-3in3bsk-pc11-lsb) | 0xa0068 | RW |  Address offset for each BSK HBM AXI4 connection |
-| [bsk_pc11_msb](#register-hbm-axi4-addr-3in3bsk-pc11-msb) | 0xa006c | RW |  Address offset for each BSK HBM AXI4 connection |
-| [bsk_pc12_lsb](#register-hbm-axi4-addr-3in3bsk-pc12-lsb) | 0xa0070 | RW |  Address offset for each BSK HBM AXI4 connection |
-| [bsk_pc12_msb](#register-hbm-axi4-addr-3in3bsk-pc12-msb) | 0xa0074 | RW |  Address offset for each BSK HBM AXI4 connection |
-| [bsk_pc13_lsb](#register-hbm-axi4-addr-3in3bsk-pc13-lsb) | 0xa0078 | RW |  Address offset for each BSK HBM AXI4 connection |
-| [bsk_pc13_msb](#register-hbm-axi4-addr-3in3bsk-pc13-msb) | 0xa007c | RW |  Address offset for each BSK HBM AXI4 connection |
-| [bsk_pc14_lsb](#register-hbm-axi4-addr-3in3bsk-pc14-lsb) | 0xa0080 | RW |  Address offset for each BSK HBM AXI4 connection |
-| [bsk_pc14_msb](#register-hbm-axi4-addr-3in3bsk-pc14-msb) | 0xa0084 | RW |  Address offset for each BSK HBM AXI4 connection |
-| [bsk_pc15_lsb](#register-hbm-axi4-addr-3in3bsk-pc15-lsb) | 0xa0088 | RW |  Address offset for each BSK HBM AXI4 connection |
-| [bsk_pc15_msb](#register-hbm-axi4-addr-3in3bsk-pc15-msb) | 0xa008c | RW |  Address offset for each BSK HBM AXI4 connection |
+| [bsk_pc0_lsb](#register-hbm-axi4-addr-3in3bsk-pc0-lsb) | 0x20010 | RW |  Address offset for each BSK HBM AXI4 connection |
+| [bsk_pc0_msb](#register-hbm-axi4-addr-3in3bsk-pc0-msb) | 0x20014 | RW |  Address offset for each BSK HBM AXI4 connection |
+| [bsk_pc1_lsb](#register-hbm-axi4-addr-3in3bsk-pc1-lsb) | 0x20018 | RW |  Address offset for each BSK HBM AXI4 connection |
+| [bsk_pc1_msb](#register-hbm-axi4-addr-3in3bsk-pc1-msb) | 0x2001c | RW |  Address offset for each BSK HBM AXI4 connection |
+| [bsk_pc2_lsb](#register-hbm-axi4-addr-3in3bsk-pc2-lsb) | 0x20020 | RW |  Address offset for each BSK HBM AXI4 connection |
+| [bsk_pc2_msb](#register-hbm-axi4-addr-3in3bsk-pc2-msb) | 0x20024 | RW |  Address offset for each BSK HBM AXI4 connection |
+| [bsk_pc3_lsb](#register-hbm-axi4-addr-3in3bsk-pc3-lsb) | 0x20028 | RW |  Address offset for each BSK HBM AXI4 connection |
+| [bsk_pc3_msb](#register-hbm-axi4-addr-3in3bsk-pc3-msb) | 0x2002c | RW |  Address offset for each BSK HBM AXI4 connection |
+| [bsk_pc4_lsb](#register-hbm-axi4-addr-3in3bsk-pc4-lsb) | 0x20030 | RW |  Address offset for each BSK HBM AXI4 connection |
+| [bsk_pc4_msb](#register-hbm-axi4-addr-3in3bsk-pc4-msb) | 0x20034 | RW |  Address offset for each BSK HBM AXI4 connection |
+| [bsk_pc5_lsb](#register-hbm-axi4-addr-3in3bsk-pc5-lsb) | 0x20038 | RW |  Address offset for each BSK HBM AXI4 connection |
+| [bsk_pc5_msb](#register-hbm-axi4-addr-3in3bsk-pc5-msb) | 0x2003c | RW |  Address offset for each BSK HBM AXI4 connection |
+| [bsk_pc6_lsb](#register-hbm-axi4-addr-3in3bsk-pc6-lsb) | 0x20040 | RW |  Address offset for each BSK HBM AXI4 connection |
+| [bsk_pc6_msb](#register-hbm-axi4-addr-3in3bsk-pc6-msb) | 0x20044 | RW |  Address offset for each BSK HBM AXI4 connection |
+| [bsk_pc7_lsb](#register-hbm-axi4-addr-3in3bsk-pc7-lsb) | 0x20048 | RW |  Address offset for each BSK HBM AXI4 connection |
+| [bsk_pc7_msb](#register-hbm-axi4-addr-3in3bsk-pc7-msb) | 0x2004c | RW |  Address offset for each BSK HBM AXI4 connection |
+| [bsk_pc8_lsb](#register-hbm-axi4-addr-3in3bsk-pc8-lsb) | 0x20050 | RW |  Address offset for each BSK HBM AXI4 connection |
+| [bsk_pc8_msb](#register-hbm-axi4-addr-3in3bsk-pc8-msb) | 0x20054 | RW |  Address offset for each BSK HBM AXI4 connection |
+| [bsk_pc9_lsb](#register-hbm-axi4-addr-3in3bsk-pc9-lsb) | 0x20058 | RW |  Address offset for each BSK HBM AXI4 connection |
+| [bsk_pc9_msb](#register-hbm-axi4-addr-3in3bsk-pc9-msb) | 0x2005c | RW |  Address offset for each BSK HBM AXI4 connection |
+| [bsk_pc10_lsb](#register-hbm-axi4-addr-3in3bsk-pc10-lsb) | 0x20060 | RW |  Address offset for each BSK HBM AXI4 connection |
+| [bsk_pc10_msb](#register-hbm-axi4-addr-3in3bsk-pc10-msb) | 0x20064 | RW |  Address offset for each BSK HBM AXI4 connection |
+| [bsk_pc11_lsb](#register-hbm-axi4-addr-3in3bsk-pc11-lsb) | 0x20068 | RW |  Address offset for each BSK HBM AXI4 connection |
+| [bsk_pc11_msb](#register-hbm-axi4-addr-3in3bsk-pc11-msb) | 0x2006c | RW |  Address offset for each BSK HBM AXI4 connection |
+| [bsk_pc12_lsb](#register-hbm-axi4-addr-3in3bsk-pc12-lsb) | 0x20070 | RW |  Address offset for each BSK HBM AXI4 connection |
+| [bsk_pc12_msb](#register-hbm-axi4-addr-3in3bsk-pc12-msb) | 0x20074 | RW |  Address offset for each BSK HBM AXI4 connection |
+| [bsk_pc13_lsb](#register-hbm-axi4-addr-3in3bsk-pc13-lsb) | 0x20078 | RW |  Address offset for each BSK HBM AXI4 connection |
+| [bsk_pc13_msb](#register-hbm-axi4-addr-3in3bsk-pc13-msb) | 0x2007c | RW |  Address offset for each BSK HBM AXI4 connection |
+| [bsk_pc14_lsb](#register-hbm-axi4-addr-3in3bsk-pc14-lsb) | 0x20080 | RW |  Address offset for each BSK HBM AXI4 connection |
+| [bsk_pc14_msb](#register-hbm-axi4-addr-3in3bsk-pc14-msb) | 0x20084 | RW |  Address offset for each BSK HBM AXI4 connection |
+| [bsk_pc15_lsb](#register-hbm-axi4-addr-3in3bsk-pc15-lsb) | 0x20088 | RW |  Address offset for each BSK HBM AXI4 connection |
+| [bsk_pc15_msb](#register-hbm-axi4-addr-3in3bsk-pc15-msb) | 0x2008c | RW |  Address offset for each BSK HBM AXI4 connection |
 
 
 ---
@@ -2970,8 +2969,8 @@ Below is a summary of all the registers in the current section hbm_axi4_addr_3in
 - **Owner**: User
 - **Read Access**: Read
 - **Write Access**: Write
-- **Offset**: 0xa0010
-- **Default**: 0
+- **Offset**: 0x20010
+- **Default**: 0 
 
 
 
@@ -2985,8 +2984,8 @@ Below is a summary of all the registers in the current section hbm_axi4_addr_3in
 - **Owner**: User
 - **Read Access**: Read
 - **Write Access**: Write
-- **Offset**: 0xa0014
-- **Default**: 0
+- **Offset**: 0x20014
+- **Default**: 0 
 
 
 
@@ -3000,8 +2999,8 @@ Below is a summary of all the registers in the current section hbm_axi4_addr_3in
 - **Owner**: User
 - **Read Access**: Read
 - **Write Access**: Write
-- **Offset**: 0xa0018
-- **Default**: 0
+- **Offset**: 0x20018
+- **Default**: 0 
 
 
 
@@ -3015,8 +3014,8 @@ Below is a summary of all the registers in the current section hbm_axi4_addr_3in
 - **Owner**: User
 - **Read Access**: Read
 - **Write Access**: Write
-- **Offset**: 0xa001c
-- **Default**: 0
+- **Offset**: 0x2001c
+- **Default**: 0 
 
 
 
@@ -3030,8 +3029,8 @@ Below is a summary of all the registers in the current section hbm_axi4_addr_3in
 - **Owner**: User
 - **Read Access**: Read
 - **Write Access**: Write
-- **Offset**: 0xa0020
-- **Default**: 0
+- **Offset**: 0x20020
+- **Default**: 0 
 
 
 
@@ -3045,8 +3044,8 @@ Below is a summary of all the registers in the current section hbm_axi4_addr_3in
 - **Owner**: User
 - **Read Access**: Read
 - **Write Access**: Write
-- **Offset**: 0xa0024
-- **Default**: 0
+- **Offset**: 0x20024
+- **Default**: 0 
 
 
 
@@ -3060,8 +3059,8 @@ Below is a summary of all the registers in the current section hbm_axi4_addr_3in
 - **Owner**: User
 - **Read Access**: Read
 - **Write Access**: Write
-- **Offset**: 0xa0028
-- **Default**: 0
+- **Offset**: 0x20028
+- **Default**: 0 
 
 
 
@@ -3075,8 +3074,8 @@ Below is a summary of all the registers in the current section hbm_axi4_addr_3in
 - **Owner**: User
 - **Read Access**: Read
 - **Write Access**: Write
-- **Offset**: 0xa002c
-- **Default**: 0
+- **Offset**: 0x2002c
+- **Default**: 0 
 
 
 
@@ -3090,8 +3089,8 @@ Below is a summary of all the registers in the current section hbm_axi4_addr_3in
 - **Owner**: User
 - **Read Access**: Read
 - **Write Access**: Write
-- **Offset**: 0xa0030
-- **Default**: 0
+- **Offset**: 0x20030
+- **Default**: 0 
 
 
 
@@ -3105,8 +3104,8 @@ Below is a summary of all the registers in the current section hbm_axi4_addr_3in
 - **Owner**: User
 - **Read Access**: Read
 - **Write Access**: Write
-- **Offset**: 0xa0034
-- **Default**: 0
+- **Offset**: 0x20034
+- **Default**: 0 
 
 
 
@@ -3120,8 +3119,8 @@ Below is a summary of all the registers in the current section hbm_axi4_addr_3in
 - **Owner**: User
 - **Read Access**: Read
 - **Write Access**: Write
-- **Offset**: 0xa0038
-- **Default**: 0
+- **Offset**: 0x20038
+- **Default**: 0 
 
 
 
@@ -3135,8 +3134,8 @@ Below is a summary of all the registers in the current section hbm_axi4_addr_3in
 - **Owner**: User
 - **Read Access**: Read
 - **Write Access**: Write
-- **Offset**: 0xa003c
-- **Default**: 0
+- **Offset**: 0x2003c
+- **Default**: 0 
 
 
 
@@ -3150,8 +3149,8 @@ Below is a summary of all the registers in the current section hbm_axi4_addr_3in
 - **Owner**: User
 - **Read Access**: Read
 - **Write Access**: Write
-- **Offset**: 0xa0040
-- **Default**: 0
+- **Offset**: 0x20040
+- **Default**: 0 
 
 
 
@@ -3165,8 +3164,8 @@ Below is a summary of all the registers in the current section hbm_axi4_addr_3in
 - **Owner**: User
 - **Read Access**: Read
 - **Write Access**: Write
-- **Offset**: 0xa0044
-- **Default**: 0
+- **Offset**: 0x20044
+- **Default**: 0 
 
 
 
@@ -3180,8 +3179,8 @@ Below is a summary of all the registers in the current section hbm_axi4_addr_3in
 - **Owner**: User
 - **Read Access**: Read
 - **Write Access**: Write
-- **Offset**: 0xa0048
-- **Default**: 0
+- **Offset**: 0x20048
+- **Default**: 0 
 
 
 
@@ -3195,8 +3194,8 @@ Below is a summary of all the registers in the current section hbm_axi4_addr_3in
 - **Owner**: User
 - **Read Access**: Read
 - **Write Access**: Write
-- **Offset**: 0xa004c
-- **Default**: 0
+- **Offset**: 0x2004c
+- **Default**: 0 
 
 
 
@@ -3210,8 +3209,8 @@ Below is a summary of all the registers in the current section hbm_axi4_addr_3in
 - **Owner**: User
 - **Read Access**: Read
 - **Write Access**: Write
-- **Offset**: 0xa0050
-- **Default**: 0
+- **Offset**: 0x20050
+- **Default**: 0 
 
 
 
@@ -3225,8 +3224,8 @@ Below is a summary of all the registers in the current section hbm_axi4_addr_3in
 - **Owner**: User
 - **Read Access**: Read
 - **Write Access**: Write
-- **Offset**: 0xa0054
-- **Default**: 0
+- **Offset**: 0x20054
+- **Default**: 0 
 
 
 
@@ -3240,8 +3239,8 @@ Below is a summary of all the registers in the current section hbm_axi4_addr_3in
 - **Owner**: User
 - **Read Access**: Read
 - **Write Access**: Write
-- **Offset**: 0xa0058
-- **Default**: 0
+- **Offset**: 0x20058
+- **Default**: 0 
 
 
 
@@ -3255,8 +3254,8 @@ Below is a summary of all the registers in the current section hbm_axi4_addr_3in
 - **Owner**: User
 - **Read Access**: Read
 - **Write Access**: Write
-- **Offset**: 0xa005c
-- **Default**: 0
+- **Offset**: 0x2005c
+- **Default**: 0 
 
 
 
@@ -3270,8 +3269,8 @@ Below is a summary of all the registers in the current section hbm_axi4_addr_3in
 - **Owner**: User
 - **Read Access**: Read
 - **Write Access**: Write
-- **Offset**: 0xa0060
-- **Default**: 0
+- **Offset**: 0x20060
+- **Default**: 0 
 
 
 
@@ -3285,8 +3284,8 @@ Below is a summary of all the registers in the current section hbm_axi4_addr_3in
 - **Owner**: User
 - **Read Access**: Read
 - **Write Access**: Write
-- **Offset**: 0xa0064
-- **Default**: 0
+- **Offset**: 0x20064
+- **Default**: 0 
 
 
 
@@ -3300,8 +3299,8 @@ Below is a summary of all the registers in the current section hbm_axi4_addr_3in
 - **Owner**: User
 - **Read Access**: Read
 - **Write Access**: Write
-- **Offset**: 0xa0068
-- **Default**: 0
+- **Offset**: 0x20068
+- **Default**: 0 
 
 
 
@@ -3315,8 +3314,8 @@ Below is a summary of all the registers in the current section hbm_axi4_addr_3in
 - **Owner**: User
 - **Read Access**: Read
 - **Write Access**: Write
-- **Offset**: 0xa006c
-- **Default**: 0
+- **Offset**: 0x2006c
+- **Default**: 0 
 
 
 
@@ -3330,8 +3329,8 @@ Below is a summary of all the registers in the current section hbm_axi4_addr_3in
 - **Owner**: User
 - **Read Access**: Read
 - **Write Access**: Write
-- **Offset**: 0xa0070
-- **Default**: 0
+- **Offset**: 0x20070
+- **Default**: 0 
 
 
 
@@ -3345,8 +3344,8 @@ Below is a summary of all the registers in the current section hbm_axi4_addr_3in
 - **Owner**: User
 - **Read Access**: Read
 - **Write Access**: Write
-- **Offset**: 0xa0074
-- **Default**: 0
+- **Offset**: 0x20074
+- **Default**: 0 
 
 
 
@@ -3360,8 +3359,8 @@ Below is a summary of all the registers in the current section hbm_axi4_addr_3in
 - **Owner**: User
 - **Read Access**: Read
 - **Write Access**: Write
-- **Offset**: 0xa0078
-- **Default**: 0
+- **Offset**: 0x20078
+- **Default**: 0 
 
 
 
@@ -3375,8 +3374,8 @@ Below is a summary of all the registers in the current section hbm_axi4_addr_3in
 - **Owner**: User
 - **Read Access**: Read
 - **Write Access**: Write
-- **Offset**: 0xa007c
-- **Default**: 0
+- **Offset**: 0x2007c
+- **Default**: 0 
 
 
 
@@ -3390,8 +3389,8 @@ Below is a summary of all the registers in the current section hbm_axi4_addr_3in
 - **Owner**: User
 - **Read Access**: Read
 - **Write Access**: Write
-- **Offset**: 0xa0080
-- **Default**: 0
+- **Offset**: 0x20080
+- **Default**: 0 
 
 
 
@@ -3405,8 +3404,8 @@ Below is a summary of all the registers in the current section hbm_axi4_addr_3in
 - **Owner**: User
 - **Read Access**: Read
 - **Write Access**: Write
-- **Offset**: 0xa0084
-- **Default**: 0
+- **Offset**: 0x20084
+- **Default**: 0 
 
 
 
@@ -3420,8 +3419,8 @@ Below is a summary of all the registers in the current section hbm_axi4_addr_3in
 - **Owner**: User
 - **Read Access**: Read
 - **Write Access**: Write
-- **Offset**: 0xa0088
-- **Default**: 0
+- **Offset**: 0x20088
+- **Default**: 0 
 
 
 
@@ -3435,15 +3434,15 @@ Below is a summary of all the registers in the current section hbm_axi4_addr_3in
 - **Owner**: User
 - **Read Access**: Read
 - **Write Access**: Write
-- **Offset**: 0xa008c
-- **Default**: 0
+- **Offset**: 0x2008c
+- **Default**: 0 
 
 
 
 
 ---
 
-
+ 
 
 
 ## Section hpu-reset
@@ -3454,7 +3453,7 @@ Below is a summary of all the registers in the current section hpu_reset:
 
 | Name             | Offset | Access | Description |
 |-----------------:|:------:|:------:|:------------|
-| [trigger](#register-hpu-resettrigger) | 0xa0100 | RW |  A soft reset for the whole HPU reconfigurable logic |
+| [trigger](#register-hpu-resettrigger) | 0x20100 | RW |  A soft reset for the whole HPU reconfigurable logic |
 
 
 ---
@@ -3466,8 +3465,8 @@ Below is a summary of all the registers in the current section hpu_reset:
 - **Owner**: Kernel
 - **Read Access**: ReadNotify
 - **Write Access**: WriteNotify
-- **Offset**: 0xa0100
-- **Default**: C.f. fields
+- **Offset**: 0x20100
+- **Default**: C.f. fields 
 
 
 #### Field Details
@@ -3483,7 +3482,7 @@ Register trigger contains following Sub-fields:
 
 ---
 
-
+ 
 
 
 ## Section entry-prc-3in3
@@ -3494,10 +3493,10 @@ Below is a summary of all the registers in the current section entry_prc_3in3:
 
 | Name             | Offset | Access | Description |
 |-----------------:|:------:|:------:|:------------|
-| [dummy_val0](#register-entry-prc-3in3dummy-val0) | 0xb0000 | R. |  RTL version |
-| [dummy_val1](#register-entry-prc-3in3dummy-val1) | 0xb0004 | R. |  RTL version |
-| [dummy_val2](#register-entry-prc-3in3dummy-val2) | 0xb0008 | R. |  RTL version |
-| [dummy_val3](#register-entry-prc-3in3dummy-val3) | 0xb000c | R. |  RTL version |
+| [dummy_val0](#register-entry-prc-3in3dummy-val0) | 0x30000 | R. |  RTL version |
+| [dummy_val1](#register-entry-prc-3in3dummy-val1) | 0x30004 | R. |  RTL version |
+| [dummy_val2](#register-entry-prc-3in3dummy-val2) | 0x30008 | R. |  RTL version |
+| [dummy_val3](#register-entry-prc-3in3dummy-val3) | 0x3000c | R. |  RTL version |
 
 
 ---
@@ -3509,8 +3508,8 @@ Below is a summary of all the registers in the current section entry_prc_3in3:
 - **Owner**: Parameter
 - **Read Access**: Read
 - **Write Access**: None
-- **Offset**: 0xb0000
-- **Default**: 67372036
+- **Offset**: 0x30000
+- **Default**: 67372036 
 
 
 
@@ -3524,8 +3523,8 @@ Below is a summary of all the registers in the current section entry_prc_3in3:
 - **Owner**: Parameter
 - **Read Access**: Read
 - **Write Access**: None
-- **Offset**: 0xb0004
-- **Default**: 336860180
+- **Offset**: 0x30004
+- **Default**: 336860180 
 
 
 
@@ -3539,8 +3538,8 @@ Below is a summary of all the registers in the current section entry_prc_3in3:
 - **Owner**: Parameter
 - **Read Access**: Read
 - **Write Access**: None
-- **Offset**: 0xb0008
-- **Default**: 606348324
+- **Offset**: 0x30008
+- **Default**: 606348324 
 
 
 
@@ -3554,15 +3553,15 @@ Below is a summary of all the registers in the current section entry_prc_3in3:
 - **Owner**: Parameter
 - **Read Access**: Read
 - **Write Access**: None
-- **Offset**: 0xb000c
-- **Default**: 875836468
+- **Offset**: 0x3000c
+- **Default**: 875836468 
 
 
 
 
 ---
 
-
+ 
 
 
 ## Section status-3in3
@@ -3573,7 +3572,7 @@ Below is a summary of all the registers in the current section status_3in3:
 
 | Name             | Offset | Access | Description |
 |-----------------:|:------:|:------:|:------------|
-| [error](#register-status-3in3error) | 0xb0010 | RW |  Error register (Could be reset by user) |
+| [error](#register-status-3in3error) | 0x30010 | RW |  Error register (Could be reset by user) |
 
 
 ---
@@ -3585,8 +3584,8 @@ Below is a summary of all the registers in the current section status_3in3:
 - **Owner**: Kernel
 - **Read Access**: Read
 - **Write Access**: WriteNotify
-- **Offset**: 0xb0010
-- **Default**: C.f. fields
+- **Offset**: 0x30010
+- **Default**: C.f. fields 
 
 
 #### Field Details
@@ -3601,7 +3600,7 @@ Register error contains following Sub-fields:
 
 ---
 
-
+ 
 
 
 ## Section bsk-avail
@@ -3612,8 +3611,8 @@ Below is a summary of all the registers in the current section bsk_avail:
 
 | Name             | Offset | Access | Description |
 |-----------------:|:------:|:------:|:------------|
-| [avail](#register-bsk-availavail) | 0xb1000 | RW |  BSK available bit |
-| [reset](#register-bsk-availreset) | 0xb1004 | RW |  BSK reset sequence |
+| [avail](#register-bsk-availavail) | 0x31000 | RW |  BSK available bit |
+| [reset](#register-bsk-availreset) | 0x31004 | RW |  BSK reset sequence |
 
 
 ---
@@ -3625,8 +3624,8 @@ Below is a summary of all the registers in the current section bsk_avail:
 - **Owner**: User
 - **Read Access**: Read
 - **Write Access**: Write
-- **Offset**: 0xb1000
-- **Default**: C.f. fields
+- **Offset**: 0x31000
+- **Default**: C.f. fields 
 
 
 #### Field Details
@@ -3648,8 +3647,8 @@ Register avail contains following Sub-fields:
 - **Owner**: Kernel
 - **Read Access**: Read
 - **Write Access**: WriteNotify
-- **Offset**: 0xb1004
-- **Default**: C.f. fields
+- **Offset**: 0x31004
+- **Default**: C.f. fields 
 
 
 #### Field Details
@@ -3665,7 +3664,7 @@ Register reset contains following Sub-fields:
 
 ---
 
-
+ 
 
 
 ## Section runtime-3in3
@@ -3676,24 +3675,24 @@ Below is a summary of all the registers in the current section runtime_3in3:
 
 | Name             | Offset | Access | Description |
 |-----------------:|:------:|:------:|:------------|
-| [pep_load_bsk_rcp_dur_pc0](#register-runtime-3in3pep-load-bsk-rcp-dur-pc0) | 0xb2000 | RW |  PEP: load BSK slice reception max duration (Could be reset by user) |
-| [pep_load_bsk_rcp_dur_pc1](#register-runtime-3in3pep-load-bsk-rcp-dur-pc1) | 0xb2004 | RW |  PEP: load BSK slice reception max duration (Could be reset by user) |
-| [pep_load_bsk_rcp_dur_pc2](#register-runtime-3in3pep-load-bsk-rcp-dur-pc2) | 0xb2008 | RW |  PEP: load BSK slice reception max duration (Could be reset by user) |
-| [pep_load_bsk_rcp_dur_pc3](#register-runtime-3in3pep-load-bsk-rcp-dur-pc3) | 0xb200c | RW |  PEP: load BSK slice reception max duration (Could be reset by user) |
-| [pep_load_bsk_rcp_dur_pc4](#register-runtime-3in3pep-load-bsk-rcp-dur-pc4) | 0xb2010 | RW |  PEP: load BSK slice reception max duration (Could be reset by user) |
-| [pep_load_bsk_rcp_dur_pc5](#register-runtime-3in3pep-load-bsk-rcp-dur-pc5) | 0xb2014 | RW |  PEP: load BSK slice reception max duration (Could be reset by user) |
-| [pep_load_bsk_rcp_dur_pc6](#register-runtime-3in3pep-load-bsk-rcp-dur-pc6) | 0xb2018 | RW |  PEP: load BSK slice reception max duration (Could be reset by user) |
-| [pep_load_bsk_rcp_dur_pc7](#register-runtime-3in3pep-load-bsk-rcp-dur-pc7) | 0xb201c | RW |  PEP: load BSK slice reception max duration (Could be reset by user) |
-| [pep_load_bsk_rcp_dur_pc8](#register-runtime-3in3pep-load-bsk-rcp-dur-pc8) | 0xb2020 | RW |  PEP: load BSK slice reception max duration (Could be reset by user) |
-| [pep_load_bsk_rcp_dur_pc9](#register-runtime-3in3pep-load-bsk-rcp-dur-pc9) | 0xb2024 | RW |  PEP: load BSK slice reception max duration (Could be reset by user) |
-| [pep_load_bsk_rcp_dur_pc10](#register-runtime-3in3pep-load-bsk-rcp-dur-pc10) | 0xb2028 | RW |  PEP: load BSK slice reception max duration (Could be reset by user) |
-| [pep_load_bsk_rcp_dur_pc11](#register-runtime-3in3pep-load-bsk-rcp-dur-pc11) | 0xb202c | RW |  PEP: load BSK slice reception max duration (Could be reset by user) |
-| [pep_load_bsk_rcp_dur_pc12](#register-runtime-3in3pep-load-bsk-rcp-dur-pc12) | 0xb2030 | RW |  PEP: load BSK slice reception max duration (Could be reset by user) |
-| [pep_load_bsk_rcp_dur_pc13](#register-runtime-3in3pep-load-bsk-rcp-dur-pc13) | 0xb2034 | RW |  PEP: load BSK slice reception max duration (Could be reset by user) |
-| [pep_load_bsk_rcp_dur_pc14](#register-runtime-3in3pep-load-bsk-rcp-dur-pc14) | 0xb2038 | RW |  PEP: load BSK slice reception max duration (Could be reset by user) |
-| [pep_load_bsk_rcp_dur_pc15](#register-runtime-3in3pep-load-bsk-rcp-dur-pc15) | 0xb203c | RW |  PEP: load BSK slice reception max duration (Could be reset by user) |
-| [pep_bskif_req_info_0](#register-runtime-3in3pep-bskif-req-info-0) | 0xb2040 | R. |  PEP: BSK_IF: requester info 0 |
-| [pep_bskif_req_info_1](#register-runtime-3in3pep-bskif-req-info-1) | 0xb2044 | R. |  PEP: BSK_IF: requester info 0 |
+| [pep_load_bsk_rcp_dur_pc0](#register-runtime-3in3pep-load-bsk-rcp-dur-pc0) | 0x32000 | RW |  PEP: load BSK slice reception max duration (Could be reset by user) |
+| [pep_load_bsk_rcp_dur_pc1](#register-runtime-3in3pep-load-bsk-rcp-dur-pc1) | 0x32004 | RW |  PEP: load BSK slice reception max duration (Could be reset by user) |
+| [pep_load_bsk_rcp_dur_pc2](#register-runtime-3in3pep-load-bsk-rcp-dur-pc2) | 0x32008 | RW |  PEP: load BSK slice reception max duration (Could be reset by user) |
+| [pep_load_bsk_rcp_dur_pc3](#register-runtime-3in3pep-load-bsk-rcp-dur-pc3) | 0x3200c | RW |  PEP: load BSK slice reception max duration (Could be reset by user) |
+| [pep_load_bsk_rcp_dur_pc4](#register-runtime-3in3pep-load-bsk-rcp-dur-pc4) | 0x32010 | RW |  PEP: load BSK slice reception max duration (Could be reset by user) |
+| [pep_load_bsk_rcp_dur_pc5](#register-runtime-3in3pep-load-bsk-rcp-dur-pc5) | 0x32014 | RW |  PEP: load BSK slice reception max duration (Could be reset by user) |
+| [pep_load_bsk_rcp_dur_pc6](#register-runtime-3in3pep-load-bsk-rcp-dur-pc6) | 0x32018 | RW |  PEP: load BSK slice reception max duration (Could be reset by user) |
+| [pep_load_bsk_rcp_dur_pc7](#register-runtime-3in3pep-load-bsk-rcp-dur-pc7) | 0x3201c | RW |  PEP: load BSK slice reception max duration (Could be reset by user) |
+| [pep_load_bsk_rcp_dur_pc8](#register-runtime-3in3pep-load-bsk-rcp-dur-pc8) | 0x32020 | RW |  PEP: load BSK slice reception max duration (Could be reset by user) |
+| [pep_load_bsk_rcp_dur_pc9](#register-runtime-3in3pep-load-bsk-rcp-dur-pc9) | 0x32024 | RW |  PEP: load BSK slice reception max duration (Could be reset by user) |
+| [pep_load_bsk_rcp_dur_pc10](#register-runtime-3in3pep-load-bsk-rcp-dur-pc10) | 0x32028 | RW |  PEP: load BSK slice reception max duration (Could be reset by user) |
+| [pep_load_bsk_rcp_dur_pc11](#register-runtime-3in3pep-load-bsk-rcp-dur-pc11) | 0x3202c | RW |  PEP: load BSK slice reception max duration (Could be reset by user) |
+| [pep_load_bsk_rcp_dur_pc12](#register-runtime-3in3pep-load-bsk-rcp-dur-pc12) | 0x32030 | RW |  PEP: load BSK slice reception max duration (Could be reset by user) |
+| [pep_load_bsk_rcp_dur_pc13](#register-runtime-3in3pep-load-bsk-rcp-dur-pc13) | 0x32034 | RW |  PEP: load BSK slice reception max duration (Could be reset by user) |
+| [pep_load_bsk_rcp_dur_pc14](#register-runtime-3in3pep-load-bsk-rcp-dur-pc14) | 0x32038 | RW |  PEP: load BSK slice reception max duration (Could be reset by user) |
+| [pep_load_bsk_rcp_dur_pc15](#register-runtime-3in3pep-load-bsk-rcp-dur-pc15) | 0x3203c | RW |  PEP: load BSK slice reception max duration (Could be reset by user) |
+| [pep_bskif_req_info_0](#register-runtime-3in3pep-bskif-req-info-0) | 0x32040 | R. |  PEP: BSK_IF: requester info 0 |
+| [pep_bskif_req_info_1](#register-runtime-3in3pep-bskif-req-info-1) | 0x32044 | R. |  PEP: BSK_IF: requester info 0 |
 
 
 ---
@@ -3705,8 +3704,8 @@ Below is a summary of all the registers in the current section runtime_3in3:
 - **Owner**: Kernel
 - **Read Access**: Read
 - **Write Access**: WriteNotify
-- **Offset**: 0xb2000
-- **Default**: 0
+- **Offset**: 0x32000
+- **Default**: 0 
 
 
 
@@ -3720,8 +3719,8 @@ Below is a summary of all the registers in the current section runtime_3in3:
 - **Owner**: Kernel
 - **Read Access**: Read
 - **Write Access**: WriteNotify
-- **Offset**: 0xb2004
-- **Default**: 0
+- **Offset**: 0x32004
+- **Default**: 0 
 
 
 
@@ -3735,8 +3734,8 @@ Below is a summary of all the registers in the current section runtime_3in3:
 - **Owner**: Kernel
 - **Read Access**: Read
 - **Write Access**: WriteNotify
-- **Offset**: 0xb2008
-- **Default**: 0
+- **Offset**: 0x32008
+- **Default**: 0 
 
 
 
@@ -3750,8 +3749,8 @@ Below is a summary of all the registers in the current section runtime_3in3:
 - **Owner**: Kernel
 - **Read Access**: Read
 - **Write Access**: WriteNotify
-- **Offset**: 0xb200c
-- **Default**: 0
+- **Offset**: 0x3200c
+- **Default**: 0 
 
 
 
@@ -3765,8 +3764,8 @@ Below is a summary of all the registers in the current section runtime_3in3:
 - **Owner**: Kernel
 - **Read Access**: Read
 - **Write Access**: WriteNotify
-- **Offset**: 0xb2010
-- **Default**: 0
+- **Offset**: 0x32010
+- **Default**: 0 
 
 
 
@@ -3780,8 +3779,8 @@ Below is a summary of all the registers in the current section runtime_3in3:
 - **Owner**: Kernel
 - **Read Access**: Read
 - **Write Access**: WriteNotify
-- **Offset**: 0xb2014
-- **Default**: 0
+- **Offset**: 0x32014
+- **Default**: 0 
 
 
 
@@ -3795,8 +3794,8 @@ Below is a summary of all the registers in the current section runtime_3in3:
 - **Owner**: Kernel
 - **Read Access**: Read
 - **Write Access**: WriteNotify
-- **Offset**: 0xb2018
-- **Default**: 0
+- **Offset**: 0x32018
+- **Default**: 0 
 
 
 
@@ -3810,8 +3809,8 @@ Below is a summary of all the registers in the current section runtime_3in3:
 - **Owner**: Kernel
 - **Read Access**: Read
 - **Write Access**: WriteNotify
-- **Offset**: 0xb201c
-- **Default**: 0
+- **Offset**: 0x3201c
+- **Default**: 0 
 
 
 
@@ -3825,8 +3824,8 @@ Below is a summary of all the registers in the current section runtime_3in3:
 - **Owner**: Kernel
 - **Read Access**: Read
 - **Write Access**: WriteNotify
-- **Offset**: 0xb2020
-- **Default**: 0
+- **Offset**: 0x32020
+- **Default**: 0 
 
 
 
@@ -3840,8 +3839,8 @@ Below is a summary of all the registers in the current section runtime_3in3:
 - **Owner**: Kernel
 - **Read Access**: Read
 - **Write Access**: WriteNotify
-- **Offset**: 0xb2024
-- **Default**: 0
+- **Offset**: 0x32024
+- **Default**: 0 
 
 
 
@@ -3855,8 +3854,8 @@ Below is a summary of all the registers in the current section runtime_3in3:
 - **Owner**: Kernel
 - **Read Access**: Read
 - **Write Access**: WriteNotify
-- **Offset**: 0xb2028
-- **Default**: 0
+- **Offset**: 0x32028
+- **Default**: 0 
 
 
 
@@ -3870,8 +3869,8 @@ Below is a summary of all the registers in the current section runtime_3in3:
 - **Owner**: Kernel
 - **Read Access**: Read
 - **Write Access**: WriteNotify
-- **Offset**: 0xb202c
-- **Default**: 0
+- **Offset**: 0x3202c
+- **Default**: 0 
 
 
 
@@ -3885,8 +3884,8 @@ Below is a summary of all the registers in the current section runtime_3in3:
 - **Owner**: Kernel
 - **Read Access**: Read
 - **Write Access**: WriteNotify
-- **Offset**: 0xb2030
-- **Default**: 0
+- **Offset**: 0x32030
+- **Default**: 0 
 
 
 
@@ -3900,8 +3899,8 @@ Below is a summary of all the registers in the current section runtime_3in3:
 - **Owner**: Kernel
 - **Read Access**: Read
 - **Write Access**: WriteNotify
-- **Offset**: 0xb2034
-- **Default**: 0
+- **Offset**: 0x32034
+- **Default**: 0 
 
 
 
@@ -3915,8 +3914,8 @@ Below is a summary of all the registers in the current section runtime_3in3:
 - **Owner**: Kernel
 - **Read Access**: Read
 - **Write Access**: WriteNotify
-- **Offset**: 0xb2038
-- **Default**: 0
+- **Offset**: 0x32038
+- **Default**: 0 
 
 
 
@@ -3930,8 +3929,8 @@ Below is a summary of all the registers in the current section runtime_3in3:
 - **Owner**: Kernel
 - **Read Access**: Read
 - **Write Access**: WriteNotify
-- **Offset**: 0xb203c
-- **Default**: 0
+- **Offset**: 0x3203c
+- **Default**: 0 
 
 
 
@@ -3945,8 +3944,8 @@ Below is a summary of all the registers in the current section runtime_3in3:
 - **Owner**: Kernel
 - **Read Access**: Read
 - **Write Access**: None
-- **Offset**: 0xb2040
-- **Default**: C.f. fields
+- **Offset**: 0x32040
+- **Default**: C.f. fields 
 
 
 #### Field Details
@@ -3969,8 +3968,8 @@ Register pep_bskif_req_info_0 contains following Sub-fields:
 - **Owner**: Kernel
 - **Read Access**: Read
 - **Write Access**: None
-- **Offset**: 0xb2044
-- **Default**: C.f. fields
+- **Offset**: 0x32044
+- **Default**: C.f. fields 
 
 
 #### Field Details
@@ -3987,7 +3986,7 @@ Register pep_bskif_req_info_1 contains following Sub-fields:
 
 ---
 
-
+ 
 
 
 ## Section system
@@ -3998,10 +3997,10 @@ Below is a summary of all the registers in the current section system:
 
 | Name             | Offset | Access | Description |
 |-----------------:|:------:|:------:|:------------|
-| [src_mac_addr](#register-systemsrc-mac-addr) | 0xd0000 | RW |  Source mac address: this Hpu mac address |
-| [dst_mac_addr](#register-systemdst-mac-addr) | 0xd0004 | RW |  Target mac address |
-| [line](#register-systemline) | 0xd0008 | RW |  Different parameters for qsfp lines |
-| [dummy_val3](#register-systemdummy-val3) | 0xd000c | R. |  Place-holder |
+| [src_mac_addr](#register-systemsrc-mac-addr) | 0x50000 | RW |  Source mac address: this Hpu mac address |
+| [dst_mac_addr](#register-systemdst-mac-addr) | 0x50004 | RW |  Target mac address |
+| [line](#register-systemline) | 0x50008 | RW |  Different parameters for qsfp lines |
+| [dummy_val3](#register-systemdummy-val3) | 0x5000c | R. |  Place-holder |
 
 
 ---
@@ -4013,8 +4012,8 @@ Below is a summary of all the registers in the current section system:
 - **Owner**: User
 - **Read Access**: Read
 - **Write Access**: Write
-- **Offset**: 0xd0000
-- **Default**: 0
+- **Offset**: 0x50000
+- **Default**: 0 
 
 
 
@@ -4028,8 +4027,8 @@ Below is a summary of all the registers in the current section system:
 - **Owner**: User
 - **Read Access**: Read
 - **Write Access**: Write
-- **Offset**: 0xd0004
-- **Default**: 0
+- **Offset**: 0x50004
+- **Default**: 0 
 
 
 
@@ -4043,8 +4042,8 @@ Below is a summary of all the registers in the current section system:
 - **Owner**: User
 - **Read Access**: Read
 - **Write Access**: Write
-- **Offset**: 0xd0008
-- **Default**: C.f. fields
+- **Offset**: 0x50008
+- **Default**: C.f. fields 
 
 
 #### Field Details
@@ -4069,15 +4068,15 @@ Register line contains following Sub-fields:
 - **Owner**: Parameter
 - **Read Access**: Read
 - **Write Access**: None
-- **Offset**: 0xd000c
-- **Default**: 892679477
+- **Offset**: 0x5000c
+- **Default**: 892679477 
 
 
 
 
 ---
 
-
+ 
 
 
 ## Section reset
@@ -4088,8 +4087,8 @@ Below is a summary of all the registers in the current section reset:
 
 | Name             | Offset | Access | Description |
 |-----------------:|:------:|:------:|:------------|
-| [datapath](#register-resetdatapath) | 0xd0014 | RW |  programmable datapath resets |
-| [monitor](#register-resetmonitor) | 0xd0018 | R. |  reset done monitoring |
+| [datapath](#register-resetdatapath) | 0x50014 | RW |  programmable datapath resets |
+| [monitor](#register-resetmonitor) | 0x50018 | R. |  reset done monitoring |
 
 
 ---
@@ -4101,8 +4100,8 @@ Below is a summary of all the registers in the current section reset:
 - **Owner**: User
 - **Read Access**: Read
 - **Write Access**: Write
-- **Offset**: 0xd0014
-- **Default**: C.f. fields
+- **Offset**: 0x50014
+- **Default**: C.f. fields 
 
 
 #### Field Details
@@ -4126,8 +4125,8 @@ Register datapath contains following Sub-fields:
 - **Owner**: Kernel
 - **Read Access**: Read
 - **Write Access**: None
-- **Offset**: 0xd0018
-- **Default**: C.f. fields
+- **Offset**: 0x50018
+- **Default**: C.f. fields 
 
 
 #### Field Details
@@ -4142,7 +4141,7 @@ Register monitor contains following Sub-fields:
 
 ---
 
-
+ 
 
 
 ## Section line
@@ -4153,7 +4152,7 @@ Below is a summary of all the registers in the current section line:
 
 | Name             | Offset | Access | Description |
 |-----------------:|:------:|:------:|:------------|
-| [debug](#register-linedebug) | 0xd1000 | RW |  Different parameters for debuging qsfp lines |
+| [debug](#register-linedebug) | 0x51000 | RW |  Different parameters for debuging qsfp lines |
 
 
 ---
@@ -4165,8 +4164,8 @@ Below is a summary of all the registers in the current section line:
 - **Owner**: User
 - **Read Access**: Read
 - **Write Access**: Write
-- **Offset**: 0xd1000
-- **Default**: C.f. fields
+- **Offset**: 0x51000
+- **Default**: C.f. fields 
 
 
 #### Field Details
@@ -4183,7 +4182,7 @@ Register debug contains following Sub-fields:
 
 ---
 
-
+ 
 
 
 ## Section fifo-write
@@ -4194,10 +4193,10 @@ Below is a summary of all the registers in the current section fifo_write:
 
 | Name             | Offset | Access | Description |
 |-----------------:|:------:|:------:|:------------|
-| [number_of_words](#register-fifo-writenumber-of-words) | 0xd101c | RW |  numbers of words in a frame |
-| [words_to_write_a](#register-fifo-writewords-to-write-a) | 0xd1020 | RW |  word that must be sent to fifo |
-| [words_to_write_b](#register-fifo-writewords-to-write-b) | 0xd1024 | RW |  word that must be sent to fifo |
-| [fifo_write_data_count](#register-fifo-writefifo-write-data-count) | 0xd1028 | R. |  numbers of words that have been written |
+| [number_of_words](#register-fifo-writenumber-of-words) | 0x5101c | RW |  numbers of words in a frame |
+| [words_to_write_a](#register-fifo-writewords-to-write-a) | 0x51020 | RW |  word that must be sent to fifo |
+| [words_to_write_b](#register-fifo-writewords-to-write-b) | 0x51024 | RW |  word that must be sent to fifo |
+| [fifo_write_data_count](#register-fifo-writefifo-write-data-count) | 0x51028 | R. |  numbers of words that have been written |
 
 
 ---
@@ -4209,8 +4208,8 @@ Below is a summary of all the registers in the current section fifo_write:
 - **Owner**: User
 - **Read Access**: Read
 - **Write Access**: Write
-- **Offset**: 0xd101c
-- **Default**: 0
+- **Offset**: 0x5101c
+- **Default**: 0 
 
 
 
@@ -4224,8 +4223,8 @@ Below is a summary of all the registers in the current section fifo_write:
 - **Owner**: User
 - **Read Access**: Read
 - **Write Access**: Write
-- **Offset**: 0xd1020
-- **Default**: 0
+- **Offset**: 0x51020
+- **Default**: 0 
 
 
 
@@ -4239,8 +4238,8 @@ Below is a summary of all the registers in the current section fifo_write:
 - **Owner**: User
 - **Read Access**: Read
 - **Write Access**: Write
-- **Offset**: 0xd1024
-- **Default**: 0
+- **Offset**: 0x51024
+- **Default**: 0 
 
 
 
@@ -4254,15 +4253,15 @@ Below is a summary of all the registers in the current section fifo_write:
 - **Owner**: Kernel
 - **Read Access**: Read
 - **Write Access**: None
-- **Offset**: 0xd1028
-- **Default**: 0
+- **Offset**: 0x51028
+- **Default**: 0 
 
 
 
 
 ---
 
-
+ 
 
 
 ## Section fifo-read
@@ -4273,9 +4272,9 @@ Below is a summary of all the registers in the current section fifo_read:
 
 | Name             | Offset | Access | Description |
 |-----------------:|:------:|:------:|:------------|
-| [words_to_read_a](#register-fifo-readwords-to-read-a) | 0xd102c | R. |  word that must be sent to fifo |
-| [words_to_read_b](#register-fifo-readwords-to-read-b) | 0xd1030 | R. |  word that must be sent to fifo |
-| [fifo_read_data_count](#register-fifo-readfifo-read-data-count) | 0xd1034 | R. |  numbers of words that have been written |
+| [words_to_read_a](#register-fifo-readwords-to-read-a) | 0x5102c | R. |  word that must be sent to fifo |
+| [words_to_read_b](#register-fifo-readwords-to-read-b) | 0x51030 | R. |  word that must be sent to fifo |
+| [fifo_read_data_count](#register-fifo-readfifo-read-data-count) | 0x51034 | R. |  numbers of words that have been written |
 
 
 ---
@@ -4287,8 +4286,8 @@ Below is a summary of all the registers in the current section fifo_read:
 - **Owner**: Kernel
 - **Read Access**: Read
 - **Write Access**: None
-- **Offset**: 0xd102c
-- **Default**: 0
+- **Offset**: 0x5102c
+- **Default**: 0 
 
 
 
@@ -4302,8 +4301,8 @@ Below is a summary of all the registers in the current section fifo_read:
 - **Owner**: Kernel
 - **Read Access**: Read
 - **Write Access**: None
-- **Offset**: 0xd1030
-- **Default**: 0
+- **Offset**: 0x51030
+- **Default**: 0 
 
 
 
@@ -4317,15 +4316,15 @@ Below is a summary of all the registers in the current section fifo_read:
 - **Owner**: Kernel
 - **Read Access**: Read
 - **Write Access**: None
-- **Offset**: 0xd1034
-- **Default**: 0
+- **Offset**: 0x51034
+- **Default**: 0 
 
 
 
 
 ---
 
-
+ 
 
 
 ## Section cnt
@@ -4336,9 +4335,9 @@ Below is a summary of all the registers in the current section cnt:
 
 | Name             | Offset | Access | Description |
 |-----------------:|:------:|:------:|:------------|
-| [trig_rd](#register-cnttrig-rd) | 0xd103c | R. |  trig_rd |
-| [tx_wr](#register-cnttx-wr) | 0xd1040 | R. |  tx_wr |
-| [words](#register-cntwords) | 0xd1044 | R. |  words |
+| [trig_rd](#register-cnttrig-rd) | 0x5103c | R. |  trig_rd |
+| [tx_wr](#register-cnttx-wr) | 0x51040 | R. |  tx_wr |
+| [words](#register-cntwords) | 0x51044 | R. |  words |
 
 
 ---
@@ -4350,8 +4349,8 @@ Below is a summary of all the registers in the current section cnt:
 - **Owner**: Kernel
 - **Read Access**: Read
 - **Write Access**: None
-- **Offset**: 0xd103c
-- **Default**: 0
+- **Offset**: 0x5103c
+- **Default**: 0 
 
 
 
@@ -4365,8 +4364,8 @@ Below is a summary of all the registers in the current section cnt:
 - **Owner**: Kernel
 - **Read Access**: Read
 - **Write Access**: None
-- **Offset**: 0xd1040
-- **Default**: 0
+- **Offset**: 0x51040
+- **Default**: 0 
 
 
 
@@ -4380,15 +4379,15 @@ Below is a summary of all the registers in the current section cnt:
 - **Owner**: Kernel
 - **Read Access**: Read
 - **Write Access**: None
-- **Offset**: 0xd1044
-- **Default**: 0
+- **Offset**: 0x51044
+- **Default**: 0 
 
 
 
 
 ---
 
-
+ 
 
 
 ## Section stat
@@ -4399,13 +4398,13 @@ Below is a summary of all the registers in the current section stat:
 
 | Name             | Offset | Access | Description |
 |-----------------:|:------:|:------:|:------------|
-| [status](#register-statstatus) | 0xd104c | R. |  fifo status |
-| [clk_a](#register-statclk-a) | 0xd1050 | R. |  clock counts |
-| [clk_b](#register-statclk-b) | 0xd1054 | R. |  clock counts |
-| [valid_words_a](#register-statvalid-words-a) | 0xd1058 | R. |  clock counts |
-| [valid_words_b](#register-statvalid-words-b) | 0xd105c | R. |  clock counts |
-| [sop_cnt_a](#register-statsop-cnt-a) | 0xd1060 | R. |  clock counts |
-| [sop_cnt_b](#register-statsop-cnt-b) | 0xd1064 | R. |  clock counts |
+| [status](#register-statstatus) | 0x5104c | R. |  fifo status |
+| [clk_a](#register-statclk-a) | 0x51050 | R. |  clock counts |
+| [clk_b](#register-statclk-b) | 0x51054 | R. |  clock counts |
+| [valid_words_a](#register-statvalid-words-a) | 0x51058 | R. |  clock counts |
+| [valid_words_b](#register-statvalid-words-b) | 0x5105c | R. |  clock counts |
+| [sop_cnt_a](#register-statsop-cnt-a) | 0x51060 | R. |  clock counts |
+| [sop_cnt_b](#register-statsop-cnt-b) | 0x51064 | R. |  clock counts |
 
 
 ---
@@ -4417,8 +4416,8 @@ Below is a summary of all the registers in the current section stat:
 - **Owner**: Kernel
 - **Read Access**: Read
 - **Write Access**: None
-- **Offset**: 0xd104c
-- **Default**: 0
+- **Offset**: 0x5104c
+- **Default**: 0 
 
 
 
@@ -4432,8 +4431,8 @@ Below is a summary of all the registers in the current section stat:
 - **Owner**: Kernel
 - **Read Access**: Read
 - **Write Access**: None
-- **Offset**: 0xd1050
-- **Default**: 0
+- **Offset**: 0x51050
+- **Default**: 0 
 
 
 
@@ -4447,8 +4446,8 @@ Below is a summary of all the registers in the current section stat:
 - **Owner**: Kernel
 - **Read Access**: Read
 - **Write Access**: None
-- **Offset**: 0xd1054
-- **Default**: 0
+- **Offset**: 0x51054
+- **Default**: 0 
 
 
 
@@ -4462,8 +4461,8 @@ Below is a summary of all the registers in the current section stat:
 - **Owner**: Kernel
 - **Read Access**: Read
 - **Write Access**: None
-- **Offset**: 0xd1058
-- **Default**: 0
+- **Offset**: 0x51058
+- **Default**: 0 
 
 
 
@@ -4477,8 +4476,8 @@ Below is a summary of all the registers in the current section stat:
 - **Owner**: Kernel
 - **Read Access**: Read
 - **Write Access**: None
-- **Offset**: 0xd105c
-- **Default**: 0
+- **Offset**: 0x5105c
+- **Default**: 0 
 
 
 
@@ -4492,8 +4491,8 @@ Below is a summary of all the registers in the current section stat:
 - **Owner**: Kernel
 - **Read Access**: Read
 - **Write Access**: None
-- **Offset**: 0xd1060
-- **Default**: 0
+- **Offset**: 0x51060
+- **Default**: 0 
 
 
 
@@ -4507,14 +4506,14 @@ Below is a summary of all the registers in the current section stat:
 - **Owner**: Kernel
 - **Read Access**: Read
 - **Write Access**: None
-- **Offset**: 0xd1064
-- **Default**: 0
+- **Offset**: 0x51064
+- **Default**: 0 
 
 
 
 
 ---
 
+ 
 
-
-
+ 

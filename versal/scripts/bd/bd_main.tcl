@@ -804,11 +804,11 @@ proc create_root_design { parentCell ntt_psi } {
   # LPD
   assign_bd_address -offset 0x00000000 -range 0x80000000 -target_address_space [get_bd_addr_spaces shell_wrapper/cips/LPD_AXI_NOC_0] [get_bd_addr_segs noc_wrapper/ddr_noc/axi_noc_mc_ddr4_0/S00_INI/C0_DDR_LOW0] -force
   assign_bd_address -offset 0x80800000 -range 0x00001000 -target_address_space [get_bd_addr_spaces shell_wrapper/cips/M_AXI_LPD] [get_bd_addr_segs shell_wrapper/axi_to_axis/S_AXI/Mem0] -force
-  assign_bd_address -offset 0x80010000 -range 0x00001000 -target_address_space [get_bd_addr_spaces shell_wrapper/cips/M_AXI_LPD] [get_bd_addr_segs shell_wrapper/base_logic/gcq_m2r/S01_AXI/S01_AXI_Reg] -force
+  assign_bd_address -offset 0x800F0000 -range 0x00001000 -target_address_space [get_bd_addr_spaces shell_wrapper/cips/M_AXI_LPD] [get_bd_addr_segs shell_wrapper/base_logic/gcq_m2r/S01_AXI/S01_AXI_Reg] -force
 
   # NOC to PL
   # == regfiles
-  set regif_add 0x80080000
+  set regif_add 0x80000000
   set regif_add_noc [expr 0x20100000000 + $regif_add]
   set regif_range 0x00010000
   assign_bd_address -offset $regif_add -range  [expr ($ETH_AXI_NB  + $REGIF_NB * $REGIF_CLK_NB) * $regif_range] -target_address_space [get_bd_addr_spaces shell_wrapper/cips/M_AXI_LPD] [get_bd_addr_segs /axi_lpd/Reg] -force

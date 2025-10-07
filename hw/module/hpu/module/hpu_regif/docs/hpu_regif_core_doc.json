@@ -2,7 +2,7 @@
   "module_name": "hpu_regif_core",
   "description": "HPU top-level register interface. Used by the host to retrieve design information, and to configure it.\n\nHPU top-level register interface. Used by the host to retrieve design information, and to configure it.\n\nHPU top-level register interface. Used by the host to retrieve design information, and to configure it.\n\nHPU top-level register interface. Used by the host to retrieve design information, and to configure it.\n\nHPU ethernet configuration register interface. Will be accessed by RPU to define registers.",
   "word_size_b": 32,
-  "offset": 524288,
+  "offset": 0,
   "range": 393216,
   "ext_pkg": [
     "axi_if_shell_axil_pkg",
@@ -12,7 +12,7 @@
     {
       "name": "entry_cfg_1in3",
       "description": "entry_cfg_1in3 section with known value used for debug.",
-      "offset": 524288,
+      "offset": 0,
       "bytes_align": 4,
       "range": 16,
       "register": [
@@ -22,7 +22,7 @@
           "owner": "Parameter",
           "read_access": "Read",
           "write_access": "None",
-          "offset": 524288,
+          "offset": 0,
           "default": {
             "Cst": 16843009
           },
@@ -34,7 +34,7 @@
           "owner": "Parameter",
           "read_access": "Read",
           "write_access": "None",
-          "offset": 524292,
+          "offset": 4,
           "default": {
             "Cst": 286331153
           },
@@ -46,7 +46,7 @@
           "owner": "Parameter",
           "read_access": "Read",
           "write_access": "None",
-          "offset": 524296,
+          "offset": 8,
           "default": {
             "Cst": 555819297
           },
@@ -58,7 +58,7 @@
           "owner": "Parameter",
           "read_access": "Read",
           "write_access": "None",
-          "offset": 524300,
+          "offset": 12,
           "default": {
             "Cst": 825307441
           },
@@ -69,7 +69,7 @@
     {
       "name": "info",
       "description": "RTL architecture parameters",
-      "offset": 524304,
+      "offset": 16,
       "bytes_align": 4,
       "range": 76,
       "register": [
@@ -79,7 +79,7 @@
           "owner": "Parameter",
           "read_access": "Read",
           "write_access": "None",
-          "offset": 524304,
+          "offset": 16,
           "default": {
             "ParamsField": {
               "params": [
@@ -125,7 +125,7 @@
           "owner": "Parameter",
           "read_access": "Read",
           "write_access": "None",
-          "offset": 524308,
+          "offset": 20,
           "default": {
             "Param": "NTT_CORE_ARCH"
           },
@@ -137,7 +137,7 @@
           "owner": "Parameter",
           "read_access": "Read",
           "write_access": "None",
-          "offset": 524312,
+          "offset": 24,
           "default": {
             "ParamsField": {
               "params": [
@@ -211,7 +211,7 @@
           "owner": "Parameter",
           "read_access": "Read",
           "write_access": "None",
-          "offset": 524316,
+          "offset": 28,
           "default": {
             "ParamsField": {
               "params": [
@@ -341,7 +341,7 @@
           "owner": "Parameter",
           "read_access": "Read",
           "write_access": "None",
-          "offset": 524320,
+          "offset": 32,
           "default": {
             "ParamsField": {
               "params": [
@@ -387,7 +387,7 @@
           "owner": "Parameter",
           "read_access": "Read",
           "write_access": "None",
-          "offset": 524324,
+          "offset": 36,
           "default": {
             "Param": "MOD_NTT_NAME"
           },
@@ -399,7 +399,7 @@
           "owner": "Parameter",
           "read_access": "Read",
           "write_access": "None",
-          "offset": 524328,
+          "offset": 40,
           "default": {
             "Param": "APPLICATION_NAME"
           },
@@ -411,7 +411,7 @@
           "owner": "Parameter",
           "read_access": "Read",
           "write_access": "None",
-          "offset": 524332,
+          "offset": 44,
           "default": {
             "ParamsField": {
               "params": [
@@ -471,7 +471,7 @@
           "owner": "Parameter",
           "read_access": "Read",
           "write_access": "None",
-          "offset": 524336,
+          "offset": 48,
           "default": {
             "ParamsField": {
               "params": [
@@ -531,7 +531,7 @@
           "owner": "Parameter",
           "read_access": "Read",
           "write_access": "None",
-          "offset": 524340,
+          "offset": 52,
           "default": {
             "ParamsField": {
               "params": [
@@ -577,7 +577,7 @@
           "owner": "Parameter",
           "read_access": "Read",
           "write_access": "None",
-          "offset": 524344,
+          "offset": 56,
           "default": {
             "ParamsField": {
               "params": [
@@ -623,7 +623,7 @@
           "owner": "Parameter",
           "read_access": "Read",
           "write_access": "None",
-          "offset": 524348,
+          "offset": 60,
           "default": {
             "ParamsField": {
               "params": [
@@ -697,7 +697,7 @@
           "owner": "Parameter",
           "read_access": "Read",
           "write_access": "None",
-          "offset": 524352,
+          "offset": 64,
           "default": {
             "ParamsField": {
               "params": [
@@ -729,7 +729,7 @@
           "owner": "Parameter",
           "read_access": "Read",
           "write_access": "None",
-          "offset": 524356,
+          "offset": 68,
           "default": {
             "ParamsField": {
               "params": [
@@ -761,7 +761,7 @@
           "owner": "Parameter",
           "read_access": "Read",
           "write_access": "None",
-          "offset": 524360,
+          "offset": 72,
           "default": {
             "ParamsField": {
               "params": [
@@ -835,7 +835,7 @@
           "owner": "Parameter",
           "read_access": "Read",
           "write_access": "None",
-          "offset": 524364,
+          "offset": 76,
           "default": {
             "Param": "AXI4_PEM_DATA_W"
           },
@@ -847,7 +847,7 @@
           "owner": "Parameter",
           "read_access": "Read",
           "write_access": "None",
-          "offset": 524368,
+          "offset": 80,
           "default": {
             "Param": "AXI4_GLWE_DATA_W"
           },
@@ -859,7 +859,7 @@
           "owner": "Parameter",
           "read_access": "Read",
           "write_access": "None",
-          "offset": 524372,
+          "offset": 84,
           "default": {
             "Param": "AXI4_BSK_DATA_W"
           },
@@ -871,7 +871,7 @@
           "owner": "Parameter",
           "read_access": "Read",
           "write_access": "None",
-          "offset": 524376,
+          "offset": 88,
           "default": {
             "Param": "AXI4_KSK_DATA_W"
           },
@@ -882,7 +882,7 @@
     {
       "name": "hbm_axi4_addr_1in3",
       "description": "HBM AXI4 connection address offset",
-      "offset": 528384,
+      "offset": 4096,
       "bytes_align": 4,
       "range": 160,
       "register": [
@@ -892,7 +892,7 @@
           "owner": "User",
           "read_access": "Read",
           "write_access": "Write",
-          "offset": 528384,
+          "offset": 4096,
           "default": {
             "Cst": 0
           },
@@ -904,7 +904,7 @@
           "owner": "User",
           "read_access": "Read",
           "write_access": "Write",
-          "offset": 528388,
+          "offset": 4100,
           "default": {
             "Cst": 0
           },
@@ -916,7 +916,7 @@
           "owner": "User",
           "read_access": "Read",
           "write_access": "Write",
-          "offset": 528392,
+          "offset": 4104,
           "default": {
             "Cst": 0
           },
@@ -928,7 +928,7 @@
           "owner": "User",
           "read_access": "Read",
           "write_access": "Write",
-          "offset": 528396,
+          "offset": 4108,
           "default": {
             "Cst": 0
           },
@@ -940,7 +940,7 @@
           "owner": "User",
           "read_access": "Read",
           "write_access": "Write",
-          "offset": 528400,
+          "offset": 4112,
           "default": {
             "Cst": 0
           },
@@ -952,7 +952,7 @@
           "owner": "User",
           "read_access": "Read",
           "write_access": "Write",
-          "offset": 528404,
+          "offset": 4116,
           "default": {
             "Cst": 0
           },
@@ -964,7 +964,7 @@
           "owner": "User",
           "read_access": "Read",
           "write_access": "Write",
-          "offset": 528408,
+          "offset": 4120,
           "default": {
             "Cst": 0
           },
@@ -976,7 +976,7 @@
           "owner": "User",
           "read_access": "Read",
           "write_access": "Write",
-          "offset": 528412,
+          "offset": 4124,
           "default": {
             "Cst": 0
           },
@@ -988,7 +988,7 @@
           "owner": "User",
           "read_access": "Read",
           "write_access": "Write",
-          "offset": 528416,
+          "offset": 4128,
           "default": {
             "Cst": 0
           },
@@ -1000,7 +1000,7 @@
           "owner": "User",
           "read_access": "Read",
           "write_access": "Write",
-          "offset": 528420,
+          "offset": 4132,
           "default": {
             "Cst": 0
           },
@@ -1012,7 +1012,7 @@
           "owner": "User",
           "read_access": "Read",
           "write_access": "Write",
-          "offset": 528424,
+          "offset": 4136,
           "default": {
             "Cst": 0
           },
@@ -1024,7 +1024,7 @@
           "owner": "User",
           "read_access": "Read",
           "write_access": "Write",
-          "offset": 528428,
+          "offset": 4140,
           "default": {
             "Cst": 0
           },
@@ -1036,7 +1036,7 @@
           "owner": "User",
           "read_access": "Read",
           "write_access": "Write",
-          "offset": 528432,
+          "offset": 4144,
           "default": {
             "Cst": 0
           },
@@ -1048,7 +1048,7 @@
           "owner": "User",
           "read_access": "Read",
           "write_access": "Write",
-          "offset": 528436,
+          "offset": 4148,
           "default": {
             "Cst": 0
           },
@@ -1060,7 +1060,7 @@
           "owner": "User",
           "read_access": "Read",
           "write_access": "Write",
-          "offset": 528440,
+          "offset": 4152,
           "default": {
             "Cst": 0
           },
@@ -1072,7 +1072,7 @@
           "owner": "User",
           "read_access": "Read",
           "write_access": "Write",
-          "offset": 528444,
+          "offset": 4156,
           "default": {
             "Cst": 0
           },
@@ -1084,7 +1084,7 @@
           "owner": "User",
           "read_access": "Read",
           "write_access": "Write",
-          "offset": 528448,
+          "offset": 4160,
           "default": {
             "Cst": 0
           },
@@ -1096,7 +1096,7 @@
           "owner": "User",
           "read_access": "Read",
           "write_access": "Write",
-          "offset": 528452,
+          "offset": 4164,
           "default": {
             "Cst": 0
           },
@@ -1108,7 +1108,7 @@
           "owner": "User",
           "read_access": "Read",
           "write_access": "Write",
-          "offset": 528456,
+          "offset": 4168,
           "default": {
             "Cst": 0
           },
@@ -1120,7 +1120,7 @@
           "owner": "User",
           "read_access": "Read",
           "write_access": "Write",
-          "offset": 528460,
+          "offset": 4172,
           "default": {
             "Cst": 0
           },
@@ -1132,7 +1132,7 @@
           "owner": "User",
           "read_access": "Read",
           "write_access": "Write",
-          "offset": 528464,
+          "offset": 4176,
           "default": {
             "Cst": 0
           },
@@ -1144,7 +1144,7 @@
           "owner": "User",
           "read_access": "Read",
           "write_access": "Write",
-          "offset": 528468,
+          "offset": 4180,
           "default": {
             "Cst": 0
           },
@@ -1156,7 +1156,7 @@
           "owner": "User",
           "read_access": "Read",
           "write_access": "Write",
-          "offset": 528472,
+          "offset": 4184,
           "default": {
             "Cst": 0
           },
@@ -1168,7 +1168,7 @@
           "owner": "User",
           "read_access": "Read",
           "write_access": "Write",
-          "offset": 528476,
+          "offset": 4188,
           "default": {
             "Cst": 0
           },
@@ -1180,7 +1180,7 @@
           "owner": "User",
           "read_access": "Read",
           "write_access": "Write",
-          "offset": 528480,
+          "offset": 4192,
           "default": {
             "Cst": 0
           },
@@ -1192,7 +1192,7 @@
           "owner": "User",
           "read_access": "Read",
           "write_access": "Write",
-          "offset": 528484,
+          "offset": 4196,
           "default": {
             "Cst": 0
           },
@@ -1204,7 +1204,7 @@
           "owner": "User",
           "read_access": "Read",
           "write_access": "Write",
-          "offset": 528488,
+          "offset": 4200,
           "default": {
             "Cst": 0
           },
@@ -1216,7 +1216,7 @@
           "owner": "User",
           "read_access": "Read",
           "write_access": "Write",
-          "offset": 528492,
+          "offset": 4204,
           "default": {
             "Cst": 0
           },
@@ -1228,7 +1228,7 @@
           "owner": "User",
           "read_access": "Read",
           "write_access": "Write",
-          "offset": 528496,
+          "offset": 4208,
           "default": {
             "Cst": 0
           },
@@ -1240,7 +1240,7 @@
           "owner": "User",
           "read_access": "Read",
           "write_access": "Write",
-          "offset": 528500,
+          "offset": 4212,
           "default": {
             "Cst": 0
           },
@@ -1252,7 +1252,7 @@
           "owner": "User",
           "read_access": "Read",
           "write_access": "Write",
-          "offset": 528504,
+          "offset": 4216,
           "default": {
             "Cst": 0
           },
@@ -1264,7 +1264,7 @@
           "owner": "User",
           "read_access": "Read",
           "write_access": "Write",
-          "offset": 528508,
+          "offset": 4220,
           "default": {
             "Cst": 0
           },
@@ -1276,7 +1276,7 @@
           "owner": "User",
           "read_access": "Read",
           "write_access": "Write",
-          "offset": 528512,
+          "offset": 4224,
           "default": {
             "Cst": 0
           },
@@ -1288,7 +1288,7 @@
           "owner": "User",
           "read_access": "Read",
           "write_access": "Write",
-          "offset": 528516,
+          "offset": 4228,
           "default": {
             "Cst": 0
           },
@@ -1300,7 +1300,7 @@
           "owner": "User",
           "read_access": "Read",
           "write_access": "Write",
-          "offset": 528520,
+          "offset": 4232,
           "default": {
             "Cst": 0
           },
@@ -1312,7 +1312,7 @@
           "owner": "User",
           "read_access": "Read",
           "write_access": "Write",
-          "offset": 528524,
+          "offset": 4236,
           "default": {
             "Cst": 0
           },
@@ -1324,7 +1324,7 @@
           "owner": "User",
           "read_access": "Read",
           "write_access": "Write",
-          "offset": 528528,
+          "offset": 4240,
           "default": {
             "Cst": 0
           },
@@ -1336,7 +1336,7 @@
           "owner": "User",
           "read_access": "Read",
           "write_access": "Write",
-          "offset": 528532,
+          "offset": 4244,
           "default": {
             "Cst": 0
           },
@@ -1348,7 +1348,7 @@
           "owner": "User",
           "read_access": "Read",
           "write_access": "Write",
-          "offset": 528536,
+          "offset": 4248,
           "default": {
             "Cst": 0
           },
@@ -1360,7 +1360,7 @@
           "owner": "User",
           "read_access": "Read",
           "write_access": "Write",
-          "offset": 528540,
+          "offset": 4252,
           "default": {
             "Cst": 0
           },
@@ -1371,7 +1371,7 @@
     {
       "name": "bpip",
       "description": "BPIP configuration",
-      "offset": 532480,
+      "offset": 8192,
       "bytes_align": 4,
       "range": 8,
       "register": [
@@ -1381,7 +1381,7 @@
           "owner": "User",
           "read_access": "Read",
           "write_access": "Write",
-          "offset": 532480,
+          "offset": 8192,
           "default": {
             "ParamsField": {
               "params": [],
@@ -1424,7 +1424,7 @@
           "owner": "User",
           "read_access": "Read",
           "write_access": "Write",
-          "offset": 532484,
+          "offset": 8196,
           "default": {
             "Cst": 4294967295
           },
@@ -1435,7 +1435,7 @@
     {
       "name": "entry_prc_1in3",
       "description": "entry_prc_1in3 section with known value used for debug.",
-      "offset": 589824,
+      "offset": 65536,
       "bytes_align": 4,
       "range": 16,
       "register": [
@@ -1445,7 +1445,7 @@
           "owner": "Parameter",
           "read_access": "Read",
           "write_access": "None",
-          "offset": 589824,
+          "offset": 65536,
           "default": {
             "Cst": 33686018
           },
@@ -1457,7 +1457,7 @@
           "owner": "Parameter",
           "read_access": "Read",
           "write_access": "None",
-          "offset": 589828,
+          "offset": 65540,
           "default": {
             "Cst": 303174162
           },
@@ -1469,7 +1469,7 @@
           "owner": "Parameter",
           "read_access": "Read",
           "write_access": "None",
-          "offset": 589832,
+          "offset": 65544,
           "default": {
             "Cst": 572662306
           },
@@ -1481,7 +1481,7 @@
           "owner": "Parameter",
           "read_access": "Read",
           "write_access": "None",
-          "offset": 589836,
+          "offset": 65548,
           "default": {
             "Cst": 842150450
           },
@@ -1492,7 +1492,7 @@
     {
       "name": "status_1in3",
       "description": "HPU status of part 1in3",
-      "offset": 589840,
+      "offset": 65552,
       "bytes_align": 4,
       "range": 4,
       "register": [
@@ -1502,7 +1502,7 @@
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "WriteNotify",
-          "offset": 589840,
+          "offset": 65552,
           "default": {
             "ParamsField": {
               "params": [],
@@ -1531,7 +1531,7 @@
     {
       "name": "ksk_avail",
       "description": "KSK availability configuration",
-      "offset": 593920,
+      "offset": 69632,
       "bytes_align": 4,
       "range": 8,
       "register": [
@@ -1541,7 +1541,7 @@
           "owner": "User",
           "read_access": "Read",
           "write_access": "Write",
-          "offset": 593920,
+          "offset": 69632,
           "default": {
             "ParamsField": {
               "params": [],
@@ -1571,7 +1571,7 @@
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "WriteNotify",
-          "offset": 593924,
+          "offset": 69636,
           "default": {
             "ParamsField": {
               "params": [],
@@ -1613,7 +1613,7 @@
     {
       "name": "runtime_1in3",
       "description": "Runtime information",
-      "offset": 598016,
+      "offset": 73728,
       "bytes_align": 4,
       "range": 316,
       "register": [
@@ -1623,7 +1623,7 @@
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "None",
-          "offset": 598016,
+          "offset": 73728,
           "default": {
             "ParamsField": {
               "params": [],
@@ -1692,7 +1692,7 @@
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "None",
-          "offset": 598020,
+          "offset": 73732,
           "default": {
             "ParamsField": {
               "params": [],
@@ -1761,7 +1761,7 @@
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "None",
-          "offset": 598024,
+          "offset": 73736,
           "default": {
             "ParamsField": {
               "params": [],
@@ -1830,7 +1830,7 @@
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "None",
-          "offset": 598028,
+          "offset": 73740,
           "default": {
             "ParamsField": {
               "params": [],
@@ -1886,7 +1886,7 @@
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "None",
-          "offset": 598032,
+          "offset": 73744,
           "default": {
             "Cst": 0
           },
@@ -1898,7 +1898,7 @@
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "None",
-          "offset": 598036,
+          "offset": 73748,
           "default": {
             "Cst": 0
           },
@@ -1910,7 +1910,7 @@
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "None",
-          "offset": 598040,
+          "offset": 73752,
           "default": {
             "Cst": 0
           },
@@ -1922,7 +1922,7 @@
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "None",
-          "offset": 598044,
+          "offset": 73756,
           "default": {
             "Cst": 0
           },
@@ -1934,7 +1934,7 @@
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "WriteNotify",
-          "offset": 598048,
+          "offset": 73760,
           "default": {
             "Cst": 0
           },
@@ -1946,7 +1946,7 @@
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "WriteNotify",
-          "offset": 598052,
+          "offset": 73764,
           "default": {
             "Cst": 0
           },
@@ -1958,7 +1958,7 @@
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "WriteNotify",
-          "offset": 598056,
+          "offset": 73768,
           "default": {
             "Cst": 0
           },
@@ -1970,7 +1970,7 @@
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "WriteNotify",
-          "offset": 598060,
+          "offset": 73772,
           "default": {
             "Cst": 0
           },
@@ -1982,7 +1982,7 @@
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "WriteNotify",
-          "offset": 598064,
+          "offset": 73776,
           "default": {
             "Cst": 0
           },
@@ -1994,7 +1994,7 @@
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "WriteNotify",
-          "offset": 598068,
+          "offset": 73780,
           "default": {
             "Cst": 0
           },
@@ -2006,7 +2006,7 @@
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "WriteNotify",
-          "offset": 598072,
+          "offset": 73784,
           "default": {
             "Cst": 0
           },
@@ -2018,7 +2018,7 @@
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "WriteNotify",
-          "offset": 598076,
+          "offset": 73788,
           "default": {
             "Cst": 0
           },
@@ -2030,7 +2030,7 @@
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "WriteNotify",
-          "offset": 598080,
+          "offset": 73792,
           "default": {
             "Cst": 0
           },
@@ -2042,7 +2042,7 @@
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "WriteNotify",
-          "offset": 598084,
+          "offset": 73796,
           "default": {
             "Cst": 0
           },
@@ -2054,7 +2054,7 @@
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "WriteNotify",
-          "offset": 598088,
+          "offset": 73800,
           "default": {
             "Cst": 0
           },
@@ -2066,7 +2066,7 @@
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "WriteNotify",
-          "offset": 598092,
+          "offset": 73804,
           "default": {
             "Cst": 0
           },
@@ -2078,7 +2078,7 @@
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "WriteNotify",
-          "offset": 598096,
+          "offset": 73808,
           "default": {
             "Cst": 0
           },
@@ -2090,7 +2090,7 @@
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "WriteNotify",
-          "offset": 598100,
+          "offset": 73812,
           "default": {
             "Cst": 0
           },
@@ -2102,7 +2102,7 @@
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "WriteNotify",
-          "offset": 598104,
+          "offset": 73816,
           "default": {
             "Cst": 0
           },
@@ -2114,7 +2114,7 @@
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "WriteNotify",
-          "offset": 598108,
+          "offset": 73820,
           "default": {
             "Cst": 0
           },
@@ -2126,7 +2126,7 @@
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "WriteNotify",
-          "offset": 598112,
+          "offset": 73824,
           "default": {
             "Cst": 0
           },
@@ -2138,7 +2138,7 @@
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "WriteNotify",
-          "offset": 598116,
+          "offset": 73828,
           "default": {
             "Cst": 0
           },
@@ -2150,7 +2150,7 @@
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "WriteNotify",
-          "offset": 598120,
+          "offset": 73832,
           "default": {
             "Cst": 0
           },
@@ -2162,7 +2162,7 @@
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "WriteNotify",
-          "offset": 598124,
+          "offset": 73836,
           "default": {
             "Cst": 0
           },
@@ -2174,7 +2174,7 @@
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "WriteNotify",
-          "offset": 598128,
+          "offset": 73840,
           "default": {
             "Cst": 0
           },
@@ -2186,7 +2186,7 @@
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "WriteNotify",
-          "offset": 598132,
+          "offset": 73844,
           "default": {
             "Cst": 0
           },
@@ -2198,7 +2198,7 @@
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "WriteNotify",
-          "offset": 598136,
+          "offset": 73848,
           "default": {
             "Cst": 0
           },
@@ -2210,7 +2210,7 @@
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "WriteNotify",
-          "offset": 598140,
+          "offset": 73852,
           "default": {
             "Cst": 0
           },
@@ -2222,7 +2222,7 @@
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "WriteNotify",
-          "offset": 598144,
+          "offset": 73856,
           "default": {
             "Cst": 0
           },
@@ -2234,7 +2234,7 @@
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "WriteNotify",
-          "offset": 598148,
+          "offset": 73860,
           "default": {
             "Cst": 0
           },
@@ -2246,7 +2246,7 @@
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "WriteNotify",
-          "offset": 598152,
+          "offset": 73864,
           "default": {
             "Cst": 0
           },
@@ -2258,7 +2258,7 @@
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "WriteNotify",
-          "offset": 598156,
+          "offset": 73868,
           "default": {
             "Cst": 0
           },
@@ -2270,7 +2270,7 @@
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "WriteNotify",
-          "offset": 598160,
+          "offset": 73872,
           "default": {
             "Cst": 0
           },
@@ -2282,7 +2282,7 @@
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "WriteNotify",
-          "offset": 598164,
+          "offset": 73876,
           "default": {
             "Cst": 0
           },
@@ -2294,7 +2294,7 @@
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "WriteNotify",
-          "offset": 598168,
+          "offset": 73880,
           "default": {
             "Cst": 0
           },
@@ -2306,7 +2306,7 @@
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "WriteNotify",
-          "offset": 598172,
+          "offset": 73884,
           "default": {
             "Cst": 0
           },
@@ -2318,7 +2318,7 @@
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "WriteNotify",
-          "offset": 598176,
+          "offset": 73888,
           "default": {
             "Cst": 0
           },
@@ -2330,7 +2330,7 @@
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "WriteNotify",
-          "offset": 598180,
+          "offset": 73892,
           "default": {
             "Cst": 0
           },
@@ -2342,7 +2342,7 @@
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "WriteNotify",
-          "offset": 598184,
+          "offset": 73896,
           "default": {
             "Cst": 0
           },
@@ -2354,7 +2354,7 @@
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "WriteNotify",
-          "offset": 598188,
+          "offset": 73900,
           "default": {
             "Cst": 0
           },
@@ -2366,7 +2366,7 @@
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "WriteNotify",
-          "offset": 598192,
+          "offset": 73904,
           "default": {
             "Cst": 0
           },
@@ -2378,7 +2378,7 @@
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "WriteNotify",
-          "offset": 598196,
+          "offset": 73908,
           "default": {
             "Cst": 0
           },
@@ -2390,7 +2390,7 @@
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "WriteNotify",
-          "offset": 598200,
+          "offset": 73912,
           "default": {
             "Cst": 0
           },
@@ -2402,7 +2402,7 @@
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "WriteNotify",
-          "offset": 598204,
+          "offset": 73916,
           "default": {
             "Cst": 0
           },
@@ -2414,7 +2414,7 @@
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "WriteNotify",
-          "offset": 598208,
+          "offset": 73920,
           "default": {
             "Cst": 0
           },
@@ -2426,7 +2426,7 @@
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "WriteNotify",
-          "offset": 598212,
+          "offset": 73924,
           "default": {
             "Cst": 0
           },
@@ -2438,7 +2438,7 @@
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "WriteNotify",
-          "offset": 598216,
+          "offset": 73928,
           "default": {
             "Cst": 0
           },
@@ -2450,7 +2450,7 @@
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "WriteNotify",
-          "offset": 598220,
+          "offset": 73932,
           "default": {
             "Cst": 0
           },
@@ -2462,7 +2462,7 @@
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "WriteNotify",
-          "offset": 598224,
+          "offset": 73936,
           "default": {
             "Cst": 0
           },
@@ -2474,7 +2474,7 @@
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "WriteNotify",
-          "offset": 598228,
+          "offset": 73940,
           "default": {
             "Cst": 0
           },
@@ -2486,7 +2486,7 @@
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "WriteNotify",
-          "offset": 598232,
+          "offset": 73944,
           "default": {
             "Cst": 0
           },
@@ -2498,7 +2498,7 @@
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "WriteNotify",
-          "offset": 598236,
+          "offset": 73948,
           "default": {
             "Cst": 0
           },
@@ -2510,7 +2510,7 @@
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "WriteNotify",
-          "offset": 598240,
+          "offset": 73952,
           "default": {
             "Cst": 0
           },
@@ -2522,7 +2522,7 @@
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "WriteNotify",
-          "offset": 598244,
+          "offset": 73956,
           "default": {
             "Cst": 0
           },
@@ -2534,7 +2534,7 @@
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "WriteNotify",
-          "offset": 598248,
+          "offset": 73960,
           "default": {
             "Cst": 0
           },
@@ -2546,7 +2546,7 @@
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "WriteNotify",
-          "offset": 598252,
+          "offset": 73964,
           "default": {
             "Cst": 0
           },
@@ -2558,7 +2558,7 @@
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "WriteNotify",
-          "offset": 598256,
+          "offset": 73968,
           "default": {
             "Cst": 0
           },
@@ -2570,7 +2570,7 @@
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "WriteNotify",
-          "offset": 598260,
+          "offset": 73972,
           "default": {
             "Cst": 0
           },
@@ -2582,7 +2582,7 @@
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "WriteNotify",
-          "offset": 598264,
+          "offset": 73976,
           "default": {
             "Cst": 0
           },
@@ -2594,7 +2594,7 @@
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "None",
-          "offset": 598268,
+          "offset": 73980,
           "default": {
             "Cst": 0
           },
@@ -2606,7 +2606,7 @@
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "None",
-          "offset": 598272,
+          "offset": 73984,
           "default": {
             "Cst": 0
           },
@@ -2618,7 +2618,7 @@
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "None",
-          "offset": 598276,
+          "offset": 73988,
           "default": {
             "Cst": 0
           },
@@ -2630,7 +2630,7 @@
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "None",
-          "offset": 598280,
+          "offset": 73992,
           "default": {
             "Cst": 0
           },
@@ -2642,7 +2642,7 @@
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "None",
-          "offset": 598284,
+          "offset": 73996,
           "default": {
             "Cst": 0
           },
@@ -2654,7 +2654,7 @@
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "None",
-          "offset": 598288,
+          "offset": 74000,
           "default": {
             "Cst": 0
           },
@@ -2666,7 +2666,7 @@
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "None",
-          "offset": 598292,
+          "offset": 74004,
           "default": {
             "Cst": 0
           },
@@ -2678,7 +2678,7 @@
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "None",
-          "offset": 598296,
+          "offset": 74008,
           "default": {
             "Cst": 0
           },
@@ -2690,7 +2690,7 @@
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "None",
-          "offset": 598300,
+          "offset": 74012,
           "default": {
             "Cst": 0
           },
@@ -2702,7 +2702,7 @@
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "None",
-          "offset": 598304,
+          "offset": 74016,
           "default": {
             "Cst": 0
           },
@@ -2714,7 +2714,7 @@
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "None",
-          "offset": 598308,
+          "offset": 74020,
           "default": {
             "Cst": 0
           },
@@ -2726,7 +2726,7 @@
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "None",
-          "offset": 598312,
+          "offset": 74024,
           "default": {
             "Cst": 0
           },
@@ -2738,7 +2738,7 @@
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "None",
-          "offset": 598316,
+          "offset": 74028,
           "default": {
             "ParamsField": {
               "params": [],
@@ -2898,7 +2898,7 @@
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "None",
-          "offset": 598320,
+          "offset": 74032,
           "default": {
             "ParamsField": {
               "params": [],
@@ -3019,7 +3019,7 @@
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "None",
-          "offset": 598324,
+          "offset": 74036,
           "default": {
             "ParamsField": {
               "params": [],
@@ -3062,7 +3062,7 @@
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "None",
-          "offset": 598328,
+          "offset": 74040,
           "default": {
             "ParamsField": {
               "params": [],
@@ -3104,7 +3104,7 @@
     {
       "name": "entry_cfg_3in3",
       "description": "entry_cfg_3in3 section with known value used for debug.",
-      "offset": 655360,
+      "offset": 131072,
       "bytes_align": 4,
       "range": 16,
       "register": [
@@ -3114,7 +3114,7 @@
           "owner": "Parameter",
           "read_access": "Read",
           "write_access": "None",
-          "offset": 655360,
+          "offset": 131072,
           "default": {
             "Cst": 50529027
           },
@@ -3126,7 +3126,7 @@
           "owner": "Parameter",
           "read_access": "Read",
           "write_access": "None",
-          "offset": 655364,
+          "offset": 131076,
           "default": {
             "Cst": 320017171
           },
@@ -3138,7 +3138,7 @@
           "owner": "Parameter",
           "read_access": "Read",
           "write_access": "None",
-          "offset": 655368,
+          "offset": 131080,
           "default": {
             "Cst": 589505315
           },
@@ -3150,7 +3150,7 @@
           "owner": "Parameter",
           "read_access": "Read",
           "write_access": "None",
-          "offset": 655372,
+          "offset": 131084,
           "default": {
             "Cst": 858993459
           },
@@ -3161,7 +3161,7 @@
     {
       "name": "hbm_axi4_addr_3in3",
       "description": "HBM AXI4 connection address offset",
-      "offset": 655376,
+      "offset": 131088,
       "bytes_align": 4,
       "range": 128,
       "register": [
@@ -3171,7 +3171,7 @@
           "owner": "User",
           "read_access": "Read",
           "write_access": "Write",
-          "offset": 655376,
+          "offset": 131088,
           "default": {
             "Cst": 0
           },
@@ -3183,7 +3183,7 @@
           "owner": "User",
           "read_access": "Read",
           "write_access": "Write",
-          "offset": 655380,
+          "offset": 131092,
           "default": {
             "Cst": 0
           },
@@ -3195,7 +3195,7 @@
           "owner": "User",
           "read_access": "Read",
           "write_access": "Write",
-          "offset": 655384,
+          "offset": 131096,
           "default": {
             "Cst": 0
           },
@@ -3207,7 +3207,7 @@
           "owner": "User",
           "read_access": "Read",
           "write_access": "Write",
-          "offset": 655388,
+          "offset": 131100,
           "default": {
             "Cst": 0
           },
@@ -3219,7 +3219,7 @@
           "owner": "User",
           "read_access": "Read",
           "write_access": "Write",
-          "offset": 655392,
+          "offset": 131104,
           "default": {
             "Cst": 0
           },
@@ -3231,7 +3231,7 @@
           "owner": "User",
           "read_access": "Read",
           "write_access": "Write",
-          "offset": 655396,
+          "offset": 131108,
           "default": {
             "Cst": 0
           },
@@ -3243,7 +3243,7 @@
           "owner": "User",
           "read_access": "Read",
           "write_access": "Write",
-          "offset": 655400,
+          "offset": 131112,
           "default": {
             "Cst": 0
           },
@@ -3255,7 +3255,7 @@
           "owner": "User",
           "read_access": "Read",
           "write_access": "Write",
-          "offset": 655404,
+          "offset": 131116,
           "default": {
             "Cst": 0
           },
@@ -3267,7 +3267,7 @@
           "owner": "User",
           "read_access": "Read",
           "write_access": "Write",
-          "offset": 655408,
+          "offset": 131120,
           "default": {
             "Cst": 0
           },
@@ -3279,7 +3279,7 @@
           "owner": "User",
           "read_access": "Read",
           "write_access": "Write",
-          "offset": 655412,
+          "offset": 131124,
           "default": {
             "Cst": 0
           },
@@ -3291,7 +3291,7 @@
           "owner": "User",
           "read_access": "Read",
           "write_access": "Write",
-          "offset": 655416,
+          "offset": 131128,
           "default": {
             "Cst": 0
           },
@@ -3303,7 +3303,7 @@
           "owner": "User",
           "read_access": "Read",
           "write_access": "Write",
-          "offset": 655420,
+          "offset": 131132,
           "default": {
             "Cst": 0
           },
@@ -3315,7 +3315,7 @@
           "owner": "User",
           "read_access": "Read",
           "write_access": "Write",
-          "offset": 655424,
+          "offset": 131136,
           "default": {
             "Cst": 0
           },
@@ -3327,7 +3327,7 @@
           "owner": "User",
           "read_access": "Read",
           "write_access": "Write",
-          "offset": 655428,
+          "offset": 131140,
           "default": {
             "Cst": 0
           },
@@ -3339,7 +3339,7 @@
           "owner": "User",
           "read_access": "Read",
           "write_access": "Write",
-          "offset": 655432,
+          "offset": 131144,
           "default": {
             "Cst": 0
           },
@@ -3351,7 +3351,7 @@
           "owner": "User",
           "read_access": "Read",
           "write_access": "Write",
-          "offset": 655436,
+          "offset": 131148,
           "default": {
             "Cst": 0
           },
@@ -3363,7 +3363,7 @@
           "owner": "User",
           "read_access": "Read",
           "write_access": "Write",
-          "offset": 655440,
+          "offset": 131152,
           "default": {
             "Cst": 0
           },
@@ -3375,7 +3375,7 @@
           "owner": "User",
           "read_access": "Read",
           "write_access": "Write",
-          "offset": 655444,
+          "offset": 131156,
           "default": {
             "Cst": 0
           },
@@ -3387,7 +3387,7 @@
           "owner": "User",
           "read_access": "Read",
           "write_access": "Write",
-          "offset": 655448,
+          "offset": 131160,
           "default": {
             "Cst": 0
           },
@@ -3399,7 +3399,7 @@
           "owner": "User",
           "read_access": "Read",
           "write_access": "Write",
-          "offset": 655452,
+          "offset": 131164,
           "default": {
             "Cst": 0
           },
@@ -3411,7 +3411,7 @@
           "owner": "User",
           "read_access": "Read",
           "write_access": "Write",
-          "offset": 655456,
+          "offset": 131168,
           "default": {
             "Cst": 0
           },
@@ -3423,7 +3423,7 @@
           "owner": "User",
           "read_access": "Read",
           "write_access": "Write",
-          "offset": 655460,
+          "offset": 131172,
           "default": {
             "Cst": 0
           },
@@ -3435,7 +3435,7 @@
           "owner": "User",
           "read_access": "Read",
           "write_access": "Write",
-          "offset": 655464,
+          "offset": 131176,
           "default": {
             "Cst": 0
           },
@@ -3447,7 +3447,7 @@
           "owner": "User",
           "read_access": "Read",
           "write_access": "Write",
-          "offset": 655468,
+          "offset": 131180,
           "default": {
             "Cst": 0
           },
@@ -3459,7 +3459,7 @@
           "owner": "User",
           "read_access": "Read",
           "write_access": "Write",
-          "offset": 655472,
+          "offset": 131184,
           "default": {
             "Cst": 0
           },
@@ -3471,7 +3471,7 @@
           "owner": "User",
           "read_access": "Read",
           "write_access": "Write",
-          "offset": 655476,
+          "offset": 131188,
           "default": {
             "Cst": 0
           },
@@ -3483,7 +3483,7 @@
           "owner": "User",
           "read_access": "Read",
           "write_access": "Write",
-          "offset": 655480,
+          "offset": 131192,
           "default": {
             "Cst": 0
           },
@@ -3495,7 +3495,7 @@
           "owner": "User",
           "read_access": "Read",
           "write_access": "Write",
-          "offset": 655484,
+          "offset": 131196,
           "default": {
             "Cst": 0
           },
@@ -3507,7 +3507,7 @@
           "owner": "User",
           "read_access": "Read",
           "write_access": "Write",
-          "offset": 655488,
+          "offset": 131200,
           "default": {
             "Cst": 0
           },
@@ -3519,7 +3519,7 @@
           "owner": "User",
           "read_access": "Read",
           "write_access": "Write",
-          "offset": 655492,
+          "offset": 131204,
           "default": {
             "Cst": 0
           },
@@ -3531,7 +3531,7 @@
           "owner": "User",
           "read_access": "Read",
           "write_access": "Write",
-          "offset": 655496,
+          "offset": 131208,
           "default": {
             "Cst": 0
           },
@@ -3543,7 +3543,7 @@
           "owner": "User",
           "read_access": "Read",
           "write_access": "Write",
-          "offset": 655500,
+          "offset": 131212,
           "default": {
             "Cst": 0
           },
@@ -3554,7 +3554,7 @@
     {
       "name": "hpu_reset",
       "description": "Used to control the HPU soft reset",
-      "offset": 655616,
+      "offset": 131328,
       "bytes_align": 4,
       "range": 4,
       "register": [
@@ -3564,7 +3564,7 @@
           "owner": "Kernel",
           "read_access": "ReadNotify",
           "write_access": "WriteNotify",
-          "offset": 655616,
+          "offset": 131328,
           "default": {
             "ParamsField": {
               "params": [],
@@ -3606,7 +3606,7 @@
     {
       "name": "entry_prc_3in3",
       "description": "entry_prc_3in3 section with known value used for debug.",
-      "offset": 720896,
+      "offset": 196608,
       "bytes_align": 4,
       "range": 16,
       "register": [
@@ -3616,7 +3616,7 @@
           "owner": "Parameter",
           "read_access": "Read",
           "write_access": "None",
-          "offset": 720896,
+          "offset": 196608,
           "default": {
             "Cst": 67372036
           },
@@ -3628,7 +3628,7 @@
           "owner": "Parameter",
           "read_access": "Read",
           "write_access": "None",
-          "offset": 720900,
+          "offset": 196612,
           "default": {
             "Cst": 336860180
           },
@@ -3640,7 +3640,7 @@
           "owner": "Parameter",
           "read_access": "Read",
           "write_access": "None",
-          "offset": 720904,
+          "offset": 196616,
           "default": {
             "Cst": 606348324
           },
@@ -3652,7 +3652,7 @@
           "owner": "Parameter",
           "read_access": "Read",
           "write_access": "None",
-          "offset": 720908,
+          "offset": 196620,
           "default": {
             "Cst": 875836468
           },
@@ -3663,7 +3663,7 @@
     {
       "name": "status_3in3",
       "description": "HPU status of parts 2in3 and 3in3",
-      "offset": 720912,
+      "offset": 196624,
       "bytes_align": 4,
       "range": 4,
       "register": [
@@ -3673,7 +3673,7 @@
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "WriteNotify",
-          "offset": 720912,
+          "offset": 196624,
           "default": {
             "ParamsField": {
               "params": [],
@@ -3702,7 +3702,7 @@
     {
       "name": "bsk_avail",
       "description": "BSK availability configuration",
-      "offset": 724992,
+      "offset": 200704,
       "bytes_align": 4,
       "range": 8,
       "register": [
@@ -3712,7 +3712,7 @@
           "owner": "User",
           "read_access": "Read",
           "write_access": "Write",
-          "offset": 724992,
+          "offset": 200704,
           "default": {
             "ParamsField": {
               "params": [],
@@ -3742,7 +3742,7 @@
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "WriteNotify",
-          "offset": 724996,
+          "offset": 200708,
           "default": {
             "ParamsField": {
               "params": [],
@@ -3784,7 +3784,7 @@
     {
       "name": "runtime_3in3",
       "description": "Runtime information",
-      "offset": 729088,
+      "offset": 204800,
       "bytes_align": 4,
       "range": 72,
       "register": [
@@ -3794,7 +3794,7 @@
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "WriteNotify",
-          "offset": 729088,
+          "offset": 204800,
           "default": {
             "Cst": 0
           },
@@ -3806,7 +3806,7 @@
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "WriteNotify",
-          "offset": 729092,
+          "offset": 204804,
           "default": {
             "Cst": 0
           },
@@ -3818,7 +3818,7 @@
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "WriteNotify",
-          "offset": 729096,
+          "offset": 204808,
           "default": {
             "Cst": 0
           },
@@ -3830,7 +3830,7 @@
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "WriteNotify",
-          "offset": 729100,
+          "offset": 204812,
           "default": {
             "Cst": 0
           },
@@ -3842,7 +3842,7 @@
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "WriteNotify",
-          "offset": 729104,
+          "offset": 204816,
           "default": {
             "Cst": 0
           },
@@ -3854,7 +3854,7 @@
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "WriteNotify",
-          "offset": 729108,
+          "offset": 204820,
           "default": {
             "Cst": 0
           },
@@ -3866,7 +3866,7 @@
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "WriteNotify",
-          "offset": 729112,
+          "offset": 204824,
           "default": {
             "Cst": 0
           },
@@ -3878,7 +3878,7 @@
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "WriteNotify",
-          "offset": 729116,
+          "offset": 204828,
           "default": {
             "Cst": 0
           },
@@ -3890,7 +3890,7 @@
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "WriteNotify",
-          "offset": 729120,
+          "offset": 204832,
           "default": {
             "Cst": 0
           },
@@ -3902,7 +3902,7 @@
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "WriteNotify",
-          "offset": 729124,
+          "offset": 204836,
           "default": {
             "Cst": 0
           },
@@ -3914,7 +3914,7 @@
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "WriteNotify",
-          "offset": 729128,
+          "offset": 204840,
           "default": {
             "Cst": 0
           },
@@ -3926,7 +3926,7 @@
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "WriteNotify",
-          "offset": 729132,
+          "offset": 204844,
           "default": {
             "Cst": 0
           },
@@ -3938,7 +3938,7 @@
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "WriteNotify",
-          "offset": 729136,
+          "offset": 204848,
           "default": {
             "Cst": 0
           },
@@ -3950,7 +3950,7 @@
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "WriteNotify",
-          "offset": 729140,
+          "offset": 204852,
           "default": {
             "Cst": 0
           },
@@ -3962,7 +3962,7 @@
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "WriteNotify",
-          "offset": 729144,
+          "offset": 204856,
           "default": {
             "Cst": 0
           },
@@ -3974,7 +3974,7 @@
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "WriteNotify",
-          "offset": 729148,
+          "offset": 204860,
           "default": {
             "Cst": 0
           },
@@ -3986,7 +3986,7 @@
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "None",
-          "offset": 729152,
+          "offset": 204864,
           "default": {
             "ParamsField": {
               "params": [],
@@ -4029,7 +4029,7 @@
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "None",
-          "offset": 729156,
+          "offset": 204868,
           "default": {
             "ParamsField": {
               "params": [],
@@ -4084,7 +4084,7 @@
     {
       "name": "system",
       "description": "system configuration",
-      "offset": 851968,
+      "offset": 327680,
       "bytes_align": 4,
       "range": 16,
       "register": [
@@ -4094,7 +4094,7 @@
           "owner": "User",
           "read_access": "Read",
           "write_access": "Write",
-          "offset": 851968,
+          "offset": 327680,
           "default": {
             "Cst": 0
           },
@@ -4106,7 +4106,7 @@
           "owner": "User",
           "read_access": "Read",
           "write_access": "Write",
-          "offset": 851972,
+          "offset": 327684,
           "default": {
             "Cst": 0
           },
@@ -4118,7 +4118,7 @@
           "owner": "User",
           "read_access": "Read",
           "write_access": "Write",
-          "offset": 851976,
+          "offset": 327688,
           "default": {
             "ParamsField": {
               "params": [],
@@ -4187,7 +4187,7 @@
           "owner": "Parameter",
           "read_access": "Read",
           "write_access": "None",
-          "offset": 851980,
+          "offset": 327692,
           "default": {
             "Cst": 892679477
           },
@@ -4198,7 +4198,7 @@
     {
       "name": "reset",
       "description": "different resets are available",
-      "offset": 851988,
+      "offset": 327700,
       "bytes_align": 4,
       "range": 8,
       "register": [
@@ -4208,7 +4208,7 @@
           "owner": "User",
           "read_access": "Read",
           "write_access": "Write",
-          "offset": 851988,
+          "offset": 327700,
           "default": {
             "ParamsField": {
               "params": [],
@@ -4264,7 +4264,7 @@
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "None",
-          "offset": 851992,
+          "offset": 327704,
           "default": {
             "ParamsField": {
               "params": [],
@@ -4293,7 +4293,7 @@
     {
       "name": "line",
       "description": "Line parameter sections",
-      "offset": 856064,
+      "offset": 331776,
       "bytes_align": 4,
       "range": 4,
       "register": [
@@ -4303,7 +4303,7 @@
           "owner": "User",
           "read_access": "Read",
           "write_access": "Write",
-          "offset": 856064,
+          "offset": 331776,
           "default": {
             "ParamsField": {
               "params": [],
@@ -4358,7 +4358,7 @@
     {
       "name": "fifo_write",
       "description": "fifo write part",
-      "offset": 856092,
+      "offset": 331804,
       "bytes_align": 4,
       "range": 16,
       "register": [
@@ -4368,7 +4368,7 @@
           "owner": "User",
           "read_access": "Read",
           "write_access": "Write",
-          "offset": 856092,
+          "offset": 331804,
           "default": {
             "Cst": 0
           },
@@ -4380,7 +4380,7 @@
           "owner": "User",
           "read_access": "Read",
           "write_access": "Write",
-          "offset": 856096,
+          "offset": 331808,
           "default": {
             "Cst": 0
           },
@@ -4392,7 +4392,7 @@
           "owner": "User",
           "read_access": "Read",
           "write_access": "Write",
-          "offset": 856100,
+          "offset": 331812,
           "default": {
             "Cst": 0
           },
@@ -4404,7 +4404,7 @@
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "None",
-          "offset": 856104,
+          "offset": 331816,
           "default": {
             "Cst": 0
           },
@@ -4415,7 +4415,7 @@
     {
       "name": "fifo_read",
       "description": "fifo write part",
-      "offset": 856108,
+      "offset": 331820,
       "bytes_align": 4,
       "range": 12,
       "register": [
@@ -4425,7 +4425,7 @@
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "None",
-          "offset": 856108,
+          "offset": 331820,
           "default": {
             "Cst": 0
           },
@@ -4437,7 +4437,7 @@
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "None",
-          "offset": 856112,
+          "offset": 331824,
           "default": {
             "Cst": 0
           },
@@ -4449,7 +4449,7 @@
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "None",
-          "offset": 856116,
+          "offset": 331828,
           "default": {
             "Cst": 0
           },
@@ -4460,7 +4460,7 @@
     {
       "name": "cnt",
       "description": "fifo write part",
-      "offset": 856124,
+      "offset": 331836,
       "bytes_align": 4,
       "range": 12,
       "register": [
@@ -4470,7 +4470,7 @@
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "None",
-          "offset": 856124,
+          "offset": 331836,
           "default": {
             "Cst": 0
           },
@@ -4482,7 +4482,7 @@
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "None",
-          "offset": 856128,
+          "offset": 331840,
           "default": {
             "Cst": 0
           },
@@ -4494,7 +4494,7 @@
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "None",
-          "offset": 856132,
+          "offset": 331844,
           "default": {
             "Cst": 0
           },
@@ -4505,7 +4505,7 @@
     {
       "name": "stat",
       "description": "fifo write part",
-      "offset": 856140,
+      "offset": 331852,
       "bytes_align": 4,
       "range": 28,
       "register": [
@@ -4515,7 +4515,7 @@
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "None",
-          "offset": 856140,
+          "offset": 331852,
           "default": {
             "Cst": 0
           },
@@ -4527,7 +4527,7 @@
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "None",
-          "offset": 856144,
+          "offset": 331856,
           "default": {
             "Cst": 0
           },
@@ -4539,7 +4539,7 @@
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "None",
-          "offset": 856148,
+          "offset": 331860,
           "default": {
             "Cst": 0
           },
@@ -4551,7 +4551,7 @@
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "None",
-          "offset": 856152,
+          "offset": 331864,
           "default": {
             "Cst": 0
           },
@@ -4563,7 +4563,7 @@
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "None",
-          "offset": 856156,
+          "offset": 331868,
           "default": {
             "Cst": 0
           },
@@ -4575,7 +4575,7 @@
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "None",
-          "offset": 856160,
+          "offset": 331872,
           "default": {
             "Cst": 0
           },
@@ -4587,7 +4587,7 @@
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "None",
-          "offset": 856164,
+          "offset": 331876,
           "default": {
             "Cst": 0
           },

@@ -1,7 +1,7 @@
 // ============================================================================================== //
 // Description  : Axi4-lite register bank
 // This file was generated with rust regmap generator:
-//  * Date:  2025-07-28
+//  * Date:  2025-10-06
 //  * Tool_version: bb0db737792da6b81e69a039028c971af1627fe2
 // ---------------------------------------------------------------------------------------------- //
 // xR[n]W[na]
@@ -12,17 +12,17 @@
 //  | [n] optional generate read notification (have a _rd_en)
 //  | Write options
 //  | [n] optional generate wr notification (have a _wr_en)
-//
+// 
 // Thus type of registers are:
-// uRW  : Read-write
+// uRW  : Read-write                                              
 //      : Value provided by the host. The host can read it and write it.
-// uW   : Write-only
+// uW   : Write-only                                              
 //      : Value provided by the host. The host can only write it.
-// uWn  : Write-only with notification
+// uWn  : Write-only with notification                            
 //      : Value provided by the host. The host can only write it.
-// kR   : Read-only register
+// kR   : Read-only register                                      
 //      : Value provided by the RTL.
-// kRn  : Read-only register with notification  (rd)
+// kRn  : Read-only register with notification  (rd)              
 //      : Value provided by the RTL.
 // kRWn : Read-only register with notification (wr)
 //      : Value provided by the RTL. The host can read it. The write data is processed by the RTL.
@@ -30,8 +30,8 @@
 //      : Value provided by the RTL. The host can read it with notify. The write data is processed by the RTL.
 // ============================================================================================== //
 module hpu_regif_core_prc_1in3
-import axi_if_shell_axil_pkg::*;
 import axi_if_common_param_pkg::*;
+import axi_if_shell_axil_pkg::*;
 import hpu_regif_core_prc_1in3_pkg::*;
 #()(
   input  logic                           clk,
@@ -361,7 +361,7 @@ import hpu_regif_core_prc_1in3_pkg::*;
 // ============================================================================================== --
 // localparam
 // ============================================================================================== --
-  localparam int AXIL_ADD_OFS = 'h90000;
+  localparam int AXIL_ADD_OFS = 'h10000;
   localparam int AXIL_ADD_RANGE= 'h10000; // Should be a power of 2
   localparam int AXIL_ADD_RANGE_W = $clog2(AXIL_ADD_RANGE);
   localparam [AXIL_ADD_W-1:0] AXIL_ADD_RANGE_MASK = AXIL_ADD_W'(AXIL_ADD_RANGE - 1);
