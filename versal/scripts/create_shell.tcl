@@ -55,7 +55,6 @@ source "${PROJECT_DIR}/versal/scripts/bd/bd_${SHELL_VER}.tcl"
 
 assign_bd_address
 
-save_bd_design
 validate_bd_design
 
 save_bd_design
