@@ -29,6 +29,8 @@ DEFAULT_RTL_FLAGS := "-F TOP_BATCH TOP_BATCH_TOPhpu_BPBS16_TPBS32 -F TOP_PCMAX  
 # By default we want to build vivado projects from scratch : from project generation
 DEFAULT_STEP := "new"
 DEFAULT_STAGE := "all"
+DEFAULT_SN := "auto"
+DEFAULT_BUS := "auto"
 
 DEFAULT_VIVADO_OPT := 'D:MEMORY_FILE_PATH=\"${PROJECT_DIR}/hw/\"'
 
@@ -94,13 +96,50 @@ build TOP_IP STEP=DEFAULT_STEP RTL_FLAGS=DEFAULT_RTL_FLAGS VIVADO_OPT=DEFAULT_VI
   export DESIGN_NAME={{TOP_IP}}
   vivado -log {{OUTDIR}}/vivado_integration_{{STEP}}.log -nojournal -mode batch -source {{SCRIPT_DIR}}/build_all.tcl -tclargs {{OUTDIR}} {{STEP}} "{{VIVADO_OPT}}" | tee {{OUTDIR}}/just_build_{{TOP_IP}}.log
 
-program TOP_IP SERIAL_NUMBER STAGE=DEFAULT_STAGE:
+program TOP_IP HOW_MANY START_BUS=DEFAULT_BUS SN=DEFAULT_SN STAGE=DEFAULT_STAGE:
   #!/usr/bin/env bash
+
+  # Mandatory | TOP_IP    : the name of the bitstream
+  # Mandatory | HOW_MANY  : the numbers of boards to program
+  # Optionnal | START_BUS : the bus in bus:device:function of the first board to program
+  # Optionnal | SN        : the serial number of the board we want to program
+  # Optionnal | STAGE     : what tandem stage we want to perform
+
   TOP_IP={{TOP_IP}}
+  HOW_MANY={{HOW_MANY}}
+  START_BUS={{START_BUS}}
+  SN={{SN}}
   STAGE={{STAGE}}
+
   DRIVERS=("qdma_pf" "ami")
 
   [[ "$STAGE" != "stage1" && "$STAGE" != "stage2" && "$STAGE" != "all" ]] && echo "[ERROR] please choose a correct stage \"all\", \"stage1\" or \"stage2\"" && exit 1
+
+  get_boards_and_serials() {
+    mapfile -t bus_l < <(lspci -d "10ee:50b4" | cut -d':' -f1)
+
+    # in order to insure that the list starts empty
+    serial_l=()
+
+    iter=0
+    for bus_id in "${bus_l[@]}"; do
+        local serial_file="/sys/bus/pci/devices/0000:${bus_id}:00.0/board_serial"
+        if [ -r "$serial_file" ]; then
+            serial_l["$iter"]=$(cat "$serial_file" | tr -d '\n')
+        else
+            serial_l["$iter"]="UNKNOWN"
+        fi
+      ((iter++))
+    done
+
+    echo "--- Board mapping --- "
+    echo "Total boards present: ${#bus_l[@]}"
+    iter=0
+    for bus in "${bus_l[@]}"; do
+      echo "$bus Bus ${bus_l[$iter]} -> Serial: ${serial_l[$iter]}"
+      ((iter++))
+    done
+  }
 
   # Function to check if a driver is loaded
   check_driver() {
@@ -114,52 +153,106 @@ program TOP_IP SERIAL_NUMBER STAGE=DEFAULT_STAGE:
       done
   }
 
-  if [[ "$STAGE" = "all" || "$STAGE" = "stage1" ]]; then
-    echo "[INFO] Stage 1 programming"
-    STAGE1_PATH=$(realpath "output/${TOP_IP}_tandem1.pdi")
+  stage1_programming() {
+    local BOARD_SN=$1
+    local STAGE1_PATH=$(realpath "output/${TOP_IP}_tandem1.pdi")
 
-    # checks
+    echo "[INFO] Stage 1 programming for $BOARD_SN"
     check_driver
     [ ! -f "$STAGE1_PATH" ] && { echo "[ERROR] $STAGE1_PATH not found" && exit 1; } || { echo "[INFO] Found $STAGE1_PATH"; }
+    vivado -mode batch -source scripts/jtag/program_stage1.tcl -tclargs $STAGE1_PATH $BOARD_SN
+  }
+  stage2_programming() {
+    local BOARD_BUS=$1
+    local QMAX="/sys/bus/pci/devices/0000:$BOARD_BUS:00.1/qdma/qmax"
+    local STAGE2_PATH=$(realpath "output/${TOP_IP}_tandem2.pdi")
+    local STAGE2_SIZE=$(stat -c%s $STAGE2_PATH)
 
-    vivado -mode batch -source scripts/jtag/program_stage1.tcl -tclargs $STAGE1_PATH {{SERIAL_NUMBER}}
-  fi
+    echo "[INFO] Stage 2 programming of $BOARD_BUS"
 
-  if [[ "$STAGE" = "all" || "$STAGE" = "stage2" ]]; then
-    echo "[INFO] Stage 2 programming"
-
-    PCIE_CARD=$(lspci -d 10ee:50b4)
-    DEVICE="${PCIE_CARD%%:*}"
-    QMAX="/sys/bus/pci/devices/0000:$DEVICE:00.1/qdma/qmax"
-    STAGE2_PATH=$(realpath "output/${TOP_IP}_tandem2.pdi")
-    STAGE2_SIZE=$(stat -c%s $STAGE2_PATH)
-
-    # checks
-    [ -z "$PCIE_CARD" ] && { echo "[ERROR] V80 PCI device not found" && exit 1; } || { echo "[INFO] Found PCI device"; }
     check_driver
     [ ! -f "$STAGE2_PATH" ] && { echo "[ERROR] $STAGE2_PATH not found" && exit 1; } || { echo "[INFO] Found $STAGE2_PATH"; }
     bootgen -arch versal -read $STAGE2_PATH | grep "rpu_subsystem" && { echo "[INFO] Found elf in stage 2 $STAGE2_PATH"; } || \
     { echo "[ERROR] No elf found in $STAGE2_PATH ... abort" ; exit 1; }
 
+
     echo "[INFO] Updating physical functions status"
-    sudo bash -c "echo 1 > /sys/bus/pci/devices/0000:$DEVICE:00.0/remove"
-    sudo bash -c "echo 1 > /sys/bus/pci/devices/0000:$DEVICE:00.1/remove"
+    sudo bash -c "echo 1 > /sys/bus/pci/devices/0000:$BOARD_BUS:00.0/remove"
+    sudo bash -c "echo 1 > /sys/bus/pci/devices/0000:$BOARD_BUS:00.1/remove"
     sudo bash -c "echo 1 > /sys/bus/pci/rescan"
     sleep 2
 
     echo "[INFO] Initializing queues"
     sudo bash -c "echo 100 > $QMAX"
-    dma-ctl qdma${DEVICE}001 q add idx 0 dir h2c
-    dma-ctl qdma${DEVICE}001 q start idx 0 dir h2c aperture_sz 4096
+    dma-ctl qdma${BOARD_BUS}001 q add idx 0 dir h2c
+    dma-ctl qdma${BOARD_BUS}001 q start idx 0 dir h2c aperture_sz 4096
 
     echo "[INFO] Programming stage 2 bitstream"
-    dma-to-device -d /dev/qdma${DEVICE}001-MM-0 -f ${STAGE2_PATH} -s ${STAGE2_SIZE} -a 0x000102100000
+    dma-to-device -d /dev/qdma${BOARD_BUS}001-MM-0 -f ${STAGE2_PATH} -s ${STAGE2_SIZE} -a 0x000102100000
 
     echo "[INFO] Reloading drivers and updating pci registers"
     # we must wait a bit for everything to settle down
     sleep 1
-    sudo bash -c "echo 1 > /sys/bus/pci/devices/0000:$DEVICE:00.0/remove"
+    sudo bash -c "echo 1 > /sys/bus/pci/devices/0000:$BOARD_BUS:00.0/remove"
     sudo bash -c "echo 1 > /sys/bus/pci/rescan"
+  }
+
+  # Mandatory | TOP_IP    : the name of the bitstream
+  # Mandatory | HOW_MANY  : the numbers of boards to program
+  # Optionnal | START_BUS : the bus in bus:device:function of the first board to program
+  # Optionnal | SN        : the serial number of the board we want to program
+  # Optionnal | STAGE     : what tandem stage we want to perform
+  get_boards_and_serials
+
+  if [ "$START_BUS" != "auto" ]; then
+    echo "[INFO] You selected $START_BUS for start bus identifier"
+    id=0
+    for element in "${bus_l[@]}"; do
+      if [[ "$element" = "$START_BUS" ]]; then
+          index=$id
+          break
+      fi
+    ((id++))
+    done
+  fi
+
+  # check that the user does not request too much boards
+  if [ "$HOW_MANY" -gt "${#bus_l[@]}" ]; then
+    echo "[ERROR] you have requested more boards that there is in this server"
+    exit 1
+  fi
+  if (( HOW_MANY + id > ${#bus_l[@]} )); then
+    echo "[ERROR] you have requested more boards that there is in this server"
+    exit 1
+  fi
+  echo $id
+
+  if [ "$SN" != "auto" ]; then
+    # then there is only one board to program
+    if [ "$STAGE" == stage1 ]; then
+      stage1_programming $SN
+    elif [ "$STAGE" == stage2 ]; then
+      stage2_programming $START_BUS
+    else
+      stage1_programming $SN
+      stage2_programming $START_BUS
+    fi
+  else
+    for ((i = $index; i < ($HOW_MANY + $index); i++)); do
+      echo "Programming: ${bus_l[i]} / ${serial_l[i]}"
+      if [ "${serial_l[i]}" = "UNKOWN" ]; then
+        echo "[ERROR] cannot program the board, exiting program.."
+        exit 1
+      fi
+      if [ "$STAGE" == stage1 ]; then
+        stage1_programming ${serial_l[i]}
+      elif [ "$STAGE" == stage2 ]; then
+        stage2_programming ${bus_l[i]}
+      else
+        stage1_programming ${serial_l[i]}
+        stage2_programming ${bus_l[i]}
+      fi
+    done
   fi
 
 #------------------------------------------------
@@ -273,3 +366,8 @@ _out-folder:
  echo "INFO> output directory :" {{OUTDIR}}
  mkdir -p {{OUTDIR}}
  echo "===================================="
+
+
+
+
+
