@@ -4172,7 +4172,7 @@
             },
             {
               "name": "debug",
-              "description": "States wherether we are in debug mode",
+              "description": "States whether we are in debug mode",
               "size_b": 1,
               "offset_b": 31,
               "default": {
@@ -4299,7 +4299,7 @@
       "register": [
         {
           "name": "debug",
-          "description": "Different parameters for debuging qsfp lines",
+          "description": "Different parameters for debugging qsfp lines",
           "owner": "User",
           "read_access": "Read",
           "write_access": "Write",

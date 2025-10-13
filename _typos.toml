@@ -24,6 +24,7 @@ extend-ignore-re = [
     # proper noun
     "Toom-Cook",
     "SerDes",
+    "BA",
 ]
 
 [files]

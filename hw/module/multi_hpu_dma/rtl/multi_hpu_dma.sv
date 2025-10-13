@@ -241,7 +241,7 @@ module multi_hpu_dma
   // ----------------------------------------------------------------------------------------------
   //  - 0: DEBUG     : regfile must be able to read and write directly to the two FIFOs
   // ----------------------------------------------------------------------------------------------
-  //  - 1: FIFO_LOOP : after initialisation, we are sending continously what is in the fifo
+  //  - 1: FIFO_LOOP : after initialisation, we are sending continuously what is in the fifo
   //                   stop sending data in TX when this mode changes
   // ----------------------------------------------------------------------------------------------
   //  - 2: RX_TO_TX  : sends what is received in rx to tx link

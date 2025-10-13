@@ -461,7 +461,7 @@ module hpu_3parts_2in3_core
     .AXIS_TDATA_W(AXIS_TDATA_W),
     .AXIS_TKEEP_W(AXIS_TKEEP_W)
   ) multi_hpu_dma (
-    // configration interface: regif
+    // configuration interface: regif
     .clk_eth_cfg   (cfg_eth_clk),
     .resetn_eth_cfg(cfg_eth_srst_n),
 

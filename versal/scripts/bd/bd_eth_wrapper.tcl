@@ -446,7 +446,7 @@ proc create_hier_cell_eth_wrapper  { parentCell nameHier } {
   # Create instance within hier object: mrmac_0_gt_wrapper
   create_hier_cell_mrmac_0_gt_wrapper $hier_obj mrmac_0_gt_wrapper
 
-  # modules for tranceiver <-> MRMAC connections
+  # modules for transceiver <-> MRMAC connections
   # resets
   set concat_4_flexif_reset    [create_bd_cell -type inline_hdl -vlnv xilinx.com:inline_hdl:ilconcat:1.0 concat_4_flexif_reset]
 

@@ -361,7 +361,7 @@ module tb_debug_mode;
       // (2) ASSIGN MAC REGISTERS ------------------------------------------------------------------
       maxil_drv_if.write_trans(SYSTEM_SRC_MAC_ADDR_OFS, DEFAULT_SRC_MAC_ADDR_OFS);
       maxil_drv_if.write_trans(SYSTEM_DST_MAC_ADDR_OFS, DEFAULT_DST_MAC_ADDR_OFS);
-      // (3) ASSGIN REGISTERS & CHECK -------------------------------------------------------------
+      // (3) ASSIGN REGISTERS & CHECK -------------------------------------------------------------
     line_rate     = 8'hAB;  // random, no idea what it should be
     line_loopback = 3'b100; // 3 near end pcs loopback
     line_select   = 2'b10;  // 2nd line selected

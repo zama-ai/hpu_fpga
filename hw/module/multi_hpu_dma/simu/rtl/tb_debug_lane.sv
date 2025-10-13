@@ -233,7 +233,7 @@ module tb_debug_lane;
     //  2- launch several reads
     //
     // a checker below is checking that the values seen in r_rd_word has changed and that the
-    // values match the ones we send trhough axi4-stream
+    // values match the ones we send through axi4-stream
     // --------------------------------------------------------------------------------------------
 
     // (1)

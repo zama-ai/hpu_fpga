@@ -2,9 +2,9 @@
 // BSD 3-Clause Clear License
 // Copyright © 2025 ZAMA. All rights reserved.
 // ----------------------------------------------------------------------------------------------
-// Description  : Handler for XPM FIFO ASYNC on rx and TX sides
+// Description  : Module for debugging and tracing
 // ----------------------------------------------------------------------------------------------
-//
+// Enables to read and write from a specific, previously defined lane.
 // ==============================================================================================
 
 module debug_lane #(
@@ -141,7 +141,7 @@ module debug_lane #(
     .SIM_ASSERT_CHK(SIM_ASSERT_CHK)
   ) xpm_fifo_tx (
     .sleep        (1'b0),            // to simplify let's not use power saving mode
-    .rst          (~s_rstn_control), // must be syncronous to wr reset
+    .rst          (~s_rstn_control), // must be synchronous to wr reset
     // Write Domain ports
     .wr_clk       (clk_control),
     .wr_en        (tx_wr_en),
@@ -323,7 +323,7 @@ module debug_lane #(
     .SIM_ASSERT_CHK(SIM_ASSERT_CHK)
   ) xpm_fifo_rx (
     .sleep        (1'b0),         // to simplify let's not use power saving mode
-    .rst          (~s_rstn_mrmac), // must be syncronous to wr reset
+    .rst          (~s_rstn_mrmac), // must be synchronous to wr reset
     // Write Domain ports
     .wr_clk       (clk_mrmac),
     .wr_en        (rx_wr_en),

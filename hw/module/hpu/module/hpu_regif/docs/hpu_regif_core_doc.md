@@ -4055,7 +4055,7 @@ Register line contains following Sub-fields:
 | select      | 0 | 2 |0| line selection |
 | loopback      | 2 | 3 |0| line loopback configurations |
 | rate      | 5 | 8 |0| line rates |
-| debug      | 31 | 1 |0| States wherether we are in debug mode |
+| debug      | 31 | 1 |0| States whether we are in debug mode |
 
 
 
@@ -4152,7 +4152,7 @@ Below is a summary of all the registers in the current section line:
 
 | Name             | Offset | Access | Description |
 |-----------------:|:------:|:------:|:------------|
-| [debug](#register-linedebug) | 0x51000 | RW |  Different parameters for debuging qsfp lines |
+| [debug](#register-linedebug) | 0x51000 | RW |  Different parameters for debugging qsfp lines |
 
 
 ---
@@ -4160,7 +4160,7 @@ Below is a summary of all the registers in the current section line:
 
 ### Register line.debug
 
-- **Description**: Different parameters for debuging qsfp lines
+- **Description**: Different parameters for debugging qsfp lines
 - **Owner**: User
 - **Read Access**: Read
 - **Write Access**: Write

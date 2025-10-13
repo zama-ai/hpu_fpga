@@ -68,7 +68,7 @@ offset= 0x1000
 description="Line parameter sections"
 
 [section.line.register.debug]
-  description="Different parameters for debuging qsfp lines"
+  description="Different parameters for debugging qsfp lines"
   owner="User"
   read_access="Read"
   write_access="Write"
