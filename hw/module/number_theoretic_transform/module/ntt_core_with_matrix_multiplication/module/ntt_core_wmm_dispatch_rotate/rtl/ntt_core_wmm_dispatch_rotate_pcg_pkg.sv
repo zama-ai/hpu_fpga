@@ -25,7 +25,7 @@ package ntt_core_wmm_dispatch_rotate_pcg_pkg;
   localparam int PARAM_OFS_ITER_CONS_NB       = 10;
   localparam int PARAM_OFS_ITER_SET_NB        = 11;
 
-  function [PARAM_NB-1:0][31:0] get_pcg_param(int R, int PSI, int S, int STG_ITER_NB, int DELTA_IDX);
+  function automatic [PARAM_NB-1:0][31:0] get_pcg_param(int R, int PSI, int S, int STG_ITER_NB, int DELTA_IDX);
     int GROUP_SIZE;
     int GROUP_NB;
     int TOTAL_GROUP_NB;
@@ -165,7 +165,7 @@ package ntt_core_wmm_dispatch_rotate_pcg_pkg;
   localparam int LS_PARAM_OFS_SET_NB       = 2;
   localparam int LS_PARAM_OFS_ITER_CONS_NB = 3;
 
-  function [LS_PARAM_NB-1:0][31:0] get_pcg_ls_param(int R, int PSI, int S, int STG_ITER_NB, int DELTA_IDX);
+  function automatic [LS_PARAM_NB-1:0][31:0] get_pcg_ls_param(int R, int PSI, int S, int STG_ITER_NB, int DELTA_IDX);
     int CONS_NB;
     int OCC_NB;
     int SET_NB;

@@ -126,7 +126,7 @@ module stream_source
 //--------------------------------------
 // open
 //--------------------------------------
-  function int open (input string name = FILENAME);
+  function automatic int open (input string name = FILENAME);
     int r;
     cur_file_name   = name;
     eof             = 0;

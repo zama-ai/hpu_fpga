@@ -13,7 +13,7 @@
 package arith_mult_cst_solinas2_44_14_inv_pkg;
   // LATENCY of arith_mult_cst__solinas2_44_14_inv.
   // This function enables parent module to have access to the default LATENCY value.
-  function int get_latency();
+  function automatic int get_latency();
     return 2; // 1 + output register
   endfunction
 endpackage

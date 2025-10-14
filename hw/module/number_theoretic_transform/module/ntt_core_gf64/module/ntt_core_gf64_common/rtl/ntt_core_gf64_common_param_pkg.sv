@@ -61,7 +61,7 @@ package ntt_core_gf64_common_param_pkg;
 // ============================================================================================== --
   // /!\ Warning: here the stages are numbered from 0 to S-1, in this increasing order.
   // For each stage
-  function [S-1:0] get_stg_is_ngc();
+  function automatic [S-1:0] get_stg_is_ngc();
     var [S-1:0] is_ngc;
     is_ngc = '0;
     for (int i=0; i<NTT_RDX_CUT_S[0]; i=i+1)
@@ -69,7 +69,7 @@ package ntt_core_gf64_common_param_pkg;
     return is_ngc;
   endfunction
 
-  function [S-1:0][31:0] get_stg_rdx_id();
+  function automatic [S-1:0][31:0] get_stg_rdx_id();
     integer i;
     i = 0;
     for (int c=0; c<NTT_RDX_CUT_NB; c=c+1)
@@ -79,7 +79,7 @@ package ntt_core_gf64_common_param_pkg;
       end
   endfunction
 
-  function [S-1:0][31:0] get_rdx_cut_id_list();
+  function automatic [S-1:0][31:0] get_rdx_cut_id_list();
     integer i;
     i = 0;
     for (int c=0; c<NTT_RDX_CUT_NB; c=c+1)
@@ -92,7 +92,7 @@ package ntt_core_gf64_common_param_pkg;
 
   // Give the ngc nature of the phi multiplication of the current radix column
   // according to RDX_CUT_ID and BWD.
-  function bit is_ngc(int rdx_col_id, bit bwd);
+  function automatic bit is_ngc(int rdx_col_id, bit bwd);
     is_ngc = bwd ? rdx_col_id == 0 : rdx_col_id == 1; // Since the numbering order is inversed.
   endfunction
 
@@ -101,7 +101,7 @@ package ntt_core_gf64_common_param_pkg;
   // Note that RDX_CUT_ID is numbered increasingly in FWD and decreasingly in BWD.
   // The result is actually the log2 of the size.
   // RDX_CUT_ID is the ID of the first column of the 2nd part of the working block.
-  function integer get_s_l(int rdx_col_id, bit bwd);
+  function automatic integer get_s_l(int rdx_col_id, bit bwd);
     integer s_l;
     s_l = 0;
     if (bwd) begin
@@ -119,7 +119,7 @@ package ntt_core_gf64_common_param_pkg;
 
   // Get the number of radix block in the left column of the working block
   // RDX_CUT_ID is the ID of the first column of the 2nd part of the working block.
-  function integer get_a_nb(int rdx_col_id, bit bwd);
+  function automatic integer get_a_nb(int rdx_col_id, bit bwd);
     integer s_l;
     integer n_l;
     s_l = get_s_l(rdx_col_id, bwd);
@@ -129,7 +129,7 @@ package ntt_core_gf64_common_param_pkg;
 
   // Get the number of radix block in the right column of the working block
   // RDX_CUT_ID is the ID of the first column of the 2nd part of the working block.
-  function integer get_l_nb(int rdx_col_id, bit bwd);
+  function automatic integer get_l_nb(int rdx_col_id, bit bwd);
     integer s_l;
     integer n_l;
     s_l = get_s_l(rdx_col_id, bwd);
@@ -139,7 +139,7 @@ package ntt_core_gf64_common_param_pkg;
 
   // Get the number of iteration within a working block
   // RDX_CUT_ID is the ID of the first column of the 2nd part of the working block.
-  function integer get_iter_nb(int rdx_col_id, bit bwd);
+  function automatic integer get_iter_nb(int rdx_col_id, bit bwd);
     integer s_l;
     integer n_l;
     s_l = get_s_l(rdx_col_id, bwd);
@@ -149,7 +149,7 @@ package ntt_core_gf64_common_param_pkg;
 
   // Get the size of the A column radix
   // RDX_CUT_ID is the ID of the first column of the 2nd part of the working block.
-  function integer get_rdx_a(int rdx_col_id, bit bwd);
+  function automatic integer get_rdx_a(int rdx_col_id, bit bwd);
     integer s_l;
     integer s_a;
     if (bwd) begin
@@ -164,7 +164,7 @@ package ntt_core_gf64_common_param_pkg;
 
   // Get the size of the L column radix
   // RDX_CUT_ID is the ID of the first column of the 2nd part of the working block.
-  function integer get_rdx_l(int rdx_col_id, bit bwd);
+  function automatic integer get_rdx_l(int rdx_col_id, bit bwd);
     integer s_l;
     integer s_ll;
     if (bwd)

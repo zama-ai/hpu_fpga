@@ -17,11 +17,11 @@ package ntt_core_wmm_dispatch_rotate_wr_pcg_pkg;
                                           1'b1,  // S1_S2
                                           1'b1}; // S0_S1
 
-  function int get_cmd_latency();
+  function automatic int get_cmd_latency();
     return $countones(LAT_PIPE_MH[0]);
   endfunction
 
-  function int get_latency();
+  function automatic int get_latency();
     return $countones(LAT_PIPE_MH);
   endfunction
 endpackage

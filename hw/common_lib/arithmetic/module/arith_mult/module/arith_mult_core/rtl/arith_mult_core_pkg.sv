@@ -24,7 +24,7 @@ package arith_mult_core_pkg;
   // NOTE : This function should be updated according to the default value of the localparam
   // LATENCY of arith_mult_core.
   // This function enables parent module to have access to the default LATENCY value.
-  function int get_latency();
+  function automatic int get_latency();
     return LATENCY;
   endfunction
 endpackage

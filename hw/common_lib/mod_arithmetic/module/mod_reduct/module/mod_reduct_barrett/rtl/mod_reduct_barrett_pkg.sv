@@ -21,7 +21,7 @@ package mod_reduct_barrett_pkg;
 
   // LATENCY of mod_reduct_barrett.
   // This function enables parent module to have access to the default LATENCY value.
-  function int get_latency(input arith_mult_type_e MULT_TYPE);
+  function automatic int get_latency(input arith_mult_type_e MULT_TYPE);
     return 2*arith_mult_pkg::get_latency(MULT_TYPE) + $countones(LAT_PIPE_MH);
   endfunction
 endpackage

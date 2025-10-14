@@ -92,7 +92,7 @@ end
   // ============================================================================================ //
   // Function
   // ============================================================================================ //
-  function [BSK_SRV_NB-1:0][31:0] get_bsk_loop_nb (int br_loop_nb);
+  function automatic [BSK_SRV_NB-1:0][31:0] get_bsk_loop_nb (int br_loop_nb);
     bit [BSK_SRV_NB-1:0][31:0] result;
     int last_nb;
     last_nb = br_loop_nb;
@@ -104,7 +104,7 @@ end
     return result;
   endfunction
 
-  function [BSK_SRV_NB-1:0][31:0] get_bsk_loop_ofs ([BSK_SRV_NB-1:0][31:0] bsk_inst_br_loop_nb);
+  function automatic [BSK_SRV_NB-1:0][31:0] get_bsk_loop_ofs ([BSK_SRV_NB-1:0][31:0] bsk_inst_br_loop_nb);
     bit [BSK_SRV_NB-1:0][31:0] result;
     result[0] = 0;
     for (int i=1; i<BSK_SRV_NB; i=i+1)

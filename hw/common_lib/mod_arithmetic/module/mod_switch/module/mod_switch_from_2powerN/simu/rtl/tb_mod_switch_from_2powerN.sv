@@ -39,7 +39,7 @@ module tb_mod_switch_from_2powerN;
 // ============================================================================================== --
 // functions
 // ============================================================================================== --
-  function logic [MOD_P_W-1:0] mod_switch_from_pow_of_2(logic [IN_W:0] a, logic [MOD_P_W-1:0] prime_p);
+  function automatic logic [MOD_P_W-1:0] mod_switch_from_pow_of_2(logic [IN_W:0] a, logic [MOD_P_W-1:0] prime_p);
     logic [MOD_P_W-1:0] res;
     logic [MOD_P_W+MOD_Q_W-1:0] abs_a;
     logic [IN_W-1:0] a_magn;

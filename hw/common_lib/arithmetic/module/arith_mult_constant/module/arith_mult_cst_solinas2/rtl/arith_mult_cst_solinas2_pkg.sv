@@ -13,7 +13,7 @@
 package arith_mult_cst_solinas2_pkg;
   // LATENCY of mod_reduct_solinas2.
   // This function enables parent module to have access to the default LATENCY value.
-  function int get_latency();
+  function automatic int get_latency();
     return 1; // output register
   endfunction
 endpackage

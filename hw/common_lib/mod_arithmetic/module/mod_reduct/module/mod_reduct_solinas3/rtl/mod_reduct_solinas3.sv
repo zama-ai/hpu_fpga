@@ -126,7 +126,7 @@ module mod_reduct_solinas3 #(
     return pow;
   endfunction
 
-  function [INT_POW_NB:0][31:0] get_stride(bit[INT_POW_NB:0][31:0] pow);
+  function automatic [INT_POW_NB:0][31:0] get_stride(bit[INT_POW_NB:0][31:0] pow);
     bit [INT_POW_NB:0][31:0] stride;
     for (int i=0; i<INT_POW_NB+1; i=i+1) begin
       stride[i] = MOD_W - pow[i];
@@ -167,7 +167,7 @@ module mod_reduct_solinas3 #(
     return pos;
   endfunction
 
-  function [POS_NB-1:0][31:0] get_pos(int start);
+  function automatic [POS_NB-1:0][31:0] get_pos(int start);
     bit [POS_NB*INT_POW_NB-1:0][31:0] pos_tmp;
     bit [POS_NB-1:0][31:0] pos;
     int k;
@@ -193,7 +193,7 @@ module mod_reduct_solinas3 #(
 
   // Compute additional bits for each stride.
   // This bits are the additional ones resulting from the intermediate compute.
-  function [INT_POW_NB:0][31:0] get_additional_bit_nb();
+  function automatic [INT_POW_NB:0][31:0] get_additional_bit_nb();
     bit [INT_POW_NB:0][MOD_W+POS_NB:0] tmp;
     bit [INT_POW_NB:0][31:0] add_bit_nb;
 
@@ -213,7 +213,7 @@ module mod_reduct_solinas3 #(
     return add_bit_nb;
   endfunction
 
-  function [31:0] get_max([INT_POW_NB:0][31:0] list, int nb_elt = 0);
+  function automatic [31:0] get_max([INT_POW_NB:0][31:0] list, int nb_elt = 0);
     bit [31:0] max;
     max = list[0];
     for (int i = 1; i<nb_elt; i=i+1)
@@ -221,7 +221,7 @@ module mod_reduct_solinas3 #(
     return max;
   endfunction
 
-  function [31:0] get_wrap_size();
+  function automatic [31:0] get_wrap_size();
     bit [MOD_W+INT_POW_NB-1:0] total;
     bit [31:0] tmp;
 
@@ -234,7 +234,7 @@ module mod_reduct_solinas3 #(
   endfunction
 
   // compute the remaining stride for a given INT_POW (express in the order "bis")
-  function [INT_POW_NB:0][31:0] get_rstride();
+  function automatic [INT_POW_NB:0][31:0] get_rstride();
     bit [INT_POW_NB:0][31:0] rstride;
     rstride[0] = STRIDE[0];
     for (int i=1; i<INT_POW_NB+1; i=i+1) begin
@@ -243,7 +243,7 @@ module mod_reduct_solinas3 #(
     return rstride;
   endfunction
 
-  function [INT_POW_NB:0][POS_NB-1:0][31:0] get_rpos();
+  function automatic [INT_POW_NB:0][POS_NB-1:0][31:0] get_rpos();
     bit [INT_POW_NB:0][POS_NB-1:0][31:0] rpos;
     for (int i=0; i<INT_POW_NB+1; i=i+1) begin
       for (int p=0; p<POS_NB; p=p+1) begin

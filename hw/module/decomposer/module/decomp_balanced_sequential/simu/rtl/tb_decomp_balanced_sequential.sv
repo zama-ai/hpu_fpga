@@ -37,7 +37,7 @@ module tb_decomp_balanced_sequential;
 // ============================================================================================== --
 // function
 // ============================================================================================== --
-  function logic [PBS_L-1:0][PBS_B_W:0] decomp (logic[MOD_Q_W-1:0] v);
+  function automatic logic [PBS_L-1:0][PBS_B_W:0] decomp (logic[MOD_Q_W-1:0] v);
     var [(PBS_L+1)*PBS_B_W-1:0] state;
     var [PBS_B_W:0]             res;
     var                         frac;

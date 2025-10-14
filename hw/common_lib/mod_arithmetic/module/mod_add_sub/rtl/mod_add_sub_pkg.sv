@@ -15,7 +15,7 @@ package mod_add_sub_pkg;
 
   // LATENCY of mod_add and mod_sub.
   // This function enables parent module to have access to the default LATENCY value.
-  function int get_latency();
+  function automatic int get_latency();
     return 0; // No internal pipe
   endfunction
 endpackage

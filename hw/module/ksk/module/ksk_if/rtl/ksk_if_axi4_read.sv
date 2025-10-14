@@ -99,7 +99,7 @@ module ksk_if_axi4_read
 // ============================================================================================== //
 // Constant functions
 // ============================================================================================== //
-  function [KSK_PC-1:0][31:0] get_cut_per_pc (int ksk_cut_nb, int ksk_pc);
+  function automatic [KSK_PC-1:0][31:0] get_cut_per_pc (int ksk_cut_nb, int ksk_pc);
     bit [KSK_PC-1:0][31:0] cut_per_pc;
     int cut_cnt;
     int cut_dist;
@@ -112,7 +112,7 @@ module ksk_if_axi4_read
     return cut_per_pc;
   endfunction
 
-  function [KSK_PC-1:0][31:0] get_cut_ofs (input [KSK_PC-1:0][31:0] cut_per_pc);
+  function automatic [KSK_PC-1:0][31:0] get_cut_ofs (input [KSK_PC-1:0][31:0] cut_per_pc);
     bit [KSK_PC-1:0][31:0] cut_ofs;
     cut_ofs[0] = '0;
     for (int i=1; i<KSK_PC; i=i+1) begin

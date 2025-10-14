@@ -19,7 +19,7 @@ package ntt_core_wmm_network_pcg_pkg;
   localparam bit DRR_IN_PIPE  = 1;
 
   // Latency to the data out of the network, once the seq_rden is received.
-  function int get_read_latency(int RAM_LATENCY);
+  function automatic int get_read_latency(int RAM_LATENCY);
     return ntt_core_wmm_ram_rd_pcg_pkg::get_read_latency(RAM_LATENCY)
          + ntt_core_wmm_dispatch_rotate_rd_pcg_pkg::get_latency()
          + DRR_IN_PIPE;

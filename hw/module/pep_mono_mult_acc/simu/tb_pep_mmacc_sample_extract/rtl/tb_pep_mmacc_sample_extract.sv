@@ -99,7 +99,7 @@ module tb_pep_mmacc_sample_extract;
 // ============================================================================================== --
 // function
 // ============================================================================================== --
-  function int rev_order(int i);
+  function automatic int rev_order(int i);
     logic [S-1:0][R_W-1:0] r_v;
     logic [S-1:0][R_W-1:0] v_a;
 

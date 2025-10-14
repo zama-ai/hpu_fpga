@@ -23,13 +23,13 @@ package ntt_radix_cooley_tukey_pkg;
 
   // LATENCY of ntt_radix_cooley_tukey.
   // This function enables parent module to have access to the default LATENCY value.
-  function int get_latency_butterfly();
+  function automatic int get_latency_butterfly();
     return  BUTTERFLY_IN_PIPE
           + BUTTERFLY_OUT_PIPE
           + mod_add_sub_pkg::get_latency();
   endfunction
 
-  function int get_latency_mult_butterfly(arith_mult_type_e MULT_TYPE,
+  function automatic int get_latency_mult_butterfly(arith_mult_type_e MULT_TYPE,
                                           mod_reduct_type_e REDUCT_TYPE,
                                           mod_mult_type_e MOD_MULT_TYPE = get_mod_mult(REDUCT_TYPE), bit USE_MOD_MULT = 0);
     int mult_reduct_lat;
@@ -49,7 +49,7 @@ package ntt_radix_cooley_tukey_pkg;
     return USE_MOD_MULT ? mod_mult_lat : mult_reduct_lat;
   endfunction
 
-  function int get_latency(int R, arith_mult_type_e MULT_TYPE,
+  function automatic int get_latency(int R, arith_mult_type_e MULT_TYPE,
                            mod_reduct_type_e REDUCT_TYPE,
                            mod_mult_type_e MOD_MULT_TYPE = get_mod_mult(REDUCT_TYPE), bit USE_MOD_MULT = 0);
     int s_nb;

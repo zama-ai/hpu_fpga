@@ -416,14 +416,14 @@ module tb_pep_mmacc_body_ram;
     sink_rdata.start(0);
   end
 
-  function ks_coeff_t center(input ks_coeff_t value); // For the shifted modulo switch
+  function automatic ks_coeff_t center(input ks_coeff_t value); // For the shifted modulo switch
     if (USE_MEAN_COMP)
       return (value - (MOD_KSK / (2*2*N))) % MOD_KSK;
     else
       return value;
   endfunction
 
-  function modsw_coeff_t mod_switch(input real value);
+  function automatic modsw_coeff_t mod_switch(input real value);
     return $floor(value / (2**(MOD_KSK_W-LWE_COEF_W)) + 0.5);
   endfunction
 

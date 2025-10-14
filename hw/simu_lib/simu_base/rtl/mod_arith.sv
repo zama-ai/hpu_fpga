@@ -7,7 +7,7 @@
 
 package mod_arith;
 
-  function logic [63:0] mod_div_by_2(logic [63:0] a, logic [63:0] m);
+  function automatic logic [63:0] mod_div_by_2(logic [63:0] a, logic [63:0] m);
     /*
     . Returns [(1/2) * a] modulo m
     . using the shift trick
@@ -21,7 +21,7 @@ package mod_arith;
 
   endfunction
 
-  function logic [63:0] mod_add(logic [63:0] a, logic [63:0] b, logic [63:0] m);
+  function automatic logic [63:0] mod_add(logic [63:0] a, logic [63:0] b, logic [63:0] m);
     /*
     . Returns (a + b) modulo m
     . using the naive method for addition with one reduction step
@@ -41,7 +41,7 @@ package mod_arith;
 
   endfunction
 
-  function logic [63:0] mod_sub(logic [63:0] a, logic [63:0] b, logic [63:0] m);
+  function automatic logic [63:0] mod_sub(logic [63:0] a, logic [63:0] b, logic [63:0] m);
     /*
     . Returns (a - b) modulo m
     . using the naive method for subtraction with one reduction step
@@ -61,7 +61,7 @@ package mod_arith;
 
   endfunction
 
-  function logic [127:0] mod_red(logic [127:0] a, logic [127:0] m);
+  function automatic logic [127:0] mod_red(logic [127:0] a, logic [127:0] m);
     /*
     . Returns a modulo m
     . using the naive method by division

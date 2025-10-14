@@ -20,7 +20,7 @@ package mod_reduct_solinas3_pkg;
 
   // LATENCY of mod_reduct_solinas3.
   // This function enables parent module to have access to the default LATENCY value.
-  function int get_latency();
+  function automatic int get_latency();
     return $countones(LAT_PIPE_MH);
   endfunction
 endpackage

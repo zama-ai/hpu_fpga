@@ -16,7 +16,7 @@ package ntt_core_gf64_phi_pkg;
 // ============================================================================================== //
   // Reverse <v> in range <range>, in base 2
   // range should be a power of 2
-  function [31:0] reverse_int (input [31:0] v, input [31:0] range);
+  function automatic [31:0] reverse_int (input [31:0] v, input [31:0] range);
     var [31:0] sz;
     var [31:0] res;
 

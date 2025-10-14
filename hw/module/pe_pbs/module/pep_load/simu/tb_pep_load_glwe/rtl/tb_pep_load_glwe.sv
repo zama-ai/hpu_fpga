@@ -70,7 +70,7 @@ module tb_pep_load_glwe;
 // ============================================================================================== --
 // function
 // ============================================================================================== --
-  function [MOD_Q_W-1:0] get_data (data_t d);
+  function automatic [MOD_Q_W-1:0] get_data (data_t d);
     return {d.part, d.coef_id} ^ d.gid;
   endfunction
 

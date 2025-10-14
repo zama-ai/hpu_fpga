@@ -21,7 +21,7 @@ package arith_mult_constant_pkg;
 
   // LATENCY of arith_mult_constant.
   // This function enables parent module to have access to the default LATENCY value.
-  function int get_latency(input int_type_e CST_TYPE, input arith_mult_type_e MULT_TYPE);
+  function automatic int get_latency(input int_type_e CST_TYPE, input arith_mult_type_e MULT_TYPE);
     int lat;
     lat = CST_TYPE == MERSENNE     ? arith_mult_cst_mersenne_pkg::get_latency():
           CST_TYPE == SOLINAS2     ? arith_mult_cst_solinas2_pkg::get_latency():

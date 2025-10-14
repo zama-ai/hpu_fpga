@@ -72,7 +72,7 @@ module ntt_core_gf64_bu_stage_column_bwd
 // ============================================================================================== //
 // functions
 // ============================================================================================== //
-  function [BU_NB-1:0][31:0] get_omg_2pow (input [32-1:0][31:0] omg_2pow_tmp);
+  function automatic [BU_NB-1:0][31:0] get_omg_2pow (input [32-1:0][31:0] omg_2pow_tmp);
     for (int i=0; i<BU_NB; i=i+1)
       get_omg_2pow[i] = omg_2pow_tmp[i%32];
   endfunction

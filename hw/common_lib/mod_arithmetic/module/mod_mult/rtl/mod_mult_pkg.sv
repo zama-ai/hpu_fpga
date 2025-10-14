@@ -17,7 +17,7 @@ package mod_mult_pkg;
 
   // LATENCY of mod_mult.
   // This function enables parent module to have access to the default LATENCY value.
-  function int get_latency(input mod_mult_type_e MOD_MULT_TYPE, input arith_mult_type_e MULT_TYPE=MULT_UNKNOWN);
+  function automatic int get_latency(input mod_mult_type_e MOD_MULT_TYPE, input arith_mult_type_e MULT_TYPE=MULT_UNKNOWN);
     int with_reduct_lat;
     with_reduct_lat = MULT_TYPE == MULT_GOLDILOCKS_CASCADE ? arith_mult_pkg::get_latency(MULT_TYPE) : arith_mult_pkg::get_latency(MULT_TYPE) + 1 ; // TODO
     with_reduct_lat = with_reduct_lat +

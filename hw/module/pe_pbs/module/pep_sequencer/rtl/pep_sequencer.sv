@@ -153,23 +153,23 @@ module pep_sequencer
 // Function
 // ============================================================================================== //
   // Increment pid pointer
-  function [PID_W:0] pt_inc_1 (input [PID_W:0] pt);
+  function automatic [PID_W:0] pt_inc_1 (input [PID_W:0] pt);
     pt_inc_1[PID_W-1:0] = pt[PID_W-1:0] == TOTAL_PBS_NB-1 ? '0 : pt[PID_W-1:0] + 1;
     pt_inc_1[PID_W]     = pt[PID_W-1:0] == TOTAL_PBS_NB-1 ? ~pt[PID_W] : pt[PID_W];
   endfunction
 
-  function [PID_W:0] pt_dec_1 (input [PID_W:0] pt);
+  function automatic [PID_W:0] pt_dec_1 (input [PID_W:0] pt);
     pt_dec_1[PID_W-1:0] = pt[PID_W-1:0] == '0 ? TOTAL_PBS_NB-1 : pt[PID_W-1:0] - 1;
     pt_dec_1[PID_W]     = pt[PID_W-1:0] == '0 ? ~pt[PID_W] : pt[PID_W];
   endfunction
 
-  function pt_inc_any_wrap (input [PID_W:0] pt, input [PID_W-1:0] val);
+  function automatic pt_inc_any_wrap (input [PID_W:0] pt, input [PID_W-1:0] val);
     logic [PID_W:0] tmp;
     tmp  = pt[PID_W-1:0] + val;
     pt_inc_any_wrap = tmp > TOTAL_PBS_NB-1;
   endfunction
 
-  function [PID_W:0] pt_inc_any (input [PID_W:0] pt, input [PID_W-1:0] val);
+  function automatic [PID_W:0] pt_inc_any (input [PID_W:0] pt, input [PID_W-1:0] val);
     logic [PID_W:0] tmp;
     logic           wrap; // result of pt_inc_any_wrap
     tmp  = pt[PID_W-1:0] + val;
@@ -179,11 +179,11 @@ module pep_sequencer
   endfunction
 
   // Compare 2 pointers
-  function logic pt_full (input [PID_W:0] wp, input [PID_W:0] rp);
+  function automatic logic pt_full (input [PID_W:0] wp, input [PID_W:0] rp);
     pt_full = (rp[PID_W-1:0] == wp[PID_W-1:0]) & (rp[PID_W] != wp[PID_W]);
   endfunction
 
-  function logic pt_empty (input [PID_W:0] wp, input [PID_W:0] rp);
+  function automatic logic pt_empty (input [PID_W:0] wp, input [PID_W:0] rp);
     pt_empty = rp == wp;
   endfunction
 

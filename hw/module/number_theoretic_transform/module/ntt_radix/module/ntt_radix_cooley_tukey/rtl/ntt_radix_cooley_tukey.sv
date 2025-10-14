@@ -82,15 +82,15 @@ module ntt_radix_cooley_tukey
   // ============================================================================================ //
   // Per stage > 0, there are G groups.
   // Half data of a group are destinated to the butterfly, the other half to the mult_butterfly.
-  function int get_group_nb (int stg); // for stg > 0
+  function automatic int get_group_nb (int stg); // for stg > 0
     return 2**(stg-1);
   endfunction
 
-  function int get_group_halfelt_nb (int stg); // for stg > 0
+  function automatic int get_group_halfelt_nb (int stg); // for stg > 0
     return R/(2**stg);
   endfunction
 
-  function [R/2-1:0][31:0] get_omg_index(int stg);
+  function automatic [R/2-1:0][31:0] get_omg_index(int stg);
     // The stage gives the stride.
     bit [R/2-1:0][31:0] pos;
     pos[0] = '0;
@@ -100,7 +100,7 @@ module ntt_radix_cooley_tukey
     return pos;
   endfunction
 
-  function [R/2-1:0][31:0] get_fifo_depth(int stg);
+  function automatic [R/2-1:0][31:0] get_fifo_depth(int stg);
     bit [R/2-1:0][31:0] depth;
     depth = '0;
     if (R > 2) begin
