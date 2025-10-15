@@ -2,7 +2,7 @@
 // BSD 3-Clause Clear License
 // Copyright © 2025 ZAMA. All rights reserved.
 // ----------------------------------------------------------------------------------------------
-// Description  : small model to mimic3) ASSIGN REGI qsfp lines in simulation.
+// Description  : small model to mimic qsfp lines in simulation.
 // ----------------------------------------------------------------------------------------------
 //
 //  Must take into account the loopback at first and then will complexify later

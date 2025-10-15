@@ -84,7 +84,6 @@ add_cells_to_pblock -quiet [get_pblocks pblock_SLL1BOT] [get_cells -hier -regexp
 add_cells_to_pblock -quiet [get_pblocks pblock_SLL0TOP] [get_cells -hier -regexp -filter {NAME =~ ".*/p3_p2_sll.*/in_pipe"}]
 add_cells_to_pblock -quiet [get_pblocks pblock_SLL0TOP] [get_cells -hier -regexp -filter {NAME =~ ".*/p2_p3_sll.*/out_pipe"}]
 
-
 # This is an alternate way of constraining the SLL flops and it supposedly uses IMUX registers,
 # sparing registers for other uses. However, generates DRC errors.
 #set sll_regs [ \

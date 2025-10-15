@@ -489,12 +489,7 @@ proc create_hier_cell_eth_wrapper  { parentCell nameHier } {
 
   connect_bd_net -net config_aclk [get_bd_pins s_axi_aclk] [get_bd_pins mrmac_0_core/s_axi_aclk]
 
-
-  # dbg -------------------------------------------------------------------------------------------
-  # from slave axistream to line debug
-
   # GT <-> MRMAC connections ----------------------------------------------------------------------
-
   # ~eth_cfg_srst_n to rx_flexif_reset
   connect_bd_net [get_bd_pins s_axi_aresetn] [get_bd_pins ilvector_not_flexif_reset/Op1]
 
@@ -541,9 +536,6 @@ proc create_hier_cell_eth_wrapper  { parentCell nameHier } {
                   [get_bd_pins mrmac_0_core/rx_flexif_clk] \
                   [get_bd_pins mrmac_0_core/tx_flexif_clk]
 
-  # rx_core_clk       = {ch3_rx_usr_clk, ch2_rx_usr_clk, ch1_rx_usr_clk, ch0_rx_usr_clk};
-  # rx_serdes_clk     = {ch3_rx_usr_clk, ch2_rx_usr_clk, ch1_rx_usr_clk, ch0_rx_usr_clk};
-
   connect_bd_net [get_bd_pins concat_4_rx_usr_clock/In0] [get_bd_pins mrmac_0_gt_wrapper/ch0_rx_usr_clk]
   connect_bd_net [get_bd_pins concat_4_rx_usr_clock/In1] [get_bd_pins mrmac_0_gt_wrapper/ch1_rx_usr_clk]
   connect_bd_net [get_bd_pins concat_4_rx_usr_clock/In2] [get_bd_pins mrmac_0_gt_wrapper/ch2_rx_usr_clk]
@@ -560,8 +552,6 @@ proc create_hier_cell_eth_wrapper  { parentCell nameHier } {
 
   connect_bd_net [get_bd_pins concat_4_rx_usr_clock2/Dout] [get_bd_pins mrmac_0_core/rx_alt_serdes_clk]
 
-  # tx_core_clk       = {ch0_tx_usr_clk, ch0_tx_usr_clk, ch0_tx_usr_clk, ch0_tx_usr_clk};
-  # tx_alt_serdes_clk = {ch0_tx_usr_clk2, ch0_tx_usr_clk2, ch0_tx_usr_clk2, ch0_tx_usr_clk2};
   for {set i 0} {$i < 4} {incr i} {
     connect_bd_net [get_bd_pins mrmac_0_gt_wrapper/ch0_tx_usr_clk] [get_bd_pins concat_4_tx_usr_clock/In${i}]
     connect_bd_net [get_bd_pins mrmac_0_gt_wrapper/ch0_tx_usr_clk2] [get_bd_pins concat_4_tx_usr_clock2/In${i}]
