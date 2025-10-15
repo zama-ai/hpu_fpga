@@ -821,8 +821,6 @@ proc create_root_design { parentCell ntt_psi } {
   }
   # == Ethernet configuration
   set ethernet_start_addr [expr $regif_add_noc + ($REGIF_NB * $REGIF_CLK_NB) * 0x10000]
-  puts "ethernet_start_addr"
-  puts $ethernet_start_addr
   for { set i 0}  {$i < $ETH_AXI_NB} {incr i} {
     assign_bd_address -offset [expr $ethernet_start_addr + $i * 0x10000] -range $regif_range -target_address_space [get_bd_addr_spaces /S_REGIF_AXI_0] [get_bd_addr_segs /ETH_AXI_${i}/Reg]
   }
