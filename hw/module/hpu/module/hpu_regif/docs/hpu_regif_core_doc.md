@@ -1,6 +1,6 @@
 # HPU_REGIF_CORE documentation
-**Date**: 2025-10-06
-**Tool Version**: bb0db737792da6b81e69a039028c971af1627fe2
+**Date**: 2025-10-17
+**Tool Version**: bd49564daf1a99d615cb6dbb121b54bfbeef8b22
 
 ## RegisterMap Overview
 
@@ -17,7 +17,7 @@ HPU ethernet configuration register interface. Will be accessed by RPU to define
 **Offset**: 0x0
 **Range**: 0x60000
 **Word Size (b)**: 32
-**External Packages**: "axi_if_shell_axil_pkg.sv","axi_if_common_param_pkg.sv"
+**External Packages**: "axi_if_common_param_pkg.sv","axi_if_shell_axil_pkg.sv"
 
 
 ---
@@ -4399,12 +4399,12 @@ Below is a summary of all the registers in the current section stat:
 | Name             | Offset | Access | Description |
 |-----------------:|:------:|:------:|:------------|
 | [status](#register-statstatus) | 0x5104c | R. |  fifo status |
-| [clk_a](#register-statclk-a) | 0x51050 | R. |  clock counts |
-| [clk_b](#register-statclk-b) | 0x51054 | R. |  clock counts |
-| [valid_words_a](#register-statvalid-words-a) | 0x51058 | R. |  clock counts |
-| [valid_words_b](#register-statvalid-words-b) | 0x5105c | R. |  clock counts |
-| [sop_cnt_a](#register-statsop-cnt-a) | 0x51060 | R. |  clock counts |
-| [sop_cnt_b](#register-statsop-cnt-b) | 0x51064 | R. |  clock counts |
+| [clk_a](#register-statclk-a) | 0x51050 | R. |  clock counts lsb |
+| [clk_b](#register-statclk-b) | 0x51054 | R. |  clock counts msb |
+| [valid_words_a](#register-statvalid-words-a) | 0x51058 | R. |  valid rx word counter lsb |
+| [valid_words_b](#register-statvalid-words-b) | 0x5105c | R. |  valid rx word counter msb |
+| [sop_cnt_a](#register-statsop-cnt-a) | 0x51060 | R. |  clock counter between tx sop and rx sop lsb |
+| [sop_cnt_b](#register-statsop-cnt-b) | 0x51064 | R. |  clock counter between tx sop and rx sop msb |
 
 
 ---
@@ -4427,7 +4427,7 @@ Below is a summary of all the registers in the current section stat:
 
 ### Register stat.clk-a
 
-- **Description**: clock counts
+- **Description**: clock counts lsb
 - **Owner**: Kernel
 - **Read Access**: Read
 - **Write Access**: None
@@ -4442,7 +4442,7 @@ Below is a summary of all the registers in the current section stat:
 
 ### Register stat.clk-b
 
-- **Description**: clock counts
+- **Description**: clock counts msb
 - **Owner**: Kernel
 - **Read Access**: Read
 - **Write Access**: None
@@ -4457,7 +4457,7 @@ Below is a summary of all the registers in the current section stat:
 
 ### Register stat.valid-words-a
 
-- **Description**: clock counts
+- **Description**: valid rx word counter lsb
 - **Owner**: Kernel
 - **Read Access**: Read
 - **Write Access**: None
@@ -4472,7 +4472,7 @@ Below is a summary of all the registers in the current section stat:
 
 ### Register stat.valid-words-b
 
-- **Description**: clock counts
+- **Description**: valid rx word counter msb
 - **Owner**: Kernel
 - **Read Access**: Read
 - **Write Access**: None
@@ -4487,7 +4487,7 @@ Below is a summary of all the registers in the current section stat:
 
 ### Register stat.sop-cnt-a
 
-- **Description**: clock counts
+- **Description**: clock counter between tx sop and rx sop lsb
 - **Owner**: Kernel
 - **Read Access**: Read
 - **Write Access**: None
@@ -4502,7 +4502,7 @@ Below is a summary of all the registers in the current section stat:
 
 ### Register stat.sop-cnt-b
 
-- **Description**: clock counts
+- **Description**: clock counter between tx sop and rx sop msb
 - **Owner**: Kernel
 - **Read Access**: Read
 - **Write Access**: None

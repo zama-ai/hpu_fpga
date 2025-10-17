@@ -175,42 +175,42 @@ description="fifo write part"
   default={Cst=0x0}
 
 [section.stat.register.clk_a]
-  description="clock counts"
+  description="clock counts lsb"
   owner="Kernel"
   read_access="Read"
   write_access="None"
   default={Cst=0x0}
 
 [section.stat.register.clk_b]
-  description="clock counts"
+  description="clock counts msb"
   owner="Kernel"
   read_access="Read"
   write_access="None"
   default={Cst=0x0}
 
 [section.stat.register.valid_words_a]
-  description="clock counts"
+  description="valid rx word counter lsb"
   owner="Kernel"
   read_access="Read"
   write_access="None"
   default={Cst=0x0}
 
 [section.stat.register.valid_words_b]
-  description="clock counts"
+  description="valid rx word counter msb"
   owner="Kernel"
   read_access="Read"
   write_access="None"
   default={Cst=0x0}
 
 [section.stat.register.sop_cnt_a]
-  description="clock counts"
+  description="clock counter between tx sop and rx sop lsb"
   owner="Kernel"
   read_access="Read"
   write_access="None"
   default={Cst=0x0}
 
 [section.stat.register.sop_cnt_b]
-  description="clock counts"
+  description="clock counter between tx sop and rx sop msb"
   owner="Kernel"
   read_access="Read"
   write_access="None"

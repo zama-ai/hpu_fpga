@@ -1,8 +1,8 @@
 // ============================================================================================== //
 // Description  : Axi4-lite register bank
 // This file was generated with rust regmap generator:
-//  * Date:  2025-10-06
-//  * Tool_version: bb0db737792da6b81e69a039028c971af1627fe2
+//  * Date:  2025-10-17
+//  * Tool_version: bd49564daf1a99d615cb6dbb121b54bfbeef8b22
 // ---------------------------------------------------------------------------------------------- //
 // xR[n]W[na]
 // |-> who is in charge of the register update logic : u -> User
@@ -30,8 +30,8 @@
 //      : Value provided by the RTL. The host can read it with notify. The write data is processed by the RTL.
 // ============================================================================================== //
 module hpu_regif_core_eth_2in3
-import axi_if_common_param_pkg::*;
 import axi_if_shell_axil_pkg::*;
+import axi_if_common_param_pkg::*;
 import hpu_regif_core_eth_2in3_pkg::*;
 #()(
   input  logic                           clk,
@@ -65,7 +65,7 @@ import hpu_regif_core_eth_2in3_pkg::*;
     , output reset_datapath_t r_reset_datapath
   // Register IO: reset_monitor
     , output reset_monitor_t r_reset_monitor
-        , input reset_monitor_t r_reset_monitor_upd
+    , input  reset_monitor_t r_reset_monitor_upd
   // Register IO: line_debug
     , output line_debug_t r_line_debug
   // Register IO: fifo_write_number_of_words
@@ -76,46 +76,46 @@ import hpu_regif_core_eth_2in3_pkg::*;
     , output logic [REG_DATA_W-1: 0] r_fifo_write_words_to_write_b
   // Register IO: fifo_write_fifo_write_data_count
     , output logic [REG_DATA_W-1: 0] r_fifo_write_fifo_write_data_count
-        , input  logic [REG_DATA_W-1: 0] r_fifo_write_fifo_write_data_count_upd
+    , input  logic [REG_DATA_W-1: 0] r_fifo_write_fifo_write_data_count_upd
   // Register IO: fifo_read_words_to_read_a
     , output logic [REG_DATA_W-1: 0] r_fifo_read_words_to_read_a
-        , input  logic [REG_DATA_W-1: 0] r_fifo_read_words_to_read_a_upd
+    , input  logic [REG_DATA_W-1: 0] r_fifo_read_words_to_read_a_upd
   // Register IO: fifo_read_words_to_read_b
     , output logic [REG_DATA_W-1: 0] r_fifo_read_words_to_read_b
-        , input  logic [REG_DATA_W-1: 0] r_fifo_read_words_to_read_b_upd
+    , input  logic [REG_DATA_W-1: 0] r_fifo_read_words_to_read_b_upd
   // Register IO: fifo_read_fifo_read_data_count
     , output logic [REG_DATA_W-1: 0] r_fifo_read_fifo_read_data_count
-        , input  logic [REG_DATA_W-1: 0] r_fifo_read_fifo_read_data_count_upd
+    , input  logic [REG_DATA_W-1: 0] r_fifo_read_fifo_read_data_count_upd
   // Register IO: cnt_trig_rd
     , output logic [REG_DATA_W-1: 0] r_cnt_trig_rd
-        , input  logic [REG_DATA_W-1: 0] r_cnt_trig_rd_upd
+    , input  logic [REG_DATA_W-1: 0] r_cnt_trig_rd_upd
   // Register IO: cnt_tx_wr
     , output logic [REG_DATA_W-1: 0] r_cnt_tx_wr
-        , input  logic [REG_DATA_W-1: 0] r_cnt_tx_wr_upd
+    , input  logic [REG_DATA_W-1: 0] r_cnt_tx_wr_upd
   // Register IO: cnt_words
     , output logic [REG_DATA_W-1: 0] r_cnt_words
-        , input  logic [REG_DATA_W-1: 0] r_cnt_words_upd
+    , input  logic [REG_DATA_W-1: 0] r_cnt_words_upd
   // Register IO: stat_status
     , output logic [REG_DATA_W-1: 0] r_stat_status
-        , input  logic [REG_DATA_W-1: 0] r_stat_status_upd
+    , input  logic [REG_DATA_W-1: 0] r_stat_status_upd
   // Register IO: stat_clk_a
     , output logic [REG_DATA_W-1: 0] r_stat_clk_a
-        , input  logic [REG_DATA_W-1: 0] r_stat_clk_a_upd
+    , input  logic [REG_DATA_W-1: 0] r_stat_clk_a_upd
   // Register IO: stat_clk_b
     , output logic [REG_DATA_W-1: 0] r_stat_clk_b
-        , input  logic [REG_DATA_W-1: 0] r_stat_clk_b_upd
+    , input  logic [REG_DATA_W-1: 0] r_stat_clk_b_upd
   // Register IO: stat_valid_words_a
     , output logic [REG_DATA_W-1: 0] r_stat_valid_words_a
-        , input  logic [REG_DATA_W-1: 0] r_stat_valid_words_a_upd
+    , input  logic [REG_DATA_W-1: 0] r_stat_valid_words_a_upd
   // Register IO: stat_valid_words_b
     , output logic [REG_DATA_W-1: 0] r_stat_valid_words_b
-        , input  logic [REG_DATA_W-1: 0] r_stat_valid_words_b_upd
+    , input  logic [REG_DATA_W-1: 0] r_stat_valid_words_b_upd
   // Register IO: stat_sop_cnt_a
     , output logic [REG_DATA_W-1: 0] r_stat_sop_cnt_a
-        , input  logic [REG_DATA_W-1: 0] r_stat_sop_cnt_a_upd
+    , input  logic [REG_DATA_W-1: 0] r_stat_sop_cnt_a_upd
   // Register IO: stat_sop_cnt_b
     , output logic [REG_DATA_W-1: 0] r_stat_sop_cnt_b
-        , input  logic [REG_DATA_W-1: 0] r_stat_sop_cnt_b_upd
+    , input  logic [REG_DATA_W-1: 0] r_stat_sop_cnt_b_upd
 );
 // ============================================================================================== --
 // localparam
