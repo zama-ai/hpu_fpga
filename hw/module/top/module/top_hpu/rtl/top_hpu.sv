@@ -3198,25 +3198,24 @@ module top_hpu #(
     .interrupt                     (hpu_interrupt),
 
     // QSFP system interface
-    .qsfp_tx_tdata(qsfp_tx_tdata),
-    .qsfp_tx_tkeep_user(qsfp_tx_tkeep_user),
-    .qsfp_tx_tlast(qsfp_tx_tlast),
-    .qsfp_tx_tvalid(qsfp_tx_tvalid),
-    // QSFP lines are always ready
-    .qsfp_tx_tready(qsfp_tx_tready),
+    .qsfp_tx_tdata                 (qsfp_tx_tdata),
+    .qsfp_tx_tkeep_user            (qsfp_tx_tkeep_user),
+    .qsfp_tx_tlast                 (qsfp_tx_tlast),
+    .qsfp_tx_tvalid                (qsfp_tx_tvalid),
+    .qsfp_tx_tready                (qsfp_tx_tready),
 
-    .qsfp_rx_tdata(qsfp_rx_tdata),
-    .qsfp_rx_tkeep_user(qsfp_rx_tkeep_user),
-    .qsfp_rx_tlast(qsfp_rx_tlast),
-    .qsfp_rx_tvalid(qsfp_rx_tvalid),
+    .qsfp_rx_tdata                 (qsfp_rx_tdata),
+    .qsfp_rx_tkeep_user            (qsfp_rx_tkeep_user),
+    .qsfp_rx_tlast                 (qsfp_rx_tlast),
+    .qsfp_rx_tvalid                (qsfp_rx_tvalid),
 
-    .gt_loopback(gt_loopback),
-    .gt_line_rate(gt_line_rate),
-    .gt_reset_rx_datapath(gt_reset_rx_datapath),
-    .gt_reset_tx_datapath(gt_reset_tx_datapath),
-    .gt_reset_all(gt_reset_all),
-    .gt_rx_reset_done(gt_rx_reset_done),
-    .gt_tx_reset_done(gt_tx_reset_done)
+    .gt_loopback                   (gt_loopback),
+    .gt_line_rate                  (gt_line_rate),
+    .gt_reset_rx_datapath          (gt_reset_rx_datapath),
+    .gt_reset_tx_datapath          (gt_reset_tx_datapath),
+    .gt_reset_all                  (gt_reset_all),
+    .gt_rx_reset_done              (gt_rx_reset_done),
+    .gt_tx_reset_done              (gt_tx_reset_done)
   );
 
 endmodule
