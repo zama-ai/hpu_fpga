@@ -16,7 +16,7 @@ package ntt_core_wmm_dispatch_rotate_last_stage_wr_pcg_pkg;
   localparam [LAT_MAX-1:0] LAT_PIPE_MH = {1'b1,  // S1_S2
                                           1'b1}; // S0_S1
 
-  function int get_latency();
+  function automatic int get_latency();
     return $countones(LAT_PIPE_MH);
   endfunction
 endpackage

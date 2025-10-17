@@ -60,7 +60,7 @@ module tb_ksk_if;
 // ============================================================================================== //
 // Constant functions
 // ============================================================================================== //
-  function [KSK_PC-1:0][31:0] get_cut_per_pc (int ksk_cut_nb, int ksk_pc);
+  function automatic [KSK_PC-1:0][31:0] get_cut_per_pc (int ksk_cut_nb, int ksk_pc);
     bit [KSK_PC-1:0][31:0] cut_per_pc;
     int cut_cnt;
     int cut_dist;
@@ -73,7 +73,7 @@ module tb_ksk_if;
     return cut_per_pc;
   endfunction
 
-  function [KSK_PC-1:0][31:0] get_cut_ofs (input [KSK_PC-1:0][31:0] cut_per_pc);
+  function automatic [KSK_PC-1:0][31:0] get_cut_ofs (input [KSK_PC-1:0][31:0] cut_per_pc);
     bit [KSK_PC-1:0][31:0] cut_ofs;
     cut_ofs[0] = '0;
     for (int i=1; i<KSK_PC; i=i+1) begin
@@ -82,7 +82,7 @@ module tb_ksk_if;
     return cut_ofs;
   endfunction
 
-  function [KSK_PC-1:0][31:0] get_bcol_coef(int cut_nb, input [KSK_PC-1:0][31:0] cut_per_pc_a);
+  function automatic [KSK_PC-1:0][31:0] get_bcol_coef(int cut_nb, input [KSK_PC-1:0][31:0] cut_per_pc_a);
     bit [KSK_PC-1:0][31:0] coef_nb;
     for (int i=0; i<KSK_PC; i=i+1) begin
       coef_nb[i] = ((LBY*KS_BLOCK_LINE_NB*KS_LG_NB*LBZ)+(cut_nb/cut_per_pc_a[i])-1) / (cut_nb/cut_per_pc_a[i]);
@@ -90,7 +90,7 @@ module tb_ksk_if;
     return coef_nb;
   endfunction
 
-  function [KSK_PC-1:0][31:0] round(input [KSK_PC-1:0][31:0] cut_per_pc_a, int round_val);
+  function automatic [KSK_PC-1:0][31:0] round(input [KSK_PC-1:0][31:0] cut_per_pc_a, int round_val);
     bit [KSK_PC-1:0][31:0] coef_nb;
     for (int i=0; i<KSK_PC; i=i+1) begin
       coef_nb[i] = ((cut_per_pc_a[i] + round_val-1) / round_val) * round_val;

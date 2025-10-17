@@ -38,7 +38,7 @@ module tb_decomp_parallel;
   // Input_word to be "rounded", decomposition parameters level_count and base_log
   // Outputs: Computes the closest representable number by the decomposition defined by
   //  level_count and base_log.
-  function logic [MOD_Q_W-1:0] closest_representable(logic [MOD_Q_W-1:0] input_word);
+  function automatic logic [MOD_Q_W-1:0] closest_representable(logic [MOD_Q_W-1:0] input_word);
     logic               non_rep_msb;
     logic [MOD_Q_W-1:0] res;
     logic [MOD_Q_W-1:-1] input_word_tmp;
@@ -54,7 +54,7 @@ module tb_decomp_parallel;
   // Inputs:
   //  Coefficient decomp_input to be decomposed with decomposition parameters level_l and base_log
   // Output: list of level_l coefficients representing the closest representable number
-  function logic [PBS_L-1:0][PBS_B_W:0] decompose(logic [MOD_Q_W-1:0] decomp_input);
+  function automatic logic [PBS_L-1:0][PBS_B_W:0] decompose(logic [MOD_Q_W-1:0] decomp_input);
     logic [MOD_Q_W-1:0]          closest_rep;
     logic [PBS_L-1:0][PBS_B_W:0] res;
     logic [MOD_Q_W-1:0]          state_tmp;

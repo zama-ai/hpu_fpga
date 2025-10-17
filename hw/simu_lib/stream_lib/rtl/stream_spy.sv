@@ -73,21 +73,21 @@ module stream_spy
 //--------------------------------------
 // set_do_write
 //--------------------------------------
-  function void set_do_write(input bit v);
+  function automatic void set_do_write(input bit v);
     do_write = v;
   endfunction
 
 //--------------------------------------
 // set_do_ref
 //--------------------------------------
-  function void set_do_ref(input bit v);
+  function automatic void set_do_ref(input bit v);
     do_ref = v;
   endfunction
 
 //--------------------------------------
 // open
 //--------------------------------------
-  function int open(input string name = FILENAME, input string name_ref = FILENAME_REF);
+  function automatic int open(input string name = FILENAME, input string name_ref = FILENAME_REF);
     int r0, r1;
     r0 = 1;
     r1 = 1;
@@ -161,7 +161,7 @@ module stream_spy
 //--------------------------------------
 // close
 //--------------------------------------
-    function void close;
+    function automatic void close;
       if (do_write) begin
         write_running = 0;
         wdata.close();

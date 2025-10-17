@@ -26,7 +26,7 @@ module tb_stream_to_pipe;
 
   localparam int RAND_RANGE = 128;
 
-  function [31:0] max_desync  (input [IN_NB-1:0][31:0] D);
+  function automatic [31:0] max_desync  (input [IN_NB-1:0][31:0] D);
     var [31:0] tmp;
     tmp = D[0];
     for (int i=0; i<IN_NB; i=i+1)

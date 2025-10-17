@@ -16,7 +16,7 @@ package arith_mult_64bgoldilocks_karatsuba_cascade_pkg;
 
   // LATENCY of arith_mult_64bgoldilocks_karatsuba_cascade_pkg.
   // This function enables parent module to have access to the default LATENCY value.
-  function int get_latency();
+  function automatic int get_latency();
     return arith_mult_karatsuba_cascade_pkg::get_latency() + 3;
   endfunction
 endpackage

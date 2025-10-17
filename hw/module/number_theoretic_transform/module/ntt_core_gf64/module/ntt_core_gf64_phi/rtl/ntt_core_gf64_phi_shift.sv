@@ -66,7 +66,7 @@ module ntt_core_gf64_phi_shift
 // ============================================================================================== --
 // function
 // ============================================================================================== --
-  function [PSI*R-1:0][31:0] get_shift_list ();
+  function automatic [PSI*R-1:0][31:0] get_shift_list ();
     var [PSI*R-1:0][31:0] iter_shift_l;
     var [N_L-1:0][31:0]   w64_power_l;
     // Order for phi multiplication at column input
@@ -92,7 +92,7 @@ module ntt_core_gf64_phi_shift
       get_shift_list[i] = (iter_shift_l[i]%32)*W64_2POWER;
   endfunction
 
-  function [PSI*R-1:0] get_shift_sign_list ();
+  function automatic [PSI*R-1:0] get_shift_sign_list ();
     var [PSI*R-1:0][31:0] iter_shift_l;
     var [N_L-1:0][31:0]   w64_power_l;
     // Order for phi multiplication at column input

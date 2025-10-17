@@ -99,7 +99,7 @@ module bsk_if_axi4_read
 // ============================================================================================== //
 // Constant functions
 // ============================================================================================== //
-  function [BSK_PC-1:0][31:0] get_cut_per_pc (int bsk_cut_nb, int bsk_pc);
+  function automatic [BSK_PC-1:0][31:0] get_cut_per_pc (int bsk_cut_nb, int bsk_pc);
     bit [BSK_PC-1:0][31:0] cut_per_pc;
     int cut_cnt;
     int cut_dist;
@@ -112,7 +112,7 @@ module bsk_if_axi4_read
     return cut_per_pc;
   endfunction
 
-  function [BSK_PC-1:0][31:0] get_cut_ofs (input [BSK_PC-1:0][31:0] cut_per_pc);
+  function automatic [BSK_PC-1:0][31:0] get_cut_ofs (input [BSK_PC-1:0][31:0] cut_per_pc);
     bit [BSK_PC-1:0][31:0] cut_ofs;
     cut_ofs[0] = '0;
     for (int i=1; i<BSK_PC; i=i+1) begin

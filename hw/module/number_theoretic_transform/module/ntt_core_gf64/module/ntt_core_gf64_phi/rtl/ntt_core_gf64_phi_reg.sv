@@ -66,7 +66,7 @@ module ntt_core_gf64_phi_reg
 // ============================================================================================== --
 // function
 // ============================================================================================== --
-  function [PSI*R-1:0][ITER_NB-1:0][63:0] get_phi_list ();
+  function automatic [PSI*R-1:0][ITER_NB-1:0][63:0] get_phi_list ();
     var [PSI*R-1:0][ITER_NB-1:0][63:0] iter_phi_l;
     var [N_L-1:0][63:0]                phi_l;
     // Order for phi multiplication at column input

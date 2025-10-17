@@ -96,7 +96,7 @@ package pep_mmacc_common_param_pkg;
 // ============================================================================================== //
 // function
 // ============================================================================================== //
-  function int set_msplit_sxt_splitc_coef (msplit_name_e s);
+  function automatic int set_msplit_sxt_splitc_coef (msplit_name_e s);
     case (s)
       MSPLIT_NAME_M2_S2: return 2*R*PSI/4; // Or any value below that divides R*PSI/2
       MSPLIT_NAME_M3_S1: return 1*R*PSI/4 > 16 ? 16 : 1*R*PSI/4; // Or any value below that divides R*PSI/4

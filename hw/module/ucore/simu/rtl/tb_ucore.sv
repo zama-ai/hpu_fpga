@@ -548,7 +548,7 @@ endtask
   endtask
 
 
-  function bit dop_check_seq (
+  function automatic bit dop_check_seq (
     input logic[PE_INST_W-1 :0] ref_q[$],
     input logic[PE_INST_W-1 :0] dop_q[$]
   );

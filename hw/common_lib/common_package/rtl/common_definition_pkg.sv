@@ -164,7 +164,7 @@ package common_definition_pkg;
 //=======================================
 // functions
 //=======================================
-  function mod_mult_type_e get_mod_mult(mod_reduct_type_e REDUCT_TYPE, optimization_name_e OPT_TYPE = OPTIMIZATION_NAME_DSP);
+  function automatic mod_mult_type_e get_mod_mult(mod_reduct_type_e REDUCT_TYPE, optimization_name_e OPT_TYPE = OPTIMIZATION_NAME_DSP);
     mod_mult_type_e mod_mult;
     case(REDUCT_TYPE)
       MOD_REDUCT_SOLINAS2  :
@@ -182,7 +182,7 @@ package common_definition_pkg;
     return mod_mult;
   endfunction
 
-  function mod_reduct_type_e get_mod_reduct(mod_mult_type_e MULT_TYPE, optimization_name_e OPT_TYPE = OPTIMIZATION_NAME_DSP);
+  function automatic mod_reduct_type_e get_mod_reduct(mod_mult_type_e MULT_TYPE, optimization_name_e OPT_TYPE = OPTIMIZATION_NAME_DSP);
     mod_reduct_type_e mod_reduct;
     case(MULT_TYPE)
       MOD_MULT_SOLINAS2  :
@@ -201,7 +201,7 @@ package common_definition_pkg;
   endfunction
 
   // Determine the modular multiplier to be used according to the modulo type
-  function mod_mult_type_e set_mod_mult_type(int_type_e mod_type, optimization_name_e OPT_TYPE = OPTIMIZATION_NAME_DSP);
+  function automatic mod_mult_type_e set_mod_mult_type(int_type_e mod_type, optimization_name_e OPT_TYPE = OPTIMIZATION_NAME_DSP);
     if (mod_type == SOLINAS2)
       return MOD_MULT_SOLINAS2;
     else if (mod_type == SOLINAS3)
@@ -216,7 +216,7 @@ package common_definition_pkg;
   endfunction
 
   // Determine the modular reduction to be used according to the modulo type
-  function mod_reduct_type_e set_mod_reduct_type(int_type_e mod_type, optimization_name_e OPT_TYPE = OPTIMIZATION_NAME_DSP);
+  function automatic mod_reduct_type_e set_mod_reduct_type(int_type_e mod_type, optimization_name_e OPT_TYPE = OPTIMIZATION_NAME_DSP);
     if (mod_type == SOLINAS2)
       return MOD_REDUCT_SOLINAS2;
     else if (mod_type == SOLINAS3)
@@ -231,7 +231,7 @@ package common_definition_pkg;
   endfunction
 
   // Determine the arithmetic multiplier to be used according to the operand width, and NTT type
-  function arith_mult_type_e set_ntt_mult_type(int OP_W, int_type_e MOD_NTT_TYPE, optimization_name_e OPT_TYPE = OPTIMIZATION_NAME_DSP);
+  function automatic arith_mult_type_e set_ntt_mult_type(int OP_W, int_type_e MOD_NTT_TYPE, optimization_name_e OPT_TYPE = OPTIMIZATION_NAME_DSP);
     case(OP_W)
       32 :
         return OPT_TYPE == OPTIMIZATION_NAME_DSP ? MULT_KARATSUBA : MULT_CORE;
@@ -244,7 +244,7 @@ package common_definition_pkg;
   endfunction
 
   // Determine the arithmetic multiplier to be used according to the operand width, and NTT type
-  function arith_mult_type_e set_mult_type(int OP_W, optimization_name_e OPT_TYPE = OPTIMIZATION_NAME_DSP);
+  function automatic arith_mult_type_e set_mult_type(int OP_W, optimization_name_e OPT_TYPE = OPTIMIZATION_NAME_DSP);
     case(OP_W)
       32 :
         return MULT_CORE; // TOREVIEW
@@ -256,7 +256,7 @@ package common_definition_pkg;
   endfunction
 
   // Get msplit coefficient divider, to get the #coef unit
-  function int get_msplit_div (msplit_name_e s);
+  function automatic int get_msplit_div (msplit_name_e s);
     case (s)
       MSPLIT_NAME_M2_S2: return 4;
       MSPLIT_NAME_M3_S1: return 4;
@@ -266,7 +266,7 @@ package common_definition_pkg;
 
   // Get msplit coefficient multiplication factor. Depends on the
   // msplit part.
-  function int get_msplit_factor (msplit_name_e s, bit is_main);
+  function automatic int get_msplit_factor (msplit_name_e s, bit is_main);
     case (s)
       MSPLIT_NAME_M2_S2: return 2;
       MSPLIT_NAME_M3_S1: return is_main ? 3 : 1;

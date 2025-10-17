@@ -15,7 +15,7 @@ import arith_mult_core_pkg::*;
 
 // LATENCY of arith_mult_karatsuba_cascade.
 // This function enables parent module to have access to the default LATENCY value.
-function int get_latency();
+function automatic int get_latency();
   return 6;
 endfunction
 endpackage

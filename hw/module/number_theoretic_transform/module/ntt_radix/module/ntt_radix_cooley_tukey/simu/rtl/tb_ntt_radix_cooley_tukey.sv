@@ -50,7 +50,7 @@ module tb_ntt_radix_cooley_tukey;
 // ============================================================================================== --
 // functions
 // ============================================================================================== --
-  function [R-1:0][OP_W-1:0] ntt(input [R-1:0][OP_W-1:0] xt_a,
+  function automatic [R-1:0][OP_W-1:0] ntt(input [R-1:0][OP_W-1:0] xt_a,
                                  input [R-1:0][OP_W-1:0] phi_a,    // complete [0] with 1
                                  input [R/2-1:0][OP_W-1:0] omg_a,
                                  input bit OUT_NATURAL_ORDER); // "

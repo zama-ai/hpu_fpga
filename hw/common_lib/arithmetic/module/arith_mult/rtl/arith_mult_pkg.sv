@@ -22,7 +22,7 @@ package arith_mult_pkg;
 
   // LATENCY of arith_mult.
   // This function enables parent module to have access to the default LATENCY value.
-  function int get_latency(input arith_mult_type_e MULT_TYPE);
+  function automatic int get_latency(input arith_mult_type_e MULT_TYPE);
     int lat;
     lat = MULT_TYPE == MULT_CORE      ? arith_mult_core_pkg::get_latency():
           MULT_TYPE == MULT_KARATSUBA ? arith_mult_karatsuba_pkg::get_latency():

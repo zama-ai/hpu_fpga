@@ -19,7 +19,7 @@ package mod_acc_pkg;
 
   // LATENCY of mod_acc.
   // This function enables parent module to have access to the default LATENCY value.
-  function int get_latency();
+  function automatic int get_latency();
     return LATENCY;
   endfunction
 endpackage

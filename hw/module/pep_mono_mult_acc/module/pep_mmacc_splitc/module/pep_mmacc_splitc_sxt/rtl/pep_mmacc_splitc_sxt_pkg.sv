@@ -67,7 +67,7 @@ package pep_mmacc_splitc_sxt_pkg;
 // function
 // ============================================================================================= --
   // Reverse in base R, on S digits
-  function [N_W-1:0] rev_order_n(logic[N_W-1:0] v);
+  function automatic [N_W-1:0] rev_order_n(logic[N_W-1:0] v);
     logic [S-1:0][R_SZ-1:0] r_v;
     logic [S-1:0][R_SZ-1:0] v_a;
 
@@ -78,7 +78,7 @@ package pep_mmacc_splitc_sxt_pkg;
     return r_v;
   endfunction
 
-  function int gunit_depth(int d);
+  function automatic int gunit_depth(int d);
     // Additional locations to compensation the FIFO output pipe
     gunit_depth = DO_ACC ? d * CHUNK_GRAM_NB + CHUNK_GRAM_NB: (d + GRAM_CHUNK_NB-1)/ GRAM_CHUNK_NB + 1;
   endfunction

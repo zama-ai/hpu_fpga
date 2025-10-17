@@ -85,7 +85,7 @@ module tb_ntt_core_wmm_clbu_pcg;
   // ============================================================================================ //
   // function
   // ============================================================================================ //
-  function [S-1:0] rev_value(logic[S-1:0] v, int delta);
+  function automatic [S-1:0] rev_value(logic[S-1:0] v, int delta);
     logic [S-1:0] rev_v;
     logic [S-1:0] tmp0;
     logic [S-1:0] tmp1;

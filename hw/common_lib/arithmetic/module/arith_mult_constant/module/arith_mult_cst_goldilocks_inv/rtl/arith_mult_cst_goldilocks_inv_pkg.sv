@@ -13,7 +13,7 @@
 package arith_mult_cst_goldilocks_inv_pkg;
   // LATENCY of arith_mult_cst__goldilocks_inv.
   // This function enables parent module to have access to the default LATENCY value.
-  function int get_latency();
+  function automatic int get_latency();
     return 1; // output register
   endfunction
 endpackage

@@ -188,7 +188,7 @@ package pep_common_param_pkg;
 //==================================================
 // Functions
 //==================================================
-  function logic [PID_WW-1:0] pt_elt_nb (input [PID_W:0] wp, input [PID_W:0] rp);
+  function automatic logic [PID_WW-1:0] pt_elt_nb (input [PID_W:0] wp, input [PID_W:0] rp);
     logic [PID_WW-1:0] tmp;
     tmp = {1'b0,wp[PID_W-1:0]} - {1'b0, rp[PID_W-1:0]};
     pt_elt_nb = (rp[PID_W] ^ wp[PID_W]) == 1'b1 ? tmp + TOTAL_PBS_NB : tmp;

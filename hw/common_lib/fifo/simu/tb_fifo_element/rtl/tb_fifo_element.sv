@@ -31,7 +31,7 @@ module tb_fifo_element;
   localparam int TOTAL_NB_CYCLES       = FULL_BANDWIDTH_CYCLES + 1000;
 
   // Constant function
-  function bit type_is_present([DEPTH-1:0][3:0] a, int val);
+  function automatic bit type_is_present([DEPTH-1:0][3:0] a, int val);
     bit is_present;
     begin
       is_present = 0;

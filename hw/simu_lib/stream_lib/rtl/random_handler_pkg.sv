@@ -26,7 +26,7 @@ package random_handler_pkg;
     //--------------------------------------------
     // Constructor
     //--------------------------------------------
-    function new (input [DATA_W-1:0] init_val = 'x);
+    function automatic new (input [DATA_W-1:0] init_val = 'x);
       this.data    = init_val;
     endfunction : new
 
@@ -36,14 +36,14 @@ package random_handler_pkg;
     //----------------------
     // get_data
     //----------------------
-    function [DATA_W-1:0] get_data;
+    function automatic [DATA_W-1:0] get_data;
       return data;
     endfunction
 
     //----------------------
     // get_next_data
     //----------------------
-    function [DATA_W-1:0] get_next_data;
+    function automatic [DATA_W-1:0] get_next_data;
       void'(std::randomize(data));
       return data;
     endfunction

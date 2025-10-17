@@ -62,7 +62,7 @@ module pep_ks_blram_format
 // ============================================================================================== --
 // Function
 // ============================================================================================== --
-  function [TOTAL_BATCH_NB-1:0][31:0] get_batch_add_ofs();
+  function automatic [TOTAL_BATCH_NB-1:0][31:0] get_batch_add_ofs();
     var [TOTAL_BATCH_NB-1:0][31:0] ofs;
     ofs[0] = 0;
     for (int i=1; i<TOTAL_BATCH_NB; i=i+1)

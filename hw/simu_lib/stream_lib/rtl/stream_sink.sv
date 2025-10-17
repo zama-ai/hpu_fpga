@@ -144,21 +144,21 @@ module stream_sink
 //--------------------------------------
 // set_do_write
 //--------------------------------------
-  function void set_do_write(input bit v);
+  function automatic void set_do_write(input bit v);
     stream_spy.do_write = v;
   endfunction
 
 //--------------------------------------
 // set_do_ref
 //--------------------------------------
-  function void set_do_ref(input bit v);
+  function automatic void set_do_ref(input bit v);
     stream_spy.do_ref = v;
   endfunction
 
 //--------------------------------------
 // open
 //--------------------------------------
-  function int open (input string name_ref = FILENAME_REF, input string name = FILENAME);
+  function automatic int open (input string name_ref = FILENAME_REF, input string name = FILENAME);
     int r;
     r = stream_spy.open(name, name_ref);
     eof = 1;
@@ -168,7 +168,7 @@ module stream_sink
 //--------------------------------------
 // open
 //--------------------------------------
-  function void close;
+  function automatic void close;
     stream_spy.close;
   endfunction
 

@@ -65,7 +65,7 @@ module tb_ntt_core_gf64_without_pp;
 // ============================================================================================== --
 // function
 // ============================================================================================== --
-  function [SPLIT_NB-1:0][31:0] get_s_init();
+  function automatic [SPLIT_NB-1:0][31:0] get_s_init();
     var [SPLIT_NB-1:0][31:0] pos;
     pos[0] = 0;
     for (int i=1; i<SPLIT_NB; i=i+1)
@@ -74,7 +74,7 @@ module tb_ntt_core_gf64_without_pp;
       get_s_init[i] = pos[i] < S ? S-1 - pos[i] : 3*S-1 - pos[i];
   endfunction
 
-  function logic check_s_nb_l();
+  function automatic logic check_s_nb_l();
     integer s_total;
     s_total = 0;
     for (int i=0; i<SPLIT_NB; i=i+1)

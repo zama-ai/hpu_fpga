@@ -85,14 +85,14 @@ module tb_ntt_core_wmm_clbu_and_network_pcg;
   // ============================================================================================ //
   // function
   // ============================================================================================ //
-  function [S-1:0][R_W-1:0] pseudo_invert(logic [S-1:0][R_W-1:0] val, int step);
+  function automatic [S-1:0][R_W-1:0] pseudo_invert(logic [S-1:0][R_W-1:0] val, int step);
     // S-2, because nb of Bu is N/R
     for (int i=0; i<S; i=i+1) begin
       pseudo_invert[i] = (i<step) ? val[S-1-i]: val[i-step];
     end
   endfunction
 
-  function [S-1:0][R_W-1:0] inv_reverse(logic [S-1:0][R_W-1:0] val, int step);
+  function automatic [S-1:0][R_W-1:0] inv_reverse(logic [S-1:0][R_W-1:0] val, int step);
     // S-2, because nb of Bu is N/R
     for (int i=0; i<S; i=i+1) begin
       inv_reverse[i] = (i<S-step) ? val[S-step-1-i]: val[i];

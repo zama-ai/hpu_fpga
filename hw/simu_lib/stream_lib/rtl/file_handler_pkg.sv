@@ -55,7 +55,7 @@ package file_handler_pkg;
   //--------------------------------------------
   // Constructor
   //--------------------------------------------
-    function new (
+    function automatic new (
       input string data_type = "ascii_hex",
       input string filename  = ""
     );
@@ -74,7 +74,7 @@ package file_handler_pkg;
   //----------------------
   // print
   //----------------------
-    function void print;
+    function automatic void print;
       $display ("read_data :");
       $display (" DATA_W     : %0d"  , this.DATA_W    );
       $display (" filename   : %s"   , this.filename  );
@@ -86,7 +86,7 @@ package file_handler_pkg;
   //----------------------
   // open
   //----------------------
-    function int open(input string filename = this.filename, input string data_type = this.data_type);
+    function automatic int open(input string filename = this.filename, input string data_type = this.data_type);
       // check current state
       if (state != ST_IDLE && state != ST_EOF) begin
         $display("%t > WARNING: %m was not in idle or eof state when open for %s is called.", $time, filename);
@@ -121,7 +121,7 @@ package file_handler_pkg;
   // start
   //----------------------
   // initialize cur_data
-    function void start;
+    function automatic void start;
       if (state == ST_UNINITIALIZED)
         cur_data = get_next_data();
       state = ST_RUN;
@@ -130,7 +130,7 @@ package file_handler_pkg;
   //----------------------
   // get_cur_data
   //----------------------
-    function [DATA_W-1:0] get_cur_data;
+    function automatic [DATA_W-1:0] get_cur_data;
       return cur_data;
     endfunction
 
@@ -138,7 +138,7 @@ package file_handler_pkg;
   // get_next_data
   //----------------------
   // Update cur_data and output its value
-    function [DATA_W-1:0] get_next_data;
+    function automatic [DATA_W-1:0] get_next_data;
       data_cnt = data_cnt + 1;
       case (filename)
         "counter":
@@ -162,7 +162,7 @@ package file_handler_pkg;
   //----------------------
   // get_file_next_data
   //----------------------
-    local function [DATA_W-1:0] get_file_next_data();
+    local function automatic [DATA_W-1:0] get_file_next_data();
       integer              r;
       logic [DATA_W-1:0]   file_data;
 
@@ -200,7 +200,7 @@ package file_handler_pkg;
   //----------------------
   // get_next_line
   //----------------------
-    local function integer get_next_line (output [DATA_W-1:0] line_data);
+    local function automatic integer get_next_line (output [DATA_W-1:0] line_data);
       integer r;
       string  line_buffer;
 
@@ -252,14 +252,14 @@ package file_handler_pkg;
   //----------------------
   // get_state
   //----------------------
-    function state_e get_state;
+    function automatic state_e get_state;
       return state;
     endfunction
 
   //----------------------
   // is_running
   //----------------------
-    function bit is_st_running;
+    function automatic bit is_st_running;
       return state == ST_RUN;
     endfunction
 
@@ -267,21 +267,21 @@ package file_handler_pkg;
   //----------------------
   // is_idle
   //----------------------
-    function bit is_st_idle;
+    function automatic bit is_st_idle;
       return state == ST_IDLE;
     endfunction
 
   //----------------------
   // is_st_eof
   //----------------------
-    function bit is_st_eof;
+    function automatic bit is_st_eof;
       return state == ST_EOF;
     endfunction
 
   //----------------------
   // eof
   //----------------------
-    function int eof;
+    function automatic int eof;
       if (is_file())
         return $feof(fd);
       else
@@ -291,21 +291,21 @@ package file_handler_pkg;
   //----------------------
   // is_file
   //----------------------
-    function bit is_file;
+    function automatic bit is_file;
       return ~(filename == "counter" || filename == "random");
     endfunction
 
   //----------------------
   // set_counter
   //----------------------
-    function void set_counter(input [DATA_W-1:0] val);
+    function automatic void set_counter(input [DATA_W-1:0] val);
       this.counter_data = val;
     endfunction
 
   //----------------------
   // set_counter_and_update
   //----------------------
-    function void set_counter_and_update(input [DATA_W-1:0] val);
+    function automatic void set_counter_and_update(input [DATA_W-1:0] val);
       this.counter_data = val;
       this.cur_data     = val;
     endfunction
@@ -347,7 +347,7 @@ package file_handler_pkg;
   //--------------------------------------------
   // Constructor
   //--------------------------------------------
-    function new (
+    function automatic new (
       input string data_type = "ascii_hex",
       input string filename  = "",
       input bit    append = 0
@@ -366,7 +366,7 @@ package file_handler_pkg;
   //----------------------
   // print
   //----------------------
-    function void print;
+    function automatic void print;
       $display ("read_data :");
       $display (" DATA_W     : %0d"  , this.DATA_W    );
       $display (" filename   : %s"   , this.filename  );
@@ -379,7 +379,7 @@ package file_handler_pkg;
   //----------------------
   // open
   //----------------------
-    function int open(input string filename  = this.filename,
+    function automatic int open(input string filename  = this.filename,
                       input string data_type = this.data_type,
                       input bit    append    = this.append);
       string access;
@@ -411,7 +411,7 @@ package file_handler_pkg;
   //----------------------
   // close
   //----------------------
-    function void close;
+    function automatic void close;
       if (!fd) begin
         $display("%t > WARNING: %m closing a file that has not been opened.", $time);
       end
@@ -425,7 +425,7 @@ package file_handler_pkg;
   //----------------------
   // set_data
   //----------------------
-  function void set_data(logic[DATA_W-1:0] data);
+  function automatic void set_data(logic[DATA_W-1:0] data);
     reg [7:0] c;
     int       j;
     begin
@@ -458,21 +458,21 @@ package file_handler_pkg;
   //----------------------
   // get_state
   //----------------------
-    function state_e get_state;
+    function automatic state_e get_state;
       return state;
     endfunction
 
   //----------------------
   // is_running
   //----------------------
-    function bit is_st_running;
+    function automatic bit is_st_running;
       return state == ST_RUN;
     endfunction
 
   //----------------------
   // is_idle
   //----------------------
-    function bit is_st_idle;
+    function automatic bit is_st_idle;
       return state == ST_IDLE;
     endfunction
 

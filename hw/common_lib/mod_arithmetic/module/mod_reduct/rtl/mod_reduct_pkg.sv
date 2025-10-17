@@ -21,7 +21,7 @@ package mod_reduct_pkg;
   // LATENCY of mod_reduct.
   // This function enables parent module to have access to the default LATENCY value.
   // MULT_TYPE is only necessary with REDUCT_TYPE == "BARRETT"
-  function int get_latency(input mod_reduct_type_e REDUCT_TYPE,
+  function automatic int get_latency(input mod_reduct_type_e REDUCT_TYPE,
                            input arith_mult_type_e MULT_TYPE = MULT_UNKNOWN);
     int lat;
     lat = REDUCT_TYPE == MOD_REDUCT_MERSENNE ? mod_reduct_mersenne_pkg::get_latency():

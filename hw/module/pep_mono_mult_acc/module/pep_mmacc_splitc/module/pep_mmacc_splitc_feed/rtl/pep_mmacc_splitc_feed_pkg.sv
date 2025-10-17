@@ -40,7 +40,7 @@ package pep_mmacc_splitc_feed_pkg;
 //=================================================================================================
 // Function
 //=================================================================================================
-  function [N_W-1:0] rev_order_n(logic[N_W-1:0] v);
+  function automatic [N_W-1:0] rev_order_n(logic[N_W-1:0] v);
     logic [S-1:0][R_SZ-1:0] r_v;
     logic [S-1:0][R_SZ-1:0] v_a;
 
@@ -51,7 +51,7 @@ package pep_mmacc_splitc_feed_pkg;
     return r_v;
   endfunction
 
-  function [STG_ITER_W-1:0] rev_order_stgiter(logic[STG_ITER_W-1:0] v);
+  function automatic [STG_ITER_W-1:0] rev_order_stgiter(logic[STG_ITER_W-1:0] v);
     logic [SS-1:0][R_SZ-1:0] r_v;
     logic [SS-1:0][R_SZ-1:0] v_a;
 
@@ -62,7 +62,7 @@ package pep_mmacc_splitc_feed_pkg;
     return r_v;
   endfunction
 
-  function [R_SZ+PSI_SZ-1:0] rev_order_rpsi(logic[R_SZ+PSI_SZ-1:0] v);
+  function automatic [R_SZ+PSI_SZ-1:0] rev_order_rpsi(logic[R_SZ+PSI_SZ-1:0] v);
     logic [(PSI_SZ+R_SZ)/R_SZ-1:0][R_SZ-1:0] r_v;
     logic [(PSI_SZ+R_SZ)/R_SZ-1:0][R_SZ-1:0] v_a;
 
@@ -75,7 +75,7 @@ package pep_mmacc_splitc_feed_pkg;
 
   // From a position (natural order), and the rotation factor.
   // Extract the add = stg_iter where the rotated value belongs to.
-  function [STG_ITER_W-1:0] get_rot_add (logic [N_W-1:0]        pos,
+  function automatic [STG_ITER_W-1:0] get_rot_add (logic [N_W-1:0]        pos,
                                          logic [LWE_COEF_W-1:0] rot_factor);
     logic [N_W-1:0]                  pos_rev; // rev : reverse
     logic [LWE_COEF_W:0]             pos_rev_plus_rot; // LWE_COEF_W = $clog2(2*N) > N_W

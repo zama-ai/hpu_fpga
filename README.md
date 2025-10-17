@@ -11,7 +11,7 @@
 <hr/>
 
 <p align="center">
-<a href="https://docs.zama.ai/tfhe-rs/configuration/run_on_hpu"> 📒 Documentation</a> | <a href="https://zama.ai/community"> 💛 Community support</a> | <a href="https://github.com/zama-ai/awesome-zama"> 📚 FHE resources by Zama</a>
+<a href="https://docs.zama.ai/tfhe-rs/hardware-acceleration/run-on-hpu"> 📒 Documentation</a> | <a href="https://zama.ai/community"> 💛 Community support</a> | <a href="https://github.com/zama-ai/awesome-zama"> 📚 FHE resources by Zama</a>
 </p>
 
 
@@ -213,6 +213,7 @@ cd ${PROJECT_DIR}/versal
 > * run_syn_hpu_3parts_psi16.sh
 >     * HPU in which blind rotation processes 32 polynomial coefficients per cycle.
 >     * Fastest to compile.
+> * sometimes Vivado 2025.1 will report routing failures like "Router failed to deposit pin-assignments on site...". In these case you need to wait for top_hpu_routed_error.dcp to be generated and run the script you can find in versal/script/reroute.tcl which unroutes this slice and reroutes the whole design (Ex: vivado -mode batch -source scripts/reroute.tcl -tclargs SLICE_X286Y585 output_psi64).
 
 The documentation about [HPU parameters](./docs/hpu_parameters.md) and [parsing flags](./docs/parsing_flags.md) can help you understand the content of these 3 scripts and change some of these parameters to adapt the HPU to your needs.
 
@@ -420,13 +421,19 @@ just merge_elf top_hpu_tandem2
 Once merged you will be able to program the two pdis.
 
 ```
-just program top_hpu
+just program top_hpu XFL1MND5BQYG
 ```
+
+> [!TIP]
+> XFL1MND5BQYG is a fake serial number. To get your serial number you can either:
+> * read it on the box you received
+> * when AMI driver is loaded and AMC is in the expected version you can run a command like ```cat /sys/module/ami/drivers/pci\:ami/0000\:24\:00.0/board_serial``` (replacing 24 by the PCIe slot id of your board)
+> * with xsdb you can run ```xsdb -eval "connect;puts [lsort -unique [regex -all -inline {( XFL[A-Z0-9]*)} [targets -target-properties]]]"```. This gives you all the serial numbers available on your machine with a character 'A' added at the end.
 
 > [!WARNING]
 > Note: if booting from OSPI is required after programming with Tandem, please run ```xsdb versal/scripts/jtag/write_ospi_mode.tcl``` beforehand.
 
-*Now, you can run TFHE-rs code with the HPU you just loaded! In order to do so, have a look at [this document](https://docs.zama.ai/tfhe-rs/configuration/run_on_hpu) in order to find the next commands!*
+*Now, you can run TFHE-rs code with the HPU you just loaded! In order to do so, have a look at [this document](https://docs.zama.ai/tfhe-rs/hardware-acceleration/run-on-hpu) in order to find the next commands!*
 
 <p align="right">
   <a href="#table-of-contents" > ↑ Back to top </a>
@@ -436,7 +443,7 @@ just program top_hpu
 
 ### High-level API
 Use the HPU with the TFHE-rs high-level API:
-- [HPU configuration documentation](https://docs.zama.ai/tfhe-rs/configuration/run_on_hpu)
+- [HPU configuration documentation](https://docs.zama.ai/tfhe-rs/hardware-acceleration/run-on-hpu)
 - [Video tutorial] Introducing HPU HFPA](Coming soon)
 - [HPU benchmarks](https://docs.zama.ai/tfhe-rs/get-started/benchmarks/hpu)
 ### Low-level implementations

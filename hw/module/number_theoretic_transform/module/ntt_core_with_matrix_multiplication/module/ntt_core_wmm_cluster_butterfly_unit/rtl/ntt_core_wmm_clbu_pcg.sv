@@ -117,21 +117,21 @@ module ntt_core_wmm_clbu_pcg
   // =========================================================================================== --
   // functions
   // =========================================================================================== --
-  function [DELTA-1:0][31:0] get_group_size ();
+  function automatic [DELTA-1:0][31:0] get_group_size ();
     var [DELTA-1:0][31:0] gr_size;
     for (int i=0; i<DELTA; i=i+1)
       gr_size[i] = R ** (i+2);
     return gr_size;
   endfunction
 
-  function [DELTA-1:0][31:0] get_fit_group_nb ();
+  function automatic [DELTA-1:0][31:0] get_fit_group_nb ();
     var [DELTA-1:0][31:0] gr_nb;
     for (int i=0; i<DELTA; i=i+1)
       gr_nb[i] = (PSI*R)/GROUP_SIZE[i];
     return gr_nb;
   endfunction
 
-  function [DELTA-1:0][31:0] get_group_nb ();
+  function automatic [DELTA-1:0][31:0] get_group_nb ();
     var [DELTA-1:0][31:0] gr_nb;
     for (int i=0; i<DELTA; i=i+1)
       gr_nb[i] = N/GROUP_SIZE[i];

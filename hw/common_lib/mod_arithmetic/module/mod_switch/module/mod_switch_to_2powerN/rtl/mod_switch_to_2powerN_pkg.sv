@@ -20,7 +20,7 @@ package mod_switch_to_2powerN_pkg;
 
   // LATENCY of mod_switch_to_2powerN_pkg.
   // This function enables parent module to have access to the default LATENCY value.
-  function int get_latency(input int_type_e MOD_P_INV_TYPE, input arith_mult_type_e MULT_TYPE);
+  function automatic int get_latency(input int_type_e MOD_P_INV_TYPE, input arith_mult_type_e MULT_TYPE);
     return $countones(LAT_PIPE_MH) + arith_mult_constant_pkg::get_latency(MOD_P_INV_TYPE,MULT_TYPE);
   endfunction
 endpackage

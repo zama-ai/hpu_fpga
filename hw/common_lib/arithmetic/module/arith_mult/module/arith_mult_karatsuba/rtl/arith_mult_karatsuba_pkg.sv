@@ -15,7 +15,7 @@ package arith_mult_karatsuba_pkg;
 
   // LATENCY of arith_mult_karatsuba.
   // This function enables parent module to have access to the default LATENCY value.
-  function int get_latency();
+  function automatic int get_latency();
     return arith_mult_core_pkg::get_latency() + 1 + 1;
   endfunction
 endpackage
