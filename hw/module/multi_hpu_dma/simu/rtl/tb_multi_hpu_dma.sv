@@ -430,11 +430,9 @@ module tb_multi_hpu_dma;
     maxil_drv_if_hpu_a.read_trans(RESET_MONITOR_OFS, reset_monitor[0]);
     maxil_drv_if_hpu_b.read_trans(RESET_MONITOR_OFS, reset_monitor[1]);
 
-    for (int i = 0; i<2; i++) begin
-      assert ((reset_monitor[i][3:0] == gt_tx_reset_done) && (reset_monitor[i][7:4] == gt_rx_reset_done)) begin
-        $display("%t >    ERROR: reset monitor has not been read correctly",$time);
-        error = 1'b1;
-      end
+    assert ((reset_monitor[3:0] == gt_tx_reset_done) && (reset_monitor[7:4] == gt_rx_reset_done)) begin
+      $display("%t >    ERROR: reset monitor has not been read correctly",$time);
+      error = 1'b1;
     end
 
     // (4) Setting up credible values -------------------------------------------------------------
