@@ -26,7 +26,6 @@ module model_qsfp_lines
   input  [LANE_NB-1:0][AXIS_TKEEP_W-1:0 ]  qsfp_tx_tkeep_user,
   input  [LANE_NB-1:0]                     qsfp_tx_tlast,
   input  [LANE_NB-1:0]                     qsfp_tx_tvalid,
-  output [LANE_NB-1:0]                     qsfp_tx_tready,
   // == RX
   output reg [LANE_NB-1:0][AXIS_TDATA_W-1:0  ] qsfp_rx_tdata,
   output reg [LANE_NB-1:0][AXIS_TKEEP_W-1:0 ]  qsfp_rx_tkeep_user,
