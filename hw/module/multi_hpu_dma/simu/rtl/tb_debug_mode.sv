@@ -13,6 +13,7 @@ module tb_debug_mode;
   import axi_if_common_param_pkg::*;
   import axi_if_shell_axil_pkg::*;
   import hpu_regif_core_eth_2in3_pkg::*;
+  import mhdma_pkg::*;
 
 // ============================================================================================== --
 // localparam
@@ -21,7 +22,6 @@ module tb_debug_mode;
   localparam int CLK_HALF_PERIOD_B = 1;
   localparam int ARST_ACTIVATION = 17;
 
-  localparam int QSFP_LANE_NB = 4;
   localparam int MRMAC_AXIS_W = 64;
   localparam int MRMAC_TKEEP_W = 11;
 
@@ -85,7 +85,7 @@ module tb_debug_mode;
 // ============================================================================================== --
 // Error
 // ============================================================================================== --
-  logic [LANE_NB-1:0] error_loopback;
+  logic [QSFP_LANE_NB-1:0] error_loopback;
   bit error_lb_nepcs; // near end pcs
   bit error_register;
   bit error_noise;
@@ -289,7 +289,7 @@ module tb_debug_mode;
   logic [MRMAC_AXIS_W-1:0] data_lb_ref_rx_q[QSFP_LANE_NB-1:0][$];
 
   logic enable_noise_on_rx;
-  logic [AXIS_TDATA_W-1:0] read_data;
+  logic [MRMAC_AXIS_W-1:0] read_data;
 
   logic [31:0] rdata;
   initial begin
@@ -328,16 +328,6 @@ module tb_debug_mode;
   task automatic init_registers;
     begin
     // (1) Reading MAC REGISTERS ------------------------------------------------------------------
-      maxil_drv_if.read_trans(SYSTEM_SRC_MAC_ADDR_OFS, rdata);
-      assert (rdata == 'h0) else begin
-        $display("%t > ERROR:register SYSTEM_SRC_MAC_ADDR_OFS not correctly read %h",$time, rdata);
-        error_register = 1'b1;
-      end
-      maxil_drv_if.read_trans(SYSTEM_DST_MAC_ADDR_OFS, rdata);
-      assert (rdata == 'h0) else begin
-        $display("%t > ERROR:register SYSTEM_DST_MAC_ADDR_OFS not correctly read %h",$time, rdata);
-        error_register = 1'b1;
-      end
       maxil_drv_if.read_trans(SYSTEM_LINE_OFS, rdata);
       assert (rdata == 'h0) else begin
         $display("%t > ERROR:register SYSTEM_LINE_OFS not correctly read %h",$time, rdata);
@@ -464,7 +454,7 @@ module tb_debug_mode;
   endtask
 
   task automatic test_receive_noise_rx;
-    logic [AXIS_TDATA_W-1:0] expected_data[LANE_NB-1:0];
+    logic [MRMAC_AXIS_W-1:0] expected_data[QSFP_LANE_NB-1:0];
     begin
       // setting up configuration -----------------------------------------------------------------
       // Debug mode - Lane 0 - near end pcs
@@ -693,15 +683,15 @@ module tb_debug_mode;
 
   // checker: are values from loopback correct ?
   generate
-    logic [AXIS_TDATA_W-1:0] expected_data[LANE_NB-1:0];
-    for (genvar lanes = '0; lanes < LANE_NB ; lanes++) begin
+    logic [MRMAC_AXIS_W-1:0] expected_data[QSFP_LANE_NB-1:0];
+    for (genvar lanes = '0; lanes < QSFP_LANE_NB ; lanes++) begin
       always_ff @(posedge clk_mrmac) begin
         if (gt_loopback != 0) begin
           if (qsfp_rx_tvalid[lanes] == 1'b1) begin
             expected_data[lanes] = data_lb_ref_rx_q[lanes].pop_back();
 
             assert (expected_data[lanes] == qsfp_rx_tdata[lanes]) else begin
-              $display("%t >    ERROR: error while reading into the fifo: unexpected value %x %x",$time, expected_data[lanes], read_data[lanes]);
+              $display("%t >    ERROR: error while reading into the fifo: unexpected value %x %x",$time, expected_data[lanes], qsfp_rx_tdata[lanes]);
               error_loopback[lanes] = 1'b1;
             end
           end

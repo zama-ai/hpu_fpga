@@ -17,7 +17,7 @@ HPU ethernet configuration register interface. Will be accessed by RPU to define
 **Offset**: 0x0
 **Range**: 0x60000
 **Word Size (b)**: 32
-**External Packages**: "axi_if_shell_axil_pkg.sv","axi_if_common_param_pkg.sv"
+**External Packages**: "axi_if_common_param_pkg.sv","axi_if_shell_axil_pkg.sv"
 
 
 ---
@@ -44,8 +44,9 @@ Below is a summary of all the registers in the current register map:
 | [bsk_avail](#section-bsk-avail) | 0x31000 | 0x8 | BSK availability configuration |
 | [runtime_3in3](#section-runtime-3in3) | 0x32000 | 0x48 | Runtime information |
 | [system](#section-system) | 0x50000 | 0x8 | system configuration |
-| [reset](#section-reset) | 0x50014 | 0x8 | different resets are available |
-| [hpu_id](#section-hpu-id) | 0x50050 | 0x20 | flag that states that it's me, HPU id and MAC address of each HPU |
+| [reset](#section-reset) | 0x50014 | 0x8 | Controllable resets for tranceivers |
+| [hpu_id](#section-hpu-id) | 0x50050 | 0x20 | HPU ID containing all possible targets. For all IDs we have HPU MAC address, software ID and a flag for current hpu |
+| [request](#section-request) | 0x50100 | 0x8 | Request registers interface |
 | [line](#section-line) | 0x51000 | 0x4 | Line parameter sections |
 | [fifo_write](#section-fifo-write) | 0x5101c | 0x10 | fifo write part |
 | [fifo_read](#section-fifo-read) | 0x5102c | 0xc | fifo write part |
@@ -4056,8 +4057,8 @@ Below is a summary of all the registers in the current section reset:
 
 | Name             | Offset | Access | Description |
 |-----------------:|:------:|:------:|:------------|
-| [datapath](#register-resetdatapath) | 0x50014 | RW |  programmable datapath resets |
-| [monitor](#register-resetmonitor) | 0x50018 | R. |  reset done monitoring |
+| [datapath](#register-resetdatapath) | 0x50014 | RW |  GTM datapath resets |
+| [monitor](#register-resetmonitor) | 0x50018 | R. |  Reset done flag for monitoring |
 
 
 ---
@@ -4065,7 +4066,7 @@ Below is a summary of all the registers in the current section reset:
 
 ### Register reset.datapath
 
-- **Description**: programmable datapath resets
+- **Description**: GTM datapath resets
 - **Owner**: User
 - **Read Access**: Read
 - **Write Access**: Write
@@ -4079,9 +4080,9 @@ Register datapath contains following Sub-fields:
 
 | Field Name | Offset_b | Size_b | Default      | Description   |
 |-----------:|:--------:|:------:|:------------:|:--------------|
-| gt_all      | 0 | 4 |0| line loopback configurations |
-| tx_rst      | 4 | 4 |0| line selection |
-| rx_rst      | 8 | 4 |0| line selection |
+| gt_all      | 0 | 4 |0| reset controlling both rx and tx at the same time |
+| tx_rst      | 4 | 4 |0| resets on tx lane |
+| rx_rst      | 8 | 4 |0| resets on rx lane |
 
 
 
@@ -4090,7 +4091,7 @@ Register datapath contains following Sub-fields:
 
 ### Register reset.monitor
 
-- **Description**: reset done monitoring
+- **Description**: Reset done flag for monitoring
 - **Owner**: Kernel
 - **Read Access**: Read
 - **Write Access**: None
@@ -4248,6 +4249,72 @@ Below is a summary of all the registers in the current section hpu_id:
 - **Offset**: 0x5006c
 - **Default**: 0
 
+
+
+
+---
+
+
+
+
+## Section request
+
+### Register Overview
+
+Below is a summary of all the registers in the current section request:
+
+| Name             | Offset | Access | Description |
+|-----------------:|:------:|:------:|:------------|
+| [req_id](#register-requestreq-id) | 0x50100 | RW |  Different parameters for qsfp lines |
+| [req_addr](#register-requestreq-addr) | 0x50104 | RW |  request address |
+
+
+---
+
+
+### Register request.req-id
+
+- **Description**: Different parameters for qsfp lines
+- **Owner**: User
+- **Read Access**: Read
+- **Write Access**: Write
+- **Offset**: 0x50100
+- **Default**: C.f. fields
+
+
+#### Field Details
+
+Register req_id contains following Sub-fields:
+
+| Field Name | Offset_b | Size_b | Default      | Description   |
+|-----------:|:--------:|:------:|:------------:|:--------------|
+| size_b      | 0 | 16 |16384| size request in bytes, default is ct size |
+| node_id      | 16 | 4 |0| node id or HPU target id |
+| iop_id      | 24 | 4 |0| IOP id from software point of view |
+
+
+
+---
+
+
+### Register request.req-addr
+
+- **Description**: request address
+- **Owner**: User
+- **Read Access**: Read
+- **Write Access**: Write
+- **Offset**: 0x50104
+- **Default**: C.f. fields
+
+
+#### Field Details
+
+Register req_addr contains following Sub-fields:
+
+| Field Name | Offset_b | Size_b | Default      | Description   |
+|-----------:|:--------:|:------:|:------------:|:--------------|
+| src      | 0 | 16 |0| ciphertext source address |
+| dst      | 16 | 16 |0| ciphertext destination address |
 
 
 

@@ -5,8 +5,8 @@
   "offset": 0,
   "range": 393216,
   "ext_pkg": [
-    "axi_if_shell_axil_pkg",
-    "axi_if_common_param_pkg"
+    "axi_if_common_param_pkg",
+    "axi_if_shell_axil_pkg"
   ],
   "section": [
     {
@@ -4173,14 +4173,14 @@
     },
     {
       "name": "reset",
-      "description": "different resets are available",
+      "description": "Controllable resets for tranceivers",
       "offset": 327700,
       "bytes_align": 4,
       "range": 8,
       "register": [
         {
           "name": "datapath",
-          "description": "programmable datapath resets",
+          "description": "GTM datapath resets",
           "owner": "User",
           "read_access": "Read",
           "write_access": "Write",
@@ -4207,7 +4207,7 @@
           "field": [
             {
               "name": "gt_all",
-              "description": "line loopback configurations",
+              "description": "reset controlling both rx and tx at the same time",
               "size_b": 4,
               "offset_b": 0,
               "default": {
@@ -4216,7 +4216,7 @@
             },
             {
               "name": "tx_rst",
-              "description": "line selection",
+              "description": "resets on tx lane",
               "size_b": 4,
               "offset_b": 4,
               "default": {
@@ -4225,7 +4225,7 @@
             },
             {
               "name": "rx_rst",
-              "description": "line selection",
+              "description": "resets on rx lane",
               "size_b": 4,
               "offset_b": 8,
               "default": {
@@ -4236,7 +4236,7 @@
         },
         {
           "name": "monitor",
-          "description": "reset done monitoring",
+          "description": "Reset done flag for monitoring",
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "None",
@@ -4268,7 +4268,7 @@
     },
     {
       "name": "hpu_id",
-      "description": "flag that states that it's me, HPU id and MAC address of each HPU",
+      "description": "HPU ID containing all possible targets. For all IDs we have HPU MAC address, software ID and a flag for current hpu",
       "offset": 327760,
       "bytes_align": 4,
       "range": 32,
@@ -4368,6 +4368,114 @@
             "Cst": 0
           },
           "field": null
+        }
+      ]
+    },
+    {
+      "name": "request",
+      "description": "Request registers interface",
+      "offset": 327936,
+      "bytes_align": 4,
+      "range": 8,
+      "register": [
+        {
+          "name": "req_id",
+          "description": "Different parameters for qsfp lines",
+          "owner": "User",
+          "read_access": "Read",
+          "write_access": "Write",
+          "offset": 327936,
+          "default": {
+            "ParamsField": {
+              "params": [],
+              "name_val": [
+                [
+                  "size_b",
+                  "'h4000"
+                ],
+                [
+                  "node_id",
+                  "'h0"
+                ],
+                [
+                  "iop_id",
+                  "'h0"
+                ]
+              ]
+            }
+          },
+          "field": [
+            {
+              "name": "size_b",
+              "description": "size request in bytes, default is ct size",
+              "size_b": 16,
+              "offset_b": 0,
+              "default": {
+                "Cst": 16384
+              }
+            },
+            {
+              "name": "node_id",
+              "description": "node id or HPU target id",
+              "size_b": 4,
+              "offset_b": 16,
+              "default": {
+                "Cst": 0
+              }
+            },
+            {
+              "name": "iop_id",
+              "description": "IOP id from software point of view",
+              "size_b": 4,
+              "offset_b": 24,
+              "default": {
+                "Cst": 0
+              }
+            }
+          ]
+        },
+        {
+          "name": "req_addr",
+          "description": "request address",
+          "owner": "User",
+          "read_access": "Read",
+          "write_access": "Write",
+          "offset": 327940,
+          "default": {
+            "ParamsField": {
+              "params": [],
+              "name_val": [
+                [
+                  "src",
+                  "'h0"
+                ],
+                [
+                  "dst",
+                  "'h0"
+                ]
+              ]
+            }
+          },
+          "field": [
+            {
+              "name": "src",
+              "description": "ciphertext source address",
+              "size_b": 16,
+              "offset_b": 0,
+              "default": {
+                "Cst": 0
+              }
+            },
+            {
+              "name": "dst",
+              "description": "ciphertext destination address",
+              "size_b": 16,
+              "offset_b": 16,
+              "default": {
+                "Cst": 0
+              }
+            }
+          ]
         }
       ]
     },

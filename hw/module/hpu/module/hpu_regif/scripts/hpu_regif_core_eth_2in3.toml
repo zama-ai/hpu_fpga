@@ -30,19 +30,19 @@ offset= 0x0
 # =====================================================================================================================
 [section.reset]
 offset= 0x14
-description="different resets are available"
+description="Controllable resets for tranceivers"
 
 [section.reset.register.datapath]
-  description="programmable datapath resets"
+  description="GTM datapath resets"
   owner="User"
   read_access="Read"
   write_access="Write"
-  field.rx_rst={size_b=4, offset_b=8, default={Cst=0x0}, description="line selection"}
-  field.tx_rst={size_b=4, offset_b=4, default={Cst=0x0}, description="line selection"}
-  field.gt_all={size_b=4, offset_b=0, default={Cst=0x0}, description="line loopback configurations"}
+  field.rx_rst={size_b=4, offset_b=8, default={Cst=0x0}, description="resets on rx lane"}
+  field.tx_rst={size_b=4, offset_b=4, default={Cst=0x0}, description="resets on tx lane"}
+  field.gt_all={size_b=4, offset_b=0, default={Cst=0x0}, description="reset controlling both rx and tx at the same time"}
 
 [section.reset.register.monitor]
-  description="reset done monitoring"
+  description="Reset done flag for monitoring"
   owner="Kernel"
   read_access="Read"
   write_access="None"
@@ -50,7 +50,7 @@ description="different resets are available"
 
 # =====================================================================================================================
 [section.hpu_id]
-description="flag that states that it's me, HPU id and MAC address of each HPU"
+description="HPU ID containing all possible targets. For all IDs we have HPU MAC address, software ID and a flag for current hpu"
 offset= 0x50
 
 [section.hpu_id.register.zero]
@@ -108,6 +108,28 @@ offset= 0x50
   read_access="Read"
   write_access="Write"
   default={Cst=0x0}
+
+# =====================================================================================================================
+[section.request]
+description="Request registers interface"
+offset= 0x100
+
+[section.request.register.req_id]
+  description="Different parameters for qsfp lines"
+  owner="User"
+  read_access="Read"
+  write_access="Write"
+  field.size_b  = {size_b=16, offset_b=0,  default={Cst=0x4000}, description="size request in bytes, default is ct size"}
+  field.node_id = {size_b=4,  offset_b=16, default={Cst=0x0},    description="node id or HPU target id"}
+  field.iop_id  = {size_b=4,  offset_b=24, default={Cst=0x0},    description="IOP id from software point of view"}
+
+[section.request.register.req_addr]
+  description="request address"
+  owner="User"
+  read_access="Read"
+  write_access="Write"
+  field.src = {size_b=16, offset_b=0,  default={Cst=0x0}, description="ciphertext source address"}
+  field.dst = {size_b=16, offset_b=16, default={Cst=0x0}, description="ciphertext destination address"}
 
 # =====================================================================================================================
 [section.line]

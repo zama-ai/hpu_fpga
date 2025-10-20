@@ -78,6 +78,10 @@ import hpu_regif_core_eth_2in3_pkg::*;
     , output logic [REG_DATA_W-1: 0] r_hpu_id_six
   // Register IO: hpu_id_seven
     , output logic [REG_DATA_W-1: 0] r_hpu_id_seven
+  // Register IO: request_req_id
+    , output request_req_id_t r_request_req_id
+  // Register IO: request_req_addr
+    , output request_req_addr_t r_request_req_addr
   // Register IO: line_debug
     , output line_debug_t r_line_debug
   // Register IO: fifo_write_number_of_words
@@ -307,6 +311,21 @@ import hpu_regif_core_eth_2in3_pkg::*;
 //-- Default hpu_id_seven
   logic [REG_DATA_W-1:0]hpu_id_seven_default;
   assign hpu_id_seven_default = 'h0;
+//-- Default request_req_id
+  request_req_id_t request_req_id_default;
+  always_comb begin
+    request_req_id_default = 'h0;
+    request_req_id_default.size_b = 'h4000;
+    request_req_id_default.node_id = 'h0;
+    request_req_id_default.iop_id = 'h0;
+  end
+//-- Default request_req_addr
+  request_req_addr_t request_req_addr_default;
+  always_comb begin
+    request_req_addr_default = 'h0;
+    request_req_addr_default.src = 'h0;
+    request_req_addr_default.dst = 'h0;
+  end
 //-- Default line_debug
   line_debug_t line_debug_default;
   always_comb begin
@@ -490,6 +509,28 @@ import hpu_regif_core_eth_2in3_pkg::*;
     end
     else begin
       r_hpu_id_seven       <= r_hpu_id_sevenD;
+    end
+  end
+// Register FF: request_req_id
+  logic [REG_DATA_W-1:0] r_request_req_idD;
+  assign r_request_req_idD = (wr_en_ok && (wr_add[AXIL_ADD_RANGE_W-1:0] == REQUEST_REQ_ID_OFS[AXIL_ADD_RANGE_W-1:0]))? wr_data: r_request_req_id;
+  always_ff @(posedge clk) begin
+    if (!s_rst_n) begin
+      r_request_req_id       <= request_req_id_default;
+    end
+    else begin
+      r_request_req_id       <= r_request_req_idD;
+    end
+  end
+// Register FF: request_req_addr
+  logic [REG_DATA_W-1:0] r_request_req_addrD;
+  assign r_request_req_addrD = (wr_en_ok && (wr_add[AXIL_ADD_RANGE_W-1:0] == REQUEST_REQ_ADDR_OFS[AXIL_ADD_RANGE_W-1:0]))? wr_data: r_request_req_addr;
+  always_ff @(posedge clk) begin
+    if (!s_rst_n) begin
+      r_request_req_addr       <= request_req_addr_default;
+    end
+    else begin
+      r_request_req_addr       <= r_request_req_addrD;
     end
   end
 // Register FF: line_debug
@@ -744,6 +785,12 @@ import hpu_regif_core_eth_2in3_pkg::*;
           end
           HPU_ID_SEVEN_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register hpu_id_seven
             axil_rdataD = r_hpu_id_seven;
+          end
+          REQUEST_REQ_ID_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register request_req_id
+            axil_rdataD = r_request_req_id;
+          end
+          REQUEST_REQ_ADDR_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register request_req_addr
+            axil_rdataD = r_request_req_addr;
           end
           LINE_DEBUG_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register line_debug
             axil_rdataD = r_line_debug;

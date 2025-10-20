@@ -13,6 +13,7 @@ module tb_debug_lane;
   import axi_if_common_param_pkg::*;
   import axi_if_shell_axil_pkg::*;
   import hpu_regif_core_eth_2in3_pkg::*;
+  import mhdma_pkg::*;
 
 // ============================================================================================== --
 // localparam
@@ -21,7 +22,6 @@ module tb_debug_lane;
   localparam int CLK_HALF_PERIOD_B = 1;
   localparam int ARST_ACTIVATION = 17;
 
-  localparam int QSFP_LANE_NB = 4;
   localparam int MRMAC_AXIS_W  = 64;
   localparam int MRMAC_TKEEP_W  = 11;
 

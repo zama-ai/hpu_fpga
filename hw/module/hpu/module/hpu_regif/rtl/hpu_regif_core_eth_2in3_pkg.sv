@@ -38,6 +38,19 @@ package hpu_regif_core_eth_2in3_pkg;
   localparam int HPU_ID_SIX_OFS = 'h50068;
   localparam int HPU_ID_SEVEN_OFS = 'h5006c;
   typedef struct packed {
+    logic [(4-1):0] padding_28;
+    logic [(4-1):0] iop_id;
+    logic [(4-1):0] padding_20;
+    logic [(4-1):0] node_id;
+    logic [(16-1):0] size_b;
+   } request_req_id_t;
+  localparam int REQUEST_REQ_ID_OFS = 'h50100;
+  typedef struct packed {
+    logic [(16-1):0] dst;
+    logic [(16-1):0] src;
+   } request_req_addr_t;
+  localparam int REQUEST_REQ_ADDR_OFS = 'h50104;
+  typedef struct packed {
     logic [(1-1):0] reset_registers;
     logic [(1-1):0] tx_loop;
     logic [(1-1):0] rx_to_tx;

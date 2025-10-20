@@ -17,10 +17,10 @@ module model_loopback
   input logic resetn_eth_mrmac,
   // QSFP system interface ----------------------------------------------------
   // == TX
-  input  [LANE_NB-1:0][AXIS_TDATA_W-1:0  ] qsfp_tx_tdata,
-  input  [LANE_NB-1:0][AXIS_TKEEP_W-1:0 ]  qsfp_tx_tkeep_user,
-  input  [LANE_NB-1:0]                     qsfp_tx_tlast,
-  input  [LANE_NB-1:0]                     qsfp_tx_tvalid,
+  input  [QSFP_LANE_NB-1:0][MRMAC_AXIS_W-1:0  ] qsfp_tx_tdata,
+  input  [QSFP_LANE_NB-1:0][MRMAC_TKEEP_W-1:0 ]  qsfp_tx_tkeep_user,
+  input  [QSFP_LANE_NB-1:0]                     qsfp_tx_tlast,
+  input  [QSFP_LANE_NB-1:0]                     qsfp_tx_tvalid,
   // == RX
   output reg [QSFP_LANE_NB-1:0][MRMAC_AXIS_W-1:0  ] qsfp_rx_tdata,
   output reg [QSFP_LANE_NB-1:0][MRMAC_TKEEP_W-1:0 ] qsfp_rx_tkeep_user,
