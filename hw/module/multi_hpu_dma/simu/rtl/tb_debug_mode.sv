@@ -335,26 +335,13 @@ module tb_debug_mode;
 // ============================================================================================== --
   task automatic init_registers;
     begin
-    // (1) Reading MAC REGISTERS ------------------------------------------------------------------
-      maxil_drv_if.read_trans(SYSTEM_SRC_MAC_ADDR_OFS, rdata);
-      assert (rdata == 'h0) else begin
-        $display("%t > ERROR:register SYSTEM_SRC_MAC_ADDR_OFS not correctly read %h",$time, rdata);
-        error = 1'b1;
-      end
-      maxil_drv_if.read_trans(SYSTEM_DST_MAC_ADDR_OFS, rdata);
-      assert (rdata == 'h0) else begin
-        $display("%t > ERROR:register SYSTEM_DST_MAC_ADDR_OFS not correctly read %h",$time, rdata);
-        error = 1'b1;
-      end
+    // (1) Reading system REGISTERS ---------------------------------------------------------------
       maxil_drv_if.read_trans(SYSTEM_LINE_OFS, rdata);
       assert (rdata == 'h0) else begin
         $display("%t > ERROR:register SYSTEM_LINE_OFS not correctly read %h",$time, rdata);
         error = 1'b1;
       end
-      // (2) ASSIGN MAC REGISTERS ------------------------------------------------------------------
-      maxil_drv_if.write_trans(SYSTEM_SRC_MAC_ADDR_OFS, DEFAULT_SRC_MAC_ADDR_OFS);
-      maxil_drv_if.write_trans(SYSTEM_DST_MAC_ADDR_OFS, DEFAULT_DST_MAC_ADDR_OFS);
-      // (3) ASSIGN REGISTERS & CHECK -------------------------------------------------------------
+      // (2) ASSIGN REGISTERS & CHECK -------------------------------------------------------------
     line_rate     = 8'hAB;  // random, no idea what it should be
     line_loopback = 3'b100; // 3 near end pcs loopback
     line_select   = 2'b10;  // 2nd line selected

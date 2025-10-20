@@ -346,6 +346,7 @@ module tb_multi_hpu_dma;
     $display("A - Initial register check and definition");
     init_registers();
 
+    write_mac_addresses();
 
     $display("%t > INFO: End simulation",$time);
     repeat(20) @(posedge clk_control);
@@ -359,29 +360,14 @@ module tb_multi_hpu_dma;
 
   task automatic init_registers;
     begin
-    // (1) Reading MAC REGISTERS ------------------------------------------------------------------
-      maxil_drv_if_hpu_a.read_trans(SYSTEM_SRC_MAC_ADDR_OFS, rdata);
-      assert (rdata == 'h0) else begin
-        $display("%t > ERROR:register SYSTEM_SRC_MAC_ADDR_OFS not correctly read %h",$time, rdata);
-        error = 1'b1;
-      end
-      maxil_drv_if_hpu_b.read_trans(SYSTEM_DST_MAC_ADDR_OFS, rdata);
-      assert (rdata == 'h0) else begin
-        $display("%t > ERROR:register SYSTEM_DST_MAC_ADDR_OFS not correctly read %h",$time, rdata);
-        error = 1'b1;
-      end
+    // (1) Reading system REGISTERS ---------------------------------------------------------------
       maxil_drv_if_hpu_a.read_trans(SYSTEM_LINE_OFS, rdata);
       assert (rdata == 'h0) else begin
         $display("%t > ERROR:register SYSTEM_LINE_OFS not correctly read %h",$time, rdata);
         error = 1'b1;
       end
-      // (2) ASSIGN MAC REGISTERS ------------------------------------------------------------------
-      maxil_drv_if_hpu_a.write_trans(SYSTEM_SRC_MAC_ADDR_OFS, DEFAULT_SRC_MAC_ADDR_OFS);
-      maxil_drv_if_hpu_a.write_trans(SYSTEM_DST_MAC_ADDR_OFS, DEFAULT_DST_MAC_ADDR_OFS);
 
-      maxil_drv_if_hpu_b.write_trans(SYSTEM_SRC_MAC_ADDR_OFS, DEFAULT_SRC_MAC_ADDR_OFS);
-      maxil_drv_if_hpu_b.write_trans(SYSTEM_DST_MAC_ADDR_OFS, DEFAULT_DST_MAC_ADDR_OFS);
-      // (3) ASSIGN REGISTERS & CHECK -------------------------------------------------------------
+      // (2) ASSIGN REGISTERS & CHECK -------------------------------------------------------------
     line_rate     = 8'hAB;  // random, no idea what it should be
     line_loopback = 3'b100; // 3 near end pcs loopback
     line_select   = 2'b10;  // 2nd line selected
@@ -450,4 +436,53 @@ module tb_multi_hpu_dma;
     end
   endtask
 
+  // Effective MAC address without OUI
+  logic [23:0] mac_addr;
+  logic [3:0]  hpu_id;
+  logic        hpu_current;
+
+  logic [3:0] random_hpu_a;
+  logic [3:0] random_hpu_b;
+
+  logic [31:0] register_mac_addr_a;
+  logic [31:0] register_mac_addr_b;
+
+  task automatic write_mac_addresses();
+    begin
+      random_hpu_a = $urandom_range(7, 0);
+
+      // let's avoid saying that we are the same HPU
+      do begin
+        random_hpu_b = $urandom_range(7, 0);
+      end while (random_hpu_b == random_hpu_a);
+
+      $display("\n[INFO] For this run....");
+      $display("[INFO] HPU_A:id=%0d", random_hpu_a);
+      $display("[INFO] HPU_B:id=%0d \n", random_hpu_b);
+
+      for (int i = 0 ; i < 8 ; i++ ) begin
+        mac_addr = $urandom();
+        hpu_id = i;
+
+        if(i == random_hpu_a) begin
+          register_mac_addr_a = {1'b1, 3'b000, hpu_id, mac_addr};
+        end else begin
+          register_mac_addr_a = {1'b0, 3'b000, hpu_id, mac_addr};
+        end
+
+        if(i == random_hpu_b) begin
+          register_mac_addr_b = {1'b1, 3'b000, hpu_id, mac_addr};
+        end else begin
+          register_mac_addr_b = {1'b0, 3'b000, hpu_id, mac_addr};
+        end
+
+        $display("[INFO] HPU_ID=%0d :: MAC=%0x", i, mac_addr);
+        maxil_drv_if_hpu_a.write_trans(HPU_ID_ZERO_OFS+(4*i), register_mac_addr_a);
+        maxil_drv_if_hpu_b.write_trans(HPU_ID_ZERO_OFS+(4*i), register_mac_addr_b);
+      end
+
+    end
+  endtask
+
 endmodule
+

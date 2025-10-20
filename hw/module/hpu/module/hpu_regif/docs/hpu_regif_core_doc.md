@@ -1,5 +1,5 @@
 # HPU_REGIF_CORE documentation
-**Date**: 2025-10-17
+**Date**: 2025-10-20
 **Tool Version**: bd49564daf1a99d615cb6dbb121b54bfbeef8b22
 
 ## RegisterMap Overview
@@ -17,7 +17,7 @@ HPU ethernet configuration register interface. Will be accessed by RPU to define
 **Offset**: 0x0
 **Range**: 0x60000
 **Word Size (b)**: 32
-**External Packages**: "axi_if_common_param_pkg.sv","axi_if_shell_axil_pkg.sv"
+**External Packages**: "axi_if_shell_axil_pkg.sv","axi_if_common_param_pkg.sv"
 
 
 ---
@@ -43,8 +43,9 @@ Below is a summary of all the registers in the current register map:
 | [status_3in3](#section-status-3in3) | 0x30010 | 0x4 | HPU status of parts 2in3 and 3in3 |
 | [bsk_avail](#section-bsk-avail) | 0x31000 | 0x8 | BSK availability configuration |
 | [runtime_3in3](#section-runtime-3in3) | 0x32000 | 0x48 | Runtime information |
-| [system](#section-system) | 0x50000 | 0x10 | system configuration |
+| [system](#section-system) | 0x50000 | 0x8 | system configuration |
 | [reset](#section-reset) | 0x50014 | 0x8 | different resets are available |
+| [hpu_id](#section-hpu-id) | 0x50050 | 0x20 | flag that states that it's me, HPU id and MAC address of each HPU |
 | [line](#section-line) | 0x51000 | 0x4 | Line parameter sections |
 | [fifo_write](#section-fifo-write) | 0x5101c | 0x10 | fifo write part |
 | [fifo_read](#section-fifo-read) | 0x5102c | 0xc | fifo write part |
@@ -3997,40 +3998,8 @@ Below is a summary of all the registers in the current section system:
 
 | Name             | Offset | Access | Description |
 |-----------------:|:------:|:------:|:------------|
-| [src_mac_addr](#register-systemsrc-mac-addr) | 0x50000 | RW |  Source mac address: this Hpu mac address |
-| [dst_mac_addr](#register-systemdst-mac-addr) | 0x50004 | RW |  Target mac address |
-| [line](#register-systemline) | 0x50008 | RW |  Different parameters for qsfp lines |
-| [dummy_val3](#register-systemdummy-val3) | 0x5000c | R. |  Place-holder |
-
-
----
-
-
-### Register system.src-mac-addr
-
-- **Description**: Source mac address: this Hpu mac address
-- **Owner**: User
-- **Read Access**: Read
-- **Write Access**: Write
-- **Offset**: 0x50000
-- **Default**: 0
-
-
-
-
----
-
-
-### Register system.dst-mac-addr
-
-- **Description**: Target mac address
-- **Owner**: User
-- **Read Access**: Read
-- **Write Access**: Write
-- **Offset**: 0x50004
-- **Default**: 0
-
-
+| [line](#register-systemline) | 0x50000 | RW |  Different parameters for qsfp lines |
+| [dummy_val3](#register-systemdummy-val3) | 0x50004 | R. |  Place-holder |
 
 
 ---
@@ -4042,7 +4011,7 @@ Below is a summary of all the registers in the current section system:
 - **Owner**: User
 - **Read Access**: Read
 - **Write Access**: Write
-- **Offset**: 0x50008
+- **Offset**: 0x50000
 - **Default**: C.f. fields
 
 
@@ -4068,7 +4037,7 @@ Register line contains following Sub-fields:
 - **Owner**: Parameter
 - **Read Access**: Read
 - **Write Access**: None
-- **Offset**: 0x5000c
+- **Offset**: 0x50004
 - **Default**: 892679477
 
 
@@ -4136,6 +4105,149 @@ Register monitor contains following Sub-fields:
 | Field Name | Offset_b | Size_b | Default      | Description   |
 |-----------:|:--------:|:------:|:------------:|:--------------|
 | rst_done      | 0 | 8 |0| rst done monitoring |
+
+
+
+---
+
+
+
+
+## Section hpu-id
+
+### Register Overview
+
+Below is a summary of all the registers in the current section hpu_id:
+
+| Name             | Offset | Access | Description |
+|-----------------:|:------:|:------:|:------------|
+| [zero](#register-hpu-idzero) | 0x50050 | RW |  HPU ID zero |
+| [one](#register-hpu-idone) | 0x50054 | RW |  HPU ID one |
+| [two](#register-hpu-idtwo) | 0x50058 | RW |  HPU ID two |
+| [three](#register-hpu-idthree) | 0x5005c | RW |  HPU ID three |
+| [four](#register-hpu-idfour) | 0x50060 | RW |  HPU ID four |
+| [five](#register-hpu-idfive) | 0x50064 | RW |  HPU ID five |
+| [six](#register-hpu-idsix) | 0x50068 | RW |  HPU ID six |
+| [seven](#register-hpu-idseven) | 0x5006c | RW |  HPU ID seven |
+
+
+---
+
+
+### Register hpu-id.zero
+
+- **Description**: HPU ID zero
+- **Owner**: User
+- **Read Access**: Read
+- **Write Access**: Write
+- **Offset**: 0x50050
+- **Default**: 0
+
+
+
+
+---
+
+
+### Register hpu-id.one
+
+- **Description**: HPU ID one
+- **Owner**: User
+- **Read Access**: Read
+- **Write Access**: Write
+- **Offset**: 0x50054
+- **Default**: 0
+
+
+
+
+---
+
+
+### Register hpu-id.two
+
+- **Description**: HPU ID two
+- **Owner**: User
+- **Read Access**: Read
+- **Write Access**: Write
+- **Offset**: 0x50058
+- **Default**: 0
+
+
+
+
+---
+
+
+### Register hpu-id.three
+
+- **Description**: HPU ID three
+- **Owner**: User
+- **Read Access**: Read
+- **Write Access**: Write
+- **Offset**: 0x5005c
+- **Default**: 0
+
+
+
+
+---
+
+
+### Register hpu-id.four
+
+- **Description**: HPU ID four
+- **Owner**: User
+- **Read Access**: Read
+- **Write Access**: Write
+- **Offset**: 0x50060
+- **Default**: 0
+
+
+
+
+---
+
+
+### Register hpu-id.five
+
+- **Description**: HPU ID five
+- **Owner**: User
+- **Read Access**: Read
+- **Write Access**: Write
+- **Offset**: 0x50064
+- **Default**: 0
+
+
+
+
+---
+
+
+### Register hpu-id.six
+
+- **Description**: HPU ID six
+- **Owner**: User
+- **Read Access**: Read
+- **Write Access**: Write
+- **Offset**: 0x50068
+- **Default**: 0
+
+
+
+
+---
+
+
+### Register hpu-id.seven
+
+- **Description**: HPU ID seven
+- **Owner**: User
+- **Read Access**: Read
+- **Write Access**: Write
+- **Offset**: 0x5006c
+- **Default**: 0
+
 
 
 

@@ -5,8 +5,8 @@
   "offset": 0,
   "range": 393216,
   "ext_pkg": [
-    "axi_if_common_param_pkg",
-    "axi_if_shell_axil_pkg"
+    "axi_if_shell_axil_pkg",
+    "axi_if_common_param_pkg"
   ],
   "section": [
     {
@@ -4086,39 +4086,15 @@
       "description": "system configuration",
       "offset": 327680,
       "bytes_align": 4,
-      "range": 16,
+      "range": 8,
       "register": [
-        {
-          "name": "src_mac_addr",
-          "description": "Source mac address: this Hpu mac address",
-          "owner": "User",
-          "read_access": "Read",
-          "write_access": "Write",
-          "offset": 327680,
-          "default": {
-            "Cst": 0
-          },
-          "field": null
-        },
-        {
-          "name": "dst_mac_addr",
-          "description": "Target mac address",
-          "owner": "User",
-          "read_access": "Read",
-          "write_access": "Write",
-          "offset": 327684,
-          "default": {
-            "Cst": 0
-          },
-          "field": null
-        },
         {
           "name": "line",
           "description": "Different parameters for qsfp lines",
           "owner": "User",
           "read_access": "Read",
           "write_access": "Write",
-          "offset": 327688,
+          "offset": 327680,
           "default": {
             "ParamsField": {
               "params": [],
@@ -4187,7 +4163,7 @@
           "owner": "Parameter",
           "read_access": "Read",
           "write_access": "None",
-          "offset": 327692,
+          "offset": 327684,
           "default": {
             "Cst": 892679477
           },
@@ -4287,6 +4263,111 @@
               }
             }
           ]
+        }
+      ]
+    },
+    {
+      "name": "hpu_id",
+      "description": "flag that states that it's me, HPU id and MAC address of each HPU",
+      "offset": 327760,
+      "bytes_align": 4,
+      "range": 32,
+      "register": [
+        {
+          "name": "zero",
+          "description": "HPU ID zero",
+          "owner": "User",
+          "read_access": "Read",
+          "write_access": "Write",
+          "offset": 327760,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "one",
+          "description": "HPU ID one",
+          "owner": "User",
+          "read_access": "Read",
+          "write_access": "Write",
+          "offset": 327764,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "two",
+          "description": "HPU ID two",
+          "owner": "User",
+          "read_access": "Read",
+          "write_access": "Write",
+          "offset": 327768,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "three",
+          "description": "HPU ID three",
+          "owner": "User",
+          "read_access": "Read",
+          "write_access": "Write",
+          "offset": 327772,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "four",
+          "description": "HPU ID four",
+          "owner": "User",
+          "read_access": "Read",
+          "write_access": "Write",
+          "offset": 327776,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "five",
+          "description": "HPU ID five",
+          "owner": "User",
+          "read_access": "Read",
+          "write_access": "Write",
+          "offset": 327780,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "six",
+          "description": "HPU ID six",
+          "owner": "User",
+          "read_access": "Read",
+          "write_access": "Write",
+          "offset": 327784,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "seven",
+          "description": "HPU ID seven",
+          "owner": "User",
+          "read_access": "Read",
+          "write_access": "Write",
+          "offset": 327788,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
         }
       ]
     },

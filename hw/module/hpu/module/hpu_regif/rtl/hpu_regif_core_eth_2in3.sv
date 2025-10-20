@@ -1,7 +1,7 @@
 // ============================================================================================== //
 // Description  : Axi4-lite register bank
 // This file was generated with rust regmap generator:
-//  * Date:  2025-10-17
+//  * Date:  2025-10-20
 //  * Tool_version: bd49564daf1a99d615cb6dbb121b54bfbeef8b22
 // ---------------------------------------------------------------------------------------------- //
 // xR[n]W[na]
@@ -55,10 +55,6 @@ import hpu_regif_core_eth_2in3_pkg::*;
   input  logic                          s_axil_rready,
   // Registered version of wdata
   output logic [AXIL_DATA_W-1:0]        r_axil_wdata
-  // Register IO: system_src_mac_addr
-    , output logic [REG_DATA_W-1: 0] r_system_src_mac_addr
-  // Register IO: system_dst_mac_addr
-    , output logic [REG_DATA_W-1: 0] r_system_dst_mac_addr
   // Register IO: system_line
     , output system_line_t r_system_line
   // Register IO: reset_datapath
@@ -66,6 +62,22 @@ import hpu_regif_core_eth_2in3_pkg::*;
   // Register IO: reset_monitor
     , output reset_monitor_t r_reset_monitor
     , input  reset_monitor_t r_reset_monitor_upd
+  // Register IO: hpu_id_zero
+    , output logic [REG_DATA_W-1: 0] r_hpu_id_zero
+  // Register IO: hpu_id_one
+    , output logic [REG_DATA_W-1: 0] r_hpu_id_one
+  // Register IO: hpu_id_two
+    , output logic [REG_DATA_W-1: 0] r_hpu_id_two
+  // Register IO: hpu_id_three
+    , output logic [REG_DATA_W-1: 0] r_hpu_id_three
+  // Register IO: hpu_id_four
+    , output logic [REG_DATA_W-1: 0] r_hpu_id_four
+  // Register IO: hpu_id_five
+    , output logic [REG_DATA_W-1: 0] r_hpu_id_five
+  // Register IO: hpu_id_six
+    , output logic [REG_DATA_W-1: 0] r_hpu_id_six
+  // Register IO: hpu_id_seven
+    , output logic [REG_DATA_W-1: 0] r_hpu_id_seven
   // Register IO: line_debug
     , output line_debug_t r_line_debug
   // Register IO: fifo_write_number_of_words
@@ -245,12 +257,6 @@ import hpu_regif_core_eth_2in3_pkg::*;
 // ============================================================================================== --
 // Default value signals
 // ============================================================================================== --
-//-- Default system_src_mac_addr
-  logic [REG_DATA_W-1:0]system_src_mac_addr_default;
-  assign system_src_mac_addr_default = 'h0;
-//-- Default system_dst_mac_addr
-  logic [REG_DATA_W-1:0]system_dst_mac_addr_default;
-  assign system_dst_mac_addr_default = 'h0;
 //-- Default system_line
   system_line_t system_line_default;
   always_comb begin
@@ -277,6 +283,30 @@ import hpu_regif_core_eth_2in3_pkg::*;
     reset_monitor_default = 'h0;
     reset_monitor_default.rst_done = 'h0;
   end
+//-- Default hpu_id_zero
+  logic [REG_DATA_W-1:0]hpu_id_zero_default;
+  assign hpu_id_zero_default = 'h0;
+//-- Default hpu_id_one
+  logic [REG_DATA_W-1:0]hpu_id_one_default;
+  assign hpu_id_one_default = 'h0;
+//-- Default hpu_id_two
+  logic [REG_DATA_W-1:0]hpu_id_two_default;
+  assign hpu_id_two_default = 'h0;
+//-- Default hpu_id_three
+  logic [REG_DATA_W-1:0]hpu_id_three_default;
+  assign hpu_id_three_default = 'h0;
+//-- Default hpu_id_four
+  logic [REG_DATA_W-1:0]hpu_id_four_default;
+  assign hpu_id_four_default = 'h0;
+//-- Default hpu_id_five
+  logic [REG_DATA_W-1:0]hpu_id_five_default;
+  assign hpu_id_five_default = 'h0;
+//-- Default hpu_id_six
+  logic [REG_DATA_W-1:0]hpu_id_six_default;
+  assign hpu_id_six_default = 'h0;
+//-- Default hpu_id_seven
+  logic [REG_DATA_W-1:0]hpu_id_seven_default;
+  assign hpu_id_seven_default = 'h0;
 //-- Default line_debug
   line_debug_t line_debug_default;
   always_comb begin
@@ -341,28 +371,6 @@ import hpu_regif_core_eth_2in3_pkg::*;
 // ============================================================================================== --
   // To ease the code, use REG_DATA_W as register size.
   // Unused bits will be simplified by the synthesizer
-// Register FF: system_src_mac_addr
-  logic [REG_DATA_W-1:0] r_system_src_mac_addrD;
-  assign r_system_src_mac_addrD = (wr_en_ok && (wr_add[AXIL_ADD_RANGE_W-1:0] == SYSTEM_SRC_MAC_ADDR_OFS[AXIL_ADD_RANGE_W-1:0]))? wr_data: r_system_src_mac_addr;
-  always_ff @(posedge clk) begin
-    if (!s_rst_n) begin
-      r_system_src_mac_addr       <= system_src_mac_addr_default;
-    end
-    else begin
-      r_system_src_mac_addr       <= r_system_src_mac_addrD;
-    end
-  end
-// Register FF: system_dst_mac_addr
-  logic [REG_DATA_W-1:0] r_system_dst_mac_addrD;
-  assign r_system_dst_mac_addrD = (wr_en_ok && (wr_add[AXIL_ADD_RANGE_W-1:0] == SYSTEM_DST_MAC_ADDR_OFS[AXIL_ADD_RANGE_W-1:0]))? wr_data: r_system_dst_mac_addr;
-  always_ff @(posedge clk) begin
-    if (!s_rst_n) begin
-      r_system_dst_mac_addr       <= system_dst_mac_addr_default;
-    end
-    else begin
-      r_system_dst_mac_addr       <= r_system_dst_mac_addrD;
-    end
-  end
 // Register FF: system_line
   logic [REG_DATA_W-1:0] r_system_lineD;
   assign r_system_lineD = (wr_en_ok && (wr_add[AXIL_ADD_RANGE_W-1:0] == SYSTEM_LINE_OFS[AXIL_ADD_RANGE_W-1:0]))? wr_data: r_system_line;
@@ -394,6 +402,94 @@ import hpu_regif_core_eth_2in3_pkg::*;
     end
     else begin
       r_reset_monitor       <= r_reset_monitorD;
+    end
+  end
+// Register FF: hpu_id_zero
+  logic [REG_DATA_W-1:0] r_hpu_id_zeroD;
+  assign r_hpu_id_zeroD = (wr_en_ok && (wr_add[AXIL_ADD_RANGE_W-1:0] == HPU_ID_ZERO_OFS[AXIL_ADD_RANGE_W-1:0]))? wr_data: r_hpu_id_zero;
+  always_ff @(posedge clk) begin
+    if (!s_rst_n) begin
+      r_hpu_id_zero       <= hpu_id_zero_default;
+    end
+    else begin
+      r_hpu_id_zero       <= r_hpu_id_zeroD;
+    end
+  end
+// Register FF: hpu_id_one
+  logic [REG_DATA_W-1:0] r_hpu_id_oneD;
+  assign r_hpu_id_oneD = (wr_en_ok && (wr_add[AXIL_ADD_RANGE_W-1:0] == HPU_ID_ONE_OFS[AXIL_ADD_RANGE_W-1:0]))? wr_data: r_hpu_id_one;
+  always_ff @(posedge clk) begin
+    if (!s_rst_n) begin
+      r_hpu_id_one       <= hpu_id_one_default;
+    end
+    else begin
+      r_hpu_id_one       <= r_hpu_id_oneD;
+    end
+  end
+// Register FF: hpu_id_two
+  logic [REG_DATA_W-1:0] r_hpu_id_twoD;
+  assign r_hpu_id_twoD = (wr_en_ok && (wr_add[AXIL_ADD_RANGE_W-1:0] == HPU_ID_TWO_OFS[AXIL_ADD_RANGE_W-1:0]))? wr_data: r_hpu_id_two;
+  always_ff @(posedge clk) begin
+    if (!s_rst_n) begin
+      r_hpu_id_two       <= hpu_id_two_default;
+    end
+    else begin
+      r_hpu_id_two       <= r_hpu_id_twoD;
+    end
+  end
+// Register FF: hpu_id_three
+  logic [REG_DATA_W-1:0] r_hpu_id_threeD;
+  assign r_hpu_id_threeD = (wr_en_ok && (wr_add[AXIL_ADD_RANGE_W-1:0] == HPU_ID_THREE_OFS[AXIL_ADD_RANGE_W-1:0]))? wr_data: r_hpu_id_three;
+  always_ff @(posedge clk) begin
+    if (!s_rst_n) begin
+      r_hpu_id_three       <= hpu_id_three_default;
+    end
+    else begin
+      r_hpu_id_three       <= r_hpu_id_threeD;
+    end
+  end
+// Register FF: hpu_id_four
+  logic [REG_DATA_W-1:0] r_hpu_id_fourD;
+  assign r_hpu_id_fourD = (wr_en_ok && (wr_add[AXIL_ADD_RANGE_W-1:0] == HPU_ID_FOUR_OFS[AXIL_ADD_RANGE_W-1:0]))? wr_data: r_hpu_id_four;
+  always_ff @(posedge clk) begin
+    if (!s_rst_n) begin
+      r_hpu_id_four       <= hpu_id_four_default;
+    end
+    else begin
+      r_hpu_id_four       <= r_hpu_id_fourD;
+    end
+  end
+// Register FF: hpu_id_five
+  logic [REG_DATA_W-1:0] r_hpu_id_fiveD;
+  assign r_hpu_id_fiveD = (wr_en_ok && (wr_add[AXIL_ADD_RANGE_W-1:0] == HPU_ID_FIVE_OFS[AXIL_ADD_RANGE_W-1:0]))? wr_data: r_hpu_id_five;
+  always_ff @(posedge clk) begin
+    if (!s_rst_n) begin
+      r_hpu_id_five       <= hpu_id_five_default;
+    end
+    else begin
+      r_hpu_id_five       <= r_hpu_id_fiveD;
+    end
+  end
+// Register FF: hpu_id_six
+  logic [REG_DATA_W-1:0] r_hpu_id_sixD;
+  assign r_hpu_id_sixD = (wr_en_ok && (wr_add[AXIL_ADD_RANGE_W-1:0] == HPU_ID_SIX_OFS[AXIL_ADD_RANGE_W-1:0]))? wr_data: r_hpu_id_six;
+  always_ff @(posedge clk) begin
+    if (!s_rst_n) begin
+      r_hpu_id_six       <= hpu_id_six_default;
+    end
+    else begin
+      r_hpu_id_six       <= r_hpu_id_sixD;
+    end
+  end
+// Register FF: hpu_id_seven
+  logic [REG_DATA_W-1:0] r_hpu_id_sevenD;
+  assign r_hpu_id_sevenD = (wr_en_ok && (wr_add[AXIL_ADD_RANGE_W-1:0] == HPU_ID_SEVEN_OFS[AXIL_ADD_RANGE_W-1:0]))? wr_data: r_hpu_id_seven;
+  always_ff @(posedge clk) begin
+    if (!s_rst_n) begin
+      r_hpu_id_seven       <= hpu_id_seven_default;
+    end
+    else begin
+      r_hpu_id_seven       <= r_hpu_id_sevenD;
     end
   end
 // Register FF: line_debug
@@ -613,12 +709,6 @@ import hpu_regif_core_eth_2in3_pkg::*;
         else begin
           axil_rrespD = AXI4_OKAY;
           case(rd_add[AXIL_ADD_RANGE_W-1:0])
-          SYSTEM_SRC_MAC_ADDR_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register system_src_mac_addr
-            axil_rdataD = r_system_src_mac_addr;
-          end
-          SYSTEM_DST_MAC_ADDR_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register system_dst_mac_addr
-            axil_rdataD = r_system_dst_mac_addr;
-          end
           SYSTEM_LINE_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register system_line
             axil_rdataD = r_system_line;
           end
@@ -630,6 +720,30 @@ import hpu_regif_core_eth_2in3_pkg::*;
           end
           RESET_MONITOR_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register reset_monitor
             axil_rdataD = r_reset_monitor;
+          end
+          HPU_ID_ZERO_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register hpu_id_zero
+            axil_rdataD = r_hpu_id_zero;
+          end
+          HPU_ID_ONE_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register hpu_id_one
+            axil_rdataD = r_hpu_id_one;
+          end
+          HPU_ID_TWO_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register hpu_id_two
+            axil_rdataD = r_hpu_id_two;
+          end
+          HPU_ID_THREE_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register hpu_id_three
+            axil_rdataD = r_hpu_id_three;
+          end
+          HPU_ID_FOUR_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register hpu_id_four
+            axil_rdataD = r_hpu_id_four;
+          end
+          HPU_ID_FIVE_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register hpu_id_five
+            axil_rdataD = r_hpu_id_five;
+          end
+          HPU_ID_SIX_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register hpu_id_six
+            axil_rdataD = r_hpu_id_six;
+          end
+          HPU_ID_SEVEN_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register hpu_id_seven
+            axil_rdataD = r_hpu_id_seven;
           end
           LINE_DEBUG_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register line_debug
             axil_rdataD = r_line_debug;

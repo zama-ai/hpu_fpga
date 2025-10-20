@@ -1,15 +1,13 @@
 // ============================================================================================== //
 // Description  : register  map address definition package
 // This file was generated with rust regmap generator:
-//  * Date:  2025-10-17
+//  * Date:  2025-10-20
 //  * Tool_version: bd49564daf1a99d615cb6dbb121b54bfbeef8b22
 // ---------------------------------------------------------------------------------------------- //
 //
 // Should only be used in testbench to drive the register interface
 // ============================================================================================== //
 package hpu_regif_core_eth_2in3_pkg;
-  localparam int SYSTEM_SRC_MAC_ADDR_OFS = 'h50000;
-  localparam int SYSTEM_DST_MAC_ADDR_OFS = 'h50004;
   typedef struct packed {
     logic [(1-1):0] debug;
     logic [(18-1):0] padding_13;
@@ -17,8 +15,8 @@ package hpu_regif_core_eth_2in3_pkg;
     logic [(3-1):0] loopback;
     logic [(2-1):0] select;
    } system_line_t;
-  localparam int SYSTEM_LINE_OFS = 'h50008;
-  localparam int SYSTEM_DUMMY_VAL3_OFS = 'h5000c;
+  localparam int SYSTEM_LINE_OFS = 'h50000;
+  localparam int SYSTEM_DUMMY_VAL3_OFS = 'h50004;
   typedef struct packed {
     logic [(20-1):0] padding_12;
     logic [(4-1):0] rx_rst;
@@ -31,6 +29,14 @@ package hpu_regif_core_eth_2in3_pkg;
     logic [(8-1):0] rst_done;
    } reset_monitor_t;
   localparam int RESET_MONITOR_OFS = 'h50018;
+  localparam int HPU_ID_ZERO_OFS = 'h50050;
+  localparam int HPU_ID_ONE_OFS = 'h50054;
+  localparam int HPU_ID_TWO_OFS = 'h50058;
+  localparam int HPU_ID_THREE_OFS = 'h5005c;
+  localparam int HPU_ID_FOUR_OFS = 'h50060;
+  localparam int HPU_ID_FIVE_OFS = 'h50064;
+  localparam int HPU_ID_SIX_OFS = 'h50068;
+  localparam int HPU_ID_SEVEN_OFS = 'h5006c;
   typedef struct packed {
     logic [(1-1):0] reset_registers;
     logic [(1-1):0] tx_loop;

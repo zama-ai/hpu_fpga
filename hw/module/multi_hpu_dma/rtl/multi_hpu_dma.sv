@@ -90,8 +90,8 @@ module multi_hpu_dma
   //  * reset done monitoring     : 8b : r  : gt_{rx;tx}_reset_done
   // ============================================================================================ //
   // Registers
-  logic [31:0] r_system_src_mac_addr;
-  logic [31:0] r_system_dst_mac_addr;
+  // logic [31:0] r_system_src_mac_addr;
+  // logic [31:0] r_system_dst_mac_addr;
   logic [31:0] r_system_line;
   logic [31:0] r_reset_datapath;
   logic [31:0] r_reset_monitor;
@@ -171,8 +171,8 @@ module multi_hpu_dma
     .s_axil_rready (s_axil_dma_rready),
     .r_axil_wdata  (/* */),
     // registers
-    .r_system_src_mac_addr                 (r_system_src_mac_addr),
-    .r_system_dst_mac_addr                 (r_system_dst_mac_addr),
+    // .r_system_src_mac_addr                 (r_system_src_mac_addr),
+    // .r_system_dst_mac_addr                 (r_system_dst_mac_addr),
     .r_system_line                         (r_system_line),
     .r_reset_datapath                      (r_reset_datapath),
     .r_reset_monitor_upd                   (r_reset_monitor),
