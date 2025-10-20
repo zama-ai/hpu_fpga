@@ -85,8 +85,14 @@ module tb_debug_mode;
 // ============================================================================================== --
 // Error
 // ============================================================================================== --
+  logic [LANE_NB-1:0] error_loopback;
+  bit error_lb_nepcs; // near end pcs
+  bit error_register;
+  bit error_noise;
+  bit error_tx_loop;
   bit error;
 
+  assign error = |error_loopback | error_register | error_lb_nepcs | error_noise | error_tx_loop;
   always_ff @(posedge clk_control)
     if (error) begin
       $display("%t > FAILURE !", $time);
@@ -236,7 +242,7 @@ module tb_debug_mode;
     .qsfp_tx_tkeep_user(qsfp_tx_tkeep_user),
     .qsfp_tx_tlast     (qsfp_tx_tlast),
     .qsfp_tx_tvalid    (qsfp_tx_tvalid),
-    .qsfp_tx_tready    (qsfp_tx_tready),
+    // I want to be able to control qsfp_tx_tready within this tb
 
     // to DMA
     .qsfp_rx_tdata     (rx_tdata),
@@ -275,19 +281,6 @@ module tb_debug_mode;
   assign maxil_drv_if.rresp   = s_axil_dma_rresp;
   assign maxil_drv_if.rvalid  = s_axil_dma_rvalid;
 
-  generate
-    for (genvar gen_i=0 ; gen_i<QSFP_LANE_NB; gen_i++ ) begin
-      // Axi4-stream tx driver
-      axis_drv_if #(
-      .AXIS_DATA_W(MRMAC_AXIS_W)
-      ) axis_tx_driver ( .clk(clk_mrmac), .rst_n(s_rstn_mrmac));
-
-      // Connect interface on testbench signals
-      assign qsfp_rx_tdata[gen_i]  = axis_tx_driver.tdata;
-      assign qsfp_rx_tvalid[gen_i] = axis_tx_driver.tvalid;
-    end
-  endgenerate
-
   logic [63:0] clk_count;
   logic [63:0] valid_words_count;
   logic [63:0] sop_count;
@@ -296,8 +289,7 @@ module tb_debug_mode;
   logic [MRMAC_AXIS_W-1:0] data_lb_ref_rx_q[QSFP_LANE_NB-1:0][$];
 
   logic enable_noise_on_rx;
-  logic [MRMAC_AXIS_W-1:0] expected_data[QSFP_LANE_NB-1:0];
-  logic [MRMAC_AXIS_W-1:0] read_data;
+  logic [AXIS_TDATA_W-1:0] read_data;
 
   logic [31:0] rdata;
   initial begin
@@ -335,11 +327,21 @@ module tb_debug_mode;
 // ============================================================================================== --
   task automatic init_registers;
     begin
-    // (1) Reading system REGISTERS ---------------------------------------------------------------
+    // (1) Reading MAC REGISTERS ------------------------------------------------------------------
+      maxil_drv_if.read_trans(SYSTEM_SRC_MAC_ADDR_OFS, rdata);
+      assert (rdata == 'h0) else begin
+        $display("%t > ERROR:register SYSTEM_SRC_MAC_ADDR_OFS not correctly read %h",$time, rdata);
+        error_register = 1'b1;
+      end
+      maxil_drv_if.read_trans(SYSTEM_DST_MAC_ADDR_OFS, rdata);
+      assert (rdata == 'h0) else begin
+        $display("%t > ERROR:register SYSTEM_DST_MAC_ADDR_OFS not correctly read %h",$time, rdata);
+        error_register = 1'b1;
+      end
       maxil_drv_if.read_trans(SYSTEM_LINE_OFS, rdata);
       assert (rdata == 'h0) else begin
         $display("%t > ERROR:register SYSTEM_LINE_OFS not correctly read %h",$time, rdata);
-        error = 1'b1;
+        error_register = 1'b1;
       end
       // (2) ASSIGN REGISTERS & CHECK -------------------------------------------------------------
     line_rate     = 8'hAB;  // random, no idea what it should be
@@ -361,14 +363,14 @@ module tb_debug_mode;
       $display("    > line parameter correctly configured");
     end else begin
       $display("%t >    ERROR: configuration doesn't match to what have been selected",$time);
-      error = 1'b1;
+      error_register = 1'b1;
     end
 
     if ((gt_reset_rx_datapath == rst_rx_datapath) && (gt_reset_tx_datapath == rst_tx_datapath) && (gt_reset_all == rst_all)) begin
       $display("    > reset lines have been triggered correctly");
     end else begin
       $display("%t >    ERROR: reset configuration has not been applied correctly",$time);
-      error = 1'b1;
+      error_register = 1'b1;
     end
 
     // read reset register
@@ -382,7 +384,7 @@ module tb_debug_mode;
       $display("    > reset monitor register correctly read");
     end else begin
       $display("%t >    ERROR: reset monitor has not been read correctly",$time);
-      error = 1'b1;
+      error_register = 1'b1;
     end
 
     // (4) Setting up credible values -------------------------------------------------------------
@@ -437,14 +439,14 @@ module tb_debug_mode;
 
       if(read_data == 0) begin
         $display("%t >    ERROR: FIFO write data count has not changed",$time);
-        error = 1'b1;
+        error_lb_nepcs = 1'b1;
       end
 
       maxil_drv_if.read_trans(FIFO_READ_FIFO_READ_DATA_COUNT_OFS, read_data);
 
       if(read_data == 0) begin
         $display("%t >    ERROR: FIFO read data count has not changed",$time);
-        error = 1'b1;
+        error_lb_nepcs = 1'b1;
       end
 
       // has the register count from start of packet to start of packet changed ?
@@ -454,7 +456,7 @@ module tb_debug_mode;
 
       assert (sop_count == 11) else begin
         $display("%t >    ERROR: unexpected sop count %0d", $time, sop_count);
-        error = 1'b1;
+        error_lb_nepcs = 1'b1;
       end
 
       empty_fifo();
@@ -462,6 +464,7 @@ module tb_debug_mode;
   endtask
 
   task automatic test_receive_noise_rx;
+    logic [AXIS_TDATA_W-1:0] expected_data[LANE_NB-1:0];
     begin
       // setting up configuration -----------------------------------------------------------------
       // Debug mode - Lane 0 - near end pcs
@@ -488,7 +491,7 @@ module tb_debug_mode;
 
         assert (expected_data[line_select] == read_data) else begin
           $display("%t >    ERROR: error while reading into the fifo: unexpected value %x %x",$time, expected_data[line_select], read_data);
-          error = 1'b1;
+          error_noise = 1'b1;
         end
 
         repeat(20) @(posedge clk_control);
@@ -555,7 +558,7 @@ module tb_debug_mode;
 
       assert ((valid_words_count != 0) || ( clk_count != 0  )) else begin
               $display("%t >    ERROR: error while reading txloop registers, they have not moved",$time);
-              error = 1'b1;
+              error_tx_loop = 1'b1;
             end
       // emptying the FIFO
       empty_fifo();
@@ -690,7 +693,8 @@ module tb_debug_mode;
 
   // checker: are values from loopback correct ?
   generate
-    for (genvar lanes = '0; lanes < QSFP_LANE_NB ; lanes++) begin
+    logic [AXIS_TDATA_W-1:0] expected_data[LANE_NB-1:0];
+    for (genvar lanes = '0; lanes < LANE_NB ; lanes++) begin
       always_ff @(posedge clk_mrmac) begin
         if (gt_loopback != 0) begin
           if (qsfp_rx_tvalid[lanes] == 1'b1) begin
@@ -698,7 +702,7 @@ module tb_debug_mode;
 
             assert (expected_data[lanes] == qsfp_rx_tdata[lanes]) else begin
               $display("%t >    ERROR: error while reading into the fifo: unexpected value %x %x",$time, expected_data[lanes], read_data[lanes]);
-              error = 1'b1;
+              error_loopback[lanes] = 1'b1;
             end
           end
         end
