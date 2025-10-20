@@ -7,10 +7,9 @@
 // Enables to read and write from a specific, previously defined lane.
 // ==============================================================================================
 
-module debug_lane #(
-  parameter int AXIS_TDATA_W  = 64,
-  parameter int AXIS_TKEEP_W  = 11,
-
+module mhdma_trace
+  import mhdma_pkg::*;
+#(
   parameter int FIFO_DEPTH = 512,
   parameter int NB_WORD_W = $clog2(FIFO_DEPTH)+1,
 
@@ -23,23 +22,23 @@ module debug_lane #(
   input logic s_rstn_mrmac,
 
   // axi4-stream from RX selected line ----------------------------------------
-  input  logic [AXIS_TDATA_W-1:0] qsfp_rx_tdata,
-  input  logic [AXIS_TKEEP_W-1:0] qsfp_rx_tkeep_user,
+  input  logic [MRMAC_AXIS_W-1:0] qsfp_rx_tdata,
+  input  logic [MRMAC_TKEEP_W-1:0] qsfp_rx_tkeep_user,
   input  logic                    qsfp_rx_tlast,
   input  logic                    qsfp_rx_tvalid,
   // axi4-stream from TX selected line ----------------------------------------
-  output logic [AXIS_TDATA_W-1:0] qsfp_tx_tdata,
-  output logic [AXIS_TKEEP_W-1:0] qsfp_tx_tkeep_user,
+  output logic [MRMAC_AXIS_W-1:0] qsfp_tx_tdata,
+  output logic [MRMAC_TKEEP_W-1:0] qsfp_tx_tkeep_user,
   output logic                    qsfp_tx_tlast,
   output logic                    qsfp_tx_tvalid,
   input  logic                    qsfp_tx_tready,
 
   // to/from register interface -----------------------------------------------
   input  logic [NB_WORD_W-1:0]    r_nb_word,
-  input  logic [AXIS_TDATA_W-1:0] r_wr_word,
+  input  logic [MRMAC_AXIS_W-1:0] r_wr_word,
   output logic [NB_WORD_W-1:0]    r_wr_data_count,
   output logic [NB_WORD_W-1:0]    r_rd_data_count,
-  output logic [AXIS_TDATA_W-1:0] r_rd_word,
+  output logic [MRMAC_AXIS_W-1:0] r_rd_word,
   input  logic                    read_ack,
   input  logic                    write_ack,
 
@@ -107,7 +106,7 @@ module debug_lane #(
   assign tx_wr_en = write_ack && !tx_full && !tx_wr_rst_busy;
 
   // FIFO TX read control -------------------------------------------------------------------------
-  logic [AXIS_TDATA_W-1:0] tx_rd_data;
+  logic [MRMAC_AXIS_W-1:0] tx_rd_data;
   logic [NB_WORD_W-1:0]    rd_data_count;
   logic                    tx_rd_en;
   logic tx_data_valid;
@@ -135,7 +134,7 @@ module debug_lane #(
   // FIFO TX
   xpm_fifo_async_wrapper # (
     .CDC_SYNC_STAGES(CDC_SYNC_STAGES),
-    .DATA_W(AXIS_TDATA_W),
+    .DATA_W(MRMAC_AXIS_W),
     .FIFO_DEPTH(FIFO_DEPTH),
     .DATA_COUNT_WIDTH(NB_WORD_W),
     .SIM_ASSERT_CHK(SIM_ASSERT_CHK)
@@ -173,8 +172,8 @@ module debug_lane #(
 
 
   // building the axi4-stream tx ------------------------------------------------------------------
-  logic [AXIS_TDATA_W-1:0] fifo_tx_tdata;
-  logic [AXIS_TKEEP_W-1:0] fifo_tx_tkeep_user;
+  logic [MRMAC_AXIS_W-1:0] fifo_tx_tdata;
+  logic [MRMAC_TKEEP_W-1:0] fifo_tx_tkeep_user;
   logic                    fifo_tx_tlast;
   logic                    fifo_tx_tvalid;
 
@@ -208,11 +207,11 @@ module debug_lane #(
   // ----------------------------------------------------------------------------------------------
   // memory in loopback mode
   // ----------------------------------------------------------------------------------------------
-  logic [AXIS_TDATA_W-1:0] mem_tx_tdata;
-  logic [AXIS_TKEEP_W-1:0] mem_tx_tkeep_user;
+  logic [MRMAC_AXIS_W-1:0] mem_tx_tdata;
+  logic [MRMAC_TKEEP_W-1:0] mem_tx_tkeep_user;
   logic                    mem_tx_tlast;
   logic                    mem_tx_tvalid;
-  logic [AXIS_TDATA_W-1:0] memory[63:0];
+  logic [MRMAC_AXIS_W-1:0] memory[63:0];
   logic [5:0]              wr_add;
   logic [5:0]              rd_add;
   logic                    mem_sop;
@@ -317,7 +316,7 @@ module debug_lane #(
 
   xpm_fifo_async_wrapper # (
     .CDC_SYNC_STAGES(CDC_SYNC_STAGES),
-    .DATA_W(AXIS_TDATA_W),
+    .DATA_W(MRMAC_AXIS_W),
     .FIFO_DEPTH(FIFO_DEPTH),
     .DATA_COUNT_WIDTH(NB_WORD_W),
     .SIM_ASSERT_CHK(SIM_ASSERT_CHK)

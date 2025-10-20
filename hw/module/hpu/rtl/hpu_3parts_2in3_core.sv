@@ -42,11 +42,6 @@ module hpu_3parts_2in3_core
   parameter int    AXI4_BSK_ADD_W   = 64,
   parameter int    AXI4_KSK_ADD_W   = 64,
 
-  // Ethernet configuration
-  parameter int LANE_NB       = 4,  // number of QSFP lines
-  parameter int AXIS_TDATA_W  = 64, // must match MAC+PCS configuration from bd
-  parameter int AXIS_TKEEP_W  = 11,
-
   // HPU version
   parameter int    VERSION_MAJOR    = 2,
   parameter int    VERSION_MINOR    = 0
@@ -126,25 +121,25 @@ module hpu_3parts_2in3_core
 
   // QSFP system interface
   // == TX
-  output[LANE_NB-1:0][AXIS_TDATA_W-1:0  ] qsfp_tx_tdata,
-  output[LANE_NB-1:0][AXIS_TKEEP_W-1:0 ]  qsfp_tx_tkeep_user,
-  output[LANE_NB-1:0]                     qsfp_tx_tlast,
-  output[LANE_NB-1:0]                     qsfp_tx_tvalid,
-  input [LANE_NB-1:0]                     qsfp_tx_tready,
+  output[QSFP_LANE_NB-1:0][AXIS_TDATA_W-1:0  ] qsfp_tx_tdata,
+  output[QSFP_LANE_NB-1:0][AXIS_TKEEP_W-1:0 ]  qsfp_tx_tkeep_user,
+  output[QSFP_LANE_NB-1:0]                     qsfp_tx_tlast,
+  output[QSFP_LANE_NB-1:0]                     qsfp_tx_tvalid,
+  input [QSFP_LANE_NB-1:0]                     qsfp_tx_tready,
   // == RX
-  input [LANE_NB-1:0][AXIS_TDATA_W-1:0  ] qsfp_rx_tdata,
-  input [LANE_NB-1:0][AXIS_TKEEP_W-1:0 ]  qsfp_rx_tkeep_user,
-  input [LANE_NB-1:0]                     qsfp_rx_tlast,
-  input [LANE_NB-1:0]                     qsfp_rx_tvalid,
+  input [QSFP_LANE_NB-1:0][AXIS_TDATA_W-1:0  ] qsfp_rx_tdata,
+  input [QSFP_LANE_NB-1:0][AXIS_TKEEP_W-1:0 ]  qsfp_rx_tkeep_user,
+  input [QSFP_LANE_NB-1:0]                     qsfp_rx_tlast,
+  input [QSFP_LANE_NB-1:0]                     qsfp_rx_tvalid,
 
   // transceiver control
   output [2:0]         gt_loopback,
   output [7:0]         gt_line_rate,
-  output [LANE_NB-1:0] gt_reset_rx_datapath,
-  output [LANE_NB-1:0] gt_reset_tx_datapath,
-  output [LANE_NB-1:0] gt_reset_all,
-  input  [LANE_NB-1:0] gt_rx_reset_done,
-  input  [LANE_NB-1:0] gt_tx_reset_done
+  output [QSFP_LANE_NB-1:0] gt_reset_rx_datapath,
+  output [QSFP_LANE_NB-1:0] gt_reset_tx_datapath,
+  output [QSFP_LANE_NB-1:0] gt_reset_all,
+  input  [QSFP_LANE_NB-1:0] gt_rx_reset_done,
+  input  [QSFP_LANE_NB-1:0] gt_tx_reset_done
 );
 
 // ============================================================================================== --
@@ -457,9 +452,6 @@ module hpu_3parts_2in3_core
 //
 // ---------------------------------------------------------------------------------------------- --
   multi_hpu_dma #(
-    .LANE_NB     (LANE_NB),
-    .AXIS_TDATA_W(AXIS_TDATA_W),
-    .AXIS_TKEEP_W(AXIS_TKEEP_W)
   ) multi_hpu_dma (
     // configuration interface: regif
     .clk_eth_cfg   (cfg_eth_clk),

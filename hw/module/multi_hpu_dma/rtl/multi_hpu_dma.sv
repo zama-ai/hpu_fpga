@@ -8,14 +8,11 @@
 // ==============================================================================================
 
 module multi_hpu_dma
+  import mhdma_pkg::*;
   import axi_if_common_param_pkg::*;
   import axi_if_shell_axil_pkg::*;
   import hpu_regif_core_eth_2in3_pkg::*;
 #(
-  parameter int LANE_NB       = 4,  // number of QSFP lines
-  parameter int AXIS_TDATA_W  = 64, // must match MAC+PCS configuration from bd
-  parameter int AXIS_TKEEP_W  = 11,
-
   parameter int FIFO_DEPTH = 512,
   parameter int NB_WORD_W = $clog2(FIFO_DEPTH)+1
 ) (
@@ -45,36 +42,38 @@ module multi_hpu_dma
   input  logic                       s_axil_dma_rready,
   // QSFP system interface ----------------------------------------------------
   // == TX
-  output[LANE_NB-1:0][AXIS_TDATA_W-1:0  ] qsfp_tx_tdata,
-  output[LANE_NB-1:0][AXIS_TKEEP_W-1:0 ]  qsfp_tx_tkeep_user,
-  output[LANE_NB-1:0]                     qsfp_tx_tlast,
-  output[LANE_NB-1:0]                     qsfp_tx_tvalid,
-  input [LANE_NB-1:0]                     qsfp_tx_tready,
+  output[QSFP_LANE_NB-1:0][MRMAC_AXIS_W-1:0  ] qsfp_tx_tdata,
+  output[QSFP_LANE_NB-1:0][MRMAC_TKEEP_W-1:0 ] qsfp_tx_tkeep_user,
+  output[QSFP_LANE_NB-1:0]                     qsfp_tx_tlast,
+  output[QSFP_LANE_NB-1:0]                     qsfp_tx_tvalid,
+  input [QSFP_LANE_NB-1:0]                     qsfp_tx_tready,
   // == RX
-  input [LANE_NB-1:0][AXIS_TDATA_W-1:0  ] qsfp_rx_tdata,
-  input [LANE_NB-1:0][AXIS_TKEEP_W-1:0 ]  qsfp_rx_tkeep_user,
-  input [LANE_NB-1:0]                     qsfp_rx_tlast,
-  input [LANE_NB-1:0]                     qsfp_rx_tvalid,
-  // control interface --------------------------------------------------------
+  input [QSFP_LANE_NB-1:0][MRMAC_AXIS_W-1:0  ] qsfp_rx_tdata,
+  input [QSFP_LANE_NB-1:0][MRMAC_TKEEP_W-1:0 ]  qsfp_rx_tkeep_user,
+  input [QSFP_LANE_NB-1:0]                     qsfp_rx_tlast,
+  input [QSFP_LANE_NB-1:0]                     qsfp_rx_tvalid,
+  // irq interface ------------------------------------------------------------
+  logic irq_read_done,
+  logic irq_rx_notify,
+  // Giga traceivers interface ------------------------------------------------
+  output [QSFP_LANE_NB-1:0] gt_reset_rx_datapath,
+  output [QSFP_LANE_NB-1:0] gt_reset_tx_datapath,
+  output [QSFP_LANE_NB-1:0] gt_reset_all,
+  input  [QSFP_LANE_NB-1:0] gt_rx_reset_done,
+  input  [QSFP_LANE_NB-1:0] gt_tx_reset_done,
+  // line rate, should be set to zero
+  output [7:0]         gt_line_rate,
   // loopback mode, will be applied to all channels
   //  * 000: disabled
   //  * 010: near end pma
   //  * 100: near end pcs
-  output [2:0] gt_loopback,
-  // Line rate TBD
-  output [7:0] gt_line_rate,
-  // resets
-  output [LANE_NB-1:0] gt_reset_rx_datapath,
-  output [LANE_NB-1:0] gt_reset_tx_datapath,
-  output [LANE_NB-1:0] gt_reset_all,
-  input  [LANE_NB-1:0] gt_rx_reset_done,
-  input  [LANE_NB-1:0] gt_tx_reset_done
+  output [2:0]         gt_loopback
 );
 
   // ============================================================================================ --
   // Signal
   // ============================================================================================ --
-  logic [$clog2(LANE_NB):0] line_sel;
+  logic [$clog2(QSFP_LANE_NB):0] line_sel;
 
   // ============================================================================================ //
   // Register file
@@ -136,12 +135,12 @@ module multi_hpu_dma
 
   // status directly from fifo
   logic [NB_WORD_W-1:0]    r_nb_word;
-  logic [AXIS_TDATA_W-1:0] r_wr_word;
+  logic [MRMAC_AXIS_W-1:0] r_wr_word;
   logic [AXIL_DATA_W-1:0]  r_wr_word_a;
   logic [AXIL_DATA_W-1:0]  r_wr_word_b;
   logic [NB_WORD_W-1:0]    r_wr_data_count;
   logic [NB_WORD_W-1:0]    r_rd_data_count;
-  logic [AXIS_TDATA_W-1:0] r_rd_word;
+  logic [MRMAC_AXIS_W-1:0] r_rd_word;
 
   logic [63:0]             clk_cnt_out;
   logic [63:0]             valid_words_out;
@@ -255,23 +254,21 @@ module multi_hpu_dma
   // ----------------------------------------------------------------------------------------------
 
   // ============================================================================================ //
-  logic [AXIS_TDATA_W-1:0  ] axis_rx_tdata;
-  logic [AXIS_TKEEP_W-1:0 ]  axis_rx_tkeep_user;
+  logic [MRMAC_AXIS_W-1:0  ] axis_rx_tdata;
+  logic [MRMAC_TKEEP_W-1:0 ]  axis_rx_tkeep_user;
   logic                      axis_rx_tlast;
   logic                      axis_rx_tvalid;
 
-  logic [AXIS_TDATA_W-1:0] axis_tx_tdata;
-  logic [AXIS_TKEEP_W-1:0] axis_tx_tkeep_user;
+  logic [MRMAC_AXIS_W-1:0] axis_tx_tdata;
+  logic [MRMAC_TKEEP_W-1:0] axis_tx_tkeep_user;
   logic                    axis_tx_tlast;
   logic                    axis_tx_tvalid;
   logic                    axis_tx_tready;
 
-  debug_lane # (
-    .AXIS_TDATA_W(AXIS_TDATA_W),
-    .AXIS_TKEEP_W(AXIS_TKEEP_W),
+  mhdma_trace # (
     .FIFO_DEPTH(FIFO_DEPTH),
     .SIM_ASSERT_CHK(0)
-  ) debug_lane (
+  ) mhdma_trace (
     // system interface
     .clk_control        (clk_eth_cfg),
     .s_rstn_control     (resetn_eth_cfg),
@@ -320,11 +317,8 @@ module multi_hpu_dma
   // depending on line_sel signal, selects and outputs the correct line
   // this module is fully combinatory
   // ============================================================================================ //
-  axis_switch_lane_to_1 # (
-    .LANE_NB            (LANE_NB),
-    .AXIS_TDATA_W       (AXIS_TDATA_W),
-    .AXIS_TKEEP_W       (AXIS_TKEEP_W)
-  ) axis_switch_lane_to_1 (
+  mhdma_axis_selector # (
+  ) mhdma_axis_selector (
     .qsfp_rx_tdata      (qsfp_rx_tdata),
     .qsfp_rx_tkeep_user (qsfp_rx_tkeep_user),
     .qsfp_rx_tlast      (qsfp_rx_tlast),

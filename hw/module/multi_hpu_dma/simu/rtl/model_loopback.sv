@@ -9,29 +9,24 @@
 //
 // ==============================================================================================
 
-module model_qsfp_lines
-  import axi_if_common_param_pkg::*;
-  import axi_if_shell_axil_pkg::*;
-#(
-  parameter int LANE_NB       = 4,  // number of QSFP lines
-  parameter int AXIS_TDATA_W  = 64, // must match MAC+PCS configuration from bd
-  parameter int AXIS_TKEEP_W  = 11
-) (
+module model_loopback
+  import mhdma_pkg::*;
+#() (
   // Ethernet fast clock interface --------------------------------------------
   input logic clk_eth_mrmac,
   input logic resetn_eth_mrmac,
   // QSFP system interface ----------------------------------------------------
   // == TX
-  input  [LANE_NB-1:0][AXIS_TDATA_W-1:0  ] qsfp_tx_tdata,
-  input  [LANE_NB-1:0][AXIS_TKEEP_W-1:0 ]  qsfp_tx_tkeep_user,
-  input  [LANE_NB-1:0]                     qsfp_tx_tlast,
-  input  [LANE_NB-1:0]                     qsfp_tx_tvalid,
-  output [LANE_NB-1:0]                     qsfp_tx_tready,
+  input  [QSFP_LANE_NB-1:0][MRMAC_AXIS_W-1:0  ]     qsfp_tx_tdata,
+  input  [QSFP_LANE_NB-1:0][MRMAC_TKEEP_W-1:0 ]     qsfp_tx_tkeep_user,
+  input  [QSFP_LANE_NB-1:0]                         qsfp_tx_tlast,
+  input  [QSFP_LANE_NB-1:0]                         qsfp_tx_tvalid,
+  output [QSFP_LANE_NB-1:0]                         qsfp_tx_tready,
   // == RX
-  output reg [LANE_NB-1:0][AXIS_TDATA_W-1:0  ] qsfp_rx_tdata,
-  output reg [LANE_NB-1:0][AXIS_TKEEP_W-1:0 ]  qsfp_rx_tkeep_user,
-  output reg [LANE_NB-1:0]                     qsfp_rx_tlast,
-  output reg [LANE_NB-1:0]                     qsfp_rx_tvalid,
+  output reg [QSFP_LANE_NB-1:0][MRMAC_AXIS_W-1:0  ] qsfp_rx_tdata,
+  output reg [QSFP_LANE_NB-1:0][MRMAC_TKEEP_W-1:0 ] qsfp_rx_tkeep_user,
+  output reg [QSFP_LANE_NB-1:0]                     qsfp_rx_tlast,
+  output reg [QSFP_LANE_NB-1:0]                     qsfp_rx_tvalid,
   // control interface --------------------------------------------------------
   // loopback mode, will be applied to all channels
   //  * 000: disabled
@@ -40,15 +35,21 @@ module model_qsfp_lines
   input [2:0] loopback
 );
 
+  // =========================================================================================== --
+  // Localparam
+  // =========================================================================================== --
   localparam int TOTAL_LAT = 10;
 
-  logic [LANE_NB-1:0][TOTAL_LAT-1:0][AXIS_TDATA_W-1:0  ] rx_tdata_d;
-  logic [LANE_NB-1:0][TOTAL_LAT-1:0][AXIS_TKEEP_W-1:0 ]  rx_tkeep_user_d;
-  logic [LANE_NB-1:0][TOTAL_LAT-1:0]                     rx_tlast_d;
-  logic [LANE_NB-1:0][TOTAL_LAT-1:0]                     rx_tvalid_d;
+  // =========================================================================================== --
+  // lanes
+  // =========================================================================================== --
+  logic [QSFP_LANE_NB-1:0][TOTAL_LAT-1:0][MRMAC_AXIS_W-1:0  ] rx_tdata_d;
+  logic [QSFP_LANE_NB-1:0][TOTAL_LAT-1:0][MRMAC_TKEEP_W-1:0 ] rx_tkeep_user_d;
+  logic [QSFP_LANE_NB-1:0][TOTAL_LAT-1:0]                     rx_tlast_d;
+  logic [QSFP_LANE_NB-1:0][TOTAL_LAT-1:0]                     rx_tvalid_d;
 
   generate
-    for (genvar gen_l = 0; gen_l < LANE_NB ; gen_l = gen_l + 1) begin
+    for (genvar gen_l = 0; gen_l < QSFP_LANE_NB ; gen_l = gen_l + 1) begin
       always_ff @(posedge clk_eth_mrmac) begin
         if ((loopback == 3'b000) || (loopback == 3'b010)) begin
           rx_tdata_d[gen_l][0]      <= qsfp_tx_tdata[gen_l];
@@ -66,7 +67,7 @@ module model_qsfp_lines
   endgenerate
 
   generate
-    for (genvar gen_l = 0; gen_l < LANE_NB ; gen_l = gen_l + 1) begin
+    for (genvar gen_l = 0; gen_l < QSFP_LANE_NB ; gen_l = gen_l + 1) begin
       for (genvar gen_i = 1; gen_i < TOTAL_LAT ; gen_i = gen_i + 1) begin
         always_ff @(posedge clk_eth_mrmac) begin
           rx_tdata_d[gen_l][gen_i]      <= rx_tdata_d[gen_l][gen_i-1];
@@ -80,7 +81,7 @@ module model_qsfp_lines
 
 
   generate
-    for (genvar gen_l = 0; gen_l < LANE_NB ; gen_l = gen_l + 1) begin
+    for (genvar gen_l = 0; gen_l < QSFP_LANE_NB ; gen_l = gen_l + 1) begin
       always_ff @(posedge clk_eth_mrmac) begin
         qsfp_rx_tdata[gen_l]      <= rx_tdata_d[gen_l][TOTAL_LAT-1];
         qsfp_rx_tkeep_user[gen_l] <= rx_tkeep_user_d[gen_l][TOTAL_LAT-1];

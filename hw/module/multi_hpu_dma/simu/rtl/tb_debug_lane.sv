@@ -21,9 +21,9 @@ module tb_debug_lane;
   localparam int CLK_HALF_PERIOD_B = 1;
   localparam int ARST_ACTIVATION = 17;
 
-  localparam int LANE_NB = 4;
-  localparam int AXIS_TDATA_W  = 64;
-  localparam int AXIS_TKEEP_W  = 11;
+  localparam int QSFP_LANE_NB = 4;
+  localparam int MRMAC_AXIS_W  = 64;
+  localparam int MRMAC_TKEEP_W  = 11;
 
   // number of words in an axi4-stream transactions
   localparam int FIFO_DEPTH = 512;
@@ -93,22 +93,22 @@ module tb_debug_lane;
 // input / output signals
 // ============================================================================================== --
   // axi4-stream from RX selected line ----------------------------------------
-  logic [AXIS_TDATA_W-1:0] qsfp_rx_tdata;
-  logic [AXIS_TKEEP_W-1:0] qsfp_rx_tkeep_user;
+  logic [MRMAC_AXIS_W-1:0] qsfp_rx_tdata;
+  logic [MRMAC_TKEEP_W-1:0] qsfp_rx_tkeep_user;
   logic                    qsfp_rx_tlast;
   logic                    qsfp_rx_tvalid;
   // axi4-stream from TX selected line ----------------------------------------
-  logic [AXIS_TDATA_W-1:0] qsfp_tx_tdata;
-  logic [AXIS_TKEEP_W-1:0] qsfp_tx_tkeep_user;
+  logic [MRMAC_AXIS_W-1:0] qsfp_tx_tdata;
+  logic [MRMAC_TKEEP_W-1:0] qsfp_tx_tkeep_user;
   logic                    qsfp_tx_tlast;
   logic                    qsfp_tx_tvalid;
   logic                    qsfp_tx_tready;
   // to/from register interface -----------------------------------------------
   logic [NB_WORD_W-1:0]    r_nb_word;
-  logic [AXIS_TDATA_W-1:0] r_wr_word;
+  logic [MRMAC_AXIS_W-1:0] r_wr_word;
   logic [NB_WORD_W-1:0]    r_wr_data_count;
   logic [NB_WORD_W-1:0]    r_rd_data_count;
-  logic [AXIS_TDATA_W-1:0] r_rd_word;
+  logic [MRMAC_AXIS_W-1:0] r_rd_word;
   logic                    read_ack;
   logic                    write_ack;
   logic                    tx_loop;
@@ -118,11 +118,9 @@ module tb_debug_lane;
   // ============================================================================================== --
   // Design under test instance
   // ============================================================================================== --
-  debug_lane # (
-    .AXIS_TDATA_W(AXIS_TDATA_W),
-    .AXIS_TKEEP_W(AXIS_TKEEP_W),
+  mhdma_trace # (
     .SIM_ASSERT_CHK(1)
-  ) debug_lane (
+  ) mhdma_trace (
     // system interface
     .clk_control       (clk_control),
     .s_rstn_control    (s_rstn_control),
@@ -316,8 +314,8 @@ module tb_debug_lane;
   // ============================================================================================== --
   // axi4-stream write into the fifo
   // ============================================================================================== --
-  logic [AXIS_TDATA_W-1:0] tdata;
-  logic [AXIS_TKEEP_W-1:0] tkeep_user;
+  logic [MRMAC_AXIS_W-1:0] tdata;
+  logic [MRMAC_TKEEP_W-1:0] tkeep_user;
   logic                    tlast;
   logic                    tvalid;
 
@@ -356,12 +354,12 @@ module tb_debug_lane;
   // ============================================================================================== --
   // Checkers
   // ============================================================================================== --
-  logic [AXIS_TDATA_W-1:0] data_ref_q[$:FIFO_DEPTH];
-  logic [AXIS_TDATA_W-1:0] r_rd_word_d;
+  logic [MRMAC_AXIS_W-1:0] data_ref_q[$:FIFO_DEPTH];
+  logic [MRMAC_AXIS_W-1:0] r_rd_word_d;
   logic word_has_updated;
 
   always_ff @(posedge clk_mrmac) begin
-    logic [AXIS_TDATA_W-1:0] data_ref;
+    logic [MRMAC_AXIS_W-1:0] data_ref;
     if (!s_rstn_mrmac) begin
       error_data <= 1'b0;
     end else begin

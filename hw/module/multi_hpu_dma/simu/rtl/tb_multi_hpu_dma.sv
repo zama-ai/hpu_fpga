@@ -9,10 +9,11 @@
 
 `resetall
 `timescale 1ns/10ps
-module tb_debug_mode;
+module tb_multi_hpu_dma;
   import axi_if_common_param_pkg::*;
   import axi_if_shell_axil_pkg::*;
   import hpu_regif_core_eth_2in3_pkg::*;
+  import mhdma_pkg::*
 
 // ============================================================================================== --
 // localparam
@@ -21,22 +22,6 @@ module tb_debug_mode;
   localparam int CLK_HALF_PERIOD_B = 1;
   localparam int ARST_ACTIVATION = 17;
 
-  localparam int QSFP_LANE_NB = 4;
-  localparam int MRMAC_AXIS_W = 64;
-  localparam int MRMAC_TKEEP_W = 11;
-
-  localparam int FIFO_DEPTH = 512;
-
-  // number of words in an axi4-stream transactions
-  localparam int WORD_NB = 25;
-  localparam int NB_WORDS_FRAME = 15;
-
-  // stalls for an arbitrary number of clock cycles
-  localparam int ARBITRARY_STALL = 55;
-
-  // OUI is not part of this mac address
-  localparam [31:0] DEFAULT_SRC_MAC_ADDR_OFS = 'h2418F0;
-  localparam [31:0] DEFAULT_DST_MAC_ADDR_OFS = 'h265A0D;
 // ============================================================================================== --
 // clock, reset
 // ============================================================================================== --
@@ -96,42 +81,60 @@ module tb_debug_mode;
 // ============================================================================================== --
 // input / output signals
 // ============================================================================================== --
-  logic [AXIL_ADD_W-1:0]      s_axil_dma_awaddr;
-  logic                       s_axil_dma_awvalid;
-  logic                       s_axil_dma_awready;
-  logic [AXIL_DATA_W-1:0]     s_axil_dma_wdata;
-  logic [AXIL_DATA_BYTES-1:0] s_axil_dma_wstrb; /* UNUSED */
-  logic                       s_axil_dma_wvalid;
-  logic                       s_axil_dma_wready;
-  logic [1:0]                 s_axil_dma_bresp;
-  logic                       s_axil_dma_bvalid;
-  logic                       s_axil_dma_bready;
-  logic [AXIL_ADD_W-1:0]      s_axil_dma_araddr;
-  logic                       s_axil_dma_arvalid;
-  logic                       s_axil_dma_arready;
-  logic [AXIL_DATA_W-1:0]     s_axil_dma_rdata;
-  logic [1:0]                 s_axil_dma_rresp;
-  logic                       s_axil_dma_rvalid;
-  logic                       s_axil_dma_rready;
+  logic [AXIL_ADD_W-1:0]      s_axil_dma_awaddr_hpu_a;
+  logic                       s_axil_dma_awvalid_hpu_a;
+  logic                       s_axil_dma_awready_hpu_a;
+  logic [AXIL_DATA_W-1:0]     s_axil_dma_wdata_hpu_a;
+  logic [AXIL_DATA_BYTES-1:0] s_axil_dma_wstrb_hpu_a; /* UNUSED */
+  logic                       s_axil_dma_wvalid_hpu_a;
+  logic                       s_axil_dma_wready_hpu_a;
+  logic [1:0]                 s_axil_dma_bresp_hpu_a;
+  logic                       s_axil_dma_bvalid_hpu_a;
+  logic                       s_axil_dma_bready_hpu_a;
+  logic [AXIL_ADD_W-1:0]      s_axil_dma_araddr_hpu_a;
+  logic                       s_axil_dma_arvalid_hpu_a;
+  logic                       s_axil_dma_arready_hpu_a;
+  logic [AXIL_DATA_W-1:0]     s_axil_dma_rdata_hpu_a;
+  logic [1:0]                 s_axil_dma_rresp_hpu_a;
+  logic                       s_axil_dma_rvalid_hpu_a;
+  logic                       s_axil_dma_rready_hpu_a;
+
+  logic [AXIL_ADD_W-1:0]      s_axil_dma_awaddr_hpu_b;
+  logic                       s_axil_dma_awvalid_hpu_b;
+  logic                       s_axil_dma_awready_hpu_b;
+  logic [AXIL_DATA_W-1:0]     s_axil_dma_wdata_hpu_b;
+  logic [AXIL_DATA_BYTES-1:0] s_axil_dma_wstrb_hpu_b; /* UNUSED */
+  logic                       s_axil_dma_wvalid_hpu_b;
+  logic                       s_axil_dma_wready_hpu_b;
+  logic [1:0]                 s_axil_dma_bresp_hpu_b;
+  logic                       s_axil_dma_bvalid_hpu_b;
+  logic                       s_axil_dma_bready_hpu_b;
+  logic [AXIL_ADD_W-1:0]      s_axil_dma_araddr_hpu_b;
+  logic                       s_axil_dma_arvalid_hpu_b;
+  logic                       s_axil_dma_arready_hpu_b;
+  logic [AXIL_DATA_W-1:0]     s_axil_dma_rdata_hpu_b;
+  logic [1:0]                 s_axil_dma_rresp_hpu_b;
+  logic                       s_axil_dma_rvalid_hpu_b;
+  logic                       s_axil_dma_rready_hpu_b;
   // QSFP system interface ----------------------------------------------------
   // == TX
-  logic [QSFP_LANE_NB-1:0][MRMAC_AXIS_W-1:0] qsfp_tx_tdata;
+  logic [QSFP_LANE_NB-1:0][MRMAC_AXIS_W-1:0 ] qsfp_tx_tdata;
   logic [QSFP_LANE_NB-1:0][MRMAC_TKEEP_W-1:0] qsfp_tx_tkeep_user;
-  logic [QSFP_LANE_NB-1:0]                   qsfp_tx_tlast;
-  logic [QSFP_LANE_NB-1:0]                   qsfp_tx_tvalid;
-  logic [QSFP_LANE_NB-1:0]                   qsfp_tx_tready;
+  logic [QSFP_LANE_NB-1:0]                    qsfp_tx_tlast;
+  logic [QSFP_LANE_NB-1:0]                    qsfp_tx_tvalid;
+  logic [QSFP_LANE_NB-1:0]                    qsfp_tx_tready;
   // == RX
-  logic [QSFP_LANE_NB-1:0][MRMAC_AXIS_W-1:0] qsfp_rx_tdata;
+  logic [QSFP_LANE_NB-1:0][MRMAC_AXIS_W-1:0 ] qsfp_rx_tdata;
   logic [QSFP_LANE_NB-1:0][MRMAC_TKEEP_W-1:0] qsfp_rx_tkeep_user;
-  logic [QSFP_LANE_NB-1:0]                   qsfp_rx_tlast;
-  logic [QSFP_LANE_NB-1:0]                   qsfp_rx_tvalid;
+  logic [QSFP_LANE_NB-1:0]                    qsfp_rx_tlast;
+  logic [QSFP_LANE_NB-1:0]                    qsfp_rx_tvalid;
 
   // ============================================================================================== --
   // Design under test instance
   // ============================================================================================== --
   // gt configuration signals
-  logic [7:0]         gt_line_rate;
-  logic [2:0]         gt_loopback;
+  logic [7:0]              gt_line_rate;
+  logic [2:0]              gt_loopback;
   logic [QSFP_LANE_NB-1:0] gt_reset_rx_datapath;
   logic [QSFP_LANE_NB-1:0] gt_reset_tx_datapath;
   logic [QSFP_LANE_NB-1:0] gt_reset_all;
@@ -151,7 +154,7 @@ module tb_debug_mode;
   assign line_parameter[27:13] = 'h0;
   assign line_parameter[31]    = debug_flag;
 
-  // [section] line parameter -------------------------------------------------
+  // [section] line debug -----------------------------------------------------
   logic [31:0] line_debug;
   logic        reset_registers;
   logic        tx_loop;
@@ -163,7 +166,7 @@ module tb_debug_mode;
   assign line_debug[31]   = reset_registers;
 
   // [section] reset ----------------------------------------------------------
-  logic [31:0]        reset_parameter;
+  logic [31:0] reset_parameter;
   logic [QSFP_LANE_NB-1:0] rst_rx_datapath;
   logic [QSFP_LANE_NB-1:0] rst_tx_datapath;
   logic [QSFP_LANE_NB-1:0] rst_all;
@@ -173,79 +176,101 @@ module tb_debug_mode;
   // monitoring of reset done
   logic [31:0] reset_monitor;
 
-  // DUT ------------------------------------------------------------------------------------------
+  // HPU A ----------------------------------------------------------------------------------------
   multi_hpu_dma #(
     .FIFO_DEPTH(FIFO_DEPTH)
-  ) dut (
+  ) hpu_a (
     .clk_eth_cfg   (clk_control    ),
     .resetn_eth_cfg(s_rstn_control ),
 
     .clk_eth_mrmac   (clk_mrmac    ),
     .resetn_eth_mrmac(s_rstn_mrmac ),
 
-    .s_axil_dma_awaddr(s_axil_dma_awaddr),
-    .s_axil_dma_awvalid(s_axil_dma_awvalid),
-    .s_axil_dma_awready(s_axil_dma_awready),
-    .s_axil_dma_wdata(s_axil_dma_wdata),
-    .s_axil_dma_wstrb(s_axil_dma_wstrb),
-    .s_axil_dma_wvalid(s_axil_dma_wvalid),
-    .s_axil_dma_wready(s_axil_dma_wready),
-    .s_axil_dma_bresp(s_axil_dma_bresp),
-    .s_axil_dma_bvalid(s_axil_dma_bvalid),
-    .s_axil_dma_bready(s_axil_dma_bready),
-    .s_axil_dma_araddr(s_axil_dma_araddr),
-    .s_axil_dma_arvalid(s_axil_dma_arvalid),
-    .s_axil_dma_arready(s_axil_dma_arready),
-    .s_axil_dma_rdata(s_axil_dma_rdata),
-    .s_axil_dma_rresp(s_axil_dma_rresp),
-    .s_axil_dma_rvalid(s_axil_dma_rvalid),
-    .s_axil_dma_rready(s_axil_dma_rready),
+    .s_axil_dma_awaddr (s_axil_dma_awaddr_hpu_a ),
+    .s_axil_dma_awvalid(s_axil_dma_awvalid_hpu_a),
+    .s_axil_dma_awready(s_axil_dma_awready_hpu_a),
+    .s_axil_dma_wdata  (s_axil_dma_wdata_hpu_a  ),
+    .s_axil_dma_wstrb  (s_axil_dma_wstrb_hpu_a  ),
+    .s_axil_dma_wvalid (s_axil_dma_wvalid_hpu_a ),
+    .s_axil_dma_wready (s_axil_dma_wready_hpu_a ),
+    .s_axil_dma_bresp  (s_axil_dma_bresp_hpu_a  ),
+    .s_axil_dma_bvalid (s_axil_dma_bvalid_hpu_a ),
+    .s_axil_dma_bready (s_axil_dma_bready_hpu_a ),
+    .s_axil_dma_araddr (s_axil_dma_araddr_hpu_a ),
+    .s_axil_dma_arvalid(s_axil_dma_arvalid_hpu_a),
+    .s_axil_dma_arready(s_axil_dma_arready_hpu_a),
+    .s_axil_dma_rdata  (s_axil_dma_rdata_hpu_a  ),
+    .s_axil_dma_rresp  (s_axil_dma_rresp_hpu_a  ),
+    .s_axil_dma_rvalid (s_axil_dma_rvalid_hpu_a ),
+    .s_axil_dma_rready (s_axil_dma_rready_hpu_a ),
 
-    .qsfp_tx_tdata(qsfp_tx_tdata),
+    .qsfp_tx_tdata     (qsfp_tx_tdata     ),
     .qsfp_tx_tkeep_user(qsfp_tx_tkeep_user),
-    .qsfp_tx_tlast(qsfp_tx_tlast),
-    .qsfp_tx_tvalid(qsfp_tx_tvalid),
-    .qsfp_tx_tready(qsfp_tx_tready),
+    .qsfp_tx_tlast     (qsfp_tx_tlast     ),
+    .qsfp_tx_tvalid    (qsfp_tx_tvalid    ),
+    .qsfp_tx_tready    (qsfp_tx_tready    ),
 
-    .qsfp_rx_tdata(qsfp_rx_tdata),
+    .qsfp_rx_tdata     (qsfp_rx_tdata     ),
     .qsfp_rx_tkeep_user(qsfp_rx_tkeep_user),
-    .qsfp_rx_tlast(qsfp_rx_tlast),
-    .qsfp_rx_tvalid(qsfp_rx_tvalid),
+    .qsfp_rx_tlast     (qsfp_rx_tlast     ),
+    .qsfp_rx_tvalid    (qsfp_rx_tvalid    ),
 
-    .gt_line_rate(gt_line_rate),
-    .gt_loopback(gt_loopback),
+    .gt_line_rate        (gt_line_rate        ),
+    .gt_loopback         (gt_loopback         ),
     .gt_reset_rx_datapath(gt_reset_rx_datapath),
     .gt_reset_tx_datapath(gt_reset_tx_datapath),
-    .gt_reset_all(gt_reset_all),
-    .gt_rx_reset_done(gt_rx_reset_done),
-    .gt_tx_reset_done(gt_tx_reset_done)
+    .gt_reset_all        (gt_reset_all        ),
+    .gt_rx_reset_done    (gt_rx_reset_done    ),
+    .gt_tx_reset_done    (gt_tx_reset_done    )
 );
 
-  logic [QSFP_LANE_NB-1:0][MRMAC_AXIS_W-1:0] rx_tdata;
-  logic [QSFP_LANE_NB-1:0][MRMAC_TKEEP_W-1:0] rx_tkeep_user;
-  logic [QSFP_LANE_NB-1:0]                   rx_tlast;
-  logic [QSFP_LANE_NB-1:0]                   rx_tvalid;
+  // HPU B ----------------------------------------------------------------------------------------
+  multi_hpu_dma #(
+    .FIFO_DEPTH(FIFO_DEPTH)
+  ) hpu_b (
+    .clk_eth_cfg   (clk_control    ),
+    .resetn_eth_cfg(s_rstn_control ),
 
-  // ----------------------------------------------------------------------------------------------
-  model_loopback # () model_loopback (
-    .clk_eth_mrmac   (clk_mrmac),
-    .resetn_eth_mrmac(s_rstn_mrmac),
+    .clk_eth_mrmac   (clk_mrmac    ),
+    .resetn_eth_mrmac(s_rstn_mrmac ),
 
-    // from DMA
-    .qsfp_tx_tdata     (qsfp_tx_tdata),
+    .s_axil_dma_awaddr (s_axil_dma_awaddr_hpu_b ),
+    .s_axil_dma_awvalid(s_axil_dma_awvalid_hpu_b),
+    .s_axil_dma_awready(s_axil_dma_awready_hpu_b),
+    .s_axil_dma_wdata  (s_axil_dma_wdata_hpu_b  ),
+    .s_axil_dma_wstrb  (s_axil_dma_wstrb_hpu_b  ),
+    .s_axil_dma_wvalid (s_axil_dma_wvalid_hpu_b ),
+    .s_axil_dma_wready (s_axil_dma_wready_hpu_b ),
+    .s_axil_dma_bresp  (s_axil_dma_bresp_hpu_b  ),
+    .s_axil_dma_bvalid (s_axil_dma_bvalid_hpu_b ),
+    .s_axil_dma_bready (s_axil_dma_bready_hpu_b ),
+    .s_axil_dma_araddr (s_axil_dma_araddr_hpu_b ),
+    .s_axil_dma_arvalid(s_axil_dma_arvalid_hpu_b),
+    .s_axil_dma_arready(s_axil_dma_arready_hpu_b),
+    .s_axil_dma_rdata  (s_axil_dma_rdata_hpu_b  ),
+    .s_axil_dma_rresp  (s_axil_dma_rresp_hpu_b  ),
+    .s_axil_dma_rvalid (s_axil_dma_rvalid_hpu_b ),
+    .s_axil_dma_rready (s_axil_dma_rready_hpu_b ),
+
+    .qsfp_tx_tdata     (qsfp_tx_tdata     ),
     .qsfp_tx_tkeep_user(qsfp_tx_tkeep_user),
-    .qsfp_tx_tlast     (qsfp_tx_tlast),
-    .qsfp_tx_tvalid    (qsfp_tx_tvalid),
-    .qsfp_tx_tready    (qsfp_tx_tready),
+    .qsfp_tx_tlast     (qsfp_tx_tlast     ),
+    .qsfp_tx_tvalid    (qsfp_tx_tvalid    ),
+    .qsfp_tx_tready    (qsfp_tx_tready    ),
 
-    // to DMA
-    .qsfp_rx_tdata     (rx_tdata),
-    .qsfp_rx_tkeep_user(rx_tkeep_user),
-    .qsfp_rx_tlast     (rx_tlast),
-    .qsfp_rx_tvalid    (rx_tvalid),
+    .qsfp_rx_tdata     (qsfp_rx_tdata     ),
+    .qsfp_rx_tkeep_user(qsfp_rx_tkeep_user),
+    .qsfp_rx_tlast     (qsfp_rx_tlast     ),
+    .qsfp_rx_tvalid    (qsfp_rx_tvalid    ),
 
-    .loopback          (line_loopback)
-  );
+    .gt_line_rate        (gt_line_rate        ),
+    .gt_loopback         (gt_loopback         ),
+    .gt_reset_rx_datapath(gt_reset_rx_datapath),
+    .gt_reset_tx_datapath(gt_reset_tx_datapath),
+    .gt_reset_all        (gt_reset_all        ),
+    .gt_rx_reset_done    (gt_rx_reset_done    ),
+    .gt_tx_reset_done    (gt_tx_reset_done    )
+);
 
 // ============================================================================================== --
 // Scenario
@@ -253,53 +278,54 @@ module tb_debug_mode;
   maxil_if #(
   .AXIL_DATA_W(AXIL_DATA_W),
   .AXIL_ADD_W  (AXIL_ADD_W)
-  ) maxil_drv_if ( .clk(clk_control), .rst_n(s_rstn_control));
+  ) maxil_drv_if_hpu_a ( .clk(clk_control), .rst_n(s_rstn_control));
 
   // Connect interface on testbench signals
-  assign s_axil_dma_awaddr  = maxil_drv_if.awaddr;
-  assign s_axil_dma_awvalid = maxil_drv_if.awvalid;
-  assign s_axil_dma_wdata   = maxil_drv_if.wdata;
-  assign s_axil_dma_wstrb   = maxil_drv_if.wstrb;
-  assign s_axil_dma_wvalid  = maxil_drv_if.wvalid;
-  assign s_axil_dma_bready  = maxil_drv_if.bready;
-  assign s_axil_dma_araddr  = maxil_drv_if.araddr;
-  assign s_axil_dma_arvalid = maxil_drv_if.arvalid;
-  assign s_axil_dma_rready  = maxil_drv_if.rready;
+  assign s_axil_dma_awaddr_hpu_a  = maxil_drv_if_hpu_a.awaddr;
+  assign s_axil_dma_awvalid_hpu_a = maxil_drv_if_hpu_a.awvalid;
+  assign s_axil_dma_wdata_hpu_a   = maxil_drv_if_hpu_a.wdata;
+  assign s_axil_dma_wstrb_hpu_a   = maxil_drv_if_hpu_a.wstrb;
+  assign s_axil_dma_wvalid_hpu_a  = maxil_drv_if_hpu_a.wvalid;
+  assign s_axil_dma_bready_hpu_a  = maxil_drv_if_hpu_a.bready;
+  assign s_axil_dma_araddr_hpu_a  = maxil_drv_if_hpu_a.araddr;
+  assign s_axil_dma_arvalid_hpu_a = maxil_drv_if_hpu_a.arvalid;
+  assign s_axil_dma_rready_hpu_a  = maxil_drv_if_hpu_a.rready;
 
-  assign maxil_drv_if.awready = s_axil_dma_awready;
-  assign maxil_drv_if.wready  = s_axil_dma_wready;
-  assign maxil_drv_if.bresp   = s_axil_dma_bresp;
-  assign maxil_drv_if.bvalid  = s_axil_dma_bvalid;
-  assign maxil_drv_if.arready = s_axil_dma_arready;
-  assign maxil_drv_if.rdata   = s_axil_dma_rdata;
-  assign maxil_drv_if.rresp   = s_axil_dma_rresp;
-  assign maxil_drv_if.rvalid  = s_axil_dma_rvalid;
+  assign maxil_drv_if_hpu_a.awready = s_axil_dma_awready_hpu_a;
+  assign maxil_drv_if_hpu_a.wready  = s_axil_dma_wready_hpu_a;
+  assign maxil_drv_if_hpu_a.bresp   = s_axil_dma_bresp_hpu_a;
+  assign maxil_drv_if_hpu_a.bvalid  = s_axil_dma_bvalid_hpu_a;
+  assign maxil_drv_if_hpu_a.arready = s_axil_dma_arready_hpu_a;
+  assign maxil_drv_if_hpu_a.rdata   = s_axil_dma_rdata_hpu_a;
+  assign maxil_drv_if_hpu_a.rresp   = s_axil_dma_rresp_hpu_a;
+  assign maxil_drv_if_hpu_a.rvalid  = s_axil_dma_rvalid_hpu_a;
 
-  generate
-    for (genvar gen_i=0 ; gen_i<QSFP_LANE_NB; gen_i++ ) begin
-      // Axi4-stream tx driver
-      axis_drv_if #(
-      .AXIS_DATA_W(MRMAC_AXIS_W)
-      ) axis_tx_driver ( .clk(clk_mrmac), .rst_n(s_rstn_mrmac));
 
-      // Connect interface on testbench signals
-      assign qsfp_rx_tdata[gen_i]  = axis_tx_driver.tdata;
-      assign qsfp_rx_tvalid[gen_i] = axis_tx_driver.tvalid;
-    end
-  endgenerate
+  maxil_if #(
+  .AXIL_DATA_W(AXIL_DATA_W),
+  .AXIL_ADD_W  (AXIL_ADD_W)
+  ) maxil_drv_if_hpu_b ( .clk(clk_control), .rst_n(s_rstn_control));
 
-  logic [63:0] clk_count;
-  logic [63:0] valid_words_count;
-  logic [63:0] sop_count;
+  // Connect interface on testbench signals
+  assign s_axil_dma_awaddr_hpu_b  = maxil_drv_if_hpu_b.awaddr;
+  assign s_axil_dma_awvalid_hpu_b = maxil_drv_if_hpu_b.awvalid;
+  assign s_axil_dma_wdata_hpu_b   = maxil_drv_if_hpu_b.wdata;
+  assign s_axil_dma_wstrb_hpu_b   = maxil_drv_if_hpu_b.wstrb;
+  assign s_axil_dma_wvalid_hpu_b  = maxil_drv_if_hpu_b.wvalid;
+  assign s_axil_dma_bready_hpu_b  = maxil_drv_if_hpu_b.bready;
+  assign s_axil_dma_araddr_hpu_b  = maxil_drv_if_hpu_b.araddr;
+  assign s_axil_dma_arvalid_hpu_b = maxil_drv_if_hpu_b.arvalid;
+  assign s_axil_dma_rready_hpu_b  = maxil_drv_if_hpu_b.rready;
 
-  logic [MRMAC_AXIS_W-1:0] data_noise_ref_rx_q[QSFP_LANE_NB-1:0][$];
-  logic [MRMAC_AXIS_W-1:0] data_lb_ref_rx_q[QSFP_LANE_NB-1:0][$];
+  assign maxil_drv_if_hpu_b.awready = s_axil_dma_awready_hpu_b;
+  assign maxil_drv_if_hpu_b.wready  = s_axil_dma_wready_hpu_b;
+  assign maxil_drv_if_hpu_b.bresp   = s_axil_dma_bresp_hpu_b;
+  assign maxil_drv_if_hpu_b.bvalid  = s_axil_dma_bvalid_hpu_b;
+  assign maxil_drv_if_hpu_b.arready = s_axil_dma_arready_hpu_b;
+  assign maxil_drv_if_hpu_b.rdata   = s_axil_dma_rdata_hpu_b;
+  assign maxil_drv_if_hpu_b.rresp   = s_axil_dma_rresp_hpu_b;
+  assign maxil_drv_if_hpu_b.rvalid  = s_axil_dma_rvalid_hpu_b;
 
-  logic enable_noise_on_rx;
-  logic [MRMAC_AXIS_W-1:0] expected_data[QSFP_LANE_NB-1:0];
-  logic [MRMAC_AXIS_W-1:0] read_data;
-
-  logic [31:0] rdata;
   initial begin
     maxil_drv_if.init();
     enable_noise_on_rx = 1'b0;
@@ -308,7 +334,6 @@ module tb_debug_mode;
     tx_loop         = 'h0;
     rx_to_tx        = 'h0;
     repeat(20) @(posedge clk_control);
-    $display("\n"); // just to unclog view from FIFO warnings
 
     $display("A - Initial register check and definition");
     init_registers();

@@ -4,6 +4,13 @@
     "is_include_dir" : false,
     "rtl_files": [
         {
+            "name": "hw/module/multi_hpu_dma/rtl/mhdma_pkg.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false
+        },
+        {
             "name": "hw/module/multi_hpu_dma/rtl/multi_hpu_dma.sv",
             "library": "work",
             "env": ["all"],
@@ -11,14 +18,21 @@
             "is_include_file": false
         },
         {
-            "name": "hw/module/multi_hpu_dma/rtl/axis_switch_lane_to_1.sv",
+            "name": "hw/module/multi_hpu_dma/rtl/mhdma_axis_selector.sv",
             "library": "work",
             "env": ["all"],
             "target": ["all"],
             "is_include_file": false
         },
         {
-            "name": "hw/module/multi_hpu_dma/rtl/debug_lane.sv",
+            "name": "hw/module/multi_hpu_dma/rtl/mhdma_bridge.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false
+        },
+        {
+            "name": "hw/module/multi_hpu_dma/rtl/mhdma_trace.sv",
             "library": "work",
             "env": ["all"],
             "target": ["all"],
@@ -26,8 +40,8 @@
         }
     ],
     "constraint_files": [
-        "hw/module/multi_hpu_dma/constraint/dma_timing_constraints_local.xdc",
-        "hw/module/multi_hpu_dma/constraint/dma_timing_constraints_hier.xdc"
+        "hw/module/multi_hpu_dma/constraint/multi_hpu_dma_timing_constraints_local.xdc",
+        "hw/module/multi_hpu_dma/constraint/multi_hpu_dma_timing_constraints_hier.xdc"
     ],
     "dependency_dir": [
         "hw/common_lib/cdc/module/xpm_fifo_async_wrapper",
