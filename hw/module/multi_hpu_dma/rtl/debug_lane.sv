@@ -68,18 +68,18 @@ module debug_lane #(
   localparam int CDC_SYNC_STAGES = 2;
 
   // word number is rather stable, changed only once in a while a false path must be set to first reg
-  logic [CDC_SYNC_STAGES-1:0] [NB_WORD_W-1:0] nb_word_mrmac;
+  logic [CDC_SYNC_STAGES-1:0] [NB_WORD_W-1:0] nb_word_mrmac_cdc;
   logic [CDC_SYNC_STAGES-1:0] reset_registers_cdc;
 
   always_ff @(posedge clk_mrmac) begin
-    nb_word_mrmac[0] <= r_nb_word;
+    nb_word_mrmac_cdc[0] <= r_nb_word;
     reset_registers_cdc[0] <= reset_registers;
   end
 
   generate
     for (genvar gen_i = 1; gen_i < CDC_SYNC_STAGES ; gen_i = gen_i + 1) begin
       always_ff @(posedge clk_mrmac) begin
-        nb_word_mrmac[gen_i] <= nb_word_mrmac[gen_i-1];
+        nb_word_mrmac_cdc[gen_i] <= nb_word_mrmac_cdc[gen_i-1];
         reset_registers_cdc[gen_i] <= reset_registers_cdc[gen_i-1];
       end
     end
@@ -123,7 +123,7 @@ module debug_lane #(
     end else begin
       if (rd_data_count == 0) begin
         trigger_rd <= 1'b0;
-      end else if (rd_data_count == nb_word_mrmac[CDC_SYNC_STAGES-1]) begin
+      end else if (rd_data_count == nb_word_mrmac_cdc[CDC_SYNC_STAGES-1]) begin
         trigger_rd <= 1'b1;
       end
     end
@@ -187,7 +187,7 @@ module debug_lane #(
   logic tx_will_complete_next;
 
   // pulse on start of transaction: positive edge of tx_data_valid when no words have been consumed
-  assign tx_sop = (tx_data_valid & ~tx_data_valid_d) & (rd_data_count==nb_word_mrmac[CDC_SYNC_STAGES-1]);
+  assign tx_sop = (tx_data_valid & ~tx_data_valid_d) & (rd_data_count==nb_word_mrmac_cdc[CDC_SYNC_STAGES-1]);
   assign tx_will_complete_next = fifo_tx_tlast && qsfp_tx_tready && fifo_tx_tvalid;
 
   // Registered state for memory
