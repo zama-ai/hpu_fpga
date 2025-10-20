@@ -5,8 +5,8 @@
   "offset": 0,
   "range": 393216,
   "ext_pkg": [
-    "axi_if_shell_axil_pkg",
-    "axi_if_common_param_pkg"
+    "axi_if_common_param_pkg",
+    "axi_if_shell_axil_pkg"
   ],
   "section": [
     {
@@ -4523,7 +4523,7 @@
         },
         {
           "name": "clk_a",
-          "description": "clock counts",
+          "description": "clock counts lsb",
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "None",
@@ -4535,7 +4535,7 @@
         },
         {
           "name": "clk_b",
-          "description": "clock counts",
+          "description": "clock counts msb",
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "None",
@@ -4547,7 +4547,7 @@
         },
         {
           "name": "valid_words_a",
-          "description": "clock counts",
+          "description": "valid rx word counter lsb",
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "None",
@@ -4559,7 +4559,7 @@
         },
         {
           "name": "valid_words_b",
-          "description": "clock counts",
+          "description": "valid rx word counter msb",
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "None",
@@ -4571,7 +4571,7 @@
         },
         {
           "name": "sop_cnt_a",
-          "description": "clock counts",
+          "description": "clock counter between tx sop and rx sop lsb",
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "None",
@@ -4583,7 +4583,7 @@
         },
         {
           "name": "sop_cnt_b",
-          "description": "clock counts",
+          "description": "clock counter between tx sop and rx sop msb",
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "None",

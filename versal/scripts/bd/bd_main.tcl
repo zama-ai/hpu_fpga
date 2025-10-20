@@ -358,26 +358,6 @@ proc create_root_design { parentCell ntt_psi } {
      CONFIG.READ_WRITE_MODE {READ_WRITE} \
   ] $port
 
-  set axis_m_eth [ create_bd_intf_port -mode Master -vlnv xilinx.com:interface:axis_rtl:1.0 axis_m_eth ]
-  set axis_s_eth [ create_bd_intf_port -mode Slave -vlnv xilinx.com:interface:axis_rtl:1.0  axis_s_eth ]
-  set_property -dict [ list \
-   CONFIG.HAS_TKEEP {0} \
-   CONFIG.HAS_TLAST {0} \
-   CONFIG.HAS_TREADY {1} \
-   CONFIG.HAS_TSTRB {0} \
-   CONFIG.LAYERED_METADATA {undef} \
-   CONFIG.TDATA_NUM_BYTES $AXIS_DATA_ETH_BYTES \
-   CONFIG.TDEST_WIDTH {0} \
-   CONFIG.TID_WIDTH {0} \
-   CONFIG.TUSER_WIDTH {0} \
-  ] $axis_s_eth
-
-  if {$prop_clk(clk_axis_mrmac) eq ""} {
-    set prop_clk(clk_axis_mrmac) "axis_m_eth:axis_s_eth"
-  } else {
-    set prop_clk(clk_axis_mrmac) "$prop_clk(clk_usr_0_0):axis_m_eth:axis_s_eth"
-  }
-
   # == Clock port connections
   # Bus clock must be defined with a port clock
   set_property -dict [ list \
@@ -406,17 +386,7 @@ proc create_root_design { parentCell ntt_psi } {
   set ctl_tx_port1 [ create_bd_intf_port -mode Slave -vlnv xilinx.com:display_mrmac:mrmac_ctrl_ports:2.0 ctl_tx_port1 ]
   set ctl_tx_port2 [ create_bd_intf_port -mode Slave -vlnv xilinx.com:display_mrmac:mrmac_ctrl_ports:2.0 ctl_tx_port2 ]
   set ctl_tx_port3 [ create_bd_intf_port -mode Slave -vlnv xilinx.com:display_mrmac:mrmac_ctrl_ports:2.0 ctl_tx_port3 ]
-  set stat_tx_port0 [ create_bd_intf_port -mode Master -vlnv xilinx.com:display_mrmac:mrmac_statistics_ports:2.0 stat_tx_port0 ]
-  set stat_tx_port1 [ create_bd_intf_port -mode Master -vlnv xilinx.com:display_mrmac:mrmac_statistics_ports:2.0 stat_tx_port1 ]
-  set stat_tx_port2 [ create_bd_intf_port -mode Master -vlnv xilinx.com:display_mrmac:mrmac_statistics_ports:2.0 stat_tx_port2 ]
-  set stat_tx_port3 [ create_bd_intf_port -mode Master -vlnv xilinx.com:display_mrmac:mrmac_statistics_ports:2.0 stat_tx_port3 ]
-  set stat_rx_port0 [ create_bd_intf_port -mode Master -vlnv xilinx.com:display_mrmac:mrmac_statistics_ports:2.0 stat_rx_port0 ]
-  set stat_rx_port1 [ create_bd_intf_port -mode Master -vlnv xilinx.com:display_mrmac:mrmac_statistics_ports:2.0 stat_rx_port1 ]
-  set stat_rx_port2 [ create_bd_intf_port -mode Master -vlnv xilinx.com:display_mrmac:mrmac_statistics_ports:2.0 stat_rx_port2 ]
-  set stat_rx_port3 [ create_bd_intf_port -mode Master -vlnv xilinx.com:display_mrmac:mrmac_statistics_ports:2.0 stat_rx_port3 ]
-
   set tx_preamblein [ create_bd_intf_port -mode Slave -vlnv xilinx.com:display_mrmac:mrmac_statistics_ports:2.0 tx_preamblein ]
-  set rx_preambleout [ create_bd_intf_port -mode Master -vlnv xilinx.com:display_mrmac:mrmac_statistics_ports:2.0 rx_preambleout ]
 
   set APB3_INTF [ create_bd_intf_port -mode Slave -vlnv xilinx.com:interface:apb_rtl:1.0 APB3_INTF ]
 
@@ -510,52 +480,6 @@ proc create_root_design { parentCell ntt_psi } {
   # Create ethernet
   ####################################
   create_hier_cell_eth_wrapper [current_bd_instance .] eth_wrapper
-  save_bd_design
-
-  ####################################
-  # Debug
-  ####################################
-  create_bd_cell -type ip -vlnv xilinx.com:ip:axis_ila:1.3 axis_ila_0
-  set_property -dict [list \
-    CONFIG.C_MON_TYPE {Net_Probes} \
-    CONFIG.C_NUM_OF_PROBES {12} \
-    CONFIG.C_PROBE0_WIDTH {8} \
-    CONFIG.C_PROBE1_WIDTH {3} \
-    CONFIG.C_PROBE2_WIDTH {4} \
-    CONFIG.C_PROBE3_WIDTH {4} \
-    CONFIG.C_PROBE10_WIDTH {4} \
-    CONFIG.C_PROBE11_WIDTH {4} \
-    CONFIG.C_PROBE5_WIDTH {4} \
-    CONFIG.C_PROBE6_WIDTH {4} \
-    CONFIG.C_PROBE7_WIDTH {4} \
-    CONFIG.C_PROBE8_WIDTH {4} \
-    CONFIG.C_PROBE9_WIDTH {4} \
-  ] [get_bd_cells axis_ila_0]
-
-  make_bd_pins_external  [get_bd_pins axis_ila_0/clk]
-  make_bd_pins_external  [get_bd_pins axis_ila_0/probe0]
-  make_bd_pins_external  [get_bd_pins axis_ila_0/probe1]
-  make_bd_pins_external  [get_bd_pins axis_ila_0/probe2]
-  make_bd_pins_external  [get_bd_pins axis_ila_0/probe3]
-  make_bd_pins_external  [get_bd_pins axis_ila_0/probe4]
-  make_bd_pins_external  [get_bd_pins axis_ila_0/probe5]
-  make_bd_pins_external  [get_bd_pins axis_ila_0/probe6]
-  make_bd_pins_external  [get_bd_pins axis_ila_0/probe7]
-  make_bd_pins_external  [get_bd_pins axis_ila_0/probe8]
-  make_bd_pins_external  [get_bd_pins axis_ila_0/probe9]
-  make_bd_pins_external  [get_bd_pins axis_ila_0/probe10]
-  make_bd_pins_external  [get_bd_pins axis_ila_0/probe11]
-  set_property name ila_clk [get_bd_ports clk_0]
-  set_property name ila_line_rate [get_bd_ports probe0_0]
-  set_property name ila_loopback [get_bd_ports probe1_0]
-  set_property name ila_rx_reset_done [get_bd_ports probe2_0]
-  set_property name ila_tx_reset_done [get_bd_ports probe3_0]
-
-  set_property name ila_gt_reset_rx_datapath [get_bd_ports probe5_0]
-  set_property name ila_gt_reset_tx_datapath [get_bd_ports probe6_0]
-  set_property name ila_gt_reset_all [get_bd_ports probe7_0]
-  set_property name ila_rx_core_reset [get_bd_ports probe8_0]
-  set_property name ila_rx_serdes_reset [get_bd_ports probe9_0]
 
   ####################################
   # Port Connections
@@ -627,15 +551,6 @@ proc create_root_design { parentCell ntt_psi } {
   connect_bd_intf_net -intf_net ctl_tx_port2               [get_bd_intf_ports ctl_tx_port2] [get_bd_intf_pins eth_wrapper/ctl_tx_port2]
   connect_bd_intf_net -intf_net ctl_tx_port3               [get_bd_intf_ports ctl_tx_port3] [get_bd_intf_pins eth_wrapper/ctl_tx_port3]
   connect_bd_intf_net -intf_net gt_quad_base_GT_Serial     [get_bd_intf_ports GT_Serial] [get_bd_intf_pins eth_wrapper/GT_Serial]
-  connect_bd_intf_net -intf_net eth_wrapper_rx_preambleout [get_bd_intf_ports rx_preambleout] [get_bd_intf_pins eth_wrapper/rx_preambleout]
-  connect_bd_intf_net -intf_net eth_wrapper_stat_rx_port0  [get_bd_intf_ports stat_rx_port0] [get_bd_intf_pins eth_wrapper/stat_rx_port0]
-  connect_bd_intf_net -intf_net eth_wrapper_stat_rx_port1  [get_bd_intf_ports stat_rx_port1] [get_bd_intf_pins eth_wrapper/stat_rx_port1]
-  connect_bd_intf_net -intf_net eth_wrapper_stat_rx_port2  [get_bd_intf_ports stat_rx_port2] [get_bd_intf_pins eth_wrapper/stat_rx_port2]
-  connect_bd_intf_net -intf_net eth_wrapper_stat_rx_port3  [get_bd_intf_ports stat_rx_port3] [get_bd_intf_pins eth_wrapper/stat_rx_port3]
-  connect_bd_intf_net -intf_net eth_wrapper_stat_tx_port0  [get_bd_intf_ports stat_tx_port0] [get_bd_intf_pins eth_wrapper/stat_tx_port0]
-  connect_bd_intf_net -intf_net eth_wrapper_stat_tx_port1  [get_bd_intf_ports stat_tx_port1] [get_bd_intf_pins eth_wrapper/stat_tx_port1]
-  connect_bd_intf_net -intf_net eth_wrapper_stat_tx_port2  [get_bd_intf_ports stat_tx_port2] [get_bd_intf_pins eth_wrapper/stat_tx_port2]
-  connect_bd_intf_net -intf_net eth_wrapper_stat_tx_port3  [get_bd_intf_ports stat_tx_port3] [get_bd_intf_pins eth_wrapper/stat_tx_port3]
   connect_bd_intf_net -intf_net tx_preamblein              [get_bd_intf_ports tx_preamblein] [get_bd_intf_pins eth_wrapper/tx_preamblein]
 
   connect_bd_net -net ch0_loopback                     [get_bd_ports ch0_loopback] [get_bd_pins eth_wrapper/ch0_loopback]
@@ -716,8 +631,6 @@ proc create_root_design { parentCell ntt_psi } {
 
   # Ethernet configuration and debug ports
   connect_bd_intf_net [get_bd_intf_ports /ETH_AXI_CFG] [get_bd_intf_pins eth_wrapper/s_axil_mrmac]
-  connect_bd_intf_net [get_bd_intf_ports /axis_m_eth]  [get_bd_intf_pins eth_wrapper/axis_m_eth]
-  connect_bd_intf_net [get_bd_intf_ports /axis_s_eth]  [get_bd_intf_pins eth_wrapper/axis_s_eth]
 
   for {set i 0}  {$i < $ETH_AXI_NB} {incr i} {
     connect_bd_intf_net [get_bd_intf_ports /ETH_AXI_${i}] [get_bd_intf_pins noc_wrapper/ETH_AXI_${i}]

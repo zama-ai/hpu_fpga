@@ -454,51 +454,51 @@ module hpu_3parts_2in3_core
   multi_hpu_dma #(
   ) multi_hpu_dma (
     // configuration interface: regif
-    .clk_eth_cfg   (cfg_eth_clk),
-    .resetn_eth_cfg(cfg_eth_srst_n),
+    .clk_eth_cfg          (cfg_eth_clk),
+    .resetn_eth_cfg       (cfg_eth_srst_n),
 
-    .clk_eth_mrmac   (prc_mrmac_clk),
-    .resetn_eth_mrmac(prc_mrmac_srst_n),
+    .clk_eth_mrmac        (prc_mrmac_clk),
+    .resetn_eth_mrmac     (prc_mrmac_srst_n),
 
     // register interface
-    .s_axil_dma_awaddr(s_axil_dma_awaddr),
-    .s_axil_dma_awvalid(s_axil_dma_awvalid),
-    .s_axil_dma_awready(s_axil_dma_awready),
-    .s_axil_dma_wdata(s_axil_dma_wdata),
-    .s_axil_dma_wstrb(s_axil_dma_wstrb),
-    .s_axil_dma_wvalid(s_axil_dma_wvalid),
-    .s_axil_dma_wready(s_axil_dma_wready),
-    .s_axil_dma_bresp(s_axil_dma_bresp),
-    .s_axil_dma_bvalid(s_axil_dma_bvalid),
-    .s_axil_dma_bready(s_axil_dma_bready),
-    .s_axil_dma_araddr(s_axil_dma_araddr),
-    .s_axil_dma_arvalid(s_axil_dma_arvalid),
-    .s_axil_dma_arready(s_axil_dma_arready),
-    .s_axil_dma_rdata(s_axil_dma_rdata),
-    .s_axil_dma_rresp(s_axil_dma_rresp),
-    .s_axil_dma_rvalid(s_axil_dma_rvalid),
-    .s_axil_dma_rready(s_axil_dma_rready),
+    .s_axil_dma_awaddr    (s_axil_dma_awaddr),
+    .s_axil_dma_awvalid   (s_axil_dma_awvalid),
+    .s_axil_dma_awready   (s_axil_dma_awready),
+    .s_axil_dma_wdata     (s_axil_dma_wdata),
+    .s_axil_dma_wstrb     (s_axil_dma_wstrb),
+    .s_axil_dma_wvalid    (s_axil_dma_wvalid),
+    .s_axil_dma_wready    (s_axil_dma_wready),
+    .s_axil_dma_bresp     (s_axil_dma_bresp),
+    .s_axil_dma_bvalid    (s_axil_dma_bvalid),
+    .s_axil_dma_bready    (s_axil_dma_bready),
+    .s_axil_dma_araddr    (s_axil_dma_araddr),
+    .s_axil_dma_arvalid   (s_axil_dma_arvalid),
+    .s_axil_dma_arready   (s_axil_dma_arready),
+    .s_axil_dma_rdata     (s_axil_dma_rdata),
+    .s_axil_dma_rresp     (s_axil_dma_rresp),
+    .s_axil_dma_rvalid    (s_axil_dma_rvalid),
+    .s_axil_dma_rready    (s_axil_dma_rready),
 
     // directly from QSFP axi4-stream
-    .qsfp_tx_tdata(qsfp_tx_tdata),
-    .qsfp_tx_tkeep_user(qsfp_tx_tkeep_user),
-    .qsfp_tx_tlast(qsfp_tx_tlast),
-    .qsfp_tx_tvalid(qsfp_tx_tvalid),
-    .qsfp_tx_tready(qsfp_tx_tready),
+    .qsfp_tx_tdata        (qsfp_tx_tdata),
+    .qsfp_tx_tkeep_user   (qsfp_tx_tkeep_user),
+    .qsfp_tx_tlast        (qsfp_tx_tlast),
+    .qsfp_tx_tvalid       (qsfp_tx_tvalid),
+    .qsfp_tx_tready       (qsfp_tx_tready),
 
-    .qsfp_rx_tdata(qsfp_rx_tdata),
-    .qsfp_rx_tkeep_user(qsfp_rx_tkeep_user),
-    .qsfp_rx_tlast(qsfp_rx_tlast),
-    .qsfp_rx_tvalid(qsfp_rx_tvalid),
+    .qsfp_rx_tdata        (qsfp_rx_tdata),
+    .qsfp_rx_tkeep_user   (qsfp_rx_tkeep_user),
+    .qsfp_rx_tlast        (qsfp_rx_tlast),
+    .qsfp_rx_tvalid       (qsfp_rx_tvalid),
 
     // gt control signals
-    .gt_loopback(gt_loopback),
-    .gt_line_rate(gt_line_rate),
-    .gt_reset_rx_datapath(gt_reset_rx_datapath),
-    .gt_reset_tx_datapath(gt_reset_tx_datapath),
-    .gt_reset_all(gt_reset_all),
-    .gt_rx_reset_done(gt_rx_reset_done),
-    .gt_tx_reset_done(gt_tx_reset_done)
+    .gt_loopback          (gt_loopback),
+    .gt_line_rate         (gt_line_rate),
+    .gt_reset_rx_datapath (gt_reset_rx_datapath),
+    .gt_reset_tx_datapath (gt_reset_tx_datapath),
+    .gt_reset_all         (gt_reset_all),
+    .gt_rx_reset_done     (gt_rx_reset_done),
+    .gt_tx_reset_done     (gt_tx_reset_done)
   );
 
 endmodule

@@ -1,8 +1,8 @@
 // ============================================================================================== //
 // Description  : Axi4-lite register bank
 // This file was generated with rust regmap generator:
-//  * Date:  2025-10-06
-//  * Tool_version: bb0db737792da6b81e69a039028c971af1627fe2
+//  * Date:  2025-10-17
+//  * Tool_version: bd49564daf1a99d615cb6dbb121b54bfbeef8b22
 // ---------------------------------------------------------------------------------------------- //
 // xR[n]W[na]
 // |-> who is in charge of the register update logic : u -> User
@@ -57,84 +57,84 @@ import hpu_regif_core_prc_3in3_pkg::*;
   output logic [AXIL_DATA_W-1:0]        r_axil_wdata
   // Register IO: status_3in3_error
     , output status_3in3_error_t r_status_3in3_error
-        , input status_3in3_error_t r_status_3in3_error_upd
+    , input  status_3in3_error_t r_status_3in3_error_upd
     , output logic r_status_3in3_error_wr_en
   // Register IO: bsk_avail_avail
     , output bsk_avail_avail_t r_bsk_avail_avail
   // Register IO: bsk_avail_reset
     , output bsk_avail_reset_t r_bsk_avail_reset
-        , input bsk_avail_reset_t r_bsk_avail_reset_upd
+    , input  bsk_avail_reset_t r_bsk_avail_reset_upd
     , output logic r_bsk_avail_reset_wr_en
   // Register IO: runtime_3in3_pep_load_bsk_rcp_dur_pc0
     , output logic [REG_DATA_W-1: 0] r_runtime_3in3_pep_load_bsk_rcp_dur_pc0
-        , input  logic [REG_DATA_W-1: 0] r_runtime_3in3_pep_load_bsk_rcp_dur_pc0_upd
+    , input  logic [REG_DATA_W-1: 0] r_runtime_3in3_pep_load_bsk_rcp_dur_pc0_upd
     , output logic r_runtime_3in3_pep_load_bsk_rcp_dur_pc0_wr_en
   // Register IO: runtime_3in3_pep_load_bsk_rcp_dur_pc1
     , output logic [REG_DATA_W-1: 0] r_runtime_3in3_pep_load_bsk_rcp_dur_pc1
-        , input  logic [REG_DATA_W-1: 0] r_runtime_3in3_pep_load_bsk_rcp_dur_pc1_upd
+    , input  logic [REG_DATA_W-1: 0] r_runtime_3in3_pep_load_bsk_rcp_dur_pc1_upd
     , output logic r_runtime_3in3_pep_load_bsk_rcp_dur_pc1_wr_en
   // Register IO: runtime_3in3_pep_load_bsk_rcp_dur_pc2
     , output logic [REG_DATA_W-1: 0] r_runtime_3in3_pep_load_bsk_rcp_dur_pc2
-        , input  logic [REG_DATA_W-1: 0] r_runtime_3in3_pep_load_bsk_rcp_dur_pc2_upd
+    , input  logic [REG_DATA_W-1: 0] r_runtime_3in3_pep_load_bsk_rcp_dur_pc2_upd
     , output logic r_runtime_3in3_pep_load_bsk_rcp_dur_pc2_wr_en
   // Register IO: runtime_3in3_pep_load_bsk_rcp_dur_pc3
     , output logic [REG_DATA_W-1: 0] r_runtime_3in3_pep_load_bsk_rcp_dur_pc3
-        , input  logic [REG_DATA_W-1: 0] r_runtime_3in3_pep_load_bsk_rcp_dur_pc3_upd
+    , input  logic [REG_DATA_W-1: 0] r_runtime_3in3_pep_load_bsk_rcp_dur_pc3_upd
     , output logic r_runtime_3in3_pep_load_bsk_rcp_dur_pc3_wr_en
   // Register IO: runtime_3in3_pep_load_bsk_rcp_dur_pc4
     , output logic [REG_DATA_W-1: 0] r_runtime_3in3_pep_load_bsk_rcp_dur_pc4
-        , input  logic [REG_DATA_W-1: 0] r_runtime_3in3_pep_load_bsk_rcp_dur_pc4_upd
+    , input  logic [REG_DATA_W-1: 0] r_runtime_3in3_pep_load_bsk_rcp_dur_pc4_upd
     , output logic r_runtime_3in3_pep_load_bsk_rcp_dur_pc4_wr_en
   // Register IO: runtime_3in3_pep_load_bsk_rcp_dur_pc5
     , output logic [REG_DATA_W-1: 0] r_runtime_3in3_pep_load_bsk_rcp_dur_pc5
-        , input  logic [REG_DATA_W-1: 0] r_runtime_3in3_pep_load_bsk_rcp_dur_pc5_upd
+    , input  logic [REG_DATA_W-1: 0] r_runtime_3in3_pep_load_bsk_rcp_dur_pc5_upd
     , output logic r_runtime_3in3_pep_load_bsk_rcp_dur_pc5_wr_en
   // Register IO: runtime_3in3_pep_load_bsk_rcp_dur_pc6
     , output logic [REG_DATA_W-1: 0] r_runtime_3in3_pep_load_bsk_rcp_dur_pc6
-        , input  logic [REG_DATA_W-1: 0] r_runtime_3in3_pep_load_bsk_rcp_dur_pc6_upd
+    , input  logic [REG_DATA_W-1: 0] r_runtime_3in3_pep_load_bsk_rcp_dur_pc6_upd
     , output logic r_runtime_3in3_pep_load_bsk_rcp_dur_pc6_wr_en
   // Register IO: runtime_3in3_pep_load_bsk_rcp_dur_pc7
     , output logic [REG_DATA_W-1: 0] r_runtime_3in3_pep_load_bsk_rcp_dur_pc7
-        , input  logic [REG_DATA_W-1: 0] r_runtime_3in3_pep_load_bsk_rcp_dur_pc7_upd
+    , input  logic [REG_DATA_W-1: 0] r_runtime_3in3_pep_load_bsk_rcp_dur_pc7_upd
     , output logic r_runtime_3in3_pep_load_bsk_rcp_dur_pc7_wr_en
   // Register IO: runtime_3in3_pep_load_bsk_rcp_dur_pc8
     , output logic [REG_DATA_W-1: 0] r_runtime_3in3_pep_load_bsk_rcp_dur_pc8
-        , input  logic [REG_DATA_W-1: 0] r_runtime_3in3_pep_load_bsk_rcp_dur_pc8_upd
+    , input  logic [REG_DATA_W-1: 0] r_runtime_3in3_pep_load_bsk_rcp_dur_pc8_upd
     , output logic r_runtime_3in3_pep_load_bsk_rcp_dur_pc8_wr_en
   // Register IO: runtime_3in3_pep_load_bsk_rcp_dur_pc9
     , output logic [REG_DATA_W-1: 0] r_runtime_3in3_pep_load_bsk_rcp_dur_pc9
-        , input  logic [REG_DATA_W-1: 0] r_runtime_3in3_pep_load_bsk_rcp_dur_pc9_upd
+    , input  logic [REG_DATA_W-1: 0] r_runtime_3in3_pep_load_bsk_rcp_dur_pc9_upd
     , output logic r_runtime_3in3_pep_load_bsk_rcp_dur_pc9_wr_en
   // Register IO: runtime_3in3_pep_load_bsk_rcp_dur_pc10
     , output logic [REG_DATA_W-1: 0] r_runtime_3in3_pep_load_bsk_rcp_dur_pc10
-        , input  logic [REG_DATA_W-1: 0] r_runtime_3in3_pep_load_bsk_rcp_dur_pc10_upd
+    , input  logic [REG_DATA_W-1: 0] r_runtime_3in3_pep_load_bsk_rcp_dur_pc10_upd
     , output logic r_runtime_3in3_pep_load_bsk_rcp_dur_pc10_wr_en
   // Register IO: runtime_3in3_pep_load_bsk_rcp_dur_pc11
     , output logic [REG_DATA_W-1: 0] r_runtime_3in3_pep_load_bsk_rcp_dur_pc11
-        , input  logic [REG_DATA_W-1: 0] r_runtime_3in3_pep_load_bsk_rcp_dur_pc11_upd
+    , input  logic [REG_DATA_W-1: 0] r_runtime_3in3_pep_load_bsk_rcp_dur_pc11_upd
     , output logic r_runtime_3in3_pep_load_bsk_rcp_dur_pc11_wr_en
   // Register IO: runtime_3in3_pep_load_bsk_rcp_dur_pc12
     , output logic [REG_DATA_W-1: 0] r_runtime_3in3_pep_load_bsk_rcp_dur_pc12
-        , input  logic [REG_DATA_W-1: 0] r_runtime_3in3_pep_load_bsk_rcp_dur_pc12_upd
+    , input  logic [REG_DATA_W-1: 0] r_runtime_3in3_pep_load_bsk_rcp_dur_pc12_upd
     , output logic r_runtime_3in3_pep_load_bsk_rcp_dur_pc12_wr_en
   // Register IO: runtime_3in3_pep_load_bsk_rcp_dur_pc13
     , output logic [REG_DATA_W-1: 0] r_runtime_3in3_pep_load_bsk_rcp_dur_pc13
-        , input  logic [REG_DATA_W-1: 0] r_runtime_3in3_pep_load_bsk_rcp_dur_pc13_upd
+    , input  logic [REG_DATA_W-1: 0] r_runtime_3in3_pep_load_bsk_rcp_dur_pc13_upd
     , output logic r_runtime_3in3_pep_load_bsk_rcp_dur_pc13_wr_en
   // Register IO: runtime_3in3_pep_load_bsk_rcp_dur_pc14
     , output logic [REG_DATA_W-1: 0] r_runtime_3in3_pep_load_bsk_rcp_dur_pc14
-        , input  logic [REG_DATA_W-1: 0] r_runtime_3in3_pep_load_bsk_rcp_dur_pc14_upd
+    , input  logic [REG_DATA_W-1: 0] r_runtime_3in3_pep_load_bsk_rcp_dur_pc14_upd
     , output logic r_runtime_3in3_pep_load_bsk_rcp_dur_pc14_wr_en
   // Register IO: runtime_3in3_pep_load_bsk_rcp_dur_pc15
     , output logic [REG_DATA_W-1: 0] r_runtime_3in3_pep_load_bsk_rcp_dur_pc15
-        , input  logic [REG_DATA_W-1: 0] r_runtime_3in3_pep_load_bsk_rcp_dur_pc15_upd
+    , input  logic [REG_DATA_W-1: 0] r_runtime_3in3_pep_load_bsk_rcp_dur_pc15_upd
     , output logic r_runtime_3in3_pep_load_bsk_rcp_dur_pc15_wr_en
   // Register IO: runtime_3in3_pep_bskif_req_info_0
     , output runtime_3in3_pep_bskif_req_info_0_t r_runtime_3in3_pep_bskif_req_info_0
-        , input runtime_3in3_pep_bskif_req_info_0_t r_runtime_3in3_pep_bskif_req_info_0_upd
+    , input  runtime_3in3_pep_bskif_req_info_0_t r_runtime_3in3_pep_bskif_req_info_0_upd
   // Register IO: runtime_3in3_pep_bskif_req_info_1
     , output runtime_3in3_pep_bskif_req_info_1_t r_runtime_3in3_pep_bskif_req_info_1
-        , input runtime_3in3_pep_bskif_req_info_1_t r_runtime_3in3_pep_bskif_req_info_1_upd
+    , input  runtime_3in3_pep_bskif_req_info_1_t r_runtime_3in3_pep_bskif_req_info_1_upd
 );
 // ============================================================================================== --
 // localparam

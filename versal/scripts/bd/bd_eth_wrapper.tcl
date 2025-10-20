@@ -290,16 +290,7 @@ proc create_hier_cell_eth_wrapper  { parentCell nameHier } {
   create_bd_intf_pin -mode Slave -vlnv xilinx.com:display_mrmac:mrmac_ctrl_ports:2.0 ctl_tx_port1
   create_bd_intf_pin -mode Slave -vlnv xilinx.com:display_mrmac:mrmac_ctrl_ports:2.0 ctl_tx_port2
   create_bd_intf_pin -mode Slave -vlnv xilinx.com:display_mrmac:mrmac_ctrl_ports:2.0 ctl_tx_port3
-  create_bd_intf_pin -mode Master -vlnv xilinx.com:display_mrmac:mrmac_statistics_ports:2.0 stat_tx_port0
-  create_bd_intf_pin -mode Master -vlnv xilinx.com:display_mrmac:mrmac_statistics_ports:2.0 stat_tx_port1
-  create_bd_intf_pin -mode Master -vlnv xilinx.com:display_mrmac:mrmac_statistics_ports:2.0 stat_tx_port2
-  create_bd_intf_pin -mode Master -vlnv xilinx.com:display_mrmac:mrmac_statistics_ports:2.0 stat_tx_port3
-  create_bd_intf_pin -mode Master -vlnv xilinx.com:display_mrmac:mrmac_statistics_ports:2.0 stat_rx_port0
-  create_bd_intf_pin -mode Master -vlnv xilinx.com:display_mrmac:mrmac_statistics_ports:2.0 stat_rx_port1
-  create_bd_intf_pin -mode Master -vlnv xilinx.com:display_mrmac:mrmac_statistics_ports:2.0 stat_rx_port2
-  create_bd_intf_pin -mode Master -vlnv xilinx.com:display_mrmac:mrmac_statistics_ports:2.0 stat_rx_port3
   create_bd_intf_pin -mode Slave -vlnv xilinx.com:display_mrmac:mrmac_statistics_ports:2.0 tx_preamblein
-  create_bd_intf_pin -mode Master -vlnv xilinx.com:display_mrmac:mrmac_statistics_ports:2.0 rx_preambleout
   create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:apb_rtl:1.0 APB3_INTF
 
   # Create pins
@@ -384,20 +375,6 @@ proc create_hier_cell_eth_wrapper  { parentCell nameHier } {
   set gt_rxp_in_0 [ create_bd_pin -dir I -from 3 -to 0 gt_rxp_in_0 ]
   set gt_txn_out_0 [ create_bd_pin -dir O -from 3 -to 0 gt_txn_out_0 ]
   set gt_txp_out_0 [ create_bd_pin -dir O -from 3 -to 0 gt_txp_out_0 ]
-
-  set axis_m_eth [ create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:axis_rtl:1.0 axis_m_eth ]
-  set axis_s_eth [ create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:axis_rtl:1.0 axis_s_eth ]
-  set_property -dict [ list \
-   CONFIG.HAS_TKEEP {0} \
-   CONFIG.HAS_TLAST {0} \
-   CONFIG.HAS_TREADY {1} \
-   CONFIG.HAS_TSTRB {0} \
-   CONFIG.LAYERED_METADATA {undef} \
-   CONFIG.TDATA_NUM_BYTES $AXIS_DATA_ETH_BYTES \
-   CONFIG.TDEST_WIDTH {0} \
-   CONFIG.TID_WIDTH {0} \
-   CONFIG.TUSER_WIDTH {0} \
-  ] $axis_s_eth
 
   # Create instance: mrmac_0_core, and set properties
   # Static 4 x 25GE Narrow
@@ -622,15 +599,6 @@ proc create_hier_cell_eth_wrapper  { parentCell nameHier } {
   connect_bd_intf_net -intf_net ctl_tx_pin1_1               [get_bd_intf_pins mrmac_0_core/ctl_tx_port1]              [get_bd_intf_pins ctl_tx_port1]
   connect_bd_intf_net -intf_net ctl_tx_pin2_1               [get_bd_intf_pins mrmac_0_core/ctl_tx_port2]              [get_bd_intf_pins ctl_tx_port2]
   connect_bd_intf_net -intf_net ctl_tx_pin3_1               [get_bd_intf_pins mrmac_0_core/ctl_tx_port3]              [get_bd_intf_pins ctl_tx_port3]
-  connect_bd_intf_net -intf_net mrmac_0_core_rx_preambleout [get_bd_intf_pins mrmac_0_core/rx_preambleout]            [get_bd_intf_pins rx_preambleout]
-  connect_bd_intf_net -intf_net mrmac_0_core_stat_rx_pin0   [get_bd_intf_pins mrmac_0_core/stat_rx_port0]             [get_bd_intf_pins stat_rx_port0]
-  connect_bd_intf_net -intf_net mrmac_0_core_stat_rx_pin1   [get_bd_intf_pins mrmac_0_core/stat_rx_port1]             [get_bd_intf_pins stat_rx_port1]
-  connect_bd_intf_net -intf_net mrmac_0_core_stat_rx_pin2   [get_bd_intf_pins mrmac_0_core/stat_rx_port2]             [get_bd_intf_pins stat_rx_port2]
-  connect_bd_intf_net -intf_net mrmac_0_core_stat_rx_pin3   [get_bd_intf_pins mrmac_0_core/stat_rx_port3]             [get_bd_intf_pins stat_rx_port3]
-  connect_bd_intf_net -intf_net mrmac_0_core_stat_tx_pin0   [get_bd_intf_pins mrmac_0_core/stat_tx_port0]             [get_bd_intf_pins stat_tx_port0]
-  connect_bd_intf_net -intf_net mrmac_0_core_stat_tx_pin1   [get_bd_intf_pins mrmac_0_core/stat_tx_port1]             [get_bd_intf_pins stat_tx_port1]
-  connect_bd_intf_net -intf_net mrmac_0_core_stat_tx_pin2   [get_bd_intf_pins mrmac_0_core/stat_tx_port2]             [get_bd_intf_pins stat_tx_port2]
-  connect_bd_intf_net -intf_net mrmac_0_core_stat_tx_pin3   [get_bd_intf_pins mrmac_0_core/stat_tx_port3]             [get_bd_intf_pins stat_tx_port3]
   connect_bd_intf_net -intf_net s_axi_1                     [get_bd_intf_pins mrmac_0_core/s_axi]                     [get_bd_intf_pins s_axil_mrmac]
   connect_bd_intf_net -intf_net tx_preamblein_1             [get_bd_intf_pins mrmac_0_core/tx_preamblein]             [get_bd_intf_pins tx_preamblein]
   connect_bd_intf_net                                       [get_bd_intf_pins mrmac_0_core/gtm_tx_serdes_interface_0] [get_bd_intf_pins mrmac_0_gt_wrapper/TX0_GT_IP_Interface]
