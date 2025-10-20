@@ -13,7 +13,7 @@ module tb_multi_hpu_dma;
   import axi_if_common_param_pkg::*;
   import axi_if_shell_axil_pkg::*;
   import hpu_regif_core_eth_2in3_pkg::*;
-  import mhdma_pkg::*
+  import mhdma_pkg::*;
 
 // ============================================================================================== --
 // localparam
@@ -21,6 +21,14 @@ module tb_multi_hpu_dma;
   localparam int CLK_HALF_PERIOD_A = 4;
   localparam int CLK_HALF_PERIOD_B = 1;
   localparam int ARST_ACTIVATION = 17;
+
+
+  localparam int HPU_NB = 2; // in this test we will try to connect two mhdma (or HPUs)
+
+  localparam int FIFO_DEPTH = 512;
+
+  localparam int DEFAULT_SRC_MAC_ADDR_OFS = 'h0005;
+  localparam int DEFAULT_DST_MAC_ADDR_OFS = 'h0006;
 
 // ============================================================================================== --
 // clock, reset
@@ -118,28 +126,28 @@ module tb_multi_hpu_dma;
   logic                       s_axil_dma_rready_hpu_b;
   // QSFP system interface ----------------------------------------------------
   // == TX
-  logic [QSFP_LANE_NB-1:0][MRMAC_AXIS_W-1:0 ] qsfp_tx_tdata;
-  logic [QSFP_LANE_NB-1:0][MRMAC_TKEEP_W-1:0] qsfp_tx_tkeep_user;
-  logic [QSFP_LANE_NB-1:0]                    qsfp_tx_tlast;
-  logic [QSFP_LANE_NB-1:0]                    qsfp_tx_tvalid;
-  logic [QSFP_LANE_NB-1:0]                    qsfp_tx_tready;
+  logic [HPU_NB-1:0][QSFP_LANE_NB-1:0][MRMAC_AXIS_W-1:0 ] qsfp_tx_tdata;
+  logic [HPU_NB-1:0][QSFP_LANE_NB-1:0][MRMAC_TKEEP_W-1:0] qsfp_tx_tkeep_user;
+  logic [HPU_NB-1:0][QSFP_LANE_NB-1:0]                    qsfp_tx_tlast;
+  logic [HPU_NB-1:0][QSFP_LANE_NB-1:0]                    qsfp_tx_tvalid;
+  logic [HPU_NB-1:0][QSFP_LANE_NB-1:0]                    qsfp_tx_tready;
   // == RX
-  logic [QSFP_LANE_NB-1:0][MRMAC_AXIS_W-1:0 ] qsfp_rx_tdata;
-  logic [QSFP_LANE_NB-1:0][MRMAC_TKEEP_W-1:0] qsfp_rx_tkeep_user;
-  logic [QSFP_LANE_NB-1:0]                    qsfp_rx_tlast;
-  logic [QSFP_LANE_NB-1:0]                    qsfp_rx_tvalid;
+  logic [HPU_NB-1:0][QSFP_LANE_NB-1:0][MRMAC_AXIS_W-1:0 ] qsfp_rx_tdata;
+  logic [HPU_NB-1:0][QSFP_LANE_NB-1:0][MRMAC_TKEEP_W-1:0] qsfp_rx_tkeep_user;
+  logic [HPU_NB-1:0][QSFP_LANE_NB-1:0]                    qsfp_rx_tlast;
+  logic [HPU_NB-1:0][QSFP_LANE_NB-1:0]                    qsfp_rx_tvalid;
 
   // ============================================================================================== --
   // Design under test instance
   // ============================================================================================== --
   // gt configuration signals
-  logic [7:0]              gt_line_rate;
-  logic [2:0]              gt_loopback;
-  logic [QSFP_LANE_NB-1:0] gt_reset_rx_datapath;
-  logic [QSFP_LANE_NB-1:0] gt_reset_tx_datapath;
-  logic [QSFP_LANE_NB-1:0] gt_reset_all;
-  logic [QSFP_LANE_NB-1:0] gt_rx_reset_done;
-  logic [QSFP_LANE_NB-1:0] gt_tx_reset_done;
+  logic [HPU_NB-1:0][7:0]              gt_line_rate;
+  logic [HPU_NB-1:0][2:0]              gt_loopback;
+  logic [HPU_NB-1:0][QSFP_LANE_NB-1:0] gt_reset_rx_datapath;
+  logic [HPU_NB-1:0][QSFP_LANE_NB-1:0] gt_reset_tx_datapath;
+  logic [HPU_NB-1:0][QSFP_LANE_NB-1:0] gt_reset_all;
+  logic [HPU_NB-1:0][QSFP_LANE_NB-1:0] gt_rx_reset_done;
+  logic [HPU_NB-1:0][QSFP_LANE_NB-1:0] gt_tx_reset_done;
 
   // [section] line parameter -------------------------------------------------
   logic [31:0] line_parameter;
@@ -174,7 +182,7 @@ module tb_multi_hpu_dma;
   assign reset_parameter = {20'h0, rst_rx_datapath, rst_tx_datapath, rst_all};
 
   // monitoring of reset done
-  logic [31:0] reset_monitor;
+  logic [HPU_NB-1:0][31:0] reset_monitor;
 
   // HPU A ----------------------------------------------------------------------------------------
   multi_hpu_dma #(
@@ -204,24 +212,24 @@ module tb_multi_hpu_dma;
     .s_axil_dma_rvalid (s_axil_dma_rvalid_hpu_a ),
     .s_axil_dma_rready (s_axil_dma_rready_hpu_a ),
 
-    .qsfp_tx_tdata     (qsfp_tx_tdata     ),
-    .qsfp_tx_tkeep_user(qsfp_tx_tkeep_user),
-    .qsfp_tx_tlast     (qsfp_tx_tlast     ),
-    .qsfp_tx_tvalid    (qsfp_tx_tvalid    ),
-    .qsfp_tx_tready    (qsfp_tx_tready    ),
+    .qsfp_tx_tdata     (qsfp_tx_tdata[0]     ),
+    .qsfp_tx_tkeep_user(qsfp_tx_tkeep_user[0]),
+    .qsfp_tx_tlast     (qsfp_tx_tlast[0]     ),
+    .qsfp_tx_tvalid    (qsfp_tx_tvalid[0]    ),
+    .qsfp_tx_tready    (qsfp_tx_tready[0]    ),
 
-    .qsfp_rx_tdata     (qsfp_rx_tdata     ),
-    .qsfp_rx_tkeep_user(qsfp_rx_tkeep_user),
-    .qsfp_rx_tlast     (qsfp_rx_tlast     ),
-    .qsfp_rx_tvalid    (qsfp_rx_tvalid    ),
+    .qsfp_rx_tdata     (qsfp_rx_tdata[0]     ),
+    .qsfp_rx_tkeep_user(qsfp_rx_tkeep_user[0]),
+    .qsfp_rx_tlast     (qsfp_rx_tlast[0]     ),
+    .qsfp_rx_tvalid    (qsfp_rx_tvalid[0]    ),
 
-    .gt_line_rate        (gt_line_rate        ),
-    .gt_loopback         (gt_loopback         ),
-    .gt_reset_rx_datapath(gt_reset_rx_datapath),
-    .gt_reset_tx_datapath(gt_reset_tx_datapath),
-    .gt_reset_all        (gt_reset_all        ),
-    .gt_rx_reset_done    (gt_rx_reset_done    ),
-    .gt_tx_reset_done    (gt_tx_reset_done    )
+    .gt_line_rate        (gt_line_rate[0]        ),
+    .gt_loopback         (gt_loopback[0]         ),
+    .gt_reset_rx_datapath(gt_reset_rx_datapath[0]),
+    .gt_reset_tx_datapath(gt_reset_tx_datapath[0]),
+    .gt_reset_all        (gt_reset_all[0]        ),
+    .gt_rx_reset_done    (gt_rx_reset_done[0]    ),
+    .gt_tx_reset_done    (gt_tx_reset_done[0]    )
 );
 
   // HPU B ----------------------------------------------------------------------------------------
@@ -252,24 +260,24 @@ module tb_multi_hpu_dma;
     .s_axil_dma_rvalid (s_axil_dma_rvalid_hpu_b ),
     .s_axil_dma_rready (s_axil_dma_rready_hpu_b ),
 
-    .qsfp_tx_tdata     (qsfp_tx_tdata     ),
-    .qsfp_tx_tkeep_user(qsfp_tx_tkeep_user),
-    .qsfp_tx_tlast     (qsfp_tx_tlast     ),
-    .qsfp_tx_tvalid    (qsfp_tx_tvalid    ),
-    .qsfp_tx_tready    (qsfp_tx_tready    ),
+    .qsfp_tx_tdata     (qsfp_tx_tdata[1]     ),
+    .qsfp_tx_tkeep_user(qsfp_tx_tkeep_user[1]),
+    .qsfp_tx_tlast     (qsfp_tx_tlast[1]     ),
+    .qsfp_tx_tvalid    (qsfp_tx_tvalid[1]    ),
+    .qsfp_tx_tready    (qsfp_tx_tready[1]    ),
 
-    .qsfp_rx_tdata     (qsfp_rx_tdata     ),
-    .qsfp_rx_tkeep_user(qsfp_rx_tkeep_user),
-    .qsfp_rx_tlast     (qsfp_rx_tlast     ),
-    .qsfp_rx_tvalid    (qsfp_rx_tvalid    ),
+    .qsfp_rx_tdata     (qsfp_rx_tdata[1]     ),
+    .qsfp_rx_tkeep_user(qsfp_rx_tkeep_user[1]),
+    .qsfp_rx_tlast     (qsfp_rx_tlast[1]     ),
+    .qsfp_rx_tvalid    (qsfp_rx_tvalid[1]    ),
 
-    .gt_line_rate        (gt_line_rate        ),
-    .gt_loopback         (gt_loopback         ),
-    .gt_reset_rx_datapath(gt_reset_rx_datapath),
-    .gt_reset_tx_datapath(gt_reset_tx_datapath),
-    .gt_reset_all        (gt_reset_all        ),
-    .gt_rx_reset_done    (gt_rx_reset_done    ),
-    .gt_tx_reset_done    (gt_tx_reset_done    )
+    .gt_line_rate        (gt_line_rate[1]        ),
+    .gt_loopback         (gt_loopback[1]         ),
+    .gt_reset_rx_datapath(gt_reset_rx_datapath[1]),
+    .gt_reset_tx_datapath(gt_reset_tx_datapath[1]),
+    .gt_reset_all        (gt_reset_all[1]        ),
+    .gt_rx_reset_done    (gt_rx_reset_done[1]    ),
+    .gt_tx_reset_done    (gt_tx_reset_done[1]    )
 );
 
 // ============================================================================================== --
@@ -327,8 +335,8 @@ module tb_multi_hpu_dma;
   assign maxil_drv_if_hpu_b.rvalid  = s_axil_dma_rvalid_hpu_b;
 
   initial begin
-    maxil_drv_if.init();
-    enable_noise_on_rx = 1'b0;
+    maxil_drv_if_hpu_a.init();
+    maxil_drv_if_hpu_b.init();
 
     reset_registers = 'h0;
     tx_loop         = 'h0;
@@ -338,17 +346,6 @@ module tb_multi_hpu_dma;
     $display("A - Initial register check and definition");
     init_registers();
 
-    $display("B - Setting near end pcs and launching a frame - receiving data");
-    test_lb_near_end_pcs();
-
-    $display("C - looping over tx to measure throughput");
-    debug_mode_tx_loop();
-
-    $display("D - Sending to TX all the values we receive from RX");
-    debug_mode_rx_2_tx();
-
-    $display("E - When we receive noise on RX, do we see it correctly in the fifo ?");
-    test_receive_noise_rx();
 
     $display("%t > INFO: End simulation",$time);
     repeat(20) @(posedge clk_control);
@@ -358,27 +355,32 @@ module tb_multi_hpu_dma;
 // ============================================================================================== --
 // Tasks
 // ============================================================================================== --
+  logic [31:0] rdata;
+
   task automatic init_registers;
     begin
     // (1) Reading MAC REGISTERS ------------------------------------------------------------------
-      maxil_drv_if.read_trans(SYSTEM_SRC_MAC_ADDR_OFS, rdata);
+      maxil_drv_if_hpu_a.read_trans(SYSTEM_SRC_MAC_ADDR_OFS, rdata);
       assert (rdata == 'h0) else begin
         $display("%t > ERROR:register SYSTEM_SRC_MAC_ADDR_OFS not correctly read %h",$time, rdata);
         error = 1'b1;
       end
-      maxil_drv_if.read_trans(SYSTEM_DST_MAC_ADDR_OFS, rdata);
+      maxil_drv_if_hpu_b.read_trans(SYSTEM_DST_MAC_ADDR_OFS, rdata);
       assert (rdata == 'h0) else begin
         $display("%t > ERROR:register SYSTEM_DST_MAC_ADDR_OFS not correctly read %h",$time, rdata);
         error = 1'b1;
       end
-      maxil_drv_if.read_trans(SYSTEM_LINE_OFS, rdata);
+      maxil_drv_if_hpu_a.read_trans(SYSTEM_LINE_OFS, rdata);
       assert (rdata == 'h0) else begin
         $display("%t > ERROR:register SYSTEM_LINE_OFS not correctly read %h",$time, rdata);
         error = 1'b1;
       end
       // (2) ASSIGN MAC REGISTERS ------------------------------------------------------------------
-      maxil_drv_if.write_trans(SYSTEM_SRC_MAC_ADDR_OFS, DEFAULT_SRC_MAC_ADDR_OFS);
-      maxil_drv_if.write_trans(SYSTEM_DST_MAC_ADDR_OFS, DEFAULT_DST_MAC_ADDR_OFS);
+      maxil_drv_if_hpu_a.write_trans(SYSTEM_SRC_MAC_ADDR_OFS, DEFAULT_SRC_MAC_ADDR_OFS);
+      maxil_drv_if_hpu_a.write_trans(SYSTEM_DST_MAC_ADDR_OFS, DEFAULT_DST_MAC_ADDR_OFS);
+
+      maxil_drv_if_hpu_b.write_trans(SYSTEM_SRC_MAC_ADDR_OFS, DEFAULT_SRC_MAC_ADDR_OFS);
+      maxil_drv_if_hpu_b.write_trans(SYSTEM_DST_MAC_ADDR_OFS, DEFAULT_DST_MAC_ADDR_OFS);
       // (3) ASSIGN REGISTERS & CHECK -------------------------------------------------------------
     line_rate     = 8'hAB;  // random, no idea what it should be
     line_loopback = 3'b100; // 3 near end pcs loopback
@@ -386,41 +388,53 @@ module tb_multi_hpu_dma;
     debug_flag    = 1'b0;
     @(posedge clk_control);
 
-    maxil_drv_if.write_trans(SYSTEM_LINE_OFS, line_parameter);
+    maxil_drv_if_hpu_a.write_trans(SYSTEM_LINE_OFS, line_parameter);
+    maxil_drv_if_hpu_b.write_trans(SYSTEM_LINE_OFS, line_parameter);
 
     rst_rx_datapath = 4'b0100;
     rst_tx_datapath = 4'b1011;
     rst_all         = 4'b0101;
     @(posedge clk_control);
 
-    maxil_drv_if.write_trans(RESET_DATAPATH_OFS, reset_parameter);
+    maxil_drv_if_hpu_a.write_trans(RESET_DATAPATH_OFS, reset_parameter);
+    maxil_drv_if_hpu_b.write_trans(RESET_DATAPATH_OFS, reset_parameter);
 
-    if ((gt_line_rate == line_rate) && (gt_loopback == line_loopback) && (dut.line_sel == line_select)) begin
-      $display("    > line parameter correctly configured");
-    end else begin
-      $display("%t >    ERROR: configuration doesn't match to what have been selected",$time);
-      error = 1'b1;
+    assert ((gt_line_rate[0] == line_rate) && (gt_line_rate[1] == line_rate)) else begin
+      $display("[ERROR] line_rate has unexpected value %x %x %x",gt_line_rate[0], gt_line_rate[1], line_rate);
+      error = 1;
+    end
+    assert ((gt_loopback[0] ==line_loopback) && (gt_loopback[1] == line_loopback)) else begin
+      $display("[ERROR] gt_loopback has unexpected value");
+      error = 1;
+    end
+    assert ((hpu_a.line_sel == line_select) &&  (hpu_b.line_sel == line_select)) else begin
+      $display("[ERROR] line_sel has unexpected value");
+      error = 1;
     end
 
-    if ((gt_reset_rx_datapath == rst_rx_datapath) && (gt_reset_tx_datapath == rst_tx_datapath) && (gt_reset_all == rst_all)) begin
-      $display("    > reset lines have been triggered correctly");
-    end else begin
-      $display("%t >    ERROR: reset configuration has not been applied correctly",$time);
-      error = 1'b1;
+    for (int i = 0; i<2; i++) begin
+      assert ((gt_reset_rx_datapath[i] == rst_rx_datapath) && (gt_reset_tx_datapath[i] == rst_tx_datapath) && (gt_reset_all[i] == rst_all)) else begin
+        $display("%t >    ERROR: reset configuration has not been applied correctly",$time);
+        error = 1'b1;
+      end
     end
 
-    // read reset register
-    gt_rx_reset_done= 4'b1111;
-    gt_tx_reset_done= 4'b1111;
+    // read reset register ----------------------------------------------------
+    // fake stimulation
+    for (int i = 0; i<2; i++) begin
+      gt_rx_reset_done[i]= 4'b1111;
+      gt_tx_reset_done[i]= 4'b1111;
+    end
     @(posedge clk_control);
 
-    maxil_drv_if.read_trans(RESET_MONITOR_OFS, reset_monitor);
+    maxil_drv_if_hpu_a.read_trans(RESET_MONITOR_OFS, reset_monitor[0]);
+    maxil_drv_if_hpu_b.read_trans(RESET_MONITOR_OFS, reset_monitor[1]);
 
-    if(( reset_monitor[3:0] == gt_tx_reset_done) && ( reset_monitor[7:4] == gt_rx_reset_done)) begin
-      $display("    > reset monitor register correctly read");
-    end else begin
-      $display("%t >    ERROR: reset monitor has not been read correctly",$time);
-      error = 1'b1;
+    for (int i = 0; i<2; i++) begin
+      assert ((reset_monitor[i][3:0] == gt_tx_reset_done) && (reset_monitor[i][7:4] == gt_rx_reset_done)) begin
+        $display("%t >    ERROR: reset monitor has not been read correctly",$time);
+        error = 1'b1;
+      end
     end
 
     // (4) Setting up credible values -------------------------------------------------------------
@@ -438,325 +452,4 @@ module tb_multi_hpu_dma;
     end
   endtask
 
-  task automatic test_lb_near_end_pcs;
-    logic [MRMAC_AXIS_W:0] tx_tdata;
-    begin
-      // (1) setting up configuration -------------------------------------------------------------
-      $display("    > Configuration: Debug mode - Lane 0 - near end pcs");
-      debug_flag    = 1'b1;
-      line_select   = 2'b00;
-      line_loopback = 3'b010;
-      @(posedge clk_control);
-
-      maxil_drv_if.write_trans(SYSTEM_LINE_OFS, line_parameter);
-
-      // ready starts
-      qsfp_tx_tready[line_select] = 1'b1;
-      @(posedge clk_control);
-
-    // (2) write to the fifo ----------------------------------------------------------------------
-      $display("    > writing NB_WORDS_FRAME %0x words into FIFO", NB_WORDS_FRAME);
-      maxil_drv_if.write_trans(FIFO_WRITE_NUMBER_OF_WORDS_OFS, NB_WORDS_FRAME);
-      for (int wr_frame = 0; wr_frame < NB_WORDS_FRAME; wr_frame++) begin
-        tx_tdata = {$urandom, $urandom};
-        maxil_drv_if.write_trans(FIFO_WRITE_WORDS_TO_WRITE_A_OFS, tx_tdata[AXIL_DATA_W-1:0]);
-        maxil_drv_if.write_trans(FIFO_WRITE_WORDS_TO_WRITE_B_OFS, tx_tdata[2*AXIL_DATA_W-1:AXIL_DATA_W]);
-        if (wr_frame == NB_WORDS_FRAME-1) begin
-          repeat(11) @(posedge clk_mrmac);
-          qsfp_tx_tready[line_select] = 1'b0;
-          repeat(5) @(posedge clk_mrmac);
-          qsfp_tx_tready[line_select] = 1'b1;
-        end
-      end
-
-      // (3) Checks that fifo depths are accessible and has changed -----------------------------
-      $display("    > check that FIFO depth registers are accessible and not zeros");
-      maxil_drv_if.read_trans(FIFO_WRITE_FIFO_WRITE_DATA_COUNT_OFS, read_data);
-
-      if(read_data == 0) begin
-        $display("%t >    ERROR: FIFO write data count has not changed",$time);
-        error = 1'b1;
-      end
-
-      maxil_drv_if.read_trans(FIFO_READ_FIFO_READ_DATA_COUNT_OFS, read_data);
-
-      if(read_data == 0) begin
-        $display("%t >    ERROR: FIFO read data count has not changed",$time);
-        error = 1'b1;
-      end
-
-      // has the register count from start of packet to start of packet changed ?
-      maxil_drv_if.read_trans(STAT_SOP_CNT_A_OFS, sop_count[31:0]);
-      maxil_drv_if.read_trans(STAT_SOP_CNT_B_OFS, sop_count[63:32]);
-
-
-      assert (sop_count == 11) else begin
-        $display("%t >    ERROR: unexpected sop count %0d", $time, sop_count);
-        error = 1'b1;
-      end
-
-      empty_fifo();
-    end
-  endtask
-
-  task automatic test_receive_noise_rx;
-    begin
-      // setting up configuration -----------------------------------------------------------------
-      // Debug mode - Lane 0 - near end pcs
-      debug_flag    = 1'b1;
-      line_select   = 2'b00;
-      line_loopback = 3'b000;
-      @(posedge clk_control);
-
-      maxil_drv_if.write_trans(SYSTEM_LINE_OFS, line_parameter);
-
-      // Checks the rx datapath -------------------------------------------------------------------
-      enable_noise_on_rx = 1'b1;
-      repeat(3*NB_WORDS_FRAME) @(posedge clk_mrmac);
-      enable_noise_on_rx = 1'b0;
-      repeat(20) @(posedge clk_control);
-      // read the first value to trigger fifo pull
-      maxil_drv_if.read_trans(FIFO_READ_WORDS_TO_READ_B_OFS, read_data);
-      repeat(20) @(posedge clk_control);
-
-      for (int rd_i = 0; rd_i< NB_WORDS_FRAME; rd_i++ ) begin
-        maxil_drv_if.read_trans(FIFO_READ_WORDS_TO_READ_A_OFS, read_data[AXIL_DATA_W-1:0]);
-        maxil_drv_if.read_trans(FIFO_READ_WORDS_TO_READ_B_OFS, read_data[2*AXIL_DATA_W-1:AXIL_DATA_W]);
-        expected_data[line_select] = data_noise_ref_rx_q[line_select].pop_back();
-
-        assert (expected_data[line_select] == read_data) else begin
-          $display("%t >    ERROR: error while reading into the fifo: unexpected value %x %x",$time, expected_data[line_select], read_data);
-          error = 1'b1;
-        end
-
-        repeat(20) @(posedge clk_control);
-      end
-    end
-  endtask
-
-
-  // task automatic measure_sop_2_sop();
-  // endtask
-
-  task automatic debug_mode_tx_loop();
-    // needs to be checked that
-    //  1 configuration of tx_loop mode
-    //  2 send an ethernet frame that will be looped
-    //  3 we can stop properly the mode
-    //  x do we see the correct values in loopback ?
-    //  x do the counters properly works ?
-    //  x reset the register and check their value are now zero
-    logic [MRMAC_AXIS_W:0] tx_tdata;
-   begin
-      // (1) setting tx_loop configuration --------------------------------------------------------
-      debug_flag    = 1'b1;
-      line_loopback = 3'b010; // 3 near end pcs loopback
-      line_select   = 2'b01;  // 1st line selected
-      tx_loop       = 1'b1;
-
-      maxil_drv_if.write_trans(SYSTEM_LINE_OFS, line_parameter);
-      maxil_drv_if.write_trans(LINE_DEBUG_OFS,  line_debug);
-
-      qsfp_tx_tready[line_select] = 1'b1;
-
-      // what values are clk_count and valid_words_count?
-      maxil_drv_if.read_trans(STAT_CLK_A_OFS, clk_count[31:00]);
-      maxil_drv_if.read_trans(STAT_CLK_B_OFS, clk_count[63:32]);
-      maxil_drv_if.read_trans(STAT_VALID_WORDS_A_OFS, valid_words_count[31:00]);
-      maxil_drv_if.read_trans(STAT_VALID_WORDS_B_OFS, valid_words_count[63:32]);
-
-      $display("    >  @ init nb valid words %0d and nb of clock went by %0d", valid_words_count, clk_count);
-
-      // (2) sending ethernet frame ---------------------------------------------------------------
-      maxil_drv_if.write_trans(FIFO_WRITE_NUMBER_OF_WORDS_OFS, 64);
-
-      for (int wr_frame = 0; wr_frame < 64; wr_frame++) begin
-        tx_tdata = {$urandom, $urandom};
-        maxil_drv_if.write_trans(FIFO_WRITE_WORDS_TO_WRITE_A_OFS, tx_tdata[AXIL_DATA_W-1:0]);
-        maxil_drv_if.write_trans(FIFO_WRITE_WORDS_TO_WRITE_B_OFS, tx_tdata[2*AXIL_DATA_W-1:AXIL_DATA_W]);
-      end
-
-      repeat(50) @(clk_control);
-
-      // (3) stopping mode ------------------------------------------------------------------------
-      tx_loop = 1'b0;
-      @(clk_control);
-
-      maxil_drv_if.write_trans(LINE_DEBUG_OFS,  line_debug);
-
-      maxil_drv_if.read_trans(STAT_CLK_A_OFS, clk_count[31:00]);
-      maxil_drv_if.read_trans(STAT_CLK_B_OFS, clk_count[63:32]);
-      maxil_drv_if.read_trans(STAT_VALID_WORDS_A_OFS, valid_words_count[31:00]);
-      maxil_drv_if.read_trans(STAT_VALID_WORDS_B_OFS, valid_words_count[63:32]);
-
-      $display("    >  after 50cc: nb valid words %0d and nb of clock went by %0d", valid_words_count, clk_count);
-
-      assert ((valid_words_count != 0) || ( clk_count != 0  )) else begin
-              $display("%t >    ERROR: error while reading txloop registers, they have not moved",$time);
-              error = 1'b1;
-            end
-      // emptying the FIFO
-      empty_fifo();
-   end
-  endtask
-
-  task automatic debug_mode_rx_2_tx();
-    begin
-      // let's reset the registers
-      reset_registers = 1'b1;
-      @(posedge clk_control);
-
-      maxil_drv_if.write_trans(LINE_DEBUG_OFS,  line_debug);
-
-      line_loopback      = 3'b000;
-      reset_registers    = 1'b0;
-      rx_to_tx           = 1'b1;
-
-      @(posedge clk_control);
-      maxil_drv_if.write_trans(LINE_DEBUG_OFS,  line_debug);
-      maxil_drv_if.write_trans(SYSTEM_LINE_OFS, line_parameter);
-
-
-      enable_noise_on_rx = 1'b1;
-
-      repeat(50) @(posedge clk_control);
-
-      enable_noise_on_rx = 1'b0;
-      rx_to_tx           = 1'b0;
-
-      @(posedge clk_control);
-      maxil_drv_if.write_trans(LINE_DEBUG_OFS,  line_debug);
-
-      maxil_drv_if.read_trans(STAT_CLK_A_OFS, clk_count[31:00]);
-      maxil_drv_if.read_trans(STAT_CLK_B_OFS, clk_count[63:32]);
-      maxil_drv_if.read_trans(STAT_VALID_WORDS_A_OFS, valid_words_count[31:00]);
-      maxil_drv_if.read_trans(STAT_VALID_WORDS_B_OFS, valid_words_count[63:32]);
-      $display(" nb of valid words %0d and nb of clock went by %0d after rx to tx mode", valid_words_count, clk_count);
-
-      empty_fifo();
-      for (int lane = 0; lane < QSFP_LANE_NB ; lane++) begin
-        data_noise_ref_rx_q[lane].delete();
-      end
-    end
-  endtask
-
-  task automatic empty_fifo();
-    $display("    > emptying FIFO for next test");
-    // this task is testing the loopback and we check that the values are back on rx
-    // Let's empty the fifo in order to start clean for the next test that will check FIFO values
-    // TODO: create a way to empty the debug fifo more cleanly
-    // TODO: When there is a stall in t_ready we see duplicated words in the FIFO
-    maxil_drv_if.read_trans(FIFO_READ_WORDS_TO_READ_B_OFS, read_data);
-    for (int rd_i = 0; rd_i< 512; rd_i++ ) begin
-      maxil_drv_if.read_trans(FIFO_READ_WORDS_TO_READ_B_OFS, read_data[2*AXIL_DATA_W-1:AXIL_DATA_W]);
-    end
-  endtask //automatic
-
-// ---------------------------------------------------------------------------------------------- --
-// AXI4-stream
-// ---------------------------------------------------------------------------------------------- --
-  // we have QSFP_LANE_NB lines + the tx one in input !
-  logic [QSFP_LANE_NB-1 + 1 :0][MRMAC_AXIS_W-1:0] tdata;
-  logic [QSFP_LANE_NB-1 + 1 :0][MRMAC_TKEEP_W-1:0] tkeep_user;
-  logic [QSFP_LANE_NB-1 + 1 :0]                   tlast;
-  logic [QSFP_LANE_NB-1 + 1 :0]                   tvalid;
-
-  // for initialization
-  initial begin
-    for (int lanes = '0; lanes < QSFP_LANE_NB+1 ; lanes++) begin
-      tdata[lanes]      = 'h0;
-      tkeep_user[lanes] = 'h0;
-      tlast[lanes]      = 'h0;
-      tvalid[lanes]     = 'h0;
-    end
-  end
-
-  // Send one AXIS transaction of WORD_NB beats
-  initial begin
-    wait (s_rstn_mrmac);
-    // Launch all lanes concurrently
-    // each iterators needs an automatic copy for each forked process
-    fork
-      for (int lane = 0; lane <= QSFP_LANE_NB; lane++) begin
-        automatic int lanes = lane;
-        fork
-          forever begin
-            automatic int i;
-            @(posedge clk_mrmac);
-            for (i = 0; i < WORD_NB; i++) begin
-              if (enable_noise_on_rx == 1'b1) begin
-                tdata[lanes] = {$urandom,$urandom};
-                tkeep_user[lanes] = $urandom;
-                tlast[lanes] = (i == WORD_NB-1);
-                tvalid[lanes] = 1'b1;
-
-                if (lanes == QSFP_LANE_NB) begin
-                  do @(posedge clk_mrmac); while (!(tvalid[lanes]));
-                end else begin
-                  @(posedge clk_mrmac);
-                end
-
-                tvalid[lanes] = 1'b0;
-                tlast[lanes] = 1'b0;
-              end else begin
-                tdata = 'h0;
-                tkeep_user = 'h0;
-                tlast = 'h0;
-                tvalid = 'h0;
-              end
-            end
-          end
-        join_none
-      end
-    join_none
-  end
-
-  // checker: push noise into queue when signal is up
-  // assert is directly in the task
-  always_ff @(posedge clk_mrmac)
-    for (int i=0; i<QSFP_LANE_NB; i=i+1)
-      if (qsfp_rx_tvalid[i])
-        if (enable_noise_on_rx)
-          data_noise_ref_rx_q[i].push_front(qsfp_rx_tdata[i]);
-
-  // Loopback -------------------------------------------------------------------------------------
-  // checker: push loopback values into queue
-  always_ff @(posedge clk_mrmac)
-    for (int i=0; i<QSFP_LANE_NB; i=i+1)
-      if (qsfp_tx_tvalid[i] && (gt_loopback != 0))
-          data_lb_ref_rx_q[i].push_front(qsfp_tx_tdata[i]);
-
-  // checker: are values from loopback correct ?
-  generate
-    for (genvar lanes = '0; lanes < QSFP_LANE_NB ; lanes++) begin
-      always_ff @(posedge clk_mrmac) begin
-        if (gt_loopback != 0) begin
-          if (qsfp_rx_tvalid[lanes] == 1'b1) begin
-            expected_data[lanes] = data_lb_ref_rx_q[lanes].pop_back();
-
-            assert (expected_data[lanes] == qsfp_rx_tdata[lanes]) else begin
-              $display("%t >    ERROR: error while reading into the fifo: unexpected value %x %x",$time, expected_data[lanes], read_data[lanes]);
-              error = 1'b1;
-            end
-          end
-        end
-      end
-    end
-  endgenerate
-
-  always_comb begin
-    for (int lanes = '0; lanes < QSFP_LANE_NB ; lanes++) begin
-      if (enable_noise_on_rx) begin
-        qsfp_rx_tdata[lanes]      = tdata[lanes];
-        qsfp_rx_tkeep_user[lanes] = tkeep_user[lanes];
-        qsfp_rx_tlast[lanes]      = tlast[lanes];
-        qsfp_rx_tvalid[lanes]     = tvalid[lanes];
-      end else begin
-        qsfp_rx_tdata[lanes]      = rx_tdata[lanes];
-        qsfp_rx_tkeep_user[lanes] = rx_tkeep_user[lanes];
-        qsfp_rx_tlast[lanes]      = rx_tlast[lanes];
-        qsfp_rx_tvalid[lanes]     = rx_tvalid[lanes];
-      end
-    end
-  end
 endmodule

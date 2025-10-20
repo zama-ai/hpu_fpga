@@ -24,6 +24,13 @@
             "is_include_file": false
         },
         {
+            "name": "hw/module/multi_hpu_dma/simu/rtl/tb_multi_hpu_dma.sv",
+            "library": "work",
+            "env": ["simu"],
+            "target": ["all"],
+            "is_include_file": false
+        },
+        {
             "name": "hw/module/multi_hpu_dma/simu/rtl/tb_arbiter.sv",
             "library": "work",
             "env": ["simu"],
