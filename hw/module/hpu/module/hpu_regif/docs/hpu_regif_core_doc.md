@@ -1,5 +1,5 @@
 # HPU_REGIF_CORE documentation
-**Date**: 2025-10-20
+**Date**: 2025-10-21
 **Tool Version**: bd49564daf1a99d615cb6dbb121b54bfbeef8b22
 
 ## RegisterMap Overview
@@ -4000,7 +4000,7 @@ Below is a summary of all the registers in the current section system:
 | Name             | Offset | Access | Description |
 |-----------------:|:------:|:------:|:------------|
 | [line](#register-systemline) | 0x50000 | RW |  Different parameters for qsfp lines |
-| [dummy_val3](#register-systemdummy-val3) | 0x50004 | R. |  Place-holder |
+| [timeout](#register-systemtimeout) | 0x50004 | RW |  Timeout time before re-launching a request, in clock cycles |
 
 
 ---
@@ -4032,14 +4032,14 @@ Register line contains following Sub-fields:
 ---
 
 
-### Register system.dummy-val3
+### Register system.timeout
 
-- **Description**: Place-holder
-- **Owner**: Parameter
+- **Description**: Timeout time before re-launching a request, in clock cycles
+- **Owner**: User
 - **Read Access**: Read
-- **Write Access**: None
+- **Write Access**: Write
 - **Offset**: 0x50004
-- **Default**: 892679477
+- **Default**: 40000
 
 
 

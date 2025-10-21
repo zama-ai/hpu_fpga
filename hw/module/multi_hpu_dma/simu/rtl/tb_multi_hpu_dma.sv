@@ -79,6 +79,10 @@ module tb_multi_hpu_dma;
 // Error
 // ============================================================================================== --
   bit error;
+  bit error_tb_notify;
+  bit error_register_read;
+
+  assign error = error_tb_notify | error_register_read;
 
   always_ff @(posedge clk_control)
     if (error) begin
@@ -283,6 +287,8 @@ module tb_multi_hpu_dma;
 // ============================================================================================== --
 // Scenario
 // ============================================================================================== --
+
+  // AXI4-LITE drivers ----------------------------------------------------------------------------
   maxil_if #(
   .AXIL_DATA_W(AXIL_DATA_W),
   .AXIL_ADD_W  (AXIL_ADD_W)
@@ -307,7 +313,6 @@ module tb_multi_hpu_dma;
   assign maxil_drv_if_hpu_a.rdata   = s_axil_dma_rdata_hpu_a;
   assign maxil_drv_if_hpu_a.rresp   = s_axil_dma_rresp_hpu_a;
   assign maxil_drv_if_hpu_a.rvalid  = s_axil_dma_rvalid_hpu_a;
-
 
   maxil_if #(
   .AXIL_DATA_W(AXIL_DATA_W),
@@ -334,6 +339,25 @@ module tb_multi_hpu_dma;
   assign maxil_drv_if_hpu_b.rresp   = s_axil_dma_rresp_hpu_b;
   assign maxil_drv_if_hpu_b.rvalid  = s_axil_dma_rvalid_hpu_b;
 
+
+  // Signals --------------------------------------------------------------------------------------
+  // must not bee too short, not too long
+  logic [31:0] timeout_size;
+
+  // HPU-A and HPU-B node id will be set randomly and mandatorily different
+  logic [3:0] random_hpu_a;
+  logic [3:0] random_hpu_b;
+
+  // IOP related signals
+  logic [ 3:0] iop_id;
+  logic [15:0] iop_src_addr;
+  logic [15:0] iop_dst_addr;
+
+  // Fixed for now, might evolve later
+  logic [15:0] req_size_b;
+  assign req_size_b = 'h4000;
+
+  // scenario -------------------------------------------------------------------------------------
   initial begin
     maxil_drv_if_hpu_a.init();
     maxil_drv_if_hpu_b.init();
@@ -343,10 +367,64 @@ module tb_multi_hpu_dma;
     rx_to_tx        = 'h0;
     repeat(20) @(posedge clk_control);
 
+    /* In this scenario we must define theses test-cases :
+     ==============================================================================================
+     * - classical use:
+     *                > X Notifies to Y that a ciphertext is ready
+     *                > Y then reads this ciphertext
+     *  -------------------------------------------------------------------------------------------
+     * > we must see that the ciphertext moved from memory X to Y
+     *  ===========================================================================================
+     * - Piling requests:
+     *                > X Notifies to Y that several ciphertexts are ready
+     *                > Y then reads alls ciphertexts
+     *  -------------------------------------------------------------------------------------------
+     * > all ciphertexts must have moved from memory X to Y
+     *  ===========================================================================================
+     * - Notfiy timeout
+     *                > X Notifies to Y that a ciphertexts is ready
+     *                > X doesn't receive the ack
+     *  -------------------------------------------------------------------------------------------
+     * > Does the timeout is triggered correctly and the Notify request resent properly ?
+     *  ===========================================================================================
+     * - Read request timeout #1
+     *                > X does a read request to Y
+     *                > no packets is then received
+     *  -------------------------------------------------------------------------------------------
+     * > Does the timeout is triggered correctly and the Read request resent properly ?
+     *  ===========================================================================================
+     * - Read request timeout #2
+     *                > X does a read request to Y
+     *                > a packet is lost
+     *  -------------------------------------------------------------------------------------------
+     * > Does the timeout is triggered correctly and the Read request resent properly ?
+     */
+
+    // Initialization =============================================================================
     $display("A - Initial register check and definition");
     init_registers();
 
+    // Defining MAC addresses for both instances of HPU -------------------------------------------
     write_mac_addresses();
+
+    // TODO: add checker
+
+    // Classical use-case =========================================================================
+    // or how this should be used most of the time
+    // for now size_b is fixed, all our ciphertext are 16.384kB size_b=0x40004
+    iop_id       = $urandom();
+    iop_src_addr = $urandom();
+    iop_dst_addr = $urandom();
+
+    // Sending a NOTIFY from HPU-B to HPU-A -------------------------------------------------------
+    notify_reqest(random_hpu_b, random_hpu_a, iop_id, iop_src_addr);
+
+    // TODO: add checker
+
+    // Sending a read request from HPU-A to HPU-B -------------------------------------------------
+    read_request(random_hpu_b, iop_id, iop_src_addr, iop_dst_addr);
+
+    // TODO: add checker
 
     $display("%t > INFO: End simulation",$time);
     repeat(20) @(posedge clk_control);
@@ -360,14 +438,14 @@ module tb_multi_hpu_dma;
 
   task automatic init_registers;
     begin
-    // (1) Reading system REGISTERS ---------------------------------------------------------------
+    // Reading system REGISTERS -------------------------------------------------------------------
       maxil_drv_if_hpu_a.read_trans(SYSTEM_LINE_OFS, rdata);
       assert (rdata == 'h0) else begin
         $display("%t > ERROR:register SYSTEM_LINE_OFS not correctly read %h",$time, rdata);
-        error = 1'b1;
+        error_register_read = 1'b1;
       end
 
-      // (2) ASSIGN REGISTERS & CHECK -------------------------------------------------------------
+    // ASSIGN REGISTERS & CHECK -------------------------------------------------------------------
     line_rate     = 8'hAB;  // random, no idea what it should be
     line_loopback = 3'b100; // 3 near end pcs loopback
     line_select   = 2'b10;  // 2nd line selected
@@ -387,25 +465,25 @@ module tb_multi_hpu_dma;
 
     assert ((gt_line_rate[0] == line_rate) && (gt_line_rate[1] == line_rate)) else begin
       $display("[ERROR] line_rate has unexpected value %x %x %x",gt_line_rate[0], gt_line_rate[1], line_rate);
-      error = 1;
+      error_register_read = 1;
     end
     assert ((gt_loopback[0] ==line_loopback) && (gt_loopback[1] == line_loopback)) else begin
       $display("[ERROR] gt_loopback has unexpected value");
-      error = 1;
+      error_register_read = 1;
     end
     assert ((hpu_a.line_sel == line_select) &&  (hpu_b.line_sel == line_select)) else begin
       $display("[ERROR] line_sel has unexpected value");
-      error = 1;
+      error_register_read = 1;
     end
 
     for (int i = 0; i<2; i++) begin
       assert ((gt_reset_rx_datapath[i] == rst_rx_datapath) && (gt_reset_tx_datapath[i] == rst_tx_datapath) && (gt_reset_all[i] == rst_all)) else begin
         $display("%t >    ERROR: reset configuration has not been applied correctly",$time);
-        error = 1'b1;
+        error_register_read = 1'b1;
       end
     end
 
-    // read reset register ----------------------------------------------------
+    // read reset register ------------------------------------------------------------------------
     // fake stimulation
     for (int i = 0; i<2; i++) begin
       gt_rx_reset_done[i]= 4'b1111;
@@ -418,10 +496,14 @@ module tb_multi_hpu_dma;
 
     assert ((reset_monitor[3:0] == gt_tx_reset_done) && (reset_monitor[7:4] == gt_rx_reset_done)) begin
       $display("%t >    ERROR: reset monitor has not been read correctly",$time);
-      error = 1'b1;
+      error_register_read = 1'b1;
     end
 
-    // (4) Setting up credible values -------------------------------------------------------------
+    // Setting timeout size to both HPUs ----------------------------------------------------------
+    maxil_drv_if_hpu_a.write_trans(SYSTEM_TIMEOUT_OFS, timeout_size);
+    maxil_drv_if_hpu_b.write_trans(SYSTEM_TIMEOUT_OFS, timeout_size);
+
+    // Setting up credible values -------------------------------------------------------------
     // no loopback, no reset, not in debug lane0 selected
     line_rate     = 8'h0;
     line_loopback = 3'b000;
@@ -436,18 +518,16 @@ module tb_multi_hpu_dma;
     end
   endtask
 
-  // Effective MAC address without OUI
-  logic [23:0] mac_addr;
-  logic [3:0]  hpu_id;
-  logic        hpu_current;
-
-  logic [3:0] random_hpu_a;
-  logic [3:0] random_hpu_b;
-
-  logic [31:0] register_mac_addr_a;
-  logic [31:0] register_mac_addr_b;
-
+  /* Performs writes to according registers to define all possible MAC addresses
+   *  - HPU-A and HPU-B are random and different at each runs
+   *  - We have at most 8 HPUs: we will write them all
+   */
   task automatic write_mac_addresses();
+    logic [23:0] mac_addr;
+    logic [ 3:0] hpu_id;
+    logic        hpu_current;
+    logic [31:0] register_mac_addr_a;
+    logic [31:0] register_mac_addr_b;
     begin
       random_hpu_a = $urandom_range(7, 0);
 
@@ -456,9 +536,10 @@ module tb_multi_hpu_dma;
         random_hpu_b = $urandom_range(7, 0);
       end while (random_hpu_b == random_hpu_a);
 
-      $display("\n[INFO] For this run....");
-      $display("[INFO] HPU_A:id=%0d", random_hpu_a);
-      $display("[INFO] HPU_B:id=%0d \n", random_hpu_b);
+      $display("\n[INFO] Writing MAC addresses");
+      $display("[INFO] For this run....");
+      $display("[INFO]  > HPU_A:id=%0d", random_hpu_a);
+      $display("[INFO]  > HPU_B:id=%0d \n", random_hpu_b);
 
       for (int i = 0 ; i < 8 ; i++ ) begin
         mac_addr = $urandom();
@@ -484,5 +565,60 @@ module tb_multi_hpu_dma;
     end
   endtask
 
-endmodule
+  /* Performs a Read request from HPU A to HPU B
+    - Since HPU A and HPU B are the same no need to be able to be able to send from both
+    - There is two registers to write to send a read request */
+  task automatic read_request(
+    input logic [ 3:0] node_id,
+    input logic [ 3:0] iop_id,
+    input logic [15:0] src_addr,
+    input logic [15:0] dest_addr
+  );
+    logic [31:0] read_req_id;
+    logic [31:0] read_req_addr;
+    begin
+      $display("\n[INFO] Sending a read request from HPU-%0x to HPU-%0x",random_hpu_a ,node_id);
 
+      // see package
+      read_req_addr = {dest_addr, src_addr};
+      read_req_id = {4'b0000, iop_id, 4'b0000, node_id, req_size_b};
+
+      maxil_drv_if_hpu_a.write_trans(REQUEST_REQ_ADDR_OFS, read_req_addr);
+      maxil_drv_if_hpu_a.write_trans(REQUEST_REQ_ID_OFS, read_req_id);
+    end
+  endtask
+
+
+  /* Performs a Notify request from an HPU to another
+   * - HPU-A and HPU-B can be both side here
+   * - if you chose a wrong HPU-id you will get an error
+   */
+  task automatic notify_reqest(
+    input logic [ 3:0] src_node_id,
+    input logic [ 3:0] dst_node_id,
+    input logic [ 3:0] iop_id,
+    input logic [15:0] src_addr
+  );
+    logic [31:0] read_req_id;
+    logic [31:0] read_req_addr;
+    begin
+      $display("\n[INFO] Sending a Notify request from HPU-%0x to HPU-%0x", src_node_id, dst_node_id);
+
+      read_req_addr = {16'b0, src_addr};
+      read_req_id = {4'b0000, iop_id, 4'b0000, dst_node_id, req_size_b};
+
+      if (src_node_id == random_hpu_a) begin
+        maxil_drv_if_hpu_a.write_trans(REQUEST_REQ_ADDR_OFS, read_req_addr);
+        maxil_drv_if_hpu_a.write_trans(REQUEST_REQ_ID_OFS, read_req_id);
+      end else if (src_node_id == random_hpu_b) begin
+        maxil_drv_if_hpu_b.write_trans(REQUEST_REQ_ADDR_OFS, read_req_addr);
+        maxil_drv_if_hpu_b.write_trans(REQUEST_REQ_ID_OFS, read_req_id);
+      end else begin
+        $display("[ERROR] you are trying to send a Notify request from an HPU non instantiated");
+        error_tb_notify = 1'b1;
+      end
+
+    end
+  endtask
+
+endmodule

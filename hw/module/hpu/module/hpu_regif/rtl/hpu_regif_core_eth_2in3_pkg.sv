@@ -1,7 +1,7 @@
 // ============================================================================================== //
 // Description  : register  map address definition package
 // This file was generated with rust regmap generator:
-//  * Date:  2025-10-20
+//  * Date:  2025-10-21
 //  * Tool_version: bd49564daf1a99d615cb6dbb121b54bfbeef8b22
 // ---------------------------------------------------------------------------------------------- //
 //
@@ -16,7 +16,7 @@ package hpu_regif_core_eth_2in3_pkg;
     logic [(2-1):0] select;
    } system_line_t;
   localparam int SYSTEM_LINE_OFS = 'h50000;
-  localparam int SYSTEM_DUMMY_VAL3_OFS = 'h50004;
+  localparam int SYSTEM_TIMEOUT_OFS = 'h50004;
   typedef struct packed {
     logic [(20-1):0] padding_12;
     logic [(4-1):0] rx_rst;

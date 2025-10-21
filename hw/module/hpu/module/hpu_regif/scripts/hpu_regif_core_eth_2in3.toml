@@ -20,12 +20,12 @@ offset= 0x0
   field.rate      = {size_b=8, offset_b=5,  default={Cst=0x0}, description="line rates"}
   field.debug     = {size_b=1, offset_b=31, default={Cst=0x0}, description="States whether we are in debug mode"}
 
-[section.system.register.dummy_val3]
-  description="Place-holder"
-  owner="Parameter"
+[section.system.register.timeout]
+  description="Timeout time before re-launching a request, in clock cycles"
+  owner="User"
   read_access="Read"
-  write_access="None"
-  default={Cst=0x35353535}
+  write_access="Write"
+  default={Cst=0x9C40}
 
 # =====================================================================================================================
 [section.reset]

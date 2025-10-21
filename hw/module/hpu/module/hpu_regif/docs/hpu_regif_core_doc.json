@@ -4158,14 +4158,14 @@
           ]
         },
         {
-          "name": "dummy_val3",
-          "description": "Place-holder",
-          "owner": "Parameter",
+          "name": "timeout",
+          "description": "Timeout time before re-launching a request, in clock cycles",
+          "owner": "User",
           "read_access": "Read",
-          "write_access": "None",
+          "write_access": "Write",
           "offset": 327684,
           "default": {
-            "Cst": 892679477
+            "Cst": 40000
           },
           "field": null
         }

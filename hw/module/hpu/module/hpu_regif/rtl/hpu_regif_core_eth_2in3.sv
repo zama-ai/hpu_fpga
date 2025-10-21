@@ -1,7 +1,7 @@
 // ============================================================================================== //
 // Description  : Axi4-lite register bank
 // This file was generated with rust regmap generator:
-//  * Date:  2025-10-20
+//  * Date:  2025-10-21
 //  * Tool_version: bd49564daf1a99d615cb6dbb121b54bfbeef8b22
 // ---------------------------------------------------------------------------------------------- //
 // xR[n]W[na]
@@ -30,8 +30,8 @@
 //      : Value provided by the RTL. The host can read it with notify. The write data is processed by the RTL.
 // ============================================================================================== //
 module hpu_regif_core_eth_2in3
-import axi_if_shell_axil_pkg::*;
 import axi_if_common_param_pkg::*;
+import axi_if_shell_axil_pkg::*;
 import hpu_regif_core_eth_2in3_pkg::*;
 #()(
   input  logic                           clk,
@@ -57,6 +57,8 @@ import hpu_regif_core_eth_2in3_pkg::*;
   output logic [AXIL_DATA_W-1:0]        r_axil_wdata
   // Register IO: system_line
     , output system_line_t r_system_line
+  // Register IO: system_timeout
+    , output logic [REG_DATA_W-1: 0] r_system_timeout
   // Register IO: reset_datapath
     , output reset_datapath_t r_reset_datapath
   // Register IO: reset_monitor
@@ -270,9 +272,9 @@ import hpu_regif_core_eth_2in3_pkg::*;
     system_line_default.rate = 'h0;
     system_line_default.debug = 'h0;
   end
-//-- Default system_dummy_val3
-  logic [REG_DATA_W-1:0]system_dummy_val3_default;
-  assign system_dummy_val3_default = 'h35353535;
+//-- Default system_timeout
+  logic [REG_DATA_W-1:0]system_timeout_default;
+  assign system_timeout_default = 'h9c40;
 //-- Default reset_datapath
   reset_datapath_t reset_datapath_default;
   always_comb begin
@@ -399,6 +401,17 @@ import hpu_regif_core_eth_2in3_pkg::*;
     end
     else begin
       r_system_line       <= r_system_lineD;
+    end
+  end
+// Register FF: system_timeout
+  logic [REG_DATA_W-1:0] r_system_timeoutD;
+  assign r_system_timeoutD = (wr_en_ok && (wr_add[AXIL_ADD_RANGE_W-1:0] == SYSTEM_TIMEOUT_OFS[AXIL_ADD_RANGE_W-1:0]))? wr_data: r_system_timeout;
+  always_ff @(posedge clk) begin
+    if (!s_rst_n) begin
+      r_system_timeout       <= system_timeout_default;
+    end
+    else begin
+      r_system_timeout       <= r_system_timeoutD;
     end
   end
 // Register FF: reset_datapath
@@ -753,8 +766,8 @@ import hpu_regif_core_eth_2in3_pkg::*;
           SYSTEM_LINE_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register system_line
             axil_rdataD = r_system_line;
           end
-          SYSTEM_DUMMY_VAL3_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register system_dummy_val3
-            axil_rdataD = system_dummy_val3_default;
+          SYSTEM_TIMEOUT_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register system_timeout
+            axil_rdataD = r_system_timeout;
           end
           RESET_DATAPATH_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register reset_datapath
             axil_rdataD = r_reset_datapath;
