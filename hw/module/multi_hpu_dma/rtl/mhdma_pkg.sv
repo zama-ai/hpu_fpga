@@ -10,8 +10,8 @@
 
 package mhdma_pkg;
   import param_tfhe_pkg::*;
-  import axi_if_data_w_definition_pkg::*;
   import axi_if_common_param_pkg::*;
+  import axi_if_ct_axi_pkg::*;
   //----------------------
   // AXI4
   //----------------------
@@ -36,6 +36,7 @@ package mhdma_pkg;
   //----------------------
   localparam int MRMAC_AXIS_W   = 64;
   localparam int MRMAC_TKEEP_W  = 11;
+
   localparam int QSFP_LANE_NB   = 4;
 
   localparam int MAC_ADDR_W = 24;
@@ -46,7 +47,8 @@ package mhdma_pkg;
   //----------------------
   // Parameters
   //----------------------
-  localparam int CT_BYTE_SIZE = 16384; //TODO: trouver la valeur quelque part
-  localparam int CT_NB_WORDS = (CT_BYTE_SIZE * 8) / 64;
+  localparam int CT_BYTE_SIZE      = N * GLWE_K + 1;
+  localparam int CT_NB_WORDS_MRMAC = (CT_BYTE_SIZE * 8) / MRMAC_AXIS_W;
+  localparam int CT_NB_WORDS_HBM   = (CT_BYTE_SIZE * 8) / AXI4_DATA_W;
 
 endpackage

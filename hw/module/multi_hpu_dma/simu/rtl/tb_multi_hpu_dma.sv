@@ -10,10 +10,9 @@
 `resetall
 `timescale 1ns/10ps
 module tb_multi_hpu_dma;
-  import axi_if_common_param_pkg::*;
-  import axi_if_shell_axil_pkg::*;
-  import hpu_regif_core_eth_2in3_pkg::*;
-  import mhdma_pkg::*;
+  import axi_if_shell_axil_pkg::*;        // axi4-lite
+  import hpu_regif_core_eth_2in3_pkg::*;  // ethernet regif
+  import mhdma_pkg::*;                    // multi-hpu-dma
 
 // ============================================================================================== --
 // localparam
@@ -22,13 +21,20 @@ module tb_multi_hpu_dma;
   localparam int CLK_HALF_PERIOD_B = 1;
   localparam int ARST_ACTIVATION = 17;
 
-
   localparam int HPU_NB = 2; // in this test we will try to connect two mhdma (or HPUs)
 
   localparam int FIFO_DEPTH = 512;
 
-  localparam int DEFAULT_SRC_MAC_ADDR_OFS = 'h0005;
-  localparam int DEFAULT_DST_MAC_ADDR_OFS = 'h0006;
+  // ciphertext memories -------------------------------------------------------------------------
+  parameter int MEM_WR_CMD_BUF_DEPTH = 4; // Should be >= 1
+  parameter int MEM_RD_CMD_BUF_DEPTH = 1; // Should be >= 1
+  // Data latency
+  parameter int MEM_WR_DATA_LATENCY = 42; // Should be >= 1
+  parameter int MEM_RD_DATA_LATENCY = 1;  // Should be >= 1
+  // Set random on ready valid, on write path
+  parameter bit MEM_USE_WR_RANDOM = 1;
+  // Set random on ready valid, on read path
+  parameter bit MEM_USE_RD_RANDOM = 0; // check path, no need random
 
 // ============================================================================================== --
 // clock, reset
@@ -339,6 +345,91 @@ module tb_multi_hpu_dma;
   assign maxil_drv_if_hpu_b.rresp   = s_axil_dma_rresp_hpu_b;
   assign maxil_drv_if_hpu_b.rvalid  = s_axil_dma_rvalid_hpu_b;
 
+  // memory models --------------------------------------------------------------------------------
+  logic [HPU_NB-1:0][AXI4_ID_W-1:0]       axi4_ct_awid;
+  logic [HPU_NB-1:0][AXI4_ADD_W-1:0]      axi4_ct_awaddr;
+  logic [HPU_NB-1:0][7:0]                 axi4_ct_awlen;
+  logic [HPU_NB-1:0][2:0]                 axi4_ct_awsize;
+  logic [HPU_NB-1:0][1:0]                 axi4_ct_awburst;
+  logic [HPU_NB-1:0]                      axi4_ct_awvalid;
+  logic [HPU_NB-1:0]                      axi4_ct_awready;
+  logic [HPU_NB-1:0][AXI4_DATA_W-1:0]     axi4_ct_wdata;
+  logic [HPU_NB-1:0][(AXI4_DATA_W/8)-1:0] axi4_ct_wstrb;
+  logic [HPU_NB-1:0]                      axi4_ct_wlast;
+  logic [HPU_NB-1:0]                      axi4_ct_wvalid;
+  logic [HPU_NB-1:0]                      axi4_ct_wready;
+  logic [HPU_NB-1:0][AXI4_ID_W-1:0]       axi4_ct_bid;
+  logic [HPU_NB-1:0][1:0]                 axi4_ct_bresp;
+  logic [HPU_NB-1:0]                      axi4_ct_bvalid;
+  logic [HPU_NB-1:0]                      axi4_ct_bready;
+
+  logic [HPU_NB-1:0][AXI4_ID_W-1:0]       axi4_ct_arid;
+  logic [HPU_NB-1:0][AXI4_ADD_W-1:0]      axi4_ct_araddr;
+  logic [HPU_NB-1:0][7:0]                 axi4_ct_arlen;
+  logic [HPU_NB-1:0][2:0]                 axi4_ct_arsize;
+  logic [HPU_NB-1:0][1:0]                 axi4_ct_arburst;
+  logic [HPU_NB-1:0]                      axi4_ct_arvalid;
+  logic [HPU_NB-1:0]                      axi4_ct_arready;
+  logic [HPU_NB-1:0][AXI4_ID_W-1:0]       axi4_ct_rid;
+  logic [HPU_NB-1:0][AXI4_DATA_W-1:0]     axi4_ct_rdata;
+  logic [HPU_NB-1:0][1:0]                 axi4_ct_rresp;
+  logic [HPU_NB-1:0]                      axi4_ct_rlast;
+  logic [HPU_NB-1:0]                      axi4_ct_rvalid;
+  logic [HPU_NB-1:0]                      axi4_ct_rready;
+
+  generate
+    for (genvar gen_p=0; gen_p<HPU_NB; gen_p=gen_p+1) begin : gen_mem_loop
+      axi4_mem #(
+        .DATA_WIDTH      (AXI4_DATA_W                    ),
+        .ADDR_WIDTH      (8                     ), //64?!
+        .ID_WIDTH        (AXI4_ID_W                      ),
+        .WR_CMD_BUF_DEPTH(MEM_WR_CMD_BUF_DEPTH           ),
+        .RD_CMD_BUF_DEPTH(MEM_RD_CMD_BUF_DEPTH           ),
+        .WR_DATA_LATENCY (MEM_WR_DATA_LATENCY+ gen_p * 50),
+        .RD_DATA_LATENCY (MEM_RD_DATA_LATENCY            ),
+        .USE_WR_RANDOM   (MEM_USE_WR_RANDOM              ),
+        .USE_RD_RANDOM   (MEM_USE_RD_RANDOM              )
+      ) axi4_mem_ct (
+        .clk           (clk                   ),
+        .rst           (~s_rst_n              ),
+        .s_axi4_awid   (axi4_ct_awid[gen_p]   ),
+        .s_axi4_awaddr (axi4_ct_awaddr[gen_p] ),
+        .s_axi4_awlen  (axi4_ct_awlen[gen_p]  ),
+        .s_axi4_awsize (axi4_ct_awsize[gen_p] ),
+        .s_axi4_awburst(axi4_ct_awburst[gen_p]),
+        .s_axi4_awlock ('0), // disable
+        .s_axi4_awcache('0), // disable
+        .s_axi4_awprot ('0), // disable
+        .s_axi4_awvalid(axi4_ct_awvalid[gen_p]),
+        .s_axi4_awready(axi4_ct_awready[gen_p]),
+        .s_axi4_wdata  (axi4_ct_wdata[gen_p]  ),
+        .s_axi4_wstrb  (axi4_ct_wstrb[gen_p]  ),
+        .s_axi4_wlast  (axi4_ct_wlast[gen_p]  ),
+        .s_axi4_wvalid (axi4_ct_wvalid[gen_p] ),
+        .s_axi4_wready (axi4_ct_wready[gen_p] ),
+        .s_axi4_bid    (axi4_ct_bid[gen_p]    ),
+        .s_axi4_bresp  (axi4_ct_bresp[gen_p]  ),
+        .s_axi4_bvalid (axi4_ct_bvalid[gen_p] ),
+        .s_axi4_bready (axi4_ct_bready[gen_p] ),
+        .s_axi4_arid   (axi4_ct_arid[gen_p]   ),
+        .s_axi4_araddr (axi4_ct_araddr[gen_p] ),
+        .s_axi4_arlen  (axi4_ct_arlen[gen_p]  ),
+        .s_axi4_arsize (axi4_ct_arsize[gen_p] ),
+        .s_axi4_arburst(axi4_ct_arburst[gen_p]),
+        .s_axi4_arlock ('0), // disable
+        .s_axi4_arcache('0), // disable
+        .s_axi4_arprot ('0), // disable
+        .s_axi4_arvalid(axi4_ct_arvalid[gen_p]),
+        .s_axi4_arready(axi4_ct_arready[gen_p]),
+        .s_axi4_rid    (axi4_ct_rid[gen_p]    ),
+        .s_axi4_rdata  (axi4_ct_rdata[gen_p]  ),
+        .s_axi4_rresp  (axi4_ct_rresp[gen_p]  ),
+        .s_axi4_rlast  (axi4_ct_rlast[gen_p]  ),
+        .s_axi4_rvalid (axi4_ct_rvalid[gen_p] ),
+        .s_axi4_rready (axi4_ct_rready[gen_p] )
+      );
+    end
+  endgenerate
 
   // Signals --------------------------------------------------------------------------------------
   // must not bee too short, not too long
@@ -429,6 +520,15 @@ module tb_multi_hpu_dma;
     $display("%t > INFO: End simulation",$time);
     repeat(20) @(posedge clk_control);
     end_of_test = 1'b1;
+  end
+
+// ============================================================================================== --
+// Initialize memory
+// ============================================================================================== --
+  initial begin
+    for (int i = 0; i < 10000; i++) begin
+        gen_mem_loop[0].axi4_mem_ct.axi4_ram_ct_wr.mem[i] = i;
+    end
   end
 
 // ============================================================================================== --
