@@ -88,7 +88,7 @@ module axi4_ram #
 parameter  int VALID_ADDR_WIDTH = ADDR_WIDTH - $clog2(STRB_WIDTH);
 parameter  int WORD_WIDTH = STRB_WIDTH;
 parameter  int WORD_SIZE = DATA_WIDTH/WORD_WIDTH;
-localparam int DEPTH = (2**VALID_ADDR_WIDTH);
+localparam [63:0] DEPTH = (2**VALID_ADDR_WIDTH);
 
 // bus width assertions
 // pragma translate_off
@@ -150,6 +150,22 @@ logic s_axi4_rvalid_pipe_reg;
 
 // (* RAM_STYLE="BLOCK" *)
 logic /* sparse */ [DATA_WIDTH-1:0] mem [DEPTH-1:0];
+logic [DATA_WIDTH-1:0] mem_0;
+logic [DATA_WIDTH-1:0] mem_1;
+logic [DATA_WIDTH-1:0] mem_2;
+logic [DATA_WIDTH-1:0] mem_3;
+logic [DATA_WIDTH-1:0] mem_4;
+logic [DATA_WIDTH-1:0] mem_5;
+logic [DATA_WIDTH-1:0] mem_6;
+logic [DATA_WIDTH-1:0] mem_7;
+assign mem_0 = mem[0];
+assign mem_1 = mem[1];
+assign mem_2 = mem[2];
+assign mem_3 = mem[3];
+assign mem_4 = mem[4];
+assign mem_5 = mem[5];
+assign mem_6 = mem[6];
+assign mem_7 = mem[7];
 
 logic [VALID_ADDR_WIDTH-1:0] s_axi4_awaddr_valid ;
 logic [VALID_ADDR_WIDTH-1:0] s_axi4_araddr_valid ;
