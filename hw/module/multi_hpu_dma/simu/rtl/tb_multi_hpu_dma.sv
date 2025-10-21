@@ -381,7 +381,7 @@ module tb_multi_hpu_dma;
     for (genvar gen_p=0; gen_p<HPU_NB; gen_p=gen_p+1) begin : gen_mem_loop
       axi4_mem #(
         .DATA_WIDTH      (AXI4_DATA_W                    ),
-        .ADDR_WIDTH      (8                     ), //64?!
+        .ADDR_WIDTH      (AXI4_ADD_W                     ), //64?!
         .ID_WIDTH        (AXI4_ID_W                      ),
         .WR_CMD_BUF_DEPTH(MEM_WR_CMD_BUF_DEPTH           ),
         .RD_CMD_BUF_DEPTH(MEM_RD_CMD_BUF_DEPTH           ),
