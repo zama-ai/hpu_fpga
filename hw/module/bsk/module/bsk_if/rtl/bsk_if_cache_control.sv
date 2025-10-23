@@ -31,7 +31,7 @@ module bsk_if_cache_control
     // batch start
     input  logic [TOTAL_BATCH_NB-1:0]               batch_start_1h, // One-hot : can only start 1 at a time.
 
-    // bsk pointer for the KS process path
+    // bsk pointer for the BSK process path
     output logic [TOTAL_BATCH_NB-1:0]               inc_bsk_wr_ptr, // Indicate that the bsk slice is available
     input  logic [TOTAL_BATCH_NB-1:0]               inc_bsk_rd_ptr, // Indicate that the bsk slice has been consumed
 

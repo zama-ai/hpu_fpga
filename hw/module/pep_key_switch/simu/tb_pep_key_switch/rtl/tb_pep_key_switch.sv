@@ -182,7 +182,6 @@ module tb_pep_key_switch;
   logic                                            seq_ks_cmd_avail;
 
   logic                                            inc_ksk_wr_ptr;
-  logic                                            inc_ksk_rd_ptr;
 
   logic [KS_IF_SUBW_NB-1:0]                        ldb_blram_wr_en;
   logic [KS_IF_SUBW_NB-1:0][PID_W-1:0]             ldb_blram_wr_pid;
@@ -226,7 +225,6 @@ module tb_pep_key_switch;
     .seq_ks_cmd_avail      (seq_ks_cmd_avail),
 
     .inc_ksk_wr_ptr        (inc_ksk_wr_ptr),
-    .inc_ksk_rd_ptr        (inc_ksk_rd_ptr),
 
 
     .batch_cmd             (batch_cmd),

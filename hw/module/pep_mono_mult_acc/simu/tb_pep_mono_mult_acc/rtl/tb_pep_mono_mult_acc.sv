@@ -208,7 +208,6 @@ module tb_pep_mono_mult_acc;
 
   // BSK
   logic                                                   inc_bsk_wr_ptr;
-  logic                                                   inc_bsk_rd_ptr;
 
   pep_mmacc_error_t                                       mmacc_error;
 
@@ -357,7 +356,6 @@ module tb_pep_mono_mult_acc;
     .seq_boram_corr_pid         (seq_boram_corr_pid),
 
     .inc_bsk_wr_ptr             (inc_bsk_wr_ptr),
-    .inc_bsk_rd_ptr             (inc_bsk_rd_ptr),
 
     .reset_cache                (reset_cache),
 

@@ -104,7 +104,6 @@ module pe_pbs_with_ks
   //== Control
   // KSK pointer
   input  logic                                                         inc_ksk_wr_ptr,
-  output logic                                                         inc_ksk_rd_ptr,
   // Broadcast batch cmd
   output logic [KS_BATCH_CMD_W-1:0]                                    ks_batch_cmd,
   output logic                                                         ks_batch_cmd_avail,
@@ -214,7 +213,6 @@ module pe_pbs_with_ks
     .seq_ks_cmd_avail      (seq_ks_cmd_avail),
 
     .inc_ksk_wr_ptr        (inc_ksk_wr_ptr),
-    .inc_ksk_rd_ptr        (inc_ksk_rd_ptr),
 
     .batch_cmd             (ks_batch_cmd),
     .batch_cmd_avail       (ks_batch_cmd_avail),

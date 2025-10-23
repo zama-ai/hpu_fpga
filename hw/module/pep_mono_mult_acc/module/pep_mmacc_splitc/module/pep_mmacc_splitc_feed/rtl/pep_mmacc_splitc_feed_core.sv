@@ -90,8 +90,6 @@ module pep_mmacc_splitc_feed_core
   input  logic                                                               in_data_avail,
 
   // Control
-  output logic                                                               br_loop_flush_done,
-
   output logic [BR_BATCH_CMD_W-1:0]                                          batch_cmd,
   output logic                                                               batch_cmd_avail
 
@@ -203,8 +201,6 @@ module pep_mmacc_splitc_feed_core
 
     .out_ss1_avail          (ss1_avail),
     .out_ss1_rcmd           (ss1_rcmd),
-
-    .br_loop_flush_done     (br_loop_flush_done),
 
     .batch_cmd              (batch_cmd),
     .batch_cmd_avail        (batch_cmd_avail)

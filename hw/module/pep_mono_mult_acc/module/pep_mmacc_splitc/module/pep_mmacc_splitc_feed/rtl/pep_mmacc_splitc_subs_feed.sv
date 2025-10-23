@@ -170,8 +170,6 @@ module pep_mmacc_splitc_subs_feed
     .in_rot_data             (main_rot_part),
     .in_data_avail           (main_part_avail),
 
-    .br_loop_flush_done      (), /*UNUSED*/
-
     .batch_cmd               (), /*UNUSED*/
     .batch_cmd_avail         ()  /*UNUSED*/
   );

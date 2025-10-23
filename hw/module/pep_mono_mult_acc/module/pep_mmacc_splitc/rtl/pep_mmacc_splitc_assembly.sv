@@ -106,7 +106,6 @@ module pep_mmacc_splitc_assembly
 
   // BSK
   input  logic                                                   inc_bsk_wr_ptr,
-  output logic                                                   inc_bsk_rd_ptr,
 
   // reset cache
   input  logic                                                   reset_cache,
@@ -556,7 +555,6 @@ module pep_mmacc_splitc_assembly
     .seq_boram_corr_pid              (seq_boram_corr_pid),
 
     .inc_bsk_wr_ptr                  (inc_bsk_wr_ptr),
-    .inc_bsk_rd_ptr                  (inc_bsk_rd_ptr),
 
     .main_subs_garb_feed_rot_avail_1h(in_garb_feed_rot_avail_1h),
     .main_subs_garb_feed_dat_avail_1h(in_garb_feed_dat_avail_1h),

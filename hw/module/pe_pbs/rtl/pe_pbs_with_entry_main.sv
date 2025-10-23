@@ -147,7 +147,6 @@ module pe_pbs_with_entry_main
   output logic                                                         bsk_if_batch_start_1h,
   output logic                                                         ksk_if_batch_start_1h,
   input  logic                                                         inc_bsk_wr_ptr,
-  output logic                                                         inc_bsk_rd_ptr,
 
   output logic [BR_BATCH_CMD_W-1:0]                                    br_batch_cmd,
   output logic                                                         br_batch_cmd_avail,
@@ -489,7 +488,6 @@ module pe_pbs_with_entry_main
     .seq_boram_corr_pid           (seq_boram_corr_pid),
 
     .inc_bsk_wr_ptr               (inc_bsk_wr_ptr),
-    .inc_bsk_rd_ptr               (inc_bsk_rd_ptr),
 
     .main_subs_garb_feed_rot_avail_1h (main_subs_garb_avail_1h.feed_rot),
     .main_subs_garb_feed_dat_avail_1h (main_subs_garb_avail_1h.feed_dat),

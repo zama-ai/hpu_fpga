@@ -50,8 +50,7 @@ module pep_ks_out_process
   input  logic                                          reset_cache,
 
   // BCOL done
-  output logic [TOTAL_BATCH_NB-1:0]                     outp_ks_loop_done_mh,
-  output logic [TOTAL_BATCH_NB-1:0]                     inc_ksk_rd_ptr
+  output logic [TOTAL_BATCH_NB-1:0]                     outp_ks_loop_done_mh
 
 );
 
@@ -197,18 +196,13 @@ module pep_ks_out_process
   logic [LBX-1:0][TOTAL_BATCH_NB-1:0]   x_ksk_rp_done;
 
   logic [TOTAL_BATCH_NB-1:0]            outp_ks_loop_done_mhD;
-  logic [TOTAL_BATCH_NB-1:0]            inc_ksk_rd_ptrD;
-
-  assign inc_ksk_rd_ptrD = x_ksk_rp_done[LBX-1];
 
   always_ff @(posedge clk)
     if (!s_rst_n) begin
       outp_ks_loop_done_mh <= '0;
-      inc_ksk_rd_ptr       <= '0;
     end
     else begin
       outp_ks_loop_done_mh <= outp_ks_loop_done_mhD;
-      inc_ksk_rd_ptr       <= inc_ksk_rd_ptrD;
     end
 
   always_comb

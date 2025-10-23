@@ -93,7 +93,6 @@ module pe_pbs_with_bsk
   input  logic                                                         bsk_if_batch_start_1h,
   // BSK pointer
   output logic                                                         inc_bsk_wr_ptr,
-  input  logic                                                         inc_bsk_rd_ptr,
 
   //== BSK coefficients
   output logic [PSI-1:0][R-1:0][GLWE_K_P1-1:0][MOD_NTT_W-1:0]          bsk,
@@ -124,6 +123,7 @@ module pe_pbs_with_bsk
   logic [BSK_CUT_NB-1:0][BSK_SLOT_W-1:0]                      bsk_mgr_wr_slot;
   logic [BSK_CUT_NB-1:0][LWE_K_W-1:0]                         bsk_mgr_wr_br_loop;
 
+  logic                                                       inc_bsk_rd_ptr;
 
 // ============================================================================================== --
 // Error / Inc / Info
@@ -224,6 +224,8 @@ module pe_pbs_with_bsk
 
     .batch_cmd       (br_batch_cmd),
     .batch_cmd_avail (br_batch_cmd_avail),
+
+    .inc_bsk_rd_ptr  (inc_bsk_rd_ptr),
 
     .wr_en           (bsk_mgr_wr_en),
     .wr_data         (bsk_mgr_wr_data),

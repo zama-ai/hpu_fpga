@@ -87,10 +87,7 @@ module pep_mmacc_splitc_main_feed
   input  logic                                                            inc_bsk_wr_ptr,
 
   // reset cache
-  input  logic                                                            reset_cache,
-
-  // Control
-  output logic                                                            br_loop_flush_done
+  input  logic                                                            reset_cache
 );
 
 //=================================================================================================
@@ -205,8 +202,6 @@ module pep_mmacc_splitc_main_feed
     .in_data                 (), /*UNUSED*/
     .in_rot_data             (), /*UNUSED*/
     .in_data_avail           (), /*UNUSED*/
-
-    .br_loop_flush_done      (br_loop_flush_done),
 
     .batch_cmd               (batch_cmd),
     .batch_cmd_avail         (batch_cmd_avail)

@@ -119,6 +119,9 @@ module tb_bsk_manager;
   logic [BR_BATCH_CMD_W-1:0]                       batch_cmd;
   logic                                            batch_cmd_avail;
 
+  // BSK pointer inc
+  logic [TOTAL_BATCH_NB-1:0]                       inc_bsk_rd_ptr;
+
   // Write interface
   logic [BSK_CUT_NB-1:0]                                 wr_en;
   logic [BSK_CUT_NB-1:0][BSK_CUT_FCOEF_NB-1:0][OP_W-1:0] wr_data;
@@ -149,6 +152,8 @@ module tb_bsk_manager;
 
     .batch_cmd      (batch_cmd      ),
     .batch_cmd_avail(batch_cmd_avail),
+
+    .inc_bsk_rd_ptr (inc_bsk_rd_ptr ), // TODO : check this
 
     .wr_en          (wr_en          ),
     .wr_data        (wr_data        ),

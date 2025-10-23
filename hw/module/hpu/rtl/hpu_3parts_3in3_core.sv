@@ -109,7 +109,6 @@ module hpu_3parts_3in3_core
 
   logic                                   bsk_if_batch_start_1h;
   logic                                   inc_bsk_wr_ptr;
-  logic                                   inc_bsk_rd_ptr;
 
   logic                                                        bsk_mem_avail;
   logic [BSK_PC_MAX-1:0][axi_if_bsk_axi_pkg::AXI4_ADD_W-1:0]   bsk_mem_addr;
@@ -171,7 +170,6 @@ module hpu_3parts_3in3_core
   assign br_batch_cmd          = ntt_proc_cmd.batch_cmd;
   assign br_batch_cmd_avail    = ntt_proc_cmd_avail;
 
-  assign inc_bsk_rd_ptr        = entry_bsk_proc.inc_rd_ptr;
   assign bsk_if_batch_start_1h = entry_bsk_proc.batch_start_1h;
 
   assign prev_data       = p2_p3_ntt_proc_data       ;
@@ -365,7 +363,6 @@ module hpu_3parts_3in3_core
   .bsk_if_batch_start_1h     (bsk_if_batch_start_1h),
 
   .inc_bsk_wr_ptr            (inc_bsk_wr_ptr),
-  .inc_bsk_rd_ptr            (inc_bsk_rd_ptr),
 
   .bsk                       (bsk),
   .bsk_vld                   (bsk_vld),

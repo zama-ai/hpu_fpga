@@ -40,6 +40,9 @@ module bsk_mgr_cut
   input  logic [BSK_RAM_ADD_W-1:0]                             wr_add,
   input  logic [GLWE_K_P1_W-1:0]                               wr_g_idx,
 
+  // BSK rd pointer
+  output logic                                                 inc_bsk_rd_ptr,
+
   // Batch cmd
   input  logic [BR_BATCH_CMD_W-1:0]                            s0_batch_cmd,
   input  logic [BSK_RAM_ADD_W-1:0]                             s0_batch_add_ofs,
@@ -130,7 +133,17 @@ module bsk_mgr_cut
     end
   end
 
-  assign s1_batch_cmd_rdy = s1_do_read & s1_last_intl_idx & s1_last_stg_iter & s1_last_pbs_id;
+  logic s1_is_flush;
+  logic s1_do_read_cond;
+  assign s1_is_flush      = s1_batch_cmd.pbs_nb == '0;
+  assign s1_batch_cmd_rdy = s1_is_flush | (s1_do_read_cond & s1_last_intl_idx & s1_last_stg_iter & s1_last_pbs_id);
+
+  logic inc_bsk_rd_ptrD;
+  assign inc_bsk_rd_ptrD = s1_batch_cmd_rdy & s1_batch_cmd_vld;
+
+  always_ff @(posedge clk)
+    if (!s_rst_n) inc_bsk_rd_ptr <= 1'b0;
+    else          inc_bsk_rd_ptr <= inc_bsk_rd_ptrD;
 
   // ----------------------------------------------------------------------------------- --
   // Read pointer
@@ -175,7 +188,8 @@ module bsk_mgr_cut
     s1_data_cnt = cnt;
   end
 
-  assign s1_do_read = (s1_data_cnt < BUF_DEPTH) & s1_batch_cmd_vld;
+  assign s1_do_read_cond = (s1_data_cnt < BUF_DEPTH) & ~s1_is_flush;
+  assign s1_do_read      = s1_do_read_cond & s1_batch_cmd_vld;
 
   // Buffer input
   assign buf_in_avail = ram_data_avail_dly[RAM_LATENCY_L-1];

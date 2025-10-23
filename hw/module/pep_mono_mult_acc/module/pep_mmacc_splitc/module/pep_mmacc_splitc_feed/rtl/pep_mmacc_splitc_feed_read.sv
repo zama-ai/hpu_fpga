@@ -72,8 +72,6 @@ module pep_mmacc_splitc_feed_read
   output logic                           out_ss1_avail,
   output logic [REQ_CMD_W-1:0]           out_ss1_rcmd,
 
-  output logic                           br_loop_flush_done,
-
   output logic [BR_BATCH_CMD_W-1:0]      batch_cmd,
   output logic                           batch_cmd_avail
 
@@ -329,7 +327,7 @@ module pep_mmacc_splitc_feed_read
 
   //== Fork
   // Fork between the process path and the arbiter request path.
-  assign fm1_f0_vld   = fm1_vld & fm1_garb_rdy & fm1_acc_rdy;
+  assign fm1_f0_vld   = fm1_vld & fm1_garb_rdy & fm1_acc_rdy & ~fm1_do_flush;
   assign fm1_garb_vld = fm1_vld & fm1_f0_rdy   & fm1_acc_rdy & ~fm1_do_flush;
   assign fm1_acc_vld  = fm1_vld & fm1_f0_rdy   & fm1_garb_rdy & ~fm1_do_flush;
   assign fm1_rdy      = fm1_garb_rdy & fm1_f0_rdy & fm1_acc_rdy;
@@ -431,8 +429,8 @@ module pep_mmacc_splitc_feed_read
     if (!s_rst_n) fm1_batch_cmd_sent <= 1'b0;
     else          fm1_batch_cmd_sent <= fm1_batch_cmd_sentD;
 
-  assign fm1_batch_cmd_avail   = ~fm1_batch_cmd_sent & fm1_mcmd_vld & ~fm1_do_flush;
-  assign fm1_batch_cmd.pbs_nb  = fm1_mcmd.ct_nb_m1 + 1;
+  assign fm1_batch_cmd_avail   = ~fm1_batch_cmd_sent & fm1_mcmd_vld;
+  assign fm1_batch_cmd.pbs_nb  = fm1_do_flush ? '0 : fm1_mcmd.ct_nb_m1 + 1;
   assign fm1_batch_cmd.br_loop = fm1_mcmd.br_loop;
 
   always_ff @(posedge clk)
@@ -444,7 +442,7 @@ module pep_mmacc_splitc_feed_read
 
 // pragma translate_off
   always_ff @(posedge clk)
-    if (fm1_f0_vld && fm1_f0_rdy) begin
+    if (fm1_vld && fm1_rdy) begin
       $display("%t > INFO: PEP_MMACC_FEED: map_idx=%0d br_loop=%0d is_flush=%0d",$time,fm1_mcmd.map_idx, fm1_mcmd.br_loop,fm1_mcmd.is_flush);
     end
 // pragma translate_on
@@ -492,7 +490,18 @@ module pep_mmacc_splitc_feed_read
 
   assign f0_do_inc   = f0_f1_vld & f0_f1_rdy;
 
-  assign br_loop_flush_done = f0_vld & f0_rdy & f0_mcmd.is_flush;
+// pragma translate_off
+  always_ff @(posedge clk)
+    if (!s_rst_n) begin
+      // Do nothing
+    end
+    else begin
+      if (f0_vld)
+        assert(f0_mcmd.is_flush == 0) else begin
+          $fatal(1,"%t > ERROR: Seen flush command in step f0!", $time);
+        end
+    end
+// pragma translate_on
 
   //== LWE
   // Compute the factor used for the rotation.

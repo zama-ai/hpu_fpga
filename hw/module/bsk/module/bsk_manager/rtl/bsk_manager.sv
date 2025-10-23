@@ -45,6 +45,9 @@ module bsk_manager
   input  logic [BSK_CUT_NB-1:0][BSK_SLOT_W-1:0]           wr_slot,
   input  logic [BSK_CUT_NB-1:0][LWE_K_W-1:0]              wr_br_loop,
 
+  // bsk pointer for the BSK process path
+  output  logic                                           inc_bsk_rd_ptr, // Indicate that the bsk slice has been consumed
+
   // Error
   output pep_bsk_error_t                                  bsk_mgr_error
 );
@@ -150,12 +153,14 @@ module bsk_manager
   end
 
 // pragma translate_off
+  logic _sm1_is_flush;
+  assign _sm1_is_flush = sm2_batch_cmd.pbs_nb == '0;
   always_ff @(posedge clk)
     if (!s_rst_n) begin
       // do nothing
     end
     else begin
-      if (sm1_batch_cmd_avail) begin
+      if (sm1_batch_cmd_avail && !_sm1_is_flush) begin
         assert($countones(sm1_slot_1h) == 1)
         else begin
           $fatal(1,"%t > ERROR: batch_cmd does not match a unique slot! (sm1_slot_1h=0x%x)", $time, sm1_slot_1h);
@@ -218,6 +223,8 @@ module bsk_manager
   logic [PSI*R-1:0][GLWE_K_P1-1:0]            bsk_vld_tmp;
   logic [PSI*R-1:0][GLWE_K_P1-1:0]            bsk_rdy_tmp;
 
+  logic [BSK_CUT_NB-1:0]                      cut_inc_bsk_rd_ptr;
+
   assign bsk         = bsk_tmp;
   assign bsk_vld     = bsk_vld_tmp;
   assign bsk_rdy_tmp = bsk_rdy;
@@ -242,6 +249,8 @@ module bsk_manager
         .wr_add          (wr_add[gen_c]),
         .wr_g_idx        (wr_g_idx[gen_c]),
 
+        .inc_bsk_rd_ptr  (cut_inc_bsk_rd_ptr[gen_c]),
+
         .s0_batch_cmd    (s0_batch_cmd),
         .s0_batch_add_ofs(s0_batch_add_ofs),
         .s0_batch_cmd_vld(s0_batch_cmd_vld),
@@ -249,6 +258,30 @@ module bsk_manager
       );
     end
   endgenerate
+
+// ---------------------------------------------------------------------------------------------- --
+// Pointer Inc
+// ---------------------------------------------------------------------------------------------- --
+  logic [BSK_CUT_NB-1:0] cut_inc_bsk_rd_ptr_keep;
+  logic [BSK_CUT_NB-1:0] cut_inc_bsk_rd_ptr_keepD;
+  logic                  send_inc_bsk_rd_ptr;
+
+  assign send_inc_bsk_rd_ptr = &cut_inc_bsk_rd_ptr_keep;
+
+  always_comb
+    for (int i=0; i<BSK_CUT_NB; i=i+1)
+        cut_inc_bsk_rd_ptr_keepD[i] = send_inc_bsk_rd_ptr ? 1'b0 :
+                                         cut_inc_bsk_rd_ptr_keep[i] | cut_inc_bsk_rd_ptr[i];
+
+  always_ff @(posedge clk)
+    if (!s_rst_n) begin
+      cut_inc_bsk_rd_ptr_keep <= '0;
+      inc_bsk_rd_ptr          <= 1'b0;
+    end
+    else begin
+      cut_inc_bsk_rd_ptr_keep <= cut_inc_bsk_rd_ptr_keepD;
+      inc_bsk_rd_ptr          <= send_inc_bsk_rd_ptr;
+    end
 
 // ---------------------------------------------------------------------------------------------- --
 // Errors
