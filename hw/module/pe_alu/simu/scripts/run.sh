@@ -34,7 +34,7 @@ echo "-D                       : PADDING_BIT : Number of padding bits (default 1
 echo "-i                       : Regfile number of registers (default 64)"
 echo "-j                       : Regfile number of coefficients (default 32)"
 echo "-k                       : Regfile number of sequences (default 4)"
-echo "-a                       : ALU_NB (default 1)"
+echo "-a                       : PEA_ALU_NB (default 1)"
 echo "-- <run_edalize options> : run_edalize options."
 
 }
@@ -60,7 +60,7 @@ LWE_K=4 # UNUSED
 REGF_REG_NB=64
 REGF_COEF_NB=32
 REGF_SEQ=4
-ALU_NB=1
+PEA_ALU_NB=1
 # Initialize your own variables here:
 while getopts "hzg:R:S:i:j:k:W:a:q:Q:D:" opt; do
   case "$opt" in
@@ -99,7 +99,7 @@ while getopts "hzg:R:S:i:j:k:W:a:q:Q:D:" opt; do
       REGF_SEQ=$OPTARG
       ;;
     a)
-      ALU_NB=$OPTARG
+      PEA_ALU_NB=$OPTARG
       ;;
     z)
       echo "Do not generate stimuli."
@@ -151,6 +151,15 @@ if [ $GEN_STIMULI -eq 1 ] ; then
   echo "INFO> Running : $pkg_cmd"
   $pkg_cmd || exit 1
 
+  echo ""
+  pkg_cmd="python3 ${PROJECT_DIR}/hw/module/pe_alu/module/pea_common/scripts/gen_pea_alu_definition_pkg.py\
+          -f -pea_alu_nb $PEA_ALU_NB \
+          -o ${RTL_DIR}/pea_alu_definition_pkg.sv"
+  echo "INFO> PEA_ALU_NB=$PEA_ALU_NB"
+  echo "INFO> Creating pea_alu_definition_pkg.sv"
+  echo "INFO> Running : $pkg_cmd"
+  $pkg_cmd || exit 1
+
   # Create the associated file_list.json
   echo ""
   file_list_cmd="${PROJECT_DIR}/hw/scripts/create_module/create_file_list.py\
@@ -158,8 +167,10 @@ if [ $GEN_STIMULI -eq 1 ] ; then
                 -p ${RTL_DIR} \
                 -R param_tfhe_definition_pkg.sv simu 0 1 \
                 -R regf_common_definition_pkg.sv simu 0 1 \
+                -R pea_alu_definition_pkg.sv simu 0 1 \
                 -F param_tfhe_definition_pkg.sv APPLICATION APPLI_simu \
-                -F regf_common_definition_pkg.sv REGF_STRUCT REGF_STRUCT_reg${REGF_REG_NB}_coef${REGF_COEF_NB}_seq${REGF_SEQ}"
+                -F regf_common_definition_pkg.sv REGF_STRUCT REGF_STRUCT_reg${REGF_REG_NB}_coef${REGF_COEF_NB}_seq${REGF_SEQ} \
+                -F pea_alu_definition_pkg.sw PEA_ALU PEA_ALU_${PEA_ALU_NB}"
   echo "INFO> Running : $file_list_cmd"
   $file_list_cmd || exit 1
 
@@ -173,9 +184,9 @@ fi
 eda_args=""
 
 eda_args="$eda_args \
-            -P ALU_NB int $ALU_NB \
             -F APPLICATION APPLI_simu \
-            -F REGF_STRUCT REGF_STRUCT_reg${REGF_REG_NB}_coef${REGF_COEF_NB}_seq${REGF_SEQ}"
+            -F REGF_STRUCT REGF_STRUCT_reg${REGF_REG_NB}_coef${REGF_COEF_NB}_seq${REGF_SEQ} \
+            -F PEA_ALU PEA_ALU_${PEA_ALU_NB}"
 
 ###################################################################################################
 # Run_edalize configure

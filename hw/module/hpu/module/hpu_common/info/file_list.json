@@ -42,6 +42,7 @@
         "hw/module/axi_if/module/axi_if_common",
         "hw/module/pep_key_switch/module/pep_ks_common",
         "hw/module/pe_mem/module/pem_common",
+        "hw/module/pe_alu/module/pea_common",
         "hw/module/number_theoretic_transform/module/ntt_core_common"
     ],
     "include_dir": []

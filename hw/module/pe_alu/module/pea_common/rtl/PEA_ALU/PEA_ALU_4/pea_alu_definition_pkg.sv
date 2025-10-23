@@ -5,23 +5,11 @@
 // Description  :
 // ----------------------------------------------------------------------------------------------
 //
-// Package containing common localparams for PE memory.
+// Parameters that define the number of ALU cores in PEA.
+//
 // ==============================================================================================
 
-package pea_common_param_pkg;
-  import pea_alu_definition_pkg::*;
-
-  export pea_alu_definition_pkg::PEA_ALU_NB;
-
-//==================================================
-// Structure
-//==================================================
-  //== Counters
-  typedef struct packed {
-    logic ack_inc;
-    logic inst_inc;
-  } pea_counter_inc_t;
-
-  localparam int PEA_COUNTER_INC_W = $bits(pea_counter_inc_t);
+package pea_alu_definition_pkg;
+  localparam int PEA_ALU_NB = 4;
 
 endpackage

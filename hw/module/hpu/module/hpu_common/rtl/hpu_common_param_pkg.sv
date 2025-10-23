@@ -18,6 +18,7 @@ package hpu_common_param_pkg;
   import pep_ks_common_param_pkg::*;
   import top_common_param_pkg::*;
   import pem_common_param_pkg::*;
+  import pea_common_param_pkg::*;
 
   // Used when hpu is split into 3 parts.
   export hpu_part_definition_pkg::HEAD_S_NB;
@@ -42,7 +43,6 @@ package hpu_common_param_pkg;
   // TOREVIEW: Could be refined
   //== PE
   localparam int               PEA_OUT_FIFO_DEPTH  = 2;
-  localparam int               PEA_ALU_NB          = 1;
 
   localparam int               PEA_REGF_PERIOD_TMP = REGF_COEF_NB / PEA_ALU_NB;
   localparam int               PEA_REGF_PERIOD     = PEA_REGF_PERIOD_TMP > 1 ? PEA_REGF_PERIOD_TMP : 2;

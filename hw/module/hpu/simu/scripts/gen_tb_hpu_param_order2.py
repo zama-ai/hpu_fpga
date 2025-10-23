@@ -109,6 +109,7 @@ if __name__ == '__main__':
     parser.add_argument('-i', dest='regf_reg_nb',  type=int, help="REGF_REG_NB.",                                    default=64)
     parser.add_argument('-j', dest='regf_coef_nb', type=int, help="REGF_COEF_NB.",                                   default=32)
     parser.add_argument('-k', dest='regf_seq',     type=int, help="REGF_SEQ.",                                       default=4)
+    parser.add_argument('-Q', dest='pea_alu_nb',   type=int, help="PEA_ALU_NB.",                                     default=2)
     parser.add_argument('-D', dest='axi_w',        type=int, help="AXI4_DATA_W: Axi4 bus data width.",               default=512)
     parser.add_argument('-FPGA', dest='fpga',      type=str, help="FPGA type",              choices=['v80'],         default="v80")
     parser.add_argument('-out_bash',               type=str, help="Output in bash format.", required=True)

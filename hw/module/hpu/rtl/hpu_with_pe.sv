@@ -304,7 +304,6 @@ pe_mem #(
 // ---------------------------------------------------------------------------------------------- --
     pe_alu #(
     .INST_FIFO_DEPTH (PEA_INST_FIFO_DEPTH),
-    .ALU_NB          (PEA_ALU_NB),
     .OUT_FIFO_DEPTH  (PEA_OUT_FIFO_DEPTH)
   ) pe_alu (
     .clk                    (clk    ),
