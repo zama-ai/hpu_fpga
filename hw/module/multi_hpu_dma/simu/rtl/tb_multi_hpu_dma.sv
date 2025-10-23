@@ -381,7 +381,7 @@ module tb_multi_hpu_dma;
     for (genvar gen_p=0; gen_p<HPU_NB; gen_p=gen_p+1) begin : gen_mem_loop
       axi4_mem #(
         .DATA_WIDTH      (AXI4_DATA_W                    ),
-        .ADDR_WIDTH      (AXI4_ADD_W                     ), //64?!
+        .ADDR_WIDTH      (20                             ), //64?!
         .ID_WIDTH        (AXI4_ID_W                      ),
         .WR_CMD_BUF_DEPTH(MEM_WR_CMD_BUF_DEPTH           ),
         .RD_CMD_BUF_DEPTH(MEM_RD_CMD_BUF_DEPTH           ),
@@ -681,7 +681,7 @@ module tb_multi_hpu_dma;
 
       // see package
       read_req_addr = {dest_addr, src_addr};
-      read_req_id = {4'b0000, iop_id, 4'b0000, node_id, req_size_b};
+      read_req_id = {4'b0000, iop_id, REQ_ID_READ, node_id, req_size_b};
 
       maxil_drv_if_hpu_a.write_trans(REQUEST_REQ_ADDR_OFS, read_req_addr);
       maxil_drv_if_hpu_a.write_trans(REQUEST_REQ_ID_OFS, read_req_id);
@@ -705,7 +705,7 @@ module tb_multi_hpu_dma;
       $display("\n[INFO] Sending a Notify request from HPU-%0x to HPU-%0x", src_node_id, dst_node_id);
 
       read_req_addr = {16'b0, src_addr};
-      read_req_id = {4'b0000, iop_id, 4'b0000, dst_node_id, req_size_b};
+      read_req_id = {4'b0000, iop_id, REQ_ID_NOTIFY_TX, dst_node_id, req_size_b};
 
       if (src_node_id == random_hpu_a) begin
         maxil_drv_if_hpu_a.write_trans(REQUEST_REQ_ADDR_OFS, read_req_addr);

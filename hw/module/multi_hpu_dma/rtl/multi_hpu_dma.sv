@@ -89,9 +89,6 @@ module multi_hpu_dma
   //  * GT PLL and datapath reset : 4b : rw : gt_reset_all
   //  * reset done monitoring     : 8b : r  : gt_{rx;tx}_reset_done
   // ============================================================================================ //
-  // Registers
-  // logic [31:0] r_system_src_mac_addr;
-  // logic [31:0] r_system_dst_mac_addr;
   logic [31:0] r_system_line;
   logic [31:0] r_reset_datapath;
   logic [31:0] r_reset_monitor;
@@ -133,6 +130,13 @@ module multi_hpu_dma
                           {(AXIL_DATA_W-NB_WORD_W-6){1'b0}},
                           stat_rd_data_count};
 
+  // MAC addresses and HPU ID
+  logic [NB_MAX_HPU-1:0][31:0] regf_hpu_ids;
+
+  // RPU requests
+  logic [31:0] r_request_req_id;
+  logic [31:0] r_request_req_addr;
+
   // status directly from fifo
   logic [NB_WORD_W-1:0]    r_nb_word;
   logic [MRMAC_AXIS_W-1:0] r_wr_word;
@@ -149,10 +153,10 @@ module multi_hpu_dma
   logic [31:0]             tx_wr_en_cnt;
 
   hpu_regif_core_eth_2in3  hpu_regif_core_eth_2in3 (
-    // configuration interface
+    // configuration interface --------------------------------------------------------------------
     .clk    (clk_eth_cfg),
     .s_rst_n(resetn_eth_cfg),
-    // axi4-lite
+    // axi4-lite ----------------------------------------------------------------------------------
     .s_axil_awaddr (s_axil_dma_awaddr),
     .s_axil_awvalid(s_axil_dma_awvalid),
     .s_axil_awready(s_axil_dma_awready),
@@ -170,6 +174,18 @@ module multi_hpu_dma
     .s_axil_rvalid (s_axil_dma_rvalid),
     .s_axil_rready (s_axil_dma_rready),
     .r_axil_wdata  (/* */),
+    // HPU ids ------------------------------------------------------------------------------------
+    .r_hpu_id_zero   (regf_hpu_ids[0]),
+    .r_hpu_id_one    (regf_hpu_ids[1]),
+    .r_hpu_id_two    (regf_hpu_ids[2]),
+    .r_hpu_id_three  (regf_hpu_ids[3]),
+    .r_hpu_id_four   (regf_hpu_ids[4]),
+    .r_hpu_id_five   (regf_hpu_ids[5]),
+    .r_hpu_id_six    (regf_hpu_ids[6]),
+    .r_hpu_id_seven  (regf_hpu_ids[7]),
+    // RPU requests -------------------------------------------------------------------------------
+    .r_request_req_id   (r_request_req_id),
+    .r_request_req_addr (r_request_req_addr),
     // registers
     // .r_system_src_mac_addr                 (r_system_src_mac_addr),
     // .r_system_dst_mac_addr                 (r_system_dst_mac_addr),
@@ -196,6 +212,35 @@ module multi_hpu_dma
   );
 
   // Logic around regfile -------------------------------------------------------------------------
+  // building requests flags for sampling and properly create the request cmd queue in the bridge
+  logic [1:0] received_req;
+  logic request_consumed;
+
+  always_ff @(posedge clk_eth_cfg) begin : received_req_id
+    if (~resetn_eth_cfg) begin
+      received_req[0]   <= 1'b0;
+    end else begin
+      if ((s_axil_dma_awaddr == REQUEST_REQ_ID_OFS) && s_axil_dma_awready)  begin
+        received_req[0] <= 1'b1;
+      end else if (request_consumed) begin
+        received_req[0] <= 1'b0;
+      end
+    end
+  end
+
+  always_ff @(posedge clk_eth_cfg) begin : received_req_addr
+    if (~resetn_eth_cfg) begin
+      received_req[1] <= 1'b0;
+    end else begin
+      if ((s_axil_dma_awaddr == REQUEST_REQ_ADDR_OFS) && s_axil_dma_awready)  begin
+        received_req[1] <= 1'b1;
+      end else if (request_consumed) begin
+        received_req[1] <= 1'b0;
+      end
+    end
+  end
+
+  // for the trace module --
   // read_ack is a pulse that partly controls the rx_fifo read, must be in configuration clock freq
   // because axi4-lite is limited in word number, the ack is triggered only when the second word is read
   logic read_ack;
@@ -230,6 +275,78 @@ module multi_hpu_dma
   assign r_wr_word = write_ack ? {r_wr_word_a, r_wr_word_b} :0;
 
   // ============================================================================================ //
+  // Multi-HPU-DMA bridge from NOC to axi4-stream & regf control
+  // ============================================================================================ //
+  logic [MRMAC_AXIS_W-1:0  ] axis_rx_tdata;
+  logic [MRMAC_TKEEP_W-1:0 ] axis_rx_tkeep_user;
+  logic                      axis_rx_tlast;
+  logic                      axis_rx_tvalid;
+
+  logic [MRMAC_AXIS_W-1:0 ] axis_tx_tdata;
+  logic [MRMAC_TKEEP_W-1:0] axis_tx_tkeep_user;
+  logic                     axis_tx_tlast;
+  logic                     axis_tx_tvalid;
+  logic                     axis_tx_tready;
+
+  mhdma_bridge # (
+    .FIFO_DEPTH(FIFO_DEPTH)
+  ) mhdma_bridge (
+    .clk_cfg     (clk_eth_cfg),
+    .resetn_cfg  (resetn_eth_cfg),
+    .clk_mrmac   (clk_eth_mrmac),
+    .resetn_mrmac(resetn_eth_mrmac),
+    // axi4-full for each ETH_PC ------------------------------------------------------------------
+    // .m_axi4_arid(m_axi4_arid),
+    // .m_axi4_araddr(m_axi4_araddr),
+    // .m_axi4_arlen(m_axi4_arlen),
+    // .m_axi4_arsize(m_axi4_arsize),
+    // .m_axi4_arburst(m_axi4_arburst),
+    // .m_axi4_arvalid(m_axi4_arvalid),
+    // .m_axi4_arready(m_axi4_arready),
+    // .m_axi4_rid(m_axi4_rid),
+    // .m_axi4_rdata(m_axi4_rdata),
+    // .m_axi4_rresp(m_axi4_rresp),
+    // .m_axi4_rlast(m_axi4_rlast),
+    // .m_axi4_rvalid(m_axi4_rvalid),
+    // .m_axi4_rready(m_axi4_rready),
+    // .m_axi4_awid(m_axi4_awid),
+    // .m_axi4_awaddr(m_axi4_awaddr),
+    // .m_axi4_awlen(m_axi4_awlen),
+    // .m_axi4_awsize(m_axi4_awsize),
+    // .m_axi4_awburst(m_axi4_awburst),
+    // .m_axi4_awvalid(m_axi4_awvalid),
+    // .m_axi4_awready(m_axi4_awready),
+    // .m_axi4_wdata(m_axi4_wdata),
+    // .m_axi4_wstrb(m_axi4_wstrb),
+    // .m_axi4_wlast(m_axi4_wlast),
+    // .m_axi4_wvalid(m_axi4_wvalid),
+    // .m_axi4_wready(m_axi4_wready),
+    // .m_axi4_bid(m_axi4_bid),
+    // .m_axi4_bresp(m_axi4_bresp),
+    // .m_axi4_bvalid(m_axi4_bvalid),
+    // .m_axi4_bready(m_axi4_bready),
+    // Register interface -------------------------------------------------------------------------
+    // .regf_tx_notify     (regf_tx_notify),
+    // .regf_rx_notify     (regf_rx_notify),
+    .regf_hpu_ids       (regf_hpu_ids),
+
+    .regf_req_id       (r_request_req_id),
+    .regf_req_addr     (r_request_req_addr),
+    .received_req      (received_req),
+    .request_consumed  (request_consumed),
+    // QSFP interface one lane --------------------------------------------------------------------
+    .qsfp_tx_tdata     (axis_tx_tdata),
+    .qsfp_tx_tkeep_user(axis_tx_tkeep_user),
+    .qsfp_tx_tlast     (axis_tx_tlast),
+    .qsfp_tx_tvalid    (axis_tx_tvalid),
+    .qsfp_tx_tready    (axis_tx_tready),
+    .qsfp_rx_tdata     (axis_rx_tdata),
+    .qsfp_rx_tkeep_user(axis_rx_tkeep_user),
+    .qsfp_rx_tlast     (axis_rx_tlast),
+    .qsfp_rx_tvalid    (axis_rx_tvalid)
+  );
+
+  // ============================================================================================ //
   // Fifo Handle
   // ==================
   // Handles two FIFOs for RX and TX that are meant to be back to back to MRMAC axi4-stream
@@ -254,16 +371,6 @@ module multi_hpu_dma
   // ----------------------------------------------------------------------------------------------
 
   // ============================================================================================ //
-  logic [MRMAC_AXIS_W-1:0  ] axis_rx_tdata;
-  logic [MRMAC_TKEEP_W-1:0 ]  axis_rx_tkeep_user;
-  logic                      axis_rx_tlast;
-  logic                      axis_rx_tvalid;
-
-  logic [MRMAC_AXIS_W-1:0] axis_tx_tdata;
-  logic [MRMAC_TKEEP_W-1:0] axis_tx_tkeep_user;
-  logic                    axis_tx_tlast;
-  logic                    axis_tx_tvalid;
-  logic                    axis_tx_tready;
 
   mhdma_trace # (
     .FIFO_DEPTH(FIFO_DEPTH),
@@ -280,11 +387,11 @@ module multi_hpu_dma
     .qsfp_rx_tlast      (axis_rx_tlast),
     .qsfp_rx_tvalid     (axis_rx_tvalid),
     // MRMAC TX interface
-    .qsfp_tx_tdata      (axis_tx_tdata),
-    .qsfp_tx_tkeep_user (axis_tx_tkeep_user),
-    .qsfp_tx_tlast      (axis_tx_tlast),
-    .qsfp_tx_tvalid     (axis_tx_tvalid),
-    .qsfp_tx_tready     (axis_tx_tready),
+    // .qsfp_tx_tdata      (axis_tx_tdata),
+    // .qsfp_tx_tkeep_user (axis_tx_tkeep_user),
+    // .qsfp_tx_tlast      (axis_tx_tlast),
+    // .qsfp_tx_tvalid     (axis_tx_tvalid),
+    // .qsfp_tx_tready     (axis_tx_tready),
     // register interface
     .r_nb_word          (r_nb_word),
     .r_wr_word          (r_wr_word),

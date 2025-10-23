@@ -1,5 +1,5 @@
 # HPU_REGIF_CORE documentation
-**Date**: 2025-10-21
+**Date**: 2025-10-23
 **Tool Version**: bd49564daf1a99d615cb6dbb121b54bfbeef8b22
 
 ## RegisterMap Overview
@@ -17,7 +17,7 @@ HPU ethernet configuration register interface. Will be accessed by RPU to define
 **Offset**: 0x0
 **Range**: 0x60000
 **Word Size (b)**: 32
-**External Packages**: "axi_if_common_param_pkg.sv","axi_if_shell_axil_pkg.sv"
+**External Packages**: "axi_if_shell_axil_pkg.sv","axi_if_common_param_pkg.sv"
 
 
 ---
@@ -4290,6 +4290,7 @@ Register req_id contains following Sub-fields:
 |-----------:|:--------:|:------:|:------------:|:--------------|
 | size_b      | 0 | 16 |16384| size request in bytes, default is ct size |
 | node_id      | 16 | 4 |0| node id or HPU target id |
+| req_id      | 20 | 4 |0| request identifier |
 | iop_id      | 24 | 4 |0| IOP id from software point of view |
 
 

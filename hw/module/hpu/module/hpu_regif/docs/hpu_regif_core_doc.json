@@ -5,8 +5,8 @@
   "offset": 0,
   "range": 393216,
   "ext_pkg": [
-    "axi_if_common_param_pkg",
-    "axi_if_shell_axil_pkg"
+    "axi_if_shell_axil_pkg",
+    "axi_if_common_param_pkg"
   ],
   "section": [
     {
@@ -4398,6 +4398,10 @@
                   "'h0"
                 ],
                 [
+                  "req_id",
+                  "'h0"
+                ],
+                [
                   "iop_id",
                   "'h0"
                 ]
@@ -4419,6 +4423,15 @@
               "description": "node id or HPU target id",
               "size_b": 4,
               "offset_b": 16,
+              "default": {
+                "Cst": 0
+              }
+            },
+            {
+              "name": "req_id",
+              "description": "request identifier",
+              "size_b": 4,
+              "offset_b": 20,
               "default": {
                 "Cst": 0
               }

@@ -42,7 +42,28 @@ package mhdma_pkg;
   localparam int MAC_ADDR_W = 24;
   localparam int MAC_OUI_W  = 24;
 
+  localparam int HPU_ID_W   = 4;
+
+  localparam int ETH_PC = 2;
   localparam [MAC_OUI_W-1:0] MAC_OUI = 'h000A35;
+
+  // beware of regfile if modifying this value
+  localparam int NB_MAX_HPU   = 8;
+  localparam int NB_MAX_HPU_W = $clog2(NB_MAX_HPU);
+
+  // fifo specific parameters
+  // minimal depth for 64 using XPM fifo is 16
+  localparam int RQQ_MEMORY_TYPE  = "auto";
+  localparam int RQQ_DEPTH        = 16;
+  localparam int RQQ_WIDTH        = 64;
+  localparam int RQQ_DATA_COUNT_W =  $clog2(RQQ_DEPTH)+1;
+
+  localparam [3:0] REQ_ID_NOTIFY_TX     = 'h2;
+  localparam [3:0] REQ_ID_ACK_NOTIFY_TX = 'h3;
+  localparam [3:0] REQ_ID_NOTIFY_RX     = 'h4;
+  localparam [3:0] REQ_ID_ACK_NOTIFY_RX = 'h5;
+  localparam [3:0] REQ_ID_READ          = 'h6;
+  localparam [3:0] REQ_ID_EMISSION      = 'h7;
 
   //----------------------
   // Parameters

@@ -46,6 +46,7 @@
     "dependency_dir": [
         "hw/common_lib/cdc/module/xpm_fifo_async_wrapper",
         "hw/common_lib/cdc/module/xpm_cdc_single_wrapper",
+        "hw/common_lib/fifo",
         "hw/module/hpu/module/hpu_regif",
         "hw/module/axi_if/module/axi_if_common"
     ],

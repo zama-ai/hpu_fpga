@@ -21,6 +21,7 @@ module xpm_fifo_async_wrapper #(
   parameter int DATA_W            = 32,
   parameter int FIFO_DEPTH        = 512,
 
+  parameter int FIFO_MEMORY_TYPE = "auto",
   // read and write data count w are the same
   parameter int DATA_COUNT_WIDTH = $clog2(FIFO_DEPTH)+1,
 
