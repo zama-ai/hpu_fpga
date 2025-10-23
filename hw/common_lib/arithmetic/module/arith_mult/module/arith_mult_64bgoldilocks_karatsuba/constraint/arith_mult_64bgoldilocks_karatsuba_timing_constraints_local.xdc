@@ -7,7 +7,7 @@
 #
 # This file contains:
 #    - the clock definition
-#    - constraints on input and output ports
+#
 # ----------------------------------------------------------------------------------------------
 # Create clock
 # ==============================================================================================
@@ -18,10 +18,5 @@ create_clock -period $INPUT_PERIOD -name CLK [get_ports clk]
 set_input_jitter [get_clocks -of_objects [get_ports clk]] [expr $INPUT_PERIOD / 100]
 
 # If the clock buffer location is known, define it for more accuracy in timing analysis
-#set_property HD.CLK_SRC BUFGCTRL_X0Y39 [get_ports clk]
+set_property CLOCK_BUFFER_TYPE BUFGCE [get_ports clk]
 
-# Set delay on input and output ports
-set_input_delay [expr [get_property PERIOD [get_clocks CLK]] / 2] -clock CLK -max [get_ports * -filter {DIRECTION == IN && NAME !~ "clk"}]
-set_input_delay [expr [get_property PERIOD [get_clocks CLK]] / 2] -clock CLK -min [get_ports * -filter {DIRECTION == IN && NAME !~ "clk"}]
-set_output_delay [expr [get_property PERIOD [get_clocks CLK]] / 2] -clock CLK -max [all_outputs]
-set_output_delay [expr [get_property PERIOD [get_clocks CLK]] / 2] -clock CLK -min [all_outputs]

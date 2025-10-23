@@ -7,23 +7,24 @@
 #
 # This file contains:
 #    - the clock definition
-#    - constraints on input and output ports
+#
 # ----------------------------------------------------------------------------------------------
 # Create clock
 # ==============================================================================================
 
-set CLK_PERIOD 2.500
-create_clock -period $CLK_PERIOD -name CLK  [get_ports clk]
-set_clock_uncertainty -setup 0.100 [get_clocks CLK]
-set_clock_uncertainty -hold 0.010 [get_clocks CLK]
-set_system_jitter 0.200
-set_clock_latency -source -min 0.100 CLK
-set_clock_latency -source -max 0.120 CLK
-# If the clock buffer location is known, define it for more accuracy in timing analysis
-#set_property HD.CLK_SRC BUFGCTRL_X0Y39 [get_ports clk]
 
-# Set delay on input and output ports
-set_input_delay [expr [get_property PERIOD [get_clocks CLK]] / 2] -clock CLK -max [get_ports * -filter {DIRECTION == IN && NAME !~ "clk"}]
-set_input_delay [expr [get_property PERIOD [get_clocks CLK]] / 2] -clock CLK -min [get_ports * -filter {DIRECTION == IN && NAME !~ "clk"}]
-set_output_delay [expr [get_property PERIOD [get_clocks CLK]] / 2] -clock CLK -max [all_outputs]
-set_output_delay [expr [get_property PERIOD [get_clocks CLK]] / 2] -clock CLK -min [all_outputs]
+set CLK_PERIOD 2.500
+set PRC_CLK_PERIOD 2.500
+set CFG_CLK_PERIOD 10.000
+
+create_clock -period $CFG_CLK_PERIOD -name CFG_CLK [get_ports cfg_clk]
+# If the clock buffer location is known, define it for more accuracy in timing analysis
+set_property CLOCK_BUFFER_TYPE BUFGCE [get_ports cfg_clk]
+
+create_clock -period $PRC_CLK_PERIOD -name PRC_CLK [get_ports prc_clk]
+# If the clock buffer location is known, define it for more accuracy in timing analysis
+set_property CLOCK_BUFFER_TYPE BUFGCE [get_ports prc_clk]
+
+create_clock -period $CLK_PERIOD -name CLK [get_ports clk]
+# If the clock buffer location is known, define it for more accuracy in timing analysis
+set_property CLOCK_BUFFER_TYPE BUFGCE [get_ports clk]

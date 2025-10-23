@@ -877,7 +877,7 @@ if __name__ == '__main__':
             arg_l.append(os.path.join(PROJECT_DIR,"hw","syn","vivado","vivado_properties_ooc.tcl"))
         # else set pin assignment
         else:
-            arg_l.append(os.path.join(PROJECT_DIR,"hw","syn","vivado", os.environ["PROJECT_TARGET"]+"_pin_assignment.tcl"))
+            arg_l.append(os.path.join(PROJECT_DIR,"versal","constraints", os.environ["PROJECT_TARGET"]+"_pin_assignment.tcl"))
         hooks_d["post_configure"].append({"cmd" : [script]+arg_l,
                                           "name": "Modify Vivado build stage",
                                           "env" : {}})
