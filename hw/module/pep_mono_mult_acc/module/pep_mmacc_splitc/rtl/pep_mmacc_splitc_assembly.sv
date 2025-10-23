@@ -101,7 +101,7 @@ module pep_mmacc_splitc_assembly
 
   // From Seq
   input  logic                                                   seq_boram_corr_wr_en,
-  input  logic [KS_MAX_ERROR_W-1:0]                              seq_boram_corr_data,
+  input  logic [KS_CORR_W-1:0]                                   seq_boram_corr_data,
   input  logic [PID_W-1:0]                                       seq_boram_corr_pid,
 
   // BSK

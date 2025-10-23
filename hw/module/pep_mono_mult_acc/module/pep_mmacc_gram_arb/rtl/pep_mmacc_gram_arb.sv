@@ -27,6 +27,7 @@ module pep_mmacc_gram_arb
   input  logic [GARB_CMD_W-1:0] mmacc_garb_req,
   input  logic                  mmacc_garb_req_vld,
   output logic                  mmacc_garb_req_rdy,
+  input  logic                  mmacc_garb_critical,
 
   output logic                  garb_mmfeed_grant, // request granted. Avail will be set for next-next time slot
   output logic                  garb_mmacc_grant,  // "
@@ -78,8 +79,6 @@ module pep_mmacc_gram_arb
     end
   endgenerate
 
-
-
 // ============================================================================================== --
 // Input Pipe
 // ============================================================================================== --
@@ -91,6 +90,9 @@ module pep_mmacc_gram_arb
   logic [REQ_NB-1:0]      s0_req_vld;
   logic [REQ_NB-1:0]      s0_req_rdy;
 
+  logic [REQ_NB-1:0]      s0_req_critical;
+  logic [REQ_NB-1:0]      s0_req_criticalD;
+
   assign in_req[FEED_REQ]     = mmfeed_garb_req;
   assign in_req_vld[FEED_REQ] = mmfeed_garb_req_vld;
   assign mmfeed_garb_req_rdy  = in_req_rdy[FEED_REQ];
@@ -98,6 +100,13 @@ module pep_mmacc_gram_arb
   assign in_req[ACC_REQ]      = mmacc_garb_req;
   assign in_req_vld[ACC_REQ]  = mmacc_garb_req_vld;
   assign mmacc_garb_req_rdy   = in_req_rdy[ACC_REQ];
+
+  assign s0_req_criticalD[FEED_REQ] = 1'b0;
+  assign s0_req_criticalD[ACC_REQ]  = mmacc_garb_critical;
+
+  always_ff @(posedge clk)
+    if (!s_rst_n) s0_req_critical <= '0;
+    else          s0_req_critical <= s0_req_criticalD;
 
   generate
     for (genvar gen_i=0; gen_i<REQ_NB; gen_i=gen_i+1) begin : gen_in_loop
@@ -263,18 +272,25 @@ module pep_mmacc_gram_arb
   // To prevent feed to wait too long, and create bubbles, check that
   // feed is not asking the same GRID
   logic [GRAM_NB-1:0] a0_feed_requesting;
-  logic [GRAM_NB-1:0] a1_feed_already_arbitrated_prev; // set by previous arbitration round
+  logic [GRAM_NB-1:0] a1_feed_next_grid;
+  logic               a1_feed_next_grid_avail;
   always_comb
     for (int g=0; g<GRAM_NB; g=g+1)
-      a0_feed_requesting[g] = s0_req_vld[FEED_REQ] & (s0_req[FEED_REQ].grid == g);
+      a0_feed_requesting[g] = s0_req_vld[FEED_REQ] & (
+                                 (s0_req[FEED_REQ].grid == g)
+                                 // Also prevent arbitration when the feed's next request is the same
+                                 // grid. This occurs because the arbitrations overlap.
+                                 // TOREVIEW if the overlap disappears.
+                                |((s0_req[FEED_REQ].next_grid == g) & s0_req[FEED_REQ].next_grid_avail));
 
-  // Do not give priority to feed, when this later is requesting, but not twice in a row
+  // Give priority to feed, except when the infifo is almost full (critical)
   always_comb
     for (int g=0; g<GRAM_NB; g=g+1)
       a0_planning_mask_acc[g] = slot_is_free[PA][g] && slot_is_free_accstart[g]
                                 && (s0_req[ACC_REQ].grid == g) && s0_req_vld[ACC_REQ]
                                 && !a0_already_arbitrated
-                                && !(a0_feed_requesting[g] && !a1_feed_already_arbitrated_prev[g] && !s0_req[ACC_REQ].critical)
+                                && !(a0_feed_requesting[g] && !s0_req_critical[ACC_REQ])
+                                && !((a1_feed_next_grid == g) && a1_feed_next_grid_avail && !s0_req_critical[ACC_REQ])
                                 ? (1 << ACC_SRC) : '0;
 
   // -------------------------------------------------------------------------------------------- --
@@ -295,26 +311,54 @@ module pep_mmacc_gram_arb
       for (int p=0; p<PORT_NB; p=p+1)
         a1_already_arbitrated_a[p][g] = planning[p][g][ARB_SLOT][FEED_SRC];
 
-  // To avoid infifo overflow, do not arbitrate twice in a row the feed on the same grid
-  // when acc is asking the same location.
-  logic [GRAM_NB-1:0]                  a1_feed_already_arbitrated_prevD;
-  logic [GRAM_NB-1:0]                  a1_feed_already_arbitrated_prevD_tmp;
   logic                                a1_do_not_arbitrate;
-
-  assign a1_feed_already_arbitrated_prevD_tmp = a1_already_arbitrated_a[PA] | a1_already_arbitrated_a[PB];
-  assign a1_feed_already_arbitrated_prevD     = st_arb_feed ? a1_feed_already_arbitrated_prevD_tmp : a1_feed_already_arbitrated_prev;
-
-  always_ff @(posedge clk)
-    if (!s_rst_n) a1_feed_already_arbitrated_prev <= '0;
-    else          a1_feed_already_arbitrated_prev <= a1_feed_already_arbitrated_prevD;
 
   assign a1_do_not_arbitrate = a1_planning_mask_acc[s0_req[FEED_REQ].grid][ACC_SRC];
 
+  logic [GRAM_NB-1:0] a1_planning_mask_feed_cond;
+
   always_comb
     for (int g=0; g<GRAM_NB; g=g+1)
-      a1_planning_mask[g] =  slot_is_free[PA][g] && slot_is_free_feedstart[g]
-                             && (s0_req[FEED_REQ].grid == g) && s0_req_vld[FEED_REQ]
-                             && ~a1_already_arbitrated && ~a1_do_not_arbitrate       ? (1 << FEED_SRC) : a1_planning_mask_acc[g];
+      a1_planning_mask_feed_cond[g] =  slot_is_free[PA][g] & slot_is_free_feedstart[g]
+                                      & (s0_req[FEED_REQ].grid == g) & s0_req_vld[FEED_REQ]
+                                      & ~a1_already_arbitrated & ~a1_do_not_arbitrate;
+
+  always_comb
+    for (int g=0; g<GRAM_NB; g=g+1)
+      a1_planning_mask[g] =  a1_planning_mask_feed_cond[g] ?
+                             (1 << FEED_SRC) : a1_planning_mask_acc[g];
+
+  // The feed informs the existence of the next request, and the next targeted GRAM.
+  logic [GRAM_NB-1:0] a1_feed_next_gridD;
+  logic               a1_feed_next_grid_availD;
+
+  assign a1_feed_next_gridD       = (|a1_planning_mask_feed_cond && st_arb_feed)? s0_req[FEED_REQ].next_grid : a1_feed_next_grid;
+  assign a1_feed_next_grid_availD = (|a1_planning_mask_feed_cond && st_arb_feed)? s0_req[FEED_REQ].next_grid_avail : a1_feed_next_grid_avail;
+
+  always_ff @(posedge clk)
+    if (!s_rst_n) begin
+      a1_feed_next_grid_avail         <= 1'b0;
+    end
+    else begin
+      a1_feed_next_grid_avail         <= a1_feed_next_grid_availD;
+    end
+
+  always_ff @(posedge clk)
+    a1_feed_next_grid <= a1_feed_next_gridD;
+
+// pragma translate_off
+  always_ff @(posedge clk)
+    if (!s_rst_n) begin
+      // Do nothing
+    end
+    else begin
+      if (st_arb_feed && s0_req_vld[FEED_REQ] && a1_feed_next_grid_avail)
+        assert(a1_feed_next_grid == s0_req[FEED_REQ].grid) else begin
+          $fatal(1,"%t > ERROR: In GARB the previously reserved GRAM ID (%0d) does not correspond to the current request GRAM ID (%0d)",
+          $time, a1_feed_next_grid, s0_req[FEED_REQ].grid);
+        end
+    end
+// pragma translate_on
 
   // -------------------------------------------------------------------------------------------- --
   // ST_ARB_GRANT : Update planning

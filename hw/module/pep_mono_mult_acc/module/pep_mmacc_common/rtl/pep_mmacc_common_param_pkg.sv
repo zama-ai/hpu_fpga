@@ -87,7 +87,8 @@ package pep_mmacc_common_param_pkg;
   localparam int MMACC_FEED_CMD_W = $bits(mmacc_feed_cmd_t);
 
   typedef struct packed {
-    logic                    critical;
+    logic                    next_grid_avail; // used in feed only
+    logic [GRAM_ID_W-1:0]    next_grid;       // used in feed only
     logic [GRAM_ID_W-1:0]    grid;
   } garb_cmd_t;
 

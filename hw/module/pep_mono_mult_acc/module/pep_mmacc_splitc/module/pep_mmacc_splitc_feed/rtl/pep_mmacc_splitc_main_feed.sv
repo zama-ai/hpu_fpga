@@ -62,7 +62,7 @@ module pep_mmacc_splitc_main_feed
 
   // From acc
   input  logic                                                           acc_feed_done,
-  input  logic [BPBS_ID_W-1:0]                                           acc_feed_done_map_idx,
+  input  logic [PID_W-1:0]                                               acc_feed_done_pid,
 
   // GRAM
   output logic [GRAM_NB-1:0][MAIN_PSI-1:0][R-1:0][1:0]                    feed_gram_rd_en,
@@ -184,7 +184,7 @@ module pep_mmacc_splitc_main_feed
     .feed_afifo_rdy          (feed_afifo_rdy),
 
     .acc_feed_done           (acc_feed_done),
-    .acc_feed_done_map_idx   (acc_feed_done_map_idx),
+    .acc_feed_done_pid       (acc_feed_done_pid),
 
     .feed_gram_rd_en         (feed_gram_rd_en),
     .feed_gram_rd_add        (feed_gram_rd_add),

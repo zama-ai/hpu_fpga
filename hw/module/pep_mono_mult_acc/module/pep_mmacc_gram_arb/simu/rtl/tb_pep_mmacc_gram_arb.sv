@@ -89,6 +89,7 @@ module tb_pep_mmacc_gram_arb;
   logic [GARB_CMD_W-1:0] mmacc_garb_req;
   logic                  mmacc_garb_req_vld;
   logic                  mmacc_garb_req_rdy;
+  logic                  mmacc_garb_critical;
 
   logic                  garb_mmfeed_grant;
   logic                  garb_mmacc_grant;
@@ -114,6 +115,7 @@ module tb_pep_mmacc_gram_arb;
     .mmacc_garb_req          (mmacc_garb_req),
     .mmacc_garb_req_vld      (mmacc_garb_req_vld),
     .mmacc_garb_req_rdy      (mmacc_garb_req_rdy),
+    .mmacc_garb_critical (mmacc_garb_critical),
 
     .garb_mmfeed_grant       (garb_mmfeed_grant),
     .garb_mmacc_grant        (garb_mmacc_grant),
@@ -147,6 +149,11 @@ module tb_pep_mmacc_gram_arb;
   assign garb_req_rdy[0] = mmfeed_garb_req_rdy;
   assign garb_req_rdy[1] = mmacc_garb_req_rdy ;
 
+
+  always_ff @(posedge clk)
+    if (!s_rst_n) mmacc_garb_critical  <= 1'b0;
+    else          mmacc_garb_critical  <= mmacc_garb_req_rdy && mmacc_garb_req_vld ? $urandom() : mmacc_garb_critical;
+
   generate
     for (genvar gen_i=0; gen_i<REQ_NB; gen_i=gen_i+1) begin : gen_req_loop
       integer      after_grant_cnt;
@@ -162,10 +169,11 @@ module tb_pep_mmacc_gram_arb;
                                          after_grant_cnt > 0  && after_grant_cnt < 'hFFFF ? after_grant_cnt +1 : after_grant_cnt;
 
       assign do_req = after_grant_cnt >= (GLWE_SLOT_NB-1)*GARB_SLOT_CYCLE;
-      assign garb_req_vld[gen_i]     = req_vld & do_req;
-      assign req_rdy                 = garb_req_rdy[gen_i] & do_req;
-      assign garb_req[gen_i].grid    = req_cnt % GRAM_NB;
-      assign garb_req[gen_i].critical = ^req_cnt; // random value
+      assign garb_req_vld[gen_i]             = req_vld & do_req;
+      assign req_rdy                         = garb_req_rdy[gen_i] & do_req;
+      assign garb_req[gen_i].grid            = req_cnt % GRAM_NB;
+      assign garb_req[gen_i].next_grid       = (req_cnt+1) % GRAM_NB;
+      assign garb_req[gen_i].next_grid_avail = ^(req_cnt[15:8] + req_cnt[7:0]); // random value
 
       stream_source
       #(

@@ -100,8 +100,6 @@ module pep_sequencer
   localparam int TOTAL_PBS_NB_EXT   = RANK_LINE_NB * RANK_NB * GRAM_NB;
   localparam int TOTAL_PBS_NB_DIFF  = TOTAL_PBS_NB_EXT - TOTAL_PBS_NB;
 
-  localparam int RANK_OFS_INC       = (TOTAL_PBS_NB/GRAM_NB) % RANK_NB;
-
   localparam int CORR_BUF_DEPTH     = 2; // 1 free location + 1 waiting.
 
 // Check
@@ -360,7 +358,6 @@ module pep_sequencer
   pointer_t              pbs_in_wp;
   logic [LWE_K_W-1:0]    pbs_in_loop;
   logic                  pbs_in_loop_c; // Used in simulation to avoid wrapping.
-  logic [RANK_W-1:0]     pbs_in_rp_rank_ofs;
 
   logic                  loop_full; // Necessary in simulation to avoid wrapping, because LWE_K is too small.
   logic                  loop_full_tmp;
@@ -1104,7 +1101,7 @@ module pep_sequencer
 // is already in the pipe:
 //   pbs_in_st_upd_0, pbs_in_st_upd_1, pbs_send_st_wrap, pbs_send_st_send.
 // Step 0 : wrap on RANK_NB*GRAM_NB lines
-// Step 1 : rotate
+// Step 1 : find rp_map_idx
 // Step 2 : Send - update ct_pool
 //
 // Particular case:
@@ -1186,14 +1183,14 @@ module pep_sequencer
   ct_info_t [TOTAL_PBS_NB_EXT-1:0]                       r0_pool_ext_masked;
   ct_info_t [RANK_LINE_NB-1:0][RANK_NB-1:0][GRAM_NB-1:0] r0_pool_ext_masked_a;
   ct_info_t [RANK_NB-1:0][GRAM_NB-1:0]                   r0_pool_wrap;
-  logic [RANK_W-1:0]                                     r0_rot;
   ct_info_t [TOTAL_PBS_NB_DIFF-1:0]                      ct_pool_ext;
 
+  logic [TOTAL_PBS_NB_EXT-1:0]                           r0_rp_1h;
+  logic [RANK_LINE_NB-1:0][RANK_NB-1:0][GRAM_NB-1:0]     r0_rp_1h_a;
+  logic [RANK_NB-1:0][GRAM_NB-1:0]                       r0_rp_1h_wrap;
   assign ct_pool_ext = ct_pool; // extend with 0s if needed
 
-  // Rotation factor. To rotate the wrapped array
-  assign r0_rot = pbs_in_rp_rank_ofs == 0 ? '0 : RANK_NB - pbs_in_rp_rank_ofs;
-
+  assign r0_rp_1h    = TOTAL_PBS_NB_EXT'(1) << pbs_in_rp.pt;
   assign r0_mask_rpB = {TOTAL_PBS_NB_EXT{1'b1}} << pbs_in_rp.pt;
   assign r0_mask_wp  = (1 << pbs_in_wp.pt)-1;
   assign r0_mask     = (pbs_in_rp.c != pbs_in_wp.c) ? r0_mask_rpB & {r0_mask_wp[0+:TOTAL_PBS_NB_DIFF], {TOTAL_PBS_NB{1'b1}}}: r0_mask_rpB & r0_mask_wp;
@@ -1204,11 +1201,15 @@ module pep_sequencer
       r0_pool_ext_masked[i] = r0_pool_ext[i] & {CT_INFO_W{r0_mask[i]}};
 
   assign r0_pool_ext_masked_a  = r0_pool_ext_masked; // Cast
+  assign r0_rp_1h_a            = r0_rp_1h; // Cast
 
   always_comb begin
-    r0_pool_wrap = '0;
-    for (int i=0; i<RANK_LINE_NB; i=i+1)
-      r0_pool_wrap = r0_pool_wrap | r0_pool_ext_masked_a[i];
+    r0_pool_wrap  = '0;
+    r0_rp_1h_wrap = '0;
+    for (int i=0; i<RANK_LINE_NB; i=i+1) begin
+      r0_pool_wrap  = r0_pool_wrap | r0_pool_ext_masked_a[i];
+      r0_rp_1h_wrap = r0_rp_1h_wrap | r0_rp_1h_a[i];
+    end
   end
 
 // pragma translate_off
@@ -1225,7 +1226,6 @@ module pep_sequencer
 // pragma translate_on
 
   //== Step 1
-  logic [RANK_W-1:0]                     r1_rot;
   ct_info_t [RANK_NB-1:0][GRAM_NB-1:0]   r1_pool_wrap;
   map_elt_t [RANK_NB-1:0][GRAM_NB-1:0]   r1_map_tmp;
   map_elt_t [RANK_NB*2-1:0][GRAM_NB-1:0] r1_map_tmp_ext;
@@ -1235,12 +1235,25 @@ module pep_sequencer
   logic [LWE_K_W-1:0]                    pbs_in_last_loop;
   logic [PID_WW-1:0]                     r1_ct_nb;
   corr_elt_t [RANK_NB-1:0][GRAM_NB-1:0]  r1_corr_map;
+  logic [RANK_NB-1:0][GRAM_NB-1:0]       r1_rp_1h_wrap;
+  logic [RANK_NB*GRAM_NB-1:0]            r1_rp_1h_wrap_a;
+  logic [BPBS_ID_W-1:0]                  r1_rp_map_idx;
 
   always_ff @(posedge clk) begin
-    r1_rot       <= r0_rot;
-    r1_pool_wrap <= r0_pool_wrap;
-    r1_ct_nb     <= pbs_in_ct_nb;
+    r1_pool_wrap  <= r0_pool_wrap;
+    r1_ct_nb      <= pbs_in_ct_nb;
+    r1_rp_1h_wrap <= r0_rp_1h_wrap;
   end
+
+  // Find the rp location within the map.
+  assign r1_rp_1h_wrap_a = r1_rp_1h_wrap;
+
+  common_lib_one_hot_to_bin #(
+    .ONE_HOT_W (RANK_NB*GRAM_NB)
+  ) r1common_lib_one_hot_to_bin (
+    .in_1h     (r1_rp_1h_wrap_a),
+    .out_value (r1_rp_map_idx)
+  );
 
   // Start loop index, for which current br_loop represents the last one.
   assign pbs_in_last_loop = pbs_in_loop == LWE_K-1 ? '0 : pbs_in_loop+1;
@@ -1262,11 +1275,7 @@ module pep_sequencer
         r1_corr_map[i][j].pid           = r1_pool_wrap[i][j].pid.pid;
       end
 
-  // Rotate
-  assign r1_map_tmp_ext = {2{r1_map_tmp}};
-  always_comb
-    for (int i=0; i<RANK_NB; i=i+1)
-      r1_map[i] = r1_map_tmp_ext[i+r1_rot];
+  assign r1_map = r1_map_tmp;
 
   // Rename
   always_comb
@@ -1285,18 +1294,21 @@ module pep_sequencer
   map_elt_t [RANK_NB-1:0][GRAM_NB-1:0] r2_map;
   logic [BPBS_NB_WW-1:0]               r2_last_nb;
   logic [PID_W-1:0]                    r2_ct_nb_m1;
+  logic [BPBS_ID_W-1:0]                r2_rp_map_idx;
   pbs_cmd_t                            seq_pbs_cmd_s;
 
   always_ff @(posedge clk) begin
-    r2_map      <= r1_map;
-    r2_last_nb  <= r1_last_nb;
-    r2_ct_nb_m1 <= r1_ct_nb - 1;
+    r2_map        <= r1_map;
+    r2_last_nb    <= r1_last_nb;
+    r2_ct_nb_m1   <= r1_ct_nb - 1;
+    r2_rp_map_idx <= r1_rp_map_idx;
   end
 
   assign seq_pbs_cmd_s.br_loop   = pbs_in_loop;
   assign seq_pbs_cmd_s.map       = r2_map;
   assign seq_pbs_cmd_s.ct_nb_m1  = pbs_in_cmd_flush ? '0 : r2_ct_nb_m1;
   assign seq_pbs_cmd_s.is_flush  = pbs_in_cmd_flush;
+  assign seq_pbs_cmd_s.rp_map_idx = r2_rp_map_idx;
   assign seq_pbs_cmd             = seq_pbs_cmd_s;
   assign seq_pbs_cmd_avail       = pbs_send_st_send;
 
@@ -1305,27 +1317,17 @@ module pep_sequencer
   logic [LWE_K_W-1:0]    pbs_in_loopD;
   logic                  pbs_in_loop_cD;
   logic                  pbs_in_rp_wrap;
-  logic [RANK_W-1:0]     pbs_in_rp_rank_ofsD;
 
   assign pbs_in_rp_wrap      = pt_inc_any_wrap(pbs_in_rp,r2_last_nb);
   assign pbs_in_rpD          = pbs_send_st_send ? pt_inc_any(pbs_in_rp,r2_last_nb) : pbs_in_rp;
-  assign pbs_in_rp_rank_ofsD = pbs_send_st_send && pbs_in_rp_wrap ?
-                                pbs_in_rp_rank_ofs + RANK_OFS_INC < RANK_NB ? pbs_in_rp_rank_ofs + RANK_OFS_INC : pbs_in_rp_rank_ofs + RANK_OFS_INC - RANK_NB :
-                                pbs_in_rp_rank_ofs;
 
   // Update the BR loop index
   assign pbs_in_loopD        = pbs_send_st_send ? pbs_in_loop == LWE_K-1 ? '0 : pbs_in_loop + 1 : pbs_in_loop;
   assign pbs_in_loop_cD      = pbs_send_st_send && (pbs_in_loop == LWE_K-1) ? ~pbs_in_loop_c : pbs_in_loop_c;
 
   always_ff @(posedge clk)
-    if (!s_rst_n) begin
-      pbs_in_rp          <= '0;
-      pbs_in_rp_rank_ofs <= '0;
-    end
-    else begin
-      pbs_in_rp          <= pbs_in_rpD;
-      pbs_in_rp_rank_ofs <= pbs_in_rp_rank_ofsD;
-    end
+    if (!s_rst_n) pbs_in_rp <= '0;
+    else          pbs_in_rp <= pbs_in_rpD;
 
   always_ff @(posedge clk)
     if (!s_rst_n || reset_clear) begin
@@ -1357,8 +1359,10 @@ module pep_sequencer
 
   always_ff @(posedge clk)
     if (!use_bpip && pbs_send_st_send) begin
-      $display("%t > INFO: PEP sequencer: PBS loop (%1d,%0d) sent with %0d ct (pbs_in_wp={%1d, %0d}, pbs_in_rp={%1d, %0d})",
-        $time, pbs_in_loop_c, pbs_in_loop, pt_elt_nb(pbs_in_wp,pbs_in_rp),pbs_in_wp.c,pbs_in_wp.pt,pbs_in_rp.c,pbs_in_rp.pt);
+      $display("%t > INFO: PEP sequencer: PBS loop (%1d,%0d) sent with %0d ct, br_loop=%0d (pbs_in_wp={%1d, %0d}, pbs_in_rp={%1d, %0d})",
+        $time, pbs_in_loop_c, pbs_in_loop, pt_elt_nb(pbs_in_wp,pbs_in_rp),
+        seq_pbs_cmd_s.br_loop,
+        pbs_in_wp.c,pbs_in_wp.pt,pbs_in_rp.c,pbs_in_rp.pt);
     end
 
 // pragma translate_on

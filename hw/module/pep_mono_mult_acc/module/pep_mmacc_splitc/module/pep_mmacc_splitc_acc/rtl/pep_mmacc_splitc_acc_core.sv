@@ -48,6 +48,7 @@ module pep_mmacc_splitc_acc_core
   output logic [GARB_CMD_W-1:0]                                    acc_garb_req,
   output logic                                                     acc_garb_req_vld,
   input  logic                                                     acc_garb_req_rdy,
+  output logic                                                     acc_garb_critical,
 
   input  logic [GRAM_NB-1:0]                                       garb_acc_rd_avail_1h,
   input  logic [GRAM_NB-1:0]                                       garb_acc_wr_avail_1h,
@@ -73,7 +74,7 @@ module pep_mmacc_splitc_acc_core
 
   // Status
   output logic                                                     acc_feed_done,
-  output logic [BPBS_ID_W-1:0]                                     acc_feed_done_map_idx,
+  output logic [PID_W-1:0]                                         acc_feed_done_pid,
   output logic                                                     br_loop_proc_done,
 
   output logic [ACC_CORE_ERROR_W-1:0]                              error // [0] gram write access error
@@ -161,6 +162,7 @@ module pep_mmacc_splitc_acc_core
     .acc_garb_req         (acc_garb_req),
     .acc_garb_req_vld     (acc_garb_req_vld),
     .acc_garb_req_rdy     (acc_garb_req_rdy),
+    .acc_garb_critical    (acc_garb_critical),
 
     .garb_acc_rd_avail_1h (garb_acc_rd_avail_1h),
 
@@ -182,7 +184,7 @@ module pep_mmacc_splitc_acc_core
     .acc_sfifo_avail      (acc_sfifo_avail),
 
     .acc_feed_done       (acc_feed_done),
-    .acc_feed_done_map_idx (acc_feed_done_map_idx),
+    .acc_feed_done_pid   (acc_feed_done_pid),
     .br_loop_proc_done   (br_loop_proc_done),
 
     .error               (error[INFIFO_OVF_ERROR_OFS])

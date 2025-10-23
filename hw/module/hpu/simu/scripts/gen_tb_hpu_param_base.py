@@ -112,17 +112,18 @@ def cstr_regf_lby (regf_seq, regf_coef, lby):
     else:
         return True
 
-def cstr_mmacc_infifo (r, s, psi, glwe_k):
+def cstr_mmacc_infifo (r, s, psi, glwe_k, gram_nb):
     """
-    MMACC infifo is composed of 1 BRAM depth, to avoid using to many BRAMs.
+    MMACC infifo is composed of 1 BRAM depth, to avoid using too many BRAMs.
     Therefore the parameters must fulfill the constraint that this
     RAM cannot overflow.
     Actually, for the system to work, this RAM should be able to store at
-    least MIN_INFIFO_CT_NB entire ciphertext.
+    least MIN_INFIFO_CT_NB + GRAM_NB entire ciphertext.
     """
     n = r ** s
     coef = r * psi
-    return ((BRAM_DEPTH / ((n * (glwe_k+1)) // coef)) >= MIN_INFIFO_CT_NB)
+    infifo_min_ct = MIN_INFIFO_CT_NB + gram_nb
+    return ((BRAM_DEPTH / ((n * (glwe_k+1)) // coef)) >= infifo_min_ct)
 
 def cstr_run5 (s, glwe_k):
     """
@@ -219,6 +220,7 @@ if __name__ == '__main__':
     r1.add_rand_var("REGF_COEF_NB"  , fn=rand_power_of, args=(2,4,64), order=1)
     r1.add_rand_var("REGF_SEQ"      , fn=rand_power_of, args=(2,1,8), order=1)
     r1.add_rand_var("USE_MEAN_COMP" , domain=range(set_val(args.use_mean_comp,0),set_val(args.use_mean_comp,1)+1), order=0)
+    r1.add_rand_var("GRAM_NB"       , domain=range(3,4+1), order=1)
 
     r3.add_rand_var("USE_BPIP"      , domain={0: 1,1: 4}) # To keep some runs with IPIP (20%)
     r3.add_rand_var("RAM_LATENCY"   , domain=range(1,3+1))
@@ -240,7 +242,7 @@ if __name__ == '__main__':
     r1.add_constraint(cstr_ksk_w, ('LBZ', 'MOD_KSK_W'))
     r1.add_constraint(cstr_regf_seq, ('REGF_SEQ', 'REGF_COEF_NB'))
     r1.add_constraint(cstr_regf_lby, ('REGF_SEQ', 'REGF_COEF_NB', 'LBY'))
-    r1.add_constraint(cstr_mmacc_infifo,('R', 'S', 'PSI', 'GLWE_K'))
+    r1.add_constraint(cstr_mmacc_infifo,('R', 'S', 'PSI', 'GLWE_K', 'GRAM_NB'))
     r1.add_constraint(cstr_run4, ('R', 'PSI', 'PBS_L', 'LBY', 'LBZ', 'KS_L'))
     r1.add_constraint(cstr_run5, ('S', 'GLWE_K'))
     r1.add_constraint(cstr_gram_arb, ('R','PSI','S'))

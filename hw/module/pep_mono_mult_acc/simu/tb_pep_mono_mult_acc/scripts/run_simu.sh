@@ -62,7 +62,6 @@ echo -n "" > $TMP_FILE
 
 INST_THROUGHPUT_L=("10" "50" "100")
 PHYS_RAM_DEPTH=1024
-MIN_INFIFO_CT_NB=3
 GARB_DIST=8 # Distance between 1rst and 2nd arbitration of dat/rot for feed or rd/wr for acc
 MSPLIT_TYPE_L=("PEP_MSPLIT_main2_subs2" "PEP_MSPLIT_main1_subs3" "PEP_MSPLIT_main3_subs1")
 SLR_LATENCY_L=(0 2 4 6)
@@ -73,6 +72,9 @@ for i in `seq 1 5`; do
     GLWE_K=$((1+$RANDOM % 3)) # Random value from 1 to 3
 
     N=$((2**$S))
+
+    GRAM_NB=$((3+$RANDOM % 2))
+    MIN_INFIFO_CT_NB=$(($GRAM_NB+2))
 
     # Split version only supports STG_ITER > 1
     PSI=$((2+$RANDOM % 5))
@@ -85,7 +87,6 @@ for i in `seq 1 5`; do
 
     MOD_Q_W=$((32+$RANDOM % 33))
 
-    GRAM_NB=$((3+$RANDOM % 2))
     BATCH_PBS_NB=$((1+$RANDOM % 8))
     BATCH_PBS_NB=$(($GRAM_NB * $BATCH_PBS_NB))
     TOTAL_PBS_NB=$((1 + $RANDOM % 5))

@@ -125,6 +125,7 @@ module pep_mmacc_splitc_feed_entry
 // During this stage
 // - extract the pid map info from the command
 // - Send command for the accumulate part.
+// For each batch, spend 1 cycle to start, to initialize the first map_id.
 
   pbs_cmd_t                    ffifo_feed_pcmd_s;
 
@@ -148,39 +149,51 @@ module pep_mmacc_splitc_feed_entry
   logic                        fm2_ct_avail; //available for the process
 
   logic                        fm2_do_proc;
-  logic                        fm2_do_bypass;
   logic                        fm2_do_flush;
   logic                        fm2_do_flush_tmp;
 
   map_elt_t [BATCH_PBS_NB-1:0] fm2_map;
+
+  logic                        fm2_do_init;
+  logic                        fm2_do_initD;
+  logic                        fm2_boundary_map_id;
 
   // Cast
   assign ffifo_feed_pcmd_s = ffifo_feed_pcmd; // cast
   assign fm2_map           = ffifo_feed_pcmd_s.map; // cast
   assign fm2_last_pbs_cnt  = fm2_pbs_cnt == ffifo_feed_pcmd_s.ct_nb_m1;
   assign fm2_first_pbs_cnt = fm2_pbs_cnt == '0;
+  assign fm2_boundary_map_id = fm2_map_idx == BPBS_NB_W'(BATCH_PBS_NB-1);
 
   assign fm2_map_elt       = fm2_map[fm2_map_idx];
   assign fm2_pbs_cntD      = fm2_do_proc ? fm2_last_pbs_cnt ? '0 : fm2_pbs_cnt + 1 : fm2_pbs_cnt;
-  assign fm2_map_idxD      = (fm2_do_proc || fm2_do_bypass) ? (fm2_do_proc && fm2_last_pbs_cnt) ? '0 : fm2_map_idx + 1 : fm2_map_idx;
+  assign fm2_map_idxD      = fm2_do_init ? ffifo_feed_pcmd_s.rp_map_idx:
+                             fm2_do_proc ? fm2_boundary_map_id ? '0 : fm2_map_idx + 1 :
+                             fm2_map_idx;
+  assign fm2_do_initD      = ffifo_feed_vld && ffifo_feed_rdy ? 1'b1 :
+                             ffifo_feed_vld && ~ffifo_feed_pcmd_s.is_flush ? 1'b0 : fm2_do_init;
 
   always_ff @(posedge clk)
     if (!s_rst_n) begin
-      fm2_map_idx   <= '0;
       fm2_pbs_cnt   <= '0;
+      fm2_do_init   <= 1'b1;
     end
     else begin
-      fm2_map_idx   <= fm2_map_idxD;
       fm2_pbs_cnt   <= fm2_pbs_cntD;
+      fm2_do_init   <= fm2_do_initD;
     end
+
+  always_ff @(posedge clk)
+    fm2_map_idx   <= fm2_map_idxD;
 
   //== Control
   logic fm2_do_proc_tmp;
   logic fm2_do_proc_tmp2;
-  assign fm2_do_proc_tmp2 = ~bsk_empty & ~ffifo_feed_pcmd_s.is_flush
+  assign fm2_do_proc_tmp2 = ~fm2_do_init
+                            & ~bsk_empty
+                            & ~ffifo_feed_pcmd_s.is_flush
                             & fm2_map_elt.avail;
   assign fm2_do_proc_tmp  = ffifo_feed_vld & fm2_do_proc_tmp2;
-  assign fm2_do_bypass    = ffifo_feed_vld & ~fm2_map_elt.avail & ~ffifo_feed_pcmd_s.is_flush;
   assign fm2_do_flush_tmp = ffifo_feed_pcmd_s.is_flush & (~bsk_empty || reset_loop);
   assign fm2_do_flush     = ffifo_feed_vld & fm2_do_flush_tmp;
 
@@ -189,12 +202,35 @@ module pep_mmacc_splitc_feed_entry
   assign ffifo_feed_rdy = fm2_rdy & ((fm2_do_proc_tmp2 & fm2_last_pbs_cnt) | fm2_do_flush_tmp);
 
 // pragma translate_off
+  logic _fm2_do_bypass;
+  assign _fm2_do_bypass    = ffifo_feed_vld & ~fm2_map_elt.avail & ~ffifo_feed_pcmd_s.is_flush;
+
   always_ff @(posedge clk)
     if (ffifo_feed_vld && ffifo_feed_pcmd_s.is_flush)
       assert(fm2_do_proc == 1'b0)
       else begin
         $fatal(1,"%t > ERROR: Processing flush command. Should not trigger the regular processing path!", $time);
       end
+
+  always_ff @(posedge clk)
+    if (!s_rst_n) begin
+      // do nothing
+    end
+    else begin
+      if (fm2_do_proc)
+        assert(!_fm2_do_bypass) else begin
+          $fatal(1, "%t > ERROR: Selected a ct in the map that is not valid! map_idx=%0d", $time, fm2_map_idx);
+        end
+    end
+
+// To debug IPIP
+//  always_ff @(posedge clk)
+//    if (fm2_vld && fm2_rdy) begin
+//      $display("%t > INFO: MMACC FEED ENTRY: is_flush=%0d br_loop=%0d pbs_id=%0d map_idx=%0d map_elt=0x%0x",
+//          $time, fm2_mcmd.is_flush, fm2_mcmd.br_loop, fm2_mcmd.pbs_id, fm2_mcmd.map_idx,
+//          fm2_mcmd.map_elt);
+//    end
+
 // pragma translate_on
 
   //== Fork
