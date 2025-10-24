@@ -800,7 +800,7 @@ if [ $GEN_STIMULI -eq 1 ] ; then
                 -F pep_ks_common_definition_pkg.sv KSLB KSLB_x${LBX}y${LBY}z${LBZ} \
                 -F regf_common_definition_pkg.sv REGF_STRUCT REGF_STRUCT_reg${REGF_REG_NB}_coef${REGF_COEF_NB}_seq${REGF_SEQ} \
                 -F hpu_twdfile_definition_pkg.sv HPU_TWDFILE HPU_TWDFILE_simu \
-                -F pea_alu_definition_pkg.sw PEA_ALU PEA_ALU_${PEA_ALU_NB}"
+                -F pea_alu_definition_pkg.sv PEA_ALU PEA_ALU_${PEA_ALU_NB}"
 
   echo "INFO> Running : $file_list_cmd"
   $file_list_cmd || exit 1

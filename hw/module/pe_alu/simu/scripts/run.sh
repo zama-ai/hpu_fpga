@@ -170,7 +170,7 @@ if [ $GEN_STIMULI -eq 1 ] ; then
                 -R pea_alu_definition_pkg.sv simu 0 1 \
                 -F param_tfhe_definition_pkg.sv APPLICATION APPLI_simu \
                 -F regf_common_definition_pkg.sv REGF_STRUCT REGF_STRUCT_reg${REGF_REG_NB}_coef${REGF_COEF_NB}_seq${REGF_SEQ} \
-                -F pea_alu_definition_pkg.sw PEA_ALU PEA_ALU_${PEA_ALU_NB}"
+                -F pea_alu_definition_pkg.sv PEA_ALU PEA_ALU_${PEA_ALU_NB}"
   echo "INFO> Running : $file_list_cmd"
   $file_list_cmd || exit 1
 
