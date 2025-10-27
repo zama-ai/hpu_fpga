@@ -279,10 +279,6 @@ module ksk_manager
   assign s1_batch_cmd_rdy  = s1_do_read_cond & s1_last_lg & s1_last_bline & s1_last_pbs_id;
   assign s1_inc_ksk_rd_ptr = s1_batch_cmd_rdy & s1_batch_cmd_vld;
 
-  always_ff @(posedge clk)
-    if (!s_rst_n) inc_ksk_rd_ptr <= 1'b0;
-    else          inc_ksk_rd_ptr <= s1_inc_ksk_rd_ptr;
-
   // ---------------------------------------------------------------------------------------------- --
   // Read pointer within the slot
   // ---------------------------------------------------------------------------------------------- --
@@ -470,6 +466,7 @@ module ksk_manager
     node_cmd_a[0][0].buf_shift    = buf_shift;
     node_cmd_a[0][0].ram_rd_enD   = ram_rd_enD ;
     node_cmd_a[0][0].ram_rd_addD  = ram_rd_addD;
+    node_cmd_a[0][0].ksk_rp_inc   = s1_inc_ksk_rd_ptr;
 
     node_cmd_a[0][LBY-1:1] = next_y_node_cmd_a[0][LBY-2:0];
 
@@ -565,6 +562,13 @@ module ksk_manager
 
     end
   endgenerate
+
+// ---------------------------------------------------------------------------------------------- --
+// Key rp increment
+// ---------------------------------------------------------------------------------------------- --
+  always_ff @(posedge clk)
+    if (!s_rst_n) inc_ksk_rd_ptr <= 1'b0;
+    else          inc_ksk_rd_ptr <= node_cmd_a[LBX-1][LBY-1].ksk_rp_inc;
 
 // ---------------------------------------------------------------------------------------------- --
 // Errors

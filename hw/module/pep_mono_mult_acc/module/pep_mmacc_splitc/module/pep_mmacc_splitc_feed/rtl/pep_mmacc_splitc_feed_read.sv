@@ -443,7 +443,8 @@ module pep_mmacc_splitc_feed_read
 // pragma translate_off
   always_ff @(posedge clk)
     if (fm1_vld && fm1_rdy) begin
-      $display("%t > INFO: PEP_MMACC_FEED: map_idx=%0d br_loop=%0d is_flush=%0d",$time,fm1_mcmd.map_idx, fm1_mcmd.br_loop,fm1_mcmd.is_flush);
+      $display("%t > INFO: PEP_MMACC_FEED: map_idx=%0d br_loop=%0d lwe=0x%0x is_flush=%0d",$time,
+      fm1_mcmd.map_idx, fm1_mcmd.br_loop,fm1_mcmd.map_elt.lwe,fm1_mcmd.is_flush);
     end
 // pragma translate_on
 

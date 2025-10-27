@@ -32,6 +32,7 @@ package ksk_mgr_common_param_pkg;
 
   //=== Typedef
   typedef struct packed {
+  logic                     ksk_rp_inc;
   logic                     buf_in_avail;
   logic                     buf_shift;
   logic                     ram_rd_enD;
