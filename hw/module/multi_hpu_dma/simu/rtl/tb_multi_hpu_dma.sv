@@ -136,16 +136,19 @@ module tb_multi_hpu_dma;
   logic                       s_axil_dma_rready_hpu_b;
   // QSFP system interface ----------------------------------------------------
   // == TX
-  logic [HPU_NB-1:0][QSFP_LANE_NB-1:0][MRMAC_AXIS_W-1:0 ] qsfp_tx_tdata;
-  logic [HPU_NB-1:0][QSFP_LANE_NB-1:0][MRMAC_TKEEP_W-1:0] qsfp_tx_tkeep_user;
-  logic [HPU_NB-1:0][QSFP_LANE_NB-1:0]                    qsfp_tx_tlast;
-  logic [HPU_NB-1:0][QSFP_LANE_NB-1:0]                    qsfp_tx_tvalid;
-  logic [HPU_NB-1:0][QSFP_LANE_NB-1:0]                    qsfp_tx_tready;
+  logic [QSFP_LANE_NB-1:0][MRMAC_AXIS_W-1:0 ] qsfp_tx_tdata;
+  logic [QSFP_LANE_NB-1:0][MRMAC_TKEEP_W-1:0] qsfp_tx_tkeep_user;
+  logic [QSFP_LANE_NB-1:0]                    qsfp_tx_tlast;
+  logic [QSFP_LANE_NB-1:0]                    qsfp_tx_tvalid;
+  logic [QSFP_LANE_NB-1:0]                    sim_qsfp_tx_tready;
   // == RX
-  logic [HPU_NB-1:0][QSFP_LANE_NB-1:0][MRMAC_AXIS_W-1:0 ] qsfp_rx_tdata;
-  logic [HPU_NB-1:0][QSFP_LANE_NB-1:0][MRMAC_TKEEP_W-1:0] qsfp_rx_tkeep_user;
-  logic [HPU_NB-1:0][QSFP_LANE_NB-1:0]                    qsfp_rx_tlast;
-  logic [HPU_NB-1:0][QSFP_LANE_NB-1:0]                    qsfp_rx_tvalid;
+  logic [QSFP_LANE_NB-1:0][MRMAC_AXIS_W-1:0 ] qsfp_rx_tdata;
+  logic [QSFP_LANE_NB-1:0][MRMAC_TKEEP_W-1:0] qsfp_rx_tkeep_user;
+  logic [QSFP_LANE_NB-1:0]                    qsfp_rx_tlast;
+  logic [QSFP_LANE_NB-1:0]                    qsfp_rx_tvalid;
+
+  // TODO: for now always ready
+  assign sim_qsfp_tx_tready = 4'b1111;
 
   // ============================================================================================== --
   // Design under test instance
@@ -222,16 +225,16 @@ module tb_multi_hpu_dma;
     .s_axil_dma_rvalid (s_axil_dma_rvalid_hpu_a ),
     .s_axil_dma_rready (s_axil_dma_rready_hpu_a ),
 
-    .qsfp_tx_tdata     (qsfp_tx_tdata[0]     ),
-    .qsfp_tx_tkeep_user(qsfp_tx_tkeep_user[0]),
-    .qsfp_tx_tlast     (qsfp_tx_tlast[0]     ),
-    .qsfp_tx_tvalid    (qsfp_tx_tvalid[0]    ),
-    .qsfp_tx_tready    (qsfp_tx_tready[0]    ),
+    .qsfp_tx_tdata     (qsfp_tx_tdata           ),
+    .qsfp_tx_tkeep_user(qsfp_tx_tkeep_user      ),
+    .qsfp_tx_tlast     (qsfp_tx_tlast           ),
+    .qsfp_tx_tvalid    (qsfp_tx_tvalid          ),
+    .qsfp_tx_tready    (sim_qsfp_tx_tready      ),
 
-    .qsfp_rx_tdata     (qsfp_rx_tdata[0]     ),
-    .qsfp_rx_tkeep_user(qsfp_rx_tkeep_user[0]),
-    .qsfp_rx_tlast     (qsfp_rx_tlast[0]     ),
-    .qsfp_rx_tvalid    (qsfp_rx_tvalid[0]    ),
+    .qsfp_rx_tdata     (qsfp_rx_tdata           ),
+    .qsfp_rx_tkeep_user(qsfp_rx_tkeep_user      ),
+    .qsfp_rx_tlast     (qsfp_rx_tlast           ),
+    .qsfp_rx_tvalid    (qsfp_rx_tvalid          ),
 
     .gt_line_rate        (gt_line_rate[0]        ),
     .gt_loopback         (gt_loopback[0]         ),
@@ -270,16 +273,16 @@ module tb_multi_hpu_dma;
     .s_axil_dma_rvalid (s_axil_dma_rvalid_hpu_b ),
     .s_axil_dma_rready (s_axil_dma_rready_hpu_b ),
 
-    .qsfp_tx_tdata     (qsfp_tx_tdata[1]     ),
-    .qsfp_tx_tkeep_user(qsfp_tx_tkeep_user[1]),
-    .qsfp_tx_tlast     (qsfp_tx_tlast[1]     ),
-    .qsfp_tx_tvalid    (qsfp_tx_tvalid[1]    ),
-    .qsfp_tx_tready    (qsfp_tx_tready[1]    ),
+    .qsfp_tx_tdata     (qsfp_rx_tdata),
+    .qsfp_tx_tkeep_user(qsfp_rx_tkeep_user),
+    .qsfp_tx_tlast     (qsfp_rx_tlast),
+    .qsfp_tx_tvalid    (qsfp_rx_tvalid),
+    .qsfp_tx_tready    (sim_qsfp_tx_tready),
 
-    .qsfp_rx_tdata     (qsfp_rx_tdata[1]     ),
-    .qsfp_rx_tkeep_user(qsfp_rx_tkeep_user[1]),
-    .qsfp_rx_tlast     (qsfp_rx_tlast[1]     ),
-    .qsfp_rx_tvalid    (qsfp_rx_tvalid[1]    ),
+    .qsfp_rx_tdata     (qsfp_tx_tdata),
+    .qsfp_rx_tkeep_user(qsfp_tx_tkeep_user),
+    .qsfp_rx_tlast     (qsfp_tx_tlast),
+    .qsfp_rx_tvalid    (qsfp_tx_tvalid),
 
     .gt_line_rate        (gt_line_rate[1]        ),
     .gt_loopback         (gt_loopback[1]         ),
@@ -507,15 +510,19 @@ module tb_multi_hpu_dma;
     iop_src_addr = $urandom();
     iop_dst_addr = $urandom();
 
+    repeat(100) @(posedge clk_control);
     // Sending a NOTIFY from HPU-B to HPU-A -------------------------------------------------------
     notify_reqest(random_hpu_b, random_hpu_a, iop_id, iop_src_addr);
 
     // TODO: add checker
 
+    repeat(100) @(posedge clk_control);
     // Sending a read request from HPU-A to HPU-B -------------------------------------------------
     read_request(random_hpu_b, iop_id, iop_src_addr, iop_dst_addr);
 
     // TODO: add checker
+
+    repeat(100) @(posedge clk_control);
 
     $display("%t > INFO: End simulation",$time);
     repeat(20) @(posedge clk_control);
