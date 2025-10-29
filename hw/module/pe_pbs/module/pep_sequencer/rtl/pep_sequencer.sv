@@ -923,8 +923,7 @@ module pep_sequencer
   typedef enum logic [1:0] {
     FORCE_UPD_XXX  = 'x,
     FORCE_UPD_ACTIVE = '0,
-    FORCE_UPD_WAIT_KS,
-    FORCE_UPD_WAIT_UPD
+    FORCE_UPD_WAIT_KS
   } force_upd_state_e;
 
   force_upd_state_e force_upd_state;
@@ -936,9 +935,7 @@ module pep_sequencer
       FORCE_UPD_ACTIVE:
         next_force_upd_state = (pbs_force_pt != ldb_pt) && pbs_force_pt_is_force ? FORCE_UPD_WAIT_KS : force_upd_state;
       FORCE_UPD_WAIT_KS:
-        next_force_upd_state = ks_in_st_upd_0_dly && (pbs_force_pt == ks_in_wp) ? FORCE_UPD_WAIT_UPD : force_upd_state; // ks_in_wp has taken pbs_force_pt into account.
-      FORCE_UPD_WAIT_UPD :
-        next_force_upd_state = (pbs_force_pt != ldb_pt) ? FORCE_UPD_ACTIVE : force_upd_state;
+        next_force_upd_state = ks_in_st_upd_0_dly && (pbs_force_pt == ks_in_wp) ? FORCE_UPD_ACTIVE : force_upd_state; // ks_in_wp has taken pbs_force_pt into account.
     endcase
   end
 
@@ -948,17 +945,14 @@ module pep_sequencer
 
   logic force_upd_st_active;
   logic force_upd_st_wait_ks;
-  logic force_upd_st_wait_upd;
 
   assign force_upd_st_active   = force_upd_state == FORCE_UPD_ACTIVE;
   assign force_upd_st_wait_ks  = force_upd_state == FORCE_UPD_WAIT_KS;
-  assign force_upd_st_wait_upd = force_upd_state == FORCE_UPD_WAIT_UPD;
 
   assign pbs_force_pt_inc_1    = pt_inc_1(pbs_force_pt);
   assign pbs_force_pt_is_force_tmp = ct_pool_force_pbs & ct_pool_avail;
   assign pbs_force_pt_is_force = pbs_force_pt_is_force_tmp[pbs_force_pt.pt];
-  assign pbs_force_ptD         = ((pbs_force_pt != ldb_pt)
-                                    && (force_upd_st_wait_upd || force_upd_st_active))?
+  assign pbs_force_ptD         = ((pbs_force_pt != ldb_pt) && force_upd_st_active)?
                                   pbs_force_pt_inc_1 : pbs_force_pt;
 
   always_ff @(posedge clk)
