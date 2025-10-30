@@ -31,7 +31,7 @@ module bsk_if_cache_control
     // batch start
     input  logic [TOTAL_BATCH_NB-1:0]               batch_start_1h, // One-hot : can only start 1 at a time.
 
-    // bsk pointer for the KS process path
+    // bsk pointer for the BSK process path
     output logic [TOTAL_BATCH_NB-1:0]               inc_bsk_wr_ptr, // Indicate that the bsk slice is available
     input  logic [TOTAL_BATCH_NB-1:0]               inc_bsk_rd_ptr, // Indicate that the bsk slice has been consumed
 
@@ -66,6 +66,8 @@ module bsk_if_cache_control
   } slot_status_e;
 
   typedef struct packed {
+    logic                      next_assigned;
+    logic [TOTAL_BATCH_NB-1:0] next_batch_id_1h;
     logic                      assigned;
     logic                      parity;
     logic [TOTAL_BATCH_NB-1:0] batch_id_1h;
@@ -340,8 +342,8 @@ module bsk_if_cache_control
       upd_req_br_loop_wp_1hD[i] = qbdc_avail
                               & qbdc_req_id_1h[i]
                               & (qbdc_br_loop == req_a[i].br_loop_wp[LWE_K_W-1:0])
-                              & req_a[i].assigned
-                              & req_a[i].parity == req_a[i].br_loop_wp[LWE_K_W];
+                              & ((req_a[i].assigned & req_a[i].parity == req_a[i].br_loop_wp[LWE_K_W])
+                                |(req_a[i].next_assigned & req_a[i].parity != req_a[i].br_loop_wp[LWE_K_W]));
 
   always_ff @(posedge clk)
     if (!s_rst_n) upd_req_br_loop_wp_1h <= 1'b0;
@@ -365,6 +367,8 @@ module bsk_if_cache_control
   logic [BATCH_NB-1:0][LWE_K_W:0]          req_br_loop_wpD;
   logic [BATCH_NB-1:0][LWE_K_W:0]          req_br_loop_rpD;
   logic [BATCH_NB-1:0]                     req_parityD;
+  logic [BATCH_NB-1:0]                     req_next_assignedD;
+  logic [BATCH_NB-1:0][TOTAL_BATCH_NB-1:0] req_next_batch_id_1hD;
 
   always_comb
     for (int i=0; i<BATCH_NB; i=i+1) begin
@@ -375,6 +379,8 @@ module bsk_if_cache_control
       req_aD[i].prf_br_loop  = req_prf_br_loopD[i];
       req_aD[i].br_loop_wp   = req_br_loop_wpD[i];
       req_aD[i].br_loop_rp   = req_br_loop_rpD[i];
+      req_aD[i].next_assigned     = req_next_assignedD[i];
+      req_aD[i].next_batch_id_1h  = req_next_batch_id_1hD[i];
     end
 
   always_ff @(posedge clk)
@@ -429,24 +435,29 @@ module bsk_if_cache_control
   //-------------------------
   // Assignment
   //-------------------------
-  logic [BATCH_NB-1:0] req_assigned;
+  logic [BATCH_NB-1:0] req_avail_for_assign;
   logic [BATCH_NB-1:0] req_assign_1h;
 
   always_comb
     for (int i=0; i<BATCH_NB; i=i+1) begin
-      req_assigned[i]     = req_a_upd[i].assigned;
-      req_assignedD[i]    = qfifo_out_vld && req_assign_1h[i] ? 1'b1 : req_assigned[i];
-      req_parityD[i]      = qfifo_out_vld && req_assign_1h[i] ? ~req_a_upd[i].parity : req_a_upd[i].parity;
-      req_batch_id_1hD[i] = qfifo_out_vld && req_assign_1h[i] ? qfifo_out_start_1h : req_a_upd[i].batch_id_1h;
+      req_avail_for_assign[i] = ~req_a_upd[i].next_assigned
+                                & (~req_a_upd[i].assigned // free requester
+                                  | (req_a[i].parity != req_a[i].br_loop_wp[LWE_K_W] & req_a[i].br_loop_wp[LWE_K_W-1:0] == '0)); // waiting for next
+      req_next_assignedD[i]   = qfifo_out_vld && req_assign_1h[i] ? 1'b1 :
+                                !req_a[i].assigned                ? 1'b0 : req_a_upd[i].next_assigned;
+      req_next_batch_id_1hD[i]= qfifo_out_vld && req_assign_1h[i] ? qfifo_out_start_1h : req_a_upd[i].next_batch_id_1h;
+      req_assignedD[i]        = !req_a[i].assigned ? req_a[i].next_assigned : req_a_upd[i].assigned;
+      req_batch_id_1hD[i]     = !req_a[i].assigned ? req_a[i].next_batch_id_1h : req_a_upd[i].batch_id_1h;
+      req_parityD[i]          = !req_a[i].assigned && req_a[i].next_assigned ? ~req_a_upd[i].parity : req_a_upd[i].parity;
     end
 
-  assign qfifo_out_rdy = |(~req_assigned);
+  assign qfifo_out_rdy = |(req_avail_for_assign);
 
   common_lib_find_first_bit_equal_to_1
   #(
     .NB_BITS(BATCH_NB)
   ) req_find_first_bit_equal_to_1 (
-    .in_vect_mh          (~req_assigned),
+    .in_vect_mh          (req_avail_for_assign),
     .out_vect_1h         (req_assign_1h),
     .out_vect_ext_to_msb (/*UNUSED*/)
   );
@@ -459,10 +470,12 @@ module bsk_if_cache_control
   always_comb begin
     inc_bsk_wr_ptrD = '0;
     for (int i=0; i<BATCH_NB; i=i+1) begin
+      var [TOTAL_BATCH_NB-1:0] wr_batch_id_1h;
       req_br_loop_wpD[i] = req_a_upd[i].br_loop_wp;
       req_br_loop_rpD[i] = req_a_upd[i].br_loop_rp;
 
-      inc_bsk_wr_ptrD = inc_bsk_wr_ptrD | ({TOTAL_BATCH_NB{upd_req_br_loop_wp_1h[i]}} & req_a_upd[i].batch_id_1h);
+      wr_batch_id_1h = req_a[i].next_assigned ? req_a[i].next_batch_id_1h : req_a[i].batch_id_1h;
+      inc_bsk_wr_ptrD = inc_bsk_wr_ptrD | ({TOTAL_BATCH_NB{upd_req_br_loop_wp_1h[i]}} & wr_batch_id_1h);
     end
   end
 
@@ -838,7 +851,9 @@ module bsk_if_cache_control
   always_comb
     for (int i=0; i<BATCH_NB; i=i+1) begin
       // Do not send a query
-      query_avail[i]       = ~req_prf_br_loop_empty[i] & req_a[i].assigned & req_a[i].parity == req_a[i].br_loop_wp[LWE_K_W];
+      query_avail[i]       = ~req_prf_br_loop_empty[i] &
+                                ((req_a[i].assigned & req_a[i].parity == req_a[i].br_loop_wp[LWE_K_W])
+                                 |(req_a[i].next_assigned & req_a[i].parity != req_a[i].br_loop_wp[LWE_K_W]));
       query_br_loop[i]     = req_a[i].br_loop_wp[LWE_K_W-1:0];
     end
 

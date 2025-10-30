@@ -17,6 +17,7 @@ module hpu_regif_cfg_1in3
   import axi_if_trc_axi_pkg::*;
   import top_common_param_pkg::*;
   import pep_common_param_pkg::*;
+  import pea_common_param_pkg::*;
   import hpu_regif_core_cfg_1in3_pkg::*;
   import hpu_common_param_pkg::*;
   // For param exposition

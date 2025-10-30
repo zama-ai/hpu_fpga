@@ -24,11 +24,12 @@ from gen_tb_hpu_param_global import *
 #=====================================================
 # constraints
 #=====================================================
-def cstr_batch (batch_pbs,total_pbs):
+def cstr_batch (batch_pbs,total_pbs, gram_nb):
     """
     Total number of pbs should be greater or equal to number of pbs per batch.
+    Both batch_pbs and total_pbs should be a multiple of GRAM_NB.
     """
-    return total_pbs > batch_pbs
+    return (total_pbs > batch_pbs) and ((batch_pbs % gram_nb) == 0) and ((total_pbs % gram_nb) == 0)
 
 def cstr_pbs_level_div (bwd_psi_div, pbs_l, ntt_arch, psi):
     """
@@ -112,17 +113,25 @@ def cstr_regf_lby (regf_seq, regf_coef, lby):
     else:
         return True
 
-def cstr_mmacc_infifo (r, s, psi, glwe_k):
+def cstr_regf_pea_alu (regf_seq, regf_coef, pea_alu_nb):
+  """
+    pea_alu_nb should divide the number of regf sequence coefficients.
+  """
+
+  return (((regf_coef//regf_seq) % pea_alu_nb) == 0)
+
+def cstr_mmacc_infifo (r, s, psi, glwe_k, gram_nb):
     """
-    MMACC infifo is composed of 1 BRAM depth, to avoid using to many BRAMs.
+    MMACC infifo is composed of 1 BRAM depth, to avoid using too many BRAMs.
     Therefore the parameters must fulfill the constraint that this
     RAM cannot overflow.
     Actually, for the system to work, this RAM should be able to store at
-    least MIN_INFIFO_CT_NB entire ciphertext.
+    least MIN_INFIFO_CT_NB + GRAM_NB entire ciphertext.
     """
     n = r ** s
     coef = r * psi
-    return ((BRAM_DEPTH / ((n * (glwe_k+1)) // coef)) >= MIN_INFIFO_CT_NB)
+    infifo_min_ct = MIN_INFIFO_CT_NB + gram_nb
+    return ((BRAM_DEPTH / ((n * (glwe_k+1)) // coef)) >= infifo_min_ct)
 
 def cstr_run5 (s, glwe_k):
     """
@@ -219,6 +228,8 @@ if __name__ == '__main__':
     r1.add_rand_var("REGF_COEF_NB"  , fn=rand_power_of, args=(2,4,64), order=1)
     r1.add_rand_var("REGF_SEQ"      , fn=rand_power_of, args=(2,1,8), order=1)
     r1.add_rand_var("USE_MEAN_COMP" , domain=range(set_val(args.use_mean_comp,0),set_val(args.use_mean_comp,1)+1), order=0)
+    r1.add_rand_var("GRAM_NB"       , domain=range(3,4+1), order=1)
+    r1.add_rand_var("PEA_ALU_NB"    , domain=range(1,8+1), order=1)
 
     r3.add_rand_var("USE_BPIP"      , domain={0: 1,1: 4}) # To keep some runs with IPIP (20%)
     r3.add_rand_var("RAM_LATENCY"   , domain=range(1,3+1))
@@ -232,7 +243,7 @@ if __name__ == '__main__':
 #---------------
     r1.add_constraint(cstr_r_psi_s, ('R','PSI','S'))
     r1.add_constraint(cstr_gt,('MOD_NTT_W','MOD_KSK_W'))
-    r1.add_constraint(cstr_batch,('BATCH_PBS_NB','TOTAL_PBS_NB'))
+    r1.add_constraint(cstr_batch,('BATCH_PBS_NB','TOTAL_PBS_NB', 'GRAM_NB'))
     r1.add_constraint(cstr_pbs_level_div, ('BWD_PSI_DIV', 'PBS_L', 'NTT_ARCH', 'PSI'))
     r1.add_constraint(cstr_level, ('PBS_B_W','PBS_L','MOD_NTT_W'))
     r1.add_constraint(cstr_level, ('KS_B_W','KS_L','MOD_KSK_W'))
@@ -240,11 +251,12 @@ if __name__ == '__main__':
     r1.add_constraint(cstr_ksk_w, ('LBZ', 'MOD_KSK_W'))
     r1.add_constraint(cstr_regf_seq, ('REGF_SEQ', 'REGF_COEF_NB'))
     r1.add_constraint(cstr_regf_lby, ('REGF_SEQ', 'REGF_COEF_NB', 'LBY'))
-    r1.add_constraint(cstr_mmacc_infifo,('R', 'S', 'PSI', 'GLWE_K'))
+    r1.add_constraint(cstr_mmacc_infifo,('R', 'S', 'PSI', 'GLWE_K', 'GRAM_NB'))
     r1.add_constraint(cstr_run4, ('R', 'PSI', 'PBS_L', 'LBY', 'LBZ', 'KS_L'))
     r1.add_constraint(cstr_run5, ('S', 'GLWE_K'))
     r1.add_constraint(cstr_gram_arb, ('R','PSI','S'))
     r1.add_constraint(cstr_mod_ntt_w_arch, ('MOD_NTT_W', 'NTT_ARCH'))
+    r1.add_constraint(cstr_regf_pea_alu, ('REGF_SEQ', 'REGF_COEF_NB','PEA_ALU_NB'))
 
 #=====================================================
 # Randomize

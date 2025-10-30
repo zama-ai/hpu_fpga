@@ -270,7 +270,6 @@ module hpu_3parts_1in3_core
   logic                                   ks_boram_parity;
 
   logic                                   inc_ksk_wr_ptr;
-  logic                                   inc_ksk_rd_ptr;
 
   logic                                   bsk_if_batch_start_1h;
   logic                                   ksk_if_batch_start_1h;
@@ -285,7 +284,6 @@ module hpu_3parts_1in3_core
   logic [LBX-1:0][LBY-1:0]                         ksk_rdy;
 
   logic                                   inc_bsk_wr_ptr;
-  logic                                   inc_bsk_rd_ptr;
 
   // Acc
   subsmain_acc_data_t                     subs_main_acc_data;
@@ -386,7 +384,6 @@ module hpu_3parts_1in3_core
     entry_bsk_proc = '0;
     ntt_proc_cmd   = '0;
 
-    entry_bsk_proc.inc_rd_ptr     = inc_bsk_rd_ptr;
     entry_bsk_proc.batch_start_1h = bsk_if_batch_start_1h;
 
     ntt_proc_cmd.batch_cmd        = br_batch_cmd;
@@ -680,7 +677,6 @@ module hpu_3parts_1in3_core
     .bsk_if_batch_start_1h      (bsk_if_batch_start_1h),
     .ksk_if_batch_start_1h      (ksk_if_batch_start_1h),
     .inc_bsk_wr_ptr             (inc_bsk_wr_ptr),
-    .inc_bsk_rd_ptr             (inc_bsk_rd_ptr),
 
     .reset_cache                (reset_cache),
     .reset_ks                   (reset_ks),
@@ -871,7 +867,6 @@ module hpu_3parts_1in3_core
     `HPU_AXI4_SHORT_RD_INSTANCE(ksk, ksk, _tmp, [KSK_PC-1:0])
 
     .inc_ksk_wr_ptr         (inc_ksk_wr_ptr),
-    .inc_ksk_rd_ptr         (inc_ksk_rd_ptr),
 
     .ks_batch_cmd           (ks_batch_cmd),
     .ks_batch_cmd_avail     (ks_batch_cmd_avail),
@@ -949,7 +944,6 @@ module hpu_3parts_1in3_core
     .ks_boram_parity          (ks_boram_parity),
 
     .inc_ksk_wr_ptr           (inc_ksk_wr_ptr),
-    .inc_ksk_rd_ptr           (inc_ksk_rd_ptr),
 
     .ks_batch_cmd             (ks_batch_cmd),
     .ks_batch_cmd_avail       (ks_batch_cmd_avail),

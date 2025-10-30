@@ -149,7 +149,6 @@ module tb_pep_ks_mult_outp;
 
   // BCOL done
   logic [TOTAL_BATCH_NB-1:0]                  outp_ks_loop_done_mh;
-  logic [TOTAL_BATCH_NB-1:0]                  inc_ksk_rd_ptr;
 
 
   logic                                       reset_cache;
@@ -216,8 +215,7 @@ module tb_pep_ks_mult_outp;
     .br_bfifo_parity       (/*UNUSED*/), // Not tested here
 
     .reset_cache           (reset_cache),
-    .outp_ks_loop_done_mh  (outp_ks_loop_done_mh),
-    .inc_ksk_rd_ptr        (inc_ksk_rd_ptr      )
+    .outp_ks_loop_done_mh  (outp_ks_loop_done_mh)
   );
 
 // ============================================================================================== --

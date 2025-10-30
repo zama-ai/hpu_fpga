@@ -42,6 +42,7 @@ module pep_mmacc_splitc_acc_assembly
   output logic [GARB_CMD_W-1:0]                                    acc_garb_req,
   output logic                                                     acc_garb_req_vld,
   input  logic                                                     acc_garb_req_rdy,
+  output logic                                                     acc_garb_critical,
 
   input  logic [GRAM_NB-1:0]                                       garb_acc_rd_avail_1h,
   input  logic [GRAM_NB-1:0]                                       garb_acc_wr_avail_1h,
@@ -71,11 +72,11 @@ module pep_mmacc_splitc_acc_assembly
 
   // Status
   output logic                                                     main_acc_feed_done,
-  output logic [BPBS_ID_W-1:0]                                     main_acc_feed_done_map_idx,
+  output logic [PID_W-1:0]                                         main_acc_feed_done_pid,
   output logic                                                     main_br_loop_proc_done,
 
   output logic                                                     subs_acc_feed_done,
-  output logic [BPBS_ID_W-1:0]                                     subs_acc_feed_done_map_idx,
+  output logic [PID_W-1:0]                                         subs_acc_feed_done_pid,
   output logic                                                     subs_br_loop_proc_done,
 
   output logic [ACC_CORE_ERROR_W-1:0]                              error
@@ -291,6 +292,7 @@ module pep_mmacc_splitc_acc_assembly
     .acc_garb_req            (acc_garb_req),
     .acc_garb_req_vld        (acc_garb_req_vld),
     .acc_garb_req_rdy        (acc_garb_req_rdy),
+    .acc_garb_critical       (acc_garb_critical),
 
     .garb_acc_rd_avail_1h    (garb_acc_rd_avail_1h),
     .garb_acc_wr_avail_1h    (garb_acc_wr_avail_1h),
@@ -312,7 +314,7 @@ module pep_mmacc_splitc_acc_assembly
     .acc_sfifo_avail         (main_acc_sfifo_avail),
 
     .acc_feed_done           (main_acc_feed_done),
-    .acc_feed_done_map_idx   (main_acc_feed_done_map_idx),
+    .acc_feed_done_pid       (main_acc_feed_done_pid),
     .br_loop_proc_done       (main_br_loop_proc_done),
 
     .subs_error              (out_subs_main_error),
@@ -370,7 +372,7 @@ module pep_mmacc_splitc_acc_assembly
     .afifo_acc_rdy             (subs_afifo_acc_rdy),
 
     .acc_feed_done             (subs_acc_feed_done),
-    .acc_feed_done_map_idx     (subs_acc_feed_done_map_idx),
+    .acc_feed_done_pid         (subs_acc_feed_done_pid),
     .br_loop_proc_done         (subs_br_loop_proc_done),
 
     .subs_error                (in_subs_main_error)

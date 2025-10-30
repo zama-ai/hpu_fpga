@@ -55,7 +55,7 @@ module pep_mmacc_splitc_feed_read
 
   // From acc
   input  logic                           acc_feed_done,
-  input  logic [BPBS_ID_W-1:0]           acc_feed_done_map_idx,
+  input  logic [PID_W-1:0]               acc_feed_done_pid,
 
   // To prepare GRAM access
   output logic                           out_f1_rd_en,
@@ -71,8 +71,6 @@ module pep_mmacc_splitc_feed_read
 
   output logic                           out_ss1_avail,
   output logic [REQ_CMD_W-1:0]           out_ss1_rcmd,
-
-  output logic                           br_loop_flush_done,
 
   output logic [BR_BATCH_CMD_W-1:0]      batch_cmd,
   output logic                           batch_cmd_avail
@@ -129,7 +127,7 @@ module pep_mmacc_splitc_feed_read
   logic [GRAM_NB-1:0]   garb_rot_avail_1h;
   logic [GRAM_NB-1:0]   garb_dat_avail_1h;
   logic                 acc_done;
-  logic [BPBS_ID_W-1:0] acc_done_map_idx;
+  logic [PID_W-1:0]     acc_done_pid;
 
   always_ff @(posedge clk)
     if (!s_rst_n) begin
@@ -144,7 +142,7 @@ module pep_mmacc_splitc_feed_read
     end
 
   always_ff @(posedge clk)
-    acc_done_map_idx <= acc_feed_done_map_idx;
+    acc_done_pid <= acc_feed_done_pid;
 
 // ============================================================================================= --
 // Keep ack
@@ -265,23 +263,23 @@ module pep_mmacc_splitc_feed_read
 //=================================================================================================
   // To be able to process a CMUX iteration, the previous iteration of the ciphertext must be over.
   // No need to set, when it is the last iteration.
-  logic [BATCH_PBS_NB-1:0] loopback_pending;
-  logic [BATCH_PBS_NB-1:0] loopback_pendingD;
+  logic [TOTAL_PBS_NB-1:0] loopback_pending;
+  logic [TOTAL_PBS_NB-1:0] loopback_pendingD;
 
   logic                    loopback_pending_set;
-  logic [BPBS_ID_W-1:0]    loopback_pending_set_map_idx;
+  logic [PID_W-1:0]        loopback_pending_set_pid;
 
   logic                    loopback_pending_unset;
-  logic [BPBS_ID_W-1:0]    loopback_pending_unset_map_idx;
+  logic [PID_W-1:0]        loopback_pending_unset_pid;
 
-  assign loopback_pending_unset         = acc_done;
-  assign loopback_pending_unset_map_idx = acc_done_map_idx;
+  assign loopback_pending_unset     = acc_done;
+  assign loopback_pending_unset_pid = acc_done_pid;
 
   always_comb
-    for (int i=0; i<BATCH_PBS_NB; i=i+1)
-      loopback_pendingD[i] = loopback_pending_set   && (loopback_pending_set_map_idx == i)   ? 1'b1 :
-                         loopback_pending_unset && (loopback_pending_unset_map_idx == i) ? 1'b0 :
-                         loopback_pending[i];
+    for (int i=0; i<TOTAL_PBS_NB; i=i+1)
+      loopback_pendingD[i] = loopback_pending_set   && (loopback_pending_set_pid == i)   ? 1'b1 :
+                             loopback_pending_unset && (loopback_pending_unset_pid == i) ? 1'b0 :
+                             loopback_pending[i];
 
   always_ff @(posedge clk)
     if (!s_rst_n) loopback_pending <= '0;
@@ -293,10 +291,10 @@ module pep_mmacc_splitc_feed_read
         // do nothing
       end
       else begin
-        for (int i=0; i<BATCH_PBS_NB; i=i+1)
-          assert(!( loopback_pending_set   && (loopback_pending_set_map_idx == i) && loopback_pending_unset && (loopback_pending_unset_map_idx == i)))
+        for (int i=0; i<TOTAL_PBS_NB; i=i+1)
+          assert(!( loopback_pending_set   && (loopback_pending_set_pid == i) && loopback_pending_unset && (loopback_pending_unset_pid == i)))
           else begin
-            $fatal(1,"%t > ERROR: loopback_pending set/unset conflict for map_idx=%0d!",$time,i);
+            $fatal(1,"%t > ERROR: loopback_pending set/unset conflict for pid=%0d!",$time,i);
           end
       end
 // pragma translate_on
@@ -322,27 +320,42 @@ module pep_mmacc_splitc_feed_read
   logic fm1_do_proc;
   logic fm1_do_flush;
 
-  assign fm1_do_proc  = (fm1_mcmd.map_elt.first | ~loopback_pending[fm1_mcmd.map_idx]);
+  assign fm1_do_proc  = (fm1_mcmd.map_elt.first | ~loopback_pending[fm1_mcmd.map_elt.pid.pid]);
   assign fm1_do_flush = fm1_mcmd.is_flush;
   assign fm1_vld      = fm1_mcmd_vld & (fm1_do_proc | fm1_do_flush);
   assign fm1_mcmd_rdy = fm1_rdy      & (fm1_do_proc | fm1_do_flush);
 
   //== Fork
   // Fork between the process path and the arbiter request path.
-  assign fm1_f0_vld   = fm1_vld & fm1_garb_rdy & fm1_acc_rdy;
+  assign fm1_f0_vld   = fm1_vld & fm1_garb_rdy & fm1_acc_rdy & ~fm1_do_flush;
   assign fm1_garb_vld = fm1_vld & fm1_f0_rdy   & fm1_acc_rdy & ~fm1_do_flush;
   assign fm1_acc_vld  = fm1_vld & fm1_f0_rdy   & fm1_garb_rdy & ~fm1_do_flush;
   assign fm1_rdy      = fm1_garb_rdy & fm1_f0_rdy & fm1_acc_rdy;
 
   //== Update loopback pending
-  assign loopback_pending_set         = fm1_vld & fm1_rdy & ~fm1_do_flush & ~fm1_mcmd.map_elt.last;
-  assign loopback_pending_set_map_idx = fm1_mcmd.map_idx;
+  assign loopback_pending_set     = fm1_vld & fm1_rdy & ~fm1_do_flush & ~fm1_mcmd.map_elt.last;
+  assign loopback_pending_set_pid = fm1_mcmd.map_elt.pid.pid;
 
   //== To GRAM arbiter
-  garb_cmd_t fm1_garb_req;
+  garb_cmd_t             fm1_garb_req;
+  logic [GRAM_ID_WW-1:0] fm1_garb_ct_cnt;
+  logic [GRAM_ID_WW-1:0] fm1_garb_ct_cntD;
+  logic                  fm1_garb_ct_cnt_in_first_round;
 
-  assign fm1_garb_req.grid     = fm1_mcmd.map_elt.pid.grid;
-  assign fm1_garb_req.critical = 1'b0;
+  assign fm1_garb_ct_cnt_in_first_round = fm1_garb_ct_cnt < GRAM_NB;
+  assign fm1_garb_ct_cntD = fm1_garb_vld && fm1_garb_rdy ? fm1_mcmd.batch_last_ct ? '0 :
+                              fm1_garb_ct_cnt_in_first_round ? fm1_garb_ct_cnt + GRAM_ID_WW'(1) : fm1_garb_ct_cnt :
+                              fm1_garb_ct_cnt;
+
+  always_ff @(posedge clk)
+    if (!s_rst_n) fm1_garb_ct_cnt <= '0;
+    else          fm1_garb_ct_cnt <= fm1_garb_ct_cntD;
+
+  // Do not "book" the next grid during the 1rst round, (round when reading the GRAM sequentially)
+  // because if the pipeline latency is less than 1 round, this could block the system.
+  assign fm1_garb_req.next_grid_avail = ~fm1_mcmd.batch_last_ct & ~fm1_garb_ct_cnt_in_first_round;
+  assign fm1_garb_req.next_grid       = fm1_mcmd.map_elt.pid.grid == GRAM_NB-1 ? '0 : fm1_mcmd.map_elt.pid.grid+1;
+  assign fm1_garb_req.grid            = fm1_mcmd.map_elt.pid.grid;
 
   fifo_element #(
     .WIDTH          (GARB_CMD_W),
@@ -416,8 +429,8 @@ module pep_mmacc_splitc_feed_read
     if (!s_rst_n) fm1_batch_cmd_sent <= 1'b0;
     else          fm1_batch_cmd_sent <= fm1_batch_cmd_sentD;
 
-  assign fm1_batch_cmd_avail   = ~fm1_batch_cmd_sent & fm1_mcmd_vld & ~fm1_do_flush;
-  assign fm1_batch_cmd.pbs_nb  = fm1_mcmd.ct_nb_m1 + 1;
+  assign fm1_batch_cmd_avail   = ~fm1_batch_cmd_sent & fm1_mcmd_vld;
+  assign fm1_batch_cmd.pbs_nb  = fm1_do_flush ? '0 : fm1_mcmd.ct_nb_m1 + 1;
   assign fm1_batch_cmd.br_loop = fm1_mcmd.br_loop;
 
   always_ff @(posedge clk)
@@ -429,8 +442,9 @@ module pep_mmacc_splitc_feed_read
 
 // pragma translate_off
   always_ff @(posedge clk)
-    if (fm1_f0_vld && fm1_f0_rdy) begin
-      $display("%t > INFO: PEP_MMACC_FEED: map_idx=%0d br_loop=%0d is_flush=%0d",$time,fm1_mcmd.map_idx, fm1_mcmd.br_loop,fm1_mcmd.is_flush);
+    if (fm1_vld && fm1_rdy) begin
+      $display("%t > INFO: PEP_MMACC_FEED: map_idx=%0d br_loop=%0d lwe=0x%0x is_flush=%0d",$time,
+      fm1_mcmd.map_idx, fm1_mcmd.br_loop,fm1_mcmd.map_elt.lwe,fm1_mcmd.is_flush);
     end
 // pragma translate_on
 
@@ -477,7 +491,18 @@ module pep_mmacc_splitc_feed_read
 
   assign f0_do_inc   = f0_f1_vld & f0_f1_rdy;
 
-  assign br_loop_flush_done = f0_vld & f0_rdy & f0_mcmd.is_flush;
+// pragma translate_off
+  always_ff @(posedge clk)
+    if (!s_rst_n) begin
+      // Do nothing
+    end
+    else begin
+      if (f0_vld)
+        assert(f0_mcmd.is_flush == 0) else begin
+          $fatal(1,"%t > ERROR: Seen flush command in step f0!", $time);
+        end
+    end
+// pragma translate_on
 
   //== LWE
   // Compute the factor used for the rotation.

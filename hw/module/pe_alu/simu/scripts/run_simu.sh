@@ -94,15 +94,15 @@ for i in `seq 1 5`; do
     MOD_Q_W=$((64 / $DIV))
 
     REGF_SEQ_COEF_NB=$(($REGF_COEF_NB / $REGF_SEQ))
-    ALU_NB=$((1+$RANDOM % 4))
-    while [ $(($REGF_SEQ_COEF_NB % $ALU_NB)) -ne 0 ] ; do
-      ALU_NB=$((1+$RANDOM % 4))
+    PEA_ALU_NB=$((1+$RANDOM % 8))
+    while [ $(($REGF_SEQ_COEF_NB % $PEA_ALU_NB)) -ne 0 ] ; do
+      PEA_ALU_NB=$((1+$RANDOM % 8))
     done
 
-    if [ $REGF_COEF_NB -eq $ALU_NB ]; then
+    if [ $REGF_COEF_NB -eq $PEA_ALU_NB ]; then
       PEA_PERIOD=2
     else
-      PEA_PERIOD=$(((($REGF_COEF_NB / $ALU_NB) +$RANDOM % 4 )))
+      PEA_PERIOD=$(((($REGF_COEF_NB / $PEA_ALU_NB) +$RANDOM % 4 )))
     fi
 
     PADDING_BIT=$(($RANDOM % 2))
@@ -117,7 +117,7 @@ for i in `seq 1 5`; do
           -i $REGF_REG_NB \
           -j $REGF_COEF_NB \
           -k $REGF_SEQ \
-          -a $ALU_NB \
+          -a $PEA_ALU_NB \
           -Q $PAYLOAD_BIT \
           -D $PADDING_BIT \
           -- $args \

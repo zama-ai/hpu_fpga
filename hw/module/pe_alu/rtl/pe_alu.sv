@@ -20,7 +20,6 @@ module pe_alu
   import pea_common_param_pkg::*;
 #(
   parameter int INST_FIFO_DEPTH = 8, // Should be >= 5
-  parameter int ALU_NB          = 1, // Number of ALU that worked in parallel. Should divide REGF_SEQ_COEF_NB
   // /!\ Review the following parameters whenever regfile architecture is updated.
   //     OUT_FIFO_DEPTH : The depth depends on the regfile maximum latency, between the sampling of the write command
   //                    and the actual writing of the first data.
@@ -68,10 +67,10 @@ module pe_alu
   localparam int ACC_DEPTH = REGF_SEQ;
   localparam int ACC_PTR_W = $clog2(ACC_DEPTH+1) == 0 ? 1 : $clog2(ACC_DEPTH+1); // counts to ACC_DEPTH included
 
-  localparam int SR_DEPTH   = REGF_SEQ_COEF_NB/ALU_NB;
+  localparam int SR_DEPTH   = REGF_SEQ_COEF_NB/PEA_ALU_NB;
   localparam int SR_DEPTH_W = $clog2(SR_DEPTH) == 0 ? 1 : $clog2(SR_DEPTH);
 
-  localparam int SEC_NB   = REGF_SEQ_COEF_NB/ALU_NB;
+  localparam int SEC_NB   = REGF_SEQ_COEF_NB/PEA_ALU_NB;
   localparam int SEC_NB_W = $clog2(SEC_NB) == 0 ? 1 : $clog2(SEC_NB);
 
   localparam int OUT_FIFO_DEPTH_PART1_TMP = (OUT_FIFO_DEPTH-1) * REGF_SEQ;
@@ -79,8 +78,8 @@ module pe_alu
   localparam int OUT_FIFO_DEPTH_PART2 = 1;
 
   generate
-    if (REGF_SEQ_COEF_NB%ALU_NB != 0) begin : __UNSUPPORTED_ALU_NB_
-      $fatal(1,"> ERROR: Unsupported ALU_NB and REGF_SEQ_COEF_NB. ALU_NB (%0d) should divide REGF_SEQ_COEF_NB (%0d).",ALU_NB, REGF_SEQ_COEF_NB);
+    if (REGF_SEQ_COEF_NB%PEA_ALU_NB != 0) begin : __UNSUPPORTED_PEA_ALU_NB_
+      $fatal(1,"> ERROR: Unsupported PEA_ALU_NB and REGF_SEQ_COEF_NB. PEA_ALU_NB (%0d) should divide REGF_SEQ_COEF_NB (%0d).",PEA_ALU_NB, REGF_SEQ_COEF_NB);
     end
   endgenerate
 
@@ -425,17 +424,17 @@ module pe_alu
   //----------------------------------
   // ALU input
   //----------------------------------
-  logic [ALU_NB-1:0][MOD_Q_W-1:0]                    p0_a0;
-  logic [ALU_NB-1:0][MOD_Q_W-1:0]                    p0_a1;
-  logic [ALU_NB-1:0][MSG_CST_W-1:0]                  p0_msg_cst;
+  logic [PEA_ALU_NB-1:0][MOD_Q_W-1:0]                p0_a0;
+  logic [PEA_ALU_NB-1:0][MOD_Q_W-1:0]                p0_a1;
+  logic [PEA_ALU_NB-1:0][MSG_CST_W-1:0]              p0_msg_cst;
   logic [MUL_FACTOR_W-1:0]                           p0_mul_factor;
   side_t                                             p0_side;
   logic                                              p0_avail;
   acc_info_t                                         p0_info;
   acc_info_t                                         p0_infoD;
 
-  logic [1:0][SR_DEPTH-1:0][ALU_NB-1:0][MOD_Q_W-1:0] p0_sr;
-  logic [1:0][SR_DEPTH-1:0][ALU_NB-1:0][MOD_Q_W-1:0] p0_srD;
+  logic [1:0][SR_DEPTH-1:0][PEA_ALU_NB-1:0][MOD_Q_W-1:0] p0_sr;
+  logic [1:0][SR_DEPTH-1:0][PEA_ALU_NB-1:0][MOD_Q_W-1:0] p0_srD;
   logic [SR_DEPTH_W-1:0]                             p0_sr_cnt;
   logic [SR_DEPTH_W-1:0]                             p0_sr_cntD;
   logic                                              p0_sr_avail;
@@ -452,7 +451,7 @@ module pe_alu
     if (SR_DEPTH > 1) begin : gen_sr_depth_gt_1
       always_comb
         for (int i=0; i<2; i=i+1)
-          p0_srD[i] = acc_rd_en ? acc[i][0] : {{ALU_NB*MOD_Q_W{1'bx}},p0_sr[i][SR_DEPTH-1:1]};
+          p0_srD[i] = acc_rd_en ? acc[i][0] : {{PEA_ALU_NB*MOD_Q_W{1'bx}},p0_sr[i][SR_DEPTH-1:1]};
     end
     else begin
       assign p0_srD = acc_rd_en ? {acc[1][0],acc[0][0]} : p0_sr;
@@ -469,7 +468,7 @@ module pe_alu
   assign p0_mul_factor = p0_info.mul_factor;
   always_comb begin
     p0_msg_cst[0] = (p0_info.is_body && (p0_sr_cnt == SR_DEPTH-1)) ? p0_info.msg_cst : '0;
-    for (int i=1; i<ALU_NB; i=i+1)
+    for (int i=1; i<PEA_ALU_NB; i=i+1)
       p0_msg_cst[i] = '0;
   end
 
@@ -494,12 +493,12 @@ module pe_alu
   //----------------------------------
   // ALU instance
   //----------------------------------
-  logic  [ALU_NB-1:0][MOD_Q_W-1:0] p1_z;
-  logic  [ALU_NB-1:0]              p1_avail;
-  side_t [ALU_NB-1:0]              p1_side;
+  logic  [PEA_ALU_NB-1:0][MOD_Q_W-1:0] p1_z;
+  logic  [PEA_ALU_NB-1:0]              p1_avail;
+  side_t [PEA_ALU_NB-1:0]              p1_side;
 
   generate
-    for (genvar gen_i=0; gen_i<ALU_NB; gen_i=gen_i+1) begin : gen_core
+    for (genvar gen_i=0; gen_i<PEA_ALU_NB; gen_i=gen_i+1) begin : gen_core
       pea_alu_core #(
         .SIDE_W (SIDE_W)
       ) pea_alu_core (
@@ -530,23 +529,23 @@ module pe_alu
   // Output data are formatted in 2 steps. First data from the same sequence are gathered.
   // Then the sequences are dispatched
   //== Part 1
-  logic [SEC_NB_W-1:0]                        p1_section_id;
-  logic [SEC_NB_W-1:0]                        p1_section_idD;
-  logic                                       p1_last_section_id;
+  logic [SEC_NB_W-1:0]                            p1_section_id;
+  logic [SEC_NB_W-1:0]                            p1_section_idD;
+  logic                                           p1_last_section_id;
 
-  logic [SEC_NB-1:0][ALU_NB-1:0]              p1_vld;
-  logic [SEC_NB-1:0][ALU_NB-1:0]              p1_rdy;
+  logic [SEC_NB-1:0][PEA_ALU_NB-1:0]              p1_vld;
+  logic [SEC_NB-1:0][PEA_ALU_NB-1:0]              p1_rdy;
 
-  logic [SEC_NB-1:0][ALU_NB-1:0][MOD_Q_W-1:0] p2_data;
-  logic [SEC_NB-1:0][ALU_NB-1:0]              p2_vld;
-  logic [SEC_NB-1:0][ALU_NB-1:0]              p2_rdy;
+  logic [SEC_NB-1:0][PEA_ALU_NB-1:0][MOD_Q_W-1:0] p2_data;
+  logic [SEC_NB-1:0][PEA_ALU_NB-1:0]              p2_vld;
+  logic [SEC_NB-1:0][PEA_ALU_NB-1:0]              p2_rdy;
 
   assign p1_last_section_id = p1_section_id == (SEC_NB-1);
   assign p1_section_idD     = p1_avail[0] ? p1_last_section_id ? '0 : p1_section_id + 1 : p1_section_id;
 
   always_comb
     for (int i=0; i<SEC_NB; i=i+1)
-      p1_vld[i] = p1_avail & {ALU_NB{p1_section_id == i}};
+      p1_vld[i] = p1_avail & {PEA_ALU_NB{p1_section_id == i}};
 
   always_ff @(posedge clk)
     if (!s_rst_n) p1_section_id <= '0;
@@ -554,7 +553,7 @@ module pe_alu
 
   generate
     for (genvar gen_i=0; gen_i<SEC_NB; gen_i=gen_i+1) begin : gen_section_loop_i
-      for (genvar gen_j=0; gen_j<ALU_NB; gen_j=gen_j+1) begin : gen_section_loop_j
+      for (genvar gen_j=0; gen_j<PEA_ALU_NB; gen_j=gen_j+1) begin : gen_section_loop_j
         fifo_reg #(
           .WIDTH       (MOD_Q_W),
           .DEPTH       (OUT_FIFO_DEPTH_PART1),

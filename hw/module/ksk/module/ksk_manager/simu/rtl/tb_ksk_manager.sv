@@ -128,8 +128,14 @@ module tb_ksk_manager;
   logic [KSK_CUT_NB-1:0][KSK_SLOT_W-1:0]                               wr_slot;
   logic [KSK_CUT_NB-1:0][KS_BLOCK_COL_W-1:0]                           wr_ks_loop;
 
+  // KSK rd pointer inc
+  logic                                            inc_ksk_rd_ptr;
+  logic                                            reset_cache;
+
   // Error
   logic [KSK_ERROR_NB-1:0]                         ksk_error;
+
+  assign reset_cache = 1'b0;  // TODO : not checked
 
 // ============================================================================================== --
 // Design under test instance
@@ -139,6 +145,8 @@ module tb_ksk_manager;
   ) dut (
     .clk            (clk            ),
     .s_rst_n        (s_rst_n        ),
+
+    .reset_cache    (reset_cache    ),
 
     .ksk            (ksk            ),
     .ksk_vld        (ksk_vld        ),
@@ -153,6 +161,8 @@ module tb_ksk_manager;
     .wr_x_idx       (wr_x_idx       ),
     .wr_slot        (wr_slot        ),
     .wr_ks_loop     (wr_ks_loop     ),
+
+    .inc_ksk_rd_ptr (inc_ksk_rd_ptr ), // TODO : not checked
 
     .error          (ksk_error      )
 

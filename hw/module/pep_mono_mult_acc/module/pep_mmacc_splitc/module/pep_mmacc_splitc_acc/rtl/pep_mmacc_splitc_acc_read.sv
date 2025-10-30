@@ -48,6 +48,7 @@ module pep_mmacc_splitc_acc_read
   output logic [GARB_CMD_W-1:0]                                  acc_garb_req,
   output logic                                                   acc_garb_req_vld,
   input  logic                                                   acc_garb_req_rdy,
+  output logic                                                   acc_garb_critical,
 
   input  logic [GRAM_NB-1:0]                                     garb_acc_rd_avail_1h,
 
@@ -73,7 +74,7 @@ module pep_mmacc_splitc_acc_read
 
   // Status
   output logic                                                   acc_feed_done,
-  output logic [BPBS_ID_W-1:0]                                   acc_feed_done_map_idx,
+  output logic [PID_W-1:0]                                       acc_feed_done_pid,
   output logic                                                   br_loop_proc_done,
 
   // error
@@ -95,14 +96,18 @@ module pep_mmacc_splitc_acc_read
   localparam int INFIFO_OVF_ERROR_OFS  = 1;
 
   // Number of ciphertext that can be stored entirely in INFIFO
-  localparam int INFIFO_CT_NB    = FIFO_NTT_ACC_DEPTH / GLWE_RAM_DEPTH_PBS;
-  localparam int INFIFO_CT_THRES = INFIFO_CT_NB / 2; // TOREVIEW
+  localparam int INFIFO_CT_NB        = FIFO_NTT_ACC_DEPTH / GLWE_RAM_DEPTH_PBS;
+  localparam int INFIFO_CT_THRES_MIN = GRAM_NB; // Cannot be late by more than 1 round
+  localparam int INFIFO_CT_THRES_UP  = INFIFO_CT_THRES_MIN-1; // TOREVIEW
+  localparam int INFIFO_CT_THRES_DN  = 1; // TOREVIEW
 
   localparam int INFIFO_DEPTH_W  = $clog2(FIFO_NTT_ACC_DEPTH) == 0 ? 1 : $clog2(FIFO_NTT_ACC_DEPTH) + 1; // add 1 bit for extra pipes within infifo
 
   generate
-    if (INFIFO_CT_NB < 3) begin : __UNSUPPORTED_FIFO_NTT_ACC_DEPTH
-      $fatal(1,"> ERROR: FIFO_NTT_ACC_DEPTH (%0d) is not big enough. It should be able to store at least 3 whole ciphertext. Now it stores only %0d.",FIFO_NTT_ACC_DEPTH,INFIFO_CT_NB);
+    // +2 : time necessary for the critical signal to be taken into account, and that
+    // arbitration occurs.
+    if (INFIFO_CT_NB < INFIFO_CT_THRES_MIN+2) begin : __UNSUPPORTED_FIFO_NTT_ACC_DEPTH
+      $fatal(1,"> ERROR: FIFO_NTT_ACC_DEPTH (%0d) is not big enough. It should be able to store at least INFIFO_CT_THRES_MIN+2 (%0d) whole ciphertext. Now it stores only %0d.",FIFO_NTT_ACC_DEPTH,INFIFO_CT_THRES_MIN+2, INFIFO_CT_NB);
     end
   endgenerate
 
@@ -222,6 +227,7 @@ module pep_mmacc_splitc_acc_read
   assign am1_rdy       = am1_ct_avail & am1_a0_rdy & am1_garb_rdy;
   assign afifo_acc_rdy = am1_rdy;
 
+  // Number of ct that fill infifo, and that are not processed.
   assign am1_ct_pending_cntD = am1_new_ct && !(am1_vld && am1_rdy) ? am1_ct_pending_cnt + 1 :
                                !am1_new_ct && (am1_vld && am1_rdy) ? am1_ct_pending_cnt - 1 : am1_ct_pending_cnt;
 
@@ -231,10 +237,23 @@ module pep_mmacc_splitc_acc_read
 
   //= GRAM arbiter
   garb_cmd_t am1_garb_req;
+  // Do a hysteresis behavior for the critical. If not the infifo is never emptied.
+  logic am1_garb_critical;
+  logic am1_garb_criticalD;
 
-  assign am1_garb_req.grid     = afifo_acc_icmd_s.map_elt.pid.grid;
-  assign am1_garb_req.critical = am1_ct_pending_cnt > INFIFO_CT_THRES;
+  assign am1_garb_criticalD = am1_ct_pending_cnt > BPBS_NB_WW'(INFIFO_CT_THRES_UP) ? 1'b1 :
+                              am1_garb_critical && (am1_ct_pending_cnt < BPBS_NB_WW'(INFIFO_CT_THRES_DN)) ? 1'b0:
+                              am1_garb_critical;
 
+  always_ff @(posedge clk)
+    if (!s_rst_n) am1_garb_critical <= 1'b0;
+    else          am1_garb_critical <= am1_garb_criticalD;
+
+  assign acc_garb_critical = am1_garb_critical;
+
+  assign am1_garb_req.next_grid_avail =1'b0;
+  assign am1_garb_req.next_grid       = 'x; // UNUSED
+  assign am1_garb_req.grid            = afifo_acc_icmd_s.map_elt.pid.grid;
 
   fifo_element #(
     .WIDTH          (GARB_CMD_W),
@@ -465,12 +484,12 @@ module pep_mmacc_splitc_acc_read
 
   //== Send done to feed, and bsk
   logic                 s1_acc_feed_done;
-  logic [BPBS_ID_W-1:0] s1_acc_feed_done_map_idx;
+  logic [PID_W-1:0]     s1_acc_feed_done_pid;
   logic                 s1_br_loop_proc_done;
 
-  assign s1_acc_feed_done         = s1_avail & s1_eog & ~s1_icmd.map_elt.last;
-  assign s1_acc_feed_done_map_idx = s1_icmd.map_idx;
-  assign s1_br_loop_proc_done     = s1_avail & s1_eog & s1_icmd.batch_last_ct;
+  assign s1_acc_feed_done     = s1_avail & s1_eog & ~s1_icmd.map_elt.last;
+  assign s1_acc_feed_done_pid = s1_icmd.map_elt.pid.pid;
+  assign s1_br_loop_proc_done = s1_avail & s1_eog & s1_icmd.batch_last_ct;
 
   always_ff @(posedge clk)
     if (!s_rst_n) begin
@@ -483,7 +502,7 @@ module pep_mmacc_splitc_acc_read
     end
 
   always_ff @(posedge clk)
-    acc_feed_done_map_idx <= s1_acc_feed_done_map_idx;
+    acc_feed_done_pid <= s1_acc_feed_done_pid;
 
   //== Send done to SXT
   // When the whole BR process of the ct is over.

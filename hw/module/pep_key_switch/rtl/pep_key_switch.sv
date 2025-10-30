@@ -33,7 +33,6 @@ module pep_key_switch
 
   // ksk_if
   input  logic                                                      inc_ksk_wr_ptr, // pulse
-  output logic                                                      inc_ksk_rd_ptr,
 
   // To ksk manager
   output logic [KS_BATCH_CMD_W-1:0]                                 batch_cmd,
@@ -270,7 +269,6 @@ module pep_key_switch
     .s_rst_n               (s_rst_n),
 
     .outp_ks_loop_done_mh  (outp_ks_loop_done_mh),
-    .inc_ksk_rd_ptr        (inc_ksk_rd_ptr),
 
     .mult_outp_data        (mult_outp_data),
     .mult_outp_avail       (mult_outp_avail),

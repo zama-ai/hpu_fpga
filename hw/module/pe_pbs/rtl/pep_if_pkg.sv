@@ -154,7 +154,6 @@ package pep_if_pkg;
   // ============================================================================================ //
   // bsk
   typedef struct packed {
-    logic [TOTAL_BATCH_NB-1:0] inc_rd_ptr;
     logic [TOTAL_BATCH_NB-1:0] batch_start_1h;
   } entrybsk_proc_t;
 

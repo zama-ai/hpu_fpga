@@ -15,14 +15,13 @@ import math
 #=====================================================
 # global var
 #=====================================================
-GRAM_NB = 4
 RAM_W = 64
 MIN_BCOL = 6
 MIN_LWE_K = 30 # For small S
 MAX_LWE_K = 40 # For big S
 MIN_REGF_REG = 16
 BRAM_DEPTH = 1024
-MIN_INFIFO_CT_NB = 3
+MIN_INFIFO_CT_NB = 2
 MAX_NGC_RDX = 5
 MAX_CYC_RDX = 6
 

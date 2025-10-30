@@ -124,7 +124,6 @@ for ((j = 0; j < 1; j++)); do
   fi
 
 
-
   # generate random parameters
   PARAM_FILE_BASE="${PROJECT_DIR}/hw/output/${module}_param_base.sh"
   PARAM_FILE_ORDER2="${PROJECT_DIR}/hw/output/${module}_param_order2.sh"
@@ -163,6 +162,7 @@ for ((j = 0; j < 1; j++)); do
         -i $REGF_REG_NB \
         -j $REGF_COEF_NB \
         -k $REGF_SEQ \
+        -Q $PEA_ALU_NB \
         -D $AXI_DATA_W \
         -FPGA $FPGA \
         || exit 1
@@ -222,6 +222,7 @@ for ((j = 0; j < 1; j++)); do
                   -A $NTT_ARCH \
                   -c $BATCH_PBS_NB\
                   -H $TOTAL_PBS_NB \
+                  -D $GRAM_NB \
                   -K $LWE_K \
                   $ntt_cut_arg \
                   -X $LBX \
@@ -241,6 +242,7 @@ for ((j = 0; j < 1; j++)); do
                   -k $REGF_SEQ \
                   -p $DOP_IMPLEM \
                   -d $USE_MEAN_COMP \
+                  -Q $PEA_ALU_NB \
                   $run_args \
                   -- -P RAM_LATENCY int $RAM_LATENCY \
                   -P USE_BPIP int $USE_BPIP \

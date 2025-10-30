@@ -13,6 +13,7 @@ module tb_pe_alu;
 
   import param_tfhe_pkg::*;
   import regf_common_param_pkg::*;
+  import pea_common_param_pkg::*;
   import hpu_common_instruction_pkg::*;
 
 // ============================================================================================== --
@@ -22,10 +23,9 @@ module tb_pe_alu;
   localparam int ARST_ACTIVATION = 17;
 
   parameter  int INST_FIFO_DEPTH = 8;
-  parameter  int ALU_NB          = 1;
   parameter  int OUT_FIFO_DEPTH  = 2;
 
-  parameter  int PEA_PERIOD   = REGF_COEF_NB / ALU_NB == 1 ? 2 : REGF_COEF_NB / ALU_NB;
+  parameter  int PEA_PERIOD   = REGF_COEF_NB / PEA_ALU_NB == 1 ? 2 : REGF_COEF_NB / PEA_ALU_NB;
   parameter  int PEM_PERIOD   = 2;
   parameter  int PEP_PERIOD   = 1;
 
@@ -128,7 +128,6 @@ module tb_pe_alu;
 // ============================================================================================== --
   pe_alu #(
     .INST_FIFO_DEPTH (INST_FIFO_DEPTH),
-    .ALU_NB          (ALU_NB),
     .OUT_FIFO_DEPTH  (OUT_FIFO_DEPTH)
   ) dut (
     .clk                    (clk    ),

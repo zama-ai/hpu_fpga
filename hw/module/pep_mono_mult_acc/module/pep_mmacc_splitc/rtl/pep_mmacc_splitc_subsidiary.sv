@@ -149,6 +149,16 @@ module pep_mmacc_splitc_subsidiary
     end
   endgenerate
 
+// For debug
+// pragma translate_off
+//  always_ff @(posedge clk)
+//    if (acc_decomp_ctrl_avail && acc_decomp_sog) begin
+//      $display("%t > INFO: DECOMP pbs_id=%0d data=0x%0x",
+//        $time, acc_decomp_pbs_id, acc_decomp_data[0]);
+//    end
+// pragma translate_on
+
+
 // ============================================================================================== --
 // Error
 // ============================================================================================== --
@@ -238,7 +248,7 @@ module pep_mmacc_splitc_subsidiary
 
   // From accumulator
   logic                                                          acc_feed_done;
-  logic [BPBS_ID_W-1:0]                                          acc_feed_done_map_idx;
+  logic [PID_W-1:0]                                              acc_feed_done_pid;
 
   pep_mmacc_splitc_subs_feed #(
     .DATA_LATENCY         (GRAM_DATA_LATENCY)
@@ -260,7 +270,7 @@ module pep_mmacc_splitc_subsidiary
     .feed_afifo_rdy                (afifo_in_rdy),
 
     .acc_feed_done                 (acc_feed_done),
-    .acc_feed_done_map_idx         (acc_feed_done_map_idx),
+    .acc_feed_done_pid             (acc_feed_done_pid),
 
     .feed_gram_rd_en               (feed_gram_rd_en),
     .feed_gram_rd_add              (feed_gram_rd_add),
@@ -350,7 +360,7 @@ module pep_mmacc_splitc_subsidiary
     .afifo_acc_rdy                (afifo_out_rdy),
 
     .acc_feed_done                (acc_feed_done),
-    .acc_feed_done_map_idx        (acc_feed_done_map_idx),
+    .acc_feed_done_pid            (acc_feed_done_pid),
 
     .br_loop_proc_done            (), /*UNUSED*/
     .subs_error                   (acc_error)

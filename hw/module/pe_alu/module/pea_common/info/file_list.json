@@ -4,6 +4,30 @@
     "is_include_dir" : false,
     "rtl_files": [
         {
+            "name": "hw/module/pe_alu/module/pea_common/rtl/PEA_ALU/PEA_ALU_1/pea_alu_definition_pkg.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false,
+            "PEA_ALU":"PEA_ALU_1"
+        },
+        {
+            "name": "hw/module/pe_alu/module/pea_common/rtl/PEA_ALU/PEA_ALU_4/pea_alu_definition_pkg.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false,
+            "PEA_ALU":"PEA_ALU_4"
+        },
+        {
+            "name": "hw/module/pe_alu/module/pea_common/rtl/PEA_ALU/PEA_ALU_2/pea_alu_definition_pkg.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false,
+            "PEA_ALU":"PEA_ALU_2"
+        },
+        {
             "name": "hw/module/pe_alu/module/pea_common/rtl/pea_common_param_pkg.sv",
             "library": "work",
             "env": ["all"],

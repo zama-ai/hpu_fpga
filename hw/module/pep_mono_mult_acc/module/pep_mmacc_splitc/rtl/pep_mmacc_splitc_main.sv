@@ -76,7 +76,6 @@ module pep_mmacc_splitc_main
 
   // BSK
   input  logic                                                       inc_bsk_wr_ptr,
-  output logic                                                       inc_bsk_rd_ptr,
 
   // main <-> subs : GRAM arbiter
   output logic [GRAM_NB-1:0]                                         main_subs_garb_feed_rot_avail_1h,
@@ -175,7 +174,6 @@ module pep_mmacc_splitc_main
 
   logic                 gram_error;
   pep_mmacc_acc_error_t acc_error;
-  logic                 flush_error;
   logic                 sfifo_ovf_error;
   logic                 sxt_cmd_wait_b_dur;
   logic                 sxt_req_dur;
@@ -187,7 +185,7 @@ module pep_mmacc_splitc_main
 
     mmacc_errorD.gram_acs        = gram_error;
     mmacc_errorD.acc             = acc_error;
-    mmacc_errorD.flush_ovf       = flush_error;
+    mmacc_errorD.flush_ovf       = 1'b0; // TODO : remove
     mmacc_errorD.sfifo_ovf       = sfifo_ovf_error;
     mmacc_errorD.feed_ofifo_ovf  = 1'b0; // TODO
     mmacc_rif_counter_incD.sxt_cmd_wait_b_dur = sxt_cmd_wait_b_dur;
@@ -215,6 +213,7 @@ module pep_mmacc_splitc_main
   logic [GARB_CMD_W-1:0] acc_garb_req;
   logic                  acc_garb_req_vld;
   logic                  acc_garb_req_rdy;
+  logic                  acc_garb_critical;
 
   logic [GRAM_NB-1:0]    garb_feed_rot_avail_1h;
   logic [GRAM_NB-1:0]    garb_feed_dat_avail_1h;
@@ -234,6 +233,7 @@ module pep_mmacc_splitc_main
     .mmacc_garb_req          (acc_garb_req),
     .mmacc_garb_req_vld      (acc_garb_req_vld),
     .mmacc_garb_req_rdy      (acc_garb_req_rdy),
+    .mmacc_garb_critical     (acc_garb_critical),
 
     .garb_mmfeed_grant       (/*UNUSED*/),
     .garb_mmacc_grant        (/*UNUSED*/),
@@ -488,9 +488,7 @@ module pep_mmacc_splitc_main
 
   // From accumulator
   logic                                                        acc_feed_done;
-  logic [BPBS_ID_W-1:0]                                        acc_feed_done_map_idx;
-
-  logic                                                        br_loop_flush_done;
+  logic [PID_W-1:0]                                            acc_feed_done_pid;
 
   pep_mmacc_splitc_main_feed #(
     .DATA_LATENCY         (GRAM_DATA_LATENCY)
@@ -520,7 +518,7 @@ module pep_mmacc_splitc_main
     .feed_afifo_rdy                (afifo_in_rdy),
 
     .acc_feed_done                 (acc_feed_done),
-    .acc_feed_done_map_idx         (acc_feed_done_map_idx),
+    .acc_feed_done_pid             (acc_feed_done_pid),
 
     .feed_gram_rd_en               (feed_gram_rd_en),
     .feed_gram_rd_add              (feed_gram_rd_add),
@@ -538,8 +536,6 @@ module pep_mmacc_splitc_main
     .inc_bsk_wr_ptr                (inc_bsk_wr_ptr),
 
     .reset_cache                   (reset_cache),
-
-    .br_loop_flush_done            (br_loop_flush_done),
 
     .batch_cmd                     (batch_cmd),
     .batch_cmd_avail               (batch_cmd_avail)
@@ -603,6 +599,7 @@ module pep_mmacc_splitc_main
     .acc_garb_req                 (acc_garb_req),
     .acc_garb_req_vld             (acc_garb_req_vld),
     .acc_garb_req_rdy             (acc_garb_req_rdy),
+    .acc_garb_critical            (acc_garb_critical),
 
     .garb_acc_rd_avail_1h         (garb_acc_rd_avail_1h),
     .garb_acc_wr_avail_1h         (garb_acc_wr_avail_1h),
@@ -624,7 +621,7 @@ module pep_mmacc_splitc_main
     .acc_sfifo_avail              (sfifo_in_avail),
 
     .acc_feed_done                (acc_feed_done),
-    .acc_feed_done_map_idx        (acc_feed_done_map_idx),
+    .acc_feed_done_pid            (acc_feed_done_pid),
 
     .br_loop_proc_done            (br_loop_proc_done),
 
@@ -834,34 +831,5 @@ module pep_mmacc_splitc_main
       );
     end // gen_dpsi_loop
   endgenerate
-
-// ============================================================================================== --
-// Inc BSK read pointer
-// ============================================================================================== --
-  logic br_loop_flush_done_vld;
-  logic br_loop_flush_done_rdy;
-  logic inc_bsk_rd_ptrD;
-
-  common_lib_pulse_to_rdy_vld
-  #(
-    .FIFO_DEPTH (2) // TOREVIEW
-  ) common_lib_pulse_to_rdy_vld (
-    .clk (clk),
-    .s_rst_n  (s_rst_n),
-
-    .in_pulse (br_loop_flush_done),
-
-    .out_vld  (br_loop_flush_done_vld),
-    .out_rdy  (br_loop_flush_done_rdy),
-
-    .error    (flush_error)
-  );
-
-  assign inc_bsk_rd_ptrD        = br_loop_proc_done | br_loop_flush_done_vld;
-  assign br_loop_flush_done_rdy = ~br_loop_proc_done;
-
-  always_ff @(posedge clk)
-    if (!s_rst_n) inc_bsk_rd_ptr <= '0;
-    else          inc_bsk_rd_ptr <= inc_bsk_rd_ptrD;
 
 endmodule

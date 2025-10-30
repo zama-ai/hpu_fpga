@@ -57,7 +57,7 @@ module pep_mmacc_splitc_subs_feed
 
   // From acc
   input  logic                                                           acc_feed_done,
-  input  logic [BPBS_ID_W-1:0]                                           acc_feed_done_map_idx,
+  input  logic [PID_W-1:0]                                               acc_feed_done_pid,
 
   // GRAM
   output logic [GRAM_NB-1:0][SUBS_PSI-1:0][R-1:0][1:0]                      feed_gram_rd_en,
@@ -148,7 +148,7 @@ module pep_mmacc_splitc_subs_feed
     .feed_afifo_rdy          (feed_afifo_rdy),
 
     .acc_feed_done           (acc_feed_done),
-    .acc_feed_done_map_idx   (acc_feed_done_map_idx),
+    .acc_feed_done_pid       (acc_feed_done_pid),
 
     .feed_gram_rd_en         (feed_gram_rd_en),
     .feed_gram_rd_add        (feed_gram_rd_add),
@@ -169,8 +169,6 @@ module pep_mmacc_splitc_subs_feed
     .in_data                 (main_part),
     .in_rot_data             (main_rot_part),
     .in_data_avail           (main_part_avail),
-
-    .br_loop_flush_done      (), /*UNUSED*/
 
     .batch_cmd               (), /*UNUSED*/
     .batch_cmd_avail         ()  /*UNUSED*/

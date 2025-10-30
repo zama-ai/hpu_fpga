@@ -44,6 +44,9 @@ module ksk_manager
   input  logic [KSK_CUT_NB-1:0][KSK_SLOT_W-1:0]                               wr_slot,
   input  logic [KSK_CUT_NB-1:0][KS_BLOCK_COL_W-1:0]                           wr_ks_loop,
 
+  // KSK rd pointer inc
+  output logic                                                                inc_ksk_rd_ptr,
+
   // Error
   output pep_ksk_error_t                                                      error
 
@@ -52,7 +55,7 @@ module ksk_manager
 // ============================================================================================== --
 // localparam
 // ============================================================================================== --
-  localparam int CMD_FIFO_DEPTH = TOTAL_BATCH_NB;
+  localparam int CMD_FIFO_DEPTH = 2;
   localparam int RAM_LATENCY_L  = RAM_LATENCY + 1; // +1 to register read command
   localparam int BUF_DEPTH      = RAM_LATENCY_L + 2;
   localparam int LOC_NB         = RAM_LATENCY_L + BUF_DEPTH;
@@ -165,7 +168,7 @@ module ksk_manager
       // do nothing
     end
     else begin
-      if (sm1_batch_cmd_avail) begin
+      if (sm1_batch_cmd_avail && sm1_batch_cmd.pbs_nb > 0) begin
         assert($countones(sm1_slot_1h) == 1)
         else begin
           $fatal(1,"%t > ERROR: batch_cmd does not match a unique slot! (sm1_slot_1h=0x%x)", $time, sm1_slot_1h);
@@ -221,10 +224,10 @@ module ksk_manager
   logic                     s1_batch_cmd_vld;
   logic                     s1_batch_cmd_rdy;
 
-  assign s1_batch_cmd     = s0_batch_cmd;;
-  assign s1_batch_add_ofs = s0_batch_add_ofs;;
-  assign s1_batch_cmd_vld = s0_batch_cmd_vld;;
-  assign s0_batch_cmd_rdy = s1_batch_cmd_rdy;;
+  assign s1_batch_cmd     = s0_batch_cmd;
+  assign s1_batch_add_ofs = s0_batch_add_ofs;
+  assign s1_batch_cmd_vld = s0_batch_cmd_vld;
+  assign s0_batch_cmd_rdy = s1_batch_cmd_rdy;
 
 
   // ---------------------------------------------------------------------------------------------- --
@@ -243,6 +246,7 @@ module ksk_manager
   logic                       s1_last_lg;
   logic                       s1_last_pbs_id;
   logic                       s1_do_read;
+  logic                       s1_do_read_cond;
 
   assign s1_lgD     = s1_do_read ? s1_last_lg ? '0 : s1_lg + 1 : s1_lg;
   assign s1_pbs_idD = (s1_do_read && s1_last_lg)?
@@ -270,7 +274,10 @@ module ksk_manager
     end
   end
 
-  assign s1_batch_cmd_rdy = s1_do_read & s1_last_lg & s1_last_bline & s1_last_pbs_id;
+  logic s1_inc_ksk_rd_ptr;
+
+  assign s1_batch_cmd_rdy  = s1_do_read_cond & s1_last_lg & s1_last_bline & s1_last_pbs_id;
+  assign s1_inc_ksk_rd_ptr = s1_batch_cmd_rdy & s1_batch_cmd_vld;
 
   // ---------------------------------------------------------------------------------------------- --
   // Read pointer within the slot
@@ -374,7 +381,9 @@ module ksk_manager
     s1_data_cnt = cnt;
   end
 
-  assign s1_do_read = (s1_data_cnt < BUF_DEPTH) & s1_batch_cmd_vld;
+
+  assign s1_do_read_cond = (s1_data_cnt < BUF_DEPTH);
+  assign s1_do_read      = s1_do_read_cond & s1_batch_cmd_vld;
 
   // Buffer input
   assign buf_in_avail = ram_data_avail_dly[RAM_LATENCY_L-1];
@@ -457,6 +466,7 @@ module ksk_manager
     node_cmd_a[0][0].buf_shift    = buf_shift;
     node_cmd_a[0][0].ram_rd_enD   = ram_rd_enD ;
     node_cmd_a[0][0].ram_rd_addD  = ram_rd_addD;
+    node_cmd_a[0][0].ksk_rp_inc   = s1_inc_ksk_rd_ptr;
 
     node_cmd_a[0][LBY-1:1] = next_y_node_cmd_a[0][LBY-2:0];
 
@@ -552,6 +562,13 @@ module ksk_manager
 
     end
   endgenerate
+
+// ---------------------------------------------------------------------------------------------- --
+// Key rp increment
+// ---------------------------------------------------------------------------------------------- --
+  always_ff @(posedge clk)
+    if (!s_rst_n) inc_ksk_rd_ptr <= 1'b0;
+    else          inc_ksk_rd_ptr <= node_cmd_a[LBX-1][LBY-1].ksk_rp_inc;
 
 // ---------------------------------------------------------------------------------------------- --
 // Errors

@@ -87,7 +87,6 @@ module pe_pbs_with_ksk
   //== Control
   // KSK pointer
   output logic                                                         inc_ksk_wr_ptr,
-  input  logic                                                         inc_ksk_rd_ptr,
   // Broadcast batch cmd
   input  logic [KS_BATCH_CMD_W-1:0]                                    ks_batch_cmd,
   input  logic                                                         ks_batch_cmd_avail,// KSK start
@@ -121,6 +120,8 @@ module pe_pbs_with_ksk
   logic [KSK_CUT_NB-1:0][LBX_W-1:0]                           ksk_mgr_wr_x_idx;
   logic [KSK_CUT_NB-1:0][KSK_SLOT_W-1:0]                      ksk_mgr_wr_slot;
   logic [KSK_CUT_NB-1:0][KS_BLOCK_COL_W-1:0]                  ksk_mgr_wr_ks_loop;
+
+  logic                                                       inc_ksk_rd_ptr;
 
 // ============================================================================================== --
 // Error / Inc
@@ -222,6 +223,7 @@ module pe_pbs_with_ksk
     .wr_slot         (ksk_mgr_wr_slot),
     .wr_ks_loop      (ksk_mgr_wr_ks_loop),
 
+    .inc_ksk_rd_ptr  (inc_ksk_rd_ptr),
     .error           (ksk_mgr_error)
   );
 

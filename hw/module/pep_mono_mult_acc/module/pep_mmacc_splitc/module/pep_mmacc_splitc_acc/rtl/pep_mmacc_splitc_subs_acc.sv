@@ -77,7 +77,7 @@ module pep_mmacc_splitc_subs_acc
 
   // Status
   output logic                                                     acc_feed_done,
-  output logic [BPBS_ID_W-1:0]                                     acc_feed_done_map_idx,
+  output logic [PID_W-1:0]                                         acc_feed_done_pid,
   output logic                                                     br_loop_proc_done,
 
   output logic [ACC_CORE_ERROR_W-1:0]                              subs_error
@@ -124,6 +124,7 @@ module pep_mmacc_splitc_subs_acc
     .acc_garb_req           (), /*UNUSED*/
     .acc_garb_req_vld       (), /*UNUSED*/
     .acc_garb_req_rdy       (1'b1), /*UNUSED*/
+    .acc_garb_critical      (), /*UNUSED*/
 
     .garb_acc_rd_avail_1h   (garb_acc_rd_avail_1h),
     .garb_acc_wr_avail_1h   (garb_acc_wr_avail_1h),
@@ -145,7 +146,7 @@ module pep_mmacc_splitc_subs_acc
     .acc_sfifo_avail        (/*UNUSED*/),
 
     .acc_feed_done          (acc_feed_done),
-    .acc_feed_done_map_idx  (acc_feed_done_map_idx),
+    .acc_feed_done_pid      (acc_feed_done_pid),
     .br_loop_proc_done      (br_loop_proc_done),
 
     .error                  (subs_error)

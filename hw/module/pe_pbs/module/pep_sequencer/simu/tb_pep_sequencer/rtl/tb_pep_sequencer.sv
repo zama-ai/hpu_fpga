@@ -604,34 +604,20 @@ module tb_pep_sequencer;
 // Check ct order in map
 //---------------------------------------
   // Keep track of rank for each ct
-  logic [TOTAL_PBS_NB-1:0][RANK_W-1:0] ref_ct_rank;
-  logic [TOTAL_PBS_NB-1:0][RANK_W-1:0] ref_ct_rankD;
-
   integer ref_iteration [TOTAL_PBS_NB-1:0];
   integer ref_iterationD [TOTAL_PBS_NB-1:0];
 
   always_ff @(posedge clk)
-    if (!s_rst_n) begin
-      ref_iteration <= '{TOTAL_PBS_NB{32'd0}};
-      for (int i=0; i<TOTAL_PBS_NB; i=i+1)
-        ref_ct_rank[i] <= (i / GRAM_NB) % RANK_NB;
-    end
-    else begin
-      ref_iteration <= ref_iterationD;
-      ref_ct_rank   <= ref_ct_rankD;
-    end
-
+    if (!s_rst_n) ref_iteration <= '{TOTAL_PBS_NB{32'd0}};
+    else          ref_iteration <= ref_iterationD;
 
   always_comb begin
-    ref_ct_rankD = ref_ct_rank;
     ref_iterationD = ref_iteration;
     if (seq_pbs_cmd_avail)
       for (int i=0; i<RANK_NB; i=i+1)
         for (int j=0; j<GRAM_NB; j=j+1)
-          if (seq_pbs_cmd_s.map[i][j].avail && seq_pbs_cmd_s.map[i][j].last) begin
-            ref_ct_rankD[seq_pbs_cmd_s.map[i][j].pid.pid] = (ref_ct_rank[seq_pbs_cmd_s.map[i][j].pid.pid] + ((TOTAL_PBS_NB/GRAM_NB) % RANK_NB))%RANK_NB;
+          if (seq_pbs_cmd_s.map[i][j].avail && seq_pbs_cmd_s.map[i][j].last)
             ref_iterationD[seq_pbs_cmd_s.map[i][j].pid.pid] = ref_iteration[seq_pbs_cmd_s.map[i][j].pid.pid] + 1;
-          end
   end
 
   always_ff @(posedge clk)
@@ -642,11 +628,11 @@ module tb_pep_sequencer;
         for (int i=0; i<RANK_NB; i=i+1)
           for (int j=0; j<GRAM_NB; j=j+1)
             if (seq_pbs_cmd_s.map[i][j].avail) begin
-              assert((i == ref_ct_rank[seq_pbs_cmd_s.map[i][j].pid.pid]) && (j == seq_pbs_cmd_s.map[i][j].pid.grid))
+              assert((j == seq_pbs_cmd_s.map[i][j].pid.grid))
               else begin
-                $display("%t > ERROR: ITER[%0d] pbs_id[%0d] is not at its correct location. exp=(rk=%0d, grid=%0d) seen=(rk=%0d, grid=%0d)",
+                $display("%t > ERROR: ITER[%0d] pbs_id[%0d] is not at its correct location. exp=(grid=%0d) seen=(grid=%0d)",
                           $time,ref_iteration[seq_pbs_cmd_s.map[i][j].pid.pid], seq_pbs_cmd_s.map[i][j].pid.pid,
-                          ref_ct_rank[seq_pbs_cmd_s.map[i][j].pid.pid], seq_pbs_cmd_s.map[i][j].pid.grid,i,j);
+                          j,seq_pbs_cmd_s.map[i][j].pid.grid);
                 error_map2 <= 1'b1;
               end
             end

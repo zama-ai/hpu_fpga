@@ -42,6 +42,7 @@ package pep_common_param_pkg;
 // Parameters
 //==================================================
   localparam int GRAM_ID_W         = $clog2(GRAM_NB) == 0 ? 1 : $clog2(GRAM_NB);
+  localparam int GRAM_ID_WW        = $clog2(GRAM_NB+1) == 0 ? 1 : $clog2(GRAM_NB+1);
 
   localparam int RANK_NB           = BATCH_PBS_NB / GRAM_NB;
   localparam int RANK_W            = $clog2(RANK_NB) == 0 ? 1 : $clog2(RANK_NB);
@@ -177,6 +178,7 @@ package pep_common_param_pkg;
   localparam int MAP_ELT_W = $bits(map_elt_t);
 
   typedef struct packed {
+    logic [BPBS_ID_W-1:0]                rp_map_idx;
     logic                                is_flush;
     logic [LWE_K_W-1:0]                  br_loop;
     logic [BPBS_NB_W-1:0]                ct_nb_m1;

@@ -80,6 +80,7 @@ USE_MEAN_COMP=1
 
 DOP_IMPLEM="Ilp"
 
+PEA_ALU_NB=2
 GRAM_NB=4
 TOP="hpu"
 GLWE_PC=1
@@ -138,6 +139,7 @@ echo "-Z                       : LBZ: Number of coefficients lines processed in 
 echo "-i                       : Regfile number of registers (default $REGF_REG_NB)"
 echo "-j                       : Regfile number of coefficients (default $REGF_COEF_NB)"
 echo "-k                       : Regfile number of sequences (default $REGF_SEQ)"
+echo "-Q                       : PEA_ALU_NB (default : $PEA_ALU_NB)"
 echo "-n                       : Integer size (default $INT_SIZE)"
 echo "-x                       : software top file (default = \"${SOFT_NAME}\")"
 echo "-y                       : directory containing microcode files. (default = \"${UCODE_DIR}\")"
@@ -164,7 +166,7 @@ echo "INFO> Parse command line"
 # Initialize your own variables here:
 NTT_RDX_CUT_S_TMP=()
 REGIF_FILE_S_TMP=()
-while getopts "Chzg:l:R:P:S:w:t:m:c:H:K:s:e:b:q:W:A:J:I:L:B:r:V:X:Y:Z:G:o:u:f:O:U:F:i:j:k:x:E:y:n:a:M:T:p:d:D:" opt; do
+while getopts "Chzg:l:R:P:S:w:t:m:c:H:K:s:e:b:q:W:A:J:I:L:B:r:V:X:Y:Z:G:o:u:f:O:U:F:i:j:k:x:E:y:n:a:M:T:p:d:D:Q:" opt; do
   case "$opt" in
     h)
       usage
@@ -318,6 +320,9 @@ while getopts "Chzg:l:R:P:S:w:t:m:c:H:K:s:e:b:q:W:A:J:I:L:B:r:V:X:Y:Z:G:o:u:f:O:
       ;;
     D)
       GRAM_NB=$OPTARG
+      ;;
+    Q)
+      PEA_ALU_NB=$OPTARG
       ;;
     :)
       echo "$0: Must supply an argument to -$OPTARG." >&2
@@ -669,7 +674,7 @@ if [ $GEN_STIMULI -eq 1 ] ; then
   echo ""
   pkg_cmd="python3 ${PROJECT_DIR}/hw/module/pe_pbs/module/pep_common/scripts/gen_pep_batch_definition_pkg.py\
           -f -c $BATCH_PBS_NB -H $TOTAL_PBS_NB -g $GRAM_NB -o ${RTL_DIR}/pep_batch_definition_pkg.sv"
-  echo "INFO> BATCH_PBS_NB=$BATCH_PBS_NB TOTAL_PBS_NB=$TOTAL_PBS_NB"
+  echo "INFO> BATCH_PBS_NB=$BATCH_PBS_NB TOTAL_PBS_NB=$TOTAL_PBS_NB GRAM_NB=$GRAM_NB"
   echo "INFO> pep_batch_definition_pkg.sv"
   echo "INFO> Running : $pkg_cmd"
   $pkg_cmd || exit 1
@@ -748,6 +753,15 @@ if [ $GEN_STIMULI -eq 1 ] ; then
   echo "INFO> Running : $pkg_cmd"
   $pkg_cmd || exit 1
 
+  echo ""
+  pkg_cmd="python3 ${PROJECT_DIR}/hw/module/pe_alu/module/pea_common/scripts/gen_pea_alu_definition_pkg.py\
+          -f -pea_alu_nb $PEA_ALU_NB \
+          -o ${RTL_DIR}/pea_alu_definition_pkg.sv"
+  echo "INFO> PEA_ALU_NB=$PEA_ALU_NB"
+  echo "INFO> Creating pea_alu_definition_pkg.sv"
+  echo "INFO> Running : $pkg_cmd"
+  $pkg_cmd || exit 1
+
   # Create the associated file_list.json
   echo ""
   file_list_cmd="${PROJECT_DIR}/hw/scripts/create_module/create_file_list.py\
@@ -769,6 +783,7 @@ if [ $GEN_STIMULI -eq 1 ] ; then
                 -R pep_batch_definition_pkg.sv simu 0 1 \
                 -R regf_common_definition_pkg.sv simu 0 1 \
                 -R hpu_twdfile_definition_pkg.sv simu 0 1 \
+                -R pea_alu_definition_pkg.sv simu 0 1 \
                 -F bsk_mgr_common_cut_definition_pkg.sv BSK_CUT BSK_CUT_${BSK_CUT_NB} \
                 -F bsk_mgr_common_slot_definition_pkg.sv BSK_SLOT BSK_SLOT_${BSK_SLOT_NB} \
                 -F top_common_pc_definition_pkg.sv TOP_PC TOP_PC_bsk${BSK_PC}_ksk${KSK_PC}_pem${PEM_PC} \
@@ -784,7 +799,8 @@ if [ $GEN_STIMULI -eq 1 ] ; then
                 -F param_ntt_definition_pkg.sv NTT_MOD NTT_MOD_simu \
                 -F pep_ks_common_definition_pkg.sv KSLB KSLB_x${LBX}y${LBY}z${LBZ} \
                 -F regf_common_definition_pkg.sv REGF_STRUCT REGF_STRUCT_reg${REGF_REG_NB}_coef${REGF_COEF_NB}_seq${REGF_SEQ} \
-                -F hpu_twdfile_definition_pkg.sv HPU_TWDFILE HPU_TWDFILE_simu "
+                -F hpu_twdfile_definition_pkg.sv HPU_TWDFILE HPU_TWDFILE_simu \
+                -F pea_alu_definition_pkg.sv PEA_ALU PEA_ALU_${PEA_ALU_NB}"
 
   echo "INFO> Running : $file_list_cmd"
   $file_list_cmd || exit 1
@@ -825,7 +841,8 @@ eda_args="$eda_args
                 -F NTT_MOD NTT_MOD_simu \
                 -F KSLB KSLB_x${LBX}y${LBY}z${LBZ} \
                 -F REGF_STRUCT REGF_STRUCT_reg${REGF_REG_NB}_coef${REGF_COEF_NB}_seq${REGF_SEQ} \
-                -F HPU_TWDFILE HPU_TWDFILE_simu"
+                -F HPU_TWDFILE HPU_TWDFILE_simu \
+                -F PEA_ALU PEA_ALU_${PEA_ALU_NB}"
 
 ###################################################################################################
 # Check microcode

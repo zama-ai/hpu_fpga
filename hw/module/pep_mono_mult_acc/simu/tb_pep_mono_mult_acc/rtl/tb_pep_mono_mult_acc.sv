@@ -203,12 +203,11 @@ module tb_pep_mono_mult_acc;
   logic                                                   ks_boram_parity;
 
   logic                                                   seq_boram_corr_wr_en;
-  logic [KS_MAX_ERROR_W-1:0]                              seq_boram_corr_data;
+  logic [KS_CORR_W-1:0]                                   seq_boram_corr_data;
   logic [PID_W-1:0]                                       seq_boram_corr_pid;
 
   // BSK
   logic                                                   inc_bsk_wr_ptr;
-  logic                                                   inc_bsk_rd_ptr;
 
   pep_mmacc_error_t                                       mmacc_error;
 
@@ -357,7 +356,6 @@ module tb_pep_mono_mult_acc;
     .seq_boram_corr_pid         (seq_boram_corr_pid),
 
     .inc_bsk_wr_ptr             (inc_bsk_wr_ptr),
-    .inc_bsk_rd_ptr             (inc_bsk_rd_ptr),
 
     .reset_cache                (reset_cache),
 
@@ -767,7 +765,10 @@ module tb_pep_mono_mult_acc;
   pep_inst_t inst_tmp;
   pep_inst_t inst_tmp2;
 
-  assign inst_tmp2.dop     = DOP_PBS;
+  integer inst_cnt;
+  integer inst_cntD;
+
+  assign inst_tmp2.dop     = (inst_cnt == SAMPLE_NB-1) ? DOP_PBS_F : DOP_PBS;
   assign inst_tmp2.gid     = inst_tmp.gid;
   assign inst_tmp2.src_rid = inst_tmp.src_rid % REGF_REG_NB;
   assign inst_tmp2.dst_rid = inst_tmp.dst_rid % REGF_REG_NB;
@@ -1048,9 +1049,6 @@ module tb_pep_mono_mult_acc;
 // ---------------------------------------------------------------------------------------------- --
 // End of test
 // ---------------------------------------------------------------------------------------------- --
-  integer inst_cnt;
-  integer inst_cntD;
-
   integer sxt_cnt;
   integer sxt_cntD;
 
