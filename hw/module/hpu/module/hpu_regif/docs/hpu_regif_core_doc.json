@@ -4173,7 +4173,7 @@
     },
     {
       "name": "reset",
-      "description": "Controllable resets for tranceivers",
+      "description": "Controllable resets for transceivers",
       "offset": 327700,
       "bytes_align": 4,
       "range": 8,

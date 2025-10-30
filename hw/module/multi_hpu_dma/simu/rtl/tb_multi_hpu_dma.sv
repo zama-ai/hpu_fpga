@@ -7,7 +7,7 @@
 //
 // TODO:
 // - test interrupts are correctly clear when read and that no read packet is lost
-// - test beahvior when saying several HPUs are the current one by mistake
+// - test behavior when saying several HPUs are the current one by mistake
 //
 // ==============================================================================================
 
@@ -480,7 +480,7 @@ module tb_multi_hpu_dma;
      *  ===========================================================================================
      * - Piling requests:
      *                > X Notifies to Y that several ciphertexts are ready
-     *                > Y then reads alls ciphertexts
+     *                > Y then reads all ciphertexts
      *  -------------------------------------------------------------------------------------------
      * > all ciphertexts must have moved from memory X to Y
      *  ===========================================================================================
@@ -521,9 +521,9 @@ module tb_multi_hpu_dma;
 
     repeat(100) @(posedge clk_control);
     // Sending a NOTIFY from HPU-B to HPU-A -------------------------------------------------------
-    notify_reqest(random_hpu_b, random_hpu_a, iop_id, iop_src_addr);
+    notify_request(random_hpu_b, random_hpu_a, iop_id, iop_src_addr);
 
-    // if a Notify is received by HPU A we should be able to confim it by reading in the regf
+    // if a Notify is received by HPU A we should be able to confirm it by reading in the regf
     notify_payload = {iop_src_addr, 8'b0, random_hpu_b, iop_id};
 
     wait (hpu_a.interrupt_notify == 1'b1);
@@ -727,7 +727,7 @@ module tb_multi_hpu_dma;
    * - HPU-A and HPU-B can be both side here
    * - if you chose a wrong HPU-id you will get an error
    */
-  task automatic notify_reqest(
+  task automatic notify_request(
     input logic [ 3:0] src_node_id,
     input logic [ 3:0] dst_node_id,
     input logic [ 3:0] iop_id,

@@ -107,7 +107,7 @@ module mhdma_bridge
   // ReQuest Queues -------------------------------------------------------------------------------
   logic rrqq_wr_en; // read request queue write enable
   logic nrqq_wr_en; // notify request queue write enable
-  // when we have the data of both request identifier and addreses, we consume the information
+  // when we have the data of both request identifier and addresses, we consume the information
   // once consumed, the top will receive the flag and toggle received requests
   assign request_consumed = (rrqq_wr_en | nrqq_wr_en) ? 1'b1 : 1'b0;
   // new pending requests on qsfp tx
@@ -241,7 +241,7 @@ module mhdma_bridge
   logic [REQ_ID_W-1:0]   nrqq_req_id;
   logic [HPU_ID_W-1:0]   nrqq_node_id;
 
-  // none of theses informations are in the first word:
+  // none of theses information are in the first word:
   //  => sampled on the same clock cycle as sending first frame
   always_ff @(posedge clk_mrmac) begin : notify_request_sampling
     if (~resetn_mrmac) begin
@@ -289,7 +289,7 @@ module mhdma_bridge
 
   // if ever two hpu ids are set as "current", raise an error
   // when one_hot_id is all zeros, we cannot conclude if there is an error or not
-  // TODO: if half is ones and the rest are zeros, erorr not raised
+  // TODO: if half is ones and the rest are zeros, error not raised
   logic error_id_def;
   always_ff @(posedge clk_mrmac) begin : error_on_hpu_id
     if (~resetn_mrmac) begin
@@ -318,7 +318,7 @@ module mhdma_bridge
   // packet decoder
   // ==============================================================================================
   // On RX lanes, should know as soon as possible what type of packets I should see
-  // First frame I can check that the dstination address is me
+  // First frame I can check that the destination address is me
   logic [MAC_ADDR_W-1:0] rx_dst_mac_addr;
   // Second frame I will know who is the sender, request ID, seq num
   logic [SEQ_NUM_W-1:0]  rx_sec_num;
@@ -665,7 +665,7 @@ module mhdma_bridge
   end
   assign rx_size_b = ((rx_counter == 2) & rx_valid) ? qsfp_rx_tdata[8+SIZE_B_W-1:8] : 'h0;
 
-  // switch betweeen components -----------------------------------------------------------------
+  // switch between components -----------------------------------------------------------------
   assign rx_valid = (current_hpu_mac == rx_dst_mac_addr) ? 1'b1 : 1'b0;
 
   assign notify_ack_received            = (rx_valid & (rx_req_id == REQ_ID_ACK_NOTIFY_TX)) ? 1'b1 : 1'b0;

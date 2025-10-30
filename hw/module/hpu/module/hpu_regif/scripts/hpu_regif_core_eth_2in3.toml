@@ -30,7 +30,7 @@ offset= 0x0
 # =====================================================================================================================
 [section.reset]
 offset= 0x14
-description="Controllable resets for tranceivers"
+description="Controllable resets for transceivers"
 
 [section.reset.register.datapath]
   description="GTM datapath resets"
