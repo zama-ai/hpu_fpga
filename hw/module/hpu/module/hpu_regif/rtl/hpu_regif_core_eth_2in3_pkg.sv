@@ -58,6 +58,11 @@ package hpu_regif_core_eth_2in3_pkg;
    } request_notify_t;
   localparam int REQUEST_NOTIFY_OFS = 'h50108;
   typedef struct packed {
+    logic [(16-1):0] cnt_notify_read;
+    logic [(16-1):0] cnt_notify_ack;
+   } request_stat_notify_t;
+  localparam int REQUEST_STAT_NOTIFY_OFS = 'h5010c;
+  typedef struct packed {
     logic [(1-1):0] reset_registers;
     logic [(1-1):0] tx_loop;
     logic [(1-1):0] rx_to_tx;

@@ -87,6 +87,9 @@ import hpu_regif_core_eth_2in3_pkg::*;
   // Register IO: request_notify
     , output request_notify_t r_request_notify
     , input  request_notify_t r_request_notify_upd
+  // Register IO: request_stat_notify
+    , output request_stat_notify_t r_request_stat_notify
+    , input  request_stat_notify_t r_request_stat_notify_upd
   // Register IO: line_debug
     , output line_debug_t r_line_debug
   // Register IO: fifo_write_number_of_words
@@ -340,6 +343,13 @@ import hpu_regif_core_eth_2in3_pkg::*;
     request_notify_default.node_id = 'h0;
     request_notify_default.src_addr = 'h0;
   end
+//-- Default request_stat_notify
+  request_stat_notify_t request_stat_notify_default;
+  always_comb begin
+    request_stat_notify_default = 'h0;
+    request_stat_notify_default.cnt_notify_ack = 'h0;
+    request_stat_notify_default.cnt_notify_read = 'h0;
+  end
 //-- Default line_debug
   line_debug_t line_debug_default;
   always_comb begin
@@ -567,6 +577,17 @@ import hpu_regif_core_eth_2in3_pkg::*;
     end
     else begin
       r_request_notify       <= r_request_notifyD;
+    end
+  end
+// Register FF: request_stat_notify
+  logic [REG_DATA_W-1:0] r_request_stat_notifyD;
+  assign r_request_stat_notifyD       = r_request_stat_notify_upd;
+  always_ff @(posedge clk) begin
+    if (!s_rst_n) begin
+      r_request_stat_notify       <= request_stat_notify_default;
+    end
+    else begin
+      r_request_stat_notify       <= r_request_stat_notifyD;
     end
   end
 // Register FF: line_debug
@@ -830,6 +851,9 @@ import hpu_regif_core_eth_2in3_pkg::*;
           end
           REQUEST_NOTIFY_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register request_notify
             axil_rdataD = r_request_notify;
+          end
+          REQUEST_STAT_NOTIFY_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register request_stat_notify
+            axil_rdataD = r_request_stat_notify;
           end
           LINE_DEBUG_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register line_debug
             axil_rdataD = r_line_debug;

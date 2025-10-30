@@ -4376,7 +4376,7 @@
       "description": "Request registers interface",
       "offset": 327936,
       "bytes_align": 4,
-      "range": 12,
+      "range": 16,
       "register": [
         {
           "name": "req_id",
@@ -4538,6 +4538,49 @@
             {
               "name": "src_addr",
               "description": "what is the source address of the ct notified",
+              "size_b": 16,
+              "offset_b": 16,
+              "default": {
+                "Cst": 0
+              }
+            }
+          ]
+        },
+        {
+          "name": "stat_notify",
+          "description": "requests statistics each counter is up to 40seconds",
+          "owner": "Kernel",
+          "read_access": "Read",
+          "write_access": "None",
+          "offset": 327948,
+          "default": {
+            "ParamsField": {
+              "params": [],
+              "name_val": [
+                [
+                  "cnt_notify_ack",
+                  "'h0"
+                ],
+                [
+                  "cnt_notify_read",
+                  "'h0"
+                ]
+              ]
+            }
+          },
+          "field": [
+            {
+              "name": "cnt_notify_ack",
+              "description": "counter from send notify up to ack",
+              "size_b": 16,
+              "offset_b": 0,
+              "default": {
+                "Cst": 0
+              }
+            },
+            {
+              "name": "cnt_notify_read",
+              "description": "counter from reception up to reading reg",
               "size_b": 16,
               "offset_b": 16,
               "default": {

@@ -141,6 +141,14 @@ offset= 0x100
   field.node_id   = {size_b=4,  offset_b=4,  default={Cst=0x0}, description="what HPU is the source of this Notify"}
   field.src_addr  = {size_b=16, offset_b=16, default={Cst=0x0}, description="what is the source address of the ct notified"}
 
+[section.request.register.stat_notify]
+  description="requests statistics each counter is up to 40seconds"
+  owner="Kernel"
+  read_access="Read"
+  write_access="None"
+  field.cnt_notify_ack  = {size_b=16, offset_b=0,  default={Cst=0x0}, description="counter from send notify up to ack"}
+  field.cnt_notify_read = {size_b=16, offset_b=16, default={Cst=0x0}, description="counter from reception up to reading reg"}
+
 # =====================================================================================================================
 [section.line]
 offset= 0x1000

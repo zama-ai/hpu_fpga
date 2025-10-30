@@ -535,6 +535,11 @@ module tb_multi_hpu_dma;
       error_notify_rx = 1'b1;
     end
 
+    maxil_drv_if_hpu_a.read_trans(REQUEST_STAT_NOTIFY_OFS, read_data);
+    $display("[INFO]: stat @HPU_A: how long data stayed before read? %x", read_data[15:0]);
+    maxil_drv_if_hpu_b.read_trans(REQUEST_STAT_NOTIFY_OFS, read_data);
+    $display("[INFO]: stat @HPU_B: how long acknowledge took? %x", read_data[31:16]);
+
     repeat(100) @(posedge clk_control);
     // Sending a read request from HPU-A to HPU-B -------------------------------------------------
     read_request(random_hpu_b, iop_id, iop_src_addr, iop_dst_addr);

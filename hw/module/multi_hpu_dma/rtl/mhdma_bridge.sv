@@ -58,6 +58,11 @@ module mhdma_bridge
   input  logic [ 1:0]                 received_req,
   output logic                        request_consumed,
   output logic [31:0]                 regf_notify_payload,
+  // statistics ---------------------------------------------------------------
+  output logic [15:0]                 stat_cnt_notify_ack,
+  output logic [15:0]                 stat_cnt_notify_read,
+  // reset counters
+  input  logic                        rst_cnt_notify,
   // interrupts ---------------------------------------------------------------
   input  logic                        clear_interrupt_notify,
   output logic                        interrupt_notify,
@@ -806,5 +811,73 @@ module mhdma_bridge
     end
     endcase
   end
+
+  // =========================================================================================== //
+  // Statistics
+  // specific for FPGA
+  // =========================================================================================== //
+  logic [15:0] cnt_notify_ack;
+  logic [15:0] cnt_notify_read;
+
+  logic start_cnt_notify_ack;
+  logic notify_ack_received_cdc;
+
+  /* how long it is between sending a notify request and receiving an acknowledge
+   *  - starts when received_req (clk_cfg) is ones
+   *  - stops when notify_ack_received (clk mrmac) is one
+   */
+  always_ff @(posedge clk_cfg) begin
+    if (~resetn_cfg) begin
+      start_cnt_notify_ack <= 1'b0;
+    end else begin
+      if (&received_req & (regf_req_id[23:20] == REQ_ID_NOTIFY_TX)) begin
+        start_cnt_notify_ack <= 1'b1;
+      end else if(notify_ack_received_cdc) begin
+        start_cnt_notify_ack <= 1'b0;
+      end
+    end
+  end
+
+  always_ff @(posedge clk_cfg) begin
+    if (~resetn_cfg) begin
+      cnt_notify_ack <= 'h0;
+    end else begin
+      if (start_cnt_notify_ack) begin
+        cnt_notify_ack <= cnt_notify_ack + 1;
+      end else if (rst_cnt_notify) begin
+        cnt_notify_ack <= 'h0;
+      end
+    end
+  end
+
+  xpm_cdc_single_wrapper # (
+    .CDC_SYNC_STAGES(CDC_SYNC_STAGES),
+    .SRC_INPUT_REG  (0)
+  ) ack_xpm_cdc_single_wrapper (
+    .src_clk(clk_mrmac),
+    .src_in (notify_ack_received),
+
+    .dest_clk(clk_cfg),
+    .dest_out(notify_ack_received_cdc)
+  );
+
+  /* How long has the data been ready in the regif
+   *  - counts when interruption is raised
+   *  - itr_notify is on config clock
+   */
+  always_ff @(posedge clk_cfg) begin
+    if (~resetn_cfg) begin
+      cnt_notify_read <= 'h0;
+    end else begin
+      if (itr_notify) begin
+        cnt_notify_read <= cnt_notify_read +1;
+      end else if (rst_cnt_notify) begin
+        cnt_notify_read <= 'h0;
+      end
+    end
+  end
+
+  assign stat_cnt_notify_ack  = cnt_notify_ack;
+  assign stat_cnt_notify_read = cnt_notify_read;
 
 endmodule

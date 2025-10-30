@@ -46,7 +46,7 @@ Below is a summary of all the registers in the current register map:
 | [system](#section-system) | 0x50000 | 0x8 | system configuration |
 | [reset](#section-reset) | 0x50014 | 0x8 | Controllable resets for tranceivers |
 | [hpu_id](#section-hpu-id) | 0x50050 | 0x20 | HPU ID containing all possible targets. For all IDs we have HPU MAC address, software ID and a flag for current hpu |
-| [request](#section-request) | 0x50100 | 0xc | Request registers interface |
+| [request](#section-request) | 0x50100 | 0x10 | Request registers interface |
 | [line](#section-line) | 0x51000 | 0x4 | Line parameter sections |
 | [fifo_write](#section-fifo-write) | 0x5101c | 0x10 | fifo write part |
 | [fifo_read](#section-fifo-read) | 0x5102c | 0xc | fifo write part |
@@ -4268,6 +4268,7 @@ Below is a summary of all the registers in the current section request:
 | [req_id](#register-requestreq-id) | 0x50100 | RW |  Different parameters for qsfp lines |
 | [req_addr](#register-requestreq-addr) | 0x50104 | RW |  request address |
 | [notify](#register-requestnotify) | 0x50108 | R. |  When a notify is received, this register will be updated |
+| [stat_notify](#register-requeststat-notify) | 0x5010c | R. |  requests statistics each counter is up to 40seconds |
 
 
 ---
@@ -4342,6 +4343,30 @@ Register notify contains following Sub-fields:
 | iop_id      | 0 | 4 |0| what is the IOP ID of received Notify |
 | node_id      | 4 | 4 |0| what HPU is the source of this Notify |
 | src_addr      | 16 | 16 |0| what is the source address of the ct notified |
+
+
+
+---
+
+
+### Register request.stat-notify
+
+- **Description**: requests statistics each counter is up to 40seconds
+- **Owner**: Kernel
+- **Read Access**: Read
+- **Write Access**: None
+- **Offset**: 0x5010c
+- **Default**: C.f. fields
+
+
+#### Field Details
+
+Register stat_notify contains following Sub-fields:
+
+| Field Name | Offset_b | Size_b | Default      | Description   |
+|-----------:|:--------:|:------:|:------------:|:--------------|
+| cnt_notify_ack      | 0 | 16 |0| counter from send notify up to ack |
+| cnt_notify_read      | 16 | 16 |0| counter from reception up to reading reg |
 
 
 
