@@ -101,9 +101,9 @@ program TOP_IP HOW_MANY START_BUS=DEFAULT_BUS SN=DEFAULT_SN STAGE=DEFAULT_STAGE:
 
   # Mandatory | TOP_IP    : the name of the bitstream
   # Mandatory | HOW_MANY  : the numbers of boards to program
-  # Optionnal | START_BUS : the bus in bus:device:function of the first board to program
-  # Optionnal | SN        : the serial number of the board we want to program
-  # Optionnal | STAGE     : what tandem stage we want to perform
+  # Optional  | START_BUS : the bus in bus:device:function of the first board to program
+  # Optional  | SN        : the serial number of the board we want to program
+  # Optional  | STAGE     : what tandem stage we want to perform
 
   TOP_IP={{TOP_IP}}
   HOW_MANY={{HOW_MANY}}
@@ -199,9 +199,9 @@ program TOP_IP HOW_MANY START_BUS=DEFAULT_BUS SN=DEFAULT_SN STAGE=DEFAULT_STAGE:
 
   # Mandatory | TOP_IP    : the name of the bitstream
   # Mandatory | HOW_MANY  : the numbers of boards to program
-  # Optionnal | START_BUS : the bus in bus:device:function of the first board to program
-  # Optionnal | SN        : the serial number of the board we want to program
-  # Optionnal | STAGE     : what tandem stage we want to perform
+  # Optional  | START_BUS : the bus in bus:device:function of the first board to program
+  # Optional  | SN        : the serial number of the board we want to program
+  # Optional  | STAGE     : what tandem stage we want to perform
   get_boards_and_serials
 
   if [ "$START_BUS" != "auto" ]; then
@@ -240,7 +240,7 @@ program TOP_IP HOW_MANY START_BUS=DEFAULT_BUS SN=DEFAULT_SN STAGE=DEFAULT_STAGE:
   else
     for ((i = $index; i < ($HOW_MANY + $index); i++)); do
       echo "Programming: ${bus_l[i]} / ${serial_l[i]}"
-      if [ "${serial_l[i]}" = "UNKOWN" ]; then
+      if [ "${serial_l[i]}" = "UNKNOWN" ]; then
         echo "[ERROR] cannot program the board, exiting program.."
         exit 1
       fi
