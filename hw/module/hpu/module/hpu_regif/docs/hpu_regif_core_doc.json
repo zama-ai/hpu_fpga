@@ -5,8 +5,8 @@
   "offset": 0,
   "range": 393216,
   "ext_pkg": [
-    "axi_if_shell_axil_pkg",
-    "axi_if_common_param_pkg"
+    "axi_if_common_param_pkg",
+    "axi_if_shell_axil_pkg"
   ],
   "section": [
     {
@@ -4376,7 +4376,7 @@
       "description": "Request registers interface",
       "offset": 327936,
       "bytes_align": 4,
-      "range": 8,
+      "range": 12,
       "register": [
         {
           "name": "req_id",
@@ -4482,6 +4482,62 @@
             {
               "name": "dst",
               "description": "ciphertext destination address",
+              "size_b": 16,
+              "offset_b": 16,
+              "default": {
+                "Cst": 0
+              }
+            }
+          ]
+        },
+        {
+          "name": "notify",
+          "description": "When a notify is received, this register will be updated",
+          "owner": "Kernel",
+          "read_access": "Read",
+          "write_access": "None",
+          "offset": 327944,
+          "default": {
+            "ParamsField": {
+              "params": [],
+              "name_val": [
+                [
+                  "iop_id",
+                  "'h0"
+                ],
+                [
+                  "node_id",
+                  "'h0"
+                ],
+                [
+                  "src_addr",
+                  "'h0"
+                ]
+              ]
+            }
+          },
+          "field": [
+            {
+              "name": "iop_id",
+              "description": "what is the IOP ID of received Notify",
+              "size_b": 4,
+              "offset_b": 0,
+              "default": {
+                "Cst": 0
+              }
+            },
+            {
+              "name": "node_id",
+              "description": "what HPU is the source of this Notify",
+              "size_b": 4,
+              "offset_b": 4,
+              "default": {
+                "Cst": 0
+              }
+            },
+            {
+              "name": "src_addr",
+              "description": "what is the source address of the ct notified",
               "size_b": 16,
               "offset_b": 16,
               "default": {

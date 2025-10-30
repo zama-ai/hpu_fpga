@@ -8,14 +8,11 @@
 // ==============================================================================================
 
 module mhdma_bridge
-import mhdma_pkg::*;
+  import mhdma_pkg::*;
   import axi_if_shell_axil_pkg::*;
   import hpu_regif_core_eth_2in3_pkg::*;
   import axi_if_common_param_pkg::*;
-#(
-  parameter int FIFO_DEPTH    = 512,
-  parameter int NB_WORD_W     = $clog2(FIFO_DEPTH)+1
-) (
+#() (
   // Ethernet configuration interface -----------------------------------------
   input  logic clk_cfg,
   input  logic resetn_cfg,
@@ -55,14 +52,16 @@ import mhdma_pkg::*;
   input  logic [ETH_PC-1:0]                      m_axi4_bvalid,
   output logic [ETH_PC-1:0]                      m_axi4_bready,
   // regf interface -----------------------------------------------------------
-  input  logic                        regf_tx_notify,
-  output logic                        regf_rx_notify,
   input  logic [NB_MAX_HPU-1:0][31:0] regf_hpu_ids,
-
   input  logic [31:0]                 regf_req_id,
   input  logic [31:0]                 regf_req_addr,
   input  logic [ 1:0]                 received_req,
   output logic                        request_consumed,
+  output logic [31:0]                 regf_notify_payload,
+  // interrupts ---------------------------------------------------------------
+  input  logic                        clear_interrupt_notify,
+  output logic                        interrupt_notify,
+  output logic                        interrupt_read_request,
   // QSFP system interface ----------------------------------------------------
   // == TX
   output logic [MRMAC_AXIS_W-1:0]  qsfp_tx_tdata,
@@ -113,7 +112,6 @@ import mhdma_pkg::*;
   logic new_ct_emission_request_pending;
 
   logic notify_request_in_use;
-  logic notify_ack_in_use;
   logic read_request_in_use;
   logic ct_emission_request_in_use;
 
@@ -315,6 +313,24 @@ import mhdma_pkg::*;
   // packet decoder
   // ==============================================================================================
   // On RX lanes, should know as soon as possible what type of packets I should see
+  // First frame I can check that the dstination address is me
+  logic [MAC_ADDR_W-1:0] rx_dst_mac_addr;
+  // Second frame I will know who is the sender, request ID, seq num
+  logic [SEQ_NUM_W-1:0]  rx_sec_num;
+  logic [HPU_ID_W-1:0]   rx_hpu_id;
+  logic [REQ_ID_W-1:0]   rx_req_id;
+  logic [MAC_ADDR_W-1:0] rx_src_mac_addr;
+  // third frame, ct src/dst address, iop id, size_byte
+  logic [SIZE_B_W-1:0]   rx_size_b;
+  logic [IOP_ID_W-1:0]   rx_iop_id;
+  logic [SRC_ADDR_W-1:0] rx_ct_src_addr;
+  logic [DST_ADDR_W-1:0] rx_ct_dst_addr;
+
+  logic read_request_received;
+  logic ciphertext_emission_received;
+  logic notify_request_received;
+  logic notify_ack_received;
+  logic new_notify_request_received;
 
   // ==============================================================================================
   // FSM
@@ -336,7 +352,6 @@ import mhdma_pkg::*;
   assign tx_line_in_use = notify_request_in_use | notify_ack_in_use | read_request_in_use | ct_emission_request_in_use;
 
   // Notify TX (NTX) ------------------------------------------------------------------------------
-  logic notify_ack_received;
   logic ntx_frame_last;
   logic ntx_timeout;
   // TODO
@@ -422,6 +437,89 @@ import mhdma_pkg::*;
   end
 
   // Notify RX (NRX) ------------------------------------------------------------------------------
+  // => must transmit to regfile IOP_ID, HPU_ID and src_addr
+  // => must trigger interrupt signal when registers are ready to be read
+  // TODO: no need of FSM..
+  typedef enum {
+    NTX_WAIT_REQUEST,
+    NTX_TRANSMIT_ACK
+  } st_nrx;
+
+  st_nrx nrx_state;
+  st_nrx nrx_next_state;
+
+  always_ff @(posedge clk_mrmac) begin
+    if (~resetn_mrmac) nrx_state <= NTX_WAIT_REQUEST;
+    else nrx_state <= nrx_next_state;
+  end
+
+  always_comb begin
+    case (nrx_state)
+      NTX_WAIT_REQUEST:
+        nrx_next_state = new_notify_request_received ? NTX_TRANSMIT_ACK : NTX_WAIT_REQUEST;
+      NTX_TRANSMIT_ACK:
+        nrx_next_state = ntx_frame_last ? NTX_WAIT_REQUEST : NTX_TRANSMIT_ACK;
+    endcase
+  end
+
+  // MRMAC domain
+  logic nrxq_wr_en;
+  logic nrxq_full;
+  logic nrxq_wr_rst_busy;
+
+  // enable when are sure that we have received a notify request + all words of the frames have been received
+  // payload data will ready before last pulse will be triggered
+  assign nrxq_wr_en = notify_request_received & qsfp_rx_tlast & ~nrxq_full & ~nrxq_wr_rst_busy;
+
+  // CFG domain
+  logic new_notify_read_pending;
+  logic nrxq_rd_data_count;
+  logic nrxq_empty;
+  logic nrxq_rd_rst_busy;
+  logic nrxq_data_valid;
+  logic nrxq_rd_en;
+
+  assign new_notify_read_pending = (nrxq_rd_data_count == 0) ? 1'b0 : 1'b1;
+  assign nrxq_rd_en = new_notify_read_pending & ~nrxq_rd_rst_busy & ~nrxq_empty;
+
+  fifo_ram_rdy_vld_2clk # (
+    .CDC_SYNC_STAGES (CDC_SYNC_STAGES),
+    .WIDTH           (RQQ_WIDTH),
+    // tweak theses parameters in package
+    .DEPTH           (RQQ_DEPTH),
+    .FIFO_MEMORY_TYPE(RQQ_MEMORY_TYPE)
+  ) nrx_fifo_ram_rdy_vld_2clk (
+    // Write Domain ports: MRMAC domain
+    .wr_rstn      (resetn_mrmac),
+    .wr_clk       (clk_mrmac),
+    .wr_en        (nrxq_wr_en),
+    .wr_data      ({rx_ct_src_addr, 8'b0, rx_hpu_id, rx_iop_id}),
+    .full         (nrxq_full),
+    .wr_rst_busy  (nrxq_wr_rst_busy),
+    // Read Domain ports: CFG domain
+    .rd_clk       (clk_cfg),
+    .rd_en        (nrxq_rd_en),
+    .rd_data      (regf_notify_payload),
+    .rd_data_count(nrxq_rd_data_count),
+    .empty        (nrxq_empty),
+    .rd_rst_busy  (nrxq_rd_rst_busy),
+    .data_valid   (nrxq_data_valid)
+  );
+
+  logic itr_notify;
+
+  always_ff @(posedge clk_cfg) begin
+    if (~resetn_cfg) begin
+      itr_notify <= 1'b0;
+    end else begin
+      if(nrxq_data_valid) begin
+        itr_notify <= 1'b1;
+      end else if (clear_interrupt_notify) begin
+        itr_notify <= 1'b0;
+      end
+    end
+  end
+  assign interrupt_notify = itr_notify;
 
   // input lane_write_busy
   logic read_rq_interrupt_toggled;
@@ -438,23 +536,8 @@ import mhdma_pkg::*;
     end
   end
 
-  // tx_notify_ack
-  // tx_notify_new_rq
-  // tx_notify_timeout
-
-  // rx_notify_new_rq
-  // rx_notify_interrupt
-
-  // ct_emission_new_rq
-  // ct_emission_finished
-
-  // read_request_new_rq
-  // read_request_timeout
-
   // TODO:
-  assign new_notify_ack_pending = 1'b0;
   assign new_ct_emission_request_pending = 1'b0;
-  assign notify_ack_in_use = 1'b0;
   assign read_request_in_use = 1'b0;
   assign ct_emission_request_in_use = 1'b0;
 
@@ -505,19 +588,6 @@ import mhdma_pkg::*;
       end
     end
   end
-
-  // First frame I can check that the dstination address is me
-  logic [MAC_ADDR_W-1:0] rx_dst_mac_addr;
-  // Second frame I will know who is the sender, request ID, seq num
-  logic [SEQ_NUM_W-1:0]  rx_sec_num;
-  logic [HPU_ID_W-1:0]   rx_hpu_id;
-  logic [REQ_ID_W-1:0]   rx_req_id;
-  logic [MAC_ADDR_W-1:0] rx_src_mac_addr;
-  // third frame, ct src/dst address, iop id, size_byte
-  logic [SIZE_B_W-1:0]   rx_size_b;
-  logic [SIZE_B_W-1:0]   rx_iop_id;
-  logic [SRC_ADDR_W-1:0] rx_ct_src_addr;
-  logic [DST_ADDR_W-1:0] rx_ct_dst_addr;
 
   /* First frame:
    * rx_dst_mac_addr
@@ -591,15 +661,87 @@ import mhdma_pkg::*;
   assign rx_size_b = ((rx_counter == 2) & rx_valid) ? qsfp_rx_tdata[8+SIZE_B_W-1:8] : 'h0;
 
   // switch betweeen components -----------------------------------------------------------------
-  assign source_hpu_mac =  qsfp_rx_tvalid ? hpu_mac_table[rx_hpu_id] : 1'b0;
-  assign rx_target_valid = (current_hpu_mac == rx_dst_mac_addr) ? 1'b1 : 1'b0;
-  assign rx_valid = (rx_target_valid & (source_hpu_mac == rx_src_mac_addr)) ? 1'b1 : 1'b0;
+  assign rx_valid = (current_hpu_mac == rx_dst_mac_addr) ? 1'b1 : 1'b0;
 
   assign notify_ack_received            = (rx_valid & (rx_req_id == REQ_ID_ACK_NOTIFY_TX)) ? 1'b1 : 1'b0;
   assign notify_request_received        = (rx_valid & (rx_req_id == REQ_ID_NOTIFY_TX))     ? 1'b1 : 1'b0;
   assign read_request_received          = (rx_valid & (rx_req_id == REQ_ID_READ))          ? 1'b1 : 1'b0;
   assign ciphertext_emission_received   = (rx_valid & (rx_req_id == REQ_ID_EMISSION))      ? 1'b1 : 1'b0;
 
+  logic notify_request_receivedD;
+  always_ff @(posedge clk_mrmac)
+    notify_request_receivedD <= notify_request_received;
+
+  logic                            send_ack;
+  logic                            nack_tlast;
+  logic [MRMAC_AXIS_W-1:0]         nack_tdata;
+  logic                            nack_tvalid;
+  logic [$clog2(NB_WORDS_MIN)+1:0] nack_cnt;
+
+  always_ff @(posedge clk_mrmac) begin
+    if (~resetn_mrmac) begin
+      send_ack <= 1'b0;
+    end else begin
+      if (notify_request_received & ~notify_request_receivedD) begin
+        send_ack <= 1'b1;
+      end else if (nack_tlast) begin
+        send_ack <= 1'b0;
+      end
+    end
+  end
+
+  always_ff @(posedge clk_mrmac) begin
+    if (~resetn_mrmac) begin
+      nack_cnt <= 'h0;
+    end else begin
+      if (send_ack) begin
+        if((nack_cnt < NB_WORDS_MIN+1) & qsfp_tx_tready & notify_ack_granted) begin
+          nack_cnt <= nack_cnt+1;
+        end
+      end else begin
+        nack_cnt <= 'h0;
+      end
+    end
+  end
+
+  assign new_notify_ack_pending = send_ack;
+  assign nack_tlast = (nack_cnt == NB_WORDS_MIN) ? 1'b1 : 1'b0;
+  assign notify_ack_in_use = notify_ack_granted & send_ack;
+
+  // in case notify request received
+  logic [ETH_HEADER_SIZE-1:0][MRMAC_AXIS_W-1:0] nack_frame;
+
+  // nack_frame[2] is ready when nack_cnt==1 which is perfectly fine as it will be sent @nack_cnt=2
+  always_ff @(posedge clk_mrmac) begin
+    if (~ resetn_mrmac) begin
+      nack_frame <= 'h0;
+    end else begin
+      if (notify_request_received) begin
+        nack_frame[0] <= {MAC_OUI, rx_src_mac_addr, MAC_OUI[MAC_OUI_W-1:8]};
+        nack_frame[1] <= {MAC_OUI[7:0], current_hpu_mac, ETH_LEN_MIN, REQ_ID_ACK_NOTIFY_TX, rx_hpu_id, nrqq_seq_num};
+        nack_frame[2] <= {rx_ct_src_addr, rx_ct_dst_addr, rx_iop_id, {SIZE_B_W{1'b0}}, 8'b0};
+      end
+    end
+  end
+
+  // this is an hardcoded configuration
+  always_comb begin
+    case (nack_cnt)
+      'h1 :
+        nack_tdata = nack_frame[0];
+      'h2 :
+        nack_tdata = nack_frame[1];
+      'h3 :
+        nack_tdata = nack_frame[2];
+      'h0, 'h3, 'h4 , 'h5 , 'h6, 'h7: begin
+        nack_tdata = 'h0;
+      end
+      default:
+        nack_tdata = 'h0;
+    endcase
+  end
+
+  assign nack_tvalid = (nack_cnt == 'h0) ? 1'b0 : 1'b1 ;
 
   // Errors on RX path ---------------------------------------------------------------------------
   logic error_rx_tkeep;
@@ -646,7 +788,13 @@ import mhdma_pkg::*;
       qsfp_tx_tkeep_user = qsfp_tx_tvalid ? 'hFF : 0;
       qsfp_tx_tlast      = ntx_frame_last;
     end
-    // 4'b0100:
+    4'b0100:
+    begin
+      qsfp_tx_tvalid     = nack_tvalid;
+      qsfp_tx_tdata      = qsfp_tx_tvalid ? nack_tdata : 'h0 ;
+      qsfp_tx_tkeep_user = qsfp_tx_tvalid ? 'hFF : 0;
+      qsfp_tx_tlast      = nack_tlast;
+    end
     // 4'b0010:
     // 4'b0001:
     default:

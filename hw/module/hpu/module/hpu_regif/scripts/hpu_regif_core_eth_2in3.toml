@@ -132,6 +132,15 @@ offset= 0x100
   field.src = {size_b=16, offset_b=0,  default={Cst=0x0}, description="ciphertext source address"}
   field.dst = {size_b=16, offset_b=16, default={Cst=0x0}, description="ciphertext destination address"}
 
+[section.request.register.notify]
+  description="When a notify is received, this register will be updated"
+  owner="Kernel"
+  read_access="Read"
+  write_access="None"
+  field.iop_id    = {size_b=4,  offset_b=0,  default={Cst=0x0}, description="what is the IOP ID of received Notify"}
+  field.node_id   = {size_b=4,  offset_b=4,  default={Cst=0x0}, description="what HPU is the source of this Notify"}
+  field.src_addr  = {size_b=16, offset_b=16, default={Cst=0x0}, description="what is the source address of the ct notified"}
+
 # =====================================================================================================================
 [section.line]
 offset= 0x1000

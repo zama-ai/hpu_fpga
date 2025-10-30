@@ -5,6 +5,10 @@
 // Description  : This testbench only tests debug mode
 // Debug mode corresponds to the control of one lane through register file
 //
+// TODO:
+// - test interrupts are correctly clear when read and that no read packet is lost
+// - test beahvior when saying several HPUs are the current one by mistake
+//
 // ==============================================================================================
 
 `resetall
@@ -87,8 +91,9 @@ module tb_multi_hpu_dma;
   bit error;
   bit error_tb_notify;
   bit error_register_read;
+  bit error_notify_rx;
 
-  assign error = error_tb_notify | error_register_read;
+  assign error = error_tb_notify | error_register_read | error_notify_rx;
 
   always_ff @(posedge clk_control)
     if (error) begin
@@ -435,6 +440,7 @@ module tb_multi_hpu_dma;
   endgenerate
 
   // Signals --------------------------------------------------------------------------------------
+  logic [31:0] read_data;
   // must not bee too short, not too long
   logic [31:0] timeout_size;
 
@@ -446,6 +452,9 @@ module tb_multi_hpu_dma;
   logic [ 3:0] iop_id;
   logic [15:0] iop_src_addr;
   logic [15:0] iop_dst_addr;
+
+  // for checking
+  logic [31:0] notify_payload;
 
   // Fixed for now, might evolve later
   logic [15:0] req_size_b;
@@ -514,7 +523,17 @@ module tb_multi_hpu_dma;
     // Sending a NOTIFY from HPU-B to HPU-A -------------------------------------------------------
     notify_reqest(random_hpu_b, random_hpu_a, iop_id, iop_src_addr);
 
-    // TODO: add checker
+    // if a Notify is received by HPU A we should be able to confim it by reading in the regf
+    notify_payload = {iop_src_addr, 8'b0, random_hpu_b, iop_id};
+
+    wait (hpu_a.interrupt_notify == 1'b1);
+    $display("[INFO]: Interrupt detected at time %0t. checking Notify payload", $time);
+    maxil_drv_if_hpu_a.read_trans(REQUEST_NOTIFY_OFS, read_data);
+
+    assert (read_data == notify_payload) else begin
+      $display("%t > [ERROR]: Payload DATA incorrect %x %x", $time, read_data, notify_payload);
+      error_notify_rx = 1'b1;
+    end
 
     repeat(100) @(posedge clk_control);
     // Sending a read request from HPU-A to HPU-B -------------------------------------------------
@@ -643,11 +662,13 @@ module tb_multi_hpu_dma;
         random_hpu_b = $urandom_range(7, 0);
       end while (random_hpu_b == random_hpu_a);
 
-      $display("\n[INFO] Writing MAC addresses");
-      $display("[INFO] For this run....");
-      $display("[INFO]  > HPU_A:id=%0d", random_hpu_a);
-      $display("[INFO]  > HPU_B:id=%0d \n", random_hpu_b);
-
+      $display("\n");
+      $display("┌------------------------┐");
+      $display("| For this run....       |");
+      $display("| ---------------------- |");
+      $display("| HPU_A:id=%d            |", random_hpu_a);
+      $display("| HPU_B:id=%d            |", random_hpu_b);
+      $display("| ---------------------- |");
       for (int i = 0 ; i < 8 ; i++ ) begin
         mac_addr = $urandom();
         hpu_id = i;
@@ -664,10 +685,11 @@ module tb_multi_hpu_dma;
           register_mac_addr_b = {1'b0, 3'b000, hpu_id, mac_addr};
         end
 
-        $display("[INFO] HPU_ID=%0d :: MAC=%0x", i, mac_addr);
+        $display("| HPU_ID=%0d :: MAC=%6x |", i, mac_addr);
         maxil_drv_if_hpu_a.write_trans(HPU_ID_ZERO_OFS+(4*i), register_mac_addr_a);
         maxil_drv_if_hpu_b.write_trans(HPU_ID_ZERO_OFS+(4*i), register_mac_addr_b);
       end
+      $display("└------------------------┘");
 
     end
   endtask

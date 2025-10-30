@@ -1,5 +1,5 @@
 # HPU_REGIF_CORE documentation
-**Date**: 2025-10-23
+**Date**: 2025-10-30
 **Tool Version**: bd49564daf1a99d615cb6dbb121b54bfbeef8b22
 
 ## RegisterMap Overview
@@ -17,7 +17,7 @@ HPU ethernet configuration register interface. Will be accessed by RPU to define
 **Offset**: 0x0
 **Range**: 0x60000
 **Word Size (b)**: 32
-**External Packages**: "axi_if_shell_axil_pkg.sv","axi_if_common_param_pkg.sv"
+**External Packages**: "axi_if_common_param_pkg.sv","axi_if_shell_axil_pkg.sv"
 
 
 ---
@@ -46,7 +46,7 @@ Below is a summary of all the registers in the current register map:
 | [system](#section-system) | 0x50000 | 0x8 | system configuration |
 | [reset](#section-reset) | 0x50014 | 0x8 | Controllable resets for tranceivers |
 | [hpu_id](#section-hpu-id) | 0x50050 | 0x20 | HPU ID containing all possible targets. For all IDs we have HPU MAC address, software ID and a flag for current hpu |
-| [request](#section-request) | 0x50100 | 0x8 | Request registers interface |
+| [request](#section-request) | 0x50100 | 0xc | Request registers interface |
 | [line](#section-line) | 0x51000 | 0x4 | Line parameter sections |
 | [fifo_write](#section-fifo-write) | 0x5101c | 0x10 | fifo write part |
 | [fifo_read](#section-fifo-read) | 0x5102c | 0xc | fifo write part |
@@ -4267,6 +4267,7 @@ Below is a summary of all the registers in the current section request:
 |-----------------:|:------:|:------:|:------------|
 | [req_id](#register-requestreq-id) | 0x50100 | RW |  Different parameters for qsfp lines |
 | [req_addr](#register-requestreq-addr) | 0x50104 | RW |  request address |
+| [notify](#register-requestnotify) | 0x50108 | R. |  When a notify is received, this register will be updated |
 
 
 ---
@@ -4316,6 +4317,31 @@ Register req_addr contains following Sub-fields:
 |-----------:|:--------:|:------:|:------------:|:--------------|
 | src      | 0 | 16 |0| ciphertext source address |
 | dst      | 16 | 16 |0| ciphertext destination address |
+
+
+
+---
+
+
+### Register request.notify
+
+- **Description**: When a notify is received, this register will be updated
+- **Owner**: Kernel
+- **Read Access**: Read
+- **Write Access**: None
+- **Offset**: 0x50108
+- **Default**: C.f. fields
+
+
+#### Field Details
+
+Register notify contains following Sub-fields:
+
+| Field Name | Offset_b | Size_b | Default      | Description   |
+|-----------:|:--------:|:------:|:------------:|:--------------|
+| iop_id      | 0 | 4 |0| what is the IOP ID of received Notify |
+| node_id      | 4 | 4 |0| what HPU is the source of this Notify |
+| src_addr      | 16 | 16 |0| what is the source address of the ct notified |
 
 
 
