@@ -14,71 +14,72 @@ module mhdma_bridge
   import axi_if_common_param_pkg::*;
 #() (
   // Ethernet configuration interface -----------------------------------------
-  input  logic clk_cfg,
-  input  logic resetn_cfg,
+  input  logic                                clk_cfg,
+  input  logic                                resetn_cfg,
   // Ethernet fast clock interface --------------------------------------------
-  input  logic clk_mrmac,
-  input  logic resetn_mrmac,
+  input  logic                                clk_mrmac,
+  input  logic                                resetn_mrmac,
   // Axi4 interface for NMU ---------------------------------------------------
   // Read channel
-  output logic [ETH_PC-1:0][   AXI4_ID_W-1:0]    m_axi4_arid,
-  output logic [ETH_PC-1:0][  AXI4_ADD_W-1:0]    m_axi4_araddr,
-  output logic [ETH_PC-1:0][  AXI4_LEN_W-1:0]    m_axi4_arlen,
-  output logic [ETH_PC-1:0][ AXI4_SIZE_W-1:0]    m_axi4_arsize,
-  output logic [ETH_PC-1:0][AXI4_BURST_W-1:0]    m_axi4_arburst,
-  output logic [ETH_PC-1:0]                      m_axi4_arvalid,
-  input  logic [ETH_PC-1:0]                      m_axi4_arready,
-  input  logic [ETH_PC-1:0][  AXI4_ID_W-1:0]     m_axi4_rid,
-  input  logic [ETH_PC-1:0][AXI4_DATA_W-1:0]     m_axi4_rdata,
-  input  logic [ETH_PC-1:0][AXI4_RESP_W-1:0]     m_axi4_rresp,
-  input  logic [ETH_PC-1:0]                      m_axi4_rlast,
-  input  logic [ETH_PC-1:0]                      m_axi4_rvalid,
-  output logic [ETH_PC-1:0]                      m_axi4_rready,
+  output logic [ETH_PC-1:0][   AXI4_ID_W-1:0] m_axi4_arid,
+  output logic [ETH_PC-1:0][  AXI4_ADD_W-1:0] m_axi4_araddr,
+  output logic [ETH_PC-1:0][  AXI4_LEN_W-1:0] m_axi4_arlen,
+  output logic [ETH_PC-1:0][ AXI4_SIZE_W-1:0] m_axi4_arsize,
+  output logic [ETH_PC-1:0][AXI4_BURST_W-1:0] m_axi4_arburst,
+  output logic [ETH_PC-1:0]                   m_axi4_arvalid,
+  input  logic [ETH_PC-1:0]                   m_axi4_arready,
+  input  logic [ETH_PC-1:0][  AXI4_ID_W-1:0]  m_axi4_rid,
+  input  logic [ETH_PC-1:0][AXI4_DATA_W-1:0]  m_axi4_rdata,
+  input  logic [ETH_PC-1:0][AXI4_RESP_W-1:0]  m_axi4_rresp,
+  input  logic [ETH_PC-1:0]                   m_axi4_rlast,
+  input  logic [ETH_PC-1:0]                   m_axi4_rvalid,
+  output logic [ETH_PC-1:0]                   m_axi4_rready,
   // Write channel
-  output logic [ETH_PC-1:0][   AXI4_ID_W-1:0]    m_axi4_awid,
-  output logic [ETH_PC-1:0][  AXI4_ADD_W-1:0]    m_axi4_awaddr,
-  output logic [ETH_PC-1:0][  AXI4_LEN_W-1:0]    m_axi4_awlen,
-  output logic [ETH_PC-1:0][ AXI4_SIZE_W-1:0]    m_axi4_awsize,
-  output logic [ETH_PC-1:0][AXI4_BURST_W-1:0]    m_axi4_awburst,
-  output logic [ETH_PC-1:0]                      m_axi4_awvalid,
-  input  logic [ETH_PC-1:0]                      m_axi4_awready,
-  output logic [ETH_PC-1:0][AXI4_DATA_W-1:0]     m_axi4_wdata,
-  output logic [ETH_PC-1:0][AXI4_STRB_W-1:0]     m_axi4_wstrb,
-  output logic [ETH_PC-1:0]                      m_axi4_wlast,
-  output logic [ETH_PC-1:0]                      m_axi4_wvalid,
-  input  logic [ETH_PC-1:0]                      m_axi4_wready,
-  input  logic [ETH_PC-1:0][  AXI4_ID_W-1:0]     m_axi4_bid,
-  input  logic [ETH_PC-1:0][AXI4_RESP_W-1:0]     m_axi4_bresp,
-  input  logic [ETH_PC-1:0]                      m_axi4_bvalid,
-  output logic [ETH_PC-1:0]                      m_axi4_bready,
+  output logic [ETH_PC-1:0][   AXI4_ID_W-1:0] m_axi4_awid,
+  output logic [ETH_PC-1:0][  AXI4_ADD_W-1:0] m_axi4_awaddr,
+  output logic [ETH_PC-1:0][  AXI4_LEN_W-1:0] m_axi4_awlen,
+  output logic [ETH_PC-1:0][ AXI4_SIZE_W-1:0] m_axi4_awsize,
+  output logic [ETH_PC-1:0][AXI4_BURST_W-1:0] m_axi4_awburst,
+  output logic [ETH_PC-1:0]                   m_axi4_awvalid,
+  input  logic [ETH_PC-1:0]                   m_axi4_awready,
+  output logic [ETH_PC-1:0][AXI4_DATA_W-1:0]  m_axi4_wdata,
+  output logic [ETH_PC-1:0][AXI4_STRB_W-1:0]  m_axi4_wstrb,
+  output logic [ETH_PC-1:0]                   m_axi4_wlast,
+  output logic [ETH_PC-1:0]                   m_axi4_wvalid,
+  input  logic [ETH_PC-1:0]                   m_axi4_wready,
+  input  logic [ETH_PC-1:0][  AXI4_ID_W-1:0]  m_axi4_bid,
+  input  logic [ETH_PC-1:0][AXI4_RESP_W-1:0]  m_axi4_bresp,
+  input  logic [ETH_PC-1:0]                   m_axi4_bvalid,
+  output logic [ETH_PC-1:0]                   m_axi4_bready,
   // regf interface -----------------------------------------------------------
-  input  logic [NB_MAX_HPU-1:0][31:0] regf_hpu_ids,
-  input  logic [31:0]                 regf_req_id,
-  input  logic [31:0]                 regf_req_addr,
-  input  logic [ 1:0]                 received_req,
-  output logic                        request_consumed,
-  output logic [31:0]                 regf_notify_payload,
+  input  logic [NB_MAX_HPU-1:0][31:0]         regf_hpu_ids,
+  input  logic [31:0]                         regf_req_id,
+  input  logic [31:0]                         regf_req_addr,
+  input  logic [ 1:0]                         received_req,
+  output logic                                request_consumed,
+  output logic [31:0]                         regf_notify_payload,
   // statistics ---------------------------------------------------------------
-  output logic [15:0]                 stat_cnt_notify_ack,
-  output logic [15:0]                 stat_cnt_notify_read,
+  output logic [15:0]                         stat_cnt_notify_ack,
+  output logic [15:0]                         stat_cnt_notify_read,
   // reset counters
-  input  logic                        rst_cnt_notify,
+  input  logic                                rst_cnt_notify,
   // interrupts ---------------------------------------------------------------
-  input  logic                        clear_interrupt_notify,
-  output logic                        interrupt_notify,
-  output logic                        interrupt_read_request,
+  input  logic                                clear_interrupt_notify,
+  output logic                                interrupt_notify,
+  output logic                                interrupt_read_request,
+  input  logic                         [15:0] timeout_duration,
   // QSFP system interface ----------------------------------------------------
   // == TX
-  output logic [MRMAC_AXIS_W-1:0]  qsfp_tx_tdata,
-  output logic [MRMAC_TKEEP_W-1:0] qsfp_tx_tkeep_user,
-  output logic                     qsfp_tx_tlast,
-  output logic                     qsfp_tx_tvalid,
-  input  logic                     qsfp_tx_tready,
+  output logic [MRMAC_AXIS_W-1:0]             qsfp_tx_tdata,
+  output logic [MRMAC_TKEEP_W-1:0]            qsfp_tx_tkeep_user,
+  output logic                                qsfp_tx_tlast,
+  output logic                                qsfp_tx_tvalid,
+  input  logic                                qsfp_tx_tready,
   // == RX
-  input  logic [MRMAC_AXIS_W-1:0]  qsfp_rx_tdata,
-  input  logic [MRMAC_TKEEP_W-1:0] qsfp_rx_tkeep_user,
-  input  logic                     qsfp_rx_tlast,
-  input  logic                     qsfp_rx_tvalid
+  input  logic [MRMAC_AXIS_W-1:0]             qsfp_rx_tdata,
+  input  logic [MRMAC_TKEEP_W-1:0]            qsfp_rx_tkeep_user,
+  input  logic                                qsfp_rx_tlast,
+  input  logic                                qsfp_rx_tvalid
 );
 
   // =========================================================================================== //
@@ -353,14 +354,26 @@ module mhdma_bridge
   assign rr_frame_valid = 'h0;
   assign ce_frame_valid = 'h0;
 
+  logic [15:0] cnt_notify_ack;
+
   logic tx_line_in_use;
   assign tx_line_in_use = notify_request_in_use | notify_ack_in_use | read_request_in_use | ct_emission_request_in_use;
 
   // Notify TX (NTX) ------------------------------------------------------------------------------
   logic ntx_frame_last;
   logic ntx_timeout;
-  // TODO
-  assign ntx_timeout = 1'b0;
+
+  always_ff @(posedge clk_cfg) begin
+    if (~resetn_cfg) begin
+      ntx_timeout <= 1'b0;
+    end else begin
+      if (cnt_notify_ack >= timeout_duration) begin
+        ntx_timeout <= 1'b1;
+      end else begin
+        ntx_timeout <= 1'b0;
+      end
+    end
+  end
 
   typedef enum {
     ST_WAIT_REQUEST,
@@ -816,7 +829,7 @@ module mhdma_bridge
   // Statistics
   // specific for FPGA
   // =========================================================================================== //
-  logic [15:0] cnt_notify_ack;
+  // logic [15:0] cnt_notify_ack; defined before for timeout
   logic [15:0] cnt_notify_read;
 
   logic start_cnt_notify_ack;
@@ -844,7 +857,7 @@ module mhdma_bridge
     end else begin
       if (start_cnt_notify_ack) begin
         cnt_notify_ack <= cnt_notify_ack + 1;
-      end else if (rst_cnt_notify) begin
+      end else if (rst_cnt_notify | ntx_timeout) begin
         cnt_notify_ack <= 'h0;
       end
     end

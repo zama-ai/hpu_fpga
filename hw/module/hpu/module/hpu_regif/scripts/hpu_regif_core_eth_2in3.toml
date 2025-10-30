@@ -21,7 +21,7 @@ offset= 0x0
   field.debug     = {size_b=1, offset_b=31, default={Cst=0x0}, description="States whether we are in debug mode"}
 
 [section.system.register.timeout]
-  description="Timeout time before re-launching a request, in clock cycles"
+  description="16 bit Timeout: time before re-launching a request, in clock cycles"
   owner="User"
   read_access="Read"
   write_access="Write"

@@ -631,8 +631,7 @@ module tb_multi_hpu_dma;
     end
 
     // Setting timeout size to both HPUs ----------------------------------------------------------
-    maxil_drv_if_hpu_a.write_trans(SYSTEM_TIMEOUT_OFS, timeout_size);
-    maxil_drv_if_hpu_b.write_trans(SYSTEM_TIMEOUT_OFS, timeout_size);
+    // keeping default value
 
     // Setting up credible values -------------------------------------------------------------
     // no loopback, no reset, not in debug lane0 selected

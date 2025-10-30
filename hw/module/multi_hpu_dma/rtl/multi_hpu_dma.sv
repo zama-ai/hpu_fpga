@@ -87,6 +87,7 @@ module multi_hpu_dma
   logic                 [31:0] r_request_notify;
   logic                 [31:0] r_request_req_id;
   logic                 [31:0] r_request_req_addr;
+  logic                 [31:0] r_system_timeout;
   // lane control & debug
   logic [31:0] r_system_line;
   logic [31:0] r_reset_datapath;
@@ -343,6 +344,7 @@ module multi_hpu_dma
     .clear_interrupt_notify(clear_interrupt_notify),
     .interrupt_notify      (interrupt_notify      ),
     .interrupt_read_request(interrupt_read_request),
+    .timeout_duration      (r_system_timeout[15:0]),
     // statistics ---------------------------------------------------------------------------------
     .stat_cnt_notify_ack   (r_cnt_notify_ack      ),
     .stat_cnt_notify_read  (r_cnt_notify_read     ),
