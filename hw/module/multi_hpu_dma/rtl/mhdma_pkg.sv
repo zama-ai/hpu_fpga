@@ -74,7 +74,7 @@ package mhdma_pkg;
 
   // fifo specific parameters -------------------------------------------------
   // minimal depth for 64 using XPM fifo is 16
-  localparam int RQQ_MEMORY_TYPE  = "auto";
+  localparam int RQQ_MEMORY_TYPE  = "ultra";
   localparam int RQQ_DEPTH        = 16;
   localparam int RQQ_WIDTH        = 64;
   localparam int RQQ_DATA_COUNT_W =  $clog2(RQQ_DEPTH)+1;

@@ -117,6 +117,11 @@ module mhdma_bridge
   logic new_read_request_pending;
   logic new_ct_emission_request_pending;
 
+  logic notify_request_granted;
+  logic notify_ack_granted;
+  logic read_request_granted;
+  logic ciphertext_emission_granted;
+
   logic notify_request_in_use;
   logic read_request_in_use;
   logic ct_emission_request_in_use;
@@ -133,13 +138,12 @@ module mhdma_bridge
   logic                        rrqq_empty;
   logic [RQQ_DATA_COUNT_W-1:0] rrqq_rd_data_count;
   // needed control signals for sampling (mrmac clock)
-  logic                        read_request_ready;
 
   // cfg
   assign rrqq_wr_en = (&received_req) & ~rrqq_wr_rst_busy & ~rrqq_full & (regf_req_id[23:20] == REQ_ID_READ);
   // mrmac
-  assign new_read_request_pending = (rrqq_rd_data_count == 0) ? 1'b0 : 1'b1;
-  assign rrqq_rd_en =  new_read_request_pending & read_request_ready & ~rrqq_rd_rst_busy & ~rrqq_empty;
+  assign new_read_request_pending = ((rrqq_rd_data_count == 0) & ~read_request_in_use) ? 1'b0 : 1'b1;
+  assign rrqq_rd_en =  new_read_request_pending & ~rrqq_rd_rst_busy & ~rrqq_empty;
 
   fifo_ram_rdy_vld_2clk # (
     .CDC_SYNC_STAGES (CDC_SYNC_STAGES),
@@ -184,11 +188,11 @@ module mhdma_bridge
     end else begin
       if (rrqq_data_valid) begin
         rrqq_dst_addr <= rrqq_rd_data[15:00];
-        rrqq_src_addr  <= rrqq_rd_data[31:16];
-        rrqq_size_b    <= rrqq_rd_data[47:32];
-        rrqq_iop_id    <= rrqq_rd_data[51:48];
-        rrqq_req_id    <= rrqq_rd_data[55:52];
-        rrqq_node_id   <= rrqq_rd_data[59:56];
+        rrqq_src_addr <= rrqq_rd_data[31:16];
+        rrqq_size_b   <= rrqq_rd_data[47:32];
+        rrqq_node_id  <= rrqq_rd_data[51:48];
+        rrqq_req_id   <= rrqq_rd_data[55:52];
+        rrqq_iop_id   <= rrqq_rd_data[59:56];
       end
     end
   end
@@ -341,14 +345,10 @@ module mhdma_bridge
   // ==============================================================================================
   // FSM
   // ==============================================================================================
-  logic notify_request_granted;
-  logic notify_ack_granted;
-  logic read_request_granted;
-  logic ciphertext_emission_granted;
-
   logic nack_frame_valid;
   logic rr_frame_valid;
   logic ce_frame_valid;
+  logic rreq_send_request;
 
   assign nack_frame_valid = 'h0;
   assign rr_frame_valid = 'h0;
@@ -360,20 +360,8 @@ module mhdma_bridge
   assign tx_line_in_use = notify_request_in_use | notify_ack_in_use | read_request_in_use | ct_emission_request_in_use;
 
   // Notify TX (NTX) ------------------------------------------------------------------------------
-  logic ntx_frame_last;
+  logic tx_frame_last;
   logic ntx_timeout;
-
-  always_ff @(posedge clk_cfg) begin
-    if (~resetn_cfg) begin
-      ntx_timeout <= 1'b0;
-    end else begin
-      if (cnt_notify_ack >= timeout_duration) begin
-        ntx_timeout <= 1'b1;
-      end else begin
-        ntx_timeout <= 1'b0;
-      end
-    end
-  end
 
   typedef enum {
     ST_WAIT_REQUEST,
@@ -394,64 +382,25 @@ module mhdma_bridge
       ST_WAIT_REQUEST:
         ntx_next_state = (new_notify_request_pending & notify_request_granted) ? ST_SEND_NOTIFY : ST_WAIT_REQUEST;
       ST_SEND_NOTIFY:
-        ntx_next_state = ntx_frame_last ? ST_WAIT_ACK : ST_SEND_NOTIFY;
+        ntx_next_state = tx_frame_last ? ST_WAIT_ACK : ST_SEND_NOTIFY;
       ST_WAIT_ACK:
-      ntx_next_state = notify_ack_received ? ST_WAIT_REQUEST : (ntx_timeout ? ST_SEND_NOTIFY : ntx_next_state);
+        ntx_next_state = notify_ack_received ? ST_WAIT_REQUEST : (ntx_timeout ? ST_SEND_NOTIFY : ntx_next_state);
     endcase
   end
 
   assign notify_request_in_use = (ntx_state == ST_SEND_NOTIFY) | (ntx_state == ST_WAIT_ACK) ? 1'b1: 1'b0;
 
-  logic [$clog2(NB_WORDS_MIN)+1:0] ntx_cnt;
-
-  assign ntx_frame_last = (ntx_cnt == NB_WORDS_MIN+1) ? 1'b1: 1'b0;
-
-  always_ff @(posedge clk_mrmac) begin
-    if (~resetn_mrmac) begin
-      ntx_cnt        <= 'h0;
+  // TODO: in cfg mode?
+  always_ff @(posedge clk_cfg) begin
+    if (~resetn_cfg) begin
+      ntx_timeout <= 1'b0;
     end else begin
-      if(ntx_state == ST_SEND_NOTIFY) begin
-        if((ntx_cnt < NB_WORDS_MIN+1) & qsfp_tx_tready) begin
-          ntx_cnt <= ntx_cnt +1;
-        end else begin
-          ntx_cnt <= 'h0;
-        end
+      if (cnt_notify_ack >= timeout_duration) begin
+        ntx_timeout <= 1'b1;
       end else begin
-        ntx_cnt <= 'h0;
+        ntx_timeout <= 1'b0;
       end
     end
-  end
-
-  // building output signals --------------------------------------------------
-  logic [MRMAC_AXIS_W-1:0] ntx_frame;
-  logic                    ntx_frame_valid;
-
-  assign ntx_frame_valid = (ntx_cnt == 'h0) ? 1'b0 : 1'b1 ;
-
-  logic [MAC_ADDR_W-1:0] ntx_target_hpu_mac;
-  logic [DST_ADDR_W-1:0] nrqq_dst_addr;
-  logic [ SEQ_NUM_W-1:0] nrqq_seq_num;
-
-  // there is no seq num for notify request
-  assign nrqq_seq_num = 'h0;
-  assign nrqq_dst_addr = 'h0;
-  assign ntx_target_hpu_mac = hpu_mac_table[nrqq_node_id];
-
-  // this is an hardcoded configuration
-  always_comb begin
-    case (ntx_cnt)
-      'h1 :
-        ntx_frame = {MAC_OUI, ntx_target_hpu_mac, MAC_OUI[MAC_OUI_W-1:8]};
-      'h2 :
-        ntx_frame = {MAC_OUI[7:0], current_hpu_mac, ETH_LEN_MIN, REQ_ID_NOTIFY_TX, current_hpu_id, nrqq_seq_num};
-      'h3 :
-        ntx_frame = {nrqq_src_addr, nrqq_dst_addr, nrqq_iop_id, nrqq_size_b, 8'b0};
-      'h0, 'h3, 'h4 , 'h5 , 'h6, 'h7: begin
-        ntx_frame = 'h0;
-      end
-      default:
-        ntx_frame = 'h0;
-    endcase
   end
 
   // Notify RX (NRX) ------------------------------------------------------------------------------
@@ -476,7 +425,7 @@ module mhdma_bridge
       NTX_WAIT_REQUEST:
         nrx_next_state = new_notify_request_received ? NTX_TRANSMIT_ACK : NTX_WAIT_REQUEST;
       NTX_TRANSMIT_ACK:
-        nrx_next_state = ntx_frame_last ? NTX_WAIT_REQUEST : NTX_TRANSMIT_ACK;
+        nrx_next_state = tx_frame_last ? NTX_WAIT_REQUEST : NTX_TRANSMIT_ACK;
     endcase
   end
 
@@ -539,27 +488,52 @@ module mhdma_bridge
   end
   assign interrupt_notify = itr_notify;
 
-  // input lane_write_busy
-  logic read_rq_interrupt_toggled;
+  // Read request ---------------------------------------------------------------------------------
+  logic error_packet_id_mismatch;
+  logic rreq_timeout;
+  logic rreq_timeout_cdc;
+  // pulses
+  logic rreq_ct_transmitted;
 
-  always_ff @(posedge clk_mrmac) begin : read_rq_control_ready
-    if (~resetn_mrmac) begin
-      read_request_ready <= 1'b0;
-    end else begin
-      if (rrqq_req_id == REQ_ID_READ) begin
-        read_request_ready <= 1'b1;
-      end else if (read_rq_interrupt_toggled) begin
-        read_request_ready <= 1'b0;
-      end
-    end
+  typedef enum {
+    ST_WAIT_READ_REQUEST,
+    ST_SEND_READ_REQUEST,
+    ST_WAIT_PACKETS
+  } st_read_req;
+
+  st_read_req rreq_state;
+  st_read_req rreq_next_state;
+
+  always_ff @(posedge clk_mrmac) begin
+    if (~resetn_mrmac) rreq_state <= ST_WAIT_READ_REQUEST;
+    else rreq_state <= rreq_next_state;
+  end
+
+  always_comb begin
+    case (rreq_state)
+      ST_WAIT_READ_REQUEST:
+        rreq_next_state = new_read_request_pending ? ST_SEND_READ_REQUEST : ST_WAIT_READ_REQUEST;
+      ST_SEND_READ_REQUEST:
+        rreq_next_state = tx_frame_last ? ST_WAIT_PACKETS : ST_SEND_READ_REQUEST;
+      ST_WAIT_PACKETS:
+        // if error_packet_id_mismatch or timeout => ST_SEND_READ_REQUEST
+        // if write into hbm is finished => ST_WAIT_READ_REQUEST
+        rreq_next_state = (error_packet_id_mismatch | rreq_timeout_cdc) ? ST_SEND_READ_REQUEST : (rreq_ct_transmitted? ST_WAIT_READ_REQUEST: ST_WAIT_PACKETS);
+    endcase
   end
 
   // TODO:
+  assign error_packet_id_mismatch = 1'b0;
+  assign rreq_timeout_cdc = 1'b0;
+  assign rreq_ct_transmitted = 1'b0;
+
+  assign rreq_send_request = (rreq_state == ST_SEND_READ_REQUEST) ? 1'b1: 1'b0;
+
+  // TODO:
   assign new_ct_emission_request_pending = 1'b0;
-  assign read_request_in_use = 1'b0;
   assign ct_emission_request_in_use = 1'b0;
 
-
+  // arbiter --------------------------------------------------------------------------------------
   // very simple round robin arbiter
   arbiter # (
     .N(4)
@@ -601,7 +575,7 @@ module mhdma_bridge
     end else begin
       if (qsfp_rx_tvalid) begin
         rx_counter <= rx_counter+1;
-      end else if (qsfp_rx_tlast) begin
+      end else begin
         rx_counter <= 0;
       end
     end
@@ -640,8 +614,8 @@ module mhdma_bridge
       if (qsfp_rx_tvalid) begin
         if (rx_counter == 1) begin
           rx_sec_num <= qsfp_rx_tdata[SEQ_NUM_W-1:0];
-          rx_req_id  <= qsfp_rx_tdata[SEQ_NUM_W+HPU_ID_W+REQ_ID_W-1:SEQ_NUM_W+HPU_ID_W];
-          rx_hpu_id       <= qsfp_rx_tdata[SEQ_NUM_W+HPU_ID_W-1:SEQ_NUM_W];
+          rx_req_id <= qsfp_rx_tdata[SEQ_NUM_W+HPU_ID_W+REQ_ID_W-1:SEQ_NUM_W+HPU_ID_W];
+          rx_hpu_id <= qsfp_rx_tdata[SEQ_NUM_W+HPU_ID_W-1:SEQ_NUM_W];
           rx_src_mac_addr <= qsfp_rx_tdata[SEQ_NUM_W+HPU_ID_W+REQ_ID_W+ETHERNET_LEN+MAC_ADDR_W-1:SEQ_NUM_W+HPU_ID_W+REQ_ID_W+ETHERNET_LEN];
         end
       end else begin
@@ -726,41 +700,6 @@ module mhdma_bridge
   assign nack_tlast = (nack_cnt == NB_WORDS_MIN) ? 1'b1 : 1'b0;
   assign notify_ack_in_use = notify_ack_granted & send_ack;
 
-  // in case notify request received
-  logic [ETH_HEADER_SIZE-1:0][MRMAC_AXIS_W-1:0] nack_frame;
-
-  // nack_frame[2] is ready when nack_cnt==1 which is perfectly fine as it will be sent @nack_cnt=2
-  always_ff @(posedge clk_mrmac) begin
-    if (~ resetn_mrmac) begin
-      nack_frame <= 'h0;
-    end else begin
-      if (notify_request_received) begin
-        nack_frame[0] <= {MAC_OUI, rx_src_mac_addr, MAC_OUI[MAC_OUI_W-1:8]};
-        nack_frame[1] <= {MAC_OUI[7:0], current_hpu_mac, ETH_LEN_MIN, REQ_ID_ACK_NOTIFY_TX, rx_hpu_id, nrqq_seq_num};
-        nack_frame[2] <= {rx_ct_src_addr, rx_ct_dst_addr, rx_iop_id, {SIZE_B_W{1'b0}}, 8'b0};
-      end
-    end
-  end
-
-  // this is an hardcoded configuration
-  always_comb begin
-    case (nack_cnt)
-      'h1 :
-        nack_tdata = nack_frame[0];
-      'h2 :
-        nack_tdata = nack_frame[1];
-      'h3 :
-        nack_tdata = nack_frame[2];
-      'h0, 'h3, 'h4 , 'h5 , 'h6, 'h7: begin
-        nack_tdata = 'h0;
-      end
-      default:
-        nack_tdata = 'h0;
-    endcase
-  end
-
-  assign nack_tvalid = (nack_cnt == 'h0) ? 1'b0 : 1'b1 ;
-
   // Errors on RX path ---------------------------------------------------------------------------
   logic error_rx_tkeep;
   logic error_rx_unexpected_size_b;
@@ -792,7 +731,115 @@ module mhdma_bridge
   // - Read request
   // - Ciphertext emissions
 
+  // building output signals --------------------------------------------------
+  logic [MRMAC_AXIS_W-1:0]         tx_frame;
+  logic                            tx_frame_valid;
+  logic [$clog2(NB_WORDS_MIN)+1:0] tx_cnt;
+
+  always_ff @(posedge clk_mrmac) begin
+    if (~resetn_mrmac) begin
+      tx_cnt        <= 'h0;
+    end else begin
+      if ((ntx_state == ST_SEND_NOTIFY) | (rreq_state == ST_SEND_READ_REQUEST))begin
+        if((tx_cnt < NB_WORDS_MIN+1) & qsfp_tx_tready) begin
+          tx_cnt <= tx_cnt +1;
+        end else begin
+          tx_cnt <= 'h0;
+        end
+      end else begin
+        tx_cnt <= 'h0;
+      end
+    end
+  end
+
+  assign tx_frame_last = (tx_cnt == NB_WORDS_MIN+1) ? 1'b1: 1'b0;
+  assign tx_frame_valid = (tx_cnt == 'h0) ? 1'b0 : 1'b1 ;
+
+  logic [  MAC_ADDR_W-1:0] tx_target_hpu_mac;
+  logic [ETHERNET_LEN-1:0] tx_eth_len;
+  logic [    REQ_ID_W-1:0] tx_req_id;
+  logic [   SEQ_NUM_W-1:0] tx_seq_num;
+  logic [  SRC_ADDR_W-1:0] tx_src_addr;
+  logic [  DST_ADDR_W-1:0] tx_dst_addr;
+  logic [    IOP_ID_W-1:0] tx_iop_id;
+  logic [    SIZE_B_W-1:0] tx_size_b;
+
+  assign tx_target_hpu_mac = rreq_send_request ? hpu_mac_table[rrqq_node_id] : hpu_mac_table[nrqq_node_id];
+  assign tx_eth_len  = ETH_LEN_MIN;
+  assign tx_req_id   = rreq_send_request ? REQ_ID_READ : REQ_ID_NOTIFY_TX;
+  assign tx_seq_num  = 'h0;
+  assign tx_src_addr = rreq_send_request ? rrqq_src_addr : nrqq_src_addr;
+  assign tx_dst_addr = rreq_send_request ? rrqq_dst_addr : 'h0;
+  assign tx_iop_id   = rreq_send_request ? rrqq_iop_id   : nrqq_iop_id;
+  assign tx_size_b   = rreq_send_request ? rrqq_size_b   : nrqq_size_b;
+
+  // this is an hardcoded configuration
+  always_comb begin
+    case (tx_cnt)
+      'h1 :
+        tx_frame = {MAC_OUI, tx_target_hpu_mac, MAC_OUI[MAC_OUI_W-1:8]};
+      'h2 :
+        tx_frame = {MAC_OUI[7:0], current_hpu_mac, tx_eth_len, tx_req_id, current_hpu_id, tx_seq_num};
+      'h3 :
+        tx_frame = {tx_src_addr, tx_dst_addr, tx_iop_id, tx_size_b, 8'b0};
+      'h0, 'h3, 'h4 , 'h5 , 'h6, 'h7: begin
+        tx_frame = 'h0;
+      end
+      default:
+        tx_frame = 'h0;
+    endcase
+  end
+
+  // Notify ack -----------------------------------------------------------------------------------
+  // in case notify request received
+  logic [ETH_HEADER_SIZE-1:0][MRMAC_AXIS_W-1:0] nack_frame;
+
+  // nack_frame[2] is ready when nack_cnt==1 which is perfectly fine as it will be sent @nack_cnt=2
+  always_ff @(posedge clk_mrmac) begin
+    if (~ resetn_mrmac) begin
+      nack_frame <= 'h0;
+    end else begin
+      if (notify_request_received) begin
+        nack_frame[0] <= {MAC_OUI, rx_src_mac_addr, MAC_OUI[MAC_OUI_W-1:8]};
+        nack_frame[1] <= {MAC_OUI[7:0], current_hpu_mac, ETH_LEN_MIN, REQ_ID_ACK_NOTIFY_TX, rx_hpu_id, tx_seq_num};
+        nack_frame[2] <= {rx_ct_src_addr, rx_ct_dst_addr, rx_iop_id, {SIZE_B_W{1'b0}}, 8'b0};
+      end
+    end
+  end
+
+  // this is an hardcoded configuration
+  always_comb begin
+    case (nack_cnt)
+      'h1 :
+        nack_tdata = nack_frame[0];
+      'h2 :
+        nack_tdata = nack_frame[1];
+      'h3 :
+        nack_tdata = nack_frame[2];
+      'h0, 'h3, 'h4 , 'h5 , 'h6, 'h7: begin
+        nack_tdata = 'h0;
+      end
+      default:
+        nack_tdata = 'h0;
+    endcase
+  end
+
+  assign nack_tvalid = (nack_cnt == 'h0) ? 1'b0 : 1'b1 ;
+
   logic [3:0] use_tx;
+
+
+  always_ff @(posedge clk_mrmac) begin : read_rq_control_ready
+    if (~resetn_mrmac) begin
+      read_request_in_use <= 1'b0;
+    end else begin
+      if (read_request_granted) begin
+        read_request_in_use <= 1'b1;
+      end else if (tx_frame_last) begin
+        read_request_in_use <= 1'b0;
+      end
+    end
+  end
 
   // note that thanks to the arbiter it's not possible to have several *_in_use at the same time
   assign use_tx = {notify_request_in_use, notify_ack_in_use, read_request_in_use, ct_emission_request_in_use};
@@ -801,10 +848,10 @@ module mhdma_bridge
     case (use_tx)
     4'b1000:
     begin
-      qsfp_tx_tvalid     = ntx_frame_valid;
-      qsfp_tx_tdata      = qsfp_tx_tvalid ? ntx_frame : 'h0 ;
+      qsfp_tx_tvalid     = tx_frame_valid;
+      qsfp_tx_tdata      = qsfp_tx_tvalid ? tx_frame : 'h0 ;
       qsfp_tx_tkeep_user = qsfp_tx_tvalid ? 'hFF : 0;
-      qsfp_tx_tlast      = ntx_frame_last;
+      qsfp_tx_tlast      = tx_frame_last;
     end
     4'b0100:
     begin
@@ -813,7 +860,13 @@ module mhdma_bridge
       qsfp_tx_tkeep_user = qsfp_tx_tvalid ? 'hFF : 0;
       qsfp_tx_tlast      = nack_tlast;
     end
-    // 4'b0010:
+    4'b0010:
+    begin
+      qsfp_tx_tvalid     = tx_frame_valid;
+      qsfp_tx_tdata      = qsfp_tx_tvalid ? tx_frame : 'h0 ;
+      qsfp_tx_tkeep_user = qsfp_tx_tvalid ? 'hFF : 0;
+      qsfp_tx_tlast      = tx_frame_last;
+    end
     // 4'b0001:
     default:
     begin
