@@ -44,18 +44,21 @@ proc create_root_design { parentCell ntt_psi } {
   set CT_AXI_NB $_nsp_hpu::CT_AXI_NB
   set GLWE_AXI_NB $_nsp_hpu::GLWE_AXI_NB
   set TRC_AXI_NB $_nsp_hpu::TRC_AXI_NB
+  set ETHPC_AXI_NB $_nsp_hpu::ETHPC_AXI_NB
 
   set HPU_KSK_HBM_BURST_MAX $_nsp_hpu::HPU_KSK_HBM_BURST_MAX
   set HPU_BSK_HBM_BURST_MAX $_nsp_hpu::HPU_BSK_HBM_BURST_MAX
   set HPU_CT_HBM_BURST_MAX $_nsp_hpu::HPU_CT_HBM_BURST_MAX
   set HPU_GLWE_HBM_BURST_MAX $_nsp_hpu::HPU_GLWE_HBM_BURST_MAX
   set HPU_TRC_HBM_BURST_MAX $_nsp_hpu::HPU_TRC_HBM_BURST_MAX
+  set HPU_ETH_HBM_BURST_MAX $_nsp_hpu::HPU_ETH_HBM_BURST_MAX
 
   set HPU_BSK_HBM_DATA_W $_nsp_hpu::HPU_BSK_HBM_DATA_W
   set HPU_KSK_HBM_DATA_W $_nsp_hpu::HPU_KSK_HBM_DATA_W
   set HPU_CT_HBM_DATA_W $_nsp_hpu::HPU_CT_HBM_DATA_W
   set HPU_GLWE_HBM_DATA_W $_nsp_hpu::HPU_GLWE_HBM_DATA_W
   set HPU_TRC_HBM_DATA_W $_nsp_hpu::HPU_TRC_HBM_DATA_W
+  set HPU_ETH_HBM_DATA_W $_nsp_hpu::HPU_ETH_HBM_DATA_W
 
   set ETH_AXI_NB $_nsp_hpu::ETH_AXI_NB
   set ETH_QSFP_FREQ $_nsp_hpu::ETH_QSFP_FREQ
@@ -205,30 +208,35 @@ proc create_root_design { parentCell ntt_psi } {
                           CT \
                           GLWE \
                           BSK \
-                          KSK]
+                          KSK \
+                          ETH_HBM]
   set axi_nb_l [list $TRC_AXI_NB \
                      $CT_AXI_NB \
                      $GLWE_AXI_NB \
                      $BSK_AXI_NB \
-                     $KSK_AXI_NB]
+                     $KSK_AXI_NB \
+                     $ETHPC_AXI_NB]
   set data_w_l [list $HPU_TRC_HBM_DATA_W \
                      $HPU_CT_HBM_DATA_W \
                      $HPU_GLWE_HBM_DATA_W \
                      $HPU_BSK_HBM_DATA_W \
-                     $HPU_KSK_HBM_DATA_W]
+                     $HPU_KSK_HBM_DATA_W \
+                     $HPU_ETH_HBM_DATA_W]
   set burst_length_l [list $HPU_TRC_HBM_BURST_MAX \
                            $HPU_CT_HBM_BURST_MAX \
                            $HPU_GLWE_HBM_BURST_MAX \
                            $HPU_BSK_HBM_BURST_MAX \
-                           $HPU_KSK_HBM_BURST_MAX]
-  set has_bresp_l [list 0 1 0 0 0]
-  set read_outstanding_l [list 1 32 32 32 32]
-  set write_outstanding_l [list 32 32 1 1 1]
+                           $HPU_KSK_HBM_BURST_MAX \
+                           $HPU_ETH_HBM_BURST_MAX]
+  set has_bresp_l [list 0 1 0 0 0 1]
+  set read_outstanding_l [list 1 32 32 32 32 32]
+  set write_outstanding_l [list 32 32 1 1 1 32]
   set read_write_mode_l [list WRITE_ONLY \
                               READ_WRITE \
                               READ_ONLY \
                               READ_ONLY \
-                              READ_ONLY]
+                              READ_ONLY \
+                              READ_WRITE]
 
   for { set a 0}  {$a < [llength $hpu_hbm_acs_l]} {incr a} {
     set axi_nb [lindex $axi_nb_l $a]
@@ -783,7 +791,18 @@ proc create_root_design { parentCell ntt_psi } {
 
     assign_bd_address -offset $add_ofs -range $_nsp_hpu::HBM_PORT_RANGE -target_address_space [get_bd_addr_spaces CT_AXI_${i}] [get_bd_addr_segs noc_wrapper/axi_noc_cips/$noc_pin/$hbm_pc_name] -force
   }
-  # TRC
+  puts "ETH HBM"
+  for { set i 0}  {$i < $_nsp_hpu::ETHPC_AXI_NB} {incr i} {
+    set hbm_port_idx [lindex $_nsp_hpu::ETH_HBM_PORTS_L $i]
+    set hbm_pc_idx [expr int($hbm_port_idx/2)]
+    set hbm_pc_name [format "HBM%0d_PC%0d" [expr int($hbm_pc_idx/2)] [expr $hbm_pc_idx%2]]
+
+    set add_ofs [expr $_nsp_hpu::HBM_ADD_OFS + $hbm_port_idx * $_nsp_hpu::HBM_PORT_RANGE]
+    set noc_pin [lindex $_nsp_hpu::ETH_NOC_PINS_L $i]
+
+    assign_bd_address -offset $add_ofs -range $_nsp_hpu::HBM_PORT_RANGE -target_address_space [get_bd_addr_spaces ETH_HBM_AXI_${i}] [get_bd_addr_segs noc_wrapper/axi_noc_cips/$noc_pin/$hbm_pc_name] -force
+  }
+  puts "TRC"
   for { set i 0}  {$i < $_nsp_hpu::TRC_AXI_NB} {incr i} {
     set hbm_port_idx [lindex $_nsp_hpu::TRC_HBM_PORTS_L $i]
     set hbm_pc_idx [expr int($hbm_port_idx/2)]
@@ -794,7 +813,7 @@ proc create_root_design { parentCell ntt_psi } {
 
     assign_bd_address -offset $add_ofs -range $_nsp_hpu::HBM_PORT_RANGE -target_address_space [get_bd_addr_spaces TRC_AXI_${i}] [get_bd_addr_segs noc_wrapper/axi_noc_cips/$noc_pin/$hbm_pc_name] -force
   }
-  # GLWE
+  puts "GLWE"
   for { set i 0}  {$i < $_nsp_hpu::GLWE_AXI_NB} {incr i} {
     set hbm_port_idx [lindex $_nsp_hpu::GLWE_HBM_PORTS_L $i]
     set hbm_pc_idx [expr int($hbm_port_idx/2)]

@@ -182,6 +182,14 @@ namespace eval _nsp_hpu {
     variable HPU_TRC_HBM_BURST_MAX 32
     variable HPU_TRC_HBM_DATA_W 128
 
+    # ETH <-> HBM
+    variable HPU_ETH_HBM_RD_BW 12000
+    variable HPU_ETH_HBM_WR_BW 12000
+    variable HPU_ETH_HBM_RD_BURST_AVG 16
+    variable HPU_ETH_HBM_WR_BURST_AVG 16
+    variable HPU_ETH_HBM_BURST_MAX 16
+    variable HPU_ETH_HBM_DATA_W 256
+
     #========================
     # HPU NOC ports
     #========================
@@ -191,6 +199,7 @@ namespace eval _nsp_hpu {
     variable CT_AXI_NB 2
     variable GLWE_AXI_NB 1
     variable TRC_AXI_NB 1
+    variable ETHPC_AXI_NB 2
     # DOP and ACK
     variable AXIS_NB 2
 
@@ -211,6 +220,7 @@ namespace eval _nsp_hpu {
     variable TRC_NOC_PINS_L [list]
     variable CT_NOC_PINS_L [list]
     variable GLWE_NOC_PINS_L [list]
+    variable ETH_NOC_PINS_L [list]
 
     # HBM port mapping
     variable KSK_HBM_PORTS_L [list]
@@ -218,6 +228,7 @@ namespace eval _nsp_hpu {
     variable TRC_HBM_PORTS_L [list]
     variable CT_HBM_PORTS_L [list]
     variable GLWE_HBM_PORTS_L [list]
+    variable ETH_HBM_PORTS_L [list]
 
     # /!\ do not touch
     # - one is for communication to gcq, uuid and reset
