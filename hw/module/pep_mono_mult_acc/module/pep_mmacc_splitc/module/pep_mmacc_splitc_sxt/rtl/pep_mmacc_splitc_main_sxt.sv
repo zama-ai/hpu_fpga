@@ -186,6 +186,12 @@ module pep_mmacc_splitc_main_sxt
     .sxt_rif_cmd_wait_b_dur (sxt_rif_cmd_wait_b_dur)
   );
 
+// pragma translate_off
+  always_ff @(posedge clk)
+    if (boram_sxt_data_vld && boram_sxt_data_rdy)
+      $display("%t > INFO: Body=0x%0x", $time, boram_sxt_data);
+// pragma translate_on
+
 // ============================================================================================= --
 // SXT core
 // ============================================================================================= --
