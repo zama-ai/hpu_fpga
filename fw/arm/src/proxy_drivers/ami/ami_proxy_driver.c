@@ -1392,7 +1392,7 @@ int iAMI_GetEepromReadWriteRequest( EVL_SIGNAL *pxSignal,
 }
 
 /**
- * @brief   Get the HPÜ registers read write requests
+ * @brief   Get the HPU registers read write requests
  */
 int iAMI_GetPeekPokeRequest(
     EVL_SIGNAL *pxSignal,

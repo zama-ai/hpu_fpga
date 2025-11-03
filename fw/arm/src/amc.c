@@ -262,6 +262,9 @@ uint64_t intr_global_var = 5;
 
 void vInterruptHandler_zama0( void* pvCallBackRef ) {
     intr_global_var = intr_global_var + 1;
+    // write int register at 0 to stop interrupt
+    uint32_t data =  * (volatile uint32_t *) (XPAR_AXI_LPD_BASEADDR + 0x2008);
+    *( ( volatile uint32_t * )(XPAR_AXI_LPD_BASEADDR + 0x2008) ) = data & 0xFFFFFFFE;
 }
 
 /*
@@ -341,6 +344,17 @@ static void vTaskFuncMain( void )
     PLL_INF( AMC_NAME, "ucInBandInitialised             %s\n\r", ( ullAmcInitStatus & AMC_CFG_IN_BAND_INITIALISED          ? "TRUE" : "FALSE" ) );
     PLL_INF( AMC_NAME, "ucOutOfBandInitialised          %s\n\r", ( ullAmcInitStatus & AMC_CFG_OUT_OF_BAND_INITIALISED      ? "TRUE" : "FALSE" ) );
 
+    if( OSAL_ERRORS_NONE != iOSAL_Interrupt_Setup( XPAR_FABRIC_RTL_INTERRUPT_0_INTR, vInterruptHandler_zama0, NULL ) ) {
+       PLL_ERR( AMC_NAME, "failed init interruption XPAR_FABRIC_RTL_INTERRUPT_0_INTR\r\n" );
+    } else {
+       PLL_ERR( AMC_NAME, "Zama interrupt handler init\r\n" );
+    }
+    if( OSAL_ERRORS_NONE != iOSAL_Interrupt_Enable( XPAR_FABRIC_RTL_INTERRUPT_0_INTR ) ) {
+       PLL_ERR( AMC_NAME, "failed enabling interruption XPAR_FABRIC_RTL_INTERRUPT_0_INTR\r\n" );
+    } else {
+       PLL_ERR( AMC_NAME, "enabling Zama interrupt\r\n" );
+    }
+
     // Init IOp queue descriptor
     volatile uint32_t *fromAmiIopqHead = NULL;
     volatile uint32_t *fromAmiIopqTail = NULL;
@@ -406,6 +420,7 @@ static void vTaskFuncMain( void )
             ackq_tail = * toAmiIopAckqTail;
             uint32_t ackq_free_words = AMI_IOPACKQ_MAX_WORDS + ackq_tail - ackq_head;
             PLL_INF("AMC", "IOP Ack pending %d, AckQ [head 0x%x; tail 0x%x; free_w %d]", read_isc_ack_cnt(), ackq_head, ackq_tail, ackq_free_words);
+            PLL_ERR("AMC", "interrupt count %d",intr_global_var);
 
             if (ackq_free_words == 0) {
                 PLL_INF("AMC", "IOpAck queue is full, abort isc ack forwarding");
