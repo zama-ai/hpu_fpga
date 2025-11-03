@@ -256,3 +256,11 @@ description="BPIP configuration"
   write_access="Write"
   default={Cst=0xffffffff}
 
+[section.bpip.register.int]
+  description="debug register to test interrupts"
+  owner="User"
+  read_access="Read"
+  write_access="Write"
+  field.int0 = { size_b=1, offset_b=0 , default={Cst=0}, description="int line 0"}
+  field.int1 = { size_b=1, offset_b=1 , default={Cst=0}, description="int line 1"}
+

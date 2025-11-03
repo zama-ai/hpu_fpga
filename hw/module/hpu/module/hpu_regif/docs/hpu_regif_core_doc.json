@@ -1373,7 +1373,7 @@
       "description": "BPIP configuration",
       "offset": 8192,
       "bytes_align": 4,
-      "range": 8,
+      "range": 12,
       "register": [
         {
           "name": "use",
@@ -1429,6 +1429,49 @@
             "Cst": 4294967295
           },
           "field": null
+        },
+        {
+          "name": "int",
+          "description": "debug register to test interrupts",
+          "owner": "User",
+          "read_access": "Read",
+          "write_access": "Write",
+          "offset": 8200,
+          "default": {
+            "ParamsField": {
+              "params": [],
+              "name_val": [
+                [
+                  "int0",
+                  "'h0"
+                ],
+                [
+                  "int1",
+                  "'h0"
+                ]
+              ]
+            }
+          },
+          "field": [
+            {
+              "name": "int0",
+              "description": "int line 0",
+              "size_b": 1,
+              "offset_b": 0,
+              "default": {
+                "Cst": 0
+              }
+            },
+            {
+              "name": "int1",
+              "description": "int line 1",
+              "size_b": 1,
+              "offset_b": 1,
+              "default": {
+                "Cst": 0
+              }
+            }
+          ]
         }
       ]
     },

@@ -457,8 +457,9 @@ module top_hpu #(
   // =========================================================================================== //
   // Connections
   // =========================================================================================== //
-  assign rtl_interrupt[0]   = hpu_interrupt[0]; // TODO
-  assign rtl_interrupt[5:1] = 5'b0;
+  assign rtl_interrupt[0]   = hpu_interrupt[0];
+  assign rtl_interrupt[1]   = hpu_interrupt[1];
+  assign rtl_interrupt[5:2] = 4'b0;
 
   // from isc to bd, stream is one word at a time
   assign axis_s_rx_tlast = 1'b1;

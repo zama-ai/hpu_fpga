@@ -1,8 +1,8 @@
 // ============================================================================================== //
 // Description  : register  map address definition package
 // This file was generated with rust regmap generator:
-//  * Date:  2025-07-28
-//  * Tool_version: bb0db737792da6b81e69a039028c971af1627fe2
+//  * Date:  2025-11-03
+//  * Tool_version: 285d6a13bd579781124865b7e21d1e6b085656a7
 // ---------------------------------------------------------------------------------------------- //
 //
 // Should only be used in testbench to drive the register interface

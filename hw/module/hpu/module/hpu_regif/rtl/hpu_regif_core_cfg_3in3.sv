@@ -1,8 +1,8 @@
 // ============================================================================================== //
 // Description  : Axi4-lite register bank
 // This file was generated with rust regmap generator:
-//  * Date:  2025-07-28
-//  * Tool_version: bb0db737792da6b81e69a039028c971af1627fe2
+//  * Date:  2025-11-03
+//  * Tool_version: 285d6a13bd579781124865b7e21d1e6b085656a7
 // ---------------------------------------------------------------------------------------------- //
 // xR[n]W[na]
 // |-> who is in charge of the register update logic : u -> User
@@ -30,8 +30,8 @@
 //      : Value provided by the RTL. The host can read it with notify. The write data is processed by the RTL.
 // ============================================================================================== //
 module hpu_regif_core_cfg_3in3
-import axi_if_common_param_pkg::*;
 import axi_if_shell_axil_pkg::*;
+import axi_if_common_param_pkg::*;
 import hpu_regif_core_cfg_3in3_pkg::*;
 #()(
   input  logic                           clk,
@@ -121,8 +121,8 @@ import hpu_regif_core_cfg_3in3_pkg::*;
     , output logic [REG_DATA_W-1: 0] r_hbm_axi4_addr_3in3_bsk_pc15_msb
   // Register IO: hpu_reset_trigger
     , output hpu_reset_trigger_t r_hpu_reset_trigger
-        , input hpu_reset_trigger_t r_hpu_reset_trigger_upd
-        , output logic r_hpu_reset_trigger_rd_en
+    , input  hpu_reset_trigger_t r_hpu_reset_trigger_upd
+    , output logic r_hpu_reset_trigger_rd_en
     , output logic r_hpu_reset_trigger_wr_en
 );
 // ============================================================================================== --

@@ -1,6 +1,6 @@
 # HPU_REGIF_CORE documentation
-**Date**: 2025-07-28
-**Tool Version**: bb0db737792da6b81e69a039028c971af1627fe2
+**Date**: 2025-11-03
+**Tool Version**: 285d6a13bd579781124865b7e21d1e6b085656a7
 
 ## RegisterMap Overview
 
@@ -29,7 +29,7 @@ Below is a summary of all the registers in the current register map:
 | [entry_cfg_1in3](#section-entry-cfg-1in3) | 0x0 | 0x10 | entry_cfg_1in3 section with known value used for debug. |
 | [info](#section-info) | 0x10 | 0x4c | RTL architecture parameters |
 | [hbm_axi4_addr_1in3](#section-hbm-axi4-addr-1in3) | 0x1000 | 0xa0 | HBM AXI4 connection address offset |
-| [bpip](#section-bpip) | 0x2000 | 0x8 | BPIP configuration |
+| [bpip](#section-bpip) | 0x2000 | 0xc | BPIP configuration |
 | [entry_prc_1in3](#section-entry-prc-1in3) | 0x10000 | 0x10 | entry_prc_1in3 section with known value used for debug. |
 | [status_1in3](#section-status-1in3) | 0x10010 | 0x4 | HPU status of part 1in3 |
 | [ksk_avail](#section-ksk-avail) | 0x11000 | 0x8 | KSK availability configuration |
@@ -1229,6 +1229,7 @@ Below is a summary of all the registers in the current section bpip:
 |-----------------:|:------:|:------:|:------------|
 | [use](#register-bpipuse) | 0x2000 | RW |  (1) Use BPIP mode, (0) use IPIP mode (default) |
 | [timeout](#register-bpiptimeout) | 0x2004 | RW |  Timeout for BPIP mode |
+| [int](#register-bpipint) | 0x2008 | RW |  debug register to test interrupts |
 
 
 ---
@@ -1267,6 +1268,30 @@ Register use contains following Sub-fields:
 - **Offset**: 0x2004
 - **Default**: 4294967295
 
+
+
+
+---
+
+
+### Register bpip.int
+
+- **Description**: debug register to test interrupts
+- **Owner**: User
+- **Read Access**: Read
+- **Write Access**: Write
+- **Offset**: 0x2008
+- **Default**: C.f. fields
+
+
+#### Field Details
+
+Register int contains following Sub-fields:
+
+| Field Name | Offset_b | Size_b | Default      | Description   |
+|-----------:|:--------:|:------:|:------------:|:--------------|
+| int0      | 0 | 1 |0| int line 0 |
+| int1      | 1 | 1 |0| int line 1 |
 
 
 

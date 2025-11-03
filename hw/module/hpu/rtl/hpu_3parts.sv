@@ -344,13 +344,13 @@ module hpu_3parts
       // Interpart Resettable output flops
       // ----------------------------------------------------------------------------------------- //
       // Part 1
-      always_ff @(posedge prc_clk)
-        if (!prc_srst_n_part[0]) begin
-          out_p1_prc_interrupt <= '0;
-        end
-        else begin
-          out_p1_prc_interrupt <= in_p1_prc_interrupt;
-        end
+      //always_ff @(posedge prc_clk)
+      //  if (!prc_srst_n_part[0]) begin
+      //    out_p1_prc_interrupt <= '0;
+      //  end
+      //  else begin
+      //    out_p1_prc_interrupt <= in_p1_prc_interrupt;
+      //  end
 
       // Part 3 TODO: Not clear how are the interrupts going to be used.
       always_ff @(posedge prc_clk)
@@ -364,10 +364,12 @@ module hpu_3parts
 
       always_ff @(posedge cfg_clk)
         if (!cfg_srst_n) begin
-          out_p1_cfg_interrupt <= '0;
+          out_p1_cfg_interrupt <= 1'b0;
+          out_p1_prc_interrupt <= 1'b0;
         end
         else begin
           out_p1_cfg_interrupt <= in_p1_cfg_interrupt;
+          out_p1_prc_interrupt <= in_p1_prc_interrupt;
         end
 
       always_ff @(posedge cfg_clk)

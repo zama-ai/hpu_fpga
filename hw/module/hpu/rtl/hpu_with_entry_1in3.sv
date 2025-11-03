@@ -154,7 +154,7 @@ module hpu_with_entry_1in3
   input  pem_counter_inc_t                                             pem_rif_counter_inc,
   input  pea_counter_inc_t                                             pea_rif_counter_inc,
 
-  output logic [1:0]                                                   interrupt // TODO
+  output logic [1:0]                                                   interrupt
 );
 
 // ============================================================================================== --
@@ -211,7 +211,8 @@ module hpu_with_entry_1in3
     .use_bpip                  (use_bpip),
     .use_bpip_opportunism      (use_bpip_opportunism),
     .bpip_timeout              (bpip_timeout),
-    .trc_mem_addr              (trc_mem_addr)
+    .trc_mem_addr              (trc_mem_addr),
+    .interrupt                 (interrupt)
   );
 
 // ============================================================================================== --
