@@ -573,6 +573,51 @@ module top_hpu #(
   logic [KSK_PC_MAX-1:0][AXI4_ARQOS_W-1:0]          m_axi4_ksk_arqos;
   logic [KSK_PC_MAX-1:0][AXI4_ARREGION_W-1:0]       m_axi4_ksk_arregion;
 
+  // HPU_AXI4_ETH_HBM
+  /*Write channel*/
+  logic [ETH_PC-1:0][AXI4_KSK_ID_W-1:0]         m_axi4_eth_hbm_awid;
+  logic [ETH_PC-1:0][AXI4_KSK_ADD_W-1:0]        m_axi4_eth_hbm_awaddr;
+  logic [ETH_PC-1:0][AXI4_LEN_W-1:0]            m_axi4_eth_hbm_awlen;
+  logic [ETH_PC-1:0][AXI4_SIZE_W-1:0]           m_axi4_eth_hbm_awsize;
+  logic [ETH_PC-1:0][AXI4_BURST_W-1:0]          m_axi4_eth_hbm_awburst;
+  logic [ETH_PC-1:0]                            m_axi4_eth_hbm_awvalid;
+  logic [ETH_PC-1:0]                            m_axi4_eth_hbm_awready;
+  logic [ETH_PC-1:0][AXI4_KSK_DATA_W-1:0]       m_axi4_eth_hbm_wdata;
+  logic [ETH_PC-1:0][AXI4_KSK_DATA_BYTES-1:0]   m_axi4_eth_hbm_wstrb;
+  logic [ETH_PC-1:0]                            m_axi4_eth_hbm_wlast;
+  logic [ETH_PC-1:0]                            m_axi4_eth_hbm_wvalid;
+  logic [ETH_PC-1:0]                            m_axi4_eth_hbm_wready;
+  logic [ETH_PC-1:0][AXI4_KSK_ID_W-1:0]         m_axi4_eth_hbm_bid;
+  logic [ETH_PC-1:0][AXI4_RESP_W-1:0]           m_axi4_eth_hbm_bresp;
+  logic [ETH_PC-1:0]                            m_axi4_eth_hbm_bvalid;
+  logic [ETH_PC-1:0]                            m_axi4_eth_hbm_bready;
+  /*Unused signal tight to constant in the top*/
+  logic [ETH_PC-1:0][AXI4_AWLOCK_W-1:0]         m_axi4_eth_hbm_awlock;
+  logic [ETH_PC-1:0][AXI4_AWCACHE_W-1:0]        m_axi4_eth_hbm_awcache;
+  logic [ETH_PC-1:0][AXI4_AWPROT_W-1:0]         m_axi4_eth_hbm_awprot;
+  logic [ETH_PC-1:0][AXI4_AWQOS_W-1:0]          m_axi4_eth_hbm_awqos;
+  logic [ETH_PC-1:0][AXI4_AWREGION_W-1:0]       m_axi4_eth_hbm_awregion;
+  /*Read channel*/
+  logic [ETH_PC-1:0][AXI4_KSK_ID_W-1:0]         m_axi4_eth_hbm_arid;
+  logic [ETH_PC-1:0][AXI4_KSK_ADD_W-1:0]        m_axi4_eth_hbm_araddr;
+  logic [ETH_PC-1:0][AXI4_LEN_W-1:0]            m_axi4_eth_hbm_arlen;
+  logic [ETH_PC-1:0][AXI4_SIZE_W-1:0]           m_axi4_eth_hbm_arsize;
+  logic [ETH_PC-1:0][AXI4_BURST_W-1:0]          m_axi4_eth_hbm_arburst;
+  logic [ETH_PC-1:0]                            m_axi4_eth_hbm_arvalid;
+  logic [ETH_PC-1:0]                            m_axi4_eth_hbm_arready;
+  logic [ETH_PC-1:0][AXI4_KSK_ID_W-1:0]         m_axi4_eth_hbm_rid;
+  logic [ETH_PC-1:0][AXI4_KSK_DATA_W-1:0]       m_axi4_eth_hbm_rdata;
+  logic [ETH_PC-1:0][AXI4_RESP_W-1:0]           m_axi4_eth_hbm_rresp;
+  logic [ETH_PC-1:0]                            m_axi4_eth_hbm_rlast;
+  logic [ETH_PC-1:0]                            m_axi4_eth_hbm_rvalid;
+  logic [ETH_PC-1:0]                            m_axi4_eth_hbm_rready;
+  /*Unused signal tight to constant in the top*/
+  logic [ETH_PC-1:0][AXI4_ARLOCK_W-1:0]         m_axi4_eth_hbm_arlock;
+  logic [ETH_PC-1:0][AXI4_ARCACHE_W-1:0]        m_axi4_eth_hbm_arcache;
+  logic [ETH_PC-1:0][AXI4_ARPROT_W-1:0]         m_axi4_eth_hbm_arprot;
+  logic [ETH_PC-1:0][AXI4_ARQOS_W-1:0]          m_axi4_eth_hbm_arqos;
+  logic [ETH_PC-1:0][AXI4_ARREGION_W-1:0]       m_axi4_eth_hbm_arregion;
+
   // ======================================================================= //
   // Ethernet link: MRMAC, GTM and DMA
   // ======================================================================= //
@@ -595,6 +640,11 @@ module top_hpu #(
   logic [QSFP_LANE_NB-1:0] gt_rx_reset_done;
   logic [QSFP_LANE_NB-1:0] gt_tx_reset_done;
   // ----------------------------------------------------------------------- //
+  // Multi-hpu-dma
+  // ---------------------- //
+  logic interrupt_notify;
+  logic interrupt_read_request;
+  // ----------------------------------------------------------------------- //
   // QSFP RX axi4-stream
   logic [QSFP_LANE_NB-1:0][AXIS_TDATA_W-1:0] qsfp_rx_tdata;
   logic [QSFP_LANE_NB-1:0][AXIS_TKEEP_W-1:0] qsfp_rx_tkeep_user;
@@ -610,7 +660,9 @@ module top_hpu #(
   // Connections
   // =========================================================================================== //
   assign rtl_interrupt[0]   = hpu_interrupt[0]; // TODO
-  assign rtl_interrupt[5:1] = 5'b0;
+  assign rtl_interrupt[3:1] = 3'b0;
+  assign rtl_interrupt[4]   = interrupt_notify;
+  assign rtl_interrupt[5]   = interrupt_read_request;
 
   // from isc to bd, stream is one word at a time
   assign axis_s_rx_tlast = 1'b1;
@@ -2230,6 +2282,84 @@ module top_hpu #(
     .KSK_AXI_15_wstrb   (m_axi4_ksk_wstrb[15]   ),
     .KSK_AXI_15_wvalid  (m_axi4_ksk_wvalid[15]  ),
 
+    .ETH_HBM_AXI_0_araddr  (m_axi4_eth_hbm_araddr[0]  ),
+    .ETH_HBM_AXI_0_arburst (m_axi4_eth_hbm_arburst[0] ),
+    .ETH_HBM_AXI_0_arcache (m_axi4_eth_hbm_arcache[0] ),
+    .ETH_HBM_AXI_0_arid    (m_axi4_eth_hbm_arid[0]    ),
+    .ETH_HBM_AXI_0_arlen   (m_axi4_eth_hbm_arlen[0]   ),
+    .ETH_HBM_AXI_0_arlock  (m_axi4_eth_hbm_arlock[0]  ),
+    .ETH_HBM_AXI_0_arprot  (m_axi4_eth_hbm_arprot[0]  ),
+    .ETH_HBM_AXI_0_arready (m_axi4_eth_hbm_arready[0] ),
+    .ETH_HBM_AXI_0_arsize  (m_axi4_eth_hbm_arsize[0]  ),
+    // .ETH_HBM_AXI_0_aruser  (m_axi4_eth_hbm_aruser[0]  ),//
+    .ETH_HBM_AXI_0_arvalid (m_axi4_eth_hbm_arvalid[0] ),
+    .ETH_HBM_AXI_0_awaddr  (m_axi4_eth_hbm_awaddr[0]  ),
+    .ETH_HBM_AXI_0_awburst (m_axi4_eth_hbm_awburst[0] ),
+    .ETH_HBM_AXI_0_awcache (m_axi4_eth_hbm_awcache[0] ),
+    .ETH_HBM_AXI_0_awid    (m_axi4_eth_hbm_awid[0]    ),
+    .ETH_HBM_AXI_0_awlen   (m_axi4_eth_hbm_awlen[0]   ),
+    .ETH_HBM_AXI_0_awlock  (m_axi4_eth_hbm_awlock[0]  ),
+    .ETH_HBM_AXI_0_awprot  (m_axi4_eth_hbm_awprot[0]  ),
+    .ETH_HBM_AXI_0_awready (m_axi4_eth_hbm_awready[0] ),
+    .ETH_HBM_AXI_0_awsize  (m_axi4_eth_hbm_awsize[0]  ),
+    // .ETH_HBM_AXI_0_awuser  (m_axi4_eth_hbm_awuser[0]  ),//
+    .ETH_HBM_AXI_0_awvalid (m_axi4_eth_hbm_awvalid[0] ),
+    .ETH_HBM_AXI_0_bid     (m_axi4_eth_hbm_bid[0]     ),
+    .ETH_HBM_AXI_0_bready  (m_axi4_eth_hbm_bready[0]  ),
+    .ETH_HBM_AXI_0_bresp   (m_axi4_eth_hbm_bresp[0]   ),
+    // .ETH_HBM_AXI_0_buser   (m_axi4_eth_hbm_buser[0]   ),//
+    .ETH_HBM_AXI_0_bvalid  (m_axi4_eth_hbm_bvalid[0]  ),
+    .ETH_HBM_AXI_0_rdata   (m_axi4_eth_hbm_rdata[0]   ),
+    .ETH_HBM_AXI_0_rid     (m_axi4_eth_hbm_rid[0]     ),
+    .ETH_HBM_AXI_0_rlast   (m_axi4_eth_hbm_rlast[0]   ),
+    .ETH_HBM_AXI_0_rready  (m_axi4_eth_hbm_rready[0]  ),
+    .ETH_HBM_AXI_0_rresp   (m_axi4_eth_hbm_rresp[0]   ),
+    .ETH_HBM_AXI_0_rvalid  (m_axi4_eth_hbm_rvalid[0]  ),
+    .ETH_HBM_AXI_0_wdata   (m_axi4_eth_hbm_wdata[0]   ),
+    .ETH_HBM_AXI_0_wlast   (m_axi4_eth_hbm_wlast[0]   ),
+    .ETH_HBM_AXI_0_wready  (m_axi4_eth_hbm_wready[0]  ),
+    .ETH_HBM_AXI_0_wstrb   (m_axi4_eth_hbm_wstrb[0]   ),
+    .ETH_HBM_AXI_0_wvalid  (m_axi4_eth_hbm_wvalid[0]  ),
+
+    .ETH_HBM_AXI_1_araddr  (m_axi4_eth_hbm_araddr[1]  ),
+    .ETH_HBM_AXI_1_arburst (m_axi4_eth_hbm_arburst[1] ),
+    .ETH_HBM_AXI_1_arcache (m_axi4_eth_hbm_arcache[1] ),
+    .ETH_HBM_AXI_1_arid    (m_axi4_eth_hbm_arid[1]    ),
+    .ETH_HBM_AXI_1_arlen   (m_axi4_eth_hbm_arlen[1]   ),
+    .ETH_HBM_AXI_1_arlock  (m_axi4_eth_hbm_arlock[1]  ),
+    .ETH_HBM_AXI_1_arprot  (m_axi4_eth_hbm_arprot[1]  ),
+    .ETH_HBM_AXI_1_arready (m_axi4_eth_hbm_arready[1] ),
+    .ETH_HBM_AXI_1_arsize  (m_axi4_eth_hbm_arsize[1]  ),
+    // .ETH_HBM_AXI_1_aruser  (m_axi4_eth_hbm_aruser[1]  ),//
+    .ETH_HBM_AXI_1_arvalid (m_axi4_eth_hbm_arvalid[1] ),
+    .ETH_HBM_AXI_1_awaddr  (m_axi4_eth_hbm_awaddr[1]  ),
+    .ETH_HBM_AXI_1_awburst (m_axi4_eth_hbm_awburst[1] ),
+    .ETH_HBM_AXI_1_awcache (m_axi4_eth_hbm_awcache[1] ),
+    .ETH_HBM_AXI_1_awid    (m_axi4_eth_hbm_awid[1]    ),
+    .ETH_HBM_AXI_1_awlen   (m_axi4_eth_hbm_awlen[1]   ),
+    .ETH_HBM_AXI_1_awlock  (m_axi4_eth_hbm_awlock[1]  ),
+    .ETH_HBM_AXI_1_awprot  (m_axi4_eth_hbm_awprot[1]  ),
+    .ETH_HBM_AXI_1_awready (m_axi4_eth_hbm_awready[1] ),
+    .ETH_HBM_AXI_1_awsize  (m_axi4_eth_hbm_awsize[1]  ),
+    // .ETH_HBM_AXI_1_awuser  (m_axi4_eth_hbm_awuser[1]  ),//
+    .ETH_HBM_AXI_1_awvalid (m_axi4_eth_hbm_awvalid[1] ),
+    .ETH_HBM_AXI_1_bid     (m_axi4_eth_hbm_bid[1]     ),
+    .ETH_HBM_AXI_1_bready  (m_axi4_eth_hbm_bready[1]  ),
+    .ETH_HBM_AXI_1_bresp   (m_axi4_eth_hbm_bresp[1]   ),
+    // .ETH_HBM_AXI_1_buser   (m_axi4_eth_hbm_buser[1]   ),//
+    .ETH_HBM_AXI_1_bvalid  (m_axi4_eth_hbm_bvalid[1]  ),
+    .ETH_HBM_AXI_1_rdata   (m_axi4_eth_hbm_rdata[1]   ),
+    .ETH_HBM_AXI_1_rid     (m_axi4_eth_hbm_rid[1]     ),
+    .ETH_HBM_AXI_1_rlast   (m_axi4_eth_hbm_rlast[1]   ),
+    .ETH_HBM_AXI_1_rready  (m_axi4_eth_hbm_rready[1]  ),
+    .ETH_HBM_AXI_1_rresp   (m_axi4_eth_hbm_rresp[1]   ),
+    .ETH_HBM_AXI_1_rvalid  (m_axi4_eth_hbm_rvalid[1]  ),
+    .ETH_HBM_AXI_1_wdata   (m_axi4_eth_hbm_wdata[1]   ),
+    .ETH_HBM_AXI_1_wlast   (m_axi4_eth_hbm_wlast[1]   ),
+    .ETH_HBM_AXI_1_wready  (m_axi4_eth_hbm_wready[1]  ),
+    .ETH_HBM_AXI_1_wstrb   (m_axi4_eth_hbm_wstrb[1]   ),
+    .ETH_HBM_AXI_1_wvalid  (m_axi4_eth_hbm_wvalid[1]  ),
+
     /* AXI stream
      */
     .axis_m_lpd_tdata  (axis_m_rx_tdata_tmp ),
@@ -2817,6 +2947,46 @@ module top_hpu #(
     .m_axi4_ksk_arqos              (m_axi4_ksk_arqos),
     .m_axi4_ksk_arregion           (m_axi4_ksk_arregion),
 
+    .m_axi4_eth_hbm_awid           (m_axi4_eth_hbm_awid),
+    .m_axi4_eth_hbm_awaddr         (m_axi4_eth_hbm_awaddr),
+    .m_axi4_eth_hbm_awlen          (m_axi4_eth_hbm_awlen),
+    .m_axi4_eth_hbm_awsize         (m_axi4_eth_hbm_awsize),
+    .m_axi4_eth_hbm_awburst        (m_axi4_eth_hbm_awburst),
+    .m_axi4_eth_hbm_awvalid        (m_axi4_eth_hbm_awvalid),
+    .m_axi4_eth_hbm_awready        (m_axi4_eth_hbm_awready),
+    .m_axi4_eth_hbm_wdata          (m_axi4_eth_hbm_wdata),
+    .m_axi4_eth_hbm_wstrb          (m_axi4_eth_hbm_wstrb),
+    .m_axi4_eth_hbm_wlast          (m_axi4_eth_hbm_wlast),
+    .m_axi4_eth_hbm_wvalid         (m_axi4_eth_hbm_wvalid),
+    .m_axi4_eth_hbm_wready         (m_axi4_eth_hbm_wready),
+    .m_axi4_eth_hbm_bid            (m_axi4_eth_hbm_bid),
+    .m_axi4_eth_hbm_bresp          (m_axi4_eth_hbm_bresp),
+    .m_axi4_eth_hbm_bvalid         (m_axi4_eth_hbm_bvalid),
+    .m_axi4_eth_hbm_bready         (m_axi4_eth_hbm_bready),
+    .m_axi4_eth_hbm_awlock         (m_axi4_eth_hbm_awlock),
+    .m_axi4_eth_hbm_awcache        (m_axi4_eth_hbm_awcache),
+    .m_axi4_eth_hbm_awprot         (m_axi4_eth_hbm_awprot),
+    .m_axi4_eth_hbm_awqos          (m_axi4_eth_hbm_awqos),
+    .m_axi4_eth_hbm_awregion       (m_axi4_eth_hbm_awregion),
+    .m_axi4_eth_hbm_arid           (m_axi4_eth_hbm_arid),
+    .m_axi4_eth_hbm_araddr         (m_axi4_eth_hbm_araddr),
+    .m_axi4_eth_hbm_arlen          (m_axi4_eth_hbm_arlen),
+    .m_axi4_eth_hbm_arsize         (m_axi4_eth_hbm_arsize),
+    .m_axi4_eth_hbm_arburst        (m_axi4_eth_hbm_arburst),
+    .m_axi4_eth_hbm_arvalid        (m_axi4_eth_hbm_arvalid),
+    .m_axi4_eth_hbm_arready        (m_axi4_eth_hbm_arready),
+    .m_axi4_eth_hbm_rid            (m_axi4_eth_hbm_rid),
+    .m_axi4_eth_hbm_rdata          (m_axi4_eth_hbm_rdata),
+    .m_axi4_eth_hbm_rresp          (m_axi4_eth_hbm_rresp),
+    .m_axi4_eth_hbm_rlast          (m_axi4_eth_hbm_rlast),
+    .m_axi4_eth_hbm_rvalid         (m_axi4_eth_hbm_rvalid),
+    .m_axi4_eth_hbm_rready         (m_axi4_eth_hbm_rready),
+    .m_axi4_eth_hbm_arlock         (m_axi4_eth_hbm_arlock),
+    .m_axi4_eth_hbm_arcache        (m_axi4_eth_hbm_arcache),
+    .m_axi4_eth_hbm_arprot         (m_axi4_eth_hbm_arprot),
+    .m_axi4_eth_hbm_arqos          (m_axi4_eth_hbm_arqos),
+    .m_axi4_eth_hbm_arregion       (m_axi4_eth_hbm_arregion),
+
     /* AXI-STREAM interface
      * Instruction scheduler
      */
@@ -2829,7 +2999,10 @@ module top_hpu #(
     .isc_ack_rdy                   (isc_ack_rdy),
     .isc_ack_vld                   (isc_ack_vld),
 
-    .interrupt                     (hpu_interrupt),
+    // interrupts
+    .interrupt                     (hpu_interrupt), //TODO
+    .interrupt_notify              (interrupt_notify),
+    .interrupt_read_request        (interrupt_read_request),
 
     // QSFP system interface
     .qsfp_tx_tdata                 (qsfp_tx_tdata),
@@ -2843,6 +3016,7 @@ module top_hpu #(
     .qsfp_rx_tlast                 (qsfp_rx_tlast),
     .qsfp_rx_tvalid                (qsfp_rx_tvalid),
 
+    // transceivers
     .gt_loopback                   (gt_loopback),
     .gt_line_rate                  (gt_line_rate),
     .gt_reset_rx_datapath          (gt_reset_rx_datapath),

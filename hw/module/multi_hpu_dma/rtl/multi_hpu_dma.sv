@@ -17,67 +17,96 @@ module multi_hpu_dma
   parameter int NB_WORD_W = $clog2(FIFO_DEPTH)+1
 ) (
   // Ethernet configuration interface -----------------------------------------
-  input logic clk_eth_cfg,
-  input logic resetn_eth_cfg,
+  input logic                                                    clk_eth_cfg,
+  input logic                                                    resetn_eth_cfg,
   // Ethernet fast clock interface --------------------------------------------
-  input logic clk_eth_mrmac,
-  input logic resetn_eth_mrmac,
+  input logic                                                    clk_eth_mrmac,
+  input logic                                                    resetn_eth_mrmac,
   // Axi4-lite slave interface for regfile ------------------------------------
-  input  logic [AXIL_ADD_W-1:0]      s_axil_dma_awaddr,
-  input  logic                       s_axil_dma_awvalid,
-  output logic                       s_axil_dma_awready,
-  input  logic [AXIL_DATA_W-1:0]     s_axil_dma_wdata,
-  input  logic [AXIL_DATA_BYTES-1:0] s_axil_dma_wstrb, /* UNUSED */
-  input  logic                       s_axil_dma_wvalid,
-  output logic                       s_axil_dma_wready,
-  output logic [1:0]                 s_axil_dma_bresp,
-  output logic                       s_axil_dma_bvalid,
-  input  logic                       s_axil_dma_bready,
-  input  logic [AXIL_ADD_W-1:0]      s_axil_dma_araddr,
-  input  logic                       s_axil_dma_arvalid,
-  output logic                       s_axil_dma_arready,
-  output logic [AXIL_DATA_W-1:0]     s_axil_dma_rdata,
-  output logic [1:0]                 s_axil_dma_rresp,
-  output logic                       s_axil_dma_rvalid,
-  input  logic                       s_axil_dma_rready,
+  input  logic [AXIL_ADD_W-1:0]                                  s_axil_dma_awaddr,
+  input  logic                                                   s_axil_dma_awvalid,
+  output logic                                                   s_axil_dma_awready,
+  input  logic [AXIL_DATA_W-1:0]                                 s_axil_dma_wdata,
+  input  logic [AXIL_DATA_BYTES-1:0]                             s_axil_dma_wstrb, /* UNUSED */
+  input  logic                                                   s_axil_dma_wvalid,
+  output logic                                                   s_axil_dma_wready,
+  output logic [1:0]                                             s_axil_dma_bresp,
+  output logic                                                   s_axil_dma_bvalid,
+  input  logic                                                   s_axil_dma_bready,
+  input  logic [AXIL_ADD_W-1:0]                                  s_axil_dma_araddr,
+  input  logic                                                   s_axil_dma_arvalid,
+  output logic                                                   s_axil_dma_arready,
+  output logic [AXIL_DATA_W-1:0]                                 s_axil_dma_rdata,
+  output logic [1:0]                                             s_axil_dma_rresp,
+  output logic                                                   s_axil_dma_rvalid,
+  input  logic                                                   s_axil_dma_rready,
+  // Axi4-full HBM interface --------------------------------------------------
+  // Write channel
+  output logic [ETH_PC-1:0][axi_if_eth_axi_pkg::AXI4_ID_W-1:0]   m_axi4_eth_hbm_awid,
+  output logic [ETH_PC-1:0][axi_if_eth_axi_pkg::AXI4_ADD_W-1:0]  m_axi4_eth_hbm_awaddr,
+  output logic [ETH_PC-1:0][AXI4_LEN_W-1:0]                      m_axi4_eth_hbm_awlen,
+  output logic [ETH_PC-1:0][AXI4_SIZE_W-1:0]                     m_axi4_eth_hbm_awsize,
+  output logic [ETH_PC-1:0][AXI4_BURST_W-1:0]                    m_axi4_eth_hbm_awburst,
+  output logic [ETH_PC-1:0]                                      m_axi4_eth_hbm_awvalid,
+  input  logic [ETH_PC-1:0]                                      m_axi4_eth_hbm_awready,
+  output logic [ETH_PC-1:0][axi_if_eth_axi_pkg::AXI4_DATA_W-1:0] m_axi4_eth_hbm_wdata,
+  output logic [ETH_PC-1:0][axi_if_eth_axi_pkg::AXI4_STRB_W-1:0] m_axi4_eth_hbm_wstrb,
+  output logic [ETH_PC-1:0]                                      m_axi4_eth_hbm_wlast,
+  output logic [ETH_PC-1:0]                                      m_axi4_eth_hbm_wvalid,
+  input  logic [ETH_PC-1:0]                                      m_axi4_eth_hbm_wready,
+  input  logic [ETH_PC-1:0][axi_if_eth_axi_pkg::AXI4_ID_W-1:0]   m_axi4_eth_hbm_bid,
+  input  logic [ETH_PC-1:0][AXI4_RESP_W-1:0]                     m_axi4_eth_hbm_bresp,
+  input  logic [ETH_PC-1:0]                                      m_axi4_eth_hbm_bvalid,
+  output logic [ETH_PC-1:0]                                      m_axi4_eth_hbm_bready,
+  // Read channel
+  output logic [ETH_PC-1:0][axi_if_eth_axi_pkg::AXI4_ID_W-1:0]   m_axi4_eth_hbm_arid,
+  output logic [ETH_PC-1:0][axi_if_eth_axi_pkg::AXI4_ADD_W-1:0]  m_axi4_eth_hbm_araddr,
+  output logic [ETH_PC-1:0][AXI4_LEN_W-1:0]                      m_axi4_eth_hbm_arlen,
+  output logic [ETH_PC-1:0][AXI4_SIZE_W-1:0]                     m_axi4_eth_hbm_arsize,
+  output logic [ETH_PC-1:0][AXI4_BURST_W-1:0]                    m_axi4_eth_hbm_arburst,
+  output logic [ETH_PC-1:0]                                      m_axi4_eth_hbm_arvalid,
+  input  logic [ETH_PC-1:0]                                      m_axi4_eth_hbm_arready,
+  input  logic [ETH_PC-1:0][axi_if_eth_axi_pkg::AXI4_ID_W-1:0]   m_axi4_eth_hbm_rid,
+  input  logic [ETH_PC-1:0][axi_if_eth_axi_pkg::AXI4_DATA_W-1:0] m_axi4_eth_hbm_rdata,
+  input  logic [ETH_PC-1:0][AXI4_RESP_W-1:0]                     m_axi4_eth_hbm_rresp,
+  input  logic [ETH_PC-1:0]                                      m_axi4_eth_hbm_rlast,
+  input  logic [ETH_PC-1:0]                                      m_axi4_eth_hbm_rvalid,
+  output logic [ETH_PC-1:0]                                      m_axi4_eth_hbm_rready,
   // QSFP system interface ----------------------------------------------------
   // == TX
-  output[QSFP_LANE_NB-1:0][MRMAC_AXIS_W-1:0  ] qsfp_tx_tdata,
-  output[QSFP_LANE_NB-1:0][MRMAC_TKEEP_W-1:0 ] qsfp_tx_tkeep_user,
-  output[QSFP_LANE_NB-1:0]                     qsfp_tx_tlast,
-  output[QSFP_LANE_NB-1:0]                     qsfp_tx_tvalid,
-  input [QSFP_LANE_NB-1:0]                     qsfp_tx_tready,
+  output logic [QSFP_LANE_NB-1:0][MRMAC_AXIS_W-1:0  ]            qsfp_tx_tdata,
+  output logic [QSFP_LANE_NB-1:0][MRMAC_TKEEP_W-1:0 ]            qsfp_tx_tkeep_user,
+  output logic [QSFP_LANE_NB-1:0]                                qsfp_tx_tlast,
+  output logic [QSFP_LANE_NB-1:0]                                qsfp_tx_tvalid,
+  input  logic [QSFP_LANE_NB-1:0]                                qsfp_tx_tready,
   // == RX
-  input [QSFP_LANE_NB-1:0][MRMAC_AXIS_W-1:0  ] qsfp_rx_tdata,
-  input [QSFP_LANE_NB-1:0][MRMAC_TKEEP_W-1:0 ]  qsfp_rx_tkeep_user,
-  input [QSFP_LANE_NB-1:0]                     qsfp_rx_tlast,
-  input [QSFP_LANE_NB-1:0]                     qsfp_rx_tvalid,
-  // irq interface ------------------------------------------------------------
-  logic irq_read_done,
-  logic irq_rx_notify,
+  input  logic [QSFP_LANE_NB-1:0][MRMAC_AXIS_W-1:0  ]            qsfp_rx_tdata,
+  input  logic [QSFP_LANE_NB-1:0][MRMAC_TKEEP_W-1:0 ]            qsfp_rx_tkeep_user,
+  input  logic [QSFP_LANE_NB-1:0]                                qsfp_rx_tlast,
+  input  logic [QSFP_LANE_NB-1:0]                                qsfp_rx_tvalid,
+  // interrupt interface ------------------------------------------------------------
+  output logic                                                   interrupt_notify,
+  output logic                                                   interrupt_read_request,
   // Giga traceivers interface ------------------------------------------------
-  output [QSFP_LANE_NB-1:0] gt_reset_rx_datapath,
-  output [QSFP_LANE_NB-1:0] gt_reset_tx_datapath,
-  output [QSFP_LANE_NB-1:0] gt_reset_all,
-  input  [QSFP_LANE_NB-1:0] gt_rx_reset_done,
-  input  [QSFP_LANE_NB-1:0] gt_tx_reset_done,
+  output logic [QSFP_LANE_NB-1:0]                                gt_reset_rx_datapath,
+  output logic [QSFP_LANE_NB-1:0]                                gt_reset_tx_datapath,
+  output logic [QSFP_LANE_NB-1:0]                                gt_reset_all,
+  input  logic [QSFP_LANE_NB-1:0]                                gt_rx_reset_done,
+  input  logic [QSFP_LANE_NB-1:0]                                gt_tx_reset_done,
   // line rate, should be set to zero
-  output [7:0]         gt_line_rate,
+  output logic [7:0]                                             gt_line_rate,
   // loopback mode, will be applied to all channels
   //  * 000: disabled
   //  * 010: near end pma
   //  * 100: near end pcs
-  output [2:0]         gt_loopback
+  output logic [2:0]                                             gt_loopback
 );
 
   // ============================================================================================ --
   // Signal
   // ============================================================================================ --
   logic [$clog2(QSFP_LANE_NB):0] line_sel;
-  // interrupts
-  logic interrupt_notify;
-  logic interrupt_read_request;
-  logic clear_interrupt_notify;
+  logic                          clear_interrupt_notify;
 
   // ============================================================================================ //
   // Register file

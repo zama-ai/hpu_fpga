@@ -12,6 +12,7 @@ module mhdma_bridge
   import axi_if_shell_axil_pkg::*;
   import hpu_regif_core_eth_2in3_pkg::*;
   import axi_if_common_param_pkg::*;
+  import axi_if_eth_axi_pkg::*;
 #() (
   // Ethernet configuration interface -----------------------------------------
   input  logic                                clk_cfg,

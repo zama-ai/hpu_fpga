@@ -33,6 +33,7 @@ module hpu_3parts
   import ntt_core_common_param_pkg::*;
   import pep_ks_common_param_pkg::*;
   import pep_if_pkg::*;
+  import mhdma_pkg::*;
 #(
   // AXI4 ADD_W could be redefined by the simulation.
   parameter int    AXI4_TRC_ADD_W   = 64,
@@ -78,7 +79,7 @@ module hpu_3parts
   `HPU_AXIL_IO(cfg_1in3,axi_if_shell_axil_pkg)
   `HPU_AXIL_IO(prc_3in3,axi_if_shell_axil_pkg)
   `HPU_AXIL_IO(cfg_3in3,axi_if_shell_axil_pkg)
-  // `HPU_AXIL_IO(dma_2in3,axi_if_shell_axil_pkg)
+  // `HPU_AXIL_IO(dma_2in3,axi_if_shell_axil_pkg) //TODO
   input  logic [AXIL_ADD_W-1:0]              s_axil_dma_2in3_awaddr,
   input  logic                               s_axil_dma_2in3_awvalid,
   output logic                               s_axil_dma_2in3_awready,
@@ -112,26 +113,32 @@ module hpu_3parts
   //== Axi4 BSK interface
   `HPU_AXI4_IO(bsk, BSK, axi_if_bsk_axi_pkg, [BSK_PC_MAX-1:0])
 
+  //== Axi4 ETH HBM interface
+  `HPU_AXI4_IO(eth_hbm, ETH_HBM, axi_if_eth_axi_pkg, [ETH_PC-1:0])
+
   // QSFP system interface
   // == TX
-  output[QSFP_LANE_NB-1:0][AXIS_TDATA_W-1:0  ] qsfp_tx_tdata,
-  output[QSFP_LANE_NB-1:0][AXIS_TKEEP_W-1:0 ]  qsfp_tx_tkeep_user,
-  output[QSFP_LANE_NB-1:0]                     qsfp_tx_tlast,
-  output[QSFP_LANE_NB-1:0]                     qsfp_tx_tvalid,
-  input [QSFP_LANE_NB-1:0]                     qsfp_tx_tready,
+  output logic [QSFP_LANE_NB-1:0][AXIS_TDATA_W-1:0  ] qsfp_tx_tdata,
+  output logic [QSFP_LANE_NB-1:0][AXIS_TKEEP_W-1:0 ]  qsfp_tx_tkeep_user,
+  output logic [QSFP_LANE_NB-1:0]                     qsfp_tx_tlast,
+  output logic [QSFP_LANE_NB-1:0]                     qsfp_tx_tvalid,
+  input  logic [QSFP_LANE_NB-1:0]                     qsfp_tx_tready,
   // == RX
-  input [QSFP_LANE_NB-1:0][AXIS_TDATA_W-1:0  ] qsfp_rx_tdata,
-  input [QSFP_LANE_NB-1:0][AXIS_TKEEP_W-1:0 ]  qsfp_rx_tkeep_user,
-  input [QSFP_LANE_NB-1:0]                     qsfp_rx_tlast,
-  input [QSFP_LANE_NB-1:0]                     qsfp_rx_tvalid,
+  input  logic [QSFP_LANE_NB-1:0][AXIS_TDATA_W-1:0  ] qsfp_rx_tdata,
+  input  logic [QSFP_LANE_NB-1:0][AXIS_TKEEP_W-1:0 ]  qsfp_rx_tkeep_user,
+  input  logic [QSFP_LANE_NB-1:0]                     qsfp_rx_tlast,
+  input  logic [QSFP_LANE_NB-1:0]                     qsfp_rx_tvalid,
+  // interrupts
+  output logic                                        interrupt_notify,
+  output logic                                        interrupt_read_request,
   // transceiver control
-  output [2:0]         gt_loopback,
-  output [7:0]         gt_line_rate,
-  output [QSFP_LANE_NB-1:0] gt_reset_rx_datapath,
-  output [QSFP_LANE_NB-1:0] gt_reset_tx_datapath,
-  output [QSFP_LANE_NB-1:0] gt_reset_all,
-  input  [QSFP_LANE_NB-1:0] gt_rx_reset_done,
-  input  [QSFP_LANE_NB-1:0] gt_tx_reset_done,
+  output logic [2:0]                                  gt_loopback,
+  output logic [7:0]                                  gt_line_rate,
+  output logic [QSFP_LANE_NB-1:0]                     gt_reset_rx_datapath,
+  output logic [QSFP_LANE_NB-1:0]                     gt_reset_tx_datapath,
+  output logic [QSFP_LANE_NB-1:0]                     gt_reset_all,
+  input  logic [QSFP_LANE_NB-1:0]                     gt_rx_reset_done,
+  input  logic [QSFP_LANE_NB-1:0]                     gt_tx_reset_done,
 
   //== AXI stream for ISC
   input  logic [PE_INST_W-1:0] isc_dop,
@@ -581,6 +588,11 @@ module hpu_3parts
     .s_axil_dma_rresp           (s_axil_dma_2in3_rresp),
     .s_axil_dma_rvalid          (s_axil_dma_2in3_rvalid),
     .s_axil_dma_rready          (s_axil_dma_2in3_rready),
+
+    `HPU_AXI4_FULL_INSTANCE(eth_hbm, eth_hbm,,[ETH_PC-1:0])
+
+    .interrupt_notify           (interrupt_notify),
+    .interrupt_read_request     (interrupt_read_request),
 
     .decomp_ntt_data_avail      (out_p1_p2_sll_ctrl.decomp_ntt_ctrl.data_avail),
     .decomp_ntt_data            (out_p1_p2_sll_data.decomp_ntt_data.data),

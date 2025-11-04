@@ -34,6 +34,7 @@ module hpu_3parts_2in3_core
   import ntt_core_common_param_pkg::*;
   import pep_ks_common_param_pkg::*;
   import pep_if_pkg::*;
+  import mhdma_pkg::*;
 #(
   // AXI4 ADD_W could be redefined by the simulation.
   parameter int    AXI4_TRC_ADD_W   = 64,
@@ -119,27 +120,30 @@ module hpu_3parts_2in3_core
   //-- For regif
   output pep_rif_elt_t                       pep_rif_elt,
 
+  // Multi-HPU-DMA
+  `HPU_AXI4_IO(eth_hbm, ETH_HBM, axi_if_ksk_axi_pkg,[ETH_PC-1:0])
+  output logic                                      interrupt_notify,
+  output logic                                      interrupt_read_request,
   // QSFP system interface
   // == TX
-  output[QSFP_LANE_NB-1:0][AXIS_TDATA_W-1:0  ] qsfp_tx_tdata,
-  output[QSFP_LANE_NB-1:0][AXIS_TKEEP_W-1:0 ]  qsfp_tx_tkeep_user,
-  output[QSFP_LANE_NB-1:0]                     qsfp_tx_tlast,
-  output[QSFP_LANE_NB-1:0]                     qsfp_tx_tvalid,
-  input [QSFP_LANE_NB-1:0]                     qsfp_tx_tready,
+  output logic [QSFP_LANE_NB-1:0][AXIS_TDATA_W-1:0] qsfp_tx_tdata,
+  output logic [QSFP_LANE_NB-1:0][AXIS_TKEEP_W-1:0] qsfp_tx_tkeep_user,
+  output logic [QSFP_LANE_NB-1:0]                   qsfp_tx_tlast,
+  output logic [QSFP_LANE_NB-1:0]                   qsfp_tx_tvalid,
+  input  logic [QSFP_LANE_NB-1:0]                   qsfp_tx_tready,
   // == RX
-  input [QSFP_LANE_NB-1:0][AXIS_TDATA_W-1:0  ] qsfp_rx_tdata,
-  input [QSFP_LANE_NB-1:0][AXIS_TKEEP_W-1:0 ]  qsfp_rx_tkeep_user,
-  input [QSFP_LANE_NB-1:0]                     qsfp_rx_tlast,
-  input [QSFP_LANE_NB-1:0]                     qsfp_rx_tvalid,
-
+  input  logic [QSFP_LANE_NB-1:0][AXIS_TDATA_W-1:0] qsfp_rx_tdata,
+  input  logic [QSFP_LANE_NB-1:0][AXIS_TKEEP_W-1:0] qsfp_rx_tkeep_user,
+  input  logic [QSFP_LANE_NB-1:0]                   qsfp_rx_tlast,
+  input  logic [QSFP_LANE_NB-1:0]                   qsfp_rx_tvalid,
   // transceiver control
-  output [2:0]         gt_loopback,
-  output [7:0]         gt_line_rate,
-  output [QSFP_LANE_NB-1:0] gt_reset_rx_datapath,
-  output [QSFP_LANE_NB-1:0] gt_reset_tx_datapath,
-  output [QSFP_LANE_NB-1:0] gt_reset_all,
-  input  [QSFP_LANE_NB-1:0] gt_rx_reset_done,
-  input  [QSFP_LANE_NB-1:0] gt_tx_reset_done
+  output logic [2:0]                                gt_loopback,
+  output logic [7:0]                                gt_line_rate,
+  output logic [QSFP_LANE_NB-1:0]                   gt_reset_rx_datapath,
+  output logic [QSFP_LANE_NB-1:0]                   gt_reset_tx_datapath,
+  output logic [QSFP_LANE_NB-1:0]                   gt_reset_all,
+  input  logic [QSFP_LANE_NB-1:0]                   gt_rx_reset_done,
+  input  logic [QSFP_LANE_NB-1:0]                   gt_tx_reset_done
 );
 
 // ============================================================================================== --
@@ -453,52 +457,54 @@ module hpu_3parts_2in3_core
 // ---------------------------------------------------------------------------------------------- --
   multi_hpu_dma #(
   ) multi_hpu_dma (
-    // configuration interface: regif
-    .clk_eth_cfg          (cfg_eth_clk),
-    .resetn_eth_cfg       (cfg_eth_srst_n),
-
-    .clk_eth_mrmac        (prc_mrmac_clk),
-    .resetn_eth_mrmac     (prc_mrmac_srst_n),
-
+    // System interface
+    .clk_eth_cfg            (cfg_eth_clk),
+    .resetn_eth_cfg         (cfg_eth_srst_n),
+    .clk_eth_mrmac          (prc_mrmac_clk),
+    .resetn_eth_mrmac       (prc_mrmac_srst_n),
     // register interface
-    .s_axil_dma_awaddr    (s_axil_dma_awaddr),
-    .s_axil_dma_awvalid   (s_axil_dma_awvalid),
-    .s_axil_dma_awready   (s_axil_dma_awready),
-    .s_axil_dma_wdata     (s_axil_dma_wdata),
-    .s_axil_dma_wstrb     (s_axil_dma_wstrb),
-    .s_axil_dma_wvalid    (s_axil_dma_wvalid),
-    .s_axil_dma_wready    (s_axil_dma_wready),
-    .s_axil_dma_bresp     (s_axil_dma_bresp),
-    .s_axil_dma_bvalid    (s_axil_dma_bvalid),
-    .s_axil_dma_bready    (s_axil_dma_bready),
-    .s_axil_dma_araddr    (s_axil_dma_araddr),
-    .s_axil_dma_arvalid   (s_axil_dma_arvalid),
-    .s_axil_dma_arready   (s_axil_dma_arready),
-    .s_axil_dma_rdata     (s_axil_dma_rdata),
-    .s_axil_dma_rresp     (s_axil_dma_rresp),
-    .s_axil_dma_rvalid    (s_axil_dma_rvalid),
-    .s_axil_dma_rready    (s_axil_dma_rready),
-
+    .s_axil_dma_awaddr      (s_axil_dma_awaddr),
+    .s_axil_dma_awvalid     (s_axil_dma_awvalid),
+    .s_axil_dma_awready     (s_axil_dma_awready),
+    .s_axil_dma_wdata       (s_axil_dma_wdata),
+    .s_axil_dma_wstrb       (s_axil_dma_wstrb),
+    .s_axil_dma_wvalid      (s_axil_dma_wvalid),
+    .s_axil_dma_wready      (s_axil_dma_wready),
+    .s_axil_dma_bresp       (s_axil_dma_bresp),
+    .s_axil_dma_bvalid      (s_axil_dma_bvalid),
+    .s_axil_dma_bready      (s_axil_dma_bready),
+    .s_axil_dma_araddr      (s_axil_dma_araddr),
+    .s_axil_dma_arvalid     (s_axil_dma_arvalid),
+    .s_axil_dma_arready     (s_axil_dma_arready),
+    .s_axil_dma_rdata       (s_axil_dma_rdata),
+    .s_axil_dma_rresp       (s_axil_dma_rresp),
+    .s_axil_dma_rvalid      (s_axil_dma_rvalid),
+    .s_axil_dma_rready      (s_axil_dma_rready),
+    // HBM axi4
+    `HPU_AXI4_SHORT_INSTANCE(eth_hbm, eth_hbm, _tmp, [ETH_PC-1:0])
+    // interrupts
+    .interrupt_notify       (interrupt_notify),
+    .interrupt_read_request (interrupt_read_request),
     // directly from QSFP axi4-stream
-    .qsfp_tx_tdata        (qsfp_tx_tdata),
-    .qsfp_tx_tkeep_user   (qsfp_tx_tkeep_user),
-    .qsfp_tx_tlast        (qsfp_tx_tlast),
-    .qsfp_tx_tvalid       (qsfp_tx_tvalid),
-    .qsfp_tx_tready       (qsfp_tx_tready),
+    .qsfp_tx_tdata          (qsfp_tx_tdata),
+    .qsfp_tx_tkeep_user     (qsfp_tx_tkeep_user),
+    .qsfp_tx_tlast          (qsfp_tx_tlast),
+    .qsfp_tx_tvalid         (qsfp_tx_tvalid),
+    .qsfp_tx_tready         (qsfp_tx_tready),
 
-    .qsfp_rx_tdata        (qsfp_rx_tdata),
-    .qsfp_rx_tkeep_user   (qsfp_rx_tkeep_user),
-    .qsfp_rx_tlast        (qsfp_rx_tlast),
-    .qsfp_rx_tvalid       (qsfp_rx_tvalid),
+    .qsfp_rx_tdata          (qsfp_rx_tdata),
+    .qsfp_rx_tkeep_user     (qsfp_rx_tkeep_user),
+    .qsfp_rx_tlast          (qsfp_rx_tlast),
+    .qsfp_rx_tvalid         (qsfp_rx_tvalid),
 
     // gt control signals
-    .gt_loopback          (gt_loopback),
-    .gt_line_rate         (gt_line_rate),
-    .gt_reset_rx_datapath (gt_reset_rx_datapath),
-    .gt_reset_tx_datapath (gt_reset_tx_datapath),
-    .gt_reset_all         (gt_reset_all),
-    .gt_rx_reset_done     (gt_rx_reset_done),
-    .gt_tx_reset_done     (gt_tx_reset_done)
+    .gt_loopback            (gt_loopback),
+    .gt_line_rate           (gt_line_rate),
+    .gt_reset_rx_datapath   (gt_reset_rx_datapath),
+    .gt_reset_tx_datapath   (gt_reset_tx_datapath),
+    .gt_reset_all           (gt_reset_all),
+    .gt_rx_reset_done       (gt_rx_reset_done),
+    .gt_tx_reset_done       (gt_tx_reset_done)
   );
 
 endmodule

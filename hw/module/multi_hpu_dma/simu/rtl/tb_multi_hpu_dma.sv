@@ -17,6 +17,7 @@ module tb_multi_hpu_dma;
   import axi_if_shell_axil_pkg::*;        // axi4-lite
   import hpu_regif_core_eth_2in3_pkg::*;  // ethernet regif
   import mhdma_pkg::*;                    // multi-hpu-dma
+  import axi_if_eth_axi_pkg::*;           // AXI ethernet
 
 // ============================================================================================== --
 // localparam
@@ -502,6 +503,7 @@ module tb_multi_hpu_dma;
      *  -------------------------------------------------------------------------------------------
      * > Does the timeout is triggered correctly and the Read request resent properly ?
      */
+    $display("\n\n"); // sperating from xpm fifo informations
 
     // Initialization =============================================================================
     $display("A - Initial register check and definition");
@@ -513,8 +515,9 @@ module tb_multi_hpu_dma;
     // TODO: add checker
 
     // Classical use-case =========================================================================
+    $display("B - Notification that a ciphertext is ready from one HPU to another");
     // or how this should be used most of the time
-    // for now size_b is fixed, all our ciphertext are 16.384kB size_b=0x40004
+    // for now size_b is fixed, all our ciphertext are 16.384kB (size_b=0x4000)
     iop_id       = $urandom();
     iop_src_addr = $urandom();
     iop_dst_addr = $urandom();
@@ -527,13 +530,14 @@ module tb_multi_hpu_dma;
     notify_payload = {iop_src_addr, 8'b0, random_hpu_b, iop_id};
 
     wait (hpu_a.interrupt_notify == 1'b1);
-    $display("[INFO]: Interrupt detected at time %0t. checking Notify payload", $time);
+    $display("%t > INFO: Interrupt detected, checking Notify payload \n",$time);
     maxil_drv_if_hpu_a.read_trans(REQUEST_NOTIFY_OFS, read_data);
 
     assert (read_data == notify_payload) else begin
       $display("%t > [ERROR]: Payload DATA incorrect %x %x", $time, read_data, notify_payload);
       error_notify_rx = 1'b1;
     end
+    $display("%t > INFO: Payload matches expected \n",$time);
 
     maxil_drv_if_hpu_a.read_trans(REQUEST_STAT_NOTIFY_OFS, read_data);
     $display("[INFO]: stat @HPU_A: how long data stayed before read? %x", read_data[15:0]);
@@ -542,6 +546,7 @@ module tb_multi_hpu_dma;
 
     repeat(100) @(posedge clk_control);
     // Sending a read request from HPU-A to HPU-B -------------------------------------------------
+    $display("\nC - Sending a Read request");
     read_request(random_hpu_b, iop_id, iop_src_addr, iop_dst_addr);
 
     // TODO: add checker
@@ -625,8 +630,8 @@ module tb_multi_hpu_dma;
     maxil_drv_if_hpu_a.read_trans(RESET_MONITOR_OFS, reset_monitor[0]);
     maxil_drv_if_hpu_b.read_trans(RESET_MONITOR_OFS, reset_monitor[1]);
 
-    assert ((reset_monitor[3:0] == gt_tx_reset_done) && (reset_monitor[7:4] == gt_rx_reset_done)) begin
-      $display("%t >    ERROR: reset monitor has not been read correctly",$time);
+    assert ((reset_monitor[3:0] != gt_tx_reset_done) | (reset_monitor[7:4] != gt_rx_reset_done)) else begin
+      $display("[ERROR] reset monitor has not been read correctly");
       error_register_read = 1'b1;
     end
 
@@ -710,7 +715,7 @@ module tb_multi_hpu_dma;
     logic [31:0] read_req_id;
     logic [31:0] read_req_addr;
     begin
-      $display("\n[INFO] Sending a read request from HPU-%0x to HPU-%0x",random_hpu_a ,node_id);
+      $display("[INFO] Sending a read request from HPU-%0x to HPU-%0x",random_hpu_a ,node_id);
 
       // see package
       read_req_addr = {dest_addr, src_addr};

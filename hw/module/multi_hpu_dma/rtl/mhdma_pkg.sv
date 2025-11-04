@@ -11,25 +11,7 @@
 package mhdma_pkg;
   import param_tfhe_pkg::*;
   import axi_if_common_param_pkg::*;
-  import axi_if_ct_axi_pkg::*;
-  //----------------------
-  // AXI4
-  //----------------------
-  localparam int AXI4_ADD_W      = 64;
-  localparam int AXI4_ID_W       = 1;
-  localparam int AXI4_DATA_W     = axi_if_data_w_definition_pkg::AXI4_DATA_W; // AXI data bus width. Should not exceed 512.
-
-  localparam int AXI4_DATA_BYTES = AXI4_DATA_W/8;
-  localparam int AXI4_STRB_W     = AXI4_DATA_BYTES;
-  // Derived value used to define the number of bytes on axi4 transaction
-  // -> Mandatory for addr increment in burst
-  localparam int AXI4_DATA_BYTES_W = $clog2(AXI4_DATA_BYTES);
-
-  // AXI4 Burst should not cross DDR page boundaries
-  // AXI4 transaction length is encoded as AXI4_DATA_BYTES*(AxLen+1)
-  localparam int PAGE_AXI4_DATA   = PAGE_BYTES / AXI4_DATA_BYTES;
-  localparam int AXI4_LEN_MAX     = (PAGE_AXI4_DATA < 256)? (PAGE_AXI4_DATA-1): 255;
-  localparam int AXI4_WORD_MAX    = AXI4_LEN_MAX + 1;
+  import axi_if_eth_axi_pkg::*;
 
   //----------------------
   // Ethernet
@@ -74,7 +56,7 @@ package mhdma_pkg;
 
   // fifo specific parameters -------------------------------------------------
   // minimal depth for 64 using XPM fifo is 16
-  localparam int RQQ_MEMORY_TYPE  = "ultra";
+  localparam int RQQ_MEMORY_TYPE  = "distributed";
   localparam int RQQ_DEPTH        = 16;
   localparam int RQQ_WIDTH        = 64;
   localparam int RQQ_DATA_COUNT_W =  $clog2(RQQ_DEPTH)+1;
