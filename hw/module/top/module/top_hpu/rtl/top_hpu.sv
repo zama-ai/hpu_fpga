@@ -108,17 +108,20 @@ module top_hpu #(
   localparam int AXI4_KSK_DATA_BYTES  = axi_if_ksk_axi_pkg::AXI4_DATA_BYTES;
   localparam int AXI4_KSK_ID_W        = axi_if_ksk_axi_pkg::AXI4_ID_W;
 
+  // Ethernet: Do not modify ----------------------------------------------------------------------
   // number of QSFP lines: do not modify
   localparam int QSFP_LANE_NB = 4;
+  // Number of PCs
+  localparam int ETH_PC       = 2;
   // Ethernet preamble
   localparam [7:0]  START_FRAME_DELIMITER = 'hD5;
   localparam [47:0] PREAMBLE = 'h555555555555;
   // tx preamble is only 56 bits: we are in  custom mode due to non-segmented configuration
   localparam [55:0] TX_PREAMBLE = {PREAMBLE, START_FRAME_DELIMITER};
-
   // axi4-stream ethernet
   localparam int AXIS_TDATA_W = 64;
   localparam int AXIS_TKEEP_W = 11;
+  // ------------------------------------------------------------------------------------------- //
 
   // ----------------------------------------------------------------------------------------- //
   // Signals
@@ -628,11 +631,11 @@ module top_hpu #(
   // coming from regif: dma
   // ---------------------- //
   // Line rate
-  logic [31:0] SW_REG_GT_LINE_RATE;
-  logic [7:0]         gt_line_rate;
+  logic [31:0]             SW_REG_GT_LINE_RATE;
+  logic [7:0]              gt_line_rate;
   // loopback
-  logic [2:0]         gt_loopback;
-  // asynchronous resets
+  logic [2:0]              gt_loopback;
+  // controlled resets
   logic [QSFP_LANE_NB-1:0] gt_reset_rx_datapath;
   logic [QSFP_LANE_NB-1:0] gt_reset_tx_datapath;
   logic [QSFP_LANE_NB-1:0] gt_reset_all;
@@ -642,20 +645,21 @@ module top_hpu #(
   // ----------------------------------------------------------------------- //
   // Multi-hpu-dma
   // ---------------------- //
-  logic interrupt_notify;
-  logic interrupt_read_request;
-  // ----------------------------------------------------------------------- //
+  logic                                      interrupt_notify;
+  logic                                      interrupt_read_request;
   // QSFP RX axi4-stream
   logic [QSFP_LANE_NB-1:0][AXIS_TDATA_W-1:0] qsfp_rx_tdata;
   logic [QSFP_LANE_NB-1:0][AXIS_TKEEP_W-1:0] qsfp_rx_tkeep_user;
   logic [QSFP_LANE_NB-1:0]                   qsfp_rx_tlast;
   logic [QSFP_LANE_NB-1:0]                   qsfp_rx_tvalid;
   // QSFP TX axi4-stream
-  logic [LANE_NB-1:0][AXIS_TDATA_W-1:0] qsfp_tx_tdata;
-  logic [LANE_NB-1:0][AXIS_TKEEP_W-1:0] qsfp_tx_tkeep_user;
-  logic [LANE_NB-1:0]                   qsfp_tx_tlast;
-  logic [LANE_NB-1:0]                   qsfp_tx_tvalid;
-  logic [LANE_NB-1:0]                   qsfp_tx_tready;
+  logic [QSFP_LANE_NB-1:0][AXIS_TDATA_W-1:0] qsfp_tx_tdata;
+  logic [QSFP_LANE_NB-1:0][AXIS_TKEEP_W-1:0] qsfp_tx_tkeep_user;
+  logic [QSFP_LANE_NB-1:0]                   qsfp_tx_tlast;
+  logic [QSFP_LANE_NB-1:0]                   qsfp_tx_tvalid;
+  logic [QSFP_LANE_NB-1:0]                   qsfp_tx_tready;
+  // ----------------------------------------------------------------------- //
+
   // =========================================================================================== //
   // Connections
   // =========================================================================================== //

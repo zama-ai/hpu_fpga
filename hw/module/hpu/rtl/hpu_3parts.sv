@@ -41,6 +41,7 @@ module hpu_3parts
   parameter int    AXI4_GLWE_ADD_W  = 64,
   parameter int    AXI4_BSK_ADD_W   = 64,
   parameter int    AXI4_KSK_ADD_W   = 64,
+  parameter int    AXI4_ETH_HBM_ADD_W = 64,
 
   // HPU version
   parameter int    VERSION_MAJOR    = 2,

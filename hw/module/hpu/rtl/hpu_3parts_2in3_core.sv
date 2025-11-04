@@ -42,6 +42,7 @@ module hpu_3parts_2in3_core
   parameter int    AXI4_GLWE_ADD_W  = 64,
   parameter int    AXI4_BSK_ADD_W   = 64,
   parameter int    AXI4_KSK_ADD_W   = 64,
+  parameter int    AXI4_ETH_HBM_ADD_W = 64,
 
   // HPU version
   parameter int    VERSION_MAJOR    = 2,
@@ -121,29 +122,29 @@ module hpu_3parts_2in3_core
   output pep_rif_elt_t                       pep_rif_elt,
 
   // Multi-HPU-DMA
-  `HPU_AXI4_IO(eth_hbm, ETH_HBM, axi_if_ksk_axi_pkg,[ETH_PC-1:0])
-  output logic                                      interrupt_notify,
-  output logic                                      interrupt_read_request,
+  `HPU_AXI4_IO(eth_hbm, ETH_HBM, axi_if_ksk_axi_pkg, [ETH_PC-1:0])
+  output logic                                       interrupt_notify,
+  output logic                                       interrupt_read_request,
   // QSFP system interface
   // == TX
-  output logic [QSFP_LANE_NB-1:0][AXIS_TDATA_W-1:0] qsfp_tx_tdata,
-  output logic [QSFP_LANE_NB-1:0][AXIS_TKEEP_W-1:0] qsfp_tx_tkeep_user,
-  output logic [QSFP_LANE_NB-1:0]                   qsfp_tx_tlast,
-  output logic [QSFP_LANE_NB-1:0]                   qsfp_tx_tvalid,
-  input  logic [QSFP_LANE_NB-1:0]                   qsfp_tx_tready,
+  output logic [QSFP_LANE_NB-1:0][MRMAC_AXIS_W-1:0]  qsfp_tx_tdata,
+  output logic [QSFP_LANE_NB-1:0][MRMAC_TKEEP_W-1:0] qsfp_tx_tkeep_user,
+  output logic [QSFP_LANE_NB-1:0]                    qsfp_tx_tlast,
+  output logic [QSFP_LANE_NB-1:0]                    qsfp_tx_tvalid,
+  input  logic [QSFP_LANE_NB-1:0]                    qsfp_tx_tready,
   // == RX
-  input  logic [QSFP_LANE_NB-1:0][AXIS_TDATA_W-1:0] qsfp_rx_tdata,
-  input  logic [QSFP_LANE_NB-1:0][AXIS_TKEEP_W-1:0] qsfp_rx_tkeep_user,
-  input  logic [QSFP_LANE_NB-1:0]                   qsfp_rx_tlast,
-  input  logic [QSFP_LANE_NB-1:0]                   qsfp_rx_tvalid,
+  input  logic [QSFP_LANE_NB-1:0][MRMAC_AXIS_W-1:0]  qsfp_rx_tdata,
+  input  logic [QSFP_LANE_NB-1:0][MRMAC_TKEEP_W-1:0] qsfp_rx_tkeep_user,
+  input  logic [QSFP_LANE_NB-1:0]                    qsfp_rx_tlast,
+  input  logic [QSFP_LANE_NB-1:0]                    qsfp_rx_tvalid,
   // transceiver control
-  output logic [2:0]                                gt_loopback,
-  output logic [7:0]                                gt_line_rate,
-  output logic [QSFP_LANE_NB-1:0]                   gt_reset_rx_datapath,
-  output logic [QSFP_LANE_NB-1:0]                   gt_reset_tx_datapath,
-  output logic [QSFP_LANE_NB-1:0]                   gt_reset_all,
-  input  logic [QSFP_LANE_NB-1:0]                   gt_rx_reset_done,
-  input  logic [QSFP_LANE_NB-1:0]                   gt_tx_reset_done
+  output logic [2:0]                                 gt_loopback,
+  output logic [7:0]                                 gt_line_rate,
+  output logic [QSFP_LANE_NB-1:0]                    gt_reset_rx_datapath,
+  output logic [QSFP_LANE_NB-1:0]                    gt_reset_tx_datapath,
+  output logic [QSFP_LANE_NB-1:0]                    gt_reset_all,
+  input  logic [QSFP_LANE_NB-1:0]                    gt_rx_reset_done,
+  input  logic [QSFP_LANE_NB-1:0]                    gt_tx_reset_done
 );
 
 // ============================================================================================== --
@@ -447,14 +448,64 @@ module hpu_3parts_2in3_core
   );
 
 
-// ---------------------------------------------------------------------------------------------- --
-// multi HPU DMA
-// contains:
-// * control register file for MAC+PCS & GT
-// * axi4-stream switch in order to toggle between each line for RPU connection
-// TODO: WIP
-//
-// ---------------------------------------------------------------------------------------------- --
+  // ==============================================================================================
+  // multi HPU DMA
+  // contains:
+  // * control register file for MAC+PCS & GT
+  // * axi4-stream switch in order to toggle between each line for RPU connection
+  // TODO: WIP
+  //
+  // initialize axi4 signals ----------------------------------------------------------------------
+  // Tie-off m_axi4 unused features
+  `HPU_AXI4_TIE_GL_UNUSED(eth_hbm, [ETH_PC-1:0], ETH_PC)
+  `HPU_AXI4_TIE_WR_UNUSED(eth_hbm, [ETH_PC-1:0])
+
+  // used axi_if_eth_axi_pkg::AXI4_ADD_W for address. this is tied to what the package chose
+
+  logic [ETH_PC-1:0][axi_if_eth_axi_pkg::AXI4_ADD_W-1:0] m_axi4_eth_hbm_araddr_tmp;
+  always_comb
+    for (int i=0; i<ETH_PC; i=i+1)
+      m_axi4_eth_hbm_araddr[i] = m_axi4_eth_hbm_araddr_tmp[i][axi_if_eth_axi_pkg::AXI4_ADD_W-1:0];
+
+// pragma translate_off
+  always_ff @(posedge prc_mrmac_clk)
+    if (!prc_mrmac_srst_n) begin
+      // Do nothing
+    end
+    else begin
+      for (int i=0; i<ETH_PC; i=i+1) begin
+        if (m_axi4_eth_hbm_arvalid[i]) begin
+          assert(m_axi4_eth_hbm_araddr_tmp[i] >> axi_if_eth_axi_pkg::AXI4_ADD_W == '0)
+          else begin
+            $fatal(1,"%t > ERROR: HBM ETHERNET AXI [%d] address overflows. Simulation supports only %d bits: 0x%0x.",$time, i, axi_if_eth_axi_pkg::AXI4_ADD_W, m_axi4_eth_hbm_araddr_tmp[i]);
+          end
+        end
+      end
+    end
+// pragma translate_on
+
+  logic [ETH_PC-1:0][axi_if_eth_axi_pkg::AXI4_ADD_W-1:0] m_axi4_eth_hbm_awaddr_tmp;
+  always_comb
+    for (int i=0; i<ETH_PC; i=i+1)
+      m_axi4_eth_hbm_araddr[i] = m_axi4_eth_hbm_awaddr_tmp[i][axi_if_eth_axi_pkg::AXI4_ADD_W-1:0];
+
+// pragma translate_off
+  always_ff @(posedge prc_mrmac_clk)
+    if (!prc_mrmac_srst_n) begin
+      // Do nothing
+    end
+    else begin
+      for (int i=0; i<ETH_PC; i=i+1) begin
+        if (m_axi4_eth_hbm_arvalid[i]) begin
+          assert(m_axi4_eth_hbm_awaddr_tmp[i] >> axi_if_eth_axi_pkg::AXI4_ADD_W == '0)
+          else begin
+            $fatal(1,"%t > ERROR: HBM ETHERNET AXI [%d] address overflows. Simulation supports only %d bits: 0x%0x.",$time, i, axi_if_eth_axi_pkg::AXI4_ADD_W, m_axi4_eth_hbm_awaddr_tmp[i]);
+          end
+        end
+      end
+    end
+// pragma translate_on
+  // ==============================================================================================
   multi_hpu_dma #(
   ) multi_hpu_dma (
     // System interface
