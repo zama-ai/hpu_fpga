@@ -15,72 +15,72 @@ module mhdma_bridge
   import axi_if_eth_axi_pkg::*;
 #() (
   // Ethernet configuration interface -----------------------------------------
-  input  logic                                clk_cfg,
-  input  logic                                resetn_cfg,
+  input  logic                                   clk_cfg,
+  input  logic                                   resetn_cfg,
   // Ethernet fast clock interface --------------------------------------------
-  input  logic                                clk_mrmac,
-  input  logic                                resetn_mrmac,
+  input  logic                                   clk_mrmac,
+  input  logic                                   resetn_mrmac,
   // Axi4 interface for NMU ---------------------------------------------------
   // Read channel
-  output logic [ETH_PC-1:0][   AXI4_ID_W-1:0] m_axi4_arid,
-  output logic [ETH_PC-1:0][  AXI4_ADD_W-1:0] m_axi4_araddr,
-  output logic [ETH_PC-1:0][  AXI4_LEN_W-1:0] m_axi4_arlen,
-  output logic [ETH_PC-1:0][ AXI4_SIZE_W-1:0] m_axi4_arsize,
-  output logic [ETH_PC-1:0][AXI4_BURST_W-1:0] m_axi4_arburst,
-  output logic [ETH_PC-1:0]                   m_axi4_arvalid,
-  input  logic [ETH_PC-1:0]                   m_axi4_arready,
-  input  logic [ETH_PC-1:0][  AXI4_ID_W-1:0]  m_axi4_rid,
-  input  logic [ETH_PC-1:0][AXI4_DATA_W-1:0]  m_axi4_rdata,
-  input  logic [ETH_PC-1:0][AXI4_RESP_W-1:0]  m_axi4_rresp,
-  input  logic [ETH_PC-1:0]                   m_axi4_rlast,
-  input  logic [ETH_PC-1:0]                   m_axi4_rvalid,
-  output logic [ETH_PC-1:0]                   m_axi4_rready,
+  output logic [ETH_PC-1:0][   AXI4_ID_W-1:0]    m_axi4_arid,
+  output logic [ETH_PC-1:0][  AXI4_ADD_W-1:0]    m_axi4_araddr,
+  output logic [ETH_PC-1:0][  AXI4_LEN_W-1:0]    m_axi4_arlen,
+  output logic [ETH_PC-1:0][ AXI4_SIZE_W-1:0]    m_axi4_arsize,
+  output logic [ETH_PC-1:0][AXI4_BURST_W-1:0]    m_axi4_arburst,
+  output logic [ETH_PC-1:0]                      m_axi4_arvalid,
+  input  logic [ETH_PC-1:0]                      m_axi4_arready,
+  input  logic [ETH_PC-1:0][  AXI4_ID_W-1:0]     m_axi4_rid,
+  input  logic [ETH_PC-1:0][AXI4_DATA_W-1:0]     m_axi4_rdata,
+  input  logic [ETH_PC-1:0][AXI4_RESP_W-1:0]     m_axi4_rresp,
+  input  logic [ETH_PC-1:0]                      m_axi4_rlast,
+  input  logic [ETH_PC-1:0]                      m_axi4_rvalid,
+  output logic [ETH_PC-1:0]                      m_axi4_rready,
   // Write channel
-  output logic [ETH_PC-1:0][   AXI4_ID_W-1:0] m_axi4_awid,
-  output logic [ETH_PC-1:0][  AXI4_ADD_W-1:0] m_axi4_awaddr,
-  output logic [ETH_PC-1:0][  AXI4_LEN_W-1:0] m_axi4_awlen,
-  output logic [ETH_PC-1:0][ AXI4_SIZE_W-1:0] m_axi4_awsize,
-  output logic [ETH_PC-1:0][AXI4_BURST_W-1:0] m_axi4_awburst,
-  output logic [ETH_PC-1:0]                   m_axi4_awvalid,
-  input  logic [ETH_PC-1:0]                   m_axi4_awready,
-  output logic [ETH_PC-1:0][AXI4_DATA_W-1:0]  m_axi4_wdata,
-  output logic [ETH_PC-1:0][AXI4_STRB_W-1:0]  m_axi4_wstrb,
-  output logic [ETH_PC-1:0]                   m_axi4_wlast,
-  output logic [ETH_PC-1:0]                   m_axi4_wvalid,
-  input  logic [ETH_PC-1:0]                   m_axi4_wready,
-  input  logic [ETH_PC-1:0][  AXI4_ID_W-1:0]  m_axi4_bid,
-  input  logic [ETH_PC-1:0][AXI4_RESP_W-1:0]  m_axi4_bresp,
-  input  logic [ETH_PC-1:0]                   m_axi4_bvalid,
-  output logic [ETH_PC-1:0]                   m_axi4_bready,
+  output logic [ETH_PC-1:0][   AXI4_ID_W-1:0]    m_axi4_awid,
+  output logic [ETH_PC-1:0][  AXI4_ADD_W-1:0]    m_axi4_awaddr,
+  output logic [ETH_PC-1:0][  AXI4_LEN_W-1:0]    m_axi4_awlen,
+  output logic [ETH_PC-1:0][ AXI4_SIZE_W-1:0]    m_axi4_awsize,
+  output logic [ETH_PC-1:0][AXI4_BURST_W-1:0]    m_axi4_awburst,
+  output logic [ETH_PC-1:0]                      m_axi4_awvalid,
+  input  logic [ETH_PC-1:0]                      m_axi4_awready,
+  output logic [ETH_PC-1:0][AXI4_DATA_W-1:0]     m_axi4_wdata,
+  output logic [ETH_PC-1:0][AXI4_STRB_W-1:0]     m_axi4_wstrb,
+  output logic [ETH_PC-1:0]                      m_axi4_wlast,
+  output logic [ETH_PC-1:0]                      m_axi4_wvalid,
+  input  logic [ETH_PC-1:0]                      m_axi4_wready,
+  input  logic [ETH_PC-1:0][  AXI4_ID_W-1:0]     m_axi4_bid,
+  input  logic [ETH_PC-1:0][AXI4_RESP_W-1:0]     m_axi4_bresp,
+  input  logic [ETH_PC-1:0]                      m_axi4_bvalid,
+  output logic [ETH_PC-1:0]                      m_axi4_bready,
   // regf interface -----------------------------------------------------------
-  input  logic [NB_MAX_HPU-1:0][31:0]         regf_hpu_ids,
-  input  logic [31:0]                         regf_req_id,
-  input  logic [31:0]                         regf_req_addr,
-  input  logic [ 1:0]                         received_req,
-  output logic                                request_consumed,
-  output logic [31:0]                         regf_notify_payload,
+  input  logic [NB_MAX_HPU-1:0][REGF_WORD_W-1:0] regf_hpu_ids,
+  input  logic [REGF_WORD_W-1:0]                 regf_req_id,
+  input  logic [REGF_WORD_W-1:0]                 regf_req_addr,
+  input  logic [ 1:0]                            received_req,
+  output logic                                   request_consumed,
+  output logic [REGF_WORD_W-1:0]                 regf_notify_payload,
   // statistics ---------------------------------------------------------------
-  output logic [15:0]                         stat_cnt_notify_ack,
-  output logic [15:0]                         stat_cnt_notify_read,
+  output logic [15:0]                            stat_cnt_notify_ack,
+  output logic [15:0]                            stat_cnt_notify_read,
   // reset counters
-  input  logic                                rst_cnt_notify,
+  input  logic                                   rst_cnt_notify,
   // interrupts ---------------------------------------------------------------
-  input  logic                                clear_interrupt_notify,
-  output logic                                interrupt_notify,
-  output logic                                interrupt_read_request,
-  input  logic                         [15:0] timeout_duration,
+  input  logic                                   clear_interrupt_notify,
+  output logic                                   interrupt_notify,
+  output logic                                   interrupt_read_request,
+  input  logic [15:0]                            timeout_duration,
   // QSFP system interface ----------------------------------------------------
   // == TX
-  output logic [MRMAC_AXIS_W-1:0]             qsfp_tx_tdata,
-  output logic [MRMAC_TKEEP_W-1:0]            qsfp_tx_tkeep_user,
-  output logic                                qsfp_tx_tlast,
-  output logic                                qsfp_tx_tvalid,
-  input  logic                                qsfp_tx_tready,
+  output logic [MRMAC_AXIS_W-1:0]                qsfp_tx_tdata,
+  output logic [MRMAC_TKEEP_W-1:0]               qsfp_tx_tkeep_user,
+  output logic                                   qsfp_tx_tlast,
+  output logic                                   qsfp_tx_tvalid,
+  input  logic                                   qsfp_tx_tready,
   // == RX
-  input  logic [MRMAC_AXIS_W-1:0]             qsfp_rx_tdata,
-  input  logic [MRMAC_TKEEP_W-1:0]            qsfp_rx_tkeep_user,
-  input  logic                                qsfp_rx_tlast,
-  input  logic                                qsfp_rx_tvalid
+  input  logic [MRMAC_AXIS_W-1:0]                qsfp_rx_tdata,
+  input  logic [MRMAC_TKEEP_W-1:0]               qsfp_rx_tkeep_user,
+  input  logic                                   qsfp_rx_tlast,
+  input  logic                                   qsfp_rx_tvalid
 );
 
   // =========================================================================================== //
@@ -92,8 +92,8 @@ module mhdma_bridge
   // CDC from regf to mrmac clock
   // =========================================================================================== //
   // theses signals are quasi static: they should move rarely
-  logic [CDC_SYNC_STAGES-1:0][NB_MAX_HPU-1:0][31:0] hpu_ids_cdc;
-  logic                      [NB_MAX_HPU-1:0][31:0] hpu_ids; // just for naming simplification
+  logic [CDC_SYNC_STAGES-1:0][NB_MAX_HPU-1:0][REGF_WORD_W-1:0] hpu_ids_cdc;
+  logic                      [NB_MAX_HPU-1:0][REGF_WORD_W-1:0] hpu_ids; // just for naming
 
   generate
     for (genvar gen_i_id = 0; gen_i_id < NB_MAX_HPU; gen_i_id++)
@@ -150,7 +150,7 @@ module mhdma_bridge
     .CDC_SYNC_STAGES (CDC_SYNC_STAGES),
     .WIDTH           (RQQ_WIDTH),
     // tweak theses parameters in package
-    .DEPTH           (RQQ_DEPTH),
+    .DEPTH           (XPM_MIN_FIFO_DEPTH),
     .FIFO_MEMORY_TYPE(RQQ_MEMORY_TYPE)
   ) rrqq_fifo_ram_rdy_vld_2clk (
     // Write Domain ports: CFG domain
@@ -171,12 +171,12 @@ module mhdma_bridge
   );
 
   // current read request, sampled when valid is toggled
-  logic [15:0] rrqq_dst_addr;
-  logic [15:0] rrqq_src_addr;
-  logic [15:0] rrqq_size_b;
-  logic [ 3:0] rrqq_req_id;
-  logic [ 3:0] rrqq_iop_id;
-  logic [ 3:0] rrqq_node_id;
+  logic [DST_ADDR_W-1:0] rrqq_dst_addr;
+  logic [SRC_ADDR_W-1:0] rrqq_src_addr;
+  logic [  SIZE_B_W-1:0] rrqq_size_b;
+  logic [  REQ_ID_W-1:0] rrqq_req_id;
+  logic [  IOP_ID_W-1:0] rrqq_iop_id;
+  logic [  HPU_ID_W-1:0] rrqq_node_id;
 
   always_ff @(posedge clk_mrmac) begin : read_request_sampling
     if (~resetn_mrmac) begin
@@ -206,9 +206,9 @@ module mhdma_bridge
   logic                        nrqq_rd_rst_busy;
   logic                        nrqq_data_valid;
   logic                        nrqq_rd_en;
-  logic [       RQQ_WIDTH-1:0] nrqq_rd_data;
+  logic [      NRQQ_WIDTH-1:0] nrqq_rd_data;
   logic                        nrqq_empty;
-  logic [RQQ_DATA_COUNT_W-1:0] nrqq_rd_data_count;
+  logic [NRQQ_DATA_COUNT_W-1:0] nrqq_rd_data_count;
 
   // cfg
   assign nrqq_wr_en = (&received_req) & ~nrqq_wr_rst_busy & ~nrqq_full & (regf_req_id[23:20] == REQ_ID_NOTIFY_TX);
@@ -218,10 +218,10 @@ module mhdma_bridge
 
   fifo_ram_rdy_vld_2clk # (
     .CDC_SYNC_STAGES (CDC_SYNC_STAGES),
-    .WIDTH           (RQQ_WIDTH),
     // tweak theses parameters in package
-    .DEPTH           (RQQ_DEPTH),
-    .FIFO_MEMORY_TYPE(RQQ_MEMORY_TYPE)
+    .WIDTH           (NRQQ_WIDTH),
+    .DEPTH           (XPM_MIN_FIFO_DEPTH),
+    .FIFO_MEMORY_TYPE(NRQQ_MEMORY_TYPE)
   ) nrqq_fifo_ram_rdy_vld_2clk (
     // Write Domain ports: CFG domain
     .wr_rstn      (resetn_cfg),
@@ -268,6 +268,12 @@ module mhdma_bridge
   // needed directly to not wait
   assign nrqq_node_id = nrqq_data_valid ? nrqq_rd_data[HPU_ID_W+SIZE_B_W+32-1:SIZE_B_W+32] : 1'b0;
 
+  // =========================================================================================== //
+  // CDC from fast to slow clock
+  // =========================================================================================== //
+  // interrupt on notify doesn't need to be cdc'd here, it is done on NRX side with fifo
+
+
   // ==============================================================================================
   // hpu identification
   // ==============================================================================================
@@ -281,13 +287,13 @@ module mhdma_bridge
     for (genvar i=0; i<NB_MAX_HPU; i++) begin
       always_ff @(posedge clk_mrmac) begin : hpu_id_table_creation
        if (~resetn_mrmac) begin
-         hpu_id_table[i]    <= 'h0;
-         hpu_mac_table[i]   <= 'h0;
-         one_hot_id[i]  <= 'h0;
+         hpu_id_table[i]  <= 'h0;
+         hpu_mac_table[i] <= 'h0;
+         one_hot_id[i]    <= 'h0;
        end else begin
-          hpu_id_table[i]   <= hpu_ids[i][HPU_ID_W+MAC_ADDR_W-1:MAC_ADDR_W];
-          hpu_mac_table[i]  <= hpu_ids[i][MAC_ADDR_W-1:0];
-          one_hot_id[i] <= hpu_ids[i][31];
+          hpu_id_table[i]  <= hpu_ids[i][HPU_ID_W+MAC_ADDR_W-1:MAC_ADDR_W];
+          hpu_mac_table[i] <= hpu_ids[i][MAC_ADDR_W-1:0];
+          one_hot_id[i]    <= hpu_ids[i][31];
         end
       end
     end
@@ -337,6 +343,7 @@ module mhdma_bridge
   logic [SRC_ADDR_W-1:0] rx_ct_src_addr;
   logic [DST_ADDR_W-1:0] rx_ct_dst_addr;
 
+  // rx status signals
   logic read_request_received;
   logic ciphertext_emission_received;
   logic notify_request_received;
@@ -346,23 +353,11 @@ module mhdma_bridge
   // ==============================================================================================
   // FSM
   // ==============================================================================================
-  logic nack_frame_valid;
-  logic rr_frame_valid;
-  logic ce_frame_valid;
-  logic rreq_send_request;
-
-  assign nack_frame_valid = 'h0;
-  assign rr_frame_valid = 'h0;
-  assign ce_frame_valid = 'h0;
-
-  logic [15:0] cnt_notify_ack;
-
-  logic tx_line_in_use;
-  assign tx_line_in_use = notify_request_in_use | notify_ack_in_use | read_request_in_use | ct_emission_request_in_use;
+  logic tx_frame_last; // last signal of qsfp-tx
 
   // Notify TX (NTX) ------------------------------------------------------------------------------
-  logic tx_frame_last;
-  logic ntx_timeout;
+  logic        ntx_timeout;
+  logic [15:0] cnt_notify_ack;
 
   typedef enum {
     ST_WAIT_REQUEST,
@@ -440,22 +435,24 @@ module mhdma_bridge
   assign nrxq_wr_en = notify_request_received & qsfp_rx_tlast & ~nrxq_full & ~nrxq_wr_rst_busy;
 
   // CFG domain
-  logic new_notify_read_pending;
-  logic nrxq_rd_data_count;
-  logic nrxq_empty;
-  logic nrxq_rd_rst_busy;
-  logic nrxq_data_valid;
-  logic nrxq_rd_en;
+  logic [NRX_DATA_COUNT_W-1:0] nrxq_rd_data_count;
+  logic                        nrxq_empty;
+  logic                        nrxq_rd_rst_busy;
+  logic                        nrxq_data_valid;
+  logic                        nrxq_rd_en;
+  logic                        new_notify_read_pending;
+  logic                        itr_notify;
 
   assign new_notify_read_pending = (nrxq_rd_data_count == 0) ? 1'b0 : 1'b1;
   assign nrxq_rd_en = new_notify_read_pending & ~nrxq_rd_rst_busy & ~nrxq_empty;
 
+  // this fifo transforms rx commands into a 32 bit readable word for regfile
   fifo_ram_rdy_vld_2clk # (
     .CDC_SYNC_STAGES (CDC_SYNC_STAGES),
-    .WIDTH           (RQQ_WIDTH),
+    .WIDTH           (NRX_WIDTH),
     // tweak theses parameters in package
-    .DEPTH           (RQQ_DEPTH),
-    .FIFO_MEMORY_TYPE(RQQ_MEMORY_TYPE)
+    .DEPTH           (XPM_MIN_FIFO_DEPTH),
+    .FIFO_MEMORY_TYPE(NRX_MEMORY_TYPE)
   ) nrx_fifo_ram_rdy_vld_2clk (
     // Write Domain ports: MRMAC domain
     .wr_rstn      (resetn_mrmac),
@@ -474,8 +471,6 @@ module mhdma_bridge
     .data_valid   (nrxq_data_valid)
   );
 
-  logic itr_notify;
-
   always_ff @(posedge clk_cfg) begin
     if (~resetn_cfg) begin
       itr_notify <= 1'b0;
@@ -490,11 +485,11 @@ module mhdma_bridge
   assign interrupt_notify = itr_notify;
 
   // Read request ---------------------------------------------------------------------------------
-  logic error_packet_id_mismatch;
   logic rreq_timeout;
   logic rreq_timeout_cdc;
-  // pulses
   logic rreq_ct_transmitted;
+  logic rreq_send_request;
+  logic error_packet_id_mismatch;
 
   typedef enum {
     ST_WAIT_READ_REQUEST,
@@ -530,11 +525,41 @@ module mhdma_bridge
 
   assign rreq_send_request = (rreq_state == ST_SEND_READ_REQUEST) ? 1'b1: 1'b0;
 
-  // TODO:
-  assign new_ct_emission_request_pending = 1'b0;
-  assign ct_emission_request_in_use = 1'b0;
+  // Ciphertext EMission (CEM) --------------------------------------------------------------------
+  logic currently_emitting_ct;
+  logic cem_over;
 
-  // arbiter --------------------------------------------------------------------------------------
+  typedef enum {
+    CEM_WAIT_REQUEST,
+    CEM_READ_N_SEND
+  } st_cem;
+
+  st_cem cem_state;
+  st_cem cem_next_state;
+
+  always_ff @(posedge clk_mrmac) begin
+    if (~resetn_mrmac) cem_state <= CEM_WAIT_REQUEST;
+    else cem_state <= cem_next_state;
+  end
+
+  always_comb begin
+    case (cem_state)
+      CEM_WAIT_REQUEST:
+        cem_next_state = new_ct_emission_request_pending ? CEM_READ_N_SEND : CEM_WAIT_REQUEST;
+      CEM_READ_N_SEND:
+        cem_next_state = cem_over ? CEM_WAIT_REQUEST : CEM_READ_N_SEND;
+    endcase
+  end
+
+  assign currently_emitting_ct = (cem_state == CEM_READ_N_SEND) ? 1'b1: 1'b0;
+
+  // TODO:
+  assign ct_emission_request_in_use = 1'b0;
+  assign cem_over = 1'b0;
+
+  // =========================================================================================== //
+  // arbiter
+  // =========================================================================================== //
   // very simple round robin arbiter
   arbiter # (
     .N(4)
@@ -549,27 +574,21 @@ module mhdma_bridge
   // =========================================================================================== //
   // QSFP RX
   // =========================================================================================== //
-  logic qsfp_rx_tsop;
-
-  logic qsfp_rx_tvalidD;
-  always_ff @(posedge clk_mrmac)
-    qsfp_rx_tvalidD <= qsfp_rx_tvalid;
-
-  assign qsfp_rx_tsop = qsfp_rx_tvalid & ~qsfp_rx_tvalidD;
-
   // We must gather RX data as soon as possible and redirect commands into their respective
   // command queue or signal.
   // - ACK Notify TX is only a reception signal     : ntx_ack
   // - Notify RX goes to respective queue           : NRXQ
   // - Read request goes to write fifo to go to HBM : RRFIFO
   // - Ciphertext Emission goes to queue            : CEQ
+  logic qsfp_rx_tsop;
+  logic qsfp_rx_tvalidD;
 
-  // control signals
+  always_ff @(posedge clk_mrmac)
+    qsfp_rx_tvalidD <= qsfp_rx_tvalid;
+
+  assign qsfp_rx_tsop = qsfp_rx_tvalid & ~qsfp_rx_tvalidD;
+
   logic [$clog2(ETH_LEN_MAX):0] rx_counter;
-  logic                         rx_target_valid;
-  logic                         rx_valid;
-  logic [       MAC_ADDR_W-1:0] source_hpu_mac;
-
   always_ff @(posedge clk_mrmac) begin
     if (~resetn_mrmac) begin
       rx_counter <= 'h0;
@@ -585,8 +604,9 @@ module mhdma_bridge
   /* First frame:
    * rx_dst_mac_addr
    *    destination mac address is not needed from the first clock cycle
-   *    => register to make a decision for next cc
+   *    this register will help define if next words in receptions are valid
    */
+  logic rx_valid;
   always_ff @(posedge clk_mrmac) begin
     if (~resetn_mrmac) begin
       rx_dst_mac_addr <= 'h0;
@@ -600,6 +620,7 @@ module mhdma_bridge
       end
     end
   end
+  assign rx_valid = (current_hpu_mac == rx_dst_mac_addr) ? 1'b1 : 1'b0;
 
   /* Second frame:
    * sec_num, request_id, hpu_id, src_mac_address
@@ -651,16 +672,72 @@ module mhdma_bridge
       end
     end
   end
+
   assign rx_size_b = ((rx_counter == 2) & rx_valid) ? qsfp_rx_tdata[8+SIZE_B_W-1:8] : 'h0;
 
   // switch between components -----------------------------------------------------------------
-  assign rx_valid = (current_hpu_mac == rx_dst_mac_addr) ? 1'b1 : 1'b0;
 
   assign notify_ack_received            = (rx_valid & (rx_req_id == REQ_ID_ACK_NOTIFY_TX)) ? 1'b1 : 1'b0;
   assign notify_request_received        = (rx_valid & (rx_req_id == REQ_ID_NOTIFY_TX))     ? 1'b1 : 1'b0;
   assign read_request_received          = (rx_valid & (rx_req_id == REQ_ID_READ))          ? 1'b1 : 1'b0;
   assign ciphertext_emission_received   = (rx_valid & (rx_req_id == REQ_ID_EMISSION))      ? 1'b1 : 1'b0;
 
+  // sending command to read request command queue ------------------------------------------------
+  // when qsfp tlast is ready we are sure that all commands have been correctly received
+  // we need to pass along:
+  //    > IOP ID
+  //    > HPU ID
+  //    > DST ADDR
+  //    > SRC ADDR
+  // RREQ_CMD_DATA_W is defined in the package
+
+  logic [RREQ_CMD_DATA_W-1:0] rreq_cmd_data_in;
+  logic [RREQ_CMD_DATA_W-1:0] rreq_cmd_out_data;
+  logic                       rreq_cmd_ready; // ~full
+  logic                       rreq_cmd_we;
+  logic                       rreq_cmd_out_valid;
+  logic                       rreq_cmd_out_ready;
+
+  assign rreq_cmd_data_in = {rx_hpu_id, rx_iop_id, rx_ct_dst_addr, rx_ct_src_addr};
+  assign rreq_cmd_we = qsfp_rx_tlast & rreq_cmd_ready & read_request_received;
+  assign rreq_cmd_out_ready = ~currently_emitting_ct;
+
+  fifo_ram_rdy_vld # (
+    .WIDTH      (RREQ_CMD_DATA_W),
+    .DEPTH      (RREQ_CMD_DEPTH),
+    .RAM_LATENCY(RREQ_CMD_RAM_LATENCY)
+  ) rreq_command_queue (
+    .clk    (clk_mrmac),
+    .s_rst_n(~resetn_mrmac),
+
+    .in_data(rreq_cmd_data_in),
+    .in_vld (rreq_cmd_we),
+    .in_rdy (rreq_cmd_ready),
+
+    .out_data(rreq_cmd_out_data),
+    .out_vld (rreq_cmd_out_valid),
+    .out_rdy (rreq_cmd_out_ready)
+  );
+
+  logic [RQQ_CMD_DATA_COUNT_W-1:0] rreq_cnt;
+
+  always_ff @(posedge clk_mrmac) begin
+    if (~resetn_mrmac) begin
+      rreq_cnt <= 'h0;
+    end else begin
+      if (rreq_cmd_we) begin
+        rreq_cnt <= rreq_cnt + 1;
+      end else if (rreq_cmd_out_valid) begin
+        rreq_cnt <= rreq_cnt - 1;
+      end
+    end
+  end
+  assign new_ct_emission_request_pending = (rreq_cnt != 0) ? 1'b1 : 1'b0;
+
+  logic error_rreq_cmd_full_packet_drop;
+  assign error_rreq_cmd_full_packet_drop = qsfp_rx_tlast & ~rreq_cmd_ready;
+
+  // sending notify ack as fast as possible -------------------------------------------------------
   logic notify_request_receivedD;
   always_ff @(posedge clk_mrmac)
     notify_request_receivedD <= notify_request_received;
@@ -722,6 +799,71 @@ module mhdma_bridge
         error_rx_unexpected_size_b <= 1'b1;
     end
   end
+
+  // =========================================================================================== //
+  // Read into HBM
+  // all @mrmac domain
+  // =========================================================================================== //
+  // phys_addr = hbm_pc_offset + ctId * ciphertext_size
+
+  logic [RREQ_CMD_DATA_W-1:0] read_request_cmd;
+  logic [       SIZE_B_W-1:0] rr_size_b;
+  logic [       IOP_ID_W-1:0] rr_iop_id;
+  logic [     SRC_ADDR_W-1:0] rr_ct_src_addr;
+  logic [     DST_ADDR_W-1:0] rr_ct_dst_addr;
+
+
+  always_ff @(posedge clk_mrmac) begin
+    if (~resetn_mrmac) begin
+      read_request_cmd <= 'h0;
+    end else begin
+      if (rreq_cmd_out_valid) begin
+        read_request_cmd <= rreq_cmd_out_data;
+      end
+    end
+  end
+
+  assign rr_size_b      = read_request_cmd[SRC_ADDR_W+DST_ADDR_W+IOP_ID_W+SIZE_B_W-1:0];
+  assign rr_iop_id      = read_request_cmd[SRC_ADDR_W+DST_ADDR_W+IOP_ID_W-1:0];
+  assign rr_ct_dst_addr = read_request_cmd[SRC_ADDR_W+DST_ADDR_W-1:0];
+  assign rr_ct_src_addr = read_request_cmd[SRC_ADDR_W-1:0];
+
+  // where to read ?
+  // we have two NMU to address, each NMU addresses a different pseudo channel
+
+  // fifo_ram_rdy_vld # (
+  //   .WIDTH      (CE_READ_DATA_W),
+  //   .DEPTH      (CE_READ_DEPTH),
+  //   .RAM_LATENCY(CE_READ_RAM_LATENCY)
+  // ) ce_read_fifo_ping (
+  //   .clk    (clk_mrmac),
+  //   .s_rst_n(~resetn_mrmac),
+
+  //   .in_data(),
+  //   .in_vld (),
+  //   .in_rdy (),
+
+  //   .out_data(),
+  //   .out_vld (),
+  //   .out_rdy ()
+  // );
+
+  // fifo_ram_rdy_vld # (
+  //   .WIDTH      (CE_READ_DATA_W),
+  //   .DEPTH      (CE_READ_DEPTH),
+  //   .RAM_LATENCY(CE_READ_RAM_LATENCY)
+  // ) ce_read_fifo_pong (
+  //   .clk    (clk_mrmac),
+  //   .s_rst_n(~resetn_mrmac),
+
+  //   .in_data(),
+  //   .in_vld (),
+  //   .in_rdy (),
+
+  //   .out_data(),
+  //   .out_vld (),
+  //   .out_rdy ()
+  // );
 
   // =========================================================================================== //
   // QSFP TX
@@ -828,7 +970,6 @@ module mhdma_bridge
   assign nack_tvalid = (nack_cnt == 'h0) ? 1'b0 : 1'b1 ;
 
   logic [3:0] use_tx;
-
 
   always_ff @(posedge clk_mrmac) begin : read_rq_control_ready
     if (~resetn_mrmac) begin
@@ -946,5 +1087,12 @@ module mhdma_bridge
 
   assign stat_cnt_notify_ack  = cnt_notify_ack;
   assign stat_cnt_notify_read = cnt_notify_read;
+
+  // =========================================================================================== //
+  // Error agreggation
+  // =========================================================================================== //
+  // error_id_def: Definition of HPUs are not correct, several are defined as current
+  // error_packet_id_mismatch: sec_num received is unexpected
+
 
 endmodule

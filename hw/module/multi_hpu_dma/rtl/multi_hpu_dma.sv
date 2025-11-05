@@ -112,17 +112,17 @@ module multi_hpu_dma
   // Register file
   // ============================================================================================ //
   // bridge
-  logic [NB_MAX_HPU-1:0][31:0] r_regf_hpu_ids;
-  logic                 [31:0] r_request_notify;
-  logic                 [31:0] r_request_req_id;
-  logic                 [31:0] r_request_req_addr;
-  logic                 [31:0] r_system_timeout;
+  logic [NB_MAX_HPU-1:0][REGF_WORD_W-1:0] r_regf_hpu_ids;
+  logic                 [REGF_WORD_W-1:0] r_request_notify;
+  logic                 [REGF_WORD_W-1:0] r_request_req_id;
+  logic                 [REGF_WORD_W-1:0] r_request_req_addr;
+  logic                 [REGF_WORD_W-1:0] r_system_timeout;
   // lane control & debug
-  logic [31:0] r_system_line;
-  logic [31:0] r_reset_datapath;
-  logic [31:0] r_reset_monitor;
-  logic [31:0] r_line_debug;
-  logic [31:0] r_status_debug;
+  logic [REGF_WORD_W-1:0] r_system_line;
+  logic [REGF_WORD_W-1:0] r_reset_datapath;
+  logic [REGF_WORD_W-1:0] r_reset_monitor;
+  logic [REGF_WORD_W-1:0] r_line_debug;
+  logic [REGF_WORD_W-1:0] r_status_debug;
   // Statistics
   logic [15:0] r_cnt_notify_ack;
   logic [15:0] r_cnt_notify_read;
@@ -333,35 +333,35 @@ module multi_hpu_dma
     .clk_mrmac             (clk_eth_mrmac         ),
     .resetn_mrmac          (resetn_eth_mrmac      ),
     // axi4-full for each ETH_PC ------------------------------------------------------------------
-    // .m_axi4_arid        (m_axi4_arid           ),
-    // .m_axi4_araddr      (m_axi4_araddr         ),
-    // .m_axi4_arlen       (m_axi4_arlen          ),
-    // .m_axi4_arsize      (m_axi4_arsize         ),
-    // .m_axi4_arburst     (m_axi4_arburst        ),
-    // .m_axi4_arvalid     (m_axi4_arvalid        ),
-    // .m_axi4_arready     (m_axi4_arready        ),
-    // .m_axi4_rid         (m_axi4_rid            ),
-    // .m_axi4_rdata       (m_axi4_rdata          ),
-    // .m_axi4_rresp       (m_axi4_rresp          ),
-    // .m_axi4_rlast       (m_axi4_rlast          ),
-    // .m_axi4_rvalid      (m_axi4_rvalid         ),
-    // .m_axi4_rready      (m_axi4_rready         ),
-    // .m_axi4_awid        (m_axi4_awid           ),
-    // .m_axi4_awaddr      (m_axi4_awaddr         ),
-    // .m_axi4_awlen       (m_axi4_awlen          ),
-    // .m_axi4_awsize      (m_axi4_awsize         ),
-    // .m_axi4_awburst     (m_axi4_awburst        ),
-    // .m_axi4_awvalid     (m_axi4_awvalid        ),
-    // .m_axi4_awready     (m_axi4_awready        ),
-    // .m_axi4_wdata       (m_axi4_wdata          ),
-    // .m_axi4_wstrb       (m_axi4_wstrb          ),
-    // .m_axi4_wlast       (m_axi4_wlast          ),
-    // .m_axi4_wvalid      (m_axi4_wvalid         ),
-    // .m_axi4_wready      (m_axi4_wready         ),
-    // .m_axi4_bid         (m_axi4_bid            ),
-    // .m_axi4_bresp       (m_axi4_bresp          ),
-    // .m_axi4_bvalid      (m_axi4_bvalid         ),
-    // .m_axi4_bready      (m_axi4_bready         ),
+    .m_axi4_arid           (m_axi4_eth_hbm_arid   ),
+    .m_axi4_araddr         (m_axi4_eth_hbm_araddr ),
+    .m_axi4_arlen          (m_axi4_eth_hbm_arlen  ),
+    .m_axi4_arsize         (m_axi4_eth_hbm_arsize ),
+    .m_axi4_arburst        (m_axi4_eth_hbm_arburst),
+    .m_axi4_arvalid        (m_axi4_eth_hbm_arvalid),
+    .m_axi4_arready        (m_axi4_eth_hbm_arready),
+    .m_axi4_rid            (m_axi4_eth_hbm_rid    ),
+    .m_axi4_rdata          (m_axi4_eth_hbm_rdata  ),
+    .m_axi4_rresp          (m_axi4_eth_hbm_rresp  ),
+    .m_axi4_rlast          (m_axi4_eth_hbm_rlast  ),
+    .m_axi4_rvalid         (m_axi4_eth_hbm_rvalid ),
+    .m_axi4_rready         (m_axi4_eth_hbm_rready ),
+    .m_axi4_awid           (m_axi4_eth_hbm_awid   ),
+    .m_axi4_awaddr         (m_axi4_eth_hbm_awaddr ),
+    .m_axi4_awlen          (m_axi4_eth_hbm_awlen  ),
+    .m_axi4_awsize         (m_axi4_eth_hbm_awsize ),
+    .m_axi4_awburst        (m_axi4_eth_hbm_awburst),
+    .m_axi4_awvalid        (m_axi4_eth_hbm_awvalid),
+    .m_axi4_awready        (m_axi4_eth_hbm_awready),
+    .m_axi4_wdata          (m_axi4_eth_hbm_wdata  ),
+    .m_axi4_wstrb          (m_axi4_eth_hbm_wstrb  ),
+    .m_axi4_wlast          (m_axi4_eth_hbm_wlast  ),
+    .m_axi4_wvalid         (m_axi4_eth_hbm_wvalid ),
+    .m_axi4_wready         (m_axi4_eth_hbm_wready ),
+    .m_axi4_bid            (m_axi4_eth_hbm_bid    ),
+    .m_axi4_bresp          (m_axi4_eth_hbm_bresp  ),
+    .m_axi4_bvalid         (m_axi4_eth_hbm_bvalid ),
+    .m_axi4_bready         (m_axi4_eth_hbm_bready ),
     // Register interface -------------------------------------------------------------------------
     .regf_hpu_ids          (r_regf_hpu_ids        ),
     .regf_req_id           (r_request_req_id      ),

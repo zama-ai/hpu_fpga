@@ -13,6 +13,8 @@ package mhdma_pkg;
   import axi_if_common_param_pkg::*;
   import axi_if_eth_axi_pkg::*;
 
+  localparam int REGF_WORD_W = 32; //must match toml configuration
+
   //----------------------
   // Ethernet
   //----------------------
@@ -36,6 +38,13 @@ package mhdma_pkg;
   // generic sizes on ethernet
   localparam int NB_WORDS_MIN = 7; // without fcs
 
+  //----------------------
+  // Parameters
+  //----------------------
+  localparam int CT_BYTE_SIZE      = N * GLWE_K + 1;
+  localparam int CT_NB_WORDS_MRMAC = (CT_BYTE_SIZE * 8) / MRMAC_AXIS_W;
+  localparam int CT_NB_WORDS_HBM   = (CT_BYTE_SIZE * 8) / AXI4_DATA_W;
+
   // Ethernet header: sizes ---------------------------------------------------
   localparam int MAC_ADDR_W   = 24;
   localparam int MAC_OUI_W    = 24;
@@ -56,10 +65,34 @@ package mhdma_pkg;
 
   // fifo specific parameters -------------------------------------------------
   // minimal depth for 64 using XPM fifo is 16
-  localparam int RQQ_MEMORY_TYPE  = "distributed";
-  localparam int RQQ_DEPTH        = 16;
-  localparam int RQQ_WIDTH        = 64;
-  localparam int RQQ_DATA_COUNT_W =  $clog2(RQQ_DEPTH)+1;
+  localparam int XPM_MIN_FIFO_DEPTH   = 16;
+
+  // read request command: XPM
+  localparam int RQQ_MEMORY_TYPE      = "distributed";
+  localparam int RQQ_WIDTH            = 2*REGF_WORD_W;
+  localparam int RQQ_DATA_COUNT_W     =  $clog2(XPM_MIN_FIFO_DEPTH)+1;
+
+  // Notify request command queue: XPM
+  localparam int NRQQ_MEMORY_TYPE     = "distributed";
+  localparam int NRQQ_WIDTH           = 2*REGF_WORD_W;
+  localparam int NRQQ_DATA_COUNT_W    =  $clog2(XPM_MIN_FIFO_DEPTH)+1;
+
+  // Notify RX payload: XPM
+  localparam int NRX_MEMORY_TYPE      = "distributed";
+  localparam int NRX_WIDTH            = REGF_WORD_W;
+  localparam int NRX_DATA_COUNT_W     =  $clog2(XPM_MIN_FIFO_DEPTH)+1;
+
+  // read request command queue: URAM fifo
+  localparam int RREQ_CMD_DATA_W      = HPU_ID_W+IOP_ID_W+SRC_ADDR_W+DST_ADDR_W;
+  localparam int RREQ_CMD_DEPTH       = 16;
+  localparam int RREQ_CMD_RAM_LATENCY = 1;
+  localparam int RQQ_CMD_DATA_COUNT_W =  $clog2(RREQ_CMD_DEPTH)+1;
+
+  // ciphertext emission raed from HBM: URAM fifo
+  localparam int CE_READ_DATA_W       = MRMAC_AXIS_W;
+  localparam int CE_READ_DEPTH        = CT_BYTE_SIZE;
+  localparam int CE_READ_RAM_LATENCY  = 1;
+  localparam int CE_READ_DATA_COUNT_W =  $clog2(RREQ_CMD_DEPTH)+1;
 
   // identification opcode --------------------------------------------------
   localparam [REQ_ID_W-1:0] REQ_ID_NOTIFY_TX     = 'h2;
@@ -68,12 +101,5 @@ package mhdma_pkg;
   localparam [REQ_ID_W-1:0] REQ_ID_ACK_NOTIFY_RX = 'h5;
   localparam [REQ_ID_W-1:0] REQ_ID_READ          = 'h6;
   localparam [REQ_ID_W-1:0] REQ_ID_EMISSION      = 'h7;
-
-  //----------------------
-  // Parameters
-  //----------------------
-  localparam int CT_BYTE_SIZE      = N * GLWE_K + 1;
-  localparam int CT_NB_WORDS_MRMAC = (CT_BYTE_SIZE * 8) / MRMAC_AXIS_W;
-  localparam int CT_NB_WORDS_HBM   = (CT_BYTE_SIZE * 8) / AXI4_DATA_W;
 
 endpackage
