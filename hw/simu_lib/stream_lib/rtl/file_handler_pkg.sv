@@ -310,6 +310,13 @@ package file_handler_pkg;
       this.cur_data     = val;
     endfunction
 
+  //----------------------
+  // get_line_cnt
+  //----------------------
+    function automatic int get_line_cnt;
+      return line_cnt;
+    endfunction
+
   endclass : read_data
 
 

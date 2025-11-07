@@ -177,13 +177,25 @@ module stream_spy
 // Check data
 // -----------------------------
   initial begin
+    bit mismatch;
     while (1) begin
       @(posedge clk)
       if (ref_running) begin
         if (rdy && vld) begin
-          assert(data == data_ref)
+          mismatch = 1'b0;
+          for (int i=0; i<DATA_W; i=i+1) begin
+            if (data_ref[i] === 1'bx) begin
+              // Do not check
+            end
+            else begin
+              if (data_ref[i] !== data[i])
+                mismatch = 1'b1;
+            end
+          end
+
+          assert(mismatch == 1'b0)
           else begin
-            $display("%t > ERROR: Data mismatch %m : exp=0x%0x, seen=0x%0x.",$time, data_ref, data);
+            $display("%t > ERROR: Data mismatch %m :(l.%0d) exp=0x%0x, seen=0x%0x.",$time, rdata.get_line_cnt(), data_ref, data);
             -> mismatch_event;
           end
           data_ref <= rdata.get_next_data;
@@ -193,7 +205,16 @@ module stream_spy
     end
   end
 
-  assign error = ref_running & vld & rdy & (data !== data_ref);
+  logic data_mismatch;
+  always_comb begin
+    data_mismatch = 1'b0;
+    for (int i=0; i<DATA_W; i=i+1) begin
+      data_mismatch = data_mismatch | ((data_ref[i] !== data[i]) & data_ref[i] !== 1'bx);
+    end
+  end
+
+
+  assign error = ref_running & vld & rdy & data_mismatch;
 
 // -----------------------------
 // Write data
