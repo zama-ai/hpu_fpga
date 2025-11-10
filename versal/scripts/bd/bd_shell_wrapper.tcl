@@ -64,7 +64,7 @@ proc create_hier_cell_shell_wrapper { parentCell nameHier } {
   set clk_usr_1_0_pin [ create_bd_pin -dir O -type clk clk_usr_1_0 ]
   set clk_usr_0_0_pin [ create_bd_pin -dir O -type clk clk_usr_0_0 ]
   set clk_eth_cfg_0_pin [ create_bd_pin -dir O -type clk clk_eth_cfg_0 ]
-  set clk_eth_qsfp_0_pin [ create_bd_pin -dir O -type clk clk_eth_qsfp_0 ]
+  set clk_eth_mrmac_0_pin [ create_bd_pin -dir O -type clk clk_eth_mrmac_0 ]
   set clk_gt_freerun_0_pin [ create_bd_pin -dir O -type clk clk_gt_freerun_0 ]
   set clk_usr_0_0_fr_pin [ create_bd_pin -dir O -type clk clk_usr_0_0_fr ]
   set clk_usr_0_0_ce_pin [ create_bd_pin -dir I clk_usr_0_0_ce ]
@@ -72,7 +72,7 @@ proc create_hier_cell_shell_wrapper { parentCell nameHier } {
   set resetn_usr_0_ic_0_pin      [ create_bd_pin -dir O -from 0 -to 0 -type rst resetn_usr_0_ic_0 ]
   set resetn_usr_0_ic_0_pin      [ create_bd_pin -dir I -from 0 -to 0 -type rst resetn_usr_0_ic_0_gated ]
   set resetn_usr_1_ic_0_pin      [ create_bd_pin -dir O -from 0 -to 0 -type rst resetn_usr_1_ic_0 ]
-  set resetn_eth_qsfp_ic_0_pin   [ create_bd_pin -dir O -from 0 -to 0 -type rst resetn_eth_qsfp_ic_0 ]
+  set resetn_eth_mrmac_ic_0_pin  [ create_bd_pin -dir O -from 0 -to 0 -type rst resetn_eth_mrmac_ic_0 ]
   set resetn_eth_cfg_ic_0_pin    [ create_bd_pin -dir O -from 0 -to 0 -type rst resetn_eth_cfg_ic_0 ]
   set resetn_gt_freerun_ic_0_pin [ create_bd_pin -dir O -from 0 -to 0 -type rst resetn_gt_freerun_ic_0 ]
 
@@ -385,14 +385,14 @@ proc create_hier_cell_shell_wrapper { parentCell nameHier } {
   connect_bd_net -net clock_reset_clk_usr_0      [get_bd_pins clock_reset/clk_usr_0]      [get_bd_pins clk_usr_0_0]
   connect_bd_net -net clock_reset_clk_usr_1      [get_bd_pins clock_reset/clk_usr_1]      [get_bd_pins clk_usr_1_0]
   connect_bd_net -net clock_reset_eth_freerun    [get_bd_pins clock_reset/clk_eth_cfg]    [get_bd_pins clk_eth_cfg_0]
-  connect_bd_net -net clock_reset_eth_qsfp       [get_bd_pins clock_reset/clk_eth_qsfp]   [get_bd_pins clk_eth_qsfp_0]
+  connect_bd_net -net clock_reset_eth_mrmac      [get_bd_pins clock_reset/clk_eth_mrmac]  [get_bd_pins clk_eth_mrmac_0]
   connect_bd_net -net clock_reset_gt_freerun     [get_bd_pins clock_reset/clk_gt_freerun] [get_bd_pins clk_gt_freerun_0]
   connect_bd_net -net clock_reset_clk_usr_0_0_fr [get_bd_pins clock_reset/clk_usr_0_fr] $clk_usr_0_0_fr_pin
 
   connect_bd_net -net clock_reset_resetn_usr_0_ic      [get_bd_pins clock_reset/resetn_usr_0_ic]      [get_bd_pins resetn_usr_0_ic_0]
   connect_bd_net -net clock_reset_resetn_usr_1_ic      [get_bd_pins clock_reset/resetn_usr_1_ic]      [get_bd_pins resetn_usr_1_ic_0]
-  connect_bd_net -net clock_reset_resetn_qsfp_ic       [get_bd_pins clock_reset/resetn_eth_qsfp_ic]   [get_bd_pins resetn_eth_qsfp_ic_0]
-  connect_bd_net -net clock_reset_resetn_eth_qsfp_ic   [get_bd_pins clock_reset/resetn_eth_cfg_ic]    [get_bd_pins resetn_eth_cfg_ic_0]
+  connect_bd_net -net clock_reset_resetn_mrmac_ic      [get_bd_pins clock_reset/resetn_eth_mrmac_ic]  [get_bd_pins resetn_eth_mrmac_ic_0]
+  connect_bd_net -net clock_reset_resetn_eth_mrmac_ic  [get_bd_pins clock_reset/resetn_eth_cfg_ic]    [get_bd_pins resetn_eth_cfg_ic_0]
   connect_bd_net -net clock_reset_resetn_gt_freerun_ic [get_bd_pins clock_reset/resetn_gt_freerun_ic] [get_bd_pins resetn_gt_freerun_ic_0]
 
   connect_bd_net -net clock_reset_resetn_usr_0_ic_gated [get_bd_pins resetn_usr_0_ic_0_gated] [get_bd_pins axi_to_axis/s_axi_aresetn]

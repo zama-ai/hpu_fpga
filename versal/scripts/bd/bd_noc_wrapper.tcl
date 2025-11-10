@@ -123,16 +123,16 @@ proc create_hier_cell_noc_wrapper { parentCell nameHier ntt_psi } {
   set HPU_TRC_HBM_DATA_W $_nsp_hpu::HPU_TRC_HBM_DATA_W
 
   # ETH <-> HBM
-  set HPU_ETH_HBM_RD_BW $_nsp_hpu::HPU_ETH_HBM_RD_BW
-  set HPU_ETH_HBM_WR_BW $_nsp_hpu::HPU_ETH_HBM_WR_BW
-  set HPU_ETH_HBM_RD_BURST_AVG $_nsp_hpu::HPU_ETH_HBM_RD_BURST_AVG
-  set HPU_ETH_HBM_WR_BURST_AVG $_nsp_hpu::HPU_ETH_HBM_WR_BURST_AVG
-  set HPU_ETH_HBM_BURST_MAX $_nsp_hpu::HPU_ETH_HBM_BURST_MAX
-  set HPU_ETH_HBM_DATA_W $_nsp_hpu::HPU_ETH_HBM_DATA_W
+  set ETH_HBM_RD_BW $_nsp_hpu::ETH_HBM_RD_BW
+  set ETH_HBM_WR_BW $_nsp_hpu::ETH_HBM_WR_BW
+  set ETH_HBM_RD_BURST_AVG $_nsp_hpu::ETH_HBM_RD_BURST_AVG
+  set ETH_HBM_WR_BURST_AVG $_nsp_hpu::ETH_HBM_WR_BURST_AVG
+  set ETH_HBM_BURST_MAX $_nsp_hpu::ETH_HBM_BURST_MAX
+  set ETH_HBM_DATA_W $_nsp_hpu::ETH_HBM_DATA_W
 
-  set HNMU_AXI_NB [expr $KSK_AXI_NB + $CT_AXI_NB + $GLWE_AXI_NB + $TRC_AXI_NB + $ETHPC_AXI_NB]
+  set HNMU_AXI_NB [expr $KSK_AXI_NB + $CT_AXI_NB + $GLWE_AXI_NB + $TRC_AXI_NB]
   # 4 additional inputs for 2xCPM, 1xPMC, 1xRPU_DDR
-  set NMU_AXI_NB [expr $BSK_AXI_NB + 4]
+  set NMU_AXI_NB [expr $BSK_AXI_NB + 4 + $ETHPC_AXI_NB]
 
   # AXI LPD <-> regfile
   set REGIF_CLK_NB $_nsp_hpu::REGIF_CLK_NB
@@ -193,6 +193,7 @@ proc create_hier_cell_noc_wrapper { parentCell nameHier ntt_psi } {
   set hpu_noc_clk            [ create_bd_pin -dir I -type CLK hpu_noc_clk ]
   set sregif_clk             [ create_bd_pin -dir I -type CLK sregif_clk ]
   set eth_clk                [ create_bd_pin -dir I -type CLK eth_clk ]
+  set mrmac_clk              [ create_bd_pin -dir I -type CLK mrmac_clk ]
 
   # reset_n for smartconnect
   for { set j 0}  {$j < $REGIF_CLK_NB} {incr j} {
@@ -268,7 +269,7 @@ proc create_hier_cell_noc_wrapper { parentCell nameHier ntt_psi } {
     CONFIG.HBM_REF_CLK_FREQ0 $HBM_REF_FREQ \
     CONFIG.HBM_REF_CLK_FREQ1 $HBM_REF_FREQ \
     CONFIG.HBM_REF_CLK_SELECTION {Internal} \
-    CONFIG.NUM_CLKS [expr 8 + $LPD_AXI_NB + $REGIF_CLK_NB] \
+    CONFIG.NUM_CLKS [expr 9 + $LPD_AXI_NB + $REGIF_CLK_NB] \
     CONFIG.NUM_HBM_BLI $HNMU_AXI_NB \
     CONFIG.NUM_MI [expr $AXI_PCIE_NB + $REGIF_NB*$REGIF_CLK_NB + $ETHPC_AXI_NB] \
     CONFIG.NUM_NMI {4} \
@@ -341,7 +342,6 @@ proc create_hier_cell_noc_wrapper { parentCell nameHier ntt_psi } {
   set ct_ofs   [expr $ksk_ofs + $KSK_AXI_NB]
   set glwe_ofs [expr $ct_ofs + $CT_AXI_NB]
   set trc_ofs  [expr $glwe_ofs + $GLWE_AXI_NB]
-  set eth_ofs  [expr $trc_ofs + $TRC_AXI_NB]
 
   set ksk_noc_pins_l [list]
   for { set i 0}  {$i < $KSK_AXI_NB} {incr i} {
@@ -359,10 +359,6 @@ proc create_hier_cell_noc_wrapper { parentCell nameHier ntt_psi } {
   for { set i 0}  {$i < $GLWE_AXI_NB} {incr i} {
     lappend glwe_noc_pins_l [format "HBM%02d_AXI" [expr $i + $glwe_ofs]]
   }
-  set eth_noc_pins_l [list]
-  for { set i 0}  {$i < $ETHPC_AXI_NB} {incr i} {
-    lappend eth_noc_pins_l [format "HBM%02d_AXI" [expr $i + $eth_ofs]]
-  }
 
   # NMU
   set cpm_ofs 0
@@ -370,7 +366,7 @@ proc create_hier_cell_noc_wrapper { parentCell nameHier ntt_psi } {
   set lpd_ofs [expr $pmc_ofs + 1]
   set sregif_ofs [expr $lpd_ofs + 1]
   set bsk_ofs [expr $sregif_ofs + 1]
-  set other_aclk_ofs [expr $bsk_ofs + 1]
+  set eth_noc_ofs  [expr $bsk_ofs + $BSK_AXI_NB]
 
   set cpm_noc_pins_l [list]
   for { set i 0}  {$i < 2} {incr i} {
@@ -384,20 +380,30 @@ proc create_hier_cell_noc_wrapper { parentCell nameHier ntt_psi } {
   for { set i 0}  {$i < 1} {incr i} {
     lappend lpd_noc_pins_l [format "S%02d_AXI" [expr $i + $lpd_ofs]]
   }
+  set sregif_noc_pins_l [format "S%02d_AXI" [expr $sregif_ofs]]
   set bsk_noc_pins_l [list]
   for { set i 0}  {$i < $BSK_AXI_NB} {incr i} {
     lappend bsk_noc_pins_l [format "S%02d_AXI" [expr $i + $bsk_ofs]]
   }
+  set eth_noc_pins_l [list]
+  for { set i 0}  {$i < $ETHPC_AXI_NB} {incr i} {
+    lappend eth_noc_pins_l [format "S%02d_AXI" [expr $i + $eth_noc_ofs]]
+  }
 
-  set sregif_noc_pins_l [format "S%02d_AXI" [expr $sregif_ofs]]
+  puts ">>>>>>>> NMU pin mapping >>>>>>>>"
+  puts "cpm_noc_pins_l    $cpm_noc_pins_l"
+  puts "pmc_noc_pins_l    $pmc_noc_pins_l"
+  puts "lpd_noc_pins_l    $lpd_noc_pins_l"
+  puts "sregif_noc_pins_l $sregif_noc_pins_l"
+  puts "bsk_noc_pins_l    $bsk_noc_pins_l"
+  puts "eth_noc_pins_l    $eth_noc_pins_l"
 
   #== NOC Outputs
   #NSU
   set mgmt_ofs 0
   set mregif_ofs [expr $mgmt_ofs + $AXI_PCIE_NB]
+  # master ethernet offset is for easily defining NOC ethernet outputs
   set meth_ofs [expr $mgmt_ofs + $AXI_PCIE_NB + $REGIF_NB*$REGIF_CLK_NB]
-  # eth offset is only here for clock : ethernet configuration
-  set eth_ofs [expr $other_aclk_ofs + $mregif_ofs + $REGIF_CLK_NB]
 
   set pcie_mgmt_noc_pins_l [list]
   for { set i 0}  {$i < $AXI_PCIE_NB} {incr i} {
@@ -429,6 +435,19 @@ proc create_hier_cell_noc_wrapper { parentCell nameHier ntt_psi } {
   }
 
   #== Clocks
+  # some can be reused from before, new ones are needed for non-associated clocks to axi4
+  set other_aclk_ofs [expr $bsk_ofs + 1]
+  set pcie_clk_ofs [expr $other_aclk_ofs + $mgmt_ofs]
+  set mregif_clk_ofs [expr $pcie_clk_ofs + $AXI_PCIE_NB]
+  # slow clock, will assign clock for associated regif
+  set eth_clk_ofs [expr $mregif_clk_ofs + $REGIF_CLK_NB]
+  # fast clock, meant for HBM clock domain crossion using NOC
+  set eth_clk_hbm_ofs [expr $eth_clk_ofs + 1]
+
+  set axis_noc_clock_pins_l [list]
+  for { set i 0}  {$i < 1} {incr i} {
+    lappend axis_noc_clock_pins_l [format "aclk%0d" $i]
+  }
   set cpm_noc_clock_pins_l [list]
   for { set i 0}  {$i < 2} {incr i} {
     lappend cpm_noc_clock_pins_l [format "aclk%0d" [expr $i + $cpm_ofs]]
@@ -445,25 +464,25 @@ proc create_hier_cell_noc_wrapper { parentCell nameHier ntt_psi } {
   for { set i 0}  {$i < 1} {incr i} {
     lappend sregif_clock_pins_l [format "aclk%0d" [expr $i + $sregif_ofs]]
   }
-  set seth_clock_pins_l [list]
-  for { set i 0}  {$i < 1} {incr i} {
-    lappend seth_clock_pins_l [format "aclk%0d" [expr $i + $eth_ofs]]
-  }
   set hpu_noc_clock_pins_l [list]
   for { set i 0}  {$i < 1} {incr i} {
     lappend hpu_noc_clock_pins_l [format "aclk%0d" [expr $i + $bsk_ofs]]
   }
-  set mregif_clock_pins_l [list]
-  for { set i 0}  {$i < $REGIF_CLK_NB} {incr i} {
-    lappend mregif_clock_pins_l [format "aclk%0d" [expr $i + $other_aclk_ofs + $mregif_ofs]]
-  }
   set pcie_mgmt_noc_clock_pins_l [list]
   for { set i 0}  {$i < $AXI_PCIE_NB} {incr i} {
-    lappend pcie_mgmt_noc_clock_pins_l [format "aclk%0d" [expr $i + $other_aclk_ofs + $mgmt_ofs]]
+    lappend pcie_mgmt_noc_clock_pins_l [format "aclk%0d" [expr $i + $pcie_clk_ofs]]
   }
-  set axis_noc_clock_pins_l [list]
+  set mregif_clock_pins_l [list]
+  for { set i 0}  {$i < $REGIF_CLK_NB} {incr i} {
+    lappend mregif_clock_pins_l [format "aclk%0d" [expr $i + $mregif_clk_ofs]]
+  }
+  set seth_clock_pins_l [list]
   for { set i 0}  {$i < 1} {incr i} {
-    lappend axis_noc_clock_pins_l [format "aclk%0d" $i]
+    lappend seth_clock_pins_l [format "aclk%0d" [expr $i + $eth_clk_ofs]]
+  }
+  set eth_hbm_clock_pins_l [list]
+  for { set i 0}  {$i < 1} {incr i} {
+    lappend eth_hbm_clock_pins_l [format "aclk%0d" [expr $i + $eth_clk_hbm_ofs]]
   }
 
   puts ">>>>>>>> Defining clock pins >>>>>>>> "
@@ -472,10 +491,11 @@ proc create_hier_cell_noc_wrapper { parentCell nameHier ntt_psi } {
   puts "pmc_noc_clock_pins_l       $pmc_noc_clock_pins_l"
   puts "lpd_noc_clock_pins_l       $lpd_noc_clock_pins_l"
   puts "sregif_clock_pins_l        $sregif_clock_pins_l"
-  puts "seth_clock_pins_l          $seth_clock_pins_l"
   puts "hpu_noc_clock_pins_l       $hpu_noc_clock_pins_l"
   puts "pcie_mgmt_noc_clock_pins_l $pcie_mgmt_noc_clock_pins_l"
   puts "mregif_clock_pins_l        $mregif_clock_pins_l"
+  puts "seth_clock_pins_l          $seth_clock_pins_l"
+  puts "eth_hbm_clock_pins_l       $eth_hbm_clock_pins_l"
 
   #===================================
   # NOC properties
@@ -498,7 +518,7 @@ proc create_hier_cell_noc_wrapper { parentCell nameHier ntt_psi } {
   # BSK : Use 8 10 12 14 24 26 28 30 40 42 44 46 56 58 60 62
   set bsk_hbm_ports_l [list 8 10 12 14 24 26 28 30 40 42 44 46 56 58 60 62]
   # TODO: GLWE : Use HBM_PORT
-  set eth_hbm_ports_l [list 36 37]
+  set eth_hbm_ports_l [list 54 55]
 
   # Check NOC config
   if {[llength $ksk_hbm_ports_l] < $KSK_AXI_NB} {
@@ -586,17 +606,17 @@ proc create_hier_cell_noc_wrapper { parentCell nameHier ntt_psi } {
   }
 
   # ETH
-  set eth_hbm_qos [set_qos $HPU_ETH_HBM_RD_BW $HPU_ETH_HBM_WR_BW $HPU_ETH_HBM_RD_BURST_AVG $HPU_ETH_HBM_WR_BURST_AVG]
+  set eth_hbm_qos [set_qos $ETH_HBM_RD_BW $ETH_HBM_WR_BW $ETH_HBM_RD_BURST_AVG $ETH_HBM_WR_BURST_AVG]
   for { set i 0}  {$i < $ETHPC_AXI_NB} {incr i} {
     set idx [lindex $eth_hbm_ports_l $i]
     set hbm_port_name [format "HBM%0d_PORT%0d" [expr int($idx / 4)] [expr $idx % 4]]
     set cnx [list $hbm_port_name $eth_hbm_qos]
 
     set_property -dict [ list \
-     CONFIG.DATA_WIDTH $HPU_ETH_HBM_DATA_W \
+     CONFIG.DATA_WIDTH $ETH_HBM_DATA_W \
      CONFIG.CONNECTIONS $cnx \
      CONFIG.NOC_PARAMS {} \
-     CONFIG.CATEGORY {pl_hbm} \
+     CONFIG.CATEGORY {pl} \
    ] [get_bd_intf_pins axi_noc_cips/[lindex $eth_noc_pins_l $i]]
   }
 
@@ -883,6 +903,7 @@ proc create_hier_cell_noc_wrapper { parentCell nameHier ntt_psi } {
   connect_bd_net [get_bd_pins mgmt_clk] [get_bd_pins axi_noc_cips/[lindex $pcie_mgmt_noc_clock_pins_l 0]]
   connect_bd_net [get_bd_pins pmc_tandem_clk] [get_bd_pins axi_noc_cips/[lindex $pcie_mgmt_noc_clock_pins_l 1]]
   connect_bd_net [get_bd_pins hpu_noc_clk] [get_bd_pins axi_noc_cips/[lindex $hpu_noc_clock_pins_l 0]] [get_bd_pins axis_noc/[lindex $axis_noc_clock_pins_l 0]]
+  connect_bd_net [get_bd_pins mrmac_clk] [get_bd_pins axi_noc_cips/[lindex $eth_hbm_clock_pins_l 0]]
 
   for {set j 0}  {$j < $REGIF_CLK_NB} {incr j} {
     connect_bd_net [get_bd_pins mregif_${j}_clk] [get_bd_pins axi_noc_cips/[lindex $mregif_clock_pins_l $j]]
@@ -949,8 +970,12 @@ proc create_hier_cell_noc_wrapper { parentCell nameHier ntt_psi } {
   # MGMT (to UUID, GCQ...)
   set_property CONFIG.PHYSICAL_LOC NOC_NSU512_X2Y0 [get_bd_intf_pins axi_noc_cips/M00_AXI]
 
-  # Axi-lite for MRMAC_X0Y3
+  # Ethernet
+  # NSU for Axi-lite
+  # NMU for hbm PCs
   set_property CONFIG.PHYSICAL_LOC NOC_NSU512_X0Y10 [get_bd_intf_pins axi_noc_cips/M06_AXI]
+  set_property CONFIG.PHYSICAL_LOC NOC_NMU512_X0Y10 [get_bd_intf_pins axi_noc_cips/S22_AXI]
+  set_property CONFIG.PHYSICAL_LOC NOC_NMU512_X0Y11 [get_bd_intf_pins axi_noc_cips/S21_AXI]
 
   #  AXIS
   set_property CONFIG.PHYSICAL_LOC NOC_NMU512_X0Y0  [get_bd_intf_pins axis_noc/S00_AXIS]

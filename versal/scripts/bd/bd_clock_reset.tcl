@@ -99,7 +99,7 @@ proc create_hier_cell_clock_reset { parentCell nameHier } {
   set USER_1_FREQ $_nsp_hpu::USER_1_FREQ
   set ETH_FREERUN_FREQ $_nsp_hpu::ETH_FREERUN_FREQ
   set ETH_APB3_FREQ $_nsp_hpu::ETH_APB3_FREQ
-  set ETH_QSFP_FREQ $_nsp_hpu::ETH_QSFP_FREQ
+  set ETH_MRMAC_FREQ $_nsp_hpu::ETH_MRMAC_FREQ
 
   ####################################
   # Create pins
@@ -127,9 +127,9 @@ proc create_hier_cell_clock_reset { parentCell nameHier } {
   create_bd_pin -dir O -type clk clk_eth_cfg
   create_bd_pin -dir O -from 0 -to 0 -type rst resetn_eth_cfg_ic
   create_bd_pin -dir O -from 0 -to 0 -type rst resetn_eth_freerun_periph
-  create_bd_pin -dir O -type clk clk_eth_qsfp
-  create_bd_pin -dir O -from 0 -to 0 -type rst resetn_eth_qsfp_ic
-  create_bd_pin -dir O -from 0 -to 0 -type rst resetn_eth_qsfp_periph
+  create_bd_pin -dir O -type clk clk_eth_mrmac
+  create_bd_pin -dir O -from 0 -to 0 -type rst resetn_eth_mrmac_ic
+  create_bd_pin -dir O -from 0 -to 0 -type rst resetn_eth_mrmac_periph
   create_bd_pin -dir O -type clk clk_gt_freerun
   create_bd_pin -dir O -from 0 -to 0 -type rst resetn_gt_freerun_ic
   create_bd_pin -dir O -from 0 -to 0 -type rst resetn_gt_freerun_periph
@@ -169,7 +169,7 @@ proc create_hier_cell_clock_reset { parentCell nameHier } {
   # Create instance: eth_clk_wiz, and set properties
   set eth_clk_wiz [ create_bd_cell -type ip -vlnv xilinx.com:ip:clk_wizard:1.0 eth_clk_wiz ]
   # we need a stable freerun clock and a qsfp clock
-  set eth_freq "${ETH_FREERUN_FREQ},${ETH_QSFP_FREQ},${ETH_APB3_FREQ}"
+  set eth_freq "${ETH_FREERUN_FREQ},${ETH_MRMAC_FREQ},${ETH_APB3_FREQ}"
   set_property -dict [list \
     CONFIG.CLKOUT_DRIVES {No_buffer,No_buffer,No_buffer} \
     CONFIG.CLKOUT_REQUESTED_OUT_FREQUENCY $eth_freq \
@@ -193,9 +193,9 @@ proc create_hier_cell_clock_reset { parentCell nameHier } {
   set eth_freerun_psr [ create_bd_cell -type ip -vlnv xilinx.com:ip:proc_sys_reset:5.0 eth_freerun_psr ]
   set_property CONFIG.C_EXT_RST_WIDTH {1} $eth_freerun_psr
 
-  # Create instance: eth_qsfp_psr, and set properties
-  set eth_qsfp_psr [ create_bd_cell -type ip -vlnv xilinx.com:ip:proc_sys_reset:5.0 eth_qsfp_psr ]
-  set_property CONFIG.C_EXT_RST_WIDTH {1} $eth_qsfp_psr
+  # Create instance: eth_mrmac_psr, and set properties
+  set eth_mrmac_psr [ create_bd_cell -type ip -vlnv xilinx.com:ip:proc_sys_reset:5.0 eth_mrmac_psr ]
+  set_property CONFIG.C_EXT_RST_WIDTH {1} $eth_mrmac_psr
 
   # Create instance: gt_freerun_psr, and set properties
   set gt_freerun_psr [ create_bd_cell -type ip -vlnv xilinx.com:ip:proc_sys_reset:5.0 gt_freerun_psr ]
@@ -217,7 +217,7 @@ proc create_hier_cell_clock_reset { parentCell nameHier } {
   connect_bd_net -net dma_axi_aresetn_1 [get_bd_pins dma_axi_aresetn] [get_bd_pins pcie_mgmt_pdi_reset/resetn_in]
   connect_bd_net -net pcie_psr_interconnect_aresetn [get_bd_pins pcie_psr/interconnect_aresetn] [get_bd_pins resetn_pcie_ic]
   connect_bd_net -net pcie_psr_peripheral_aresetn [get_bd_pins pcie_psr/peripheral_aresetn] [get_bd_pins resetn_pcie_periph]
-  connect_bd_net -net pl_psr_interconnect_aresetn [get_bd_pins pl_psr/interconnect_aresetn] [get_bd_pins resetn_pl_ic] [get_bd_pins pcie_psr/ext_reset_in] [get_bd_pins usr_0_psr/ext_reset_in] [get_bd_pins usr_1_psr/ext_reset_in] [get_bd_pins eth_freerun_psr/ext_reset_in] [get_bd_pins eth_qsfp_psr/ext_reset_in] [get_bd_pins gt_freerun_psr/ext_reset_in]
+  connect_bd_net -net pl_psr_interconnect_aresetn [get_bd_pins pl_psr/interconnect_aresetn] [get_bd_pins resetn_pl_ic] [get_bd_pins pcie_psr/ext_reset_in] [get_bd_pins usr_0_psr/ext_reset_in] [get_bd_pins usr_1_psr/ext_reset_in] [get_bd_pins eth_freerun_psr/ext_reset_in] [get_bd_pins eth_mrmac_psr/ext_reset_in] [get_bd_pins gt_freerun_psr/ext_reset_in]
   connect_bd_net -net pl_psr_peripheral_aresetn [get_bd_pins pl_psr/peripheral_aresetn] [get_bd_pins resetn_pl_periph] [get_bd_pins pcie_mgmt_pdi_reset/resetn]
   connect_bd_net -net resetn_pl_axi_1 [get_bd_pins resetn_pl_axi] [get_bd_pins pl_psr/ext_reset_in]
   connect_bd_net -net usr_0_psr_interconnect_aresetn [get_bd_pins usr_0_psr/interconnect_aresetn] [get_bd_pins resetn_usr_0_ic]
@@ -226,8 +226,8 @@ proc create_hier_cell_clock_reset { parentCell nameHier } {
   connect_bd_net -net usr_1_psr_peripheral_aresetn [get_bd_pins usr_1_psr/peripheral_aresetn] [get_bd_pins resetn_usr_1_periph]
   connect_bd_net -net eth_freerun_psr_interconnect_aresetn [get_bd_pins eth_freerun_psr/interconnect_aresetn] [get_bd_pins resetn_eth_cfg_ic]
   connect_bd_net -net eth_freerun_psr_peripheral_aresetn [get_bd_pins eth_freerun_psr/peripheral_aresetn] [get_bd_pins resetn_eth_freerun_periph]
-  connect_bd_net -net eth_qsfp_psr_interconnect_aresetn [get_bd_pins eth_qsfp_psr/interconnect_aresetn] [get_bd_pins resetn_eth_qsfp_ic]
-  connect_bd_net -net eth_qsfp_psr_peripheral_aresetn [get_bd_pins eth_qsfp_psr/peripheral_aresetn] [get_bd_pins resetn_eth_qsfp_periph]
+  connect_bd_net -net eth_mrmac_psr_interconnect_aresetn [get_bd_pins eth_mrmac_psr/interconnect_aresetn] [get_bd_pins resetn_eth_mrmac_ic]
+  connect_bd_net -net eth_mrmac_psr_peripheral_aresetn [get_bd_pins eth_mrmac_psr/peripheral_aresetn] [get_bd_pins resetn_eth_mrmac_periph]
   connect_bd_net -net gt_freerun_psr_interconnect_aresetn [get_bd_pins gt_freerun_psr/interconnect_aresetn] [get_bd_pins resetn_gt_freerun_ic]
   connect_bd_net -net gt_freerun_psr_peripheral_aresetn [get_bd_pins gt_freerun_psr/peripheral_aresetn] [get_bd_pins resetn_gt_freerun_periph]
   connect_bd_net -net usr_clk_wiz_clk_out3 [get_bd_pins usr_clk_wiz/clk_out3] [get_bd_pins clk_usr_0_fr] [get_bd_pins usr_0_psr/slowest_sync_clk]
@@ -236,9 +236,9 @@ proc create_hier_cell_clock_reset { parentCell nameHier } {
   connect_bd_net -net clk_usr_0_en_net     [get_bd_pins clk_usr_0_ce]         [get_bd_pins usr_clk_wiz/clk_out1_ce]
   connect_bd_net -net usr_clk_wiz_locked [get_bd_pins usr_clk_wiz/locked] [get_bd_pins usr_0_psr/dcm_locked] [get_bd_pins usr_1_psr/dcm_locked]
   connect_bd_net -net eth_clk_wiz_clk_out1 [get_bd_pins eth_clk_wiz/clk_out1] [get_bd_pins clk_eth_cfg] [get_bd_pins eth_freerun_psr/slowest_sync_clk]
-  connect_bd_net -net eth_clk_wiz_clk_out2 [get_bd_pins eth_clk_wiz/clk_out2] [get_bd_pins clk_eth_qsfp] [get_bd_pins eth_qsfp_psr/slowest_sync_clk]
+  connect_bd_net -net eth_clk_wiz_clk_out2 [get_bd_pins eth_clk_wiz/clk_out2] [get_bd_pins clk_eth_mrmac] [get_bd_pins eth_mrmac_psr/slowest_sync_clk]
   connect_bd_net -net eth_clk_wiz_clk_out3 [get_bd_pins eth_clk_wiz/clk_out3] [get_bd_pins clk_gt_freerun] [get_bd_pins gt_freerun_psr/slowest_sync_clk]
-  connect_bd_net -net eth_clk_wiz_locked   [get_bd_pins eth_clk_wiz/locked] [get_bd_pins eth_freerun_psr/dcm_locked] [get_bd_pins eth_qsfp_psr/dcm_locked] [get_bd_pins gt_freerun_psr/dcm_locked]
+  connect_bd_net -net eth_clk_wiz_locked   [get_bd_pins eth_clk_wiz/locked] [get_bd_pins eth_freerun_psr/dcm_locked] [get_bd_pins eth_mrmac_psr/dcm_locked] [get_bd_pins gt_freerun_psr/dcm_locked]
 
   ####################################
   # Restore instance

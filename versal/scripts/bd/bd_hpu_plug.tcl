@@ -61,7 +61,7 @@ namespace eval _nsp_hpu {
     # APB3 freerunning mandatory clock for MRMAC
     variable ETH_APB3_FREQ 200
     # we are in 4x25GE Narrow mode: 64b
-    variable ETH_QSFP_FREQ 390.625
+    variable ETH_MRMAC_FREQ 390.625
 
     #========================
     # AXI
@@ -128,6 +128,14 @@ namespace eval _nsp_hpu {
     variable PMC_DDR_RD_BURST_AVG 256
     variable PMC_DDR_WR_BURST_AVG 256
 
+    # ETH <-> HBM
+    variable ETH_HBM_RD_BW 100
+    variable ETH_HBM_WR_BW 100
+    variable ETH_HBM_RD_BURST_AVG 256
+    variable ETH_HBM_WR_BURST_AVG 256
+    variable ETH_HBM_BURST_MAX 256
+    variable ETH_HBM_DATA_W 256
+
     # Key <-> HBM
     # WARNING:
     # The current BW requirements assume a 400MHz clock, the
@@ -181,14 +189,6 @@ namespace eval _nsp_hpu {
     variable HPU_TRC_HBM_WR_BURST_AVG 8
     variable HPU_TRC_HBM_BURST_MAX 32
     variable HPU_TRC_HBM_DATA_W 128
-
-    # ETH <-> HBM
-    variable HPU_ETH_HBM_RD_BW 12000
-    variable HPU_ETH_HBM_WR_BW 12000
-    variable HPU_ETH_HBM_RD_BURST_AVG 16
-    variable HPU_ETH_HBM_WR_BURST_AVG 16
-    variable HPU_ETH_HBM_BURST_MAX 16
-    variable HPU_ETH_HBM_DATA_W 256
 
     #========================
     # HPU NOC ports

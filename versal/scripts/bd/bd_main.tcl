@@ -51,17 +51,17 @@ proc create_root_design { parentCell ntt_psi } {
   set HPU_CT_HBM_BURST_MAX $_nsp_hpu::HPU_CT_HBM_BURST_MAX
   set HPU_GLWE_HBM_BURST_MAX $_nsp_hpu::HPU_GLWE_HBM_BURST_MAX
   set HPU_TRC_HBM_BURST_MAX $_nsp_hpu::HPU_TRC_HBM_BURST_MAX
-  set HPU_ETH_HBM_BURST_MAX $_nsp_hpu::HPU_ETH_HBM_BURST_MAX
+  set ETH_HBM_BURST_MAX $_nsp_hpu::ETH_HBM_BURST_MAX
 
   set HPU_BSK_HBM_DATA_W $_nsp_hpu::HPU_BSK_HBM_DATA_W
   set HPU_KSK_HBM_DATA_W $_nsp_hpu::HPU_KSK_HBM_DATA_W
   set HPU_CT_HBM_DATA_W $_nsp_hpu::HPU_CT_HBM_DATA_W
   set HPU_GLWE_HBM_DATA_W $_nsp_hpu::HPU_GLWE_HBM_DATA_W
   set HPU_TRC_HBM_DATA_W $_nsp_hpu::HPU_TRC_HBM_DATA_W
-  set HPU_ETH_HBM_DATA_W $_nsp_hpu::HPU_ETH_HBM_DATA_W
+  set ETH_HBM_DATA_W $_nsp_hpu::ETH_HBM_DATA_W
 
   set ETH_AXI_NB $_nsp_hpu::ETH_AXI_NB
-  set ETH_QSFP_FREQ $_nsp_hpu::ETH_QSFP_FREQ
+  set ETH_MRMAC_FREQ $_nsp_hpu::ETH_MRMAC_FREQ
 
   set AXIS_DATA_ETH_W $_nsp_hpu::AXIS_DATA_ETH_W
   set AXIS_DATA_ETH_BYTES $_nsp_hpu::AXIS_DATA_ETH_BYTES
@@ -89,7 +89,7 @@ proc create_root_design { parentCell ntt_psi } {
 
   set CLK_IN_D [ create_bd_intf_port -mode Slave -vlnv xilinx.com:interface:diff_clock_rtl:1.0 CLK_IN_D ]
   set_property -dict [ list \
-   CONFIG.FREQ_HZ [expr int($ETH_QSFP_FREQ * 10**6)] \
+   CONFIG.FREQ_HZ [expr int($ETH_MRMAC_FREQ * 10**6)] \
   ] $CLK_IN_D
 
   # System clocks
@@ -105,7 +105,6 @@ proc create_root_design { parentCell ntt_psi } {
   set prop_clk(clk_usr_0_0) ""
   set prop_clk(clk_usr_1_0) ""
   set prop_clk(pl0_ref_clk_0) ""
-  set prop_clk(clk_axis_mrmac) ""
 
   # == Resets
   set resetn_usr_0_ic_0 [ create_bd_port -dir O -type rst resetn_usr_0_ic_0 ]
@@ -221,13 +220,13 @@ proc create_root_design { parentCell ntt_psi } {
                      $HPU_GLWE_HBM_DATA_W \
                      $HPU_BSK_HBM_DATA_W \
                      $HPU_KSK_HBM_DATA_W \
-                     $HPU_ETH_HBM_DATA_W]
+                     $ETH_HBM_DATA_W]
   set burst_length_l [list $HPU_TRC_HBM_BURST_MAX \
                            $HPU_CT_HBM_BURST_MAX \
                            $HPU_GLWE_HBM_BURST_MAX \
                            $HPU_BSK_HBM_BURST_MAX \
                            $HPU_KSK_HBM_BURST_MAX \
-                           $HPU_ETH_HBM_BURST_MAX]
+                           $ETH_HBM_BURST_MAX]
   set has_bresp_l [list 0 1 0 0 0 1]
   set read_outstanding_l [list 1 32 32 32 32 32]
   set write_outstanding_l [list 32 32 1 1 1 32]
@@ -280,10 +279,13 @@ proc create_root_design { parentCell ntt_psi } {
        CONFIG.WUSER_WIDTH {0} \
       ] $port
 
-      if {$prop_clk(clk_usr_0_0) eq ""} {
-        set prop_clk(clk_usr_0_0) "${prefix}_AXI_${i}"
-      } else {
-        set prop_clk(clk_usr_0_0) "$prop_clk(clk_usr_0_0):${prefix}_AXI_${i}"
+      # ethernet to HBM are not the same clock as the other signals
+      if {${prefix} ne "ETH_HBM"} {
+        if {$prop_clk(clk_usr_0_0) eq ""} {
+          set prop_clk(clk_usr_0_0) "${prefix}_AXI_${i}"
+        } else {
+          set prop_clk(clk_usr_0_0) "$prop_clk(clk_usr_0_0):${prefix}_AXI_${i}"
+        }
       }
     } ; # for i
   } ; # for a
@@ -380,15 +382,12 @@ proc create_root_design { parentCell ntt_psi } {
    CONFIG.ASSOCIATED_BUSIF $prop_clk(pl0_ref_clk_0) \
   ] [get_bd_ports /pl0_ref_clk_0]
 
-  set_property -dict [ list \
-   CONFIG.ASSOCIATED_BUSIF $prop_clk(clk_axis_mrmac) \
-  ] [get_bd_ports /clk_axis_mrmac]
-
-
-  # == Ethernet via QSFP
+  # == Ethernet via MRMAC
   set GT_Serial [ create_bd_intf_port -mode Master -vlnv xilinx.com:interface:gt_rtl:1.0 GT_Serial ]
 
+  # let's be clear on what signals are on which clock here. They will not evolve
   set_property CONFIG.ASSOCIATED_BUSIF {ETH_AXI_CFG:ETH_AXI_0:ETH_AXI_1} [get_bd_ports /clk_eth_cfg_0]
+  set_property CONFIG.ASSOCIATED_BUSIF {ETH_HBM_AXI_0:ETH_HBM_AXI_1} [get_bd_ports /clk_axis_mrmac]
 
   set ctl_tx_port0 [ create_bd_intf_port -mode Slave -vlnv xilinx.com:display_mrmac:mrmac_ctrl_ports:2.0 ctl_tx_port0 ]
   set ctl_tx_port1 [ create_bd_intf_port -mode Slave -vlnv xilinx.com:display_mrmac:mrmac_ctrl_ports:2.0 ctl_tx_port1 ]
@@ -588,8 +587,8 @@ proc create_root_design { parentCell ntt_psi } {
   connect_bd_net -net eth_wrapper_gt_tx_reset_done_out [get_bd_ports gt_tx_reset_done_out] [get_bd_pins eth_wrapper/gt_tx_reset_done_out]
   connect_bd_net -net eth_wrapper_pm_rdy               [get_bd_ports pm_rdy] [get_bd_pins eth_wrapper/pm_rdy]
 
-  connect_bd_net [get_bd_ports clk_axis_mrmac]    [get_bd_pins shell_wrapper/clk_eth_qsfp_0] [get_bd_pins eth_wrapper/s_axis_mrmac_aclk]
-  connect_bd_net [get_bd_ports resetn_axis_mrmac] [get_bd_pins shell_wrapper/resetn_eth_qsfp_ic_0]
+  connect_bd_net [get_bd_ports clk_axis_mrmac]    [get_bd_pins shell_wrapper/clk_eth_mrmac_0] [get_bd_pins eth_wrapper/s_axis_mrmac_aclk] [get_bd_pins noc_wrapper/mrmac_clk]
+  connect_bd_net [get_bd_ports resetn_axis_mrmac] [get_bd_pins shell_wrapper/resetn_eth_mrmac_ic_0]
 
   # == RX Lanes
   # 0
@@ -689,7 +688,7 @@ proc create_root_design { parentCell ntt_psi } {
   # Ethernet
   connect_bd_net      [get_bd_pins eth_wrapper/s_axi_aclk]    [get_bd_pins shell_wrapper/clk_eth_cfg_0]
   connect_bd_net      [get_bd_pins eth_wrapper/s_axi_aresetn] [get_bd_pins shell_wrapper/resetn_eth_cfg_ic_0]
-  connect_bd_net      [get_bd_pins eth_wrapper/s_axis_mrmac_aresetn] [get_bd_pins shell_wrapper/resetn_eth_qsfp_ic_0]
+  connect_bd_net      [get_bd_pins eth_wrapper/s_axis_mrmac_aresetn] [get_bd_pins shell_wrapper/resetn_eth_mrmac_ic_0]
 
   ####################################
   # Address
@@ -747,7 +746,7 @@ proc create_root_design { parentCell ntt_psi } {
   }
 
   # Ethernet
-  assign_bd_address -offset 0x00000000 -range 0x00010000 -target_address_space [get_bd_addr_spaces s_axil_mrmac] [get_bd_addr_segs eth_wrapper/mrmac_0_core/s_axi/Reg] -force
+  assign_bd_address -offset 0x00000000 -range 0x00010000 -target_address_space [get_bd_addr_spaces ETH_AXI_CFG] [get_bd_addr_segs eth_wrapper/mrmac_0_core/s_axi/Reg] -force
 
   # APB3 not meant to be used
   assign_bd_address -offset 0xA4080000 -range 0x00010000 -target_address_space [get_bd_addr_spaces APB3_INTF] [get_bd_addr_segs eth_wrapper/mrmac_0_gt_wrapper/gt_quad_base/APB3_INTF/Reg] -force
