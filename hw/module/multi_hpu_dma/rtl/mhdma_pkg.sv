@@ -9,11 +9,10 @@
 // ==============================================================================================
 
 package mhdma_pkg;
-  import param_tfhe_pkg::*;
-  import axi_if_common_param_pkg::*;
-  import axi_if_eth_axi_pkg::*;
-
-  localparam int REGF_WORD_W = 32; //must match toml configuration
+  import param_tfhe_pkg::*;           // TFHE parameterset
+  import axi_if_common_param_pkg::*;  // HBM pages
+  import axi_if_eth_axi_pkg::*;       // AXI4
+  import axi_if_shell_axil_pkg::*;    // REG_DATA_W
 
   //----------------------
   // Ethernet
@@ -28,12 +27,16 @@ package mhdma_pkg;
 
   localparam int QSFP_LANE_NB   = 4;
 
-  localparam int ETH_NB_BYTES_PAYLOAD = 1000;
+  // ETH_NB_BYTES_PAYLOAD must be divisible by AXI4_DATA_BYTES
+  localparam int ETH_NB_BYTES_PAYLOAD = 1024;
   localparam int ETH_NB_BYTES_MIN = 64;
-  localparam int ETH_HEADER_SIZE = 3;  // number of 64bit frames to send
+  localparam int ETH_HEADER_SIZE = 3;
 
-  localparam [15:0] ETH_LEN_MIN = (ETH_NB_BYTES_MIN*8)/64 - ETH_HEADER_SIZE ;
-  localparam [15:0] ETH_LEN_MAX = (ETH_NB_BYTES_PAYLOAD*8)/MRMAC_AXIS_W + ETH_HEADER_SIZE;
+  localparam int NB_WORDS_PAYLOAD = (ETH_NB_BYTES_PAYLOAD * 8) / MRMAC_AXIS_W;
+  localparam int NB_WORDS_HEADER  = (ETH_NB_BYTES_MIN * 8) / MRMAC_AXIS_W;
+
+  localparam [15:0] ETH_LEN_MIN = NB_WORDS_HEADER  - ETH_HEADER_SIZE ;
+  localparam [15:0] ETH_LEN_MAX = NB_WORDS_PAYLOAD + ETH_HEADER_SIZE;
 
   // generic sizes on ethernet
   localparam int NB_WORDS_MIN = 7; // without fcs
@@ -41,9 +44,13 @@ package mhdma_pkg;
   //----------------------
   // Parameters
   //----------------------
-  localparam int CT_BYTE_SIZE      = N * GLWE_K + 1;
-  localparam int CT_NB_WORDS_MRMAC = (CT_BYTE_SIZE * 8) / MRMAC_AXIS_W;
-  localparam int CT_NB_WORDS_HBM   = (CT_BYTE_SIZE * 8) / AXI4_DATA_W;
+  // BLWE_K = N * GLWE_K
+  localparam int CT_NB_COEF        = BLWE_K + 1;
+  localparam int CT_SIZE           = CT_NB_COEF * 64;
+  localparam int CT_SIZE_BYTE      = CT_SIZE / 8;
+
+  localparam int CT_NB_WORDS_MRMAC = CT_SIZE; // because coef size is MRMAC size
+  localparam int CT_NB_WORDS_AXI4  = CT_SIZE/AXI4_DATA_W;
 
   // Ethernet header: sizes ---------------------------------------------------
   localparam int MAC_ADDR_W   = 24;
@@ -61,7 +68,7 @@ package mhdma_pkg;
 
   // Ethernet header: values --------------------------------------------------
   localparam [MAC_OUI_W-1:0] MAC_OUI = 'h000A35;
-  localparam [SIZE_B_W-1:0]  SIZE_B  = 'h4000; // fixed for now to 16.384
+  localparam [ SIZE_B_W-1:0] SIZE_B  = 'h4000; // fixed for now to 16.384
 
   // fifo specific parameters -------------------------------------------------
   // minimal depth for 64 using XPM fifo is 16
@@ -69,17 +76,17 @@ package mhdma_pkg;
 
   // read request command: XPM
   localparam int RQQ_MEMORY_TYPE      = "distributed";
-  localparam int RQQ_WIDTH            = 2*REGF_WORD_W;
+  localparam int RQQ_WIDTH            = 2*REG_DATA_W;
   localparam int RQQ_DATA_COUNT_W     =  $clog2(XPM_MIN_FIFO_DEPTH)+1;
 
   // Notify request command queue: XPM
   localparam int NRQQ_MEMORY_TYPE     = "distributed";
-  localparam int NRQQ_WIDTH           = 2*REGF_WORD_W;
+  localparam int NRQQ_WIDTH           = 2*REG_DATA_W;
   localparam int NRQQ_DATA_COUNT_W    =  $clog2(XPM_MIN_FIFO_DEPTH)+1;
 
   // Notify RX payload: XPM
   localparam int NRX_MEMORY_TYPE      = "distributed";
-  localparam int NRX_WIDTH            = REGF_WORD_W;
+  localparam int NRX_WIDTH            = REG_DATA_W;
   localparam int NRX_DATA_COUNT_W     =  $clog2(XPM_MIN_FIFO_DEPTH)+1;
 
   // read request command queue: URAM fifo
@@ -88,11 +95,11 @@ package mhdma_pkg;
   localparam int RREQ_CMD_RAM_LATENCY = 1;
   localparam int RQQ_CMD_DATA_COUNT_W =  $clog2(RREQ_CMD_DEPTH)+1;
 
-  // ciphertext emission raed from HBM: URAM fifo
-  localparam int CE_READ_DATA_W       = MRMAC_AXIS_W;
-  localparam int CE_READ_DEPTH        = CT_BYTE_SIZE;
+  // ciphertext emission read from HBM: URAM fifo
+  localparam int CE_READ_DATA_W       = AXI4_DATA_W;
+  localparam int CE_READ_DEPTH        = CT_NB_WORDS_AXI4;
   localparam int CE_READ_RAM_LATENCY  = 1;
-  localparam int CE_READ_DATA_COUNT_W =  $clog2(RREQ_CMD_DEPTH)+1;
+  localparam int CE_READ_DATA_COUNT_W =  $clog2(CT_NB_WORDS_AXI4)+1;
 
   // identification opcode --------------------------------------------------
   localparam [REQ_ID_W-1:0] REQ_ID_NOTIFY_TX     = 'h2;

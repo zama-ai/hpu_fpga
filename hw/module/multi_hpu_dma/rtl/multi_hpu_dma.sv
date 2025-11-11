@@ -9,8 +9,8 @@
 
 module multi_hpu_dma
   import mhdma_pkg::*;
-  import axi_if_common_param_pkg::*;
   import axi_if_shell_axil_pkg::*;
+  import axi_if_common_param_pkg::*;
   import hpu_regif_core_eth_2in3_pkg::*;
 #(
   parameter int FIFO_DEPTH = 512,
@@ -112,17 +112,18 @@ module multi_hpu_dma
   // Register file
   // ============================================================================================ //
   // bridge
-  logic [NB_MAX_HPU-1:0][REGF_WORD_W-1:0] r_regf_hpu_ids;
-  logic                 [REGF_WORD_W-1:0] r_request_notify;
-  logic                 [REGF_WORD_W-1:0] r_request_req_id;
-  logic                 [REGF_WORD_W-1:0] r_request_req_addr;
-  logic                 [REGF_WORD_W-1:0] r_system_timeout;
+  logic [NB_MAX_HPU-1:0][REG_DATA_W-1:0]   r_regf_hpu_ids;
+  logic                 [REG_DATA_W-1:0]   r_request_notify;
+  logic                 [REG_DATA_W-1:0]   r_request_req_id;
+  logic                 [REG_DATA_W-1:0]   r_request_req_addr;
+  logic                 [REG_DATA_W-1:0]   r_system_timeout;
+  logic [    ETH_PC-1:0][2*REG_DATA_W-1:0] r_ct_mem_addr;
   // lane control & debug
-  logic [REGF_WORD_W-1:0] r_system_line;
-  logic [REGF_WORD_W-1:0] r_reset_datapath;
-  logic [REGF_WORD_W-1:0] r_reset_monitor;
-  logic [REGF_WORD_W-1:0] r_line_debug;
-  logic [REGF_WORD_W-1:0] r_status_debug;
+  logic                 [REG_DATA_W-1:0]   r_system_line;
+  logic                 [REG_DATA_W-1:0]   r_reset_datapath;
+  logic                 [REG_DATA_W-1:0]   r_reset_monitor;
+  logic                 [REG_DATA_W-1:0]   r_line_debug;
+  logic                 [REG_DATA_W-1:0]   r_status_debug;
   // Statistics
   logic [15:0] r_cnt_notify_ack;
   logic [15:0] r_cnt_notify_read;
@@ -211,6 +212,11 @@ module multi_hpu_dma
     .r_hpu_id_five   (r_regf_hpu_ids[5]),
     .r_hpu_id_six    (r_regf_hpu_ids[6]),
     .r_hpu_id_seven  (r_regf_hpu_ids[7]),
+    // HBM ----------------------------------------------------------------------------------------
+    .r_hbm_axi4_addr_2in3_ct_pc0_lsb    (r_ct_mem_addr[0][0*REG_DATA_W+:REG_DATA_W]),
+    .r_hbm_axi4_addr_2in3_ct_pc0_msb    (r_ct_mem_addr[0][1*REG_DATA_W+:REG_DATA_W]),
+    .r_hbm_axi4_addr_2in3_ct_pc1_lsb    (r_ct_mem_addr[1][0*REG_DATA_W+:REG_DATA_W]),
+    .r_hbm_axi4_addr_2in3_ct_pc1_msb    (r_ct_mem_addr[1][1*REG_DATA_W+:REG_DATA_W]),
     // RPU requests -------------------------------------------------------------------------------
     .r_request_req_id   (r_request_req_id),
     .r_request_req_addr (r_request_req_addr),
@@ -364,6 +370,7 @@ module multi_hpu_dma
     .m_axi4_bready         (m_axi4_eth_hbm_bready ),
     // Register interface -------------------------------------------------------------------------
     .regf_hpu_ids          (r_regf_hpu_ids        ),
+    .regf_ct_mem_addr      (r_ct_mem_addr         ),
     .regf_req_id           (r_request_req_id      ),
     .regf_req_addr         (r_request_req_addr    ),
     .regf_notify_payload   (r_request_notify      ),

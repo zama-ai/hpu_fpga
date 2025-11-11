@@ -151,7 +151,7 @@ offset= 0x100
 
 # =====================================================================================================================
 [section.line]
-offset= 0x1000
+offset= 0x200
 description="Line parameter sections"
 
 [section.line.register.debug]
@@ -162,6 +162,18 @@ description="Line parameter sections"
   field.rx_to_tx        = {size_b=1, offset_b=29, default={Cst=0x0}, description="a"}
   field.tx_loop         = {size_b=1, offset_b=30, default={Cst=0x0}, description="b"}
   field.reset_registers = {size_b=1, offset_b=31, default={Cst=0x0}, description="c"}
+
+# =====================================================================================================================
+[section.hbm_axi4_addr_2in3]
+offset= 0x1000
+description="HBM AXI4 connection address offset"
+
+[section.hbm_axi4_addr_2in3.register.ct]
+  description="Address offset for each ciphertext HBM AXI4 connection"
+  owner="User"
+  read_access="Read"
+  write_access="Write"
+  duplicate=["_pc0_lsb", "_pc0_msb","_pc1_lsb", "_pc1_msb"]
 
 # =====================================================================================================================
 [section.fifo_write]

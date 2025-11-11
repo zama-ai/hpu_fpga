@@ -1,7 +1,7 @@
 // ============================================================================================== //
 // Description  : register  map address definition package
 // This file was generated with rust regmap generator:
-//  * Date:  2025-10-30
+//  * Date:  2025-11-10
 //  * Tool_version: bd49564daf1a99d615cb6dbb121b54bfbeef8b22
 // ---------------------------------------------------------------------------------------------- //
 //
@@ -68,7 +68,11 @@ package hpu_regif_core_eth_2in3_pkg;
     logic [(1-1):0] rx_to_tx;
     logic [(29-1):0] padding_0;
    } line_debug_t;
-  localparam int LINE_DEBUG_OFS = 'h51000;
+  localparam int LINE_DEBUG_OFS = 'h50200;
+  localparam int HBM_AXI4_ADDR_2IN3_CT_PC0_LSB_OFS = 'h51000;
+  localparam int HBM_AXI4_ADDR_2IN3_CT_PC0_MSB_OFS = 'h51004;
+  localparam int HBM_AXI4_ADDR_2IN3_CT_PC1_LSB_OFS = 'h51008;
+  localparam int HBM_AXI4_ADDR_2IN3_CT_PC1_MSB_OFS = 'h5100c;
   localparam int FIFO_WRITE_NUMBER_OF_WORDS_OFS = 'h5101c;
   localparam int FIFO_WRITE_WORDS_TO_WRITE_A_OFS = 'h51020;
   localparam int FIFO_WRITE_WORDS_TO_WRITE_B_OFS = 'h51024;

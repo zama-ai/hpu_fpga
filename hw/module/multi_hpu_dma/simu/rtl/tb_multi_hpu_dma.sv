@@ -15,6 +15,7 @@
 `timescale 1ns/10ps
 module tb_multi_hpu_dma;
   import axi_if_shell_axil_pkg::*;        // axi4-lite
+  import axi_if_common_param_pkg::*;      // general axi4
   import hpu_regif_core_eth_2in3_pkg::*;  // ethernet regif
   import mhdma_pkg::*;                    // multi-hpu-dma
   import axi_if_eth_axi_pkg::*;           // AXI ethernet
@@ -42,7 +43,7 @@ module tb_multi_hpu_dma;
   localparam bit MEM_USE_RD_RANDOM = 0;     // check path, no need random
 
   // simulation sizes to reduce runtime
-  localparam int MEM_SIM_SIZE = 2;         // must be < 22
+  localparam int MEM_SIM_SIZE = 16;         // must be < 22
   localparam int SIZE_B_SIM   = 'h40;
 
 // ============================================================================================== --
@@ -160,6 +161,71 @@ module tb_multi_hpu_dma;
   // TODO: for now always ready
   assign sim_qsfp_tx_tready = 4'b1111;
 
+
+  // AXI4 to HBM: HPUA ----------------------------------------------------------------------------
+  // Read channel
+  logic [ETH_PC-1:0][   AXI4_ID_W-1:0]    hpu_a_axi4_arid;
+  logic [ETH_PC-1:0][  AXI4_ADD_W-1:0]    hpu_a_axi4_araddr;
+  logic [ETH_PC-1:0][  AXI4_LEN_W-1:0]    hpu_a_axi4_arlen;
+  logic [ETH_PC-1:0][ AXI4_SIZE_W-1:0]    hpu_a_axi4_arsize;
+  logic [ETH_PC-1:0][AXI4_BURST_W-1:0]    hpu_a_axi4_arburst;
+  logic [ETH_PC-1:0]                      hpu_a_axi4_arvalid;
+  logic [ETH_PC-1:0]                      hpu_a_axi4_arready;
+  logic [ETH_PC-1:0][  AXI4_ID_W-1:0]     hpu_a_axi4_rid;
+  logic [ETH_PC-1:0][AXI4_DATA_W-1:0]     hpu_a_axi4_rdata;
+  logic [ETH_PC-1:0][AXI4_RESP_W-1:0]     hpu_a_axi4_rresp;
+  logic [ETH_PC-1:0]                      hpu_a_axi4_rlast;
+  logic [ETH_PC-1:0]                      hpu_a_axi4_rvalid;
+  logic [ETH_PC-1:0]                      hpu_a_axi4_rready;
+  // Write channel
+  logic [ETH_PC-1:0][   AXI4_ID_W-1:0]    hpu_a_axi4_awid;
+  logic [ETH_PC-1:0][  AXI4_ADD_W-1:0]    hpu_a_axi4_awaddr;
+  logic [ETH_PC-1:0][  AXI4_LEN_W-1:0]    hpu_a_axi4_awlen;
+  logic [ETH_PC-1:0][ AXI4_SIZE_W-1:0]    hpu_a_axi4_awsize;
+  logic [ETH_PC-1:0][AXI4_BURST_W-1:0]    hpu_a_axi4_awburst;
+  logic [ETH_PC-1:0]                      hpu_a_axi4_awvalid;
+  logic [ETH_PC-1:0]                      hpu_a_axi4_awready;
+  logic [ETH_PC-1:0][AXI4_DATA_W-1:0]     hpu_a_axi4_wdata;
+  logic [ETH_PC-1:0][AXI4_STRB_W-1:0]     hpu_a_axi4_wstrb;
+  logic [ETH_PC-1:0]                      hpu_a_axi4_wlast;
+  logic [ETH_PC-1:0]                      hpu_a_axi4_wvalid;
+  logic [ETH_PC-1:0]                      hpu_a_axi4_wready;
+  logic [ETH_PC-1:0][  AXI4_ID_W-1:0]     hpu_a_axi4_bid;
+  logic [ETH_PC-1:0][AXI4_RESP_W-1:0]     hpu_a_axi4_bresp;
+  logic [ETH_PC-1:0]                      hpu_a_axi4_bvalid;
+  logic [ETH_PC-1:0]                      hpu_a_axi4_bready;
+  // cnx to memory models -------------------------------------------------------------------------
+  logic [ETH_PC-1:0][HPU_NB-1:0][AXI4_ID_W-1:0]       axi4_ct_awid;
+  logic [ETH_PC-1:0][HPU_NB-1:0][AXI4_ADD_W-1:0]      axi4_ct_awaddr;
+  logic [ETH_PC-1:0][HPU_NB-1:0][7:0]                 axi4_ct_awlen;
+  logic [ETH_PC-1:0][HPU_NB-1:0][2:0]                 axi4_ct_awsize;
+  logic [ETH_PC-1:0][HPU_NB-1:0][1:0]                 axi4_ct_awburst;
+  logic [ETH_PC-1:0][HPU_NB-1:0]                      axi4_ct_awvalid;
+  logic [ETH_PC-1:0][HPU_NB-1:0]                      axi4_ct_awready;
+  logic [ETH_PC-1:0][HPU_NB-1:0][AXI4_DATA_W-1:0]     axi4_ct_wdata;
+  logic [ETH_PC-1:0][HPU_NB-1:0][(AXI4_DATA_W/8)-1:0] axi4_ct_wstrb;
+  logic [ETH_PC-1:0][HPU_NB-1:0]                      axi4_ct_wlast;
+  logic [ETH_PC-1:0][HPU_NB-1:0]                      axi4_ct_wvalid;
+  logic [ETH_PC-1:0][HPU_NB-1:0]                      axi4_ct_wready;
+  logic [ETH_PC-1:0][HPU_NB-1:0][AXI4_ID_W-1:0]       axi4_ct_bid;
+  logic [ETH_PC-1:0][HPU_NB-1:0][1:0]                 axi4_ct_bresp;
+  logic [ETH_PC-1:0][HPU_NB-1:0]                      axi4_ct_bvalid;
+  logic [ETH_PC-1:0][HPU_NB-1:0]                      axi4_ct_bready;
+
+  logic [ETH_PC-1:0][HPU_NB-1:0][AXI4_ID_W-1:0]       axi4_ct_arid;
+  logic [ETH_PC-1:0][HPU_NB-1:0][AXI4_ADD_W-1:0]      axi4_ct_araddr;
+  logic [ETH_PC-1:0][HPU_NB-1:0][7:0]                 axi4_ct_arlen;
+  logic [ETH_PC-1:0][HPU_NB-1:0][2:0]                 axi4_ct_arsize;
+  logic [ETH_PC-1:0][HPU_NB-1:0][1:0]                 axi4_ct_arburst;
+  logic [ETH_PC-1:0][HPU_NB-1:0]                      axi4_ct_arvalid;
+  logic [ETH_PC-1:0][HPU_NB-1:0]                      axi4_ct_arready;
+  logic [ETH_PC-1:0][HPU_NB-1:0][AXI4_ID_W-1:0]       axi4_ct_rid;
+  logic [ETH_PC-1:0][HPU_NB-1:0][AXI4_DATA_W-1:0]     axi4_ct_rdata;
+  logic [ETH_PC-1:0][HPU_NB-1:0][1:0]                 axi4_ct_rresp;
+  logic [ETH_PC-1:0][HPU_NB-1:0]                      axi4_ct_rlast;
+  logic [ETH_PC-1:0][HPU_NB-1:0]                      axi4_ct_rvalid;
+  logic [ETH_PC-1:0][HPU_NB-1:0]                      axi4_ct_rready;
+
   // ============================================================================================== --
   // Design under test instance
   // ============================================================================================== --
@@ -235,6 +301,36 @@ module tb_multi_hpu_dma;
     .s_axil_dma_rvalid (s_axil_dma_rvalid_hpu_a ),
     .s_axil_dma_rready (s_axil_dma_rready_hpu_a ),
 
+    .m_axi4_eth_hbm_arid       (axi4_ct_arid[0]         ),
+    .m_axi4_eth_hbm_araddr     (axi4_ct_araddr[0]       ),
+    .m_axi4_eth_hbm_arlen      (axi4_ct_arlen[0]        ),
+    .m_axi4_eth_hbm_arsize     (axi4_ct_arsize[0]       ),
+    .m_axi4_eth_hbm_arburst    (axi4_ct_arburst[0]      ),
+    .m_axi4_eth_hbm_arvalid    (axi4_ct_arvalid[0]      ),
+    .m_axi4_eth_hbm_arready    (axi4_ct_arready[0]      ),
+    .m_axi4_eth_hbm_rid        (axi4_ct_rid[0]          ),
+    .m_axi4_eth_hbm_rdata      (axi4_ct_rdata[0]        ),
+    .m_axi4_eth_hbm_rresp      (axi4_ct_rresp[0]        ),
+    .m_axi4_eth_hbm_rlast      (axi4_ct_rlast[0]        ),
+    .m_axi4_eth_hbm_rvalid     (axi4_ct_rvalid[0]       ),
+    .m_axi4_eth_hbm_rready     (axi4_ct_rready[0]       ),
+    .m_axi4_eth_hbm_awid       (axi4_ct_awid[0]         ),
+    .m_axi4_eth_hbm_awaddr     (axi4_ct_awaddr[0]       ),
+    .m_axi4_eth_hbm_awlen      (axi4_ct_awlen[0]        ),
+    .m_axi4_eth_hbm_awsize     (axi4_ct_awsize[0]       ),
+    .m_axi4_eth_hbm_awburst    (axi4_ct_awburst[0]      ),
+    .m_axi4_eth_hbm_awvalid    (axi4_ct_awvalid[0]      ),
+    .m_axi4_eth_hbm_awready    (axi4_ct_awready[0]      ),
+    .m_axi4_eth_hbm_wdata      (axi4_ct_wdata[0]        ),
+    .m_axi4_eth_hbm_wstrb      (axi4_ct_wstrb[0]        ),
+    .m_axi4_eth_hbm_wlast      (axi4_ct_wlast[0]        ),
+    .m_axi4_eth_hbm_wvalid     (axi4_ct_wvalid[0]       ),
+    .m_axi4_eth_hbm_wready     (axi4_ct_wready[0]       ),
+    .m_axi4_eth_hbm_bid        (axi4_ct_bid[0]          ),
+    .m_axi4_eth_hbm_bresp      (axi4_ct_bresp[0]        ),
+    .m_axi4_eth_hbm_bvalid     (axi4_ct_bvalid[0]       ),
+    .m_axi4_eth_hbm_bready     (axi4_ct_bready[0]       ),
+
     .qsfp_tx_tdata     (qsfp_tx_tdata           ),
     .qsfp_tx_tkeep_user(qsfp_tx_tkeep_user      ),
     .qsfp_tx_tlast     (qsfp_tx_tlast           ),
@@ -282,6 +378,36 @@ module tb_multi_hpu_dma;
     .s_axil_dma_rresp  (s_axil_dma_rresp_hpu_b  ),
     .s_axil_dma_rvalid (s_axil_dma_rvalid_hpu_b ),
     .s_axil_dma_rready (s_axil_dma_rready_hpu_b ),
+
+    .m_axi4_eth_hbm_arid       (axi4_ct_arid[1]       ),
+    .m_axi4_eth_hbm_araddr     (axi4_ct_araddr[1]     ),
+    .m_axi4_eth_hbm_arlen      (axi4_ct_arlen[1]      ),
+    .m_axi4_eth_hbm_arsize     (axi4_ct_arsize[1]     ),
+    .m_axi4_eth_hbm_arburst    (axi4_ct_arburst[1]    ),
+    .m_axi4_eth_hbm_arvalid    (axi4_ct_arvalid[1]    ),
+    .m_axi4_eth_hbm_arready    (axi4_ct_arready[1]    ),
+    .m_axi4_eth_hbm_rid        (axi4_ct_rid[1]        ),
+    .m_axi4_eth_hbm_rdata      (axi4_ct_rdata[1]      ),
+    .m_axi4_eth_hbm_rresp      (axi4_ct_rresp[1]      ),
+    .m_axi4_eth_hbm_rlast      (axi4_ct_rlast[1]      ),
+    .m_axi4_eth_hbm_rvalid     (axi4_ct_rvalid[1]     ),
+    .m_axi4_eth_hbm_rready     (axi4_ct_rready[1]     ),
+    .m_axi4_eth_hbm_awid       (axi4_ct_awid[1]       ),
+    .m_axi4_eth_hbm_awaddr     (axi4_ct_awaddr[1]     ),
+    .m_axi4_eth_hbm_awlen      (axi4_ct_awlen[1]      ),
+    .m_axi4_eth_hbm_awsize     (axi4_ct_awsize[1]     ),
+    .m_axi4_eth_hbm_awburst    (axi4_ct_awburst[1]    ),
+    .m_axi4_eth_hbm_awvalid    (axi4_ct_awvalid[1]    ),
+    .m_axi4_eth_hbm_awready    (axi4_ct_awready[1]    ),
+    .m_axi4_eth_hbm_wdata      (axi4_ct_wdata[1]      ),
+    .m_axi4_eth_hbm_wstrb      (axi4_ct_wstrb[1]      ),
+    .m_axi4_eth_hbm_wlast      (axi4_ct_wlast[1]      ),
+    .m_axi4_eth_hbm_wvalid     (axi4_ct_wvalid[1]     ),
+    .m_axi4_eth_hbm_wready     (axi4_ct_wready[1]     ),
+    .m_axi4_eth_hbm_bid        (axi4_ct_bid[1]        ),
+    .m_axi4_eth_hbm_bresp      (axi4_ct_bresp[1]      ),
+    .m_axi4_eth_hbm_bvalid     (axi4_ct_bvalid[1]     ),
+    .m_axi4_eth_hbm_bready     (axi4_ct_bready[1]     ),
 
     .qsfp_tx_tdata     (qsfp_rx_tdata),
     .qsfp_tx_tkeep_user(qsfp_rx_tkeep_user),
@@ -358,38 +484,6 @@ module tb_multi_hpu_dma;
   assign maxil_drv_if_hpu_b.rresp   = s_axil_dma_rresp_hpu_b;
   assign maxil_drv_if_hpu_b.rvalid  = s_axil_dma_rvalid_hpu_b;
 
-  // memory models --------------------------------------------------------------------------------
-  logic [ETH_PC-1:0][HPU_NB-1:0][AXI4_ID_W-1:0]       axi4_ct_awid;
-  logic [ETH_PC-1:0][HPU_NB-1:0][AXI4_ADD_W-1:0]      axi4_ct_awaddr;
-  logic [ETH_PC-1:0][HPU_NB-1:0][7:0]                 axi4_ct_awlen;
-  logic [ETH_PC-1:0][HPU_NB-1:0][2:0]                 axi4_ct_awsize;
-  logic [ETH_PC-1:0][HPU_NB-1:0][1:0]                 axi4_ct_awburst;
-  logic [ETH_PC-1:0][HPU_NB-1:0]                      axi4_ct_awvalid;
-  logic [ETH_PC-1:0][HPU_NB-1:0]                      axi4_ct_awready;
-  logic [ETH_PC-1:0][HPU_NB-1:0][AXI4_DATA_W-1:0]     axi4_ct_wdata;
-  logic [ETH_PC-1:0][HPU_NB-1:0][(AXI4_DATA_W/8)-1:0] axi4_ct_wstrb;
-  logic [ETH_PC-1:0][HPU_NB-1:0]                      axi4_ct_wlast;
-  logic [ETH_PC-1:0][HPU_NB-1:0]                      axi4_ct_wvalid;
-  logic [ETH_PC-1:0][HPU_NB-1:0]                      axi4_ct_wready;
-  logic [ETH_PC-1:0][HPU_NB-1:0][AXI4_ID_W-1:0]       axi4_ct_bid;
-  logic [ETH_PC-1:0][HPU_NB-1:0][1:0]                 axi4_ct_bresp;
-  logic [ETH_PC-1:0][HPU_NB-1:0]                      axi4_ct_bvalid;
-  logic [ETH_PC-1:0][HPU_NB-1:0]                      axi4_ct_bready;
-
-  logic [ETH_PC-1:0][HPU_NB-1:0][AXI4_ID_W-1:0]       axi4_ct_arid;
-  logic [ETH_PC-1:0][HPU_NB-1:0][AXI4_ADD_W-1:0]      axi4_ct_araddr;
-  logic [ETH_PC-1:0][HPU_NB-1:0][7:0]                 axi4_ct_arlen;
-  logic [ETH_PC-1:0][HPU_NB-1:0][2:0]                 axi4_ct_arsize;
-  logic [ETH_PC-1:0][HPU_NB-1:0][1:0]                 axi4_ct_arburst;
-  logic [ETH_PC-1:0][HPU_NB-1:0]                      axi4_ct_arvalid;
-  logic [ETH_PC-1:0][HPU_NB-1:0]                      axi4_ct_arready;
-  logic [ETH_PC-1:0][HPU_NB-1:0][AXI4_ID_W-1:0]       axi4_ct_rid;
-  logic [ETH_PC-1:0][HPU_NB-1:0][AXI4_DATA_W-1:0]     axi4_ct_rdata;
-  logic [ETH_PC-1:0][HPU_NB-1:0][1:0]                 axi4_ct_rresp;
-  logic [ETH_PC-1:0][HPU_NB-1:0]                      axi4_ct_rlast;
-  logic [ETH_PC-1:0][HPU_NB-1:0]                      axi4_ct_rvalid;
-  logic [ETH_PC-1:0][HPU_NB-1:0]                      axi4_ct_rready;
-
   generate
     for (genvar gen_hpu=0; gen_hpu<HPU_NB; gen_hpu=gen_hpu+1) begin : gen_mem_hpu
       for (genvar gen_pc=0; gen_pc<ETH_PC; gen_pc=gen_pc+1) begin : gen_mem_pc
@@ -404,8 +498,8 @@ module tb_multi_hpu_dma;
           .USE_WR_RANDOM   (MEM_USE_WR_RANDOM               ),
           .USE_RD_RANDOM   (MEM_USE_RD_RANDOM               )
         ) axi4_mem_ct (
-          .clk           (clk                               ),
-          .rst           (~s_rst_n                          ),
+          .clk           (clk_mrmac                         ),
+          .rst           (~s_rstn_mrmac                     ),
           .s_axi4_awid   (axi4_ct_awid[gen_hpu][gen_pc]     ),
           .s_axi4_awaddr (axi4_ct_awaddr[gen_hpu][gen_pc]   ),
           .s_axi4_awlen  (axi4_ct_awlen[gen_hpu][gen_pc]    ),
@@ -567,19 +661,33 @@ module tb_multi_hpu_dma;
 // ============================================================================================== --
 // Initialize memory
 // ============================================================================================== --
+  logic [59:0] val_id = 0;
+
   initial begin
-    logic [15:0] val;
-    // for (int i = 0; i < HPU_NB; i++) begin
-    //   for (int j = 0; j < ETH_PC; j++) begin
-        for (int k = 0; k < 2**(MEM_SIM_SIZE); k++) begin
-          val = k;
-          gen_mem_hpu[0].gen_mem_pc[0].axi4_mem_ct.axi4_ram_ct_wr.mem[k] = {16'b00000000, val};
-          gen_mem_hpu[0].gen_mem_pc[1].axi4_mem_ct.axi4_ram_ct_wr.mem[k] = {16'b01000000, val};
-          gen_mem_hpu[1].gen_mem_pc[0].axi4_mem_ct.axi4_ram_ct_wr.mem[k] = {16'b10000000, val};
-          gen_mem_hpu[1].gen_mem_pc[1].axi4_mem_ct.axi4_ram_ct_wr.mem[k] = {16'b11000000, val};
+    for (int gen_hpu = 0; gen_hpu < HPU_NB; ++gen_hpu) begin
+      for (int gen_pc = 0; gen_pc < ETH_PC; ++gen_pc) begin
+        for (int k = 0; k < 2**MEM_SIM_SIZE; ++k) begin
+          logic [255:0] value = '0;
+          for (int j = 0; j < 4; ++j) begin
+            logic [63:0] w;
+            w[63:62] = gen_hpu;
+            w[61:60] = gen_pc;
+            w[59:46] = 'h0;
+            w[47:40] = k;
+            w[39:32] = 'h0;
+            w[31:0] = val_id;
+            value |= (w << (j*64));
+            val_id++;
+          end
+          // TODO: why this don't work?
+          // gen_mem_hpu[gen_hpu].gen_mem_pc[gen_pc].axi4_mem_ct.axi4_ram_ct_wr.mem[k] = value;
+          gen_mem_hpu[0].gen_mem_pc[0].axi4_mem_ct.axi4_ram_ct_wr.mem[k] = value;
+          gen_mem_hpu[0].gen_mem_pc[1].axi4_mem_ct.axi4_ram_ct_wr.mem[k] = value;
+          gen_mem_hpu[1].gen_mem_pc[0].axi4_mem_ct.axi4_ram_ct_wr.mem[k] = value;
+          gen_mem_hpu[1].gen_mem_pc[1].axi4_mem_ct.axi4_ram_ct_wr.mem[k] = value;
         end
-    //   end
-    // end
+      end
+    end
   end
 
 // ============================================================================================== --
@@ -737,6 +845,7 @@ module tb_multi_hpu_dma;
 
       maxil_drv_if_hpu_a.write_trans(REQUEST_REQ_ADDR_OFS, read_req_addr);
       maxil_drv_if_hpu_a.write_trans(REQUEST_REQ_ID_OFS, read_req_id);
+      // there is as wel the hbm pc offsets to write from RPU pov but in simulation we let it set to 0
     end
   endtask
 

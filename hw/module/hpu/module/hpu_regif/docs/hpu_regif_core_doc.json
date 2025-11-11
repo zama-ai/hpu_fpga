@@ -5,8 +5,8 @@
   "offset": 0,
   "range": 393216,
   "ext_pkg": [
-    "axi_if_common_param_pkg",
-    "axi_if_shell_axil_pkg"
+    "axi_if_shell_axil_pkg",
+    "axi_if_common_param_pkg"
   ],
   "section": [
     {
@@ -4159,7 +4159,7 @@
         },
         {
           "name": "timeout",
-          "description": "Timeout time before re-launching a request, in clock cycles",
+          "description": "16 bit Timeout: time before re-launching a request, in clock cycles",
           "owner": "User",
           "read_access": "Read",
           "write_access": "Write",
@@ -4594,7 +4594,7 @@
     {
       "name": "line",
       "description": "Line parameter sections",
-      "offset": 331776,
+      "offset": 328192,
       "bytes_align": 4,
       "range": 4,
       "register": [
@@ -4604,7 +4604,7 @@
           "owner": "User",
           "read_access": "Read",
           "write_access": "Write",
-          "offset": 331776,
+          "offset": 328192,
           "default": {
             "ParamsField": {
               "params": [],
@@ -4653,6 +4653,63 @@
               }
             }
           ]
+        }
+      ]
+    },
+    {
+      "name": "hbm_axi4_addr_2in3",
+      "description": "HBM AXI4 connection address offset",
+      "offset": 331776,
+      "bytes_align": 4,
+      "range": 16,
+      "register": [
+        {
+          "name": "ct_pc0_lsb",
+          "description": "Address offset for each ciphertext HBM AXI4 connection",
+          "owner": "User",
+          "read_access": "Read",
+          "write_access": "Write",
+          "offset": 331776,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "ct_pc0_msb",
+          "description": "Address offset for each ciphertext HBM AXI4 connection",
+          "owner": "User",
+          "read_access": "Read",
+          "write_access": "Write",
+          "offset": 331780,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "ct_pc1_lsb",
+          "description": "Address offset for each ciphertext HBM AXI4 connection",
+          "owner": "User",
+          "read_access": "Read",
+          "write_access": "Write",
+          "offset": 331784,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "ct_pc1_msb",
+          "description": "Address offset for each ciphertext HBM AXI4 connection",
+          "owner": "User",
+          "read_access": "Read",
+          "write_access": "Write",
+          "offset": 331788,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
         }
       ]
     },

@@ -1,7 +1,7 @@
 // ============================================================================================== //
 // Description  : Axi4-lite register bank
 // This file was generated with rust regmap generator:
-//  * Date:  2025-10-30
+//  * Date:  2025-11-10
 //  * Tool_version: bd49564daf1a99d615cb6dbb121b54bfbeef8b22
 // ---------------------------------------------------------------------------------------------- //
 // xR[n]W[na]
@@ -30,8 +30,8 @@
 //      : Value provided by the RTL. The host can read it with notify. The write data is processed by the RTL.
 // ============================================================================================== //
 module hpu_regif_core_eth_2in3
-import axi_if_shell_axil_pkg::*;
 import axi_if_common_param_pkg::*;
+import axi_if_shell_axil_pkg::*;
 import hpu_regif_core_eth_2in3_pkg::*;
 #()(
   input  logic                           clk,
@@ -92,6 +92,14 @@ import hpu_regif_core_eth_2in3_pkg::*;
     , input  request_stat_notify_t r_request_stat_notify_upd
   // Register IO: line_debug
     , output line_debug_t r_line_debug
+  // Register IO: hbm_axi4_addr_2in3_ct_pc0_lsb
+    , output logic [REG_DATA_W-1: 0] r_hbm_axi4_addr_2in3_ct_pc0_lsb
+  // Register IO: hbm_axi4_addr_2in3_ct_pc0_msb
+    , output logic [REG_DATA_W-1: 0] r_hbm_axi4_addr_2in3_ct_pc0_msb
+  // Register IO: hbm_axi4_addr_2in3_ct_pc1_lsb
+    , output logic [REG_DATA_W-1: 0] r_hbm_axi4_addr_2in3_ct_pc1_lsb
+  // Register IO: hbm_axi4_addr_2in3_ct_pc1_msb
+    , output logic [REG_DATA_W-1: 0] r_hbm_axi4_addr_2in3_ct_pc1_msb
   // Register IO: fifo_write_number_of_words
     , output logic [REG_DATA_W-1: 0] r_fifo_write_number_of_words
   // Register IO: fifo_write_words_to_write_a
@@ -358,6 +366,18 @@ import hpu_regif_core_eth_2in3_pkg::*;
     line_debug_default.tx_loop = 'h0;
     line_debug_default.reset_registers = 'h0;
   end
+//-- Default hbm_axi4_addr_2in3_ct_pc0_lsb
+  logic [REG_DATA_W-1:0]hbm_axi4_addr_2in3_ct_pc0_lsb_default;
+  assign hbm_axi4_addr_2in3_ct_pc0_lsb_default = 'h0;
+//-- Default hbm_axi4_addr_2in3_ct_pc0_msb
+  logic [REG_DATA_W-1:0]hbm_axi4_addr_2in3_ct_pc0_msb_default;
+  assign hbm_axi4_addr_2in3_ct_pc0_msb_default = 'h0;
+//-- Default hbm_axi4_addr_2in3_ct_pc1_lsb
+  logic [REG_DATA_W-1:0]hbm_axi4_addr_2in3_ct_pc1_lsb_default;
+  assign hbm_axi4_addr_2in3_ct_pc1_lsb_default = 'h0;
+//-- Default hbm_axi4_addr_2in3_ct_pc1_msb
+  logic [REG_DATA_W-1:0]hbm_axi4_addr_2in3_ct_pc1_msb_default;
+  assign hbm_axi4_addr_2in3_ct_pc1_msb_default = 'h0;
 //-- Default fifo_write_number_of_words
   logic [REG_DATA_W-1:0]fifo_write_number_of_words_default;
   assign fifo_write_number_of_words_default = 'h0;
@@ -599,6 +619,50 @@ import hpu_regif_core_eth_2in3_pkg::*;
     end
     else begin
       r_line_debug       <= r_line_debugD;
+    end
+  end
+// Register FF: hbm_axi4_addr_2in3_ct_pc0_lsb
+  logic [REG_DATA_W-1:0] r_hbm_axi4_addr_2in3_ct_pc0_lsbD;
+  assign r_hbm_axi4_addr_2in3_ct_pc0_lsbD = (wr_en_ok && (wr_add[AXIL_ADD_RANGE_W-1:0] == HBM_AXI4_ADDR_2IN3_CT_PC0_LSB_OFS[AXIL_ADD_RANGE_W-1:0]))? wr_data: r_hbm_axi4_addr_2in3_ct_pc0_lsb;
+  always_ff @(posedge clk) begin
+    if (!s_rst_n) begin
+      r_hbm_axi4_addr_2in3_ct_pc0_lsb       <= hbm_axi4_addr_2in3_ct_pc0_lsb_default;
+    end
+    else begin
+      r_hbm_axi4_addr_2in3_ct_pc0_lsb       <= r_hbm_axi4_addr_2in3_ct_pc0_lsbD;
+    end
+  end
+// Register FF: hbm_axi4_addr_2in3_ct_pc0_msb
+  logic [REG_DATA_W-1:0] r_hbm_axi4_addr_2in3_ct_pc0_msbD;
+  assign r_hbm_axi4_addr_2in3_ct_pc0_msbD = (wr_en_ok && (wr_add[AXIL_ADD_RANGE_W-1:0] == HBM_AXI4_ADDR_2IN3_CT_PC0_MSB_OFS[AXIL_ADD_RANGE_W-1:0]))? wr_data: r_hbm_axi4_addr_2in3_ct_pc0_msb;
+  always_ff @(posedge clk) begin
+    if (!s_rst_n) begin
+      r_hbm_axi4_addr_2in3_ct_pc0_msb       <= hbm_axi4_addr_2in3_ct_pc0_msb_default;
+    end
+    else begin
+      r_hbm_axi4_addr_2in3_ct_pc0_msb       <= r_hbm_axi4_addr_2in3_ct_pc0_msbD;
+    end
+  end
+// Register FF: hbm_axi4_addr_2in3_ct_pc1_lsb
+  logic [REG_DATA_W-1:0] r_hbm_axi4_addr_2in3_ct_pc1_lsbD;
+  assign r_hbm_axi4_addr_2in3_ct_pc1_lsbD = (wr_en_ok && (wr_add[AXIL_ADD_RANGE_W-1:0] == HBM_AXI4_ADDR_2IN3_CT_PC1_LSB_OFS[AXIL_ADD_RANGE_W-1:0]))? wr_data: r_hbm_axi4_addr_2in3_ct_pc1_lsb;
+  always_ff @(posedge clk) begin
+    if (!s_rst_n) begin
+      r_hbm_axi4_addr_2in3_ct_pc1_lsb       <= hbm_axi4_addr_2in3_ct_pc1_lsb_default;
+    end
+    else begin
+      r_hbm_axi4_addr_2in3_ct_pc1_lsb       <= r_hbm_axi4_addr_2in3_ct_pc1_lsbD;
+    end
+  end
+// Register FF: hbm_axi4_addr_2in3_ct_pc1_msb
+  logic [REG_DATA_W-1:0] r_hbm_axi4_addr_2in3_ct_pc1_msbD;
+  assign r_hbm_axi4_addr_2in3_ct_pc1_msbD = (wr_en_ok && (wr_add[AXIL_ADD_RANGE_W-1:0] == HBM_AXI4_ADDR_2IN3_CT_PC1_MSB_OFS[AXIL_ADD_RANGE_W-1:0]))? wr_data: r_hbm_axi4_addr_2in3_ct_pc1_msb;
+  always_ff @(posedge clk) begin
+    if (!s_rst_n) begin
+      r_hbm_axi4_addr_2in3_ct_pc1_msb       <= hbm_axi4_addr_2in3_ct_pc1_msb_default;
+    end
+    else begin
+      r_hbm_axi4_addr_2in3_ct_pc1_msb       <= r_hbm_axi4_addr_2in3_ct_pc1_msbD;
     end
   end
 // Register FF: fifo_write_number_of_words
@@ -857,6 +921,18 @@ import hpu_regif_core_eth_2in3_pkg::*;
           end
           LINE_DEBUG_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register line_debug
             axil_rdataD = r_line_debug;
+          end
+          HBM_AXI4_ADDR_2IN3_CT_PC0_LSB_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register hbm_axi4_addr_2in3_ct_pc0_lsb
+            axil_rdataD = r_hbm_axi4_addr_2in3_ct_pc0_lsb;
+          end
+          HBM_AXI4_ADDR_2IN3_CT_PC0_MSB_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register hbm_axi4_addr_2in3_ct_pc0_msb
+            axil_rdataD = r_hbm_axi4_addr_2in3_ct_pc0_msb;
+          end
+          HBM_AXI4_ADDR_2IN3_CT_PC1_LSB_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register hbm_axi4_addr_2in3_ct_pc1_lsb
+            axil_rdataD = r_hbm_axi4_addr_2in3_ct_pc1_lsb;
+          end
+          HBM_AXI4_ADDR_2IN3_CT_PC1_MSB_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register hbm_axi4_addr_2in3_ct_pc1_msb
+            axil_rdataD = r_hbm_axi4_addr_2in3_ct_pc1_msb;
           end
           FIFO_WRITE_NUMBER_OF_WORDS_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register fifo_write_number_of_words
             axil_rdataD = r_fifo_write_number_of_words;

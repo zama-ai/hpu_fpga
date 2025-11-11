@@ -53,12 +53,14 @@ module mhdma_bridge
   input  logic [ETH_PC-1:0]                      m_axi4_bvalid,
   output logic [ETH_PC-1:0]                      m_axi4_bready,
   // regf interface -----------------------------------------------------------
-  input  logic [NB_MAX_HPU-1:0][REGF_WORD_W-1:0] regf_hpu_ids,
-  input  logic [REGF_WORD_W-1:0]                 regf_req_id,
-  input  logic [REGF_WORD_W-1:0]                 regf_req_addr,
+  input  logic [NB_MAX_HPU-1:0][  REG_DATA_W-1:0] regf_hpu_ids,
+  input  logic [    ETH_PC-1:0][2*REG_DATA_W-1:0] regf_ct_mem_addr,
+  input  logic                 [  REG_DATA_W-1:0] regf_req_id,
+  input  logic                 [  REG_DATA_W-1:0] regf_req_addr,
+  output logic                 [  REG_DATA_W-1:0] regf_notify_payload,
+  // control ------------------------------------------------------------------
   input  logic [ 1:0]                            received_req,
   output logic                                   request_consumed,
-  output logic [REGF_WORD_W-1:0]                 regf_notify_payload,
   // statistics ---------------------------------------------------------------
   output logic [15:0]                            stat_cnt_notify_ack,
   output logic [15:0]                            stat_cnt_notify_read,
@@ -88,12 +90,30 @@ module mhdma_bridge
   // =========================================================================================== //
   localparam int CDC_SYNC_STAGES = 2;
 
+  // generate cannot be in packages
+  //TODO: review theses two values
+  localparam [ETH_PC-1:0][15:0] PC_CT_BYTES = '{'h2000, 'h2008};
+  localparam             [15:0] PC_STRIDE   = 'h5000;
+
+  localparam [7:0] MAX_BURST_SIZE = PAGE_BYTES/AXI4_DATA_BYTES;
+  localparam [AXI4_SIZE_W-1:0] MHDMA_ARSIZE = $clog2(AXI4_DATA_BYTES);
+
+  // PC_NB_READS: how many reads are needed per PCs
+  // TOREVIEW: if ever ciphertexts are not aligned to a page, this will induce stalls
+  // How to enforce ? / should it be enforced ?
+  generate
+    for (genvar gen_i = 0; gen_i < ETH_PC; gen_i = gen_i + 1) begin : gen_localparam
+      localparam [15:0] PC_NB_READS = (PC_CT_BYTES[gen_i] + (MAX_BURST_SIZE)-1) / MAX_BURST_SIZE;
+      localparam [15:0] PC_NB_WORDS = (PC_CT_BYTES[gen_i] + (AXI4_DATA_BYTES)-1) / AXI4_DATA_BYTES;
+    end
+  endgenerate
+
   // =========================================================================================== //
   // CDC from regf to mrmac clock
   // =========================================================================================== //
   // theses signals are quasi static: they should move rarely
-  logic [CDC_SYNC_STAGES-1:0][NB_MAX_HPU-1:0][REGF_WORD_W-1:0] hpu_ids_cdc;
-  logic                      [NB_MAX_HPU-1:0][REGF_WORD_W-1:0] hpu_ids; // just for naming
+  logic [CDC_SYNC_STAGES-1:0][NB_MAX_HPU-1:0][REG_DATA_W-1:0] hpu_ids_cdc;
+  logic                      [NB_MAX_HPU-1:0][REG_DATA_W-1:0] hpu_ids; // just for naming
 
   generate
     for (genvar gen_i_id = 0; gen_i_id < NB_MAX_HPU; gen_i_id++)
@@ -526,7 +546,6 @@ module mhdma_bridge
   assign rreq_send_request = (rreq_state == ST_SEND_READ_REQUEST) ? 1'b1: 1'b0;
 
   // Ciphertext EMission (CEM) --------------------------------------------------------------------
-  logic currently_emitting_ct;
   logic cem_over;
 
   typedef enum {
@@ -551,10 +570,9 @@ module mhdma_bridge
     endcase
   end
 
-  assign currently_emitting_ct = (cem_state == CEM_READ_N_SEND) ? 1'b1: 1'b0;
+  assign ct_emission_request_in_use = (cem_state == CEM_READ_N_SEND) ? 1'b1: 1'b0;
 
   // TODO:
-  assign ct_emission_request_in_use = 1'b0;
   assign cem_over = 1'b0;
 
   // =========================================================================================== //
@@ -700,7 +718,7 @@ module mhdma_bridge
 
   assign rreq_cmd_data_in = {rx_hpu_id, rx_iop_id, rx_ct_dst_addr, rx_ct_src_addr};
   assign rreq_cmd_we = qsfp_rx_tlast & rreq_cmd_ready & read_request_received;
-  assign rreq_cmd_out_ready = ~currently_emitting_ct;
+  assign rreq_cmd_out_ready = ct_emission_request_in_use;
 
   fifo_ram_rdy_vld # (
     .WIDTH      (RREQ_CMD_DATA_W),
@@ -708,7 +726,7 @@ module mhdma_bridge
     .RAM_LATENCY(RREQ_CMD_RAM_LATENCY)
   ) rreq_command_queue (
     .clk    (clk_mrmac),
-    .s_rst_n(~resetn_mrmac),
+    .s_rst_n(resetn_mrmac),
 
     .in_data(rreq_cmd_data_in),
     .in_vld (rreq_cmd_we),
@@ -727,7 +745,7 @@ module mhdma_bridge
     end else begin
       if (rreq_cmd_we) begin
         rreq_cnt <= rreq_cnt + 1;
-      end else if (rreq_cmd_out_valid) begin
+      end else if (rreq_cmd_out_valid & rreq_cmd_out_ready) begin
         rreq_cnt <= rreq_cnt - 1;
       end
     end
@@ -803,11 +821,13 @@ module mhdma_bridge
   // =========================================================================================== //
   // Read into HBM
   // all @mrmac domain
+  // TODO add status signals to know how much time we are not reading into fifo
+  // TODO add status signals to know how much time we are not reading into fifo
+  // TODO add status signals to know how much time we are not reading into fifo
   // =========================================================================================== //
-  // phys_addr = hbm_pc_offset + ctId * ciphertext_size
-
   logic [RREQ_CMD_DATA_W-1:0] read_request_cmd;
-  logic [       SIZE_B_W-1:0] rr_size_b;
+  // logic [       SIZE_B_W-1:0] ;
+  logic [       HPU_ID_W-1:0] rr_hpu_id;
   logic [       IOP_ID_W-1:0] rr_iop_id;
   logic [     SRC_ADDR_W-1:0] rr_ct_src_addr;
   logic [     DST_ADDR_W-1:0] rr_ct_dst_addr;
@@ -817,53 +837,222 @@ module mhdma_bridge
     if (~resetn_mrmac) begin
       read_request_cmd <= 'h0;
     end else begin
-      if (rreq_cmd_out_valid) begin
+      if (rreq_cmd_out_valid & rreq_cmd_out_ready) begin
         read_request_cmd <= rreq_cmd_out_data;
       end
     end
   end
 
-  assign rr_size_b      = read_request_cmd[SRC_ADDR_W+DST_ADDR_W+IOP_ID_W+SIZE_B_W-1:0];
-  assign rr_iop_id      = read_request_cmd[SRC_ADDR_W+DST_ADDR_W+IOP_ID_W-1:0];
-  assign rr_ct_dst_addr = read_request_cmd[SRC_ADDR_W+DST_ADDR_W-1:0];
+  assign rr_hpu_id      = read_request_cmd[SRC_ADDR_W+DST_ADDR_W+IOP_ID_W+HPU_ID_W-1:SRC_ADDR_W+DST_ADDR_W+IOP_ID_W];
+  assign rr_iop_id      = read_request_cmd[SRC_ADDR_W+DST_ADDR_W+IOP_ID_W-1:SRC_ADDR_W+DST_ADDR_W];
+  assign rr_ct_dst_addr = read_request_cmd[SRC_ADDR_W+DST_ADDR_W-1:SRC_ADDR_W];
   assign rr_ct_src_addr = read_request_cmd[SRC_ADDR_W-1:0];
 
-  // where to read ?
-  // we have two NMU to address, each NMU addresses a different pseudo channel
+  // phys_addr = hbm_pc_offset + ctId * ciphertext_size
+  logic [ETH_PC-1:0] [AXI4_ADD_W-1:0] phy_addr;
+  generate
+    for (genvar gen_p=0; gen_p<ETH_PC; gen_p=gen_p+1)
+      always_ff @(posedge clk_mrmac)
+        phy_addr[gen_p] <= regf_ct_mem_addr[gen_p] + rr_ct_src_addr * PC_STRIDE;
+  endgenerate
 
-  // fifo_ram_rdy_vld # (
-  //   .WIDTH      (CE_READ_DATA_W),
-  //   .DEPTH      (CE_READ_DEPTH),
-  //   .RAM_LATENCY(CE_READ_RAM_LATENCY)
-  // ) ce_read_fifo_ping (
-  //   .clk    (clk_mrmac),
-  //   .s_rst_n(~resetn_mrmac),
+  // temporising rreq_cmd_out_valid in order to have phy_addr ready
+  logic rreq_ready;
+  always_ff @(posedge clk_mrmac)
+    rreq_ready <= rreq_cmd_out_valid & rreq_cmd_out_ready;
 
-  //   .in_data(),
-  //   .in_vld (),
-  //   .in_rdy (),
+  // let's start ciphertext emission when its flag is up and we are not changing command values
+  logic [ETH_PC-1:0] axi4_read_pc;
 
-  //   .out_data(),
-  //   .out_vld (),
-  //   .out_rdy ()
-  // );
+  // process an axi4-read on each PC
+  //  - arlen the burst size is dictated from parameter MAX_BURST_SIZE
+  //  - arburst whould be INCR
+  //  - arsize the size of each data transfer, fixed to MHDMA_ARSIZE
+  generate
+    for (genvar gen_rd=0; gen_rd<ETH_PC; gen_rd++) begin : gen_ce_reads
+      logic [$clog2(gen_localparam[gen_rd].PC_NB_READS):0] axi_read_cnt;
 
-  // fifo_ram_rdy_vld # (
-  //   .WIDTH      (CE_READ_DATA_W),
-  //   .DEPTH      (CE_READ_DEPTH),
-  //   .RAM_LATENCY(CE_READ_RAM_LATENCY)
-  // ) ce_read_fifo_pong (
-  //   .clk    (clk_mrmac),
-  //   .s_rst_n(~resetn_mrmac),
+      always_ff @(posedge clk_mrmac) begin
+        if (~resetn_mrmac) begin
+          axi_read_cnt <= gen_localparam[gen_rd].PC_NB_READS;
+        end else begin
+          if (axi4_read_pc[gen_rd]) begin
+            axi_read_cnt <= axi_read_cnt -1;
+          end else begin
+            axi_read_cnt <= gen_localparam[gen_rd].PC_NB_READS;
+          end
+        end
+      end
 
-  //   .in_data(),
-  //   .in_vld (),
-  //   .in_rdy (),
+      always_ff @(posedge clk_mrmac) begin
+        if (~resetn_mrmac) begin
+          m_axi4_arid[gen_rd]    <= 'h0;
+          m_axi4_araddr[gen_rd]  <= 'h0;
+          m_axi4_arlen[gen_rd]   <= 'h0;
+          m_axi4_arsize[gen_rd]  <= 'h0;
+          m_axi4_arburst[gen_rd] <= 'h0;
+          m_axi4_arvalid[gen_rd] <= 'h0;
+          m_axi4_rready[gen_rd]  <= 'h0;
+        end else begin
+          m_axi4_rready[gen_rd]   <= 1'b1;
 
-  //   .out_data(),
-  //   .out_vld (),
-  //   .out_rdy ()
-  // );
+          if (axi4_read_pc[gen_rd]) begin
+            // m_axi4_arid[gen_rd] unused ?
+            m_axi4_araddr[gen_rd]   <= phy_addr[gen_rd];
+            m_axi4_arlen[gen_rd]    <= gen_localparam[gen_rd].PC_NB_READS;
+            m_axi4_arsize[gen_rd]   <= MHDMA_ARSIZE;
+            m_axi4_arburst[gen_rd]  <= 2'b01; // incr
+            m_axi4_arvalid[gen_rd]  <= 1'b1;
+          end else begin
+
+          m_axi4_arid[gen_rd]    <= 'h0;
+          m_axi4_araddr[gen_rd]  <= 'h0;
+          m_axi4_arlen[gen_rd]   <= 'h0;
+          m_axi4_arsize[gen_rd]  <= 'h0;
+          m_axi4_arburst[gen_rd] <= 'h0;
+          m_axi4_arvalid[gen_rd] <= 'h0;
+          end
+        end
+      end
+    end
+  endgenerate
+
+  // prc_read_one_at_a_time must much change if ETH_PC != 0 or we wand to read two PCs in parallel
+  always_ff @(posedge clk_mrmac) begin : prc_read_one_at_a_time
+    if (~resetn_mrmac) begin
+      axi4_read_pc <= 'h0;
+    end else begin
+      // we shift when we are about to hit 1 on the counter to be in sync to 0
+      // between this signal and the counters
+      if (rreq_ready | (gen_ce_reads[0].axi_read_cnt==1)) begin
+        axi4_read_pc <= {axi4_read_pc[ETH_PC-2:0], rreq_ready};
+      end else if (gen_ce_reads[1].axi_read_cnt==1) begin
+        axi4_read_pc <= 'h0;
+      end
+    end
+  end
+
+
+  logic [ETH_PC-1:0] reading_which_pc;
+
+  // we only have one QSFP lane interface, we will read each FIFO independantly, one at a time
+  always_ff @(posedge clk_mrmac) begin
+    if (~resetn_mrmac) begin
+      reading_which_pc <= 'h0;
+    end else begin
+      // at initialization we insert rreq_ready when read request is ready to be performed
+      // once the whole fifo has been fully read
+      // TODO: add a word counter to match if all data has arrived
+      if (rreq_ready | (gen_read_fifo[0].read_fifo_counter==0 & gen_read_fifo[0].all_words_have_arrived)) begin
+        reading_which_pc <= {reading_which_pc[ETH_PC-2:0], rreq_ready};
+      end else if (gen_ce_reads[1].axi_read_cnt==1) begin
+        reading_which_pc <= 'h0;
+      end
+    end
+  end
+
+  // separate generate block for read fifo and its misc
+  // add a backpressure to the read requests
+  generate
+    for (genvar gen_rd=0; gen_rd<ETH_PC; gen_rd++) begin : gen_read_fifo
+      // input part
+      logic                   read_fifo_we;
+      logic                   read_fifo_ready; // ~full
+      // output part
+      logic [AXI4_DATA_W-1:0] read_fifo_out_data;
+      logic                   read_fifo_out_valid;
+      logic                   read_fifo_out_ready;
+      logic                   all_words_have_arrived;
+
+      assign read_fifo_we = m_axi4_rvalid[gen_rd] & read_fifo_ready & ct_emission_request_in_use;
+
+      fifo_ram_rdy_vld # (
+        .WIDTH      (CE_READ_DATA_W),
+        .DEPTH      (CE_READ_DEPTH),
+        .RAM_LATENCY(CE_READ_RAM_LATENCY)
+      ) read_fifo (
+        .clk    (clk_mrmac),
+        .s_rst_n(resetn_mrmac),
+
+        .in_data(m_axi4_rdata),
+        .in_vld (read_fifo_we),
+        .in_rdy (read_fifo_ready),
+
+        .out_data(read_fifo_out_data),
+        .out_vld (read_fifo_out_valid),
+        .out_rdy (read_fifo_out_ready)
+      );
+
+      logic [$clog2(gen_localparam[gen_rd].PC_NB_WORDS):0] read_fifo_how_much_words_arrived;
+
+      always_ff @(posedge clk_mrmac) begin
+        if (~resetn_mrmac) begin
+          read_fifo_how_much_words_arrived <= 'h0;
+        end else begin
+          if (read_fifo_we) begin
+            read_fifo_how_much_words_arrived <= read_fifo_how_much_words_arrived + 1;
+          end else if (all_words_have_arrived) begin
+            read_fifo_how_much_words_arrived <= 'h0;
+          end
+        end
+      end
+
+      assign all_words_have_arrived = (read_fifo_how_much_words_arrived == gen_localparam[gen_rd].PC_NB_WORDS);
+
+      logic [CE_READ_DATA_COUNT_W-1:0] read_fifo_counter;
+
+      always_ff @(posedge clk_mrmac) begin
+        if (~resetn_mrmac) begin
+          read_fifo_counter <= 'h0;
+        end else begin
+          if (read_fifo_we) begin
+            read_fifo_counter <= read_fifo_counter + 1;
+          end else if (read_fifo_out_valid & read_fifo_out_ready) begin
+            read_fifo_counter <= read_fifo_counter - 1;
+          end // if read_fifo_we & read_fifo_out_valid don't do anything
+        end
+      end
+
+      // TODO
+      assign read_fifo_out_ready = 1'b0;
+
+      logic read_fifo_enough_words;
+
+      assign read_fifo_enough_words = (read_fifo_counter >= ETH_NB_BYTES_PAYLOAD/AXI4_DATA_BYTES);
+
+      // we are going to read 4 times slower the fifo than we are feeding it
+      logic [$clog2(AXI4_DATA_W/MRMAC_AXIS_W):0] read_fifo_out_cnt;
+
+      always_ff @(posedge clk_mrmac) begin
+        if (~resetn_mrmac) begin
+          read_fifo_out_cnt <= 'h0;
+        end else begin
+
+        end
+      end
+    end
+  endgenerate
+
+  // generate
+  //   for (genvar gen_wr=0; gen_wr<ETH_PC; gen_wr++) begin
+  //     always_ff @(posedge clk_mrmac) begin
+  //       if (~resetn_mrmac) begin
+  //         m_axi4_awid[gen_wr]<='h0;
+  //         m_axi4_awaddr[gen_wr]<='h0;
+  //         m_axi4_awlen[gen_wr]<='h0;
+  //         m_axi4_awsize[gen_wr]<='h0;
+  //         m_axi4_awburst[gen_wr]<='h0;
+  //         m_axi4_awvalid[gen_wr]<='h0;
+  //         m_axi4_wdata[gen_wr]<='h0;
+  //         m_axi4_wstrb[gen_wr]<='h0;
+  //         m_axi4_wlast[gen_wr]<='h0;
+  //         m_axi4_wvalid[gen_wr]<='h0;
+  //         m_axi4_bready[gen_wr]<='h0;
+  //       end else begin
+  //     end
+  //   end
+  //   end
+  // endgenerate
 
   // =========================================================================================== //
   // QSFP TX

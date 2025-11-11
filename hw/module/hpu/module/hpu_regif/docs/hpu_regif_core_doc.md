@@ -1,5 +1,5 @@
 # HPU_REGIF_CORE documentation
-**Date**: 2025-10-30
+**Date**: 2025-11-10
 **Tool Version**: bd49564daf1a99d615cb6dbb121b54bfbeef8b22
 
 ## RegisterMap Overview
@@ -17,7 +17,7 @@ HPU ethernet configuration register interface. Will be accessed by RPU to define
 **Offset**: 0x0
 **Range**: 0x60000
 **Word Size (b)**: 32
-**External Packages**: "axi_if_common_param_pkg.sv","axi_if_shell_axil_pkg.sv"
+**External Packages**: "axi_if_shell_axil_pkg.sv","axi_if_common_param_pkg.sv"
 
 
 ---
@@ -44,10 +44,11 @@ Below is a summary of all the registers in the current register map:
 | [bsk_avail](#section-bsk-avail) | 0x31000 | 0x8 | BSK availability configuration |
 | [runtime_3in3](#section-runtime-3in3) | 0x32000 | 0x48 | Runtime information |
 | [system](#section-system) | 0x50000 | 0x8 | system configuration |
-| [reset](#section-reset) | 0x50014 | 0x8 | Controllable resets for tranceivers |
+| [reset](#section-reset) | 0x50014 | 0x8 | Controllable resets for transceivers |
 | [hpu_id](#section-hpu-id) | 0x50050 | 0x20 | HPU ID containing all possible targets. For all IDs we have HPU MAC address, software ID and a flag for current hpu |
 | [request](#section-request) | 0x50100 | 0x10 | Request registers interface |
-| [line](#section-line) | 0x51000 | 0x4 | Line parameter sections |
+| [line](#section-line) | 0x50200 | 0x4 | Line parameter sections |
+| [hbm_axi4_addr_2in3](#section-hbm-axi4-addr-2in3) | 0x51000 | 0x10 | HBM AXI4 connection address offset |
 | [fifo_write](#section-fifo-write) | 0x5101c | 0x10 | fifo write part |
 | [fifo_read](#section-fifo-read) | 0x5102c | 0xc | fifo write part |
 | [cnt](#section-cnt) | 0x5103c | 0xc | fifo write part |
@@ -4000,7 +4001,7 @@ Below is a summary of all the registers in the current section system:
 | Name             | Offset | Access | Description |
 |-----------------:|:------:|:------:|:------------|
 | [line](#register-systemline) | 0x50000 | RW |  Different parameters for qsfp lines |
-| [timeout](#register-systemtimeout) | 0x50004 | RW |  Timeout time before re-launching a request, in clock cycles |
+| [timeout](#register-systemtimeout) | 0x50004 | RW |  16 bit Timeout: time before re-launching a request, in clock cycles |
 
 
 ---
@@ -4034,7 +4035,7 @@ Register line contains following Sub-fields:
 
 ### Register system.timeout
 
-- **Description**: Timeout time before re-launching a request, in clock cycles
+- **Description**: 16 bit Timeout: time before re-launching a request, in clock cycles
 - **Owner**: User
 - **Read Access**: Read
 - **Write Access**: Write
@@ -4383,7 +4384,7 @@ Below is a summary of all the registers in the current section line:
 
 | Name             | Offset | Access | Description |
 |-----------------:|:------:|:------:|:------------|
-| [debug](#register-linedebug) | 0x51000 | RW |  Different parameters for debugging qsfp lines |
+| [debug](#register-linedebug) | 0x50200 | RW |  Different parameters for debugging qsfp lines |
 
 
 ---
@@ -4395,7 +4396,7 @@ Below is a summary of all the registers in the current section line:
 - **Owner**: User
 - **Read Access**: Read
 - **Write Access**: Write
-- **Offset**: 0x51000
+- **Offset**: 0x50200
 - **Default**: C.f. fields
 
 
@@ -4408,6 +4409,85 @@ Register debug contains following Sub-fields:
 | rx_to_tx      | 29 | 1 |0| a |
 | tx_loop      | 30 | 1 |0| b |
 | reset_registers      | 31 | 1 |0| c |
+
+
+
+---
+
+
+
+
+## Section hbm-axi4-addr-2in3
+
+### Register Overview
+
+Below is a summary of all the registers in the current section hbm_axi4_addr_2in3:
+
+| Name             | Offset | Access | Description |
+|-----------------:|:------:|:------:|:------------|
+| [ct_pc0_lsb](#register-hbm-axi4-addr-2in3ct-pc0-lsb) | 0x51000 | RW |  Address offset for each ciphertext HBM AXI4 connection |
+| [ct_pc0_msb](#register-hbm-axi4-addr-2in3ct-pc0-msb) | 0x51004 | RW |  Address offset for each ciphertext HBM AXI4 connection |
+| [ct_pc1_lsb](#register-hbm-axi4-addr-2in3ct-pc1-lsb) | 0x51008 | RW |  Address offset for each ciphertext HBM AXI4 connection |
+| [ct_pc1_msb](#register-hbm-axi4-addr-2in3ct-pc1-msb) | 0x5100c | RW |  Address offset for each ciphertext HBM AXI4 connection |
+
+
+---
+
+
+### Register hbm-axi4-addr-2in3.ct-pc0-lsb
+
+- **Description**: Address offset for each ciphertext HBM AXI4 connection
+- **Owner**: User
+- **Read Access**: Read
+- **Write Access**: Write
+- **Offset**: 0x51000
+- **Default**: 0
+
+
+
+
+---
+
+
+### Register hbm-axi4-addr-2in3.ct-pc0-msb
+
+- **Description**: Address offset for each ciphertext HBM AXI4 connection
+- **Owner**: User
+- **Read Access**: Read
+- **Write Access**: Write
+- **Offset**: 0x51004
+- **Default**: 0
+
+
+
+
+---
+
+
+### Register hbm-axi4-addr-2in3.ct-pc1-lsb
+
+- **Description**: Address offset for each ciphertext HBM AXI4 connection
+- **Owner**: User
+- **Read Access**: Read
+- **Write Access**: Write
+- **Offset**: 0x51008
+- **Default**: 0
+
+
+
+
+---
+
+
+### Register hbm-axi4-addr-2in3.ct-pc1-msb
+
+- **Description**: Address offset for each ciphertext HBM AXI4 connection
+- **Owner**: User
+- **Read Access**: Read
+- **Write Access**: Write
+- **Offset**: 0x5100c
+- **Default**: 0
+
 
 
 
