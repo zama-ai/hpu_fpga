@@ -1129,7 +1129,7 @@ module mhdma_bridge
   assign tx_frame_last = (tx_cnt == NB_WORDS_MIN+1) ? 1'b1: 1'b0;
   assign tx_frame_valid = (tx_cnt == 'h0) ? 1'b0 : 1'b1 ;
 
-  logic [  MAC_ADDR_W-1:0] tx_target_hpu_mac;
+  logic [  MAC_ADDR_W-1:0] tx_target_hpu_mac_addr;
   logic [ETHERNET_LEN-1:0] tx_eth_len;
   logic [    REQ_ID_W-1:0] tx_req_id;
   logic [   SEQ_NUM_W-1:0] tx_seq_num;
@@ -1138,7 +1138,7 @@ module mhdma_bridge
   logic [    IOP_ID_W-1:0] tx_iop_id;
   logic [    SIZE_B_W-1:0] tx_size_b;
 
-  assign tx_target_hpu_mac = rreq_send_request ? hpu_mac_table[rrqq_hpu_id] : hpu_mac_table[nrqq_hpu_id];
+  assign tx_target_hpu_mac_addr = rreq_send_request ? hpu_mac_table[rrqq_hpu_id] : hpu_mac_table[nrqq_hpu_id];
   assign tx_eth_len  = ETH_LEN_MIN;
   assign tx_req_id   = rreq_send_request ? REQ_ID_READ : REQ_ID_NOTIFY_TX;
   assign tx_seq_num  = 'h0;
@@ -1151,7 +1151,7 @@ module mhdma_bridge
   always_comb begin
     case (tx_cnt)
       'h1 :
-        tx_frame = {MAC_OUI, tx_target_hpu_mac, MAC_OUI[MAC_OUI_W-1:8]};
+        tx_frame = {MAC_OUI, tx_target_hpu_mac_addr, MAC_OUI[MAC_OUI_W-1:8]};
       'h2 :
         tx_frame = {MAC_OUI[7:0], current_hpu_mac, tx_eth_len, tx_req_id, current_hpu_id, tx_seq_num};
       'h3 :
