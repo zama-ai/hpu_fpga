@@ -19,6 +19,7 @@
 #include "amc_version.h"
 
 #include "xil_io.h"
+#include "xscugic.h"
 /* osal */
 #include "osal.h"
 #include <stdint.h>
@@ -254,17 +255,27 @@ AXC_PROXY_DRIVER_EXTERNAL_DEVICE_CONFIG xDimmDevice =
 };
 
 uint64_t ullAmcInitStatus = 0;
-uint64_t intr_global_var = 5;
+uint64_t intr_global_var_0 = 5;
+uint64_t intr_global_var_1 = 2;
+uint64_t intr_global_var_2 = 3;
 
 /******************************************************************************/
 /* Function implementations                                                   */
 /******************************************************************************/
 
+extern XScuGic xInterruptController;
+
 void vInterruptHandler_zama0( void* pvCallBackRef ) {
-    intr_global_var = intr_global_var + 1;
+    intr_global_var_0 = intr_global_var_0 + 1;
+    // write int register at 0 to stop interrupt
+    //uint32_t data =  * (volatile uint32_t *) (XPAR_AXI_LPD_BASEADDR + 0x2008);
+    //*( ( volatile uint32_t * )(XPAR_AXI_LPD_BASEADDR + 0x2008) ) = data & 0xFFFFFFFE;
+}
+void vInterruptHandler_zama1( void* pvCallBackRef ) {
+    intr_global_var_1 = intr_global_var_1 + 1;
     // write int register at 0 to stop interrupt
     uint32_t data =  * (volatile uint32_t *) (XPAR_AXI_LPD_BASEADDR + 0x2008);
-    *( ( volatile uint32_t * )(XPAR_AXI_LPD_BASEADDR + 0x2008) ) = data & 0xFFFFFFFE;
+    *( ( volatile uint32_t * )(XPAR_AXI_LPD_BASEADDR + 0x2008) ) = data & 0xFFFFFFFD;
 }
 
 /*
@@ -347,13 +358,30 @@ static void vTaskFuncMain( void )
     if( OSAL_ERRORS_NONE != iOSAL_Interrupt_Setup( XPAR_FABRIC_RTL_INTERRUPT_0_INTR, vInterruptHandler_zama0, NULL ) ) {
        PLL_ERR( AMC_NAME, "failed init interruption XPAR_FABRIC_RTL_INTERRUPT_0_INTR\r\n" );
     } else {
-       PLL_ERR( AMC_NAME, "Zama interrupt handler init\r\n" );
+       PLL_ERR( AMC_NAME, "interrupt handler on hpu_interrupt[0] init\r\n" );
     }
-    if( OSAL_ERRORS_NONE != iOSAL_Interrupt_Enable( XPAR_FABRIC_RTL_INTERRUPT_0_INTR ) ) {
+    XScuGic_SetPriorityTriggerType(
+       &xInterruptController,
+       XPAR_FABRIC_RTL_INTERRUPT_0_INTR,
+       0xA0,
+       0x3 // Constant for Edge-Sensitive (Rising Edge)
+    );
+    if( OSAL_ERRORS_NONE != iOSAL_Interrupt_Enable( XPAR_FABRIC_RTL_INTERRUPT_0_INTR) ) {
        PLL_ERR( AMC_NAME, "failed enabling interruption XPAR_FABRIC_RTL_INTERRUPT_0_INTR\r\n" );
     } else {
-       PLL_ERR( AMC_NAME, "enabling Zama interrupt\r\n" );
+       PLL_ERR( AMC_NAME, "enabling hpu_interrupt[0] on rising edge\r\n" );
     }
+    if( OSAL_ERRORS_NONE != iOSAL_Interrupt_Setup( XPAR_FABRIC_RTL_INTERRUPT_1_INTR, vInterruptHandler_zama1, NULL ) ) {
+       PLL_ERR( AMC_NAME, "failed init interruption XPAR_FABRIC_RTL_INTERRUPT_1_INTR\r\n" );
+    } else {
+       PLL_ERR( AMC_NAME, "interrupt handler on hpu_interrupt[0] init\r\n" );
+    }
+    if( OSAL_ERRORS_NONE != iOSAL_Interrupt_Enable( XPAR_FABRIC_RTL_INTERRUPT_1_INTR) ) {
+       PLL_ERR( AMC_NAME, "failed enabling interruption XPAR_FABRIC_RTL_INTERRUPT_1_INTR\r\n" );
+    } else {
+       PLL_ERR( AMC_NAME, "enabling hpu_interrupt[0] on level\r\n" );
+    }
+
 
     // Init IOp queue descriptor
     volatile uint32_t *fromAmiIopqHead = NULL;
@@ -420,7 +448,8 @@ static void vTaskFuncMain( void )
             ackq_tail = * toAmiIopAckqTail;
             uint32_t ackq_free_words = AMI_IOPACKQ_MAX_WORDS + ackq_tail - ackq_head;
             PLL_INF("AMC", "IOP Ack pending %d, AckQ [head 0x%x; tail 0x%x; free_w %d]", read_isc_ack_cnt(), ackq_head, ackq_tail, ackq_free_words);
-            PLL_ERR("AMC", "interrupt count %d",intr_global_var);
+            PLL_ERR("AMC", "interrupt count [0] %d edges", intr_global_var_0);
+            PLL_ERR("AMC", "interrupt count [1] %d level at 1", intr_global_var_1);
 
             if (ackq_free_words == 0) {
                 PLL_INF("AMC", "IOpAck queue is full, abort isc ack forwarding");
