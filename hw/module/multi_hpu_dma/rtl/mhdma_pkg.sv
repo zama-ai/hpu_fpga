@@ -74,6 +74,7 @@ package mhdma_pkg;
   // minimal depth for 64 using XPM fifo is 16
   localparam int XPM_MIN_FIFO_DEPTH   = 16;
 
+  // = Commands
   // read request command: XPM
   localparam int RQQ_MEMORY_TYPE      = "distributed";
   localparam int RQQ_WIDTH            = 2*REG_DATA_W;
@@ -95,11 +96,18 @@ package mhdma_pkg;
   localparam int RREQ_CMD_RAM_LATENCY = 1;
   localparam int RQQ_CMD_DATA_COUNT_W =  $clog2(RREQ_CMD_DEPTH)+1;
 
-  // ciphertext emission read from HBM: URAM fifo
-  localparam int CE_READ_DATA_W       = AXI4_DATA_W;
-  localparam int CE_READ_DEPTH        = CT_NB_WORDS_AXI4;
-  localparam int CE_READ_RAM_LATENCY  = 1;
-  localparam int CE_READ_DATA_COUNT_W =  $clog2(CT_NB_WORDS_AXI4)+1;
+  // = Ciphertext Emission: URAMs
+  // reading each PC
+  localparam int READ_PC_DATA_W       = AXI4_DATA_W;
+  localparam int READ_PC_DEPTH        = CT_NB_WORDS_AXI4;
+  localparam int READ_PC_RAM_LATENCY  = 1;
+  localparam int READ_PC_DATA_COUNT_W =  $clog2(CT_NB_WORDS_AXI4)+1;
+
+  // QSFP TX fifo
+  localparam int CE_DATA_W       = MRMAC_AXIS_W;
+  localparam int CE_DEPTH        = NB_WORDS_PAYLOAD;
+  localparam int CE_RAM_LATENCY  = 1;
+  localparam int CE_DATA_COUNT_W =  $clog2(NB_WORDS_PAYLOAD)+1;
 
   // identification opcode --------------------------------------------------
   localparam [REQ_ID_W-1:0] REQ_ID_NOTIFY_TX     = 'h2;
