@@ -198,7 +198,7 @@ module mhdma_bridge
   logic [  SIZE_B_W-1:0] rrqq_size_b;
   logic [  REQ_ID_W-1:0] rrqq_req_id;
   logic [  IOP_ID_W-1:0] rrqq_iop_id;
-  logic [  HPU_ID_W-1:0] rrqq_node_id;
+  logic [  HPU_ID_W-1:0] rrqq_hpu_id;
 
   always_ff @(posedge clk_mrmac) begin : read_request_sampling
     if (~resetn_mrmac) begin
@@ -207,15 +207,15 @@ module mhdma_bridge
       rrqq_size_b    <= 'h0;
       rrqq_iop_id    <= 'h0;
       rrqq_req_id    <= 'h0;
-      rrqq_node_id   <= 'h0;
+      rrqq_hpu_id   <= 'h0;
     end else begin
       if (rrqq_data_valid) begin
-        rrqq_dst_addr <= rrqq_rd_data[15:00];
-        rrqq_src_addr <= rrqq_rd_data[31:16];
-        rrqq_size_b   <= rrqq_rd_data[47:32];
-        rrqq_node_id  <= rrqq_rd_data[51:48];
-        rrqq_req_id   <= rrqq_rd_data[55:52];
-        rrqq_iop_id   <= rrqq_rd_data[59:56];
+        rrqq_src_addr <= rrqq_rd_data[CMD_SRC_ADDR_OFS-1:0];
+        rrqq_dst_addr <= rrqq_rd_data[CMD_DST_ADDR_OFS-1:CMD_SRC_ADDR_OFS];
+        rrqq_size_b   <= rrqq_rd_data[CMD_SIZE_B_OFS-1:CMD_SRC_ADDR_OFS];
+        rrqq_hpu_id  <= rrqq_rd_data[CMD_HPU_ID_OFS-1:CMD_SIZE_B_OFS];
+        rrqq_req_id   <= rrqq_rd_data[CMD_REQ_ID_OFS-1:CMD_HPU_ID_OFS];
+        rrqq_iop_id   <= rrqq_rd_data[CMD_IOP_ID_OFS-1:CMD_REQ_ID_OFS];
       end
     end
   end
@@ -267,7 +267,7 @@ module mhdma_bridge
   logic [IOP_ID_W-1:0]   nrqq_iop_id;
   logic [SIZE_B_W-1:0]   nrqq_size_b;
   logic [REQ_ID_W-1:0]   nrqq_req_id;
-  logic [HPU_ID_W-1:0]   nrqq_node_id;
+  logic [HPU_ID_W-1:0]   nrqq_hpu_id;
 
   // none of theses information are in the first word:
   //  => sampled on the same clock cycle as sending first frame
@@ -279,16 +279,16 @@ module mhdma_bridge
       nrqq_req_id    <= 'h0;
     end else begin
       if (nrqq_data_valid) begin
-        nrqq_src_addr  <= nrqq_rd_data[SRC_ADDR_W-1:0];
-        nrqq_size_b    <= nrqq_rd_data[SIZE_B_W+32-1:32];
-        nrqq_req_id    <= nrqq_rd_data[REQ_ID_W+HPU_ID_W+SIZE_B_W+32-1:HPU_ID_W+SIZE_B_W+32];
-        nrqq_iop_id    <= nrqq_rd_data[IOP_ID_W+REQ_ID_W+HPU_ID_W+SIZE_B_W+32-1:REQ_ID_W+HPU_ID_W+SIZE_B_W+32];
+        nrqq_iop_id    <= nrqq_rd_data[CMD_IOP_ID_OFS-1:CMD_REQ_ID_OFS];
+        nrqq_req_id    <= nrqq_rd_data[CMD_REQ_ID_OFS-1:CMD_HPU_ID_OFS];
+        nrqq_size_b    <= nrqq_rd_data[CMD_SIZE_B_OFS-1:CMD_DST_ADDR_OFS];
+        nrqq_src_addr  <= nrqq_rd_data[CMD_SRC_ADDR_OFS-1:0];
       end
     end
   end
 
   // needed directly to not wait
-  assign nrqq_node_id = nrqq_data_valid ? nrqq_rd_data[HPU_ID_W+SIZE_B_W+32-1:SIZE_B_W+32] : 1'b0;
+  assign nrqq_hpu_id = nrqq_data_valid ? nrqq_rd_data[CMD_HPU_ID_OFS-1:CMD_SIZE_B_OFS] : 1'b0;
 
   // =========================================================================================== //
   // CDC from fast to slow clock
@@ -621,7 +621,7 @@ module mhdma_bridge
     end
   end
 
-  /* First frame:
+  /* FRAME 0:
    * rx_dst_mac_addr
    *    destination mac address is not needed from the first clock cycle
    *    this register will help define if next words in receptions are valid
@@ -633,7 +633,7 @@ module mhdma_bridge
     end else begin
       if (qsfp_rx_tvalid) begin
         if (qsfp_rx_tsop) begin
-          rx_dst_mac_addr <=  qsfp_rx_tdata[16+MAC_ADDR_W-1:16];
+          rx_dst_mac_addr <=  qsfp_rx_tdata[H0_DST_MAC_ADDR_OFS-1:H0_SRC_OUI_OFS];
         end
       end else begin
         rx_dst_mac_addr <= 'h0;
@@ -642,7 +642,7 @@ module mhdma_bridge
   end
   assign rx_valid = (current_hpu_mac == rx_dst_mac_addr) ? 1'b1 : 1'b0;
 
-  /* Second frame:
+  /* FRAME 1 :
    * sec_num, request_id, hpu_id, src_mac_address
    * ethernet len is skipped: not used for now
    */
@@ -655,10 +655,11 @@ module mhdma_bridge
     end else begin
       if (qsfp_rx_tvalid) begin
         if (rx_counter == 1) begin
-          rx_sec_num <= qsfp_rx_tdata[SEQ_NUM_W-1:0];
-          rx_req_id <= qsfp_rx_tdata[SEQ_NUM_W+HPU_ID_W+REQ_ID_W-1:SEQ_NUM_W+HPU_ID_W];
-          rx_hpu_id <= qsfp_rx_tdata[SEQ_NUM_W+HPU_ID_W-1:SEQ_NUM_W];
-          rx_src_mac_addr <= qsfp_rx_tdata[SEQ_NUM_W+HPU_ID_W+REQ_ID_W+ETHERNET_LEN+MAC_ADDR_W-1:SEQ_NUM_W+HPU_ID_W+REQ_ID_W+ETHERNET_LEN];
+          rx_sec_num      <= qsfp_rx_tdata[H1_SEQ_NUM_OFS-1:0];
+          rx_hpu_id       <= qsfp_rx_tdata[H1_HPU_ID_OFS-1:H1_SEQ_NUM_OFS];
+          rx_req_id       <= qsfp_rx_tdata[H1_REQ_ID_OFS-1:H1_HPU_ID_OFS];
+          // Ethernet len is ignored
+          rx_src_mac_addr <= qsfp_rx_tdata[H1_SRC_MAC_ADDR_OFS-1:H1_SRC_ETH_LEN_OFS];
         end
       end else begin
         rx_sec_num <= 'h0;
@@ -669,7 +670,7 @@ module mhdma_bridge
     end
   end
 
-  /* Third frame:
+  /* FRAME 2:
    * iop_id, src/dst addresses
    * size_b for triggering error
    */
@@ -681,9 +682,9 @@ module mhdma_bridge
     end else begin
       if (qsfp_rx_tvalid) begin
         if (rx_counter == 2) begin
-          rx_iop_id      <= qsfp_rx_tdata[8+SIZE_B_W+IOP_ID_W-1:8+SIZE_B_W];
-          rx_ct_dst_addr <= qsfp_rx_tdata[8+SIZE_B_W+IOP_ID_W+SRC_ADDR_W-1:8+SIZE_B_W+IOP_ID_W];
-          rx_ct_src_addr <= qsfp_rx_tdata[8+SIZE_B_W+IOP_ID_W+SRC_ADDR_W+DST_ADDR_W-1:8+SIZE_B_W+IOP_ID_W+SRC_ADDR_W];
+          rx_iop_id      <= qsfp_rx_tdata[H2_IOP_ID_OFS-1:H2_SIZE_B_OFS];
+          rx_ct_dst_addr <= qsfp_rx_tdata[H2_CT_DST_ADDR_OFS-1:H2_IOP_ID_OFS];
+          rx_ct_src_addr <= qsfp_rx_tdata[H2_CT_SRC_ADDR_OFS-1:H2_CT_DST_ADDR_OFS];
         end
       end else begin
         rx_iop_id       <= 'h0;
@@ -693,7 +694,7 @@ module mhdma_bridge
     end
   end
 
-  assign rx_size_b = ((rx_counter == 2) & rx_valid) ? qsfp_rx_tdata[8+SIZE_B_W-1:8] : 'h0;
+  assign rx_size_b = ((rx_counter == 2) & rx_valid) ? qsfp_rx_tdata[H2_SIZE_B_OFS-1:H2_EMPTY_OFS] : 'h0;
 
   // switch between components -----------------------------------------------------------------
 
@@ -845,10 +846,10 @@ module mhdma_bridge
     end
   end
 
-  assign rr_hpu_id      = read_request_cmd[SRC_ADDR_W+DST_ADDR_W+IOP_ID_W+HPU_ID_W-1:SRC_ADDR_W+DST_ADDR_W+IOP_ID_W];
-  assign rr_iop_id      = read_request_cmd[SRC_ADDR_W+DST_ADDR_W+IOP_ID_W-1:SRC_ADDR_W+DST_ADDR_W];
-  assign rr_ct_dst_addr = read_request_cmd[SRC_ADDR_W+DST_ADDR_W-1:SRC_ADDR_W];
-  assign rr_ct_src_addr = read_request_cmd[SRC_ADDR_W-1:0];
+  assign rr_hpu_id      = read_request_cmd[RR_HPU_ID_OFS-1:RR_IOP_ID_OFS];
+  assign rr_iop_id      = read_request_cmd[RR_IOP_ID_OFS-1:RR_DST_ID_OFS];
+  assign rr_ct_dst_addr = read_request_cmd[RR_DST_ID_OFS-1:RR_SRC_ID_OFS];
+  assign rr_ct_src_addr = read_request_cmd[RR_SRC_ID_OFS-1:0];
 
   // phys_addr = hbm_pc_offset + ctId * ciphertext_size
   logic [ETH_PC-1:0] [AXI4_ADD_W-1:0] phy_addr;
@@ -1137,7 +1138,7 @@ module mhdma_bridge
   logic [    IOP_ID_W-1:0] tx_iop_id;
   logic [    SIZE_B_W-1:0] tx_size_b;
 
-  assign tx_target_hpu_mac = rreq_send_request ? hpu_mac_table[rrqq_node_id] : hpu_mac_table[nrqq_node_id];
+  assign tx_target_hpu_mac = rreq_send_request ? hpu_mac_table[rrqq_hpu_id] : hpu_mac_table[nrqq_hpu_id];
   assign tx_eth_len  = ETH_LEN_MIN;
   assign tx_req_id   = rreq_send_request ? REQ_ID_READ : REQ_ID_NOTIFY_TX;
   assign tx_seq_num  = 'h0;

@@ -117,4 +117,36 @@ package mhdma_pkg;
   localparam [REQ_ID_W-1:0] REQ_ID_READ          = 'h6;
   localparam [REQ_ID_W-1:0] REQ_ID_EMISSION      = 'h7;
 
+
+  // Offsets ------------------------------------------------------------------
+  // Read ReQuest Queue
+  localparam int CMD_IOP_ID_OFS   = SRC_ADDR_W + DST_ADDR_W + SIZE_B_W + HPU_ID_W + REQ_ID_W + IOP_ID_W;
+  localparam int CMD_REQ_ID_OFS   = SRC_ADDR_W + DST_ADDR_W + SIZE_B_W + HPU_ID_W + REQ_ID_W;
+  localparam int CMD_HPU_ID_OFS  = SRC_ADDR_W + DST_ADDR_W + SIZE_B_W + HPU_ID_W;
+  localparam int CMD_SIZE_B_OFS   = SRC_ADDR_W + DST_ADDR_W + SIZE_B_W;
+  localparam int CMD_DST_ADDR_OFS = SRC_ADDR_W + DST_ADDR_W;
+  localparam int CMD_SRC_ADDR_OFS = SRC_ADDR_W;
+
+  // Read-Request
+  localparam int RR_HPU_ID_OFS = SRC_ADDR_W+DST_ADDR_W+IOP_ID_W+HPU_ID_W;
+  localparam int RR_IOP_ID_OFS = SRC_ADDR_W+DST_ADDR_W+IOP_ID_W;
+  localparam int RR_DST_ID_OFS = SRC_ADDR_W+DST_ADDR_W;
+  localparam int RR_SRC_ID_OFS = SRC_ADDR_W;
+
+  // Headers (0,1,2,3) for the clock cycle
+  localparam int H0_DST_MAC_ADDR_OFS = 16+MAC_ADDR_W;
+  localparam int H0_SRC_OUI_OFS = 16;
+
+  localparam int H1_SRC_MAC_ADDR_OFS = SEQ_NUM_W+HPU_ID_W+REQ_ID_W+ETHERNET_LEN+MAC_ADDR_W;
+  localparam int H1_SRC_ETH_LEN_OFS  = SEQ_NUM_W+HPU_ID_W+REQ_ID_W+ETHERNET_LEN;
+  localparam int H1_REQ_ID_OFS       = SEQ_NUM_W+HPU_ID_W+REQ_ID_W;
+  localparam int H1_HPU_ID_OFS       = SEQ_NUM_W+HPU_ID_W;
+  localparam int H1_SEQ_NUM_OFS      = SEQ_NUM_W;
+
+  localparam int H2_CT_SRC_ADDR_OFS = 8+SIZE_B_W+IOP_ID_W+SRC_ADDR_W+DST_ADDR_W;
+  localparam int H2_CT_DST_ADDR_OFS = 8+SIZE_B_W+IOP_ID_W+SRC_ADDR_W;
+  localparam int H2_IOP_ID_OFS      = 8+SIZE_B_W+IOP_ID_W;
+  localparam int H2_SIZE_B_OFS      = 8+SIZE_B_W;
+  localparam int H2_EMPTY_OFS       = 8;
+
 endpackage
