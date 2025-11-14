@@ -375,7 +375,7 @@ module multi_hpu_dma
     .regf_req_addr         (r_request_req_addr    ),
     .regf_notify_payload   (r_request_notify      ),
     // interruptions and control ------------------------------------------------------------------
-    .received_req          (received_req          ),
+    .received_req          (&received_req          ),
     .request_consumed      (request_consumed      ),
     .clear_interrupt_notify(clear_interrupt_notify),
     .interrupt_notify      (interrupt_notify      ),

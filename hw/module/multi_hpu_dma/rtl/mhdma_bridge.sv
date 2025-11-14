@@ -59,7 +59,7 @@ module mhdma_bridge
   input  logic                 [  REG_DATA_W-1:0] regf_req_addr,
   output logic                 [  REG_DATA_W-1:0] regf_notify_payload,
   // control ------------------------------------------------------------------
-  input  logic [ 1:0]                            received_req,
+  input  logic                                   received_req,
   output logic                                   request_consumed,
   // statistics ---------------------------------------------------------------
   output logic [15:0]                            stat_cnt_notify_ack,
@@ -163,7 +163,7 @@ module mhdma_bridge
   // needed control signals for sampling (mrmac clock)
 
   // cfg
-  assign rrqq_wr_en = (&received_req) & ~rrqq_wr_rst_busy & ~rrqq_full & (regf_req_id[23:20] == REQ_ID_READ);
+  assign rrqq_wr_en = (received_req) & ~rrqq_wr_rst_busy & ~rrqq_full & (regf_req_id[23:20] == REQ_ID_READ);
   // mrmac
   assign new_read_request_pending = ((rrqq_rd_data_count == 0) & ~read_request_in_use) ? 1'b0 : 1'b1;
   assign rrqq_rd_en =  new_read_request_pending & ~rrqq_rd_rst_busy & ~rrqq_empty;
@@ -233,7 +233,7 @@ module mhdma_bridge
   logic [NRQQ_DATA_COUNT_W-1:0] nrqq_rd_data_count;
 
   // cfg
-  assign nrqq_wr_en = (&received_req) & ~nrqq_wr_rst_busy & ~nrqq_full & (regf_req_id[23:20] == REQ_ID_NOTIFY_TX);
+  assign nrqq_wr_en = (received_req) & ~nrqq_wr_rst_busy & ~nrqq_full & (regf_req_id[23:20] == REQ_ID_NOTIFY_TX);
   // mrmac
   assign new_notify_request_pending = (nrqq_rd_data_count == 0) ? 1'b0 : 1'b1;
   assign nrqq_rd_en =  new_notify_request_pending & notify_request_in_use & ~nrqq_rd_rst_busy & ~nrqq_empty;
@@ -1200,7 +1200,7 @@ module mhdma_bridge
 
   assign nack_tvalid = (nack_cnt == 'h0) ? 1'b0 : 1'b1 ;
 
-  logic [3:0] use_tx;
+  logic [3:0] command_type;
 
   always_ff @(posedge clk_mrmac) begin : read_rq_control_ready
     if (~resetn_mrmac) begin
@@ -1215,10 +1215,10 @@ module mhdma_bridge
   end
 
   // note that thanks to the arbiter it's not possible to have several *_in_use at the same time
-  assign use_tx = {notify_request_in_use, notify_ack_in_use, read_request_in_use, ct_emission_request_in_use};
+  assign command_type = {notify_request_in_use, notify_ack_in_use, read_request_in_use, ct_emission_request_in_use};
 
   always_comb begin
-    case (use_tx)
+    case (command_type)
     4'b1000:
     begin
       qsfp_tx_tvalid     = tx_frame_valid;
@@ -1269,7 +1269,7 @@ module mhdma_bridge
     if (~resetn_cfg) begin
       start_cnt_notify_ack <= 1'b0;
     end else begin
-      if (&received_req & (regf_req_id[23:20] == REQ_ID_NOTIFY_TX)) begin
+      if (received_req & (regf_req_id[23:20] == REQ_ID_NOTIFY_TX)) begin
         start_cnt_notify_ack <= 1'b1;
       end else if(notify_ack_received_cdc) begin
         start_cnt_notify_ack <= 1'b0;
