@@ -133,6 +133,9 @@ module hpu_3parts
   logic                  in_p3_cfg_interrupt;
 
   logic                  out_p1_prc_interrupt;
+  logic                  out_p1_prc_interrupt_r0;
+  logic                  out_p1_prc_interrupt_r1;
+  logic                  out_p1_prc_interrupt_r2;
   logic                  out_p1_cfg_interrupt;
   logic                  out_p3_prc_interrupt;
   logic                  out_p3_cfg_interrupt;
@@ -364,12 +367,18 @@ module hpu_3parts
 
       always_ff @(posedge cfg_clk)
         if (!cfg_srst_n) begin
-          out_p1_cfg_interrupt <= 1'b0;
-          out_p1_prc_interrupt <= 1'b0;
+          out_p1_cfg_interrupt    <= 1'b0;
+          out_p1_prc_interrupt    <= 1'b0;
+          out_p1_prc_interrupt_r0 <= 1'b0;
+          out_p1_prc_interrupt_r1 <= 1'b0;
+          out_p1_prc_interrupt_r2 <= 1'b0;
         end
         else begin
-          out_p1_cfg_interrupt <= in_p1_cfg_interrupt;
-          out_p1_prc_interrupt <= in_p1_prc_interrupt;
+          out_p1_cfg_interrupt    <= in_p1_cfg_interrupt;
+          out_p1_prc_interrupt_r0 <= in_p1_prc_interrupt;
+          out_p1_prc_interrupt_r1 <= out_p1_prc_interrupt_r0;
+          out_p1_prc_interrupt_r2 <= out_p1_prc_interrupt_r1;
+          out_p1_prc_interrupt    <= out_p1_prc_interrupt_r2 ^ out_p1_prc_interrupt_r1;
         end
 
       always_ff @(posedge cfg_clk)
