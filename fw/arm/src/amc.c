@@ -255,9 +255,14 @@ AXC_PROXY_DRIVER_EXTERNAL_DEVICE_CONFIG xDimmDevice =
 };
 
 uint64_t ullAmcInitStatus = 0;
-uint64_t intr_global_var_0 = 5;
-uint64_t intr_global_var_1 = 2;
-uint64_t intr_global_var_2 = 3;
+uint64_t intr_global_var_0 = 0;
+uint64_t intr_global_var_1 = 0;
+uint64_t intr_global_var_2 = 0;
+uint32_t ackq_head = 0;
+uint32_t ackq_tail = 0;
+volatile uint32_t *toAmiIopAckqHead = ( volatile uint32_t* )( HAL_RPU_SHARED_MEMORY_BASE_ADDR + OFFSET_TO_AMI_IOPACKQ_HEAD );
+volatile uint32_t *toAmiIopAckqTail = ( volatile uint32_t* )( HAL_RPU_SHARED_MEMORY_BASE_ADDR + OFFSET_TO_AMI_IOPACKQ_TAIL );
+volatile uintptr_t toAmiIopAckqData = ( volatile uintptr_t )( HAL_RPU_SHARED_MEMORY_BASE_ADDR + OFFSET_TO_AMI_IOPACKQ_DATA_START );
 
 /******************************************************************************/
 /* Function implementations                                                   */
@@ -267,9 +272,30 @@ extern XScuGic xInterruptController;
 
 void vInterruptHandler_zama0( void* pvCallBackRef ) {
     intr_global_var_0 = intr_global_var_0 + 1;
-    // write int register at 0 to stop interrupt
-    //uint32_t data =  * (volatile uint32_t *) (XPAR_AXI_LPD_BASEADDR + 0x2008);
-    //*( ( volatile uint32_t * )(XPAR_AXI_LPD_BASEADDR + 0x2008) ) = data & 0xFFFFFFFE;
+
+    // NB: Head is only written by AMC after init
+    // -> No need to invalidate the cache
+    ackq_head = * toAmiIopAckqHead;
+    HAL_INVALIDATE_CACHE_DATA( (uintptr_t)toAmiIopAckqTail, sizeof(uint32_t) );
+    ackq_tail = * toAmiIopAckqTail;
+    uint32_t ackq_free_words = AMI_IOPACKQ_MAX_WORDS + ackq_tail - ackq_head;
+    //PLL_INF("AMC", "IOP Ack pending %d, AckQ [head 0x%x; tail 0x%x; free_w %d]", read_isc_ack_cnt(), ackq_head, ackq_tail, ackq_free_words);
+
+    //PLL_INF("AMC", "IOpAck queue is full, abort isc ack forwarding");
+    if (ackq_free_words != 0) {
+        // Write ack value in queue body
+        volatile uint32_t* ackq_idx = toAmiIopAckqData + ((ackq_head % AMI_IOPACKQ_MAX_WORDS) * sizeof(uint32_t));
+        uint32_t poped_iop_ack = pop_isc_ack();
+        *ackq_idx = poped_iop_ack;
+        HAL_FLUSH_CACHE_DATA( (uintptr_t)ackq_idx, sizeof(uint32_t));
+
+        if (poped_iop_ack > 0) {
+            // Update queue head
+            ackq_head += 1;
+            *toAmiIopAckqHead = ackq_head;
+            HAL_FLUSH_CACHE_DATA( (uintptr_t)toAmiIopAckqHead, sizeof(uint32_t));
+        }
+    }
 }
 void vInterruptHandler_zama1( void* pvCallBackRef ) {
     intr_global_var_1 = intr_global_var_1 + 1;
@@ -355,6 +381,14 @@ static void vTaskFuncMain( void )
     PLL_INF( AMC_NAME, "ucInBandInitialised             %s\n\r", ( ullAmcInitStatus & AMC_CFG_IN_BAND_INITIALISED          ? "TRUE" : "FALSE" ) );
     PLL_INF( AMC_NAME, "ucOutOfBandInitialised          %s\n\r", ( ullAmcInitStatus & AMC_CFG_OUT_OF_BAND_INITIALISED      ? "TRUE" : "FALSE" ) );
 
+    // Upon init retrieved ack queue Head and Tail to be align with the driver
+    // Read driver tail position and aligned head to have empty queue
+    HAL_INVALIDATE_CACHE_DATA( (uintptr_t) (toAmiIopAckqTail), sizeof(uint32_t) );
+    ackq_tail = * toAmiIopAckqTail;
+    ackq_head = ackq_tail;
+    *toAmiIopAckqHead = ackq_head;
+    HAL_FLUSH_CACHE_DATA( (uintptr_t) (toAmiIopAckqHead), sizeof(uint32_t) );
+
     if( OSAL_ERRORS_NONE != iOSAL_Interrupt_Setup( XPAR_FABRIC_RTL_INTERRUPT_0_INTR, vInterruptHandler_zama0, NULL ) ) {
        PLL_ERR( AMC_NAME, "failed init interruption XPAR_FABRIC_RTL_INTERRUPT_0_INTR\r\n" );
     } else {
@@ -400,23 +434,6 @@ static void vTaskFuncMain( void )
     * fromAmiIopqTail = iopq_tail;
     HAL_FLUSH_CACHE_DATA( (uintptr_t) (fromAmiIopqTail), sizeof(uint32_t) );
 
-     // Init IOpAck queue descriptor
-    volatile uint32_t *toAmiIopAckqHead = NULL;
-    volatile uint32_t *toAmiIopAckqTail = NULL;
-    toAmiIopAckqHead = ( volatile uint32_t* )( HAL_RPU_SHARED_MEMORY_BASE_ADDR + OFFSET_TO_AMI_IOPACKQ_HEAD );
-    toAmiIopAckqTail = ( volatile uint32_t* )( HAL_RPU_SHARED_MEMORY_BASE_ADDR + OFFSET_TO_AMI_IOPACKQ_TAIL );
-    volatile uintptr_t toAmiIopAckqData = (volatile uintptr_t )( HAL_RPU_SHARED_MEMORY_BASE_ADDR + OFFSET_TO_AMI_IOPACKQ_DATA_START );
-
-    // Upon init retrieved Head and Tail to be align with the driver
-    // Read driver tail position and aligned head to have empty queue
-    HAL_INVALIDATE_CACHE_DATA( (uintptr_t) (toAmiIopAckqTail), sizeof(uint32_t) );
-    // HAL_INVALIDATE_CACHE_DATA( (uintptr_t) (toAmiIopAckqHead), sizeof(uint32_t) );
-    uint32_t ackq_tail = * toAmiIopAckqTail;
-    uint32_t ackq_head = ackq_tail;
-    *toAmiIopAckqHead = ackq_head;
-    HAL_FLUSH_CACHE_DATA( (uintptr_t) (toAmiIopAckqHead), sizeof(uint32_t) );
-
-
     // IOp/Dop translation buffer
     uint32_t iop_buffer[IOP_MAX_WORDS];
     uint32_t dop_buffer[DOP_BUFFER_SIZE];
@@ -436,39 +453,6 @@ static void vTaskFuncMain( void )
         uint32_t write_isc_rv = OK;
 
         // ----------------------------------------------------------------------------------------
-        // First forward Isc Ack to Host if any
-        // In this (i.e. IOpAck queue) AMC is the producer
-        // NB: Ack are pushed one by one to prevent handling of queue data boundaries crossing
-        // -> No real impact on performances
-        while (read_isc_ack_cnt() != 0) {
-            // NB: Head is only written by AMC after init
-            // -> No need to invalidate the cache
-            ackq_head = * toAmiIopAckqHead;
-            HAL_INVALIDATE_CACHE_DATA( (uintptr_t)toAmiIopAckqTail, sizeof(uint32_t) );
-            ackq_tail = * toAmiIopAckqTail;
-            uint32_t ackq_free_words = AMI_IOPACKQ_MAX_WORDS + ackq_tail - ackq_head;
-            PLL_INF("AMC", "IOP Ack pending %d, AckQ [head 0x%x; tail 0x%x; free_w %d]", read_isc_ack_cnt(), ackq_head, ackq_tail, ackq_free_words);
-            PLL_ERR("AMC", "interrupt count [0] %d edges", intr_global_var_0);
-            PLL_ERR("AMC", "interrupt count [1] %d level at 1", intr_global_var_1);
-
-            if (ackq_free_words == 0) {
-                PLL_INF("AMC", "IOpAck queue is full, abort isc ack forwarding");
-                break;
-            } else {
-                // Write ack value in queue body
-                volatile uint32_t* ackq_idx = toAmiIopAckqData + ((ackq_head % AMI_IOPACKQ_MAX_WORDS) * sizeof(uint32_t));
-                *ackq_idx = pop_isc_ack();
-                HAL_FLUSH_CACHE_DATA( (uintptr_t)ackq_idx, sizeof(uint32_t));
-
-                // Update queue head
-                ackq_head += 1;
-                *toAmiIopAckqHead = ackq_head;
-                HAL_FLUSH_CACHE_DATA( (uintptr_t)toAmiIopAckqHead, sizeof(uint32_t));
-            }
-        }
-
-
-        // ----------------------------------------------------------------------------------------
         // Second handle IOp queue containing IOp pushed by AMI driver
         // Update queue pointer
         // NB: Tail is only written by AMC after init
@@ -486,6 +470,9 @@ static void vTaskFuncMain( void )
         //      This buffer have the depth of the longest supported IOp (Currently fixed at compile time)
         //      After parsing only the used bytes are consumed from the queue
         if (iopq_used_bytes != 0 && !stop_consuming_iop) {
+            //PLL_ERR("AMC", "interrupt count [0] %d edges", intr_global_var_0);
+            //PLL_ERR("AMC", "interrupt [0] loop count %d", intr_global_var_2);
+            //PLL_ERR("AMC", "interrupt count [1] %d level at 1", intr_global_var_1);
             PLL_INF("AMC", "Fw received IOP request, translation into DOP needed [head 0x%x; tail 0x%x]", iopq_head, iopq_tail);
 
             // 1. Compute bytes to read from queue
