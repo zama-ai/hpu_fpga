@@ -90,14 +90,14 @@ module mhdma_bridge
   // =========================================================================================== //
   localparam int CDC_SYNC_STAGES = 2;
 
-  // generate cannot be in packages
   //TODO: review theses two values, if not divisible by 32 it will be wrong
+  localparam [15:0] PC_STRIDE   = 'h3000;
   localparam [ETH_PC-1:0][15:0] PC_CT_BYTES = '{'h2000, 'h2020};
-  localparam             [15:0] PC_STRIDE   = 'h5000;
 
   localparam int MAX_BURST_SIZE = PAGE_BYTES/AXI4_DATA_BYTES;
   localparam [AXI4_SIZE_W-1:0] MHDMA_ARSIZE = $clog2(AXI4_DATA_BYTES);
 
+  // generate cannot be in packages
   // PC_NB_READS: how many reads are needed per PCs
   // TOREVIEW: if ever ciphertexts are not aligned to a page, this will induce stalls
   // How to enforce ? / should it be enforced ?
@@ -849,23 +849,31 @@ module mhdma_bridge
   assign rr_hpu_id      = read_request_cmd[RR_HPU_ID_OFS-1:RR_IOP_ID_OFS];
   assign rr_iop_id      = read_request_cmd[RR_IOP_ID_OFS-1:RR_DST_ID_OFS];
   assign rr_ct_dst_addr = read_request_cmd[RR_DST_ID_OFS-1:RR_SRC_ID_OFS];
-  assign rr_ct_src_addr = read_request_cmd[RR_SRC_ID_OFS-1:0];
+  assign rr_ct_src_addr = (rreq_cmd_out_valid & rreq_cmd_out_ready) ? rreq_cmd_out_data[RR_SRC_ID_OFS-1:0] : 0;
 
   // phys_addr = hbm_pc_offset + ctId * ciphertext_size
   logic [ETH_PC-1:0] [AXI4_ADD_W-1:0] phy_addr;
   generate
     for (genvar gen_p=0; gen_p<ETH_PC; gen_p=gen_p+1)
-      always_ff @(posedge clk_mrmac)
-        phy_addr[gen_p] <= regf_ct_mem_addr[gen_p] + rr_ct_src_addr * PC_STRIDE;
+      always_ff @(posedge clk_mrmac) begin
+        if (~resetn_mrmac) begin
+          phy_addr[gen_p] <= 'h0;
+        end else begin
+          if (rreq_cmd_out_valid & rreq_cmd_out_ready) begin
+            phy_addr[gen_p] <= regf_ct_mem_addr[gen_p] + rr_ct_src_addr * PC_STRIDE;
+          end
+        end
+      end
   endgenerate
 
-  // temporising rreq_cmd_out_valid in order to have phy_addr ready
+  // flag that states that read request is ready
   logic rreq_ready;
   always_ff @(posedge clk_mrmac)
     rreq_ready <= rreq_cmd_out_valid & rreq_cmd_out_ready;
 
   // let's start ciphertext emission when its flag is up and we are not changing command values
   logic [ETH_PC-1:0] axi4_read_pc;
+  logic [ETH_PC-1:0] axi4_read_last;
 
   // process an axi4-read on each PC
   //  - arlen the burst size is dictated from parameter MAX_BURST_SIZE
@@ -874,52 +882,48 @@ module mhdma_bridge
   generate
     for (genvar gen_rd=0; gen_rd<ETH_PC; gen_rd++) begin : gen_ce_reads
       logic [$clog2(gen_localparam[gen_rd].PC_NB_READS):0] axi_read_cnt;
+      logic                                                axi_read;
 
       // Counts the number of clock cycles that must perform reads taking account bursts
       // because we decrement from axi4_read_pc we add one to count all words
       always_ff @(posedge clk_mrmac) begin
         if (~resetn_mrmac) begin
-          axi_read_cnt <= gen_localparam[gen_rd].PC_NB_READS + 1;
+          axi_read_cnt <= gen_localparam[gen_rd].PC_NB_READS;
+          axi_read <= 1'b0;
         end else begin
-          if (axi4_read_pc[gen_rd] & m_axi4_arready) begin
+          if ((axi_read_cnt > 0) & axi4_read_pc[gen_rd] & m_axi4_arready[gen_rd]) begin
+            axi_read <= 1'b1;
             axi_read_cnt <= axi_read_cnt - 1;
           end else begin
-            axi_read_cnt <= gen_localparam[gen_rd].PC_NB_READS + 1;
+            axi_read <= 1'b0;
+            axi_read_cnt <= gen_localparam[gen_rd].PC_NB_READS;
           end
         end
       end
 
-      // TODO: hop phy addr to next increment !
+      logic [AXI4_ADD_W-1:0] mhdma_read_addr;
+      // read address takes the physical address computed earlier as soon as the value is ready
+      // when starting the reading process we compute the offset accounting burst sequence
       always_ff @(posedge clk_mrmac) begin
         if (~resetn_mrmac) begin
-          m_axi4_arid[gen_rd]    <= 'h0;
-          m_axi4_araddr[gen_rd]  <= 'h0;
-          m_axi4_arlen[gen_rd]   <= 'h0;
-          m_axi4_arsize[gen_rd]  <= 'h0;
-          m_axi4_arburst[gen_rd] <= 'h0;
-          m_axi4_arvalid[gen_rd] <= 'h0;
-          m_axi4_rready[gen_rd]  <= 'h0;
+          mhdma_read_addr <= 'h0;
         end else begin
-          m_axi4_rready[gen_rd]   <= 1'b1;
-
-          if (axi4_read_pc[gen_rd] & m_axi4_arready) begin
-            // m_axi4_arid[gen_rd] unused ?
-            m_axi4_araddr[gen_rd]   <= phy_addr[gen_rd];
-            m_axi4_arlen[gen_rd]    <= MAX_BURST_SIZE-1;
-            m_axi4_arsize[gen_rd]   <= MHDMA_ARSIZE;
-            m_axi4_arburst[gen_rd]  <= 2'b01; // incr
-            m_axi4_arvalid[gen_rd]  <= 1'b1;
+          if (axi_read_cnt == gen_localparam[gen_rd].PC_NB_READS) begin
+            mhdma_read_addr <= phy_addr[gen_rd];
           end else begin
-
-          m_axi4_arid[gen_rd]    <= 'h0;
-          m_axi4_araddr[gen_rd]  <= 'h0;
-          m_axi4_arlen[gen_rd]   <= 'h0;
-          m_axi4_arsize[gen_rd]  <= 'h0;
-          m_axi4_arburst[gen_rd] <= 'h0;
-          m_axi4_arvalid[gen_rd] <= 'h0;
+            mhdma_read_addr <= mhdma_read_addr + (NB_MRMRAC_WORDS_PER_READ*MAX_BURST_SIZE);
           end
         end
       end
+
+      // m_axi4_arid[gen_rd];
+      assign m_axi4_araddr[gen_rd]  = (axi_read) ? mhdma_read_addr :'h0;
+      assign m_axi4_arlen[gen_rd]   = (axi_read) ? MAX_BURST_SIZE-1:'h0;
+      assign m_axi4_arsize[gen_rd]  = (axi_read) ? MHDMA_ARSIZE    :'h0;
+      assign m_axi4_arburst[gen_rd] = (axi_read) ? 2'b01           :'h0; // incr
+      assign m_axi4_arvalid[gen_rd] = (axi_read) ? 1'b1            :'h0;
+      // there is not arlast, this is only an intermediate signal
+      assign axi4_read_last[gen_rd] = (axi_read & (axi_read_cnt == 0)) ? 1'b1 : 1'b0;
     end
   endgenerate
 
@@ -928,11 +932,11 @@ module mhdma_bridge
     if (~resetn_mrmac) begin
       axi4_read_pc <= 'h0;
     end else begin
-      // we shift when we are about to hit 1 on the counter to be in sync to 0
-      // between this signal and the counters
-      if (rreq_ready | (gen_ce_reads[0].axi_read_cnt==1)) begin
+      // when read request registers are ready we can trigger the shift register.
+      // when the last signal is fired we can trigger the second PC
+      if (rreq_ready | (axi4_read_last[0])) begin
         axi4_read_pc <= {axi4_read_pc[ETH_PC-2:0], rreq_ready};
-      end else if (gen_ce_reads[1].axi_read_cnt==1) begin
+      end else if (axi4_read_last[1]) begin
         axi4_read_pc <= 'h0;
       end
     end
@@ -941,6 +945,9 @@ module mhdma_bridge
   // one hot value that selects wich PC is selected to be read and sent to QSFP lane
   // always start with PC0
   logic [ETH_PC-1:0] reading_which_pc;
+
+  // TODO:
+  assign m_axi4_rready = 1'b1;
 
   // separate generate block for read fifo and its misc
   // add a backpressure to the read requests
