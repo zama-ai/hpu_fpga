@@ -128,6 +128,10 @@ module hpu_3parts
   //-- Interrupt
   // -------------------------------------------------------------------------------------------- --
   logic                  in_p1_prc_interrupt;
+  logic                  in_p1_prc_interrupt_r0;
+  logic                  in_p1_prc_interrupt_r1;
+  logic                  in_p1_prc_interrupt_leveled;
+  logic                  in_p1_prc_interrupt_leveled_D;
   logic                  in_p1_cfg_interrupt;
   logic                  in_p3_prc_interrupt;
   logic                  in_p3_cfg_interrupt;
@@ -347,13 +351,19 @@ module hpu_3parts
       // Interpart Resettable output flops
       // ----------------------------------------------------------------------------------------- //
       // Part 1
-      //always_ff @(posedge prc_clk)
-      //  if (!prc_srst_n_part[0]) begin
-      //    out_p1_prc_interrupt <= '0;
-      //  end
-      //  else begin
-      //    out_p1_prc_interrupt <= in_p1_prc_interrupt;
-      //  end
+      always_ff @(posedge prc_clk)
+        if (!prc_srst_n_part[0]) begin
+          in_p1_prc_interrupt_r0      <= 1'b0;
+          in_p1_prc_interrupt_r1      <= 1'b0;
+          in_p1_prc_interrupt_leveled <= 1'b0;
+        end
+        else begin
+          in_p1_prc_interrupt_r0      <= in_p1_prc_interrupt;
+          in_p1_prc_interrupt_r1      <= in_p1_prc_interrupt_r0;
+          in_p1_prc_interrupt_leveled <= in_p1_prc_interrupt_leveled_D;
+        end
+
+      assign in_p1_prc_interrupt_leveled_D = in_p1_prc_interrupt_r0 & ~in_p1_prc_interrupt_r1 ? ~in_p1_prc_interrupt_leveled : in_p1_prc_interrupt_leveled;
 
       // Part 3 TODO: Not clear how are the interrupts going to be used.
       always_ff @(posedge prc_clk)
@@ -375,7 +385,7 @@ module hpu_3parts
         end
         else begin
           out_p1_cfg_interrupt    <= in_p1_cfg_interrupt;
-          out_p1_prc_interrupt_r0 <= in_p1_prc_interrupt;
+          out_p1_prc_interrupt_r0 <= in_p1_prc_interrupt_leveled;
           out_p1_prc_interrupt_r1 <= out_p1_prc_interrupt_r0;
           out_p1_prc_interrupt_r2 <= out_p1_prc_interrupt_r1;
           out_p1_prc_interrupt    <= out_p1_prc_interrupt_r2 ^ out_p1_prc_interrupt_r1;

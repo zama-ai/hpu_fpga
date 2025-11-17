@@ -212,7 +212,7 @@ module hpu_with_entry_1in3
     .use_bpip_opportunism      (use_bpip_opportunism),
     .bpip_timeout              (bpip_timeout),
     .trc_mem_addr              (trc_mem_addr),
-    .interrupt                 (interrupt)
+    .interrupt                 ({interrupt[1], 1'(_)})
   );
 
 // ============================================================================================== --
@@ -304,6 +304,8 @@ module hpu_with_entry_1in3
     .trace_wr_en        (isc_trace_wr_en),
     .trace_data         (isc_trace_data)
   );
+
+  assign interrupt[0] = isc_ack_vld & isc_ack_rdy;
 
 /// ============================================================================================== --
 //  Trace Manager
