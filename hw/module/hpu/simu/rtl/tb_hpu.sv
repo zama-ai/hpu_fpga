@@ -169,7 +169,7 @@ module tb_hpu;
   bit cfg_clk;
   bit a_rst_n; // asynchronous reset
   bit s_rst_n; // synchronous reset
-  bit cfg_srst_n; // synchronous clock
+  bit cfg_srst_n; // synchronous reset to cfg_clk
 
   initial begin
     clk     = 1'b0;
@@ -235,7 +235,7 @@ module tb_hpu;
 // ============================================================================================== --
 // input / output signals
 // ============================================================================================== --
-logic [3:0]                          hpu_irq;
+logic [4:0]                          hpu_irq;
 
 // AxiLite interface ======================================================================
 logic [1:0][AXIL_ADD_W-1:0]          tb_axil_prc_awaddr;

@@ -92,7 +92,7 @@ module hpu_with_entry_3in3
   input  pep_info_t                                                    pep_rif_info,
   input  pep_counter_inc_t                                             pep_rif_counter_inc,
 
-  output logic [1:0]                                                   interrupt, // TODO
+  output logic                                                         interrupt,
 
   // Reset three way handshake -----------------------------------------------------------------------
   output logic                                                         hpu_reset,
@@ -132,7 +132,8 @@ module hpu_with_entry_3in3
     // Registers IO
     .bsk_mem_addr              (bsk_mem_addr),
     .hpu_reset                 (hpu_reset),
-    .hpu_reset_done            (hpu_reset_done)
+    .hpu_reset_done            (hpu_reset_done),
+    .interrupt                 (interrupt)
   );
 
 // ============================================================================================== --

@@ -82,8 +82,7 @@
         }
     ],
     "constraint_files": [
-        "hw/module/hpu/constraint/hpu_timing_constraints_local.xdc",
-        "hw/module/hpu/constraint/hpu_timing_constraints_hier.xdc"
+        "hw/module/hpu/constraint/hpu_timing_constraints_local.xdc"
     ],
     "dependency_dir": [
         "hw/common_lib/common_package",

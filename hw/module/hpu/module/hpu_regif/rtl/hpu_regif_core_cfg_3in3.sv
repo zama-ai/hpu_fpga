@@ -1,7 +1,7 @@
 // ============================================================================================== //
 // Description  : Axi4-lite register bank
 // This file was generated with rust regmap generator:
-//  * Date:  2025-11-10
+//  * Date:  2025-11-17
 //  * Tool_version: 27d9e880d531030160fd8749c606142942d5558d
 // ---------------------------------------------------------------------------------------------- //
 // xR[n]W[na]
@@ -124,6 +124,8 @@ import hpu_regif_core_cfg_3in3_pkg::*;
     , input  hpu_reset_trigger_t r_hpu_reset_trigger_upd
     , output logic r_hpu_reset_trigger_rd_en
     , output logic r_hpu_reset_trigger_wr_en
+  // Register IO: hpu_reset_int
+    , output hpu_reset_int_t r_hpu_reset_int
 );
 // ============================================================================================== --
 // localparam
@@ -367,6 +369,12 @@ import hpu_regif_core_cfg_3in3_pkg::*;
     hpu_reset_trigger_default = 'h0;
     hpu_reset_trigger_default.request = 'h0;
     hpu_reset_trigger_default.done = 'h0;
+  end
+//-- Default hpu_reset_int
+  hpu_reset_int_t hpu_reset_int_default;
+  always_comb begin
+    hpu_reset_int_default = 'h0;
+    hpu_reset_int_default.int0 = 'h0;
   end
 // ============================================================================================== --
 // Write reg
@@ -740,6 +748,17 @@ import hpu_regif_core_cfg_3in3_pkg::*;
   end
   assign r_hpu_reset_trigger_rd_en = rd_en_ok && (rd_add[AXIL_ADD_RANGE_W-1:0] == HPU_RESET_TRIGGER_OFS[AXIL_ADD_RANGE_W-1:0]);
   assign r_hpu_reset_trigger = r_hpu_reset_trigger_upd;
+// Register FF: hpu_reset_int
+  logic [REG_DATA_W-1:0] r_hpu_reset_intD;
+  assign r_hpu_reset_intD = (wr_en_ok && (wr_add[AXIL_ADD_RANGE_W-1:0] == HPU_RESET_INT_OFS[AXIL_ADD_RANGE_W-1:0]))? wr_data: r_hpu_reset_int;
+  always_ff @(posedge clk) begin
+    if (!s_rst_n) begin
+      r_hpu_reset_int       <= hpu_reset_int_default;
+    end
+    else begin
+      r_hpu_reset_int       <= r_hpu_reset_intD;
+    end
+  end
 // ============================================================================================== --
 // Read reg
 // ============================================================================================== --
@@ -869,6 +888,9 @@ import hpu_regif_core_cfg_3in3_pkg::*;
           end
           HPU_RESET_TRIGGER_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register hpu_reset_trigger
             axil_rdataD = r_hpu_reset_trigger;
+          end
+          HPU_RESET_INT_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register hpu_reset_int
+            axil_rdataD = r_hpu_reset_int;
           end
           default:
             axil_rdataD = REG_DATA_W'('h0BAD_ADD1); // Default value

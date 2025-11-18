@@ -1,7 +1,7 @@
 // ============================================================================================== //
 // Description  : register  map address definition package
 // This file was generated with rust regmap generator:
-//  * Date:  2025-11-10
+//  * Date:  2025-11-17
 //  * Tool_version: 27d9e880d531030160fd8749c606142942d5558d
 // ---------------------------------------------------------------------------------------------- //
 //
@@ -50,4 +50,9 @@ package hpu_regif_core_cfg_3in3_pkg;
     logic [(1-1):0] request;
    } hpu_reset_trigger_t;
   localparam int HPU_RESET_TRIGGER_OFS = 'h20100;
+  typedef struct packed {
+    logic [(31-1):0] padding_1;
+    logic [(1-1):0] int0;
+   } hpu_reset_int_t;
+  localparam int HPU_RESET_INT_OFS = 'h20104;
 endpackage

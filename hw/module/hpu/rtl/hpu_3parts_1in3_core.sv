@@ -52,7 +52,7 @@ module hpu_3parts_1in3_core
   input  logic                 cfg_clk,    // config clock
   input  logic                 cfg_srst_n, // synchronous reset
 
-  output logic [1:0]           interrupt, // [0] prc_clk, [1] cfg_clk
+  output logic [1:0]           interrupt,
 
   //== Axi4-lite slave @prc_clk and @cfg_clk
   `HPU_AXIL_IO(prc,axi_if_shell_axil_pkg)

@@ -125,7 +125,7 @@ module top_hpu #(
    * only one interrupt on the rtl side but inside block design
    * the maximum number is defined
    */
-  logic [3:0] hpu_interrupt;
+  logic [4:0] hpu_interrupt;
   logic [5:0] rtl_interrupt;
 
   /* Clock Reset --------------------------------------------------------------
@@ -457,9 +457,7 @@ module top_hpu #(
   // =========================================================================================== //
   // Connections
   // =========================================================================================== //
-  assign rtl_interrupt[0]   = hpu_interrupt[0];
-  assign rtl_interrupt[1]   = hpu_interrupt[1];
-  assign rtl_interrupt[5:2] = 4'b0;
+  assign rtl_interrupt = {1'b0, hpu_interrupt};
 
   // from isc to bd, stream is one word at a time
   assign axis_s_rx_tlast = 1'b1;

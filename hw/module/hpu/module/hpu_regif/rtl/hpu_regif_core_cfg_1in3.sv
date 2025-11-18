@@ -1,7 +1,7 @@
 // ============================================================================================== //
 // Description  : Axi4-lite register bank
 // This file was generated with rust regmap generator:
-//  * Date:  2025-11-10
+//  * Date:  2025-11-17
 //  * Tool_version: 27d9e880d531030160fd8749c606142942d5558d
 // ---------------------------------------------------------------------------------------------- //
 // xR[n]W[na]
@@ -182,8 +182,6 @@ import hpu_regif_core_cfg_1in3_pkg::*;
     , output bpip_use_t r_bpip_use
   // Register IO: bpip_timeout
     , output logic [REG_DATA_W-1: 0] r_bpip_timeout
-  // Register IO: bpip_int
-    , output bpip_int_t r_bpip_int
 );
 // ============================================================================================== --
 // localparam
@@ -572,13 +570,6 @@ import hpu_regif_core_cfg_1in3_pkg::*;
 //-- Default bpip_timeout
   logic [REG_DATA_W-1:0]bpip_timeout_default;
   assign bpip_timeout_default = 'hffffffff;
-//-- Default bpip_int
-  bpip_int_t bpip_int_default;
-  always_comb begin
-    bpip_int_default = 'h0;
-    bpip_int_default.int0 = 'h0;
-    bpip_int_default.int1 = 'h0;
-  end
 // ============================================================================================== --
 // Write reg
 // ============================================================================================== --
@@ -1046,17 +1037,6 @@ import hpu_regif_core_cfg_1in3_pkg::*;
       r_bpip_timeout       <= r_bpip_timeoutD;
     end
   end
-// Register FF: bpip_int
-  logic [REG_DATA_W-1:0] r_bpip_intD;
-  assign r_bpip_intD = (wr_en_ok && (wr_add[AXIL_ADD_RANGE_W-1:0] == BPIP_INT_OFS[AXIL_ADD_RANGE_W-1:0]))? wr_data: r_bpip_int;
-  always_ff @(posedge clk) begin
-    if (!s_rst_n) begin
-      r_bpip_int       <= bpip_int_default;
-    end
-    else begin
-      r_bpip_int       <= r_bpip_intD;
-    end
-  end
 // ============================================================================================== --
 // Read reg
 // ============================================================================================== --
@@ -1270,9 +1250,6 @@ import hpu_regif_core_cfg_1in3_pkg::*;
           end
           BPIP_TIMEOUT_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register bpip_timeout
             axil_rdataD = r_bpip_timeout;
-          end
-          BPIP_INT_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register bpip_int
-            axil_rdataD = r_bpip_int;
           end
           default:
             axil_rdataD = REG_DATA_W'('h0BAD_ADD1); // Default value

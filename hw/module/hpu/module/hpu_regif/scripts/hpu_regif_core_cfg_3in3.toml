@@ -61,3 +61,10 @@ offset= 0x100
   write_access="WriteNotify"
   field.request = { size_b=1, offset_b=0 ,  default={Cst=0}, description="request"}
   field.done    = { size_b=1, offset_b=31 , default={Cst=0}, description="done"}
+
+[section.hpu_reset.register.int]
+  description="debug register to test interrupts"
+  owner="User"
+  read_access="Read"
+  write_access="Write"
+  field.int0 = { size_b=1, offset_b=0 , default={Cst=0}, description="debug int line 0"}

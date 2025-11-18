@@ -255,23 +255,28 @@ AXC_PROXY_DRIVER_EXTERNAL_DEVICE_CONFIG xDimmDevice =
 };
 
 uint64_t ullAmcInitStatus = 0;
-uint64_t intr_global_var_0 = 0;
-uint64_t intr_global_var_1 = 0;
-uint64_t intr_global_var_2 = 0;
+uint64_t isc_intr_global_cnt = 0;
+uint64_t debug_intr_global_cnt = 0;
 uint32_t ackq_head = 0;
 uint32_t ackq_tail = 0;
 volatile uint32_t *toAmiIopAckqHead = ( volatile uint32_t* )( HAL_RPU_SHARED_MEMORY_BASE_ADDR + OFFSET_TO_AMI_IOPACKQ_HEAD );
 volatile uint32_t *toAmiIopAckqTail = ( volatile uint32_t* )( HAL_RPU_SHARED_MEMORY_BASE_ADDR + OFFSET_TO_AMI_IOPACKQ_TAIL );
-volatile uintptr_t toAmiIopAckqData = ( volatile uintptr_t )( HAL_RPU_SHARED_MEMORY_BASE_ADDR + OFFSET_TO_AMI_IOPACKQ_DATA_START );
+volatile uint32_t *toAmiIopAckqData = ( volatile uint32_t* )( HAL_RPU_SHARED_MEMORY_BASE_ADDR + OFFSET_TO_AMI_IOPACKQ_DATA_START );
+
+#define HIGH_PRIORITY_INTR  0x20 // default is around 0xA0 and lower val means higher priority
+#define EDGE_SENSITIVE_INTR 0x3  // triggers on posedge of interrupt signal
+#define ACTIVE_ONE_INTR     0x1  // default value, triggers when signal is at 1
+
+extern XScuGic xInterruptController;
 
 /******************************************************************************/
 /* Function implementations                                                   */
 /******************************************************************************/
-
-extern XScuGic xInterruptController;
-
+/*
+ * @brief   the IOp ack interrupt handler
+ */
 void vInterruptHandler_zama0( void* pvCallBackRef ) {
-    intr_global_var_0 = intr_global_var_0 + 1;
+    isc_intr_global_cnt = isc_intr_global_cnt + 1;
 
     // NB: Head is only written by AMC after init
     // -> No need to invalidate the cache
@@ -297,11 +302,15 @@ void vInterruptHandler_zama0( void* pvCallBackRef ) {
         }
     }
 }
+
+/*
+ * @brief   debug only interrupt handler
+ */
 void vInterruptHandler_zama1( void* pvCallBackRef ) {
-    intr_global_var_1 = intr_global_var_1 + 1;
+    debug_intr_global_cnt = debug_intr_global_cnt + 1;
     // write int register at 0 to stop interrupt
-    uint32_t data =  * (volatile uint32_t *) (XPAR_AXI_LPD_BASEADDR + 0x2008);
-    *( ( volatile uint32_t * )(XPAR_AXI_LPD_BASEADDR + 0x2008) ) = data & 0xFFFFFFFD;
+    uint32_t data =  * (volatile uint32_t *) (XPAR_AXI_LPD_BASEADDR + 0x20104);
+    *( ( volatile uint32_t * )(XPAR_AXI_LPD_BASEADDR + 0x20104) ) = data & 0xFFFFFFFE;
 }
 
 /*
@@ -389,33 +398,33 @@ static void vTaskFuncMain( void )
     *toAmiIopAckqHead = ackq_head;
     HAL_FLUSH_CACHE_DATA( (uintptr_t) (toAmiIopAckqHead), sizeof(uint32_t) );
 
+    // Initialise Interrupts
     if( OSAL_ERRORS_NONE != iOSAL_Interrupt_Setup( XPAR_FABRIC_RTL_INTERRUPT_0_INTR, vInterruptHandler_zama0, NULL ) ) {
-       PLL_ERR( AMC_NAME, "failed init interruption XPAR_FABRIC_RTL_INTERRUPT_0_INTR\r\n" );
+       PLL_ERR( AMC_NAME, "failed init isc interruption\r\n" );
     } else {
-       PLL_ERR( AMC_NAME, "interrupt handler on hpu_interrupt[0] init\r\n" );
+       PLL_INF( AMC_NAME, "interrupt handler on isc interrupt initialised\r\n" );
     }
     XScuGic_SetPriorityTriggerType(
        &xInterruptController,
        XPAR_FABRIC_RTL_INTERRUPT_0_INTR,
-       0xA0,
-       0x3 // Constant for Edge-Sensitive (Rising Edge)
+       HIGH_PRIORITY_INTR,
+       EDGE_SENSITIVE_INTR
     );
     if( OSAL_ERRORS_NONE != iOSAL_Interrupt_Enable( XPAR_FABRIC_RTL_INTERRUPT_0_INTR) ) {
-       PLL_ERR( AMC_NAME, "failed enabling interruption XPAR_FABRIC_RTL_INTERRUPT_0_INTR\r\n" );
+       PLL_ERR( AMC_NAME, "failed enabling isc interrupt\r\n" );
     } else {
-       PLL_ERR( AMC_NAME, "enabling hpu_interrupt[0] on rising edge\r\n" );
+       PLL_INF( AMC_NAME, "enabling isc interrupt on rising edge\r\n" );
     }
-    if( OSAL_ERRORS_NONE != iOSAL_Interrupt_Setup( XPAR_FABRIC_RTL_INTERRUPT_1_INTR, vInterruptHandler_zama1, NULL ) ) {
-       PLL_ERR( AMC_NAME, "failed init interruption XPAR_FABRIC_RTL_INTERRUPT_1_INTR\r\n" );
+    if( OSAL_ERRORS_NONE != iOSAL_Interrupt_Setup( XPAR_FABRIC_RTL_INTERRUPT_4_INTR, vInterruptHandler_zama1, NULL ) ) {
+       PLL_ERR( AMC_NAME, "failed init interrupt hpu_interrupt[4](debug)\r\n" );
     } else {
-       PLL_ERR( AMC_NAME, "interrupt handler on hpu_interrupt[0] init\r\n" );
+       PLL_INF( AMC_NAME, "interrupt handler on hpu_interrupt[4](debug) initialised\r\n" );
     }
-    if( OSAL_ERRORS_NONE != iOSAL_Interrupt_Enable( XPAR_FABRIC_RTL_INTERRUPT_1_INTR) ) {
-       PLL_ERR( AMC_NAME, "failed enabling interruption XPAR_FABRIC_RTL_INTERRUPT_1_INTR\r\n" );
+    if( OSAL_ERRORS_NONE != iOSAL_Interrupt_Enable( XPAR_FABRIC_RTL_INTERRUPT_4_INTR) ) {
+       PLL_ERR( AMC_NAME, "failed enabling interrupt hpu_interrupt[4](debug)\r\n" );
     } else {
-       PLL_ERR( AMC_NAME, "enabling hpu_interrupt[0] on level\r\n" );
+       PLL_INF( AMC_NAME, "enabling hpu_interrupt[4] on level\r\n" );
     }
-
 
     // Init IOp queue descriptor
     volatile uint32_t *fromAmiIopqHead = NULL;
@@ -470,9 +479,8 @@ static void vTaskFuncMain( void )
         //      This buffer have the depth of the longest supported IOp (Currently fixed at compile time)
         //      After parsing only the used bytes are consumed from the queue
         if (iopq_used_bytes != 0 && !stop_consuming_iop) {
-            //PLL_ERR("AMC", "interrupt count [0] %d edges", intr_global_var_0);
-            //PLL_ERR("AMC", "interrupt [0] loop count %d", intr_global_var_2);
-            //PLL_ERR("AMC", "interrupt count [1] %d level at 1", intr_global_var_1);
+            //PLL_ERR("AMC", "interrupt[0](isc) count %d edges", isc_intr_global_cnt);
+            //PLL_ERR("AMC", "interrupt[4](debug) count %d level at 1", debug_intr_global_cnt);
             PLL_INF("AMC", "Fw received IOP request, translation into DOP needed [head 0x%x; tail 0x%x]", iopq_head, iopq_tail);
 
             // 1. Compute bytes to read from queue

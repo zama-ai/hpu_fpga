@@ -211,8 +211,7 @@ module hpu_with_entry_1in3
     .use_bpip                  (use_bpip),
     .use_bpip_opportunism      (use_bpip_opportunism),
     .bpip_timeout              (bpip_timeout),
-    .trc_mem_addr              (trc_mem_addr),
-    .interrupt                 ({interrupt[1], 1'(_)})
+    .trc_mem_addr              (trc_mem_addr)
   );
 
 // ============================================================================================== --
@@ -264,6 +263,9 @@ module hpu_with_entry_1in3
     .clk                (prc_clk    ),
     .s_rst_n            (prc_srst_n),
 
+    .cfg_clk            (cfg_clk),
+    .cfg_srst_n         (cfg_srst_n),
+
     .use_bpip           (use_bpip),
 
     // Insn input stream and ack
@@ -271,12 +273,10 @@ module hpu_with_entry_1in3
     .insn_pld           (isc_dop),
     .insn_vld           (isc_dop_vld),
 
-    // TODO extend to axis or change to directly connect to irq-line
-    // Must add a counter with atomic reset on read to enforce that no ack is lost
-    // Implement it directly in the scheduler => it's not an axis fifo, custom component
     .insn_ack_rdy       (isc_ack_rdy),
     .insn_ack_cnt       (isc_ack),
     .insn_ack_vld       (isc_ack_vld),
+    .insn_ack_int       (interrupt[0]),
 
     // PE interfaces
     // PEM
@@ -305,7 +305,8 @@ module hpu_with_entry_1in3
     .trace_data         (isc_trace_data)
   );
 
-  assign interrupt[0] = isc_ack_vld & isc_ack_rdy;
+  // unused for now
+  assign interrupt[1] = 1'b0;
 
 /// ============================================================================================== --
 //  Trace Manager

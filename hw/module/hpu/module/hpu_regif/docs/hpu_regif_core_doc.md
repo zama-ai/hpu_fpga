@@ -1,5 +1,5 @@
 # HPU_REGIF_CORE documentation
-**Date**: 2025-11-10
+**Date**: 2025-11-17
 **Tool Version**: 27d9e880d531030160fd8749c606142942d5558d
 
 ## RegisterMap Overview
@@ -15,7 +15,7 @@ HPU top-level register interface. Used by the host to retrieve design informatio
 **Offset**: 0x0
 **Range**: 0x40000
 **Word Size (b)**: 32
-**External Packages**: "axi_if_common_param_pkg.sv","axi_if_shell_axil_pkg.sv"
+**External Packages**: "axi_if_shell_axil_pkg.sv","axi_if_common_param_pkg.sv"
 
 
 ---
@@ -29,14 +29,14 @@ Below is a summary of all the registers in the current register map:
 | [entry_cfg_1in3](#section-entry-cfg-1in3) | 0x0 | 0x10 | entry_cfg_1in3 section with known value used for debug. |
 | [info](#section-info) | 0x10 | 0x4c | RTL architecture parameters |
 | [hbm_axi4_addr_1in3](#section-hbm-axi4-addr-1in3) | 0x1000 | 0xa0 | HBM AXI4 connection address offset |
-| [bpip](#section-bpip) | 0x2000 | 0xc | BPIP configuration |
+| [bpip](#section-bpip) | 0x2000 | 0x8 | BPIP configuration |
 | [entry_prc_1in3](#section-entry-prc-1in3) | 0x10000 | 0x10 | entry_prc_1in3 section with known value used for debug. |
 | [status_1in3](#section-status-1in3) | 0x10010 | 0x4 | HPU status of part 1in3 |
 | [ksk_avail](#section-ksk-avail) | 0x11000 | 0x8 | KSK availability configuration |
 | [runtime_1in3](#section-runtime-1in3) | 0x12000 | 0x13c | Runtime information |
 | [entry_cfg_3in3](#section-entry-cfg-3in3) | 0x20000 | 0x10 | entry_cfg_3in3 section with known value used for debug. |
 | [hbm_axi4_addr_3in3](#section-hbm-axi4-addr-3in3) | 0x20010 | 0x80 | HBM AXI4 connection address offset |
-| [hpu_reset](#section-hpu-reset) | 0x20100 | 0x4 | Used to control the HPU soft reset |
+| [hpu_reset](#section-hpu-reset) | 0x20100 | 0x8 | Used to control the HPU soft reset |
 | [entry_prc_3in3](#section-entry-prc-3in3) | 0x30000 | 0x10 | entry_prc_3in3 section with known value used for debug. |
 | [status_3in3](#section-status-3in3) | 0x30010 | 0x4 | HPU status of parts 2in3 and 3in3 |
 | [bsk_avail](#section-bsk-avail) | 0x31000 | 0x8 | BSK availability configuration |
@@ -1229,7 +1229,6 @@ Below is a summary of all the registers in the current section bpip:
 |-----------------:|:------:|:------:|:------------|
 | [use](#register-bpipuse) | 0x2000 | RW |  (1) Use BPIP mode, (0) use IPIP mode (default) |
 | [timeout](#register-bpiptimeout) | 0x2004 | RW |  Timeout for BPIP mode |
-| [int](#register-bpipint) | 0x2008 | RW |  debug register to test interrupts |
 
 
 ---
@@ -1268,30 +1267,6 @@ Register use contains following Sub-fields:
 - **Offset**: 0x2004
 - **Default**: 4294967295
 
-
-
-
----
-
-
-### Register bpip.int
-
-- **Description**: debug register to test interrupts
-- **Owner**: User
-- **Read Access**: Read
-- **Write Access**: Write
-- **Offset**: 0x2008
-- **Default**: C.f. fields
-
-
-#### Field Details
-
-Register int contains following Sub-fields:
-
-| Field Name | Offset_b | Size_b | Default      | Description   |
-|-----------:|:--------:|:------:|:------------:|:--------------|
-| int0      | 0 | 1 |0| int line 0 |
-| int1      | 1 | 1 |0| int line 1 |
 
 
 
@@ -3470,6 +3445,7 @@ Below is a summary of all the registers in the current section hpu_reset:
 | Name             | Offset | Access | Description |
 |-----------------:|:------:|:------:|:------------|
 | [trigger](#register-hpu-resettrigger) | 0x20100 | RW |  A soft reset for the whole HPU reconfigurable logic |
+| [int](#register-hpu-resetint) | 0x20104 | RW |  debug register to test interrupts |
 
 
 ---
@@ -3493,6 +3469,29 @@ Register trigger contains following Sub-fields:
 |-----------:|:--------:|:------:|:------------:|:--------------|
 | request      | 0 | 1 |0| request |
 | done      | 31 | 1 |0| done |
+
+
+
+---
+
+
+### Register hpu-reset.int
+
+- **Description**: debug register to test interrupts
+- **Owner**: User
+- **Read Access**: Read
+- **Write Access**: Write
+- **Offset**: 0x20104
+- **Default**: C.f. fields
+
+
+#### Field Details
+
+Register int contains following Sub-fields:
+
+| Field Name | Offset_b | Size_b | Default      | Description   |
+|-----------:|:--------:|:------:|:------------:|:--------------|
+| int0      | 0 | 1 |0| debug int line 0 |
 
 
 

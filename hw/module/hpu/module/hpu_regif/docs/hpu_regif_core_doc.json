@@ -5,8 +5,8 @@
   "offset": 0,
   "range": 262144,
   "ext_pkg": [
-    "axi_if_common_param_pkg",
-    "axi_if_shell_axil_pkg"
+    "axi_if_shell_axil_pkg",
+    "axi_if_common_param_pkg"
   ],
   "section": [
     {
@@ -1373,7 +1373,7 @@
       "description": "BPIP configuration",
       "offset": 8192,
       "bytes_align": 4,
-      "range": 12,
+      "range": 8,
       "register": [
         {
           "name": "use",
@@ -1429,49 +1429,6 @@
             "Cst": 4294967295
           },
           "field": null
-        },
-        {
-          "name": "int",
-          "description": "debug register to test interrupts",
-          "owner": "User",
-          "read_access": "Read",
-          "write_access": "Write",
-          "offset": 8200,
-          "default": {
-            "ParamsField": {
-              "params": [],
-              "name_val": [
-                [
-                  "int0",
-                  "'h0"
-                ],
-                [
-                  "int1",
-                  "'h0"
-                ]
-              ]
-            }
-          },
-          "field": [
-            {
-              "name": "int0",
-              "description": "int line 0",
-              "size_b": 1,
-              "offset_b": 0,
-              "default": {
-                "Cst": 0
-              }
-            },
-            {
-              "name": "int1",
-              "description": "int line 1",
-              "size_b": 1,
-              "offset_b": 1,
-              "default": {
-                "Cst": 0
-              }
-            }
-          ]
         }
       ]
     },
@@ -3599,7 +3556,7 @@
       "description": "Used to control the HPU soft reset",
       "offset": 131328,
       "bytes_align": 4,
-      "range": 4,
+      "range": 8,
       "register": [
         {
           "name": "trigger",
@@ -3638,6 +3595,36 @@
               "description": "done",
               "size_b": 1,
               "offset_b": 31,
+              "default": {
+                "Cst": 0
+              }
+            }
+          ]
+        },
+        {
+          "name": "int",
+          "description": "debug register to test interrupts",
+          "owner": "User",
+          "read_access": "Read",
+          "write_access": "Write",
+          "offset": 131332,
+          "default": {
+            "ParamsField": {
+              "params": [],
+              "name_val": [
+                [
+                  "int0",
+                  "'h0"
+                ]
+              ]
+            }
+          },
+          "field": [
+            {
+              "name": "int0",
+              "description": "debug int line 0",
+              "size_b": 1,
+              "offset_b": 0,
               "default": {
                 "Cst": 0
               }
