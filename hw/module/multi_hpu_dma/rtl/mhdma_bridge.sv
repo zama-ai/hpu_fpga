@@ -916,7 +916,7 @@ module mhdma_bridge
         end
       end
 
-      // m_axi4_arid[gen_rd];
+      // m_axi4_arid[gen_rd]
       assign m_axi4_araddr[gen_rd]  = (axi_read) ? mhdma_read_addr :'h0;
       assign m_axi4_arlen[gen_rd]   = (axi_read) ? MAX_BURST_SIZE-1:'h0;
       assign m_axi4_arsize[gen_rd]  = (axi_read) ? MHDMA_ARSIZE    :'h0;
@@ -924,6 +924,10 @@ module mhdma_bridge
       assign m_axi4_arvalid[gen_rd] = (axi_read) ? 1'b1            :'h0;
       // there is not arlast, this is only an intermediate signal
       assign axi4_read_last[gen_rd] = (axi_read & (axi_read_cnt == 0)) ? 1'b1 : 1'b0;
+
+      // we read if and only if we are in ciphertext emission mode
+      assign m_axi4_rready[gen_rd]  = ct_emission_request_in_use;
+
     end
   endgenerate
 
@@ -946,8 +950,9 @@ module mhdma_bridge
   // always start with PC0
   logic [ETH_PC-1:0] reading_which_pc;
 
-  // TODO:
-  assign m_axi4_rready = 1'b1;
+  logic [ETH_PC-1:0]                fifo_ce_pc_in_rdy;
+  logic [ETH_PC-1:0][CE_DATA_W-1:0] fifo_ce_pc_in_data;
+  logic [ETH_PC-1:0]                fifo_ce_pc_in_vld;
 
   // separate generate block for read fifo and its misc
   // add a backpressure to the read requests
@@ -973,7 +978,7 @@ module mhdma_bridge
         .clk    (clk_mrmac),
         .s_rst_n(resetn_mrmac),
 
-        .in_data(m_axi4_rdata),
+        .in_data(m_axi4_rdata[gen_rd]),
         .in_vld (read_fifo_we),
         .in_rdy (read_fifo_ready),
 
@@ -1007,7 +1012,8 @@ module mhdma_bridge
         if (~resetn_mrmac) begin
           slow_pace_count <= 'h0;
         end else begin
-          if (reading_which_pc[gen_rd]) begin
+          // If we want to read to this PC & the fifo is not empty
+          if (reading_which_pc[gen_rd] & read_fifo_out_valid) begin
             slow_pace_count <= slow_pace_count + 1;
           end else begin
             slow_pace_count <= 'h0;
@@ -1038,25 +1044,32 @@ module mhdma_bridge
         end
       end
 
-      // read word each 4 clock cycles
-      assign read_fifo_out_ready = (slow_pace_count == 0) && reading_which_pc[gen_rd];
-
-      always_ff @(posedge clk_mrmac)
-        if(read_fifo_out_valid & read_fifo_out_ready)
-          read_fifo_out_dataD <= read_fifo_out_data;
+      // read word each 4 clock cycles, we trigger at 1 as slow_pace_count default is 0
+      assign read_fifo_out_ready = (slow_pace_count == 1) && reading_which_pc[gen_rd] & fifo_ce_pc_in_rdy[gen_rd];
 
       logic [NB_MRMRAC_WORDS_PER_READ-1:0][MRMAC_AXIS_W-1:0] ce_data_out;
       for (genvar gen_i=0; gen_i<NB_MRMRAC_WORDS_PER_READ; gen_i++) begin
         always_ff @(posedge clk_mrmac) begin
-          ce_data_out[gen_i] <= read_fifo_out_dataD[(gen_i+1)*MRMAC_AXIS_W-1:gen_i*MRMAC_AXIS_W];
+          if(read_fifo_out_valid & read_fifo_out_ready) begin
+            ce_data_out[gen_i] <= read_fifo_out_data[(gen_i+1)*MRMAC_AXIS_W-1:gen_i*MRMAC_AXIS_W];
+          end
         end
       end
 
-    logic [CE_DATA_W-1:0] data_b;
-
     always_ff @(posedge clk_mrmac)
-      data_b <= ce_data_out[slow_pace_count];
+      fifo_ce_pc_in_data[gen_rd] <= ce_data_out[slow_pace_count];
 
+    always_ff @(posedge clk_mrmac) begin
+      if (~resetn_mrmac) begin
+        fifo_ce_pc_in_vld[gen_rd] <= 1'b0;
+      end else begin
+        if (slow_pace_count == NB_MRMRAC_WORDS_PER_READ-1) begin
+          fifo_ce_pc_in_vld[gen_rd] <= 1'b1;
+        end else if (pc_read_finished) begin
+        fifo_ce_pc_in_vld[gen_rd] <= 1'b0;
+        end
+      end
+    end
     end
   endgenerate
 
@@ -1073,18 +1086,41 @@ module mhdma_bridge
     end
   end
 
-
   // Fifo Ciphertext Emission ---------------------------------------------------------------------
-  // data in input are already in the correct form for sending directly to the lane
-  logic [CE_DATA_W-1:0] fifo_ce_data_in;
+  logic [ $clog2(CE_DATA_COUNT_W)+1:0] fifo_ce_cnt;
+  logic [            MRMAC_AXIS_W-1:0] fifo_ce_out_data;
+  logic                                fifo_ce_out_vld;
+  logic                                fifo_ce_out_rdy;
 
-  // always_ff @(posedge clk_mrmac) begin
-  //   if (~resetn_mrmac) begin
-  //     fifo_ce_data_in <= 'h0;
-  //   end else begin
-  //     fifo_ce_data_in <= ce_data_out;
-  //   end
-  // end
+  // data in input are already in the correct form for sending directly to the lane
+  assign  fifo_ce_in_data = (reading_which_pc[0] == 1) ? fifo_ce_pc_in_data[0] : fifo_ce_pc_in_data[1];
+  assign  fifo_ce_in_vld  = (reading_which_pc[0] == 1) ? fifo_ce_pc_in_vld[0] : fifo_ce_pc_in_vld[1];
+
+  // TODO: do something clearer/simpler
+  always_comb begin
+    if(reading_which_pc == 1) begin
+      fifo_ce_pc_in_rdy[0] = fifo_ce_in_rdy;
+      fifo_ce_pc_in_rdy[1] = 1'b0;
+    end else if (reading_which_pc == 2) begin
+      fifo_ce_pc_in_rdy[0] = 1'b0;
+      fifo_ce_pc_in_rdy[1] = fifo_ce_in_rdy;
+    end else begin
+      fifo_ce_pc_in_rdy[0] =  1'b0;
+      fifo_ce_pc_in_rdy[1] = 1'b0;
+    end
+  end
+
+  always_ff @(posedge clk_mrmac) begin
+    if (~resetn_mrmac) begin
+      fifo_ce_cnt <= 'h0;
+    end else begin
+      if (fifo_ce_in_vld) begin
+        fifo_ce_cnt <= fifo_ce_cnt + 1;
+      end else if (fifo_ce_out_vld) begin
+        fifo_ce_cnt <= fifo_ce_cnt - 1;
+      end
+    end
+  end
 
   fifo_ram_rdy_vld # (
     .WIDTH      (CE_DATA_W),
@@ -1094,14 +1130,55 @@ module mhdma_bridge
     .clk    (clk_mrmac),
     .s_rst_n(resetn_mrmac),
 
-    .in_data(m_axi4_rdata),
-    .in_vld (read_fifo_we),
-    .in_rdy (read_fifo_ready),
+    .in_data(fifo_ce_in_data),
+    .in_vld (fifo_ce_in_vld),
+    .in_rdy (fifo_ce_in_rdy),
 
-    .out_data(read_fifo_out_data),
-    .out_vld (read_fifo_out_valid),
-    .out_rdy (read_fifo_out_ready)
+    .out_data(fifo_ce_out_data),
+    .out_vld (fifo_ce_out_vld),
+    .out_rdy (1'b0)
   );
+
+  // counter of output words and control for starting header & payload emission
+  logic [$clog2(NB_WORDS_PAYLOAD)+1:0] ce_nb_words_cnt;
+  logic                                ce_payload_start;
+  logic                                ce_header_start;
+
+  always_ff @ (posedge clk_mrmac) begin
+    if (~resetn_mrmac) begin
+      ce_payload_start <= 1'b0;
+    end else begin
+      if (fifo_ce_cnt == NB_WORDS_PAYLOAD) begin
+        ce_payload_start <= 1'b1;
+      end else if (ce_nb_words_cnt  == NB_WORDS_PAYLOAD) begin
+        ce_payload_start <= 1'b0;
+      end
+    end
+  end
+
+  always_ff @ (posedge clk_mrmac) begin
+    if (~resetn_mrmac) begin
+      ce_header_start <= 1'b0;
+    end else begin
+      if (fifo_ce_cnt == (NB_WORDS_PAYLOAD-ETH_HEADER_SIZE)) begin
+        ce_header_start <= 1'b1;
+      end else if (fifo_ce_cnt == NB_WORDS_PAYLOAD) begin
+        ce_header_start <= 1'b0;
+      end
+    end
+  end
+
+  always_ff @(posedge clk_mrmac) begin
+    if(~resetn_mrmac) begin
+      ce_nb_words_cnt <= 'h0;
+    end else begin
+      if (ce_payload_start) begin
+        ce_nb_words_cnt <= ce_nb_words_cnt +1;
+      end else begin
+        ce_nb_words_cnt <= 'h0;
+      end
+    end
+  end
 
   // =========================================================================================== //
   // QSFP TX
@@ -1261,6 +1338,7 @@ module mhdma_bridge
   // =========================================================================================== //
   // Statistics
   // specific for FPGA
+  // TODO: reseync miust be reworked
   // =========================================================================================== //
   // logic [15:0] cnt_notify_ack; defined before for timeout
   logic [15:0] cnt_notify_read;
