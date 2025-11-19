@@ -32,7 +32,7 @@
             "is_include_file": false
         },
         {
-            "name": "hw/module/multi_hpu_dma/rtl/mhdma_formater.sv",
+            "name": "hw/module/multi_hpu_dma/rtl/mhdma_formatter.sv",
             "library": "work",
             "env": ["all"],
             "target": ["all"],

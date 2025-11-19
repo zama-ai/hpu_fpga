@@ -376,7 +376,7 @@ module mhdma_slave
 
   // process an axi4-read on each PC
   //  - arlen the burst size is dictated from parameter MAX_BURST_SIZE
-  //  - arburst whould be INCR
+  //  - arburst would be INCR
   //  - arsize the size of each data transfer, fixed to MHDMA_ARSIZE
   generate
     for (genvar gen_rd=0; gen_rd<ETH_PC; gen_rd++) begin : gen_ce_reads
@@ -445,7 +445,7 @@ module mhdma_slave
     end
   end
 
-  // one hot value that selects wich PC is selected to be read and sent to QSFP lane
+  // one hot value that selects which PC is selected to be read and sent to QSFP lane
   // always start with PC0
   logic [ETH_PC-1:0] reading_which_pc;
 
@@ -572,7 +572,7 @@ module mhdma_slave
     end
   endgenerate
 
-  // we only have one QSFP lane interface, we will read each FIFO independantly, one at a time
+  // we only have one QSFP lane interface, we will read each FIFO independently, one at a time
   always_ff @(posedge clk_mrmac) begin
     if (~resetn_mrmac) begin
       reading_which_pc <= 'h0;

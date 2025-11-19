@@ -5,7 +5,7 @@
 // Description  : Multi-HPU DMA formatter or TX module for QSFP lane
 // ==============================================================================================
 
-module mhdma_formater
+module mhdma_formatter
   import mhdma_pkg::*;
 #() (
   // Ethernet fast clock interface --------------------------------------------

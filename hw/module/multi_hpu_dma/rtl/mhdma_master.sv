@@ -36,7 +36,7 @@ module mhdma_master
 
   input  logic                                notify_ack_received,
   input  logic                                ciphertext_received,
-  // from master to packet formater -------------------------------------------
+  // from master to packet formatter -------------------------------------------
   output logic             [  DST_ADDR_W-1:0] master_dst_addr,
   output logic             [  SRC_ADDR_W-1:0] master_src_addr,
   output logic             [    SIZE_B_W-1:0] master_size_b,

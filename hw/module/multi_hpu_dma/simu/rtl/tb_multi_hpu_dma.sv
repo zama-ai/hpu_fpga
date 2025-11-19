@@ -603,7 +603,7 @@ module tb_multi_hpu_dma;
      *  -------------------------------------------------------------------------------------------
      * > Does the timeout is triggered correctly and the Read request resent properly ?
      */
-    $display("\n\n"); // sperating from xpm fifo informations
+    $display("\n\n"); // sperating from xpm fifo information
 
     // Initialization =============================================================================
     $display("A - Initial register check and definition");
@@ -785,9 +785,9 @@ module tb_multi_hpu_dma;
    *  - We have at most 8 HPUs: we will write them all
    */
   task automatic write_mac_addresses();
-    logic [23:0] mac_addr;
-    logic [ 3:0] hpu_id;
-    logic        hpu_current;
+    logic [ MAC_ADDR_W-1:0] mac_addr;
+    logic [   HPU_ID_W-1:0] hpu_id;
+    logic                   hpu_current;
     logic [REG_DATA_W-1:00] register_mac_addr_a;
     logic [REG_DATA_W-1:00] register_mac_addr_b;
     begin
@@ -849,7 +849,7 @@ module tb_multi_hpu_dma;
 
       maxil_drv_if_hpu_a.write_trans(REQUEST_REQ_ADDR_OFS, read_req_addr);
       maxil_drv_if_hpu_a.write_trans(REQUEST_REQ_ID_OFS, read_req_id);
-      // there is as wel the hbm pc offsets to write from RPU pov but in simulation we let it set to 0
+      // there is as well the hbm pc offsets to write from RPU pov but in simulation we let it set to 0
     end
   endtask
 

@@ -15,43 +15,43 @@ module mhdma_bridge
   import axi_if_eth_axi_pkg::*;
 #() (
   // Ethernet configuration interface -----------------------------------------
-  input  logic                                   clk_cfg,
-  input  logic                                   resetn_cfg,
+  input  logic                                    clk_cfg,
+  input  logic                                    resetn_cfg,
   // Ethernet fast clock interface --------------------------------------------
-  input  logic                                   clk_mrmac,
-  input  logic                                   resetn_mrmac,
+  input  logic                                    clk_mrmac,
+  input  logic                                    resetn_mrmac,
   // Axi4 interface for NMU ---------------------------------------------------
   // Read channel
-  output logic [ETH_PC-1:0][   AXI4_ID_W-1:0]    m_axi4_arid,
-  output logic [ETH_PC-1:0][  AXI4_ADD_W-1:0]    m_axi4_araddr,
-  output logic [ETH_PC-1:0][  AXI4_LEN_W-1:0]    m_axi4_arlen,
-  output logic [ETH_PC-1:0][ AXI4_SIZE_W-1:0]    m_axi4_arsize,
-  output logic [ETH_PC-1:0][AXI4_BURST_W-1:0]    m_axi4_arburst,
-  output logic [ETH_PC-1:0]                      m_axi4_arvalid,
-  input  logic [ETH_PC-1:0]                      m_axi4_arready,
-  input  logic [ETH_PC-1:0][  AXI4_ID_W-1:0]     m_axi4_rid,
-  input  logic [ETH_PC-1:0][AXI4_DATA_W-1:0]     m_axi4_rdata,
-  input  logic [ETH_PC-1:0][AXI4_RESP_W-1:0]     m_axi4_rresp,
-  input  logic [ETH_PC-1:0]                      m_axi4_rlast,
-  input  logic [ETH_PC-1:0]                      m_axi4_rvalid,
-  output logic [ETH_PC-1:0]                      m_axi4_rready,
+  output logic [ETH_PC-1:0][   AXI4_ID_W-1:0]     m_axi4_arid,
+  output logic [ETH_PC-1:0][  AXI4_ADD_W-1:0]     m_axi4_araddr,
+  output logic [ETH_PC-1:0][  AXI4_LEN_W-1:0]     m_axi4_arlen,
+  output logic [ETH_PC-1:0][ AXI4_SIZE_W-1:0]     m_axi4_arsize,
+  output logic [ETH_PC-1:0][AXI4_BURST_W-1:0]     m_axi4_arburst,
+  output logic [ETH_PC-1:0]                       m_axi4_arvalid,
+  input  logic [ETH_PC-1:0]                       m_axi4_arready,
+  input  logic [ETH_PC-1:0][  AXI4_ID_W-1:0]      m_axi4_rid,
+  input  logic [ETH_PC-1:0][AXI4_DATA_W-1:0]      m_axi4_rdata,
+  input  logic [ETH_PC-1:0][AXI4_RESP_W-1:0]      m_axi4_rresp,
+  input  logic [ETH_PC-1:0]                       m_axi4_rlast,
+  input  logic [ETH_PC-1:0]                       m_axi4_rvalid,
+  output logic [ETH_PC-1:0]                       m_axi4_rready,
   // Write channel
-  output logic [ETH_PC-1:0][   AXI4_ID_W-1:0]    m_axi4_awid,
-  output logic [ETH_PC-1:0][  AXI4_ADD_W-1:0]    m_axi4_awaddr,
-  output logic [ETH_PC-1:0][  AXI4_LEN_W-1:0]    m_axi4_awlen,
-  output logic [ETH_PC-1:0][ AXI4_SIZE_W-1:0]    m_axi4_awsize,
-  output logic [ETH_PC-1:0][AXI4_BURST_W-1:0]    m_axi4_awburst,
-  output logic [ETH_PC-1:0]                      m_axi4_awvalid,
-  input  logic [ETH_PC-1:0]                      m_axi4_awready,
-  output logic [ETH_PC-1:0][AXI4_DATA_W-1:0]     m_axi4_wdata,
-  output logic [ETH_PC-1:0][AXI4_STRB_W-1:0]     m_axi4_wstrb,
-  output logic [ETH_PC-1:0]                      m_axi4_wlast,
-  output logic [ETH_PC-1:0]                      m_axi4_wvalid,
-  input  logic [ETH_PC-1:0]                      m_axi4_wready,
-  input  logic [ETH_PC-1:0][  AXI4_ID_W-1:0]     m_axi4_bid,
-  input  logic [ETH_PC-1:0][AXI4_RESP_W-1:0]     m_axi4_bresp,
-  input  logic [ETH_PC-1:0]                      m_axi4_bvalid,
-  output logic [ETH_PC-1:0]                      m_axi4_bready,
+  output logic [ETH_PC-1:0][   AXI4_ID_W-1:0]     m_axi4_awid,
+  output logic [ETH_PC-1:0][  AXI4_ADD_W-1:0]     m_axi4_awaddr,
+  output logic [ETH_PC-1:0][  AXI4_LEN_W-1:0]     m_axi4_awlen,
+  output logic [ETH_PC-1:0][ AXI4_SIZE_W-1:0]     m_axi4_awsize,
+  output logic [ETH_PC-1:0][AXI4_BURST_W-1:0]     m_axi4_awburst,
+  output logic [ETH_PC-1:0]                       m_axi4_awvalid,
+  input  logic [ETH_PC-1:0]                       m_axi4_awready,
+  output logic [ETH_PC-1:0][AXI4_DATA_W-1:0]      m_axi4_wdata,
+  output logic [ETH_PC-1:0][AXI4_STRB_W-1:0]      m_axi4_wstrb,
+  output logic [ETH_PC-1:0]                       m_axi4_wlast,
+  output logic [ETH_PC-1:0]                       m_axi4_wvalid,
+  input  logic [ETH_PC-1:0]                       m_axi4_wready,
+  input  logic [ETH_PC-1:0][  AXI4_ID_W-1:0]      m_axi4_bid,
+  input  logic [ETH_PC-1:0][AXI4_RESP_W-1:0]      m_axi4_bresp,
+  input  logic [ETH_PC-1:0]                       m_axi4_bvalid,
+  output logic [ETH_PC-1:0]                       m_axi4_bready,
   // regf interface -----------------------------------------------------------
   input  logic [NB_MAX_HPU-1:0][  REG_DATA_W-1:0] regf_hpu_ids,
   input  logic [    ETH_PC-1:0][2*REG_DATA_W-1:0] regf_ct_mem_addr,
@@ -59,30 +59,30 @@ module mhdma_bridge
   input  logic                 [  REG_DATA_W-1:0] regf_req_addr,
   output logic                 [  REG_DATA_W-1:0] regf_notify_payload,
   // control ------------------------------------------------------------------
-  input  logic                                   received_req,
-  output logic                                   request_consumed,
+  input  logic                                    received_req,
+  output logic                                    request_consumed,
   // statistics ---------------------------------------------------------------
-  output logic [15:0]                            stat_cnt_notify_ack,
-  output logic [15:0]                            stat_cnt_notify_read,
+  output logic [15:0]                             stat_cnt_notify_ack,
+  output logic [15:0]                             stat_cnt_notify_read,
   // reset counters
-  input  logic                                   rst_cnt_notify,
+  input  logic                                    rst_cnt_notify,
   // statistics ---------------------------------------------------------------
-  input  logic                                   clear_interrupt_notify,
-  output logic                                   interrupt_notify,
-  output logic                                   interrupt_read_request,
-  input  logic [15:0]                            timeout_duration,
+  input  logic                                    clear_interrupt_notify,
+  output logic                                    interrupt_notify,
+  output logic                                    interrupt_read_request,
+  input  logic [15:0]                             timeout_duration,
   // QSFP system interface ----------------------------------------------------
   // == TX
-  output logic [MRMAC_AXIS_W-1:0]                qsfp_tx_tdata,
-  output logic [MRMAC_TKEEP_W-1:0]               qsfp_tx_tkeep_user,
-  output logic                                   qsfp_tx_tlast,
-  output logic                                   qsfp_tx_tvalid,
-  input  logic                                   qsfp_tx_tready,
+  output logic [MRMAC_AXIS_W-1:0]                 qsfp_tx_tdata,
+  output logic [MRMAC_TKEEP_W-1:0]                qsfp_tx_tkeep_user,
+  output logic                                    qsfp_tx_tlast,
+  output logic                                    qsfp_tx_tvalid,
+  input  logic                                    qsfp_tx_tready,
   // == RX
-  input  logic [MRMAC_AXIS_W-1:0]                qsfp_rx_tdata,
-  input  logic [MRMAC_TKEEP_W-1:0]               qsfp_rx_tkeep_user,
-  input  logic                                   qsfp_rx_tlast,
-  input  logic                                   qsfp_rx_tvalid
+  input  logic [MRMAC_AXIS_W-1:0]                 qsfp_rx_tdata,
+  input  logic [MRMAC_TKEEP_W-1:0]                qsfp_rx_tkeep_user,
+  input  logic                                    qsfp_rx_tlast,
+  input  logic                                    qsfp_rx_tvalid
 );
 
   // =========================================================================================== //
@@ -119,7 +119,7 @@ module mhdma_bridge
   // ==============================================================================================
   logic [NB_MAX_HPU-1:0][HPU_ID_W-1:0]   hpu_id_table;
   logic [NB_MAX_HPU-1:0][MAC_ADDR_W-1:0] hpu_mac_table;
-  logic [NB_MAX_HPU-1:0]                 one_hot_id; // one hot
+  logic [NB_MAX_HPU-1:0]                 one_hot_id;
 
   assign hpu_ids = hpu_ids_cdc[CDC_SYNC_STAGES-1];
 
@@ -169,54 +169,54 @@ module mhdma_bridge
   // ==============================================================================================
   // Core Instances of mhdma
   // ==============================================================================================
-  logic ct_emission_allowed;
-  logic notify_ack_allowed;
-  logic read_request_allowed;
-  logic notify_request_allowed;
+  logic                     ct_emission_allowed;
+  logic                     notify_ack_allowed;
+  logic                     read_request_allowed;
+  logic                     notify_request_allowed;
 
-  logic new_ct_emission_request_pending;
-  logic new_notify_ack_pending;
-  logic new_read_request_pending;
-  logic new_notify_request_pending;
+  logic                     new_ct_emission_request_pending;
+  logic                     new_notify_ack_pending;
+  logic                     new_read_request_pending;
+  logic                     new_notify_request_pending;
 
-  logic notify_ack_received;
-  logic notify_request_received;
-  logic read_request_received;
-  logic ciphertext_emission_received;
+  logic                     notify_ack_received;
+  logic                     notify_request_received;
+  logic                     read_request_received;
+  logic                     ciphertext_emission_received;
 
-  logic [DST_ADDR_W-1:0] master_dst_addr;
-  logic [SRC_ADDR_W-1:0] master_src_addr;
-  logic [  SIZE_B_W-1:0] master_size_b;
-  logic [  REQ_ID_W-1:0] master_req_id;
-  logic [  IOP_ID_W-1:0] master_iop_id;
-  logic [  HPU_ID_W-1:0] master_hpu_id;
-  logic                  master_valid;
+  logic [DST_ADDR_W-1:0]    master_dst_addr;
+  logic [SRC_ADDR_W-1:0]    master_src_addr;
+  logic [  SIZE_B_W-1:0]    master_size_b;
+  logic [  REQ_ID_W-1:0]    master_req_id;
+  logic [  IOP_ID_W-1:0]    master_iop_id;
+  logic [  HPU_ID_W-1:0]    master_hpu_id;
+  logic                     master_valid;
 
-  logic [MAC_ADDR_W-1:0] rx_dst_mac_addr;
-  logic [SEQ_NUM_W-1:0]  rx_sec_num;
-  logic [HPU_ID_W-1:0]   rx_hpu_id;
-  logic [REQ_ID_W-1:0]   rx_req_id;
-  logic [MAC_ADDR_W-1:0] rx_src_mac_addr;
-  logic [SIZE_B_W-1:0]   rx_size_b;
-  logic [IOP_ID_W-1:0]   rx_iop_id;
-  logic [SRC_ADDR_W-1:0] rx_ct_src_addr;
-  logic [DST_ADDR_W-1:0] rx_ct_dst_addr;
-  logic                  rx_header_valid;
+  logic [MAC_ADDR_W-1:0]    rx_dst_mac_addr;
+  logic [SEQ_NUM_W-1:0]     rx_sec_num;
+  logic [HPU_ID_W-1:0]      rx_hpu_id;
+  logic [REQ_ID_W-1:0]      rx_req_id;
+  logic [MAC_ADDR_W-1:0]    rx_src_mac_addr;
+  logic [SIZE_B_W-1:0]      rx_size_b;
+  logic [IOP_ID_W-1:0]      rx_iop_id;
+  logic [SRC_ADDR_W-1:0]    rx_ct_src_addr;
+  logic [DST_ADDR_W-1:0]    rx_ct_dst_addr;
+  logic                     rx_header_valid;
 
-  logic [MRMAC_AXIS_W-1:0]     format_tdata;
-  logic [MRMAC_TKEEP_W-1:0]    format_tkeep_user;
-  logic                        format_tlast;
-  logic                        format_tvalid;
-  logic                        format_tready;
+  logic [MRMAC_AXIS_W-1:0]  format_tdata;
+  logic [MRMAC_TKEEP_W-1:0] format_tkeep_user;
+  logic                     format_tlast;
+  logic                     format_tvalid;
+  logic                     format_tready;
   // == RX
-  logic [MRMAC_AXIS_W-1:0]     decode_tdata;
-  logic [MRMAC_TKEEP_W-1:0]    decode_tkeep_user;
-  logic                        decode_tlast;
-  logic                        decode_tvalid;
+  logic [MRMAC_AXIS_W-1:0]  decode_tdata;
+  logic [MRMAC_TKEEP_W-1:0] decode_tkeep_user;
+  logic                     decode_tlast;
+  logic                     decode_tvalid;
 
-  logic [NRX_WIDTH-1:0] nrx_cmd_payload;
-  logic                 nrx_valid;
-  logic notify_ack_sent;
+  logic [NRX_WIDTH-1:0]     nrx_cmd_payload;
+  logic                     nrx_valid;
+  logic                     notify_ack_sent;
 
   mhdma_master mhdma_master (
     // Ethernet configuration interface ---------------------------------------
@@ -336,7 +336,7 @@ module mhdma_bridge
     .qsfp_rx_tvalid              (qsfp_rx_tvalid                              )
   );
 
-  mhdma_formater mhdma_formater (
+  mhdma_formatter mhdma_formatter (
     // Ethernet fast clock interface ------------------------------------------
     .clk_mrmac                      (clk_mrmac                                ),
     .resetn_mrmac                   (resetn_mrmac                             ),

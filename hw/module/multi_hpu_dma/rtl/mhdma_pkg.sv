@@ -72,47 +72,47 @@ package mhdma_pkg;
 
   // fifo specific parameters -------------------------------------------------
   // minimal depth for 64 using XPM fifo is 16
-  localparam int XPM_MIN_FIFO_DEPTH   = 16;
+  localparam int XPM_MIN_FIFO_DEPTH    = 16;
 
   // = Commands
   // read request command: XPM
-  localparam int RQQ_MEMORY_TYPE      = "distributed";
-  localparam int RQQ_WIDTH            = 2*REG_DATA_W;
-  localparam int RQQ_DATA_COUNT_W     =  $clog2(XPM_MIN_FIFO_DEPTH)+1;
+  localparam int RQQ_MEMORY_TYPE       = "distributed";
+  localparam int RQQ_WIDTH             = 2*REG_DATA_W;
+  localparam int RQQ_DATA_COUNT_W      =  $clog2(XPM_MIN_FIFO_DEPTH)+1;
 
   // Notify request command queue: XPM
-  localparam int NRQQ_MEMORY_TYPE     = "distributed";
-  localparam int NRQQ_WIDTH           = 2*REG_DATA_W;
-  localparam int NRQQ_DATA_COUNT_W    =  $clog2(XPM_MIN_FIFO_DEPTH)+1;
+  localparam int NRQQ_MEMORY_TYPE      = "distributed";
+  localparam int NRQQ_WIDTH            = 2*REG_DATA_W;
+  localparam int NRQQ_DATA_COUNT_W     = $clog2(XPM_MIN_FIFO_DEPTH)+1;
 
   // Notify RX payload to regif: XPM
-  localparam int NRX_REGF_MEMORY_TYPE      = "distributed";
-  localparam int NRX_REGF_WIDTH            = REG_DATA_W;
-  localparam int NRX_REGF_DATA_COUNT_W     =  $clog2(XPM_MIN_FIFO_DEPTH)+1;
+  localparam int NRX_REGF_MEMORY_TYPE  = "distributed";
+  localparam int NRX_REGF_WIDTH        = REG_DATA_W;
+  localparam int NRX_REGF_DATA_COUNT_W =  $clog2(XPM_MIN_FIFO_DEPTH)+1;
 
   // Notify RX payload: distributed
-  localparam int NRX_WIDTH            = SRC_ADDR_W + HPU_ID_W + IOP_ID_W;
-  localparam int NRX_DEPTH            = 4; //TOREVIEW
-  localparam int NRX_DATA_COUNT_W     =  $clog2(NRX_WIDTH)+1;
+  localparam int NRX_WIDTH             = SRC_ADDR_W + HPU_ID_W + IOP_ID_W;
+  localparam int NRX_DEPTH             = 4; //TOREVIEW
+  localparam int NRX_DATA_COUNT_W      =  $clog2(NRX_WIDTH)+1;
 
   // read request command queue: URAM fifo
-  localparam int RREQ_CMD_DATA_W      = HPU_ID_W+IOP_ID_W+SRC_ADDR_W+DST_ADDR_W;
-  localparam int RREQ_CMD_DEPTH       = 16;
-  localparam int RREQ_CMD_RAM_LATENCY = 1;
-  localparam int RQQ_CMD_DATA_COUNT_W =  $clog2(RREQ_CMD_DEPTH)+1;
+  localparam int RREQ_CMD_DATA_W       = HPU_ID_W+IOP_ID_W+SRC_ADDR_W+DST_ADDR_W;
+  localparam int RREQ_CMD_DEPTH        = 16;
+  localparam int RREQ_CMD_RAM_LATENCY  = 1;
+  localparam int RQQ_CMD_DATA_COUNT_W  =  $clog2(RREQ_CMD_DEPTH)+1;
 
   // = Ciphertext Emission: URAMs
   // reading each PC
-  localparam int READ_PC_DATA_W       = AXI4_DATA_W;
-  localparam int READ_PC_DEPTH        = CT_NB_WORDS_AXI4;
-  localparam int READ_PC_RAM_LATENCY  = 1;
-  localparam int READ_PC_DATA_COUNT_W =  $clog2(CT_NB_WORDS_AXI4)+1;
+  localparam int READ_PC_DATA_W        = AXI4_DATA_W;
+  localparam int READ_PC_DEPTH         = CT_NB_WORDS_AXI4;
+  localparam int READ_PC_RAM_LATENCY   = 1;
+  localparam int READ_PC_DATA_COUNT_W  =  $clog2(CT_NB_WORDS_AXI4)+1;
 
   // QSFP TX fifo: FIFO CE
-  localparam int CE_DATA_W       = MRMAC_AXIS_W;
-  localparam int CE_DEPTH        = CT_NB_WORDS_MRMAC;
-  localparam int CE_RAM_LATENCY  = 1;
-  localparam int CE_DATA_COUNT_W =  $clog2(CT_NB_WORDS_MRMAC)+1;
+  localparam int CE_DATA_W             = MRMAC_AXIS_W;
+  localparam int CE_DEPTH              = CT_NB_WORDS_MRMAC;
+  localparam int CE_RAM_LATENCY        = 1;
+  localparam int CE_DATA_COUNT_W       =  $clog2(CT_NB_WORDS_MRMAC)+1;
 
   // identification opcode --------------------------------------------------
   localparam [REQ_ID_W-1:0] REQ_ID_NOTIFY_TX     = 'h2;
