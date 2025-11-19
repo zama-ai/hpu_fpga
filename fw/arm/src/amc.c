@@ -289,7 +289,7 @@ void vInterruptHandler_zama0( void* pvCallBackRef ) {
     //PLL_INF("AMC", "IOpAck queue is full, abort isc ack forwarding");
     if (ackq_free_words != 0) {
         // Write ack value in queue body
-        volatile uint32_t* ackq_idx = toAmiIopAckqData + ((ackq_head % AMI_IOPACKQ_MAX_WORDS) * sizeof(uint32_t));
+        volatile uint32_t* ackq_idx = toAmiIopAckqData + (ackq_head % AMI_IOPACKQ_MAX_WORDS);
         uint32_t poped_iop_ack = pop_isc_ack();
         *ackq_idx = poped_iop_ack;
         HAL_FLUSH_CACHE_DATA( (uintptr_t)ackq_idx, sizeof(uint32_t));
@@ -479,8 +479,10 @@ static void vTaskFuncMain( void )
         //      This buffer have the depth of the longest supported IOp (Currently fixed at compile time)
         //      After parsing only the used bytes are consumed from the queue
         if (iopq_used_bytes != 0 && !stop_consuming_iop) {
-            //PLL_ERR("AMC", "interrupt[0](isc) count %d edges", isc_intr_global_cnt);
-            //PLL_ERR("AMC", "interrupt[4](debug) count %d level at 1", debug_intr_global_cnt);
+            //if (debug_intr_global_cnt%2 == 0) {
+            //    PLL_ERR("AMC", "interrupt[0](isc) count %d edges", isc_intr_global_cnt);
+            //    PLL_ERR("AMC", "interrupt[4](debug) count %d level at 1", debug_intr_global_cnt);
+            //}
             PLL_INF("AMC", "Fw received IOP request, translation into DOP needed [head 0x%x; tail 0x%x]", iopq_head, iopq_tail);
 
             // 1. Compute bytes to read from queue
