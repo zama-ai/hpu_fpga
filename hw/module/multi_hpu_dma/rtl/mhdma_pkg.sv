@@ -62,7 +62,7 @@ package mhdma_pkg;
   localparam int ETHERNET_LEN = 16;
 
   localparam int SIZE_B_W     = 16;
-  localparam int IOP_ID_W     = 4;
+  localparam int IOP_ID_W     = 8;
   localparam int SRC_ADDR_W   = 16;
   localparam int DST_ADDR_W   = 16;
 
@@ -85,10 +85,15 @@ package mhdma_pkg;
   localparam int NRQQ_WIDTH           = 2*REG_DATA_W;
   localparam int NRQQ_DATA_COUNT_W    =  $clog2(XPM_MIN_FIFO_DEPTH)+1;
 
-  // Notify RX payload: XPM
-  localparam int NRX_MEMORY_TYPE      = "distributed";
-  localparam int NRX_WIDTH            = REG_DATA_W;
-  localparam int NRX_DATA_COUNT_W     =  $clog2(XPM_MIN_FIFO_DEPTH)+1;
+  // Notify RX payload to regif: XPM
+  localparam int NRX_REGF_MEMORY_TYPE      = "distributed";
+  localparam int NRX_REGF_WIDTH            = REG_DATA_W;
+  localparam int NRX_REGF_DATA_COUNT_W     =  $clog2(XPM_MIN_FIFO_DEPTH)+1;
+
+  // Notify RX payload: distributed
+  localparam int NRX_WIDTH            = SRC_ADDR_W + HPU_ID_W + IOP_ID_W;
+  localparam int NRX_DEPTH            = 4; //TOREVIEW
+  localparam int NRX_DATA_COUNT_W     =  $clog2(NRX_WIDTH)+1;
 
   // read request command queue: URAM fifo
   localparam int RREQ_CMD_DATA_W      = HPU_ID_W+IOP_ID_W+SRC_ADDR_W+DST_ADDR_W;
@@ -117,7 +122,6 @@ package mhdma_pkg;
   localparam [REQ_ID_W-1:0] REQ_ID_READ          = 'h6;
   localparam [REQ_ID_W-1:0] REQ_ID_EMISSION      = 'h7;
 
-
   // Offsets ------------------------------------------------------------------
   // Read ReQuest Queue
   localparam int CMD_IOP_ID_OFS   = SRC_ADDR_W + DST_ADDR_W + SIZE_B_W + HPU_ID_W + REQ_ID_W + IOP_ID_W;
@@ -126,6 +130,10 @@ package mhdma_pkg;
   localparam int CMD_SIZE_B_OFS   = SRC_ADDR_W + DST_ADDR_W + SIZE_B_W;
   localparam int CMD_DST_ADDR_OFS = SRC_ADDR_W + DST_ADDR_W;
   localparam int CMD_SRC_ADDR_OFS = SRC_ADDR_W;
+
+  localparam int NRX_SRC_ADDR_OFS = IOP_ID_W + HPU_ID_W + SRC_ADDR_W;
+  localparam int NRX_HPU_ID_OFS   = IOP_ID_W + HPU_ID_W;
+  localparam int NRX_IOP_ID_OFS   = IOP_ID_W;
 
   // Read-Request
   localparam int RR_HPU_ID_OFS = SRC_ADDR_W + DST_ADDR_W + IOP_ID_W + HPU_ID_W;

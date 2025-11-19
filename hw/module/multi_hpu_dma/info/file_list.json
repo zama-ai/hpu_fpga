@@ -25,14 +25,35 @@
             "is_include_file": false
         },
         {
-            "name": "hw/module/multi_hpu_dma/rtl/mhdma_trace.sv",
+            "name": "hw/module/multi_hpu_dma/rtl/mhdma_decoder.sv",
             "library": "work",
             "env": ["all"],
             "target": ["all"],
             "is_include_file": false
         },
         {
-            "name": "hw/module/multi_hpu_dma/rtl/arbiter.sv",
+            "name": "hw/module/multi_hpu_dma/rtl/mhdma_formater.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false
+        },
+        {
+            "name": "hw/module/multi_hpu_dma/rtl/mhdma_master.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false
+        },
+        {
+            "name": "hw/module/multi_hpu_dma/rtl/mhdma_slave.sv",
+            "library": "work",
+            "env": ["all"],
+            "target": ["all"],
+            "is_include_file": false
+        },
+        {
+            "name": "hw/module/multi_hpu_dma/rtl/mhdma_trace.sv",
             "library": "work",
             "env": ["all"],
             "target": ["all"],

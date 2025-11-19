@@ -14,10 +14,10 @@
 `resetall
 `timescale 1ns/10ps
 module tb_multi_hpu_dma;
-  import axi_if_shell_axil_pkg::*;        // axi4-lite
+  import mhdma_pkg::*;                    // multi-hpu-dma
+  import axi_if_shell_axil_pkg::*;        // axi4-lite + REG_DATA_W
   import axi_if_common_param_pkg::*;      // general axi4
   import hpu_regif_core_eth_2in3_pkg::*;  // ethernet regif
-  import mhdma_pkg::*;                    // multi-hpu-dma
   import axi_if_eth_axi_pkg::*;           // AXI ethernet
 
 // ============================================================================================== --
@@ -239,7 +239,7 @@ module tb_multi_hpu_dma;
   logic [HPU_NB-1:0][QSFP_LANE_NB-1:0] gt_tx_reset_done;
 
   // [section] line parameter -------------------------------------------------
-  logic [31:0] line_parameter;
+  logic [REG_DATA_W-1:0] line_parameter;
   logic        debug_flag;
   logic [2:0]  line_loopback;
   logic [7:0]  line_rate;
@@ -252,7 +252,7 @@ module tb_multi_hpu_dma;
   assign line_parameter[31]    = debug_flag;
 
   // [section] line debug -----------------------------------------------------
-  logic [31:0] line_debug;
+  logic [REG_DATA_W-1:0] line_debug;
   logic        reset_registers;
   logic        tx_loop;
   logic        rx_to_tx;
@@ -263,7 +263,7 @@ module tb_multi_hpu_dma;
   assign line_debug[31]   = reset_registers;
 
   // [section] reset ----------------------------------------------------------
-  logic [31:0] reset_parameter;
+  logic [REG_DATA_W-1:00] reset_parameter;
   logic [QSFP_LANE_NB-1:0] rst_rx_datapath;
   logic [QSFP_LANE_NB-1:0] rst_tx_datapath;
   logic [QSFP_LANE_NB-1:0] rst_all;
@@ -271,7 +271,7 @@ module tb_multi_hpu_dma;
   assign reset_parameter = {20'h0, rst_rx_datapath, rst_tx_datapath, rst_all};
 
   // monitoring of reset done
-  logic [HPU_NB-1:0][31:0] reset_monitor;
+  logic [HPU_NB-1:0][REG_DATA_W-1:00] reset_monitor;
 
   // HPU A ----------------------------------------------------------------------------------------
   multi_hpu_dma #(
@@ -541,24 +541,24 @@ module tb_multi_hpu_dma;
   endgenerate
 
   // Signals --------------------------------------------------------------------------------------
-  logic [31:0] read_data;
+  logic [REG_DATA_W-1:0] read_data;
   // must not bee too short, not too long
-  logic [31:0] timeout_size;
+  logic [REG_DATA_W-1:0] timeout_size;
 
   // HPU-A and HPU-B node id will be set randomly and mandatorily different
-  logic [3:0] random_hpu_a;
-  logic [3:0] random_hpu_b;
+  logic [HPU_ID_W-1:0] random_hpu_a;
+  logic [HPU_ID_W-1:0] random_hpu_b;
 
   // IOP related signals
-  logic [ 3:0] iop_id;
-  logic [15:0] iop_src_addr;
-  logic [15:0] iop_dst_addr;
+  logic [  IOP_ID_W-1:0] iop_id;
+  logic [SRC_ADDR_W-1:0] iop_src_addr;
+  logic [DST_ADDR_W-1:0] iop_dst_addr;
 
   // for checking
-  logic [31:0] notify_payload;
+  logic [REG_DATA_W-1:0] notify_payload;
 
   // Fixed for now, might evolve later
-  logic [15:0] req_size_b;
+  logic [SIZE_B_W-1:0] req_size_b;
   assign req_size_b = 'h4000;
 
   // scenario -------------------------------------------------------------------------------------
@@ -627,7 +627,7 @@ module tb_multi_hpu_dma;
     notify_request(random_hpu_b, random_hpu_a, iop_id, iop_src_addr);
 
     // if a Notify is received by HPU A we should be able to confirm it by reading in the regf
-    notify_payload = {iop_src_addr, 8'b0, random_hpu_b, iop_id};
+    notify_payload = {iop_src_addr, 4'b0, random_hpu_b, iop_id};
 
     wait (hpu_a.interrupt_notify == 1'b1);
     $display("%t > INFO: Interrupt detected, checking Notify payload \n",$time);
@@ -635,6 +635,10 @@ module tb_multi_hpu_dma;
 
     assert (read_data == notify_payload) else begin
       $display("%t > [ERROR]: Payload DATA incorrect %x %x", $time, read_data, notify_payload);
+      $display("%t > [ERROR]: iop_src_addr  = %x ", $time, iop_src_addr);
+      $display("%t > [ERROR]: random_hpu_b  = %x ", $time, random_hpu_b);
+      $display("%t > [ERROR]: iop_id        = %x ", $time, iop_id);
+
       error_notify_rx = 1'b1;
     end
     $display("%t > INFO: Payload matches expected \n",$time);
@@ -693,7 +697,7 @@ module tb_multi_hpu_dma;
 // ============================================================================================== --
 // Tasks
 // ============================================================================================== --
-  logic [31:0] rdata;
+  logic [REG_DATA_W-1:00] rdata;
 
   task automatic init_registers;
     begin
@@ -784,8 +788,8 @@ module tb_multi_hpu_dma;
     logic [23:0] mac_addr;
     logic [ 3:0] hpu_id;
     logic        hpu_current;
-    logic [31:0] register_mac_addr_a;
-    logic [31:0] register_mac_addr_b;
+    logic [REG_DATA_W-1:00] register_mac_addr_a;
+    logic [REG_DATA_W-1:00] register_mac_addr_b;
     begin
       random_hpu_a = $urandom_range(7, 0);
 
@@ -829,19 +833,19 @@ module tb_multi_hpu_dma;
     - Since HPU A and HPU B are the same no need to be able to be able to send from both
     - There is two registers to write to send a read request */
   task automatic read_request(
-    input logic [ 3:0] node_id,
-    input logic [ 3:0] iop_id,
-    input logic [15:0] src_addr,
-    input logic [15:0] dest_addr
+    input logic [  HPU_ID_W-1:0] node_id,
+    input logic [  IOP_ID_W-1:0] iop_id,
+    input logic [SRC_ADDR_W-1:0] src_addr,
+    input logic [DST_ADDR_W-1:0] dest_addr
   );
-    logic [31:0] read_req_id;
-    logic [31:0] read_req_addr;
+    logic [REG_DATA_W-1:00] read_req_id;
+    logic [REG_DATA_W-1:00] read_req_addr;
     begin
       $display("[INFO] Sending a read request from HPU-%0x to HPU-%0x",random_hpu_a ,node_id);
 
       // see package
       read_req_addr = {dest_addr, src_addr};
-      read_req_id = {4'b0000, iop_id, REQ_ID_READ, node_id, req_size_b};
+      read_req_id = {iop_id, REQ_ID_READ, node_id, req_size_b};
 
       maxil_drv_if_hpu_a.write_trans(REQUEST_REQ_ADDR_OFS, read_req_addr);
       maxil_drv_if_hpu_a.write_trans(REQUEST_REQ_ID_OFS, read_req_id);
@@ -855,18 +859,18 @@ module tb_multi_hpu_dma;
    * - if you chose a wrong HPU-id you will get an error
    */
   task automatic notify_request(
-    input logic [ 3:0] src_node_id,
-    input logic [ 3:0] dst_node_id,
-    input logic [ 3:0] iop_id,
-    input logic [15:0] src_addr
+    input logic [  HPU_ID_W-1:0]   src_node_id,
+    input logic [  HPU_ID_W-1:0]   dst_node_id,
+    input logic [  IOP_ID_W-1:0]   iop_id,
+    input logic [SRC_ADDR_W-1:0] src_addr
   );
-    logic [31:0] read_req_id;
-    logic [31:0] read_req_addr;
+    logic [REG_DATA_W-1:00] read_req_id;
+    logic [REG_DATA_W-1:00] read_req_addr;
     begin
       $display("\n[INFO] Sending a Notify request from HPU-%0x to HPU-%0x", src_node_id, dst_node_id);
 
-      read_req_addr = {16'b0, src_addr};
-      read_req_id = {4'b0000, iop_id, REQ_ID_NOTIFY_TX, dst_node_id, req_size_b};
+      read_req_addr = {16'b0, src_addr}; //TODO
+      read_req_id = {iop_id, REQ_ID_NOTIFY_TX, dst_node_id, req_size_b};
 
       if (src_node_id == random_hpu_a) begin
         maxil_drv_if_hpu_a.write_trans(REQUEST_REQ_ADDR_OFS, read_req_addr);

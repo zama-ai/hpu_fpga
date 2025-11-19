@@ -4439,7 +4439,7 @@
             {
               "name": "iop_id",
               "description": "IOP id from software point of view",
-              "size_b": 4,
+              "size_b": 8,
               "offset_b": 24,
               "default": {
                 "Cst": 0
