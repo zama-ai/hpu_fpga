@@ -655,7 +655,7 @@ module tb_multi_hpu_dma;
 
     // TODO: add checker
 
-    repeat(400) @(posedge clk_control);
+    repeat(800) @(posedge clk_control);
 
     $display("%t > INFO: End simulation",$time);
     repeat(20) @(posedge clk_control);

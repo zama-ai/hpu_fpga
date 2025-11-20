@@ -567,20 +567,40 @@ module mhdma_slave
         end
       end
 
-      always_ff @(posedge clk_mrmac)
-        fifo_ce_pc_in_data[gen_rd] <= ce_data_out[slow_pace_count];
+      logic [$clog2(NB_MRMRAC_WORDS_PER_READ)-1:0] realign_cnt;
+      logic                                      start_deserialize;
 
       always_ff @(posedge clk_mrmac) begin
-        if (~resetn_mrmac) begin
-          fifo_ce_pc_in_vld[gen_rd] <= 1'b0;
+        if(~resetn_mrmac)begin
+          start_deserialize <= 1'b0;
         end else begin
-          if (slow_pace_count == NB_MRMRAC_WORDS_PER_READ-1) begin
-            fifo_ce_pc_in_vld[gen_rd] <= 1'b1;
-          end else if (pc_read_finished) begin
-          fifo_ce_pc_in_vld[gen_rd] <= 1'b0;
+          if (reading_which_pc[gen_rd] & (read_fifo_out_valid & read_fifo_out_ready)) begin
+            start_deserialize <= 1'b1;
+          end else if (~reading_which_pc[gen_rd]) begin
+            start_deserialize <= 1'b0;
           end
         end
       end
+
+      always_ff @(posedge clk_mrmac) begin
+        if(~resetn_mrmac) begin
+          realign_cnt <= 'h0;
+        end else begin
+          if (start_deserialize) begin
+            realign_cnt <= realign_cnt + 1;
+            // we need to take into account that ce_data_out arrives one cc later
+          end else begin
+            realign_cnt <= 'h0;
+          end
+        end
+      end
+
+      always_ff @(posedge clk_mrmac)
+        fifo_ce_pc_in_data[gen_rd] <= ce_data_out[realign_cnt];
+
+      always_ff @(posedge clk_mrmac)
+          fifo_ce_pc_in_vld[gen_rd] <= start_deserialize;
+
     end
   endgenerate
 
@@ -616,12 +636,12 @@ module mhdma_slave
   end
 
   // Fifo Ciphertext Emission ---------------------------------------------------------------------
-  logic [ $clog2(CE_DATA_COUNT_W)+1:0] fifo_ce_cnt;
-  logic [               CE_DATA_W-1:0] fifo_ce_in_data;
-  logic                                fifo_ce_in_vld;
-  logic [            MRMAC_AXIS_W-1:0] fifo_ce_out_data;
-  logic                                fifo_ce_out_vld;
-  logic                                fifo_ce_out_rdy;
+  logic [CE_DATA_COUNT_W:0] fifo_ce_cnt;
+  logic [    CE_DATA_W-1:0] fifo_ce_in_data;
+  logic                     fifo_ce_in_vld;
+  logic [ MRMAC_AXIS_W-1:0] fifo_ce_out_data;
+  logic                     fifo_ce_out_vld;
+  logic                     fifo_ce_out_rdy;
 
   // data in input are already in the correct form for sending directly to the lane
   assign  fifo_ce_in_vld  = (reading_which_pc[0] == 1) ? fifo_ce_pc_in_vld[0]  : fifo_ce_pc_in_vld[1];
@@ -635,9 +655,9 @@ module mhdma_slave
     if (~resetn_mrmac) begin
       fifo_ce_cnt <= 'h0;
     end else begin
-      if (fifo_ce_in_vld) begin
+      if (fifo_ce_in_vld & fifo_ce_in_rdy) begin
         fifo_ce_cnt <= fifo_ce_cnt + 1;
-      end else if (fifo_ce_out_vld) begin
+      end else if (fifo_ce_out_rdy & fifo_ce_out_vld) begin
         fifo_ce_cnt <= fifo_ce_cnt - 1;
       end
     end
@@ -657,8 +677,9 @@ module mhdma_slave
 
     .out_data(fifo_ce_out_data),
     .out_vld (fifo_ce_out_vld),
-    .out_rdy (1'b0)
+    .out_rdy (fifo_ce_out_rdy)
   );
+  assign fifo_ce_out_rdy = 1'b0;
 
   // counter of output words and control for starting header & payload emission
   logic [$clog2(NB_WORDS_PAYLOAD)+1:0] ce_nb_words_cnt;

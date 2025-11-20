@@ -93,7 +93,7 @@ package mhdma_pkg;
   // Notify RX payload: distributed
   localparam int NRX_WIDTH             = SRC_ADDR_W + HPU_ID_W + IOP_ID_W;
   localparam int NRX_DEPTH             = 4; //TOREVIEW
-  localparam int NRX_DATA_COUNT_W      =  $clog2(NRX_WIDTH)+1;
+  localparam int NRX_DATA_COUNT_W      =  $clog2(NRX_DEPTH)+1;
 
   // read request command queue: URAM fifo
   localparam int RREQ_CMD_DATA_W       = HPU_ID_W+IOP_ID_W+SRC_ADDR_W+DST_ADDR_W;
@@ -106,13 +106,13 @@ package mhdma_pkg;
   localparam int READ_PC_DATA_W        = AXI4_DATA_W;
   localparam int READ_PC_DEPTH         = CT_NB_WORDS_AXI4;
   localparam int READ_PC_RAM_LATENCY   = 1;
-  localparam int READ_PC_DATA_COUNT_W  =  $clog2(CT_NB_WORDS_AXI4)+1;
+  localparam int READ_PC_DATA_COUNT_W  =  $clog2(READ_PC_DEPTH)+1;
 
   // QSFP TX fifo: FIFO CE
   localparam int CE_DATA_W             = MRMAC_AXIS_W;
-  localparam int CE_DEPTH              = CT_NB_WORDS_MRMAC;
+  localparam int CE_DEPTH              = CT_NB_COEF;
   localparam int CE_RAM_LATENCY        = 1;
-  localparam int CE_DATA_COUNT_W       =  $clog2(CT_NB_WORDS_MRMAC)+1;
+  localparam int CE_DATA_COUNT_W       =  $clog2(CE_DEPTH)+1;
 
   // identification opcode --------------------------------------------------
   localparam [REQ_ID_W-1:0] REQ_ID_NOTIFY_TX     = 'h2;
