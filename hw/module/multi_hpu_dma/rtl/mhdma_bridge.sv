@@ -249,58 +249,60 @@ module mhdma_bridge
   );
 
   mhdma_slave # (
-    .CDC_SYNC_STAGES        (CDC_SYNC_STAGES                                  ),
-    .MAX_BURST_SIZE         (MAX_BURST_SIZE                                   ),
-    .PC_CT_BYTES            (PC_CT_BYTES                                      ),
-    .PC_STRIDE              (PC_STRIDE                                        )
+    .CDC_SYNC_STAGES                (CDC_SYNC_STAGES                          ),
+    .MAX_BURST_SIZE                 (MAX_BURST_SIZE                           ),
+    .PC_CT_BYTES                    (PC_CT_BYTES                              ),
+    .PC_STRIDE                      (PC_STRIDE                                )
   ) mhdma_slave (
     // Ethernet configuration interface ---------------------------------------
-    .clk_cfg                (clk_cfg                                          ),
-    .resetn_cfg             (resetn_cfg                                       ),
+    .clk_cfg                        (clk_cfg                                  ),
+    .resetn_cfg                     (resetn_cfg                               ),
     // Ethernet fast clock interface ------------------------------------------
-    .clk_mrmac              (clk_mrmac                                        ),
-    .resetn_mrmac           (resetn_mrmac                                     ),
+    .clk_mrmac                      (clk_mrmac                                ),
+    .resetn_mrmac                   (resetn_mrmac                             ),
     // regf interface ---------------------------------------------------------
-    .regf_ct_mem_addr       (regf_ct_mem_addr                                 ),
-    .regf_notify_payload    (regf_notify_payload                              ),
+    .regf_ct_mem_addr               (regf_ct_mem_addr                         ),
+    .regf_notify_payload            (regf_notify_payload                      ),
     // header interface -------------------------------------------------------
-    .rx_dst_mac_addr        (rx_dst_mac_addr                                  ),
-    .rx_sec_num             (rx_sec_num                                       ),
-    .rx_hpu_id              (rx_hpu_id                                        ),
-    .rx_req_id              (rx_req_id                                        ),
-    .rx_src_mac_addr        (rx_src_mac_addr                                  ),
-    .rx_size_b              (rx_size_b                                        ),
-    .rx_iop_id              (rx_iop_id                                        ),
-    .rx_ct_src_addr         (rx_ct_src_addr                                   ),
-    .rx_ct_dst_addr         (rx_ct_dst_addr                                   ),
-    .rx_header_valid        (rx_header_valid                                  ),
+    .rx_dst_mac_addr                (rx_dst_mac_addr                          ),
+    .rx_sec_num                     (rx_sec_num                               ),
+    .rx_hpu_id                      (rx_hpu_id                                ),
+    .rx_req_id                      (rx_req_id                                ),
+    .rx_src_mac_addr                (rx_src_mac_addr                          ),
+    .rx_size_b                      (rx_size_b                                ),
+    .rx_iop_id                      (rx_iop_id                                ),
+    .rx_ct_src_addr                 (rx_ct_src_addr                           ),
+    .rx_ct_dst_addr                 (rx_ct_dst_addr                           ),
+    .rx_header_valid                (rx_header_valid                          ),
     // command interface ------------------------------------------------------
-    .notify_request_received(notify_request_received                          ),
-    .read_request_received  (read_request_received                            ),
-    .new_notify_read_pending(new_notify_read_pending                          ),
-    .new_notify_ack_pending (new_notify_ack_pending                           ),
-    .notify_ack_allowed     (notify_ack_allowed                               ),
-    .ct_emission_allowed    (ct_emission_allowed                              ),
+    .notify_request_received         (notify_request_received                 ),
+    .read_request_received           (read_request_received                   ),
+    .new_notify_read_pending         (new_notify_read_pending                 ),
+    .new_notify_ack_pending          (new_notify_ack_pending                  ),
+    .new_ct_emission_request_pending (new_ct_emission_request_pending         ),
+    .notify_ack_allowed              (notify_ack_allowed                      ),
+    .ct_emission_allowed             (ct_emission_allowed                     ),
     // notify ack payload -----------------------------------------------------
-    .nrx_cmd_payload        (nrx_cmd_payload                                  ),
-    .nrx_valid              (nrx_valid                                        ),
+    .nrx_cmd_payload                  (nrx_cmd_payload                        ),
+    .nrx_valid                        (nrx_valid                              ),
+    .notify_ack_sent                  (notify_ack_sent                        ),
     // AXI4-4 full read interface ---------------------------------------------
-    .m_axi4_arid            (m_axi4_arid                                      ),
-    .m_axi4_araddr          (m_axi4_araddr                                    ),
-    .m_axi4_arlen           (m_axi4_arlen                                     ),
-    .m_axi4_arsize          (m_axi4_arsize                                    ),
-    .m_axi4_arburst         (m_axi4_arburst                                   ),
-    .m_axi4_arvalid         (m_axi4_arvalid                                   ),
-    .m_axi4_arready         (m_axi4_arready                                   ),
-    .m_axi4_rid             (m_axi4_rid                                       ),
-    .m_axi4_rdata           (m_axi4_rdata                                     ),
-    .m_axi4_rresp           (m_axi4_rresp                                     ),
-    .m_axi4_rlast           (m_axi4_rlast                                     ),
-    .m_axi4_rvalid          (m_axi4_rvalid                                    ),
-    .m_axi4_rready          (m_axi4_rready                                    ),
+    .m_axi4_arid                      (m_axi4_arid                            ),
+    .m_axi4_araddr                    (m_axi4_araddr                          ),
+    .m_axi4_arlen                     (m_axi4_arlen                           ),
+    .m_axi4_arsize                    (m_axi4_arsize                          ),
+    .m_axi4_arburst                   (m_axi4_arburst                         ),
+    .m_axi4_arvalid                   (m_axi4_arvalid                         ),
+    .m_axi4_arready                   (m_axi4_arready                         ),
+    .m_axi4_rid                       (m_axi4_rid                             ),
+    .m_axi4_rdata                     (m_axi4_rdata                           ),
+    .m_axi4_rresp                     (m_axi4_rresp                           ),
+    .m_axi4_rlast                     (m_axi4_rlast                           ),
+    .m_axi4_rvalid                    (m_axi4_rvalid                          ),
+    .m_axi4_rready                    (m_axi4_rready                          ),
     // interrupt interface ----------------------------------------------------
-    .clear_interrupt_notify (clear_interrupt_notify                           ),
-    .interrupt_notify       (interrupt_notify                                 )
+    .clear_interrupt_notify           (clear_interrupt_notify                 ),
+    .interrupt_notify                 (interrupt_notify                       )
   );
 
   mhdma_decoder mhdma_decoder (

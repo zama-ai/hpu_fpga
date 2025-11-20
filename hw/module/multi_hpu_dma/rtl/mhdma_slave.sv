@@ -46,6 +46,7 @@ module mhdma_slave
 
   output logic                                new_notify_read_pending,
   output logic                                new_notify_ack_pending,
+  output logic                                new_ct_emission_request_pending,
 
   input  logic                                notify_ack_allowed,
   input  logic                                ct_emission_allowed,
@@ -80,14 +81,28 @@ module mhdma_slave
 
   // generate cannot be in packages
   // PC_NB_READS: how many reads are needed per PCs
-  // TOREVIEW: if ever ciphertexts are not aligned to a page, this will induce stalls
-  // How to enforce ? / should it be enforced ?
+  // TOREVIEW
+  // TODO
   generate
     for (genvar gen_i = 0; gen_i < ETH_PC; gen_i = gen_i + 1) begin : gen_localparam
-      localparam int PC_NB_READS = (PC_CT_BYTES[gen_i]/AXI4_DATA_BYTES) / MAX_BURST_SIZE;
-      localparam int PC_NB_WORDS = PC_NB_READS*MAX_BURST_SIZE;
+      localparam int PC_NB_WORDS = (PC_CT_BYTES[gen_i] / AXI4_DATA_BYTES);
+      localparam int PC_NB_READS_BURST = (PC_NB_WORDS / MAX_BURST_SIZE);
+      localparam int PC_REMAINS = (PC_NB_WORDS % MAX_BURST_SIZE);
+      localparam int PC_NB_READS = (PC_REMAINS!=0) ? PC_NB_READS_BURST + 1 : PC_NB_READS_BURST;
     end
   endgenerate
+
+  // =========================================================================================== //
+  // general
+  // =========================================================================================== //
+  // here we want to handle only pulses to move away from our current state or write into fifo
+  logic notify_request_receivedD;
+
+  always_ff @(posedge clk_mrmac)
+    notify_request_receivedD <= notify_request_received;
+
+  logic notify_request;
+  assign notify_request = notify_request_received & ~notify_request_receivedD;
 
   // ==============================================================================================
   // Notify RX (NRX)
@@ -365,19 +380,27 @@ module mhdma_slave
       end
   endgenerate
 
+  // Is read request ready ------------------------------------------------------------------------
   // flag that states that read request is ready
   logic rreq_ready;
+  logic rreq_readyD;
   always_ff @(posedge clk_mrmac)
     rreq_ready <= rreq_cmd_out_valid & rreq_cmd_out_ready;
+  always_ff @(posedge clk_mrmac)
+    rreq_readyD <= rreq_ready;
 
-  // let's start ciphertext emission when its flag is up and we are not changing command values
-  logic [ETH_PC-1:0] axi4_read_pc;
-  logic [ETH_PC-1:0] axi4_read_last;
+  logic rreq_ready_pulse;
+  assign rreq_ready_pulse = rreq_ready & ~rreq_readyD;
 
-  // process an axi4-read on each PC
+
+  // process an axi4-read on each PC --------------------------------------------------------------
   //  - arlen the burst size is dictated from parameter MAX_BURST_SIZE
   //  - arburst would be INCR
   //  - arsize the size of each data transfer, fixed to MHDMA_ARSIZE
+  // let's start ciphertext emission when its flag is up and we are not changing command values
+  logic [ETH_PC-1:0] axi4_read_pc;
+  logic [ETH_PC-1:0] axi4_read_last;
+  // TODO: TOREVIEW :: we probably could read at the same time the two PCs and not one by one
   generate
     for (genvar gen_rd=0; gen_rd<ETH_PC; gen_rd++) begin : gen_ce_reads
       logic [$clog2(gen_localparam[gen_rd].PC_NB_READS):0] axi_read_cnt;
@@ -390,10 +413,10 @@ module mhdma_slave
           axi_read_cnt <= gen_localparam[gen_rd].PC_NB_READS;
           axi_read <= 1'b0;
         end else begin
-          if ((axi_read_cnt > 0) & axi4_read_pc[gen_rd] & m_axi4_arready[gen_rd]) begin
+          if ((axi_read_cnt > 0) && axi4_read_pc[gen_rd] && m_axi4_arready[gen_rd]) begin
             axi_read <= 1'b1;
             axi_read_cnt <= axi_read_cnt - 1;
-          end else begin
+          end else if (axi4_read_last[gen_rd]) begin
             axi_read <= 1'b0;
             axi_read_cnt <= gen_localparam[gen_rd].PC_NB_READS;
           end
@@ -410,51 +433,40 @@ module mhdma_slave
           if (axi_read_cnt == gen_localparam[gen_rd].PC_NB_READS) begin
             mhdma_read_addr <= phy_addr[gen_rd];
           end else begin
-            mhdma_read_addr <= mhdma_read_addr + (NB_MRMRAC_WORDS_PER_READ*MAX_BURST_SIZE);
+            mhdma_read_addr <= mhdma_read_addr + (AXI4_DATA_BYTES*MAX_BURST_SIZE);
           end
         end
       end
 
-      // m_axi4_arid[gen_rd]
-      assign m_axi4_araddr[gen_rd]  = (axi_read) ? mhdma_read_addr :'h0;
-      assign m_axi4_arlen[gen_rd]   = (axi_read) ? MAX_BURST_SIZE-1:'h0;
-      assign m_axi4_arsize[gen_rd]  = (axi_read) ? MHDMA_ARSIZE    :'h0;
-      assign m_axi4_arburst[gen_rd] = (axi_read) ? 2'b01           :'h0; // incr
-      assign m_axi4_arvalid[gen_rd] = (axi_read) ? 1'b1            :'h0;
+      // m_axi4_arid[gen_rd] not used
+      assign m_axi4_araddr[gen_rd]  = (axi_read && m_axi4_arready[gen_rd]) ? mhdma_read_addr :'h0;
+      assign m_axi4_arsize[gen_rd]  = (axi_read && m_axi4_arready[gen_rd]) ? MHDMA_ARSIZE    :'h0;
+      assign m_axi4_arburst[gen_rd] = (axi_read && m_axi4_arready[gen_rd]) ? 2'b01           :'h0; // incr
+      assign m_axi4_arvalid[gen_rd] = (axi_read && m_axi4_arready[gen_rd]) ? 1'b1            :'h0;
       // there is not arlast, this is only an intermediate signal
-      assign axi4_read_last[gen_rd] = (axi_read & (axi_read_cnt == 0)) ? 1'b1 : 1'b0;
+      assign axi4_read_last[gen_rd] = ((axi_read && m_axi4_arready[gen_rd]) & (axi_read_cnt == 0)) ? 1'b1 : 1'b0;
+
+      always_comb begin
+        if ((gen_localparam[gen_rd].PC_REMAINS !=0) && (axi_read_cnt == gen_localparam[gen_rd].PC_NB_READS)) begin
+          m_axi4_arlen[gen_rd] = (axi_read && m_axi4_arready[gen_rd]) ? gen_localparam[gen_rd].PC_REMAINS-1 : 'h0;
+        end else begin
+          m_axi4_arlen[gen_rd] = (axi_read && m_axi4_arready[gen_rd]) ? MAX_BURST_SIZE-1 : 'h0;
+        end
+      end
 
       // we read if and only if we are in ciphertext emission mode
       assign m_axi4_rready[gen_rd]  = ct_emission_request_in_use;
-
     end
   endgenerate
 
-  // prc_read_one_at_a_time must much change if ETH_PC != 0 or we wand to read two PCs in parallel
-  always_ff @(posedge clk_mrmac) begin : prc_read_one_at_a_time
-    if (~resetn_mrmac) begin
-      axi4_read_pc <= 'h0;
-    end else begin
-      // when read request registers are ready we can trigger the shift register.
-      // when the last signal is fired we can trigger the second PC
-      if (rreq_ready | (axi4_read_last[0])) begin
-        axi4_read_pc <= {axi4_read_pc[ETH_PC-2:0], rreq_ready};
-      end else if (axi4_read_last[1]) begin
-        axi4_read_pc <= 'h0;
-      end
-    end
-  end
-
+  // Reception FIFOs for both PC ports ------------------------------------------------------------
   // one hot value that selects which PC is selected to be read and sent to QSFP lane
   // always start with PC0
-  logic [ETH_PC-1:0] reading_which_pc;
-
+  logic [ETH_PC-1:0]                reading_which_pc;
   logic [ETH_PC-1:0]                fifo_ce_pc_in_rdy;
   logic [ETH_PC-1:0][CE_DATA_W-1:0] fifo_ce_pc_in_data;
   logic [ETH_PC-1:0]                fifo_ce_pc_in_vld;
 
-  // separate generate block for read fifo and its misc
-  // add a backpressure to the read requests
   generate
     for (genvar gen_rd=0; gen_rd<ETH_PC; gen_rd++) begin : gen_read_fifo
       // input part
@@ -486,15 +498,14 @@ module mhdma_slave
         .out_rdy (read_fifo_out_ready)
       );
 
-      logic [$clog2(gen_localparam[gen_rd].PC_NB_WORDS):0] read_fifo_how_much_words_arrived;
-
+      logic [$clog2(gen_localparam[gen_rd].PC_NB_WORDS)-1:0] read_fifo_how_much_words_arrived;
       always_ff @(posedge clk_mrmac) begin
         if (~resetn_mrmac) begin
           read_fifo_how_much_words_arrived <= 'h0;
         end else begin
           if (read_fifo_we) begin
             read_fifo_how_much_words_arrived <= read_fifo_how_much_words_arrived + 1;
-          end else begin
+          end else if (all_words_have_arrived) begin
             read_fifo_how_much_words_arrived <= 'h0;
           end
         end
@@ -503,9 +514,9 @@ module mhdma_slave
       assign all_words_have_arrived = (read_fifo_how_much_words_arrived == gen_localparam[gen_rd].PC_NB_WORDS - 1);
 
       // we are going to read 4 times slower the fifo than we are feeding it
-      logic [$clog2(NB_MRMRAC_WORDS_PER_READ)-1:0] slow_pace_count;
+      logic [$clog2(NB_MRMRAC_WORDS_PER_READ)-1:0]         slow_pace_count;
       logic [$clog2(gen_localparam[gen_rd].PC_NB_WORDS):0] read_fifo_out_cnt;
-      logic pc_read_finished;
+      logic                                                pc_read_finished;
 
       always_ff @(posedge clk_mrmac) begin
         if (~resetn_mrmac) begin
@@ -531,6 +542,7 @@ module mhdma_slave
           end
         end
       end
+
       always_ff @(posedge clk_mrmac) begin
         if(~resetn_mrmac) begin
           pc_read_finished <= 1'b0;
@@ -555,32 +567,50 @@ module mhdma_slave
         end
       end
 
-    always_ff @(posedge clk_mrmac)
-      fifo_ce_pc_in_data[gen_rd] <= ce_data_out[slow_pace_count];
+      always_ff @(posedge clk_mrmac)
+        fifo_ce_pc_in_data[gen_rd] <= ce_data_out[slow_pace_count];
 
-    always_ff @(posedge clk_mrmac) begin
-      if (~resetn_mrmac) begin
-        fifo_ce_pc_in_vld[gen_rd] <= 1'b0;
-      end else begin
-        if (slow_pace_count == NB_MRMRAC_WORDS_PER_READ-1) begin
-          fifo_ce_pc_in_vld[gen_rd] <= 1'b1;
-        end else if (pc_read_finished) begin
-        fifo_ce_pc_in_vld[gen_rd] <= 1'b0;
+      always_ff @(posedge clk_mrmac) begin
+        if (~resetn_mrmac) begin
+          fifo_ce_pc_in_vld[gen_rd] <= 1'b0;
+        end else begin
+          if (slow_pace_count == NB_MRMRAC_WORDS_PER_READ-1) begin
+            fifo_ce_pc_in_vld[gen_rd] <= 1'b1;
+          end else if (pc_read_finished) begin
+          fifo_ce_pc_in_vld[gen_rd] <= 1'b0;
+          end
         end
       end
     end
-    end
   endgenerate
 
-  // we only have one QSFP lane interface, we will read each FIFO independently, one at a time
+  // which PC must be read ------------------------------------------------------------------------
+  // thoses two processes are defined for two PCS only.
+
+  // launch reads over the two PCs indepenently
+  always_ff @(posedge clk_mrmac) begin : prc_read_one_at_a_time
+    if (~resetn_mrmac) begin
+      axi4_read_pc <= 'h0;
+    end else begin
+      // when read request registers are ready we can trigger the shift register.
+      // when the last signal is fired we can trigger the second PC
+      if (rreq_ready_pulse | axi4_read_last[0] | axi4_read_last[1]) begin
+        axi4_read_pc <= {axi4_read_pc[ETH_PC-2:0], rreq_ready_pulse};
+      end else if (axi4_read_last[1]) begin
+        axi4_read_pc <= 'h0;
+      end
+    end
+  end
+
+  // we only have one QSFP lane interface, we will read each PC FIFO independently, one at a time
   always_ff @(posedge clk_mrmac) begin
     if (~resetn_mrmac) begin
       reading_which_pc <= 'h0;
     end else begin
       // at initialization we insert rreq_ready when read request is ready to be performed
       // once the whole fifo has been fully read
-      if (rreq_ready | (gen_read_fifo[0].pc_read_finished) | (gen_read_fifo[1].pc_read_finished)) begin
-        reading_which_pc <= {reading_which_pc[ETH_PC-2:0], rreq_ready};
+      if (rreq_ready_pulse | (gen_read_fifo[0].pc_read_finished) | (gen_read_fifo[1].pc_read_finished)) begin
+        reading_which_pc <= {reading_which_pc[ETH_PC-2:0], rreq_ready_pulse};
       end
     end
   end
@@ -591,10 +621,16 @@ module mhdma_slave
   logic                                fifo_ce_out_vld;
   logic                                fifo_ce_out_rdy;
 
+  logic [ETH_PC-1:0] allow_reading_pc;
+
+  assign allow_reading_pc[0] = (fifo_ce_pc_in_rdy<gen_localparam[0].PC_NB_WORDS)? gen_read_fifo[0].read_fifo_out_valid : 1'b0;
+  assign allow_reading_pc[1] = (fifo_ce_pc_in_rdy>=gen_localparam[0].PC_NB_WORDS)? gen_read_fifo[1].read_fifo_out_valid : 1'b0;
+
   // data in input are already in the correct form for sending directly to the lane
-  assign  fifo_ce_in_data = (reading_which_pc[0] == 1) ? fifo_ce_pc_in_data[0] : fifo_ce_pc_in_data[1];
+  assign  fifo_ce_in_data = (reading_which_pc[0] == 1) ? gen_read_fifo[0].read_fifo_out_data : gen_read_fifo[1].read_fifo_out_data;
   assign  fifo_ce_in_vld  = (reading_which_pc[0] == 1) ? fifo_ce_pc_in_vld[0] : fifo_ce_pc_in_vld[1];
 
+  // backpressure over ready fo each fifo
   // TODO: do something clearer/simpler
   always_comb begin
     if(reading_which_pc == 1) begin
@@ -637,6 +673,8 @@ module mhdma_slave
     .out_vld (fifo_ce_out_vld),
     .out_rdy (1'b0)
   );
+
+  // assign fifo_ce_out_vld = 1'b0;
 
   // counter of output words and control for starting header & payload emission
   logic [$clog2(NB_WORDS_PAYLOAD)+1:0] ce_nb_words_cnt;

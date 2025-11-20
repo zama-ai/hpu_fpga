@@ -84,8 +84,8 @@ module mhdma_master
   // cfg
   assign rrqq_wr_en = received_req & ~rrqq_wr_rst_busy & ~rrqq_full & (regf_req_id[23:20] == REQ_ID_READ);
   // mrmac
-  assign new_read_request_pending = ((rrqq_rd_data_count == 0) & ~read_request_allowed) ? 1'b0 : 1'b1;
-  assign rrqq_rd_en =  new_read_request_pending & ~rrqq_rd_rst_busy & ~rrqq_empty;
+  assign new_read_request_pending = (rrqq_rd_data_count != 0) ? 1'b1 : 1'b0;
+  assign rrqq_rd_en =  new_read_request_pending & ~rrqq_rd_rst_busy & ~rrqq_empty & read_request_allowed;
 
   fifo_ram_rdy_vld_2clk # (
     .CDC_SYNC_STAGES (CDC_SYNC_STAGES),

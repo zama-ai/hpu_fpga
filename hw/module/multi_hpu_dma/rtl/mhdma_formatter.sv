@@ -63,6 +63,8 @@ module mhdma_formatter
   logic [SEQ_NUM_W-1:0] ce_seq_num;
   logic                 ct_emission_all_packets_transmitted;
 
+  assign ct_emission_all_packets_transmitted = 1'b0;
+
   // =========================================================================================== //
   // Building headers
   // =========================================================================================== //
@@ -202,7 +204,7 @@ module mhdma_formatter
       ST_NACK:
         tx_next_state =  tx_last_header ? ST_IDLE : ST_NACK;
       ST_READ_REQ:
-        tx_next_state =  tx_last_header ? ST_IDLE : ST_READ_REQ;
+        tx_next_state =  ct_emission_all_packets_transmitted ? ST_IDLE : ST_READ_REQ;
       ST_NOTIFY:
         tx_next_state =  tx_last_header ? ST_IDLE : ST_NOTIFY;
     endcase
@@ -215,6 +217,7 @@ module mhdma_formatter
 
   assign header_sop = master_request ? master_valid : notify_ack_allowed ? nrx_valid : 1'b0;
 
+  assign notify_ack_sent = tx_last_header && (tx_state == ST_NACK);
   // =========================================================================================== //
   // AXI4-stream
   // =========================================================================================== //

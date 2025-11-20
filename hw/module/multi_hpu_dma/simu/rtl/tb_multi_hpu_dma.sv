@@ -619,7 +619,7 @@ module tb_multi_hpu_dma;
     // or how this should be used most of the time
     // for now size_b is fixed, all our ciphertext are 16.384kB (size_b=0x4000)
     iop_id       = $urandom();
-    iop_src_addr = 1;
+    iop_src_addr = 0;
     iop_dst_addr = 2;
 
     repeat(100) @(posedge clk_control);
