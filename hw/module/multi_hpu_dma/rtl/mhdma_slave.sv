@@ -617,33 +617,19 @@ module mhdma_slave
 
   // Fifo Ciphertext Emission ---------------------------------------------------------------------
   logic [ $clog2(CE_DATA_COUNT_W)+1:0] fifo_ce_cnt;
+  logic [               CE_DATA_W-1:0] fifo_ce_in_data;
+  logic                                fifo_ce_in_vld;
   logic [            MRMAC_AXIS_W-1:0] fifo_ce_out_data;
   logic                                fifo_ce_out_vld;
   logic                                fifo_ce_out_rdy;
 
-  logic [ETH_PC-1:0] allow_reading_pc;
-
-  assign allow_reading_pc[0] = (fifo_ce_pc_in_rdy<gen_localparam[0].PC_NB_WORDS)? gen_read_fifo[0].read_fifo_out_valid : 1'b0;
-  assign allow_reading_pc[1] = (fifo_ce_pc_in_rdy>=gen_localparam[0].PC_NB_WORDS)? gen_read_fifo[1].read_fifo_out_valid : 1'b0;
-
   // data in input are already in the correct form for sending directly to the lane
-  assign  fifo_ce_in_data = (reading_which_pc[0] == 1) ? gen_read_fifo[0].read_fifo_out_data : gen_read_fifo[1].read_fifo_out_data;
-  assign  fifo_ce_in_vld  = (reading_which_pc[0] == 1) ? fifo_ce_pc_in_vld[0] : fifo_ce_pc_in_vld[1];
+  assign  fifo_ce_in_vld  = (reading_which_pc[0] == 1) ? fifo_ce_pc_in_vld[0]  : fifo_ce_pc_in_vld[1];
+  assign  fifo_ce_in_data = fifo_ce_in_vld ? ((reading_which_pc[0] == 1) ? fifo_ce_pc_in_data[0] : fifo_ce_pc_in_data[1]) : 'h0;
 
   // backpressure over ready fo each fifo
-  // TODO: do something clearer/simpler
-  always_comb begin
-    if(reading_which_pc == 1) begin
-      fifo_ce_pc_in_rdy[0] = fifo_ce_in_rdy;
-      fifo_ce_pc_in_rdy[1] = 1'b0;
-    end else if (reading_which_pc == 2) begin
-      fifo_ce_pc_in_rdy[0] = 1'b0;
-      fifo_ce_pc_in_rdy[1] = fifo_ce_in_rdy;
-    end else begin
-      fifo_ce_pc_in_rdy[0] =  1'b0;
-      fifo_ce_pc_in_rdy[1] = 1'b0;
-    end
-  end
+  assign fifo_ce_pc_in_rdy[0] = (reading_which_pc == 1) ? fifo_ce_in_rdy : 1'b0;
+  assign fifo_ce_pc_in_rdy[1] = (reading_which_pc == 2) ? fifo_ce_in_rdy : 1'b0;
 
   always_ff @(posedge clk_mrmac) begin
     if (~resetn_mrmac) begin
@@ -673,8 +659,6 @@ module mhdma_slave
     .out_vld (fifo_ce_out_vld),
     .out_rdy (1'b0)
   );
-
-  // assign fifo_ce_out_vld = 1'b0;
 
   // counter of output words and control for starting header & payload emission
   logic [$clog2(NB_WORDS_PAYLOAD)+1:0] ce_nb_words_cnt;
