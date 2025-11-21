@@ -67,7 +67,7 @@ module hpu_regif_cfg_3in3
   logic [REG_DATA_W-1:0]                             r_wr_data;
   logic [REQ_ACK_NB-1:0]                             req_cmd;
   logic [REQ_ACK_NB-1:0]                             ack_rsp;
-  hpu_reset_int_t                                    r_hpu_reset_int;
+  debug_int_t                                        r_debug_int;
 
   // Reset interface
   assign hpu_reset = req_cmd[REQ_ACK_HPU_RST_OFS];
@@ -90,7 +90,7 @@ module hpu_regif_cfg_3in3
   );
 
   // Debug interrupt
-  assign interrupt = r_hpu_reset_int.int0;
+  assign interrupt = r_debug_int.int0;
 
 // ============================================================================================== --
 // hpu_regif_core
@@ -162,7 +162,7 @@ module hpu_regif_cfg_3in3
       .r_hpu_reset_trigger_wr_en          (r_req_ack_wr_en[REQ_ACK_HPU_RST_OFS]),
       .r_hpu_reset_trigger_rd_en          (r_req_ack_rd_en[REQ_ACK_HPU_RST_OFS]),
       .r_hpu_reset_trigger                (/*UNUSED*/),
-      .r_hpu_reset_int                    (r_hpu_reset_int)
+      .r_debug_int                        (r_debug_int)
   );
 
 endmodule

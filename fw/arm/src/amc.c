@@ -275,7 +275,7 @@ extern XScuGic xInterruptController;
 /*
  * @brief   the IOp ack interrupt handler
  */
-void vInterruptHandler_zama0( void* pvCallBackRef ) {
+void vInterruptHandler_isc_ack( void* pvCallBackRef ) {
     isc_intr_global_cnt = isc_intr_global_cnt + 1;
 
     // NB: Head is only written by AMC after init
@@ -306,11 +306,11 @@ void vInterruptHandler_zama0( void* pvCallBackRef ) {
 /*
  * @brief   debug only interrupt handler
  */
-void vInterruptHandler_zama1( void* pvCallBackRef ) {
+void vInterruptHandler_debug( void* pvCallBackRef ) {
     debug_intr_global_cnt = debug_intr_global_cnt + 1;
     // write int register at 0 to stop interrupt
-    uint32_t data =  * (volatile uint32_t *) (XPAR_AXI_LPD_BASEADDR + 0x20104);
-    *( ( volatile uint32_t * )(XPAR_AXI_LPD_BASEADDR + 0x20104) ) = data & 0xFFFFFFFE;
+    // write cnt in upper 16b
+    *( ( volatile uint32_t * )(XPAR_AXI_LPD_BASEADDR + 0x20200) ) = ((debug_intr_global_cnt & 0xFFFF) << 16) | 0x0;
 }
 
 /*
@@ -399,29 +399,29 @@ static void vTaskFuncMain( void )
     HAL_FLUSH_CACHE_DATA( (uintptr_t) (toAmiIopAckqHead), sizeof(uint32_t) );
 
     // Initialise Interrupts
-    if( OSAL_ERRORS_NONE != iOSAL_Interrupt_Setup( XPAR_FABRIC_RTL_INTERRUPT_0_INTR, vInterruptHandler_zama0, NULL ) ) {
+    if( OSAL_ERRORS_NONE != iOSAL_Interrupt_Setup( XPAR_FABRIC_RTL_INTERRUPT_1_INTR, vInterruptHandler_isc_ack, NULL ) ) {
        PLL_ERR( AMC_NAME, "failed init isc interruption\r\n" );
     } else {
        PLL_INF( AMC_NAME, "interrupt handler on isc interrupt initialised\r\n" );
     }
     XScuGic_SetPriorityTriggerType(
        &xInterruptController,
-       XPAR_FABRIC_RTL_INTERRUPT_0_INTR,
+       XPAR_FABRIC_RTL_INTERRUPT_1_INTR,
        HIGH_PRIORITY_INTR,
        EDGE_SENSITIVE_INTR
     );
-    if( OSAL_ERRORS_NONE != iOSAL_Interrupt_Enable( XPAR_FABRIC_RTL_INTERRUPT_0_INTR) ) {
+    if( OSAL_ERRORS_NONE != iOSAL_Interrupt_Enable( XPAR_FABRIC_RTL_INTERRUPT_1_INTR) ) {
        PLL_ERR( AMC_NAME, "failed enabling isc interrupt\r\n" );
     } else {
        PLL_INF( AMC_NAME, "enabling isc interrupt on rising edge\r\n" );
     }
-    if( OSAL_ERRORS_NONE != iOSAL_Interrupt_Setup( XPAR_FABRIC_RTL_INTERRUPT_4_INTR, vInterruptHandler_zama1, NULL ) ) {
-       PLL_ERR( AMC_NAME, "failed init interrupt hpu_interrupt[4](debug)\r\n" );
+    if( OSAL_ERRORS_NONE != iOSAL_Interrupt_Setup( XPAR_FABRIC_RTL_INTERRUPT_0_INTR, vInterruptHandler_debug, NULL ) ) {
+       PLL_ERR( AMC_NAME, "failed init interrupt hpu_interrupt[0](debug)\r\n" );
     } else {
-       PLL_INF( AMC_NAME, "interrupt handler on hpu_interrupt[4](debug) initialised\r\n" );
+       PLL_INF( AMC_NAME, "interrupt handler on hpu_interrupt[0](debug) initialised\r\n" );
     }
-    if( OSAL_ERRORS_NONE != iOSAL_Interrupt_Enable( XPAR_FABRIC_RTL_INTERRUPT_4_INTR) ) {
-       PLL_ERR( AMC_NAME, "failed enabling interrupt hpu_interrupt[4](debug)\r\n" );
+    if( OSAL_ERRORS_NONE != iOSAL_Interrupt_Enable( XPAR_FABRIC_RTL_INTERRUPT_0_INTR) ) {
+       PLL_ERR( AMC_NAME, "failed enabling interrupt hpu_interrupt[0](debug)\r\n" );
     } else {
        PLL_INF( AMC_NAME, "enabling hpu_interrupt[4] on level\r\n" );
     }
@@ -480,8 +480,8 @@ static void vTaskFuncMain( void )
         //      After parsing only the used bytes are consumed from the queue
         if (iopq_used_bytes != 0 && !stop_consuming_iop) {
             //if (debug_intr_global_cnt%2 == 0) {
-            //    PLL_ERR("AMC", "interrupt[0](isc) count %d edges", isc_intr_global_cnt);
-            //    PLL_ERR("AMC", "interrupt[4](debug) count %d level at 1", debug_intr_global_cnt);
+            //    PLL_ERR("AMC", "interrupt[1](isc) count %d edges", isc_intr_global_cnt);
+            //    PLL_ERR("AMC", "interrupt[0](debug) count %d level at 1", debug_intr_global_cnt);
             //}
             PLL_INF("AMC", "Fw received IOP request, translation into DOP needed [head 0x%x; tail 0x%x]", iopq_head, iopq_tail);
 

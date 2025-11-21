@@ -101,6 +101,7 @@ module instruction_scheduler
   logic                    query_ack_vld;
 
   // interrupt
+  logic insn_ack_interrupt;
   logic interrupt_leveled;
   logic interrupt_leveled_D;
   logic cfg_interrupt_resync;
@@ -170,17 +171,26 @@ always_ff @(posedge clk)
     interrupt_leveled <= interrupt_leveled_D;
   end
 
-assign interrupt_leveled_D = insn_ack_vld & insn_ack_rdy ? ~interrupt_leveled : interrupt_leveled;
+assign insn_ack_interrupt  = insn_ack_vld & insn_ack_rdy;
+assign interrupt_leveled_D = insn_ack_interrupt ? ~interrupt_leveled : interrupt_leveled;
+
+xpm_cdc_single_wrapper #(
+  .CDC_SYNC_STAGES ( 2 ) ,
+  .SRC_INPUT_REG   ( 0 )
+) sync_interrupt (
+  .src_clk  ( clk     ) ,
+  .dest_clk ( cfg_clk ) ,
+  .src_in   ( interrupt_leveled ) ,
+  .dest_out ( cfg_interrupt_resync )
+);
 
 always_ff @(posedge cfg_clk)
   if (!cfg_srst_n) begin
-    cfg_interrupt_resync <= 1'b0;
     cfg_interrupt_r0     <= 1'b0;
     cfg_interrupt_r1     <= 1'b0;
     cfg_interrupt_pulse  <= 1'b0;
   end
   else begin
-    cfg_interrupt_resync <= interrupt_leveled;
     cfg_interrupt_r0     <= cfg_interrupt_resync;
     cfg_interrupt_r1     <= cfg_interrupt_r0;
     cfg_interrupt_pulse  <= cfg_interrupt_r1 ^ cfg_interrupt_r0;
@@ -568,7 +578,7 @@ assign query_vld = !query_ack_vld;
           _cfg_clk_r1        <= _cfg_clk_r0;
           _cfg_clk_cycle_cnt <= _cfg_clk_r0 & ~_cfg_clk_r1 ? '0 : ( (_cfg_clk_cycle_cnt == '1) ? _cfg_clk_cycle_cnt : _cfg_clk_cycle_cnt + 1 );
           _cfg_clk_period    <= _cfg_clk_cycle_cnt > _cfg_clk_period ? _cfg_clk_cycle_cnt : _cfg_clk_period;
-          _intr_dist         <= insn_ack_vld & insn_ack_rdy ? '0 : (_intr_dist == '1) ? _intr_dist : _intr_dist + 1;
+          _intr_dist         <= insn_ack_interrupt ? '0 : (_intr_dist == '1) ? _intr_dist : _intr_dist + 1;
           _intr_min_dist     <= ((insn_ack_vld & insn_ack_rdy) && (_intr_min_dist > _intr_dist)) ? _intr_dist : _intr_min_dist;
           assert ( _intr_min_dist > (_cfg_clk_period << 1) )
           else begin

@@ -92,7 +92,7 @@ module hpu_with_entry_3in3
   input  pep_info_t                                                    pep_rif_info,
   input  pep_counter_inc_t                                             pep_rif_counter_inc,
 
-  output logic                                                         interrupt,
+  output interrupt_t                                                   interrupt,
 
   // Reset three way handshake -----------------------------------------------------------------------
   output logic                                                         hpu_reset,
@@ -102,6 +102,11 @@ module hpu_with_entry_3in3
 // ============================================================================================== --
 // localparam
 // ============================================================================================== --
+
+// ============================================================================================== --
+// Signals
+// ============================================================================================== --
+logic debug_interrupt;
 
 // ============================================================================================== --
 // regif @ cfg_clk
@@ -133,8 +138,13 @@ module hpu_with_entry_3in3
     .bsk_mem_addr              (bsk_mem_addr),
     .hpu_reset                 (hpu_reset),
     .hpu_reset_done            (hpu_reset_done),
-    .interrupt                 (interrupt)
+    .interrupt                 (debug_interrupt)
   );
+
+  always_comb begin
+    interrupt                 = '0;
+    interrupt.debug_interrupt = debug_interrupt;
+  end
 
 // ============================================================================================== --
 // regif @ prc_clk

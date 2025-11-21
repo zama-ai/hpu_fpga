@@ -1,5 +1,5 @@
 # HPU_REGIF_CORE documentation
-**Date**: 2025-11-17
+**Date**: 2025-11-20
 **Tool Version**: 27d9e880d531030160fd8749c606142942d5558d
 
 ## RegisterMap Overview
@@ -36,7 +36,8 @@ Below is a summary of all the registers in the current register map:
 | [runtime_1in3](#section-runtime-1in3) | 0x12000 | 0x13c | Runtime information |
 | [entry_cfg_3in3](#section-entry-cfg-3in3) | 0x20000 | 0x10 | entry_cfg_3in3 section with known value used for debug. |
 | [hbm_axi4_addr_3in3](#section-hbm-axi4-addr-3in3) | 0x20010 | 0x80 | HBM AXI4 connection address offset |
-| [hpu_reset](#section-hpu-reset) | 0x20100 | 0x8 | Used to control the HPU soft reset |
+| [hpu_reset](#section-hpu-reset) | 0x20100 | 0x4 | Used to control the HPU soft reset |
+| [debug](#section-debug) | 0x20200 | 0x4 | Register used for debug purpose |
 | [entry_prc_3in3](#section-entry-prc-3in3) | 0x30000 | 0x10 | entry_prc_3in3 section with known value used for debug. |
 | [status_3in3](#section-status-3in3) | 0x30010 | 0x4 | HPU status of parts 2in3 and 3in3 |
 | [bsk_avail](#section-bsk-avail) | 0x31000 | 0x8 | BSK availability configuration |
@@ -3445,7 +3446,6 @@ Below is a summary of all the registers in the current section hpu_reset:
 | Name             | Offset | Access | Description |
 |-----------------:|:------:|:------:|:------------|
 | [trigger](#register-hpu-resettrigger) | 0x20100 | RW |  A soft reset for the whole HPU reconfigurable logic |
-| [int](#register-hpu-resetint) | 0x20104 | RW |  debug register to test interrupts |
 
 
 ---
@@ -3475,13 +3475,29 @@ Register trigger contains following Sub-fields:
 ---
 
 
-### Register hpu-reset.int
+
+
+## Section debug
+
+### Register Overview
+
+Below is a summary of all the registers in the current section debug:
+
+| Name             | Offset | Access | Description |
+|-----------------:|:------:|:------:|:------------|
+| [int](#register-debugint) | 0x20200 | RW |  debug register to test interrupts |
+
+
+---
+
+
+### Register debug.int
 
 - **Description**: debug register to test interrupts
 - **Owner**: User
 - **Read Access**: Read
 - **Write Access**: Write
-- **Offset**: 0x20104
+- **Offset**: 0x20200
 - **Default**: C.f. fields
 
 
@@ -3492,6 +3508,7 @@ Register int contains following Sub-fields:
 | Field Name | Offset_b | Size_b | Default      | Description   |
 |-----------:|:--------:|:------:|:------------:|:--------------|
 | int0      | 0 | 1 |0| debug int line 0 |
+| int0_cnt      | 16 | 16 |0| cnt of int trigger |
 
 
 

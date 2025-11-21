@@ -50,17 +50,17 @@ module hpu_3parts
                                         // Note that 0 means not used.
 )
 (
-  input  logic                 prc_free_clk,    // free running process clock
-  input  logic                 prc_free_srst_n, // free running process clock reset
+  input  logic                   prc_free_clk,    // free running process clock
+  input  logic                   prc_free_srst_n, // free running process clock reset
 
-  input  logic                 prc_clk,         // gated process clock
-  output logic                 prc_ce,          // gated process clock enable
-  output logic                 prc_srst_n,      // gated process clock reset
+  input  logic                   prc_clk,         // gated process clock
+  output logic                   prc_ce,          // gated process clock enable
+  output logic                   prc_srst_n,      // gated process clock reset
 
-  input  logic                 cfg_clk,    // config clock
-  input  logic                 cfg_srst_n, // synchronous reset
+  input  logic                   cfg_clk,    // config clock
+  input  logic                   cfg_srst_n, // synchronous reset
 
-  output logic [4:0]           interrupt,
+  output logic [INTERRUPT_W-1:0] interrupt,
 
   //== Axi4-lite slave @prc_clk and @cfg_clk
   `HPU_AXIL_IO(prc_1in3,axi_if_shell_axil_pkg)
@@ -127,19 +127,12 @@ module hpu_3parts
   // -------------------------------------------------------------------------------------------- --
   //-- Interrupt
   // -------------------------------------------------------------------------------------------- --
-  typedef struct packed {
-    logic intr0;
-    logic intr1;
-    logic intr2;
-    logic intr3;
-  } sll_interrupt_t;
-
-  sll_interrupt_t      in_p1_p2_sll_interrupt;
-  sll_interrupt_t      out_p1_p2_sll_interrupt;
-  sll_interrupt_t      in_p2_p3_sll_interrupt;
-  sll_interrupt_t      out_p2_p3_sll_interrupt;
-
-  logic                cfg_debug_interrupt;
+  interrupt_t          in_p1_p2_sll_interrupt;
+  interrupt_t          out_p1_p2_sll_interrupt;
+  interrupt_t          in_p2_p3_sll_interrupt;
+  interrupt_t          out_p2_p3_sll_interrupt;
+  interrupt_t          hpu_2in3_interrupt;
+  interrupt_t          hpu_3in3_interrupt;
 
 // ============================================================================================== --
 // Daisy chain the reset signals to be able to pin the reset root to different SLRs
@@ -295,11 +288,11 @@ module hpu_3parts
   );
 
   hpu_qual_sll #(
-    .IN_DEPTH    ( SLL_IN_PIPE                ) ,
-    .OUT_DEPTH   ( SLL_OUT_PIPE               ) ,
-    .DATA_WIDTH  ( 1                          ) ,
-    .CTRL_WIDTH  ( $bits(sll_interrupt_t)     ) ,
-    .CTRL_RST    ( $bits(sll_interrupt_t)'(0) )
+    .IN_DEPTH    ( SLL_IN_PIPE            ) ,
+    .OUT_DEPTH   ( SLL_OUT_PIPE           ) ,
+    .DATA_WIDTH  ( 1                      ) ,
+    .CTRL_WIDTH  ( $bits(interrupt_t)     ) ,
+    .CTRL_RST    ( $bits(interrupt_t)'(0) )
   ) p1_p2_sll_int (
     .in_clk      ( cfg_clk                 ) ,
     .in_s_rst_n  ( cfg_srst_n              ) ,
@@ -316,8 +309,9 @@ module hpu_3parts
   assign in_p2_p3_sll_ctrl.ntt_proc_cmd_avail = out_p1_p2_sll_ctrl.ntt_proc_cmd_avail;
   assign in_p2_p3_sll_ctrl.bsk_ctrl = out_p1_p2_sll_ctrl.bsk_ctrl;
   assign in_p2_p1_sll_ctrl.bsk_ctrl = out_p3_p2_sll_ctrl.bsk_ctrl;
-  assign in_p2_p3_sll_interrupt.intr0 = out_p1_p2_sll_interrupt.intr0; /*isc*/
-  assign in_p2_p3_sll_interrupt.intr1 = out_p1_p2_sll_interrupt.intr1; /*unused*/
+  // TODO: remove that when 2in3 drives its interrupt
+  assign hpu_2in3_interrupt = '0;
+  assign in_p2_p3_sll_interrupt     = out_p1_p2_sll_interrupt | hpu_2in3_interrupt;
 
   hpu_qual_sll #(
     .IN_DEPTH    ( SLL_IN_PIPE                 ) ,
@@ -354,11 +348,11 @@ module hpu_3parts
   );
 
   hpu_qual_sll #(
-    .IN_DEPTH    ( SLL_IN_PIPE                ) ,
-    .OUT_DEPTH   ( SLL_OUT_PIPE               ) ,
-    .DATA_WIDTH  ( 1                          ) ,
-    .CTRL_WIDTH  ( $bits(sll_interrupt_t)     ) ,
-    .CTRL_RST    ( $bits(sll_interrupt_t)'(0) )
+    .IN_DEPTH    ( SLL_IN_PIPE            ) ,
+    .OUT_DEPTH   ( SLL_OUT_PIPE           ) ,
+    .DATA_WIDTH  ( 1                      ) ,
+    .CTRL_WIDTH  ( $bits(interrupt_t)     ) ,
+    .CTRL_RST    ( $bits(interrupt_t)'(0) )
   ) p2_p3_sll_int (
     .in_clk      ( cfg_clk                 ) ,
     .in_s_rst_n  ( cfg_srst_n              ) ,
@@ -370,11 +364,7 @@ module hpu_3parts
     .out_ctrl    ( out_p2_p3_sll_interrupt )
   );
 
-  assign interrupt = {cfg_debug_interrupt,
-                      out_p2_p3_sll_interrupt.intr3,
-                      out_p2_p3_sll_interrupt.intr2,
-                      out_p2_p3_sll_interrupt.intr1,
-                      out_p2_p3_sll_interrupt.intr0};
+  assign interrupt = out_p2_p3_sll_interrupt | hpu_3in3_interrupt;
 
 // ============================================================================================== --
 // Tie unused AXI channels
@@ -420,7 +410,7 @@ module hpu_3parts
     .cfg_clk                 (cfg_clk),
     .cfg_srst_n              (cfg_srst_n),
 
-    .interrupt                ({in_p1_p2_sll_interrupt.intr1,in_p1_p2_sll_interrupt.intr0}),
+    .interrupt                (in_p1_p2_sll_interrupt),
 
     //== Axi4-lite slave @prc_clk and @cfg_clk
     `HPU_AXIL_INSTANCE(prc,prc_1in3)
@@ -555,7 +545,7 @@ module hpu_3parts
     .cfg_clk                  (cfg_clk),
     .cfg_srst_n               (cfg_srst_n),
 
-    .interrupt                (cfg_debug_interrupt),
+    .interrupt                (hpu_3in3_interrupt),
 
     //== Axi4-lite slave @prc_clk and @cfg_clk
     `HPU_AXIL_INSTANCE(prc,prc_3in3)

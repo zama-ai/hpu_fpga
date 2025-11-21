@@ -154,7 +154,7 @@ module hpu_with_entry_1in3
   input  pem_counter_inc_t                                             pem_rif_counter_inc,
   input  pea_counter_inc_t                                             pea_rif_counter_inc,
 
-  output logic [1:0]                                                   interrupt
+  output interrupt_t                                                   interrupt
 );
 
 // ============================================================================================== --
@@ -171,6 +171,7 @@ module hpu_with_entry_1in3
   logic               isc_trace_wr_en;
   isc_trace_t         isc_trace_data;
   logic               error_trace;
+  logic               isc_ack_int;
 
   // Counters ----------------------------------------------------------------------------------------
   isc_counter_inc_t   isc_rif_counter_inc;
@@ -276,7 +277,7 @@ module hpu_with_entry_1in3
     .insn_ack_rdy       (isc_ack_rdy),
     .insn_ack_cnt       (isc_ack),
     .insn_ack_vld       (isc_ack_vld),
-    .insn_ack_int       (interrupt[0]),
+    .insn_ack_int       (isc_ack_int),
 
     // PE interfaces
     // PEM
@@ -306,7 +307,10 @@ module hpu_with_entry_1in3
   );
 
   // unused for now
-  assign interrupt[1] = 1'b0;
+  always_comb begin
+    interrupt                       = '0;
+    interrupt.isc_iop_ack_interrupt = isc_ack_int;
+  end
 
 /// ============================================================================================== --
 //  Trace Manager
