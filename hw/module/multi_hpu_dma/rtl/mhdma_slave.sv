@@ -31,10 +31,10 @@ module mhdma_slave
   output logic             [  REG_DATA_W-1:0] regf_notify_payload,
   // Received header ----------------------------------------------------------
   input  logic             [  MAC_ADDR_W-1:0] rx_dst_mac_addr,
-  input  logic             [   SEQ_NUM_W-1:0] rx_sec_num,
+  input  logic             [   SEQ_NUM_W-1:0] rx_sec_num,           // toremove
   input  logic             [    HPU_ID_W-1:0] rx_hpu_id,
-  input  logic             [    REQ_ID_W-1:0] rx_req_id,
-  input  logic             [  MAC_ADDR_W-1:0] rx_src_mac_addr,
+  input  logic             [    REQ_ID_W-1:0] rx_req_id,            // toremove
+  input  logic             [  MAC_ADDR_W-1:0] rx_src_mac_addr,      // toremove
   input  logic             [    SIZE_B_W-1:0] rx_size_b,
   input  logic             [    IOP_ID_W-1:0] rx_iop_id,
   input  logic             [  SRC_ADDR_W-1:0] rx_ct_src_addr,
@@ -54,6 +54,11 @@ module mhdma_slave
   output logic             [   NRX_WIDTH-1:0] nrx_cmd_payload,
   output logic                                nrx_valid,
   input  logic                                notify_ack_sent,
+  output logic             [   CEH_WIDTH-1:0] ce_header_payload,
+  output logic                                ce_start_of_batch,
+  output logic             [MRMAC_AXIS_W-1:0] ce_payload,
+  output logic                                ce_valid,
+  input  logic                                ce_ready,
   // Axi4 interface for NMU ---------------------------------------------------
   output logic [ETH_PC-1:0][   AXI4_ID_W-1:0] m_axi4_arid,
   output logic [ETH_PC-1:0][  AXI4_ADD_W-1:0] m_axi4_araddr,
@@ -639,6 +644,7 @@ module mhdma_slave
   logic [CE_DATA_COUNT_W:0] fifo_ce_cnt;
   logic [    CE_DATA_W-1:0] fifo_ce_in_data;
   logic                     fifo_ce_in_vld;
+  logic                     fifo_ce_in_rdy;
   logic [ MRMAC_AXIS_W-1:0] fifo_ce_out_data;
   logic                     fifo_ce_out_vld;
   logic                     fifo_ce_out_rdy;
@@ -679,21 +685,36 @@ module mhdma_slave
     .out_vld (fifo_ce_out_vld),
     .out_rdy (fifo_ce_out_rdy)
   );
-  assign fifo_ce_out_rdy = 1'b0;
 
-  // counter of output words and control for starting header & payload emission
-  logic [$clog2(NB_WORDS_PAYLOAD)+1:0] ce_nb_words_cnt;
-  logic                                ce_payload_start;
-  logic                                ce_header_start;
+  logic [$clog2(CT_NB_COEF):0] fifo_ce_out_cnt;
 
-  always_ff @ (posedge clk_mrmac) begin
+  always_ff @(posedge clk_mrmac) begin
     if (~resetn_mrmac) begin
-      ce_payload_start <= 1'b0;
+      fifo_ce_out_cnt <= 'h0;
+    end else begin
+      if (ce_ready & (fifo_ce_out_vld & fifo_ce_out_rdy)) begin
+        fifo_ce_out_cnt <= fifo_ce_out_cnt + 1;
+      end
+    end
+  end
+
+  logic ce_payload_valid;
+  logic ce_header_start;
+  logic ce_frame;
+  logic frame_stall;
+
+  // because ETH_NB_BYTES_PAYLOAD is divisible by AXI4_DATA_BYTES, it is a power of two
+  assign ce_frame = ce_payload_valid & ((fifo_ce_out_cnt % ETH_NB_BYTES_PAYLOAD) == 0);
+  assign fifo_ce_out_rdy = ce_ready & ce_payload_valid;
+
+  always_ff @(posedge clk_mrmac) begin
+    if (~resetn_mrmac) begin
+      ce_payload_valid <= 1'b0;
     end else begin
       if (fifo_ce_cnt == NB_WORDS_PAYLOAD) begin
-        ce_payload_start <= 1'b1;
-      end else if (ce_nb_words_cnt  == NB_WORDS_PAYLOAD) begin
-        ce_payload_start <= 1'b0;
+        ce_payload_valid <= 1'b1;
+      end else if (fifo_ce_out_cnt == CT_NB_COEF) begin
+        ce_payload_valid <= 1'b0;
       end
     end
   end
@@ -704,21 +725,45 @@ module mhdma_slave
     end else begin
       if (fifo_ce_cnt == (NB_WORDS_PAYLOAD-ETH_HEADER_SIZE)) begin
         ce_header_start <= 1'b1;
-      end else if (fifo_ce_cnt == NB_WORDS_PAYLOAD) begin
+      end else begin
         ce_header_start <= 1'b0;
       end
     end
   end
 
+  // header propagation ---------------------------------------------------------------------------
+  logic [MAC_ADDR_W-1:0] dst_mac_addr;
+  logic [  HPU_ID_W-1:0] hpu_id;
+  logic [  SIZE_B_W-1:0] size_b;
+  logic [  IOP_ID_W-1:0] iop_id;
+  logic [DST_ADDR_W-1:0] ct_dst_addr;
+  logic [SRC_ADDR_W-1:0] ct_src_addr;
+
   always_ff @(posedge clk_mrmac) begin
-    if(~resetn_mrmac) begin
-      ce_nb_words_cnt <= 'h0;
+    if (~resetn_mrmac) begin
+      dst_mac_addr <='h0;
+      hpu_id       <='h0;
+      size_b       <='h0;
+      iop_id       <='h0;
+      ct_src_addr  <='h0;
+      ct_dst_addr  <='h0;
     end else begin
-      if (ce_payload_start) begin
-        ce_nb_words_cnt <= ce_nb_words_cnt +1;
-      end else begin
-        ce_nb_words_cnt <= 'h0;
+      if (rx_header_valid) begin
+        dst_mac_addr <= rx_dst_mac_addr;
+        hpu_id       <= rx_hpu_id;
+        size_b       <= rx_size_b;
+        iop_id       <= rx_iop_id;
+        ct_src_addr  <= rx_ct_src_addr;
+        ct_dst_addr  <= rx_ct_dst_addr;
       end
     end
   end
+
+  // this is imperative that ce_start_of_batch starts 3 cc earlier in order to send the header before payload
+  assign ce_header_payload = {dst_mac_addr, iop_id, hpu_id, size_b, ct_dst_addr, ct_src_addr};
+  assign ce_start_of_batch = ce_header_start;
+
+  assign ce_payload = ce_valid ? fifo_ce_out_data : 'h0;
+  assign ce_valid = ce_payload_valid;
+
 endmodule

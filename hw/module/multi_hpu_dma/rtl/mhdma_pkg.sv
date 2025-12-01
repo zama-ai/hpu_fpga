@@ -1,11 +1,6 @@
 // ==============================================================================================
 // BSD 3-Clause Clear License
 // Copyright © 2025 ZAMA. All rights reserved.
-// ----------------------------------------------------------------------------------------------
-// Description  :
-// ----------------------------------------------------------------------------------------------
-//
-// Package for multi-HPU DMA
 // ==============================================================================================
 
 package mhdma_pkg;
@@ -14,9 +9,20 @@ package mhdma_pkg;
   import axi_if_eth_axi_pkg::*;       // AXI4
   import axi_if_shell_axil_pkg::*;    // REG_DATA_W
 
-  //----------------------
+  // =========================================================================================== //
+  // Parameters
+  // =========================================================================================== //
+  // BLWE_K = N * GLWE_K
+  localparam int CT_NB_COEF        = BLWE_K + 1;
+  localparam int CT_SIZE           = CT_NB_COEF * 64;
+  localparam int CT_SIZE_BYTE      = CT_SIZE / 8;
+
+  localparam int CT_NB_WORDS_MRMAC = CT_SIZE; // because coef size is MRMAC size
+  localparam int CT_NB_WORDS_AXI4  = CT_SIZE/AXI4_DATA_W;
+
+  // =========================================================================================== //
   // Ethernet
-  //----------------------
+  // =========================================================================================== //
   // beware of block design if modifying this values
   localparam int MRMAC_AXIS_W   = 64;
   localparam int MRMAC_TKEEP_W  = 11;
@@ -27,30 +33,17 @@ package mhdma_pkg;
 
   localparam int QSFP_LANE_NB   = 4;
 
-  // ETH_NB_BYTES_PAYLOAD must be divisible by AXI4_DATA_BYTES
-  localparam int ETH_NB_BYTES_PAYLOAD = 1024;
+  // ETH_NB_BYTES_PAYLOAD must be divisible by MRMAC_AXIS_W
+  localparam int ETH_NB_BYTES_PAYLOAD = 88; //false
   localparam int ETH_NB_BYTES_MIN = 64;
   localparam int ETH_HEADER_SIZE = 3;
 
   localparam int NB_WORDS_PAYLOAD = (ETH_NB_BYTES_PAYLOAD * 8) / MRMAC_AXIS_W;
   localparam int NB_WORDS_HEADER  = (ETH_NB_BYTES_MIN * 8) / MRMAC_AXIS_W;
+  localparam int NB_WORDS_MIN     = 7; // without fcs
 
   localparam [15:0] ETH_LEN_MIN = NB_WORDS_HEADER  - ETH_HEADER_SIZE ;
   localparam [15:0] ETH_LEN_MAX = NB_WORDS_PAYLOAD + ETH_HEADER_SIZE;
-
-  // generic sizes on ethernet
-  localparam int NB_WORDS_MIN = 7; // without fcs
-
-  //----------------------
-  // Parameters
-  //----------------------
-  // BLWE_K = N * GLWE_K
-  localparam int CT_NB_COEF        = BLWE_K + 1;
-  localparam int CT_SIZE           = CT_NB_COEF * 64;
-  localparam int CT_SIZE_BYTE      = CT_SIZE / 8;
-
-  localparam int CT_NB_WORDS_MRMAC = CT_SIZE; // because coef size is MRMAC size
-  localparam int CT_NB_WORDS_AXI4  = CT_SIZE/AXI4_DATA_W;
 
   // Ethernet header: sizes ---------------------------------------------------
   localparam int MAC_ADDR_W   = 24;
@@ -66,11 +59,16 @@ package mhdma_pkg;
   localparam int SRC_ADDR_W   = 16;
   localparam int DST_ADDR_W   = 16;
 
+  // ce header transmission size to formatter
+  localparam int CEH_WIDTH = MAC_ADDR_W+HPU_ID_W+SIZE_B_W+IOP_ID_W+DST_ADDR_W+SRC_ADDR_W;
+
   // Ethernet header: values --------------------------------------------------
   localparam [MAC_OUI_W-1:0] MAC_OUI = 'h000A35;
   localparam [ SIZE_B_W-1:0] SIZE_B  = 'h4000; // fixed for now to 16.384
 
-  // fifo specific parameters -------------------------------------------------
+  // =========================================================================================== //
+  // fifo specific parameters
+  // =========================================================================================== //
   // minimal depth for 64 using XPM fifo is 16
   localparam int XPM_MIN_FIFO_DEPTH    = 16;
 
@@ -114,15 +112,19 @@ package mhdma_pkg;
   localparam int CE_RAM_LATENCY        = 1;
   localparam int CE_DATA_COUNT_W       =  $clog2(CE_DEPTH)+1;
 
-  // identification opcode --------------------------------------------------
+  // =========================================================================================== //
+  // identification opcode
+  // =========================================================================================== //
   localparam [REQ_ID_W-1:0] REQ_ID_NOTIFY_TX     = 'h2;
   localparam [REQ_ID_W-1:0] REQ_ID_ACK_NOTIFY_TX = 'h3;
-  localparam [REQ_ID_W-1:0] REQ_ID_NOTIFY_RX     = 'h4;
-  localparam [REQ_ID_W-1:0] REQ_ID_ACK_NOTIFY_RX = 'h5;
+  // localparam [REQ_ID_W-1:0] REQ_ID_NOTIFY_RX     = 'h4;
+  // localparam [REQ_ID_W-1:0] REQ_ID_ACK_NOTIFY_RX = 'h5;
   localparam [REQ_ID_W-1:0] REQ_ID_READ          = 'h6;
   localparam [REQ_ID_W-1:0] REQ_ID_EMISSION      = 'h7;
 
-  // Offsets ------------------------------------------------------------------
+  // =========================================================================================== //
+  // Offsets
+  // =========================================================================================== //
   // Read ReQuest Queue
   localparam int CMD_IOP_ID_OFS   = SRC_ADDR_W + DST_ADDR_W + SIZE_B_W + HPU_ID_W + REQ_ID_W + IOP_ID_W;
   localparam int CMD_REQ_ID_OFS   = SRC_ADDR_W + DST_ADDR_W + SIZE_B_W + HPU_ID_W + REQ_ID_W;
@@ -131,9 +133,18 @@ package mhdma_pkg;
   localparam int CMD_DST_ADDR_OFS = SRC_ADDR_W + DST_ADDR_W;
   localparam int CMD_SRC_ADDR_OFS = SRC_ADDR_W;
 
+  // Slave offset: notify request
   localparam int NRX_SRC_ADDR_OFS = IOP_ID_W + HPU_ID_W + SRC_ADDR_W;
   localparam int NRX_HPU_ID_OFS   = IOP_ID_W + HPU_ID_W;
   localparam int NRX_IOP_ID_OFS   = IOP_ID_W;
+
+  // Slave offset: ciphertext emission offset
+  localparam int CEH_DST_MAC_ADDR_OFS = SRC_ADDR_W + DST_ADDR_W + SIZE_B_W + HPU_ID_W + IOP_ID_W + MAC_ADDR_W;
+  localparam int CEH_IOP_ID_OFS       = SRC_ADDR_W + DST_ADDR_W + SIZE_B_W + HPU_ID_W + IOP_ID_W;
+  localparam int CEH_HPU_ID_OFS       = SRC_ADDR_W + DST_ADDR_W + SIZE_B_W + HPU_ID_W;
+  localparam int CEH_SIZE_B_OFS       = SRC_ADDR_W + DST_ADDR_W + SIZE_B_W;
+  localparam int CEH_DST_ADDR_OFS     = SRC_ADDR_W + DST_ADDR_W;
+  localparam int CEH_SRC_ADDR_OFS     = SRC_ADDR_W;
 
   // Read-Request
   localparam int RR_HPU_ID_OFS = SRC_ADDR_W + DST_ADDR_W + IOP_ID_W + HPU_ID_W;

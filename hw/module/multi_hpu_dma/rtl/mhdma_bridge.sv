@@ -217,6 +217,11 @@ module mhdma_bridge
   logic [NRX_WIDTH-1:0]     nrx_cmd_payload;
   logic                     nrx_valid;
   logic                     notify_ack_sent;
+  logic [    CEH_WIDTH-1:0] ce_header_payload;
+  logic                     ce_start_of_batch;
+  logic [ MRMAC_AXIS_W-1:0] ce_payload;
+  logic                     ce_ready;
+  logic                     ce_valid;
 
   mhdma_master mhdma_master (
     // Ethernet configuration interface ---------------------------------------
@@ -275,34 +280,39 @@ module mhdma_bridge
     .rx_ct_dst_addr                 (rx_ct_dst_addr                           ),
     .rx_header_valid                (rx_header_valid                          ),
     // command interface ------------------------------------------------------
-    .notify_request_received         (notify_request_received                 ),
-    .read_request_received           (read_request_received                   ),
-    .new_notify_read_pending         (new_notify_read_pending                 ),
-    .new_notify_ack_pending          (new_notify_ack_pending                  ),
-    .new_ct_emission_request_pending (new_ct_emission_request_pending         ),
-    .notify_ack_allowed              (notify_ack_allowed                      ),
-    .ct_emission_allowed             (ct_emission_allowed                     ),
+    .notify_request_received        (notify_request_received                  ),
+    .read_request_received          (read_request_received                    ),
+    .new_notify_read_pending        (new_notify_read_pending                  ),
+    .new_notify_ack_pending         (new_notify_ack_pending                   ),
+    .new_ct_emission_request_pending(new_ct_emission_request_pending          ),
+    .notify_ack_allowed             (notify_ack_allowed                       ),
+    .ct_emission_allowed            (ct_emission_allowed                      ),
     // notify ack payload -----------------------------------------------------
-    .nrx_cmd_payload                  (nrx_cmd_payload                        ),
-    .nrx_valid                        (nrx_valid                              ),
-    .notify_ack_sent                  (notify_ack_sent                        ),
+    .nrx_cmd_payload                (nrx_cmd_payload                          ),
+    .nrx_valid                      (nrx_valid                                ),
+    .notify_ack_sent                (notify_ack_sent                          ),
+    .ce_header_payload              (ce_header_payload                        ),
+    .ce_start_of_batch                         (ce_start_of_batch                                   ),
+    .ce_payload                     (ce_payload                               ),
+    .ce_ready                       (ce_ready                                 ),
+    .ce_valid                       (ce_valid                                 ),
     // AXI4-4 full read interface ---------------------------------------------
-    .m_axi4_arid                      (m_axi4_arid                            ),
-    .m_axi4_araddr                    (m_axi4_araddr                          ),
-    .m_axi4_arlen                     (m_axi4_arlen                           ),
-    .m_axi4_arsize                    (m_axi4_arsize                          ),
-    .m_axi4_arburst                   (m_axi4_arburst                         ),
-    .m_axi4_arvalid                   (m_axi4_arvalid                         ),
-    .m_axi4_arready                   (m_axi4_arready                         ),
-    .m_axi4_rid                       (m_axi4_rid                             ),
-    .m_axi4_rdata                     (m_axi4_rdata                           ),
-    .m_axi4_rresp                     (m_axi4_rresp                           ),
-    .m_axi4_rlast                     (m_axi4_rlast                           ),
-    .m_axi4_rvalid                    (m_axi4_rvalid                          ),
-    .m_axi4_rready                    (m_axi4_rready                          ),
+    .m_axi4_arid                    (m_axi4_arid                              ),
+    .m_axi4_araddr                  (m_axi4_araddr                            ),
+    .m_axi4_arlen                   (m_axi4_arlen                             ),
+    .m_axi4_arsize                  (m_axi4_arsize                            ),
+    .m_axi4_arburst                 (m_axi4_arburst                           ),
+    .m_axi4_arvalid                 (m_axi4_arvalid                           ),
+    .m_axi4_arready                 (m_axi4_arready                           ),
+    .m_axi4_rid                     (m_axi4_rid                               ),
+    .m_axi4_rdata                   (m_axi4_rdata                             ),
+    .m_axi4_rresp                   (m_axi4_rresp                             ),
+    .m_axi4_rlast                   (m_axi4_rlast                             ),
+    .m_axi4_rvalid                  (m_axi4_rvalid                            ),
+    .m_axi4_rready                  (m_axi4_rready                            ),
     // interrupt interface ----------------------------------------------------
-    .clear_interrupt_notify           (clear_interrupt_notify                 ),
-    .interrupt_notify                 (interrupt_notify                       )
+    .clear_interrupt_notify         (clear_interrupt_notify                   ),
+    .interrupt_notify               (interrupt_notify                         )
   );
 
   mhdma_decoder mhdma_decoder (
@@ -367,6 +377,11 @@ module mhdma_bridge
     .nrx_cmd_payload                (nrx_cmd_payload                          ),
     .nrx_valid                      (nrx_valid                                ),
     .notify_ack_sent                (notify_ack_sent                          ),
+    .ce_header_payload              (ce_header_payload                        ),
+    .ce_valid                       (ce_valid                                 ),
+    .ce_start_of_batch                         (ce_start_of_batch                                   ),
+    .ce_payload                     (ce_payload                               ),
+    .ce_ready                       (ce_ready                                 ),
     // QSFP TX interface ------------------------------------------------------
     .qsfp_tx_tdata                  (qsfp_tx_tdata                            ),
     .qsfp_tx_tkeep_user             (qsfp_tx_tkeep_user                       ),

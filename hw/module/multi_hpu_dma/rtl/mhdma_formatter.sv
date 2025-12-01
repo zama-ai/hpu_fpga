@@ -37,6 +37,11 @@ module mhdma_formatter
   input  logic                 [     NRX_WIDTH-1:0] nrx_cmd_payload,
   input  logic                                      nrx_valid,
   output logic                                      notify_ack_sent,
+  input  logic                 [     CEH_WIDTH-1:0] ce_header_payload,
+  input  logic                                      ce_start_of_batch,
+  input  logic                 [  MRMAC_AXIS_W-1:0] ce_payload,
+  input  logic                                      ce_valid,
+  output logic                                      ce_ready,
   // QSFP TX interface --------------------------------------------------------
   output logic                 [  MRMAC_AXIS_W-1:0] qsfp_tx_tdata,
   output logic                 [ MRMAC_TKEEP_W-1:0] qsfp_tx_tkeep_user,
@@ -48,6 +53,7 @@ module mhdma_formatter
   // =========================================================================================== //
   // general control
   // =========================================================================================== //
+  logic end_of_header;
   // simplify notations
   logic master_request;
   logic small_frame;
@@ -58,12 +64,117 @@ module mhdma_formatter
   // =========================================================================================== //
   // Ciphertext emission specific
   // =========================================================================================== //
-  // During CE we need to increment seq_num for each packet sent
-  // For the arbiter we need the information to release the fsm that all have been sent
-  logic [SEQ_NUM_W-1:0] ce_seq_num;
-  logic                 ct_emission_all_packets_transmitted;
 
+  // headers --------------------------------------------------------------------------------------
+  logic ce_start_of_header;
+  logic ce_new_header;
+  logic ce_end_of_batch;
+  // decoding header payload
+  logic [CEH_WIDTH-1:0] ce_header_payloadD;
+  logic                 ce_dst_addr;
+  logic                 ce_src_addr;
+  logic                 ce_size_b;
+  logic                 ce_hpu_id;
+  logic                 ce_iop_id;
+  logic                 ce_dst_mac_addr;
+
+  always_ff @(posedge clk_mrmac) begin
+    if (~resetn_mrmac) begin
+      ce_header_payloadD <= 'h0;
+    end else begin
+      if (ce_start_of_batch)
+        ce_header_payloadD <= ce_header_payload;
+    end
+  end
+
+  assign ce_dst_mac_addr = ce_header_payloadD[CEH_DST_MAC_ADDR_OFS-1:CEH_IOP_ID_OFS];
+  assign ce_iop_id       = ce_header_payloadD[CEH_IOP_ID_OFS-1:CEH_HPU_ID_OFS];
+  assign ce_hpu_id       = ce_header_payloadD[CEH_HPU_ID_OFS-1:CEH_SIZE_B_OFS];
+  assign ce_size_b       = ce_header_payloadD[CEH_SIZE_B_OFS-1:CEH_DST_ADDR_OFS];
+  assign ce_dst_addr     = ce_header_payloadD[CEH_DST_ADDR_OFS-1:CEH_SRC_ADDR_OFS];
+  assign ce_src_addr     = ce_header_payloadD[CEH_SRC_ADDR_OFS-1:0];
+
+  assign ce_start_of_header = ce_start_of_batch | ce_new_header;
+
+  // payload --------------------------------------------------------------------------------------
+  logic                                  ct_emission_all_packets_transmitted;
+  logic [$clog2(ETH_NB_BYTES_PAYLOAD):0] ce_word_counter;
+  logic                                  ce_stalling;
+
+  assign ce_ready = ct_emission_allowed & qsfp_tx_tready & ~ce_stalling;
+
+  // For the arbiter we need the information to release the fsm that all have been sent
   assign ct_emission_all_packets_transmitted = 1'b0;
+
+  // we must stall when we have extracted ETH_NB_BYTES_PAYLOAD words
+  always_ff @(posedge clk_mrmac) begin
+    if (~resetn_mrmac) begin
+      ce_word_counter <= 'h0;
+    end else begin
+      if (ce_valid & ce_ready) begin
+        ce_word_counter <= ce_word_counter + 1;
+      end
+    end
+  end
+
+  logic trigger_stalling;
+
+  // TODO: find better solution?
+  // we know that we will not have more than three packets in a batch of ciphertext
+  // we should not use % because NB_WORDS_PAYLOAD is not a power of two
+  generate
+    if ($ceil(CT_NB_COEF/ETH_NB_BYTES_PAYLOAD)>3) begin : __UNSUPPORTED_NB_PACKETS_
+      $fatal(1,"> ERROR: We do not support more than 3 ethernet packets per CT, add more if needed.");
+    end
+  endgenerate
+  always_comb begin
+    trigger_stalling = 1'b0;
+    case (ce_word_counter)
+      1*NB_WORDS_PAYLOAD-1: trigger_stalling = 1'b1;
+      2*NB_WORDS_PAYLOAD-1: trigger_stalling = 1'b1;
+      3*NB_WORDS_PAYLOAD-1: trigger_stalling = 1'b1;
+      default: trigger_stalling = 1'b0;
+    endcase
+  end
+
+  // we must continue to stall long enough to allow us to send a new header
+  always_ff @(posedge clk_mrmac) begin
+    if (~resetn_mrmac) begin
+      ce_stalling <= 1'b0;
+    end else begin
+      if (trigger_stalling) begin
+        ce_stalling <= 1'b1;
+      end else if (end_of_header) begin
+        ce_stalling <= 1'b0;
+      end
+    end
+  end
+
+  // to define if we have a new header to send we can just do a positive edge detection
+  logic ce_stallingD;
+  always_ff @(posedge clk_mrmac)
+    ce_stallingD <= ce_stalling;
+
+  assign ce_new_header = ce_stalling & ~ce_stallingD;
+
+  // During CE we need to increment seq_num for each packet sent
+  logic [SEQ_NUM_W-1:0] ce_seq_num;
+
+  always_ff @(posedge clk_mrmac) begin
+    if (~resetn_mrmac) begin
+      ce_seq_num <= 'h0;
+    end else begin
+      if (ce_new_header) begin
+        ce_seq_num <= ce_seq_num+1;
+      end else if (ce_end_of_batch) begin
+        ce_seq_num <= 'h0;
+      end
+    end
+  end
+
+  assign ce_end_of_batch = (ce_word_counter >= CT_NB_COEF) ? 1'b1 : 1'b0;
+
+  // we must be able to do zero padding if we receive not enough words from slave module
 
   // =========================================================================================== //
   // Building headers
@@ -71,7 +182,7 @@ module mhdma_formatter
   logic                            sending_request;
   logic                            header_sop;
   logic [        MRMAC_AXIS_W-1:0] tx_frame;
-  logic [$clog2(NB_WORDS_MIN)+1:0] tx_cnt;
+  logic [$clog2(NB_WORDS_MIN)+1:0] tx_cnt; //TODO
   logic                            tx_frame_valid;
   logic                            tx_last_header;
   logic                            tx_last;
@@ -91,6 +202,7 @@ module mhdma_formatter
   assign tx_last_header = (tx_cnt == NB_WORDS_MIN+1) ? 1'b1: 1'b0;
   assign tx_last        = (tx_cnt == NB_WORDS_PAYLOAD+1) ? 1'b1: 1'b0;
   assign tx_frame_valid = (tx_cnt == 'h0) ? 1'b0 : 1'b1 ;
+  assign end_of_header  = (tx_cnt == ETH_HEADER_SIZE) ? 1'b1 : 1'b0 ;
 
   always_ff @(posedge clk_mrmac) begin
     if (~resetn_mrmac) begin
@@ -136,16 +248,15 @@ module mhdma_formatter
   logic [    IOP_ID_W-1:0] header_iop_id;
 
   // header assignation depending on request
-  assign header_target_hpu_mac_addr = master_request ? hpu_mac_table[master_hpu_id] : notify_ack_allowed ? hpu_mac_table[nack_hpu_id] : 'h0;
-  assign header_req_id              = master_request ? master_req_id                : notify_ack_allowed ? REQ_ID_ACK_NOTIFY_TX       : 'h0;
-  assign header_src_addr            = master_request ? master_src_addr              : notify_ack_allowed ? nack_src_addr              : 'h0;
-  assign header_dst_addr            = master_request ? master_dst_addr              : notify_ack_allowed ? 'h0                        : 'h0;
-  assign header_iop_id              = master_request ? master_iop_id                : notify_ack_allowed ? nack_iop_id                : 'h0;
+  assign header_target_hpu_mac_addr = master_request ? hpu_mac_table[master_hpu_id] : notify_ack_allowed ? hpu_mac_table[nack_hpu_id] : ct_emission_allowed ? ce_dst_mac_addr : 'h0;
+  assign header_req_id              = master_request ? master_req_id                : notify_ack_allowed ? REQ_ID_ACK_NOTIFY_TX       : ct_emission_allowed ? REQ_ID_EMISSION : 'h0;
+  assign header_src_addr            = master_request ? master_src_addr              : notify_ack_allowed ? nack_src_addr              : ct_emission_allowed ? ce_src_addr : 'h0;
+  assign header_dst_addr            = master_request ? master_dst_addr              : notify_ack_allowed ? 'h0                        : ct_emission_allowed ? ce_dst_addr : 'h0;
+  assign header_iop_id              = master_request ? master_iop_id                : notify_ack_allowed ? nack_iop_id                : ct_emission_allowed ? ce_iop_id : 'h0;
 
-  // TODO
   assign header_eth_len = small_frame ? ETH_LEN_MIN : ETH_LEN_MAX;
-  assign header_seq_num = small_frame ? 'h0         : 'h0;
-  assign header_size_b  = small_frame ? 'h0         : 'h0;
+  assign header_seq_num = small_frame ? 'h0         : ct_emission_allowed ? ce_seq_num : 'h0;
+  assign header_size_b  = small_frame ? 'h0         : ct_emission_allowed ? ce_size_b  : 'h0;
 
   always_comb begin
     case (tx_cnt)
@@ -155,7 +266,7 @@ module mhdma_formatter
         tx_frame = {MAC_OUI[7:0], current_hpu_mac, header_eth_len, header_req_id, current_hpu_id, header_seq_num};
       'h3 :
         tx_frame = {header_src_addr, header_dst_addr, header_iop_id, header_size_b, 8'b0};
-      'h0, 'h3, 'h4 , 'h5 , 'h6, 'h7: begin
+      'h0, 'h4 , 'h5 , 'h6, 'h7: begin
         tx_frame = (~ct_emission_allowed) ? 'h0 : 'h0;
       end
       default:
@@ -215,7 +326,7 @@ module mhdma_formatter
   assign read_request_allowed   = (tx_state == ST_READ_REQ)    ? 1'b1 : 1'b0;
   assign notify_request_allowed = (tx_state == ST_NOTIFY)      ? 1'b1 : 1'b0;
 
-  assign header_sop = master_request ? master_valid : notify_ack_allowed ? nrx_valid : 1'b0;
+  assign header_sop = master_request ? master_valid : notify_ack_allowed ? nrx_valid : ct_emission_allowed ? ce_start_of_header : 1'b0;
 
   assign notify_ack_sent = tx_last_header && (tx_state == ST_NACK);
   // =========================================================================================== //
