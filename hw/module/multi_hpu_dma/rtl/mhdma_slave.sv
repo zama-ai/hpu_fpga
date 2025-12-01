@@ -18,7 +18,7 @@ module mhdma_slave
   parameter                int CDC_SYNC_STAGES = 2,
   parameter                int MAX_BURST_SIZE  = PAGE_BYTES/AXI4_DATA_BYTES,
   parameter [ETH_PC-1:0][15:0] PC_CT_BYTES     = '{'h2000, 'h2020},
-  parameter             [15:0] PC_STRIDE       = 'h3000
+  parameter              [3:0] PC_STRIDE       = 'hB
 ) (
   // Ethernet configuration interface -----------------------------------------
   input  logic                                clk_cfg,
@@ -371,7 +371,7 @@ module mhdma_slave
           phy_addr[gen_p] <= 'h0;
         end else begin
           if (rreq_cmd_out_valid & rreq_cmd_out_ready) begin
-            phy_addr[gen_p] <= regf_ct_mem_addr[gen_p] + rr_ct_src_addr * PC_STRIDE;
+            phy_addr[gen_p] <= regf_ct_mem_addr[gen_p] + (rr_ct_src_addr << PC_STRIDE);
           end
         end
       end

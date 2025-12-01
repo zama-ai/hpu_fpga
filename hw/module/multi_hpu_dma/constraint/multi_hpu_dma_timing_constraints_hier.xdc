@@ -20,15 +20,14 @@ set_false_path -to [get_cells -hierarchical -filter {NAME =~ *mhdma_trace/cdc_tx
 set_false_path -to [get_cells -hierarchical -filter {NAME =~ *mhdma_trace/cdc_tx_rd_rst_busy_reg[0]*}]
 set_false_path -to [get_cells -hierarchical -filter {NAME =~ *mhdma_trace/cdc_tx_data_valid_reg[0]*}]
 set_false_path -to [get_cells -hierarchical -filter {NAME =~ *mhdma_trace/cdc_rd_data_count_reg[0]*}]
-set_false_path -to [get_cells -hierarchical -filter {NAME =~ *mhdma_trace/cdc_qsfp_tx_tready_reg[0]*}]
+# set_false_path -to [get_cells -hierarchical -filter {NAME =~ *mhdma_trace/cdc_qsfp_tx_tready_reg[0]*}]
+
+set_false_path -to [get_cells -hierarchical -filter {NAME =~ *mhdma_bridge/*hpu_ids_cdc_reg*}]
+set_false_path -to [get_cells -hierarchical -filter {NAME =~ *mhdma_slave/*phy_addr_reg*}] -from [get_cells -hierarchical -filter {NAME =~ *hpu_regif_core_eth_2in3/*addr_2in3_ct_*}]
 
 # Use URAM for ciphertext buffering
-set_property ram_style "ultra" [get_cells -hier -regexp .*ce_read_fifo_ping/ram/ram_1R1W/ram_1R1W_core/a_reg.*]
-set_property cascade_height 8 [get_cells -hier -regexp .*ce_read_fifo_ping/ram/ram_1R1W/ram_1R1W_core/a_reg.*]
-set_property ram_style "ultra" [get_cells -hier -regexp .*ce_read_fifo_pong/ram/ram_1R1W/ram_1R1W_core/a_reg.*]
-set_property cascade_height 8 [get_cells -hier -regexp .*ce_read_fifo_pong/ram/ram_1R1W/ram_1R1W_core/a_reg.*]
+set_property ram_style "ultra" [get_cells -hier -regexp .*fifo_read_pc[*]/ram/ram_1R1W/ram_1R1W_core/a_reg.*]
+set_property cascade_height 8 [get_cells -hier -regexp .*fifo_read_pc[*]/ram/ram_1R1W/ram_1R1W_core/a_reg.*]
 
-set_property ram_style "ultra" [get_cells -hier -regexp .*rrq_write_fifo_ping/ram/ram_1R1W/ram_1R1W_core/a_reg.*]
-set_property cascade_height 8 [get_cells -hier -regexp .*rrq_write_fifo_ping/ram/ram_1R1W/ram_1R1W_core/a_reg.*]
-set_property ram_style "ultra" [get_cells -hier -regexp .*rrq_write_fifo_pong/ram/ram_1R1W/ram_1R1W_core/a_reg.*]
-set_property cascade_height 8 [get_cells -hier -regexp .*rrq_write_fifo_pong/ram/ram_1R1W/ram_1R1W_core/a_reg.*]
+set_property ram_style "ultra" [get_cells -hier -regexp .*fifo_ce[*]/ram/ram_1R1W/ram_1R1W_core/a_reg.*]
+set_property cascade_height 8 [get_cells -hier -regexp .*fifo_ce[*]/ram/ram_1R1W/ram_1R1W_core/a_reg.*]

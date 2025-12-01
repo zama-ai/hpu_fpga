@@ -91,7 +91,7 @@ module mhdma_bridge
   localparam int CDC_SYNC_STAGES = 2;
 
   //TODO: review theses two values, if not divisible by 32 it will be wrong
-  localparam [15:0] PC_STRIDE   = 'h3000;
+  localparam [3:0] PC_STRIDE                = 'hB;
   localparam [ETH_PC-1:0][15:0] PC_CT_BYTES = '{'h2000, 'h2020};
 
   localparam int MAX_BURST_SIZE = PAGE_BYTES/AXI4_DATA_BYTES;
@@ -165,6 +165,15 @@ module mhdma_bridge
 
   assign current_hpu_mac = error_id_def | (one_hot_id==0)? 'h0 : hpu_mac_table[hpu_index];
   assign current_hpu_id  = error_id_def | (one_hot_id==0)? 'h0 : hpu_id_table[hpu_index];
+
+  // theses two registers are here to ease P&R
+  logic [  HPU_ID_W-1:0] current_hpu_idD;
+  logic [MAC_ADDR_W-1:0] current_hpu_macD;
+
+  always_ff @(posedge clk_mrmac) begin
+    current_hpu_idD  <= current_hpu_id;
+    current_hpu_macD <= current_hpu_mac;
+  end
 
   // ==============================================================================================
   // Core Instances of mhdma
@@ -324,7 +333,7 @@ module mhdma_bridge
     .read_request_received       (read_request_received                       ),
     .ciphertext_emission_received(ciphertext_emission_received                ),
     // Header information -----------------------------------------------------
-    .current_hpu_mac             (current_hpu_mac                             ),
+    .current_hpu_mac             (current_hpu_macD                            ),
     .rx_dst_mac_addr             (rx_dst_mac_addr                             ),
     .rx_sec_num                  (rx_sec_num                                  ),
     .rx_hpu_id                   (rx_hpu_id                                   ),
@@ -353,8 +362,8 @@ module mhdma_bridge
     .resetn_mrmac                   (resetn_mrmac                             ),
     // Bridge interface -------------------------------------------------------
     .hpu_mac_table                  (hpu_mac_table                            ),
-    .current_hpu_id                 (current_hpu_id                           ),
-    .current_hpu_mac                (current_hpu_mac                          ),
+    .current_hpu_id                 (current_hpu_idD                          ),
+    .current_hpu_mac                (current_hpu_macD                         ),
     // Command interface ------------------------------------------------------
     .ct_emission_allowed            (ct_emission_allowed                      ),
     .notify_ack_allowed             (notify_ack_allowed                       ),
