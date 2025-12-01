@@ -44,7 +44,6 @@ module mhdma_slave
   input  logic                                notify_request_received,
   input  logic                                read_request_received,
 
-  output logic                                new_notify_read_pending,
   output logic                                new_notify_ack_pending,
   output logic                                new_ct_emission_request_pending,
 
@@ -160,7 +159,6 @@ module mhdma_slave
   end
 
   assign nrx_cmd_in_we = notify_request_received & rx_header_valid & nrx_cmd_in_rdy;
-  assign nrx_cmd_rdy   = notify_ack_allowed & nrx_cmd_rdy_tmp;
 
   // in order to not lose any commands if we receive several notify
   fifo_ram_rdy_vld # (
@@ -180,77 +178,70 @@ module mhdma_slave
     .out_rdy (nrx_cmd_rdy)
   );
 
-  // signals that will be propagated to format module
+  // signals that will be propagated to format module for ack
   assign nrx_cmd_payload = nrx_cmd_valid ? nrx_cmd_data : 'h0;
   assign nrx_valid       = nrx_cmd_valid;
 
   // NRX REGF queue ----------------------------------------------------------
   // === MRMAC domain
-  logic nrxq_wr_en;
-  logic nrxq_full;
-  logic nrxq_wr_rst_busy;
-
-  logic [SRC_ADDR_W-1:0] nrx_ct_src_addr;
-  logic [HPU_ID_W-1:0]   nrx_hpu_id;
-  logic [IOP_ID_W-1:0]   nrx_iop_id;
+  logic [SRC_ADDR_W-1:0]     nrx_ct_src_addr;
+  logic [HPU_ID_W-1:0]       nrx_hpu_id;
+  logic [IOP_ID_W-1:0]       nrx_iop_id;
+  //  fifo in
+  logic [NRX_REGF_WIDTH-1:0] nrxq_in_data;
+  // tmp
+  logic [NRX_REGF_WIDTH-1:0] nrxq_data_kept;
+  logic                      nrxq_data_kept_avail;
+  logic                      nrxq_data_vld;
 
   // === CFG domain
-  logic [NRX_DATA_COUNT_W-1:0] nrxq_rd_data_count;
-  logic                        nrxq_empty;
-  logic                        nrxq_rd_rst_busy;
-  logic                        nrxq_data_valid;
-  logic                        nrxq_rd_en;
-  logic                        itr_notify;
+  logic                      nrxq_out_rdy;
+  logic                      nrxq_out_vld;
 
-  // enable when are sure that we have received a notify request + all words of the frames have been received
-  // payload data will ready before last pulse will be triggered
-  assign nrxq_wr_en      = nrx_valid & ~nrxq_full & ~nrxq_wr_rst_busy;
   assign nrx_ct_src_addr = nrx_cmd_data[NRX_SRC_ADDR_OFS-1:NRX_HPU_ID_OFS];
   assign nrx_hpu_id      = nrx_cmd_data[NRX_HPU_ID_OFS-1:NRX_IOP_ID_OFS];
   assign nrx_iop_id      = nrx_cmd_data[NRX_IOP_ID_OFS-1:0];
 
-  assign new_notify_read_pending = (nrxq_rd_data_count == 0) ? 1'b0 : 1'b1;
-  assign nrxq_rd_en = new_notify_read_pending & ~nrxq_rd_rst_busy & ~nrxq_empty;
+  assign nrxq_in_data = {nrx_ct_src_addr, 4'b0, nrx_hpu_id, nrx_iop_id};
 
   // this fifo transforms rx commands into a 32 bit readable word for regfile
   fifo_ram_rdy_vld_2clk # (
     .CDC_SYNC_STAGES (CDC_SYNC_STAGES),
-    .WIDTH           (NRX_REGF_WIDTH),
     // tweak theses parameters in package
+    .WIDTH           (NRX_REGF_WIDTH),
     .DEPTH           (XPM_MIN_FIFO_DEPTH),
     .FIFO_MEMORY_TYPE(NRX_REGF_MEMORY_TYPE)
   ) nrx_fifo_ram_rdy_vld_2clk (
     // Write Domain ports: MRMAC domain
-    .wr_rstn      (resetn_mrmac),
-    .wr_clk       (clk_mrmac),
-    .wr_en        (nrxq_wr_en),
-    .wr_data      ({nrx_ct_src_addr, 4'b0, nrx_hpu_id, nrx_iop_id}),
-    .full         (nrxq_full),
-    .wr_rst_busy  (nrxq_wr_rst_busy),
+    .in_clk   (clk_mrmac),
+    .in_rstn  (resetn_mrmac),
+    .in_data  (nrxq_in_data),
+    .in_rdy   (nrx_cmd_rdy),
+    .in_vld   (nrx_cmd_valid),
     // Read Domain ports: CFG domain
-    .rd_clk       (clk_cfg),
-    .rd_en        (nrxq_rd_en),
-    .rd_data      (regf_notify_payload),
-    .rd_data_count(nrxq_rd_data_count),
-    .empty        (nrxq_empty),
-    .rd_rst_busy  (nrxq_rd_rst_busy),
-    .data_valid   (nrxq_data_valid)
+    .out_clk  (clk_cfg),
+    .out_rstn (resetn_cfg),
+    .out_data (regf_notify_payload),
+    .out_rdy  (~interrupt_notify),
+    .out_vld  (nrqq_out_vld)
   );
 
-  // TODO: check what to do
+  // we are ready when there is no pending interrupt or when previous one has been cleared
+
+  logic itr_notify;
   always_ff @(posedge clk_cfg) begin
     if (~resetn_cfg) begin
       itr_notify <= 1'b0;
     end else begin
-      if(nrxq_data_valid) begin
+      if(nrqq_out_vld) begin
         itr_notify <= 1'b1;
       end else if (clear_interrupt_notify) begin
         itr_notify <= 1'b0;
       end
     end
   end
-  assign interrupt_notify = itr_notify;
 
+  assign interrupt_notify = itr_notify;
 
   // ==============================================================================================
   // Ciphertext EMission (CEM)

@@ -62,54 +62,65 @@ module mhdma_master
   // =========================================================================================== //
   // CDC from regf to mrmac clock
   // =========================================================================================== //
-  logic rrqq_wr_en; // read request queue write enable
-  logic nrqq_wr_en; // notify request queue write enable
-
-  // when we have the data of both request identifier and addresses, we consume the information
-  // this signal is in configuration clock
-  assign request_consumed = (rrqq_wr_en | nrqq_wr_en) ? 1'b1 : 1'b0;
-
   // Read ReQuest Queue (RRQQ) --------------------------------------------------------------------
-  // config clock
-  logic                        rrqq_wr_rst_busy;
-  logic                        rrqq_full;
-  // mrmac clock
-  logic                        rrqq_rd_rst_busy;
-  logic                        rrqq_data_valid;
-  logic                        rrqq_rd_en;
-  logic [       RQQ_WIDTH-1:0] rrqq_rd_data;
-  logic                        rrqq_empty;
-  logic [RQQ_DATA_COUNT_W-1:0] rrqq_rd_data_count;
+  // === CFG domain
+  logic                 rrqq_in_rdy;
+  logic                 rrqq_in_vld;
+  logic [RQQ_WIDTH-1:0] rrqq_in_data;
+  // tmp
+  logic [RQQ_WIDTH-1:0] rrqq_data_kept;
+  logic                 rrqq_data_kept_avail;
+  logic                 rrqq_data_vld;
 
-  // cfg
-  assign rrqq_wr_en = received_req & ~rrqq_wr_rst_busy & ~rrqq_full & (regf_req_id[23:20] == REQ_ID_READ);
-  // mrmac
-  assign new_read_request_pending = (rrqq_rd_data_count != 0) ? 1'b1 : 1'b0;
-  assign rrqq_rd_en =  new_read_request_pending & ~rrqq_rd_rst_busy & ~rrqq_empty & read_request_allowed;
+  assign rrqq_in_vld = received_req & (regf_req_id[23:20] == REQ_ID_READ);
+  // backpressure
+  always_ff @(posedge clk_cfg)
+    if (~rrqq_in_rdy & rrqq_in_vld)
+      rrqq_data_kept <= {regf_req_id, regf_req_addr};
+
+  always_ff @(posedge clk_cfg) begin
+    if (~resetn_cfg) begin
+      rrqq_data_kept_avail <= 1'b0;
+    end else begin
+      if (rrqq_in_vld & ~rrqq_in_rdy) begin
+        rrqq_data_kept_avail <= 1'b1;
+      end else if (rrqq_data_vld & rrqq_in_rdy) begin
+        rrqq_data_kept_avail <= 1'b0;
+      end
+    end
+  end
+
+  assign rrqq_data_vld = rrqq_in_vld | rrqq_data_kept_avail;
+  assign rrqq_in_data = (rrqq_in_vld & rrqq_in_rdy) ? {regf_req_id, regf_req_addr} : rrqq_data_kept;
+
+  // === MRMAC domain
+  logic [RQQ_WIDTH-1:0] rrqq_out_data;
+  logic                 rrqq_out_rdy;
+  logic                 rrqq_out_vld;
 
   fifo_ram_rdy_vld_2clk # (
     .CDC_SYNC_STAGES (CDC_SYNC_STAGES),
-    .WIDTH           (RQQ_WIDTH),
     // tweak theses parameters in package
+    .WIDTH           (RQQ_WIDTH),
     .DEPTH           (XPM_MIN_FIFO_DEPTH),
     .FIFO_MEMORY_TYPE(RQQ_MEMORY_TYPE)
   ) rrqq_fifo_ram_rdy_vld_2clk (
-    // Write Domain ports: CFG domain
-    .wr_rstn      (resetn_cfg),
-    .wr_clk       (clk_cfg),
-    .wr_en        (rrqq_wr_en),
-    .wr_data      ({regf_req_id, regf_req_addr}),
-    .full         (rrqq_full),
-    .wr_rst_busy  (rrqq_wr_rst_busy),
-    // Read Domain ports: MRMAC domain
-    .rd_clk       (clk_mrmac),
-    .rd_en        (rrqq_rd_en),
-    .rd_data      (rrqq_rd_data),
-    .rd_data_count(rrqq_rd_data_count),
-    .empty        (rrqq_empty),
-    .rd_rst_busy  (rrqq_rd_rst_busy),
-    .data_valid   (rrqq_data_valid)
+    // CFG domain
+    .in_clk   (clk_cfg),
+    .in_rstn  (resetn_cfg),
+    .in_data  (rrqq_in_data),
+    .in_rdy   (rrqq_in_rdy),
+    .in_vld   (rrqq_in_vld),
+    // MRMAC domain
+    .out_clk  (clk_mrmac),
+    .out_rstn (resetn_mrmac),
+    .out_data (rrqq_out_data),
+    .out_rdy  (rrqq_out_rdy),
+    .out_vld  (rrqq_out_vld)
   );
+
+  assign new_read_request_pending = rrqq_out_vld;
+  assign rrqq_out_rdy = read_request_allowed;
 
   // current read request, sampled when valid is toggled
   logic [DST_ADDR_W-1:0] rrqq_dst_addr;
@@ -120,46 +131,55 @@ module mhdma_master
   logic [  HPU_ID_W-1:0] rrqq_hpu_id;
 
   always_ff @(posedge clk_mrmac) begin : read_request_sampling
-    if (~resetn_mrmac) begin
-      rrqq_dst_addr <= 'h0;
-      rrqq_src_addr <= 'h0;
-      rrqq_size_b   <= 'h0;
-      rrqq_iop_id   <= 'h0;
-      rrqq_req_id   <= 'h0;
-      rrqq_hpu_id   <= 'h0;
+    if (rrqq_out_vld) begin
+      rrqq_src_addr <= rrqq_out_data[CMD_SRC_ADDR_OFS-1:0];
+      rrqq_dst_addr <= rrqq_out_data[CMD_DST_ADDR_OFS-1:CMD_SRC_ADDR_OFS];
+      rrqq_size_b   <= rrqq_out_data[CMD_SIZE_B_OFS-1:CMD_DST_ADDR_OFS];
+      rrqq_hpu_id   <= rrqq_out_data[CMD_HPU_ID_OFS-1:CMD_SIZE_B_OFS];
+      rrqq_req_id   <= rrqq_out_data[CMD_REQ_ID_OFS-1:CMD_HPU_ID_OFS];
+      rrqq_iop_id   <= rrqq_out_data[CMD_IOP_ID_OFS-1:CMD_REQ_ID_OFS];
+    end
+  end
+
+  logic rrqq_cmd_vld;
+  always_ff @(posedge clk_mrmac)
+    rrqq_cmd_vld <= rrqq_out_vld;
+
+  // Notify ReQuest Queue (NRQQ) ------------------------------------------------------------------
+  // === CFG domain
+  logic                  nrqq_in_rdy;
+  logic                  nrqq_in_vld;
+  logic [NRQQ_WIDTH-1:0] nrqq_in_data;
+  // tmp
+  logic [NRQQ_WIDTH-1:0] nrqq_data_kept;
+  logic                  nrqq_data_kept_avail;
+  logic                  nrqq_data_vld;
+  // === MRMAC domain
+  logic [NRQQ_WIDTH-1:0] nrqq_out_data;
+  logic                  nrqq_out_rdy;
+  logic                  nrqq_out_vld;
+
+  // @cfg clock ---------------------------------
+  assign nrqq_in_vld = received_req & (regf_req_id[23:20] == REQ_ID_NOTIFY_TX);
+  // backpressure
+  always_ff @(posedge clk_cfg)
+    if (nrqq_in_vld & ~nrqq_in_rdy)
+      nrqq_data_kept <= {regf_req_id, regf_req_addr};
+
+  always_ff @(posedge clk_cfg) begin
+    if (~resetn_cfg) begin
+      nrqq_data_kept_avail <= 1'b0;
     end else begin
-      if (rrqq_data_valid) begin
-        rrqq_src_addr <= rrqq_rd_data[CMD_SRC_ADDR_OFS-1:0];
-        rrqq_dst_addr <= rrqq_rd_data[CMD_DST_ADDR_OFS-1:CMD_SRC_ADDR_OFS];
-        rrqq_size_b   <= rrqq_rd_data[CMD_SIZE_B_OFS-1:CMD_DST_ADDR_OFS];
-        rrqq_hpu_id   <= rrqq_rd_data[CMD_HPU_ID_OFS-1:CMD_SIZE_B_OFS];
-        rrqq_req_id   <= rrqq_rd_data[CMD_REQ_ID_OFS-1:CMD_HPU_ID_OFS];
-        rrqq_iop_id   <= rrqq_rd_data[CMD_IOP_ID_OFS-1:CMD_REQ_ID_OFS];
+      if (nrqq_in_vld & ~nrqq_in_rdy) begin
+        nrqq_data_kept_avail <= 1'b1;
+      end else if (nrqq_data_vld & nrqq_in_rdy) begin
+        nrqq_data_kept_avail <= 1'b0;
       end
     end
   end
 
-  logic rrqq_data_validD;
-  always_ff @(posedge clk_mrmac)
-    rrqq_data_validD <= rrqq_data_valid;
-
-  // Notify ReQuest Queue (NRQQ) ------------------------------------------------------------------
-  // config clock
-  logic                         nrqq_wr_rst_busy;
-  logic                         nrqq_full;
-  // mrmac clock
-  logic                         nrqq_rd_rst_busy;
-  logic                         nrqq_data_valid;
-  logic                         nrqq_rd_en;
-  logic [      NRQQ_WIDTH-1:0]  nrqq_rd_data;
-  logic                         nrqq_empty;
-  logic [NRQQ_DATA_COUNT_W-1:0] nrqq_rd_data_count;
-
-  // cfg
-  assign nrqq_wr_en = (received_req) & ~nrqq_wr_rst_busy & ~nrqq_full & (regf_req_id[23:20] == REQ_ID_NOTIFY_TX);
-  // mrmac
-  assign new_notify_request_pending = (nrqq_rd_data_count == 0) ? 1'b0 : 1'b1;
-  assign nrqq_rd_en =  new_notify_request_pending & notify_request_allowed & ~nrqq_rd_rst_busy & ~nrqq_empty;
+  assign nrqq_data_vld = nrqq_in_vld | nrqq_data_kept_avail;
+  assign nrqq_in_data = (nrqq_in_rdy & nrqq_in_vld) ?  {regf_req_id, regf_req_addr} : nrqq_data_kept;
 
   fifo_ram_rdy_vld_2clk # (
     .CDC_SYNC_STAGES (CDC_SYNC_STAGES),
@@ -168,22 +188,22 @@ module mhdma_master
     .DEPTH           (XPM_MIN_FIFO_DEPTH),
     .FIFO_MEMORY_TYPE(NRQQ_MEMORY_TYPE)
   ) nrqq_fifo_ram_rdy_vld_2clk (
-    // Write Domain ports: CFG domain
-    .wr_rstn      (resetn_cfg),
-    .wr_clk       (clk_cfg),
-    .wr_en        (nrqq_wr_en),
-    .wr_data      ({regf_req_id, regf_req_addr}),
-    .full         (nrqq_full),
-    .wr_rst_busy  (nrqq_wr_rst_busy),
-    // Read Domain ports: MRMAC domain
-    .rd_clk       (clk_mrmac),
-    .rd_en        (nrqq_rd_en),
-    .rd_data      (nrqq_rd_data),
-    .rd_data_count(nrqq_rd_data_count),
-    .empty        (nrqq_empty),
-    .rd_rst_busy  (nrqq_rd_rst_busy),
-    .data_valid   (nrqq_data_valid)
+    // CFG domain
+    .in_clk   (clk_cfg),
+    .in_rstn  (resetn_cfg),
+    .in_data  (nrqq_in_data),
+    .in_rdy   (nrqq_in_rdy),
+    .in_vld   (nrqq_data_vld),
+    //  MRMAC domain
+    .out_clk  (clk_mrmac),
+    .out_rstn (resetn_mrmac),
+    .out_data (nrqq_out_data),
+    .out_rdy  (nrqq_out_rdy),
+    .out_vld  (nrqq_out_vld)
   );
+
+  assign new_notify_request_pending = nrqq_out_vld;
+  assign nrqq_out_rdy = notify_request_allowed;
 
   // current notify request, sampled when valid is toggled
   logic [SRC_ADDR_W-1:0] nrqq_src_addr;
@@ -195,26 +215,18 @@ module mhdma_master
   // none of theses information are in the first word:
   //  => sampled on the same clock cycle as sending first frame
   always_ff @(posedge clk_mrmac) begin : notify_request_sampling
-    if (~resetn_mrmac) begin
-      nrqq_src_addr  <= 'h0;
-      nrqq_size_b    <= 'h0;
-      nrqq_iop_id    <= 'h0;
-      nrqq_req_id    <= 'h0;
-      nrqq_hpu_id    <= 'h0;
-    end else begin
-      if (nrqq_data_valid) begin
-        nrqq_iop_id    <= nrqq_rd_data[CMD_IOP_ID_OFS-1:CMD_REQ_ID_OFS];
-        nrqq_req_id    <= nrqq_rd_data[CMD_REQ_ID_OFS-1:CMD_HPU_ID_OFS];
-        nrqq_hpu_id    <= nrqq_rd_data[CMD_HPU_ID_OFS-1:CMD_SIZE_B_OFS];
-        nrqq_size_b    <= nrqq_rd_data[CMD_SIZE_B_OFS-1:CMD_DST_ADDR_OFS];
-        nrqq_src_addr  <= nrqq_rd_data[CMD_SRC_ADDR_OFS-1:0];
-      end
+    if (nrqq_out_vld) begin
+      nrqq_iop_id    <= nrqq_out_data[CMD_IOP_ID_OFS-1:CMD_REQ_ID_OFS];
+      nrqq_req_id    <= nrqq_out_data[CMD_REQ_ID_OFS-1:CMD_HPU_ID_OFS];
+      nrqq_hpu_id    <= nrqq_out_data[CMD_HPU_ID_OFS-1:CMD_SIZE_B_OFS];
+      nrqq_size_b    <= nrqq_out_data[CMD_SIZE_B_OFS-1:CMD_DST_ADDR_OFS];
+      nrqq_src_addr  <= nrqq_out_data[CMD_SRC_ADDR_OFS-1:0];
     end
   end
-  logic nrqq_data_validD;
-  always_ff @(posedge clk_mrmac)
-    nrqq_data_validD <= nrqq_data_valid;
 
+  logic nrqq_cmd_vld;
+  always_ff @(posedge clk_mrmac)
+    nrqq_cmd_vld <= nrqq_out_vld;
 
   // Header information ---------------------------------------------------------------------------
   assign master_dst_addr = notify_request_allowed ?         'h0   : read_request_allowed ? rrqq_dst_addr : 'h0;
@@ -225,7 +237,12 @@ module mhdma_master
   assign master_hpu_id   = notify_request_allowed ? nrqq_hpu_id   : read_request_allowed ? rrqq_hpu_id   : 'h0;
 
   // valid signal for formatting frames
-  assign master_header_valid = notify_request_allowed ? nrqq_data_validD : read_request_allowed ? rrqq_data_validD : 1'b0;
+  assign master_header_valid = notify_request_allowed ? nrqq_cmd_vld : read_request_allowed ? rrqq_cmd_vld : 1'b0;
+
+  // ----------------------------------------------------------------------------------------------
+  // when we have the data of both request identifier and addresses, we consume the information
+  // > this signal is in configuration clock
+  assign request_consumed = (rrqq_data_vld | nrqq_data_vld) ? 1'b1 : 1'b0;
 
   // ==============================================================================================
   // FSM

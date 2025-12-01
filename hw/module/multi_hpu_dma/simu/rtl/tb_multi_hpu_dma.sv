@@ -671,7 +671,7 @@ module tb_multi_hpu_dma;
     for (int gen_hpu = 0; gen_hpu < HPU_NB; ++gen_hpu) begin
       for (int gen_pc = 0; gen_pc < ETH_PC; ++gen_pc) begin
         for (int k = 0; k < 2**MEM_SIM_SIZE; ++k) begin
-          logic [255:0] value = '0;
+          logic [255:0] value = '0; //TODO
           for (int j = 0; j < 4; ++j) begin
             logic [63:0] w;
             w[63:62] = gen_hpu;

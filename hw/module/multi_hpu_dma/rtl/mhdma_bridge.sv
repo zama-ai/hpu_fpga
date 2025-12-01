@@ -282,7 +282,6 @@ module mhdma_bridge
     // command interface ------------------------------------------------------
     .notify_request_received        (notify_request_received                  ),
     .read_request_received          (read_request_received                    ),
-    .new_notify_read_pending        (new_notify_read_pending                  ),
     .new_notify_ack_pending         (new_notify_ack_pending                   ),
     .new_ct_emission_request_pending(new_ct_emission_request_pending          ),
     .notify_ack_allowed             (notify_ack_allowed                       ),
@@ -292,7 +291,7 @@ module mhdma_bridge
     .nrx_valid                      (nrx_valid                                ),
     .notify_ack_sent                (notify_ack_sent                          ),
     .ce_header_payload              (ce_header_payload                        ),
-    .ce_start_of_batch                         (ce_start_of_batch                                   ),
+    .ce_start_of_batch              (ce_start_of_batch                        ),
     .ce_payload                     (ce_payload                               ),
     .ce_ready                       (ce_ready                                 ),
     .ce_valid                       (ce_valid                                 ),

@@ -122,11 +122,11 @@ module mhdma_formatter
   // TODO: find better solution?
   // we know that we will not have more than three packets in a batch of ciphertext
   // we should not use % because NB_WORDS_PAYLOAD is not a power of two
-  generate
-    if ($ceil(CT_NB_COEF/ETH_NB_BYTES_PAYLOAD)>3) begin : __UNSUPPORTED_NB_PACKETS_
-      $fatal(1,"> ERROR: We do not support more than 3 ethernet packets per CT, add more if needed.");
-    end
-  endgenerate
+  // generate
+  //   if ($ceil(CT_NB_COEF/ETH_NB_BYTES_PAYLOAD)>3) begin : __UNSUPPORTED_NB_PACKETS_
+  //     $fatal(1,"> ERROR: We do not support more than 3 ethernet packets per CT, add more if needed.");
+  //   end
+  // endgenerate
   always_comb begin
     trigger_stalling = 1'b0;
     case (ce_word_counter)
