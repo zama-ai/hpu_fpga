@@ -226,8 +226,6 @@ module mhdma_slave
     .out_vld  (nrqq_out_vld)
   );
 
-  // we are ready when there is no pending interrupt or when previous one has been cleared
-
   logic itr_notify;
   always_ff @(posedge clk_cfg) begin
     if (~resetn_cfg) begin
