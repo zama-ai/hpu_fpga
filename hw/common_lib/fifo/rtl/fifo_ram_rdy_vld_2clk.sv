@@ -6,7 +6,7 @@
 // ----------------------------------------------------------------------------------------------
 //
 // Double clock FIFO wrapper
-//
+// > ALMOST_FULL_REMAIN cannot be 1. min value is 5
 // ==============================================================================================
 
 module fifo_ram_rdy_vld_2clk #(
@@ -15,7 +15,7 @@ module fifo_ram_rdy_vld_2clk #(
   parameter int WIDTH              = 32,
   parameter int DEPTH              = 512,
   parameter int RAM_LATENCY        = 1,
-  parameter int ALMOST_FULL_REMAIN = 1,
+  parameter int ALMOST_FULL_REMAIN = 5,
 
   parameter int OUT_FIFO_DEPTH     = 2,
   // for xpm simulation assertion
