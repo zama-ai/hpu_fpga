@@ -347,15 +347,9 @@ module mhdma_slave
   logic [     DST_ADDR_W-1:0] rr_ct_dst_addr;
 
 
-  always_ff @(posedge clk_mrmac) begin
-    if (~resetn_mrmac) begin
-      read_request_cmd <= 'h0;
-    end else begin
-      if (rreq_cmd_out_valid & rreq_cmd_out_ready) begin
-        read_request_cmd <= rreq_cmd_out_data;
-      end
-    end
-  end
+  always_ff @(posedge clk_mrmac)
+    if (rreq_cmd_out_valid & rreq_cmd_out_ready)
+      read_request_cmd <= rreq_cmd_out_data;
 
   assign rr_hpu_id      = read_request_cmd[RR_HPU_ID_OFS-1:RR_IOP_ID_OFS];
   assign rr_iop_id      = read_request_cmd[RR_IOP_ID_OFS-1:RR_DST_ID_OFS];
@@ -366,15 +360,9 @@ module mhdma_slave
   logic [ETH_PC-1:0] [AXI4_ADD_W-1:0] phy_addr;
   generate
     for (genvar gen_p=0; gen_p<ETH_PC; gen_p=gen_p+1)
-      always_ff @(posedge clk_mrmac) begin
-        if (~resetn_mrmac) begin
-          phy_addr[gen_p] <= 'h0;
-        end else begin
-          if (rreq_cmd_out_valid & rreq_cmd_out_ready) begin
+      always_ff @(posedge clk_mrmac)
+          if (rreq_cmd_out_valid & rreq_cmd_out_ready)
             phy_addr[gen_p] <= regf_ct_mem_addr[gen_p] + (rr_ct_src_addr << PC_STRIDE);
-          end
-        end
-      end
   endgenerate
 
   // Is read request ready ------------------------------------------------------------------------
@@ -424,14 +412,10 @@ module mhdma_slave
       // read address takes the physical address computed earlier as soon as the value is ready
       // when starting the reading process we compute the offset accounting burst sequence
       always_ff @(posedge clk_mrmac) begin
-        if (~resetn_mrmac) begin
-          mhdma_read_addr <= 'h0;
+        if (axi_read_cnt == gen_localparam[gen_rd].PC_NB_READS) begin
+          mhdma_read_addr <= phy_addr[gen_rd];
         end else begin
-          if (axi_read_cnt == gen_localparam[gen_rd].PC_NB_READS) begin
-            mhdma_read_addr <= phy_addr[gen_rd];
-          end else begin
-            mhdma_read_addr <= mhdma_read_addr + (AXI4_DATA_BYTES*MAX_BURST_SIZE);
-          end
+          mhdma_read_addr <= mhdma_read_addr + (AXI4_DATA_BYTES*MAX_BURST_SIZE);
         end
       end
 
@@ -732,22 +716,13 @@ module mhdma_slave
   logic [SRC_ADDR_W-1:0] ct_src_addr;
 
   always_ff @(posedge clk_mrmac) begin
-    if (~resetn_mrmac) begin
-      dst_mac_addr <='h0;
-      hpu_id       <='h0;
-      size_b       <='h0;
-      iop_id       <='h0;
-      ct_src_addr  <='h0;
-      ct_dst_addr  <='h0;
-    end else begin
-      if (rx_header_valid) begin
-        dst_mac_addr <= rx_dst_mac_addr;
-        hpu_id       <= rx_hpu_id;
-        size_b       <= rx_size_b;
-        iop_id       <= rx_iop_id;
-        ct_src_addr  <= rx_ct_src_addr;
-        ct_dst_addr  <= rx_ct_dst_addr;
-      end
+    if (rx_header_valid) begin
+      dst_mac_addr <= rx_dst_mac_addr;
+      hpu_id       <= rx_hpu_id;
+      size_b       <= rx_size_b;
+      iop_id       <= rx_iop_id;
+      ct_src_addr  <= rx_ct_src_addr;
+      ct_dst_addr  <= rx_ct_dst_addr;
     end
   end
 

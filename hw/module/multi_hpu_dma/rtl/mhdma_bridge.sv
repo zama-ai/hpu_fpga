@@ -126,15 +126,9 @@ module mhdma_bridge
   generate
     for (genvar i=0; i<NB_MAX_HPU; i++) begin
       always_ff @(posedge clk_mrmac) begin : hpu_id_table_creation
-       if (~resetn_mrmac) begin
-         hpu_id_table[i]  <= 'h0;
-         hpu_mac_table[i] <= 'h0;
-         one_hot_id[i]    <= 'h0;
-       end else begin
-          hpu_id_table[i]  <= hpu_ids[i][HPU_ID_W+MAC_ADDR_W-1:MAC_ADDR_W];
-          hpu_mac_table[i] <= hpu_ids[i][MAC_ADDR_W-1:0];
-          one_hot_id[i]    <= hpu_ids[i][31];
-        end
+        hpu_id_table[i]  <= hpu_ids[i][HPU_ID_W+MAC_ADDR_W-1:MAC_ADDR_W];
+        hpu_mac_table[i] <= hpu_ids[i][MAC_ADDR_W-1:0];
+        one_hot_id[i]    <= hpu_ids[i][31];
       end
     end
   endgenerate

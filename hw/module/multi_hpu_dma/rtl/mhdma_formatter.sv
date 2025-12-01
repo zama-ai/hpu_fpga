@@ -78,14 +78,9 @@ module mhdma_formatter
   logic                 ce_iop_id;
   logic                 ce_dst_mac_addr;
 
-  always_ff @(posedge clk_mrmac) begin
-    if (~resetn_mrmac) begin
-      ce_header_payloadD <= 'h0;
-    end else begin
-      if (ce_start_of_batch)
-        ce_header_payloadD <= ce_header_payload;
-    end
-  end
+  always_ff @(posedge clk_mrmac)
+    if (ce_start_of_batch)
+      ce_header_payloadD <= ce_header_payload;
 
   assign ce_dst_mac_addr = ce_header_payloadD[CEH_DST_MAC_ADDR_OFS-1:CEH_IOP_ID_OFS];
   assign ce_iop_id       = ce_header_payloadD[CEH_IOP_ID_OFS-1:CEH_HPU_ID_OFS];
@@ -224,16 +219,10 @@ module mhdma_formatter
   logic [  IOP_ID_W-1:0] nack_iop_id;
 
   always_ff @(posedge clk_mrmac) begin
-    if (~resetn_mrmac) begin
-      nack_src_addr <= 'h0;
-      nack_hpu_id   <= 'h0;
-      nack_iop_id   <= 'h0;
-    end else begin
-      if (nrx_valid) begin
-        nack_src_addr <= nrx_cmd_payload[NRX_SRC_ADDR_OFS-1:NRX_HPU_ID_OFS];
-        nack_hpu_id   <= nrx_cmd_payload[NRX_HPU_ID_OFS-1:NRX_IOP_ID_OFS];
-        nack_iop_id   <= nrx_cmd_payload[NRX_IOP_ID_OFS-1:0];
-      end
+    if (nrx_valid) begin
+      nack_src_addr <= nrx_cmd_payload[NRX_SRC_ADDR_OFS-1:NRX_HPU_ID_OFS];
+      nack_hpu_id   <= nrx_cmd_payload[NRX_HPU_ID_OFS-1:NRX_IOP_ID_OFS];
+      nack_iop_id   <= nrx_cmd_payload[NRX_IOP_ID_OFS-1:0];
     end
   end
 
