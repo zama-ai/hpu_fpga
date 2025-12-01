@@ -50,39 +50,9 @@ module fifo_ram_rdy_vld_2clk #(
   logic             empty;
   logic             full;
 
-  // Temporary signals
-  logic [WIDTH-1:0] tmp_data;
-  logic             tmp_vld;
-  logic             tmp_rdy;
-
-  logic [WIDTH-1:0] data_kept;
-  logic             data_kept_available;
-
-
   assign in_rdy = ~full;
 
   assign wr_en = in_vld  & ~full  & ~wr_rst_busy;
-  assign rd_en = tmp_rdy & ~empty & ~rd_rst_busy;
-
-  assign tmp_vld = rd_data_valid | data_kept_available;
-
-  always_ff @(posedge out_clk)
-    if (~tmp_rdy & rd_data_valid)
-      data_kept <= rd_data;
-
-  always_ff @(posedge out_clk) begin
-    if (~out_rstn) begin
-      data_kept_available <= 1'b0;
-    end else begin
-      if (~tmp_rdy & rd_data_valid) begin
-        data_kept_available <= 1'b1;
-      end else if (tmp_vld & tmp_rdy) begin
-        data_kept_available <= 1'b0;
-      end
-    end
-  end
-
-  assign tmp_data = rd_data_valid ? rd_data : data_kept;
 
   // =========================================================================================== --
   // XPM MACRO
@@ -138,9 +108,39 @@ module fifo_ram_rdy_vld_2clk #(
     .dbiterr(/* UNUSED */)
   );
 
+  // backpressure contruction
+  logic [WIDTH-1:0] tmp_data;
+  logic             tmp_vld;
+  logic             tmp_rdy;
+  logic [WIDTH-1:0] data_kept;
+  logic             data_kept_available;
+
+  assign tmp_vld = rd_data_valid | data_kept_available;
+
+  assign rd_en = tmp_rdy & ~empty & ~rd_rst_busy;
+
+  always_ff @(posedge out_clk)
+    if (~tmp_rdy & rd_data_valid)
+      data_kept <= rd_data;
+
+  always_ff @(posedge out_clk) begin
+    if (~out_rstn) begin
+      data_kept_available <= 1'b0;
+    end else begin
+      if (~tmp_rdy & rd_data_valid) begin
+        data_kept_available <= 1'b1;
+      end else if (tmp_vld & tmp_rdy) begin
+        data_kept_available <= 1'b0;
+      end
+    end
+  end
+
+  assign tmp_data = rd_data_valid ? rd_data : data_kept;
+
   // =========================================================================================== --
   // FIFO element
   // =========================================================================================== --
+
   fifo_element #(
     .WIDTH          (WIDTH),
     .DEPTH          (OUT_FIFO_DEPTH),
