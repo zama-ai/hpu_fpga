@@ -108,7 +108,7 @@ module fifo_ram_rdy_vld_2clk #(
     .dbiterr(/* UNUSED */)
   );
 
-  // backpressure contruction
+  // backpressure construction
   logic [WIDTH-1:0] tmp_data;
   logic             tmp_vld;
   logic             tmp_rdy;

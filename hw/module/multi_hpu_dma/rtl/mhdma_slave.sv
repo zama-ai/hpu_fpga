@@ -599,9 +599,9 @@ module mhdma_slave
   endgenerate
 
   // which PC must be read ------------------------------------------------------------------------
-  // thoses two processes are defined for two PCS only.
+  // those two processes are defined for two PCS only.
 
-  // launch reads over the two PCs indepenently
+  // launch reads over the two PCs independently
   always_ff @(posedge clk_mrmac) begin : prc_read_one_at_a_time
     if (~resetn_mrmac) begin
       axi4_read_pc <= 'h0;
@@ -642,7 +642,7 @@ module mhdma_slave
   assign  fifo_ce_in_vld  = (reading_which_pc[0] == 1) ? fifo_ce_pc_in_vld[0]  : fifo_ce_pc_in_vld[1];
   assign  fifo_ce_in_data = fifo_ce_in_vld ? ((reading_which_pc[0] == 1) ? fifo_ce_pc_in_data[0] : fifo_ce_pc_in_data[1]) : 'h0;
 
-  // backpressure over ready fo each fifo
+  // backpressure over ready for each fifo
   assign fifo_ce_pc_in_rdy[0] = (reading_which_pc == 1) ? fifo_ce_in_rdy : 1'b0;
   assign fifo_ce_pc_in_rdy[1] = (reading_which_pc == 2) ? fifo_ce_in_rdy : 1'b0;
 

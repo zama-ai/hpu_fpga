@@ -8,8 +8,8 @@
 // This testbench is really close to fifo_ram_rdy_vld.
 // Differences are:
 //  - two clocks interface with reset have been added
-//  - spliting logic between in and out domains
-//  - Testbench's FSM had to be splitted
+//  - splitting logic between in and out domains
+//  - Testbench's FSM had to be split
 //
 // Must be taken into account:
 //  - FIFO depth with XPM must be a power of two -> mandatory from XPM
