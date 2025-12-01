@@ -258,6 +258,7 @@ module mhdma_master
   st_ntx ntx_state;
   st_ntx ntx_next_state;
   logic  ntx_timeout;
+  logic  ntx_timeout_cdc;
 
   always_ff @(posedge clk_mrmac) begin
     if (~resetn_mrmac) ntx_state <= NTX_WAIT_REQUEST;
@@ -279,11 +280,10 @@ module mhdma_master
       NTX_SEND_NOTIFY:
         ntx_next_state = notify_request_sent ? NTX_WAIT_ACK : NTX_SEND_NOTIFY;
       NTX_WAIT_ACK:
-        ntx_next_state = notify_ack_received ? NTX_WAIT_REQUEST : (ntx_timeout ? NTX_SEND_NOTIFY : ntx_next_state);
+        ntx_next_state = notify_ack_received ? NTX_WAIT_REQUEST : (ntx_timeout_cdc ? NTX_SEND_NOTIFY : ntx_next_state);
     endcase
   end
 
-  // TODO: in cfg mode?
   logic [15:0] cnt_notify_ack;
   always_ff @(posedge clk_cfg) begin
     if (~resetn_cfg) begin
@@ -297,6 +297,17 @@ module mhdma_master
       end
     end
   end
+
+  xpm_cdc_single_wrapper # (
+    .CDC_SYNC_STAGES(CDC_SYNC_STAGES),
+    .SRC_INPUT_REG  (0)
+  ) cdc_single_ntx_timeout (
+    .src_clk(clk_cfg),
+    .src_in (ntx_timeout),
+
+    .dest_clk(clk_mrmac),
+    .dest_out(ntx_timeout_cdc)
+  );
 
   // Read request ---------------------------------------------------------------------------------
   typedef enum logic [1:0] {
