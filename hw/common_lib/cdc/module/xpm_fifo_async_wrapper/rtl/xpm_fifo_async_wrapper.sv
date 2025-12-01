@@ -20,6 +20,7 @@ module xpm_fifo_async_wrapper #(
 
   parameter int DATA_W            = 32,
   parameter int FIFO_DEPTH        = 512,
+  parameter int PROG_FULL_THRESH  = 10,
 
   parameter int FIFO_MEMORY_TYPE = "auto",
   // read and write data count w are the same
@@ -76,7 +77,7 @@ module xpm_fifo_async_wrapper #(
     .FIFO_WRITE_DEPTH   (FIFO_DEPTH),       // DECIMAL
     .FULL_RESET_VALUE   (0),                // DECIMAL
     .PROG_EMPTY_THRESH  (10),               // DECIMAL
-    .PROG_FULL_THRESH   (10),               // DECIMAL
+    .PROG_FULL_THRESH   (PROG_FULL_THRESH), // DECIMAL
     .RD_DATA_COUNT_WIDTH(DATA_COUNT_WIDTH), // DECIMAL
     .READ_DATA_WIDTH    (DATA_W),           // DECIMAL
     .READ_MODE          ("std"),            // String
