@@ -113,9 +113,10 @@ module mhdma_slave
   // ==============================================================================================
   // => must transmit to regfile IOP_ID, HPU_ID and src_addr
   // => must trigger interrupt signal when registers are ready to be read
-  typedef enum {
-    NTX_WAIT_REQUEST,
-    NTX_TRANSMIT_ACK
+  typedef enum logic [1:0] {
+    NTW_XXX          = 'x,
+    NTX_WAIT_REQUEST = 2'b00,
+    NTX_TRANSMIT_ACK = 2'b1
   } st_nrx;
 
   st_nrx nrx_state;
@@ -127,6 +128,7 @@ module mhdma_slave
   end
 
   always_comb begin
+    nrx_next_state = NTW_XXX;
     case (nrx_state)
       NTX_WAIT_REQUEST:
         nrx_next_state = notify_request_received ? NTX_TRANSMIT_ACK : NTX_WAIT_REQUEST;
@@ -245,15 +247,15 @@ module mhdma_slave
   // Ciphertext EMission (CEM)
   // ==============================================================================================
   // FSM ------------------------------------------------------------------------------------------
-  logic cem_over;
-
-  typedef enum {
-    CEM_WAIT_REQUEST,
-    CEM_READ_N_SEND
+  typedef enum logic [1:0] {
+    CEM_XXX           = 'x,
+    CEM_WAIT_REQUEST  = 2'b0,
+    CEM_READ_N_SEND   = 2'b1
   } st_cem;
 
   st_cem cem_state;
   st_cem cem_next_state;
+  logic  cem_over;
 
   always_ff @(posedge clk_mrmac) begin
     if (~resetn_mrmac) cem_state <= CEM_WAIT_REQUEST;
@@ -261,6 +263,7 @@ module mhdma_slave
   end
 
   always_comb begin
+    cem_next_state = CEM_XXX;
     case (cem_state)
       CEM_WAIT_REQUEST:
         cem_next_state = new_ct_emission_request_pending ? CEM_READ_N_SEND : CEM_WAIT_REQUEST;

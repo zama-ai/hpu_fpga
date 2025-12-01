@@ -248,20 +248,19 @@ module mhdma_master
   // FSM
   // ==============================================================================================
   // Notify TX (NTX) ------------------------------------------------------------------------------
-  logic        ntx_timeout;
-  logic [15:0] cnt_notify_ack;
-
-  typedef enum {
-    ST_WAIT_REQUEST,
-    ST_WAIT_ACK,
-    ST_SEND_NOTIFY
+  typedef enum logic [1:0] {
+    NTX_XXX          = 'x,
+    NTX_WAIT_REQUEST = 2'b00,
+    NTX_WAIT_ACK     = 2'b01,
+    NTX_SEND_NOTIFY  = 2'b10
   } st_ntx;
 
   st_ntx ntx_state;
   st_ntx ntx_next_state;
+  logic  ntx_timeout;
 
   always_ff @(posedge clk_mrmac) begin
-    if (~resetn_mrmac) ntx_state <= ST_WAIT_REQUEST;
+    if (~resetn_mrmac) ntx_state <= NTX_WAIT_REQUEST;
     else ntx_state <= ntx_next_state;
   end
 
@@ -273,17 +272,19 @@ module mhdma_master
   assign notify_request_sent = notify_request_allowedD & ~notify_request_allowed;
 
   always_comb begin
+    ntx_next_state = NTX_XXX;
     case (ntx_state)
-      ST_WAIT_REQUEST:
-        ntx_next_state = (new_notify_request_pending & notify_request_allowed) ? ST_SEND_NOTIFY : ST_WAIT_REQUEST;
-      ST_SEND_NOTIFY:
-        ntx_next_state = notify_request_sent ? ST_WAIT_ACK : ST_SEND_NOTIFY;
-      ST_WAIT_ACK:
-        ntx_next_state = notify_ack_received ? ST_WAIT_REQUEST : (ntx_timeout ? ST_SEND_NOTIFY : ntx_next_state);
+      NTX_WAIT_REQUEST:
+        ntx_next_state = (new_notify_request_pending & notify_request_allowed) ? NTX_SEND_NOTIFY : NTX_WAIT_REQUEST;
+      NTX_SEND_NOTIFY:
+        ntx_next_state = notify_request_sent ? NTX_WAIT_ACK : NTX_SEND_NOTIFY;
+      NTX_WAIT_ACK:
+        ntx_next_state = notify_ack_received ? NTX_WAIT_REQUEST : (ntx_timeout ? NTX_SEND_NOTIFY : ntx_next_state);
     endcase
   end
 
   // TODO: in cfg mode?
+  logic [15:0] cnt_notify_ack;
   always_ff @(posedge clk_cfg) begin
     if (~resetn_cfg) begin
       ntx_timeout <= 1'b0;
@@ -298,23 +299,23 @@ module mhdma_master
   end
 
   // Read request ---------------------------------------------------------------------------------
-  logic rreq_timeout;
-  logic rreq_timeout_cdc;
-  logic rreq_ct_transmitted;
-  logic rreq_send_request;
-  logic error_packet_id_mismatch;
-
-  typedef enum {
-    ST_WAIT_READ_REQUEST,
-    ST_SEND_READ_REQUEST,
-    ST_WAIT_PACKETS
+  typedef enum logic [1:0] {
+    RR_XXX          = 'x,
+    RR_WAIT_REQUEST = 2'b00,
+    RR_SEND_REQUEST = 2'b01,
+    RR_WAIT_PACKETS = 2'b10
   } st_read_req;
 
   st_read_req rreq_state;
   st_read_req rreq_next_state;
+  logic       rreq_timeout;
+  logic       rreq_timeout_cdc;
+  logic       rreq_ct_transmitted;
+  logic       rreq_send_request;
+  logic       error_packet_id_mismatch;
 
   always_ff @(posedge clk_mrmac) begin
-    if (~resetn_mrmac) rreq_state <= ST_WAIT_READ_REQUEST;
+    if (~resetn_mrmac) rreq_state <= RR_WAIT_REQUEST;
     else rreq_state <= rreq_next_state;
   end
 
@@ -326,15 +327,16 @@ module mhdma_master
   assign read_request_sent = read_request_allowedD & ~read_request_allowed;
 
   always_comb begin
+    rreq_next_state = RR_XXX;
     case (rreq_state)
-      ST_WAIT_READ_REQUEST:
-        rreq_next_state = new_read_request_pending ? ST_SEND_READ_REQUEST : ST_WAIT_READ_REQUEST;
-      ST_SEND_READ_REQUEST:
-        rreq_next_state =  read_request_sent ? ST_WAIT_PACKETS : ST_SEND_READ_REQUEST;
-      ST_WAIT_PACKETS:
-        // if error_packet_id_mismatch or timeout => ST_SEND_READ_REQUEST
-        // if write into hbm is finished => ST_WAIT_READ_REQUEST
-        rreq_next_state = (error_packet_id_mismatch | rreq_timeout_cdc) ? ST_SEND_READ_REQUEST : (rreq_ct_transmitted? ST_WAIT_READ_REQUEST: ST_WAIT_PACKETS);
+      RR_WAIT_REQUEST:
+        rreq_next_state = new_read_request_pending ? RR_SEND_REQUEST : RR_WAIT_REQUEST;
+      RR_SEND_REQUEST:
+        rreq_next_state =  read_request_sent ? RR_WAIT_PACKETS : RR_SEND_REQUEST;
+      RR_WAIT_PACKETS:
+        // if error_packet_id_mismatch or timeout => RR_SEND_REQUEST
+        // if write into hbm is finished => RR_WAIT_REQUEST
+        rreq_next_state = (error_packet_id_mismatch | rreq_timeout_cdc) ? RR_SEND_REQUEST : (rreq_ct_transmitted? RR_WAIT_REQUEST: RR_WAIT_PACKETS);
     endcase
   end
 
@@ -343,6 +345,6 @@ module mhdma_master
   assign rreq_timeout_cdc = 1'b0;
   assign rreq_ct_transmitted = 1'b0;
 
-  assign rreq_send_request = (rreq_state == ST_SEND_READ_REQUEST) ? 1'b1: 1'b0;
+  assign rreq_send_request = (rreq_state == RR_SEND_REQUEST) ? 1'b1: 1'b0;
 
 endmodule

@@ -280,12 +280,13 @@ module mhdma_formatter
   // simple FSM that changes state from IDLE when a new request is pensing
   // desasserts from the state allowed when the full frame has been sent
 
-  typedef enum {
-    ST_IDLE,
-    ST_CT_EMISSION,
-    ST_NACK,
-    ST_READ_REQ,
-    ST_NOTIFY
+  typedef enum logic [2:0] {
+    ST_XXX         = 'x,
+    ST_IDLE        = 3'b001,
+    ST_CT_EMISSION = 3'b010,
+    ST_NACK        = 3'b011,
+    ST_READ_REQ    = 3'b100,
+    ST_NOTIFY      = 3'b101
   } st_tx;
 
   st_tx tx_state;
@@ -297,6 +298,7 @@ module mhdma_formatter
   end
 
   always_comb begin
+    tx_next_state = ST_XXX;
     case (tx_state)
       ST_IDLE:
         begin
@@ -308,6 +310,8 @@ module mhdma_formatter
             tx_next_state = ST_READ_REQ;
           end else if (new_notify_request_pending) begin
             tx_next_state = ST_NOTIFY;
+          end else begin
+            tx_next_state = ST_IDLE;
           end
         end
       ST_CT_EMISSION:
