@@ -55,10 +55,31 @@ module mhdma_formatter
   // simplify notations
   logic master_request;
   logic small_frame;
-
-  assign master_request = read_request_allowed | notify_request_allowed;
-  assign small_frame = master_request | notify_ack_allowed;
   // there is only one slave request: ciphertext emission
+
+  always_ff @(posedge clk_mrmac) begin
+    if (~resetn_mrmac) begin
+      master_request <= 1'b0;
+    end else begin
+      if(qsfp_tx_tlast) begin
+        master_request <= 1'b0;
+      end else if (read_request_allowed | notify_request_allowed) begin
+        master_request <= 1'b1;
+      end
+    end
+  end
+
+  always_ff @(posedge clk_mrmac) begin
+    if (~resetn_mrmac) begin
+      small_frame <= 1'b0;
+    end else begin
+      if (qsfp_tx_tlast) begin
+        small_frame <= 1'b0;
+      end else if (master_request | notify_ack_allowed) begin
+        small_frame <= 1'b1;
+      end
+    end
+  end
 
   // =========================================================================================== //
   // Building headers
@@ -175,10 +196,10 @@ module mhdma_formatter
 
   assign ce_last_packet = ct_emission_allowed & (ce_seq_num == NB_PACKETS_FULL);
 
-  assign stop_sending_small_frame      = small_frame && (tx_cnt == NB_WORDS_SMALL_PACKETS);
-  assign stop_sending_ce_full_frame    = ct_emission_allowed && (tx_cnt == NB_WORDS_PAYLOAD);
+  assign stop_sending_small_frame      = small_frame         && (tx_cnt == NB_WORDS_SMALL_PACKETS-1);
+  assign stop_sending_ce_full_frame    = ct_emission_allowed && (tx_cnt == ETH_HEADER_SIZE+NB_WORDS_PAYLOAD-1);
   // stop send partial: counted the correct number of words & headers and taken into account 1cc and that 0 is unactive
-  assign stop_sending_ce_partial_frame = ce_last_packet && (tx_cnt == (NB_WORDS_LAST_PACKET+ETH_HEADER_SIZE-1-1));
+  assign stop_sending_ce_partial_frame = ce_last_packet && (tx_cnt == (NB_WORDS_LAST_PACKET+ETH_HEADER_SIZE-1));
 
   always_ff @(posedge clk_mrmac) begin
     if (~resetn_mrmac) begin
@@ -274,7 +295,7 @@ module mhdma_formatter
     if (~resetn_mrmac) begin
       ce_stalling <= 1'b0;
     end else begin
-      if (ce_word_counter == NB_WORDS_PAYLOAD-1) begin
+      if (tx_cnt == ETH_HEADER_SIZE+NB_WORDS_PAYLOAD) begin
         ce_stalling <= 1'b1;
       end else if (tx_header_last) begin
         ce_stalling <= 1'b0;
@@ -324,14 +345,20 @@ module mhdma_formatter
 
   // For the arbiter we need the information to release the fsm that all have been sent
   logic ct_emission_all_packets_transmitted;
-  assign ct_emission_all_packets_transmitted = 1'b0;
+  always_ff @(posedge clk_mrmac) begin
+    if (~resetn_mrmac) begin
+      ct_emission_all_packets_transmitted <= 1'b0;
+    end else begin
+      ct_emission_all_packets_transmitted <= stop_sending_ce_partial_frame;
+    end
+  end
 
   // we must be able to do zero padding if we receive not enough words from slave module
 
   // ----------------------------------------------------------------------------------------------
   assign tx_small_last  = (tx_cnt == NB_WORDS_MIN);
   assign tx_header_last = (tx_cnt == ETH_HEADER_SIZE);
-  assign tx_last_word   = (ct_emission_allowed & ~ce_last_packet) ? (tx_cnt == NB_WORDS_PAYLOAD) : (tx_cnt == (NB_WORDS_LAST_PACKET+ETH_HEADER_SIZE));
+  assign tx_last_word   = (ct_emission_allowed & ~ce_last_packet) ? (tx_cnt == ETH_HEADER_SIZE+NB_WORDS_PAYLOAD) : (tx_cnt == (NB_WORDS_LAST_PACKET+ETH_HEADER_SIZE));
 
   assign tx_data  = small_frame ? tx_header : (ct_emission_allowed & ce_header) ? tx_header : (ct_emission_allowed & ce_valid & ce_ready) ? ce_payload :'h0;
   assign tx_last  = small_frame ? tx_small_last : ct_emission_allowed ? tx_last_word : 1'b0;
@@ -403,6 +430,6 @@ module mhdma_formatter
   assign qsfp_tx_tdata      = mhdma_pkg::byte_swap(tx_data);
   assign qsfp_tx_tvalid     = tx_valid;
   assign qsfp_tx_tkeep_user = tx_valid ? 'hFF : 0;
-  assign qsfp_tx_tlast      = small_frame    ? tx_small_last: tx_last;
+  assign qsfp_tx_tlast      = small_frame  ? tx_small_last: tx_last;
 
 endmodule

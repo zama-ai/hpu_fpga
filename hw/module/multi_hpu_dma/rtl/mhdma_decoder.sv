@@ -141,10 +141,32 @@ module mhdma_decoder
   // assigning output -----------------------------------------------------------------------------
 
   // decoding commands
-  assign notify_ack_received          = (rx_valid & (rx_req_id == REQ_ID_ACK_NOTIFY_TX)) ? 1'b1 : 1'b0;
-  assign notify_request_received      = (rx_valid & (rx_req_id == REQ_ID_NOTIFY_TX))     ? 1'b1 : 1'b0;
-  assign read_request_received        = (rx_valid & (rx_req_id == REQ_ID_READ))          ? 1'b1 : 1'b0;
-  assign ciphertext_emission_received = (rx_valid & (rx_req_id == REQ_ID_EMISSION))      ? 1'b1 : 1'b0;
+  logic nack_received;
+  logic nr_received;
+  logic rr_received;
+  logic ce_received;
+
+  assign nack_received = (rx_valid & (rx_req_id == REQ_ID_ACK_NOTIFY_TX)) ? 1'b1 : 1'b0;
+  assign nr_received   = (rx_valid & (rx_req_id == REQ_ID_NOTIFY_TX))     ? 1'b1 : 1'b0;
+  assign rr_received   = (rx_valid & (rx_req_id == REQ_ID_READ))          ? 1'b1 : 1'b0;
+  assign ce_received   = (rx_valid & (rx_req_id == REQ_ID_EMISSION))      ? 1'b1 : 1'b0;
+
+  logic nack_receivedD;
+  logic nr_receivedD;
+  logic rr_receivedD;
+  logic ce_receivedD;
+
+  always_ff @(posedge clk_mrmac) begin
+    nack_receivedD <= nack_received;
+    nr_receivedD <= nr_received;
+    rr_receivedD <= rr_received;
+    ce_receivedD <= ce_received;
+  end
+
+  assign notify_ack_received          = nack_received & ~nack_receivedD;
+  assign notify_request_received      = nr_received   & ~nr_receivedD;
+  assign read_request_received        = rr_received   & ~rr_receivedD;
+  assign ciphertext_emission_received = ce_received   & ~ce_receivedD;
 
   // header information
   assign rx_dst_mac_addr = dst_mac_addr;

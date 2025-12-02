@@ -159,7 +159,7 @@ module mhdma_slave
     end
   end
 
-  assign nrx_cmd_in_we = notify_request_received & rx_header_valid & nrx_cmd_in_rdy;
+  assign nrx_cmd_in_we = (nrx_state == NTX_TRANSMIT_ACK) & rx_header_valid & nrx_cmd_in_rdy;
 
   // in order to not lose any commands if we receive several notify
   fifo_ram_rdy_vld # (
@@ -293,7 +293,7 @@ module mhdma_slave
   logic                       rreq_cmd_out_ready;
 
   assign rreq_cmd_data_in = {rx_hpu_id, rx_iop_id, rx_ct_dst_addr, rx_ct_src_addr};
-  assign rreq_cmd_we = rreq_cmd_ready & read_request_received; //TODO:add when payload is ready
+  assign rreq_cmd_we = rreq_cmd_ready & read_request_received; //TODO: add when payload is ready
   assign rreq_cmd_out_ready = ct_emission_request_in_use;
 
   fifo_ram_rdy_vld # (
