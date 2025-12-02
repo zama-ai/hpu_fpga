@@ -96,7 +96,7 @@ module mhdma_decoder
   logic rx_valid;
   always_ff @(posedge clk_mrmac)
     if (qsfp_rx_tvalid &qsfp_rx_tsop)
-      dst_mac_addr <=  qsfp_rx_tdata_bs[H0_DST_MAC_ADDR_OFS-1:H0_SRC_OUI_OFS];
+      dst_mac_addr <= qsfp_rx_tdata_bs[H0_DST_MAC_ADDR_OFS-1:H0_SRC_OUI_OFS];
 
   assign rx_valid = (current_hpu_mac == dst_mac_addr) ? 1'b1 : 1'b0;
 
@@ -105,12 +105,22 @@ module mhdma_decoder
    * ethernet len is skipped: not used for now
    */
   always_ff @(posedge clk_mrmac) begin
-    if ( (qsfp_rx_tvalid) & (rx_counter == 1)) begin
-      sec_num      <= qsfp_rx_tdata_bs[H1_SEQ_NUM_OFS-1:0];
-      hpu_id       <= qsfp_rx_tdata_bs[H1_HPU_ID_OFS-1:H1_SEQ_NUM_OFS];
-      req_id       <= qsfp_rx_tdata_bs[H1_REQ_ID_OFS-1:H1_HPU_ID_OFS];
-      // Ethernet len is ignored
-      src_mac_addr <= qsfp_rx_tdata_bs[H1_SRC_MAC_ADDR_OFS-1:H1_SRC_ETH_LEN_OFS];
+    if ((qsfp_rx_tvalid) & (rx_counter == 1)) begin
+        sec_num <= qsfp_rx_tdata_bs[H1_SEQ_NUM_OFS-1:0];
+        hpu_id  <= qsfp_rx_tdata_bs[H1_HPU_ID_OFS-1:H1_SEQ_NUM_OFS];
+        // Ethernet len is ignored
+        src_mac_addr <= qsfp_rx_tdata_bs[H1_SRC_MAC_ADDR_OFS-1:H1_SRC_ETH_LEN_OFS];
+      end
+  end
+
+  // it is mandatory to reset request ID when invalid: we build pulses around it
+  always_ff @(posedge clk_mrmac) begin
+    if (qsfp_rx_tvalid) begin
+      if (rx_counter == 1) begin
+        req_id <= qsfp_rx_tdata_bs[H1_REQ_ID_OFS-1:H1_HPU_ID_OFS];
+      end
+    end else begin
+      req_id <= 'h0;
     end
   end
 
