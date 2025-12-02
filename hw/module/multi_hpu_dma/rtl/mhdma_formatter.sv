@@ -196,9 +196,9 @@ module mhdma_formatter
 
   assign ce_last_packet = ct_emission_allowed & (ce_seq_num == NB_PACKETS_FULL);
 
+  // we have to trigger signal one cycle earlier to have sending_request on time
   assign stop_sending_small_frame      = small_frame         && (tx_cnt == NB_WORDS_SMALL_PACKETS-1);
   assign stop_sending_ce_full_frame    = ct_emission_allowed && (tx_cnt == ETH_HEADER_SIZE+NB_WORDS_PAYLOAD-1);
-  // stop send partial: counted the correct number of words & headers and taken into account 1cc and that 0 is unactive
   assign stop_sending_ce_partial_frame = ce_last_packet && (tx_cnt == (NB_WORDS_LAST_PACKET+ETH_HEADER_SIZE-1));
 
   always_ff @(posedge clk_mrmac) begin
