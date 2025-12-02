@@ -94,15 +94,10 @@ module mhdma_decoder
    *    this register will help define if next words in receptions are valid
    */
   logic rx_valid;
-  always_ff @(posedge clk_mrmac) begin
-    if (qsfp_rx_tvalid) begin
-      if (qsfp_rx_tsop) begin
-        dst_mac_addr <=  qsfp_rx_tdata_bs[H0_DST_MAC_ADDR_OFS-1:H0_SRC_OUI_OFS];
-      end
-    end else begin
-      dst_mac_addr <= 'h0;
-    end
-  end
+  always_ff @(posedge clk_mrmac)
+    if (qsfp_rx_tvalid &qsfp_rx_tsop)
+      dst_mac_addr <=  qsfp_rx_tdata_bs[H0_DST_MAC_ADDR_OFS-1:H0_SRC_OUI_OFS];
+
   assign rx_valid = (current_hpu_mac == dst_mac_addr) ? 1'b1 : 1'b0;
 
   /* FRAME 1 :
@@ -110,19 +105,12 @@ module mhdma_decoder
    * ethernet len is skipped: not used for now
    */
   always_ff @(posedge clk_mrmac) begin
-    if (qsfp_rx_tvalid) begin
-      if (rx_counter == 1) begin
-        sec_num      <= qsfp_rx_tdata_bs[H1_SEQ_NUM_OFS-1:0];
-        hpu_id       <= qsfp_rx_tdata_bs[H1_HPU_ID_OFS-1:H1_SEQ_NUM_OFS];
-        req_id       <= qsfp_rx_tdata_bs[H1_REQ_ID_OFS-1:H1_HPU_ID_OFS];
-        // Ethernet len is ignored
-        src_mac_addr <= qsfp_rx_tdata_bs[H1_SRC_MAC_ADDR_OFS-1:H1_SRC_ETH_LEN_OFS];
-      end
-    end else begin
-      sec_num <= 'h0;
-      req_id <= 'h0;
-      hpu_id <= 'h0;
-      src_mac_addr <= 'h0;
+    if ( (qsfp_rx_tvalid) & (rx_counter == 1)) begin
+      sec_num      <= qsfp_rx_tdata_bs[H1_SEQ_NUM_OFS-1:0];
+      hpu_id       <= qsfp_rx_tdata_bs[H1_HPU_ID_OFS-1:H1_SEQ_NUM_OFS];
+      req_id       <= qsfp_rx_tdata_bs[H1_REQ_ID_OFS-1:H1_HPU_ID_OFS];
+      // Ethernet len is ignored
+      src_mac_addr <= qsfp_rx_tdata_bs[H1_SRC_MAC_ADDR_OFS-1:H1_SRC_ETH_LEN_OFS];
     end
   end
 
@@ -131,16 +119,10 @@ module mhdma_decoder
    * size_b for triggering error
    */
   always_ff @(posedge clk_mrmac) begin
-    if (qsfp_rx_tvalid) begin
-      if (rx_counter == 2) begin
-        iop_id      <= qsfp_rx_tdata_bs[H2_IOP_ID_OFS-1:H2_SIZE_B_OFS];
-        ct_dst_addr <= qsfp_rx_tdata_bs[H2_CT_DST_ADDR_OFS-1:H2_IOP_ID_OFS];
-        ct_src_addr <= qsfp_rx_tdata_bs[H2_CT_SRC_ADDR_OFS-1:H2_CT_DST_ADDR_OFS];
-      end
-    end else begin
-      iop_id       <= 'h0;
-      ct_src_addr  <= 'h0;
-      ct_dst_addr  <= 'h0;
+    if ((qsfp_rx_tvalid) & (rx_counter == 2)) begin
+      iop_id      <= qsfp_rx_tdata_bs[H2_IOP_ID_OFS-1:H2_SIZE_B_OFS];
+      ct_dst_addr <= qsfp_rx_tdata_bs[H2_CT_DST_ADDR_OFS-1:H2_IOP_ID_OFS];
+      ct_src_addr <= qsfp_rx_tdata_bs[H2_CT_SRC_ADDR_OFS-1:H2_CT_DST_ADDR_OFS];
     end
   end
 
