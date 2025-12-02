@@ -859,9 +859,9 @@ module tb_multi_hpu_dma;
    * - if you chose a wrong HPU-id you will get an error
    */
   task automatic notify_request(
-    input logic [  HPU_ID_W-1:0]   src_node_id,
-    input logic [  HPU_ID_W-1:0]   dst_node_id,
-    input logic [  IOP_ID_W-1:0]   iop_id,
+    input logic [  HPU_ID_W-1:0] src_node_id,
+    input logic [  HPU_ID_W-1:0] dst_node_id,
+    input logic [  IOP_ID_W-1:0] iop_id,
     input logic [SRC_ADDR_W-1:0] src_addr
   );
     logic [REG_DATA_W-1:00] read_req_id;

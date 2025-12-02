@@ -221,7 +221,6 @@ module mhdma_bridge
   logic                     nrx_valid;
   logic                     notify_ack_sent;
   logic [    CEH_WIDTH-1:0] ce_header_payload;
-  logic                     ce_start_of_batch;
   logic [ MRMAC_AXIS_W-1:0] ce_payload;
   logic                     ce_ready;
   logic                     ce_valid;
@@ -294,7 +293,6 @@ module mhdma_bridge
     .nrx_valid                      (nrx_valid                                ),
     .notify_ack_sent                (notify_ack_sent                          ),
     .ce_header_payload              (ce_header_payload                        ),
-    .ce_start_of_batch              (ce_start_of_batch                        ),
     .ce_payload                     (ce_payload                               ),
     .ce_ready                       (ce_ready                                 ),
     .ce_valid                       (ce_valid                                 ),
@@ -380,10 +378,9 @@ module mhdma_bridge
     .nrx_valid                      (nrx_valid                                ),
     .notify_ack_sent                (notify_ack_sent                          ),
     .ce_header_payload              (ce_header_payload                        ),
-    .ce_valid                       (ce_valid                                 ),
-    .ce_start_of_batch                         (ce_start_of_batch                                   ),
     .ce_payload                     (ce_payload                               ),
     .ce_ready                       (ce_ready                                 ),
+    .ce_valid                       (ce_valid                                 ),
     // QSFP TX interface ------------------------------------------------------
     .qsfp_tx_tdata                  (qsfp_tx_tdata                            ),
     .qsfp_tx_tkeep_user             (qsfp_tx_tkeep_user                       ),

@@ -54,7 +54,6 @@ module mhdma_slave
   output logic                                nrx_valid,
   input  logic                                notify_ack_sent,
   output logic             [   CEH_WIDTH-1:0] ce_header_payload,
-  output logic                                ce_start_of_batch,
   output logic             [MRMAC_AXIS_W-1:0] ce_payload,
   output logic                                ce_valid,
   input  logic                                ce_ready,
@@ -623,7 +622,6 @@ module mhdma_slave
   logic                     fifo_ce_in_rdy;
   logic [ MRMAC_AXIS_W-1:0] fifo_ce_out_data;
   logic                     fifo_ce_out_vld;
-  logic                     fifo_ce_out_rdy;
 
   // data in input are already in the correct form for sending directly to the lane
   assign  fifo_ce_in_vld  = (reading_which_pc[0] == 1) ? fifo_ce_pc_in_vld[0]  : fifo_ce_pc_in_vld[1];
@@ -639,7 +637,7 @@ module mhdma_slave
     end else begin
       if (fifo_ce_in_vld & fifo_ce_in_rdy) begin
         fifo_ce_cnt <= fifo_ce_cnt + 1;
-      end else if (fifo_ce_out_rdy & fifo_ce_out_vld) begin
+      end else if (ce_valid & fifo_ce_out_vld) begin
         fifo_ce_cnt <= fifo_ce_cnt - 1;
       end
     end
@@ -659,53 +657,11 @@ module mhdma_slave
 
     .out_data(fifo_ce_out_data),
     .out_vld (fifo_ce_out_vld),
-    .out_rdy (fifo_ce_out_rdy)
+    .out_rdy (ce_ready)
   );
 
-  logic [$clog2(CT_NB_COEF):0] fifo_ce_out_cnt;
-
-  always_ff @(posedge clk_mrmac) begin
-    if (~resetn_mrmac) begin
-      fifo_ce_out_cnt <= 'h0;
-    end else begin
-      if (ce_ready & (fifo_ce_out_vld & fifo_ce_out_rdy)) begin
-        fifo_ce_out_cnt <= fifo_ce_out_cnt + 1;
-      end
-    end
-  end
-
-  logic ce_payload_valid;
-  logic ce_header_start;
-  logic ce_frame;
-  logic frame_stall;
-
-  // because ETH_NB_BYTES_PAYLOAD is divisible by AXI4_DATA_BYTES, it is a power of two
-  assign ce_frame = ce_payload_valid & ((fifo_ce_out_cnt % ETH_NB_BYTES_PAYLOAD) == 0);
-  assign fifo_ce_out_rdy = ce_ready & ce_payload_valid;
-
-  always_ff @(posedge clk_mrmac) begin
-    if (~resetn_mrmac) begin
-      ce_payload_valid <= 1'b0;
-    end else begin
-      if (fifo_ce_cnt == NB_WORDS_PAYLOAD) begin
-        ce_payload_valid <= 1'b1;
-      end else if (fifo_ce_out_cnt == CT_NB_COEF) begin
-        ce_payload_valid <= 1'b0;
-      end
-    end
-  end
-
-  always_ff @ (posedge clk_mrmac) begin
-    if (~resetn_mrmac) begin
-      ce_header_start <= 1'b0;
-    end else begin
-      if (fifo_ce_cnt == (NB_WORDS_PAYLOAD-ETH_HEADER_SIZE)) begin
-        ce_header_start <= 1'b1;
-      end else begin
-        ce_header_start <= 1'b0;
-      end
-    end
-  end
+  assign ce_valid = fifo_ce_out_vld;
+  assign ce_payload = ce_valid ? fifo_ce_out_data : 'h0;
 
   // header propagation ---------------------------------------------------------------------------
   logic [MAC_ADDR_W-1:0] dst_mac_addr;
@@ -726,11 +682,6 @@ module mhdma_slave
     end
   end
 
-  // this is imperative that ce_start_of_batch starts 3 cc earlier in order to send the header before payload
   assign ce_header_payload = {dst_mac_addr, iop_id, hpu_id, size_b, ct_dst_addr, ct_src_addr};
-  assign ce_start_of_batch = ce_header_start;
-
-  assign ce_payload = ce_valid ? fifo_ce_out_data : 'h0;
-  assign ce_valid = ce_payload_valid;
 
 endmodule

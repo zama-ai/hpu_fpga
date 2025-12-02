@@ -33,17 +33,24 @@ package mhdma_pkg;
 
   localparam int QSFP_LANE_NB   = 4;
 
-  // ETH_NB_BYTES_PAYLOAD must be divisible by MRMAC_AXIS_W
-  localparam int ETH_NB_BYTES_PAYLOAD = 88; //false
-  localparam int ETH_NB_BYTES_MIN = 64;
-  localparam int ETH_HEADER_SIZE = 3;
+  // ETH_NB_BYTES_PAYLOAD must be divisible by MRMAC_AXIS_W. 1472 is the closest to 1518.
+  localparam int ETH_NB_BYTES_PAYLOAD = 1472;
+  localparam int ETH_NB_BYTES_MIN     = 64;
+  localparam int ETH_HEADER_SIZE      = 3;
 
-  localparam int NB_WORDS_PAYLOAD = (ETH_NB_BYTES_PAYLOAD * 8) / MRMAC_AXIS_W;
-  localparam int NB_WORDS_HEADER  = (ETH_NB_BYTES_MIN * 8) / MRMAC_AXIS_W;
-  localparam int NB_WORDS_MIN     = 7; // without fcs
+  localparam int NB_WORDS_PAYLOAD = ETH_NB_BYTES_PAYLOAD / (MRMAC_AXIS_W/8);
+  localparam int NB_WORDS_SMALL_PACKETS = ETH_NB_BYTES_MIN / (MRMAC_AXIS_W/8);
 
-  localparam [15:0] ETH_LEN_MIN = NB_WORDS_HEADER  - ETH_HEADER_SIZE ;
+  localparam int NB_WORDS_MAX = NB_WORDS_PAYLOAD + ETH_HEADER_SIZE;
+  localparam int NB_WORDS_MIN = NB_WORDS_SMALL_PACKETS;
+
+  localparam [15:0] ETH_LEN_MIN = NB_WORDS_SMALL_PACKETS - ETH_HEADER_SIZE ;
   localparam [15:0] ETH_LEN_MAX = NB_WORDS_PAYLOAD + ETH_HEADER_SIZE;
+
+  localparam int NB_PACKETS_FULL = $floor(CT_SIZE_BYTE/ETH_NB_BYTES_PAYLOAD);
+  localparam int LAST_PACKET_BYTE_SIZE = CT_SIZE_BYTE - (NB_PACKETS_FULL*ETH_NB_BYTES_PAYLOAD);
+  localparam int NB_WORDS_LAST_PACKET_USEFULL = LAST_PACKET_BYTE_SIZE/8;
+  localparam int NB_WORDS_LAST_PACKET = (NB_WORDS_LAST_PACKET_USEFULL < NB_WORDS_SMALL_PACKETS) ? NB_WORDS_SMALL_PACKETS : NB_WORDS_LAST_PACKET_USEFULL;
 
   // Ethernet header: sizes ---------------------------------------------------
   localparam int MAC_ADDR_W   = 24;
@@ -167,5 +174,16 @@ package mhdma_pkg;
   localparam int H2_IOP_ID_OFS      = 8 + SIZE_B_W + IOP_ID_W;
   localparam int H2_SIZE_B_OFS      = 8 + SIZE_B_W;
   localparam int H2_EMPTY_OFS       = 8;
+
+  // =========================================================================================== //
+  // Functions
+  // =========================================================================================== //
+  function automatic logic [MRMAC_AXIS_W-1:0] byte_swap (input logic [MRMAC_AXIS_W-1:0] data_in);
+    logic [MRMAC_AXIS_W-1:0] data_out;
+    for (int i = 0; i < 8; i++) begin
+      data_out[(MRMAC_AXIS_W - ((i + 1) * 8)) +: 8] = data_in[(i*8) +: 8];
+    end
+    return data_out;
+  endfunction
 
 endpackage
