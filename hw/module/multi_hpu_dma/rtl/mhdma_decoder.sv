@@ -18,21 +18,11 @@ module mhdma_decoder
   output logic                     ciphertext_emission_received,
   // Header information -------------------------------------------------------
   input  logic [MAC_ADDR_W-1:0]    current_hpu_mac,
-  output logic [MAC_ADDR_W-1:0]    rx_dst_mac_addr,
-  output logic [SEQ_NUM_W-1:0]     rx_sec_num,
-  output logic [HPU_ID_W-1:0]      rx_hpu_id,
-  output logic [REQ_ID_W-1:0]      rx_req_id,
-  output logic [MAC_ADDR_W-1:0]    rx_src_mac_addr,
-  output logic [SIZE_B_W-1:0]      rx_size_b,
-  output logic [IOP_ID_W-1:0]      rx_iop_id,
-  output logic [SRC_ADDR_W-1:0]    rx_ct_src_addr,
-  output logic [DST_ADDR_W-1:0]    rx_ct_dst_addr,
-  output logic                     rx_header_valid,
+  output header_t                  rx_header,
   // RX payload ---------------------------------------------------------------
   output logic [MRMAC_AXIS_W-1:0]  rx_tdata,
-  output logic                     rx_tsop,
-  output logic                     rx_tlast,
   output logic                     rx_tvalid,
+  output logic                     rx_tlast,
   // QSFP system interface ----------------------------------------------------
   // == RX
   input  logic [MRMAC_AXIS_W-1:0]  qsfp_rx_tdata,
@@ -95,8 +85,13 @@ module mhdma_decoder
    */
   logic rx_valid;
   always_ff @(posedge clk_mrmac)
-    if (qsfp_rx_tvalid &qsfp_rx_tsop)
-      dst_mac_addr <= qsfp_rx_tdata_bs[H0_DST_MAC_ADDR_OFS-1:H0_SRC_OUI_OFS];
+    if (~resetn_mrmac) begin
+      // it is relevant to reset dst_mac_addr here because we build rx_valid from it
+      dst_mac_addr <= 'h0;
+    end else begin
+      if (qsfp_rx_tvalid & qsfp_rx_tsop)
+        dst_mac_addr <= qsfp_rx_tdata_bs[H0_DST_MAC_ADDR_OFS-1:H0_SRC_OUI_OFS];
+    end
 
   assign rx_valid = (current_hpu_mac == dst_mac_addr) ? 1'b1 : 1'b0;
 
@@ -146,10 +141,10 @@ module mhdma_decoder
   logic rr_received;
   logic ce_received;
 
-  assign nack_received = (rx_valid & (rx_req_id == REQ_ID_ACK_NOTIFY_TX)) ? 1'b1 : 1'b0;
-  assign nr_received   = (rx_valid & (rx_req_id == REQ_ID_NOTIFY_TX))     ? 1'b1 : 1'b0;
-  assign rr_received   = (rx_valid & (rx_req_id == REQ_ID_READ))          ? 1'b1 : 1'b0;
-  assign ce_received   = (rx_valid & (rx_req_id == REQ_ID_EMISSION))      ? 1'b1 : 1'b0;
+  assign nack_received = (rx_valid & (req_id == REQ_ID_ACK_NOTIFY_TX)) ? 1'b1 : 1'b0;
+  assign nr_received   = (rx_valid & (req_id == REQ_ID_NOTIFY_TX))     ? 1'b1 : 1'b0;
+  assign rr_received   = (rx_valid & (req_id == REQ_ID_READ))          ? 1'b1 : 1'b0;
+  assign ce_received   = (rx_valid & (req_id == REQ_ID_EMISSION))      ? 1'b1 : 1'b0;
 
   logic nack_receivedD;
   logic nr_receivedD;
@@ -169,15 +164,30 @@ module mhdma_decoder
   assign ciphertext_emission_received = ce_received   & ~ce_receivedD;
 
   // header information
-  assign rx_dst_mac_addr = dst_mac_addr;
-  assign rx_sec_num      = sec_num;
-  assign rx_hpu_id       = hpu_id;
-  assign rx_req_id       = req_id;
-  assign rx_src_mac_addr = src_mac_addr;
-  assign rx_size_b       = size_b;
-  assign rx_iop_id       = iop_id;
-  assign rx_ct_src_addr  = ct_src_addr;
-  assign rx_ct_dst_addr  = ct_dst_addr;
-  assign rx_header_valid = (rx_counter == 3) ? 1'b1 : 1'b0;
+  assign rx_header.valid        = (rx_counter == 3) ? 1'b1 : 1'b0;
+  assign rx_header.src_mac_addr = src_mac_addr;
+  assign rx_header.seq_num      = sec_num;
+  assign rx_header.hpu_id       = hpu_id;
+  assign rx_header.size_b       = size_b;
+  assign rx_header.iop_id       = iop_id;
+  assign rx_header.src_addr     = ct_src_addr;
+  assign rx_header.dst_addr     = ct_dst_addr;
+  assign rx_header.req_id       = req_id;
+
+  // payload interface to master module -----------------------------------------------------------
+  always_ff @(posedge clk_mrmac)
+    if (ce_received & qsfp_rx_tvalid & (qsfp_rx_tkeep_user == 'hFF) & (rx_counter>2))
+      rx_tdata <= qsfp_rx_tdata_bs;
+
+  always_ff @(posedge clk_mrmac) begin
+    if (ce_received & qsfp_rx_tvalid & (qsfp_rx_tkeep_user == 'hFF) & (rx_counter>2)) begin
+      rx_tvalid <= 1'b1;
+    end else begin
+      rx_tvalid <= 1'b0;
+    end
+  end
+
+  always_ff @(posedge clk_mrmac)
+    rx_tlast <= ce_received & qsfp_rx_tvalid & qsfp_rx_tlast;
 
 endmodule

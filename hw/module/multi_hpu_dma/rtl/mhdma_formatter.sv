@@ -25,14 +25,11 @@ module mhdma_formatter
   input  logic                                      new_notify_ack_pending,
   input  logic                                      new_read_request_pending,
   input  logic                                      new_notify_request_pending,
+
+  input  logic                                      ct_emission_all_packets_received,
+  input  logic                                      cerx_reception_ready,
   // master interface ---------------------------------------------------------
-  input  logic                 [    DST_ADDR_W-1:0] master_dst_addr,
-  input  logic                 [    SRC_ADDR_W-1:0] master_src_addr,
-  input  logic                 [      SIZE_B_W-1:0] master_size_b,
-  input  logic                 [      REQ_ID_W-1:0] master_req_id,
-  input  logic                 [      IOP_ID_W-1:0] master_iop_id,
-  input  logic                 [      HPU_ID_W-1:0] master_hpu_id,
-  input  logic                                      master_valid,
+  input  header_t                                   format_header,
   // slave interface ----------------------------------------------------------
   input  logic                 [     NRX_WIDTH-1:0] nrx_cmd_payload,
   input  logic                                      nrx_valid,
@@ -140,13 +137,13 @@ module mhdma_formatter
 
   // decoding header payload --------------------------------------------------
   // header is propagated well before we receive any data on fifo tx
-  logic [CEH_WIDTH-1:0] ce_header_payloadD;
-  logic                 ce_dst_addr;
-  logic                 ce_src_addr;
-  logic                 ce_size_b;
-  logic                 ce_hpu_id;
-  logic                 ce_iop_id;
-  logic                 ce_dst_mac_addr;
+  logic [ CEH_WIDTH-1:0] ce_header_payloadD;
+  logic [DST_ADDR_W-1:0] ce_dst_addr;
+  logic [SRC_ADDR_W-1:0] ce_src_addr;
+  logic [  SIZE_B_W-1:0] ce_size_b;
+  logic [  HPU_ID_W-1:0] ce_hpu_id;
+  logic [  IOP_ID_W-1:0] ce_iop_id;
+  logic [MAC_ADDR_W-1:0] ce_dst_mac_addr;
 
   always_ff @(posedge clk_mrmac)
     ce_header_payloadD <= ce_header_payload;
@@ -197,7 +194,7 @@ module mhdma_formatter
   assign ce_last_packet = ct_emission_allowed & (ce_seq_num == NB_PACKETS_FULL);
 
   // we have to trigger signal one cycle earlier to have sending_request on time
-  assign stop_sending_small_frame      = small_frame         && (tx_cnt == NB_WORDS_SMALL_PACKETS-1);
+  assign stop_sending_small_frame      = small_frame && (tx_cnt == NB_WORDS_SMALL_PACKETS-1);
   assign stop_sending_ce_full_frame    = ct_emission_allowed && (tx_cnt == ETH_HEADER_SIZE+NB_WORDS_PAYLOAD-1);
   assign stop_sending_ce_partial_frame = ce_last_packet && (tx_cnt == (NB_WORDS_LAST_PACKET+ETH_HEADER_SIZE-1));
 
@@ -236,11 +233,11 @@ module mhdma_formatter
   logic [    IOP_ID_W-1:0] header_iop_id;
 
   // header assignation depending on request
-  assign header_target_hpu_mac_addr = master_request ? hpu_mac_table[master_hpu_id] : notify_ack_allowed ? hpu_mac_table[nack_hpu_id] : ct_emission_allowed ? ce_dst_mac_addr : 'h0;
-  assign header_req_id              = master_request ? master_req_id                : notify_ack_allowed ? REQ_ID_ACK_NOTIFY_TX       : ct_emission_allowed ? REQ_ID_EMISSION : 'h0;
-  assign header_src_addr            = master_request ? master_src_addr              : notify_ack_allowed ? nack_src_addr              : ct_emission_allowed ? ce_src_addr : 'h0;
-  assign header_dst_addr            = master_request ? master_dst_addr              : notify_ack_allowed ? 'h0                        : ct_emission_allowed ? ce_dst_addr : 'h0;
-  assign header_iop_id              = master_request ? master_iop_id                : notify_ack_allowed ? nack_iop_id                : ct_emission_allowed ? ce_iop_id : 'h0;
+  assign header_target_hpu_mac_addr = master_request ? hpu_mac_table[format_header.hpu_id] : notify_ack_allowed ? hpu_mac_table[nack_hpu_id] : ct_emission_allowed ? ce_dst_mac_addr : 'h0;
+  assign header_req_id              = master_request ? format_header.req_id                : notify_ack_allowed ? REQ_ID_ACK_NOTIFY_TX       : ct_emission_allowed ? REQ_ID_EMISSION : 'h0;
+  assign header_src_addr            = master_request ? format_header.src_addr              : notify_ack_allowed ? nack_src_addr              : ct_emission_allowed ? ce_src_addr : 'h0;
+  assign header_dst_addr            = master_request ? format_header.dst_addr              : notify_ack_allowed ? 'h0                        : ct_emission_allowed ? ce_dst_addr : 'h0;
+  assign header_iop_id              = master_request ? format_header.iop_id                : notify_ack_allowed ? nack_iop_id                : ct_emission_allowed ? ce_iop_id : 'h0;
 
   assign header_eth_len = small_frame ? ETH_LEN_MIN : ETH_LEN_MAX;
   assign header_seq_num = small_frame ? 'h0         : ct_emission_allowed ? ce_seq_num : 'h0;
@@ -396,7 +393,8 @@ module mhdma_formatter
             tx_next_state = ST_CT_EMISSION;
           end else if (new_notify_ack_pending) begin
             tx_next_state = ST_NACK;
-          end else if (new_read_request_pending) begin
+          end else if (new_read_request_pending & cerx_reception_ready) begin
+            // we must allow launching read-request only if ce-rx is ready and empty
             tx_next_state = ST_READ_REQ;
           end else if (new_notify_request_pending) begin
             tx_next_state = ST_NOTIFY;
@@ -409,7 +407,7 @@ module mhdma_formatter
       ST_NACK:
         tx_next_state =  tx_small_last ? ST_IDLE : ST_NACK;
       ST_READ_REQ:
-        tx_next_state =  ct_emission_all_packets_transmitted ? ST_IDLE : ST_READ_REQ;
+        tx_next_state =  ct_emission_all_packets_received ? ST_IDLE : ST_READ_REQ;
       ST_NOTIFY:
         tx_next_state =  tx_small_last ? ST_IDLE : ST_NOTIFY;
     endcase
@@ -420,7 +418,7 @@ module mhdma_formatter
   assign read_request_allowed   = (tx_state == ST_READ_REQ)    ? 1'b1 : 1'b0;
   assign notify_request_allowed = (tx_state == ST_NOTIFY)      ? 1'b1 : 1'b0;
 
-  assign header_sop = master_request ? master_valid : notify_ack_allowed ? nrx_valid : ct_emission_allowed ? ce_start_of_header : 1'b0;
+  assign header_sop = master_request ? format_header.valid : notify_ack_allowed ? nrx_valid : ct_emission_allowed ? ce_start_of_header : 1'b0;
 
   assign notify_ack_sent = tx_small_last && (tx_state == ST_NACK);
 

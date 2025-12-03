@@ -172,51 +172,28 @@ module mhdma_bridge
   // ==============================================================================================
   // Core Instances of mhdma
   // ==============================================================================================
-  logic                     ct_emission_allowed;
-  logic                     notify_ack_allowed;
-  logic                     read_request_allowed;
-  logic                     notify_request_allowed;
+  // Control interface
+  logic ct_emission_allowed;
+  logic notify_ack_allowed;
+  logic read_request_allowed;
+  logic notify_request_allowed;
 
-  logic                     new_ct_emission_request_pending;
-  logic                     new_notify_ack_pending;
-  logic                     new_read_request_pending;
-  logic                     new_notify_request_pending;
+  logic new_ct_emission_request_pending;
+  logic new_notify_ack_pending;
+  logic new_read_request_pending;
+  logic new_notify_request_pending;
 
-  logic                     notify_ack_received;
-  logic                     notify_request_received;
-  logic                     read_request_received;
-  logic                     ciphertext_emission_received;
+  logic notify_ack_received;
+  logic notify_request_received;
+  logic read_request_received;
+  logic ciphertext_emission_received;
 
-  logic [DST_ADDR_W-1:0]    master_dst_addr;
-  logic [SRC_ADDR_W-1:0]    master_src_addr;
-  logic [  SIZE_B_W-1:0]    master_size_b;
-  logic [  REQ_ID_W-1:0]    master_req_id;
-  logic [  IOP_ID_W-1:0]    master_iop_id;
-  logic [  HPU_ID_W-1:0]    master_hpu_id;
-  logic                     master_valid;
+  logic ct_emission_all_packets_received;
 
-  logic [MAC_ADDR_W-1:0]    rx_dst_mac_addr;
-  logic [SEQ_NUM_W-1:0]     rx_sec_num;
-  logic [HPU_ID_W-1:0]      rx_hpu_id;
-  logic [REQ_ID_W-1:0]      rx_req_id;
-  logic [MAC_ADDR_W-1:0]    rx_src_mac_addr;
-  logic [SIZE_B_W-1:0]      rx_size_b;
-  logic [IOP_ID_W-1:0]      rx_iop_id;
-  logic [SRC_ADDR_W-1:0]    rx_ct_src_addr;
-  logic [DST_ADDR_W-1:0]    rx_ct_dst_addr;
-  logic                     rx_header_valid;
+  header_t format_header;
+  header_t decoded_header;
 
-  logic [MRMAC_AXIS_W-1:0]  format_tdata;
-  logic [MRMAC_TKEEP_W-1:0] format_tkeep_user;
-  logic                     format_tlast;
-  logic                     format_tvalid;
-  logic                     format_tready;
-  // == RX
-  logic [MRMAC_AXIS_W-1:0]  decode_tdata;
-  logic [MRMAC_TKEEP_W-1:0] decode_tkeep_user;
-  logic                     decode_tlast;
-  logic                     decode_tvalid;
-
+  // Slave payload and header for ciphertext emission
   logic [NRX_WIDTH-1:0]     nrx_cmd_payload;
   logic                     nrx_valid;
   logic                     notify_ack_sent;
@@ -225,34 +202,41 @@ module mhdma_bridge
   logic                     ce_ready;
   logic                     ce_valid;
 
+  // payload for ciphertext reception
+  logic [MRMAC_AXIS_W-1:0]  rx_tdata;
+  logic                     rx_tvalid;
+  logic                     rx_tlast;
+  logic                     cerx_reception_ready;
+
   mhdma_master mhdma_master (
     // Ethernet configuration interface ---------------------------------------
-    .clk_cfg                   (clk_cfg                                       ),
-    .resetn_cfg                (resetn_cfg                                    ),
+    .clk_cfg                         (clk_cfg                                 ),
+    .resetn_cfg                      (resetn_cfg                              ),
     // Ethernet fast clock interface ------------------------------------------
-    .clk_mrmac                 (clk_mrmac                                     ),
-    .resetn_mrmac              (resetn_mrmac                                  ),
+    .clk_mrmac                       (clk_mrmac                               ),
+    .resetn_mrmac                    (resetn_mrmac                            ),
     // regf interface ---------------------------------------------------------
-    .regf_ct_mem_addr          (regf_ct_mem_addr                              ),
-    .regf_req_id               (regf_req_id                                   ),
-    .regf_req_addr             (regf_req_addr                                 ),
+    .regf_ct_mem_addr                (regf_ct_mem_addr                        ),
+    .regf_req_id                     (regf_req_id                             ),
+    .regf_req_addr                   (regf_req_addr                           ),
     // register control -------------------------------------------------------
-    .received_req              (received_req                                  ),
-    .request_consumed          (request_consumed                              ),
+    .received_req                    (received_req                            ),
+    .request_consumed                (request_consumed                        ),
     // flags ------------------------------------------------------------------
-    .read_request_allowed      (read_request_allowed                          ),
-    .notify_request_allowed    (notify_request_allowed                        ),
-    .new_read_request_pending  (new_read_request_pending                      ),
-    .new_notify_request_pending(new_notify_request_pending                    ),
-    .notify_ack_received       (notify_ack_received                           ),
-    // from decoder -----------------------------------------------------------
-    .master_dst_addr           (master_dst_addr                               ),
-    .master_src_addr           (master_src_addr                               ),
-    .master_size_b             (master_size_b                                 ),
-    .master_req_id             (master_req_id                                 ),
-    .master_iop_id             (master_iop_id                                 ),
-    .master_hpu_id             (master_hpu_id                                 ),
-    .master_header_valid       (master_valid                                  )
+    .read_request_allowed            (read_request_allowed                    ),
+    .notify_request_allowed          (notify_request_allowed                  ),
+    .new_read_request_pending        (new_read_request_pending                ),
+    .new_notify_request_pending      (new_notify_request_pending              ),
+    .notify_ack_received             (notify_ack_received                     ),
+    .ct_emission_all_packets_received(ct_emission_all_packets_received        ),
+    .cerx_reception_ready            (cerx_reception_ready                    ),
+    // payload from decoder ---------------------------------------------------
+    .rx_tdata                        (rx_tdata                                ),
+    .rx_tvalid                       (rx_tvalid                               ),
+    .rx_tlast                        (rx_tlast                                ),
+    // header interface -------------------------------------------------------
+    .decoded_header                  (decoded_header                          ),
+    .format_header                   (format_header                           )
   );
 
   mhdma_slave # (
@@ -271,16 +255,7 @@ module mhdma_bridge
     .regf_ct_mem_addr               (regf_ct_mem_addr                         ),
     .regf_notify_payload            (regf_notify_payload                      ),
     // header interface -------------------------------------------------------
-    .rx_dst_mac_addr                (rx_dst_mac_addr                          ),
-    .rx_sec_num                     (rx_sec_num                               ),
-    .rx_hpu_id                      (rx_hpu_id                                ),
-    .rx_req_id                      (rx_req_id                                ),
-    .rx_src_mac_addr                (rx_src_mac_addr                          ),
-    .rx_size_b                      (rx_size_b                                ),
-    .rx_iop_id                      (rx_iop_id                                ),
-    .rx_ct_src_addr                 (rx_ct_src_addr                           ),
-    .rx_ct_dst_addr                 (rx_ct_dst_addr                           ),
-    .rx_header_valid                (rx_header_valid                          ),
+    .decoded_header                 (decoded_header                           ),
     // command interface ------------------------------------------------------
     .notify_request_received        (notify_request_received                  ),
     .read_request_received          (read_request_received                    ),
@@ -326,21 +301,11 @@ module mhdma_bridge
     .ciphertext_emission_received(ciphertext_emission_received                ),
     // Header information -----------------------------------------------------
     .current_hpu_mac             (current_hpu_macD                            ),
-    .rx_dst_mac_addr             (rx_dst_mac_addr                             ),
-    .rx_sec_num                  (rx_sec_num                                  ),
-    .rx_hpu_id                   (rx_hpu_id                                   ),
-    .rx_req_id                   (rx_req_id                                   ),
-    .rx_src_mac_addr             (rx_src_mac_addr                             ),
-    .rx_size_b                   (rx_size_b                                   ),
-    .rx_iop_id                   (rx_iop_id                                   ),
-    .rx_ct_src_addr              (rx_ct_src_addr                              ),
-    .rx_ct_dst_addr              (rx_ct_dst_addr                              ),
-    .rx_header_valid             (rx_header_valid                             ),
+    .rx_header                   (decoded_header                              ),
      // RX payload ------------------------------------------------------------
     .rx_tdata                    (rx_tdata                                    ),
-    .rx_tsop                     (rx_tsop                                     ),
-    .rx_tlast                    (rx_tlast                                    ),
     .rx_tvalid                   (rx_tvalid                                   ),
+    .rx_tlast                    (rx_tlast                                    ),
     // QSFP RX interface ------------------------------------------------------
     .qsfp_rx_tdata               (qsfp_rx_tdata                               ),
     .qsfp_rx_tkeep_user          (qsfp_rx_tkeep_user                          ),
@@ -350,43 +315,39 @@ module mhdma_bridge
 
   mhdma_formatter mhdma_formatter (
     // Ethernet fast clock interface ------------------------------------------
-    .clk_mrmac                      (clk_mrmac                                ),
-    .resetn_mrmac                   (resetn_mrmac                             ),
+    .clk_mrmac                       (clk_mrmac                               ),
+    .resetn_mrmac                    (resetn_mrmac                            ),
     // Bridge interface -------------------------------------------------------
-    .hpu_mac_table                  (hpu_mac_table                            ),
-    .current_hpu_id                 (current_hpu_idD                          ),
-    .current_hpu_mac                (current_hpu_macD                         ),
+    .hpu_mac_table                   (hpu_mac_table                           ),
+    .current_hpu_id                  (current_hpu_idD                         ),
+    .current_hpu_mac                 (current_hpu_macD                        ),
     // Command interface ------------------------------------------------------
-    .ct_emission_allowed            (ct_emission_allowed                      ),
-    .notify_ack_allowed             (notify_ack_allowed                       ),
-    .read_request_allowed           (read_request_allowed                     ),
-    .notify_request_allowed         (notify_request_allowed                   ),
-    .new_ct_emission_request_pending(new_ct_emission_request_pending          ),
-    .new_notify_ack_pending         (new_notify_ack_pending                   ),
-    .new_read_request_pending       (new_read_request_pending                 ),
-    .new_notify_request_pending     (new_notify_request_pending               ),
+    .ct_emission_allowed             (ct_emission_allowed                     ),
+    .notify_ack_allowed              (notify_ack_allowed                      ),
+    .read_request_allowed            (read_request_allowed                    ),
+    .notify_request_allowed          (notify_request_allowed                  ),
+    .new_ct_emission_request_pending (new_ct_emission_request_pending         ),
+    .new_notify_ack_pending          (new_notify_ack_pending                  ),
+    .new_read_request_pending        (new_read_request_pending                ),
+    .new_notify_request_pending      (new_notify_request_pending              ),
+    .ct_emission_all_packets_received(ct_emission_all_packets_received        ),
+    .cerx_reception_ready            (cerx_reception_ready                    ),
     // master interface -------------------------------------------------------
-    .master_dst_addr                (master_dst_addr                          ),
-    .master_src_addr                (master_src_addr                          ),
-    .master_size_b                  (master_size_b                            ),
-    .master_req_id                  (master_req_id                            ),
-    .master_iop_id                  (master_iop_id                            ),
-    .master_hpu_id                  (master_hpu_id                            ),
-    .master_valid                   (master_valid                             ),
+    .format_header                   (format_header                           ),
     // slave interface --------------------------------------------------------
-    .nrx_cmd_payload                (nrx_cmd_payload                          ),
-    .nrx_valid                      (nrx_valid                                ),
-    .notify_ack_sent                (notify_ack_sent                          ),
-    .ce_header_payload              (ce_header_payload                        ),
-    .ce_payload                     (ce_payload                               ),
-    .ce_ready                       (ce_ready                                 ),
-    .ce_valid                       (ce_valid                                 ),
+    .nrx_cmd_payload                 (nrx_cmd_payload                         ),
+    .nrx_valid                       (nrx_valid                               ),
+    .notify_ack_sent                 (notify_ack_sent                         ),
+    .ce_header_payload               (ce_header_payload                       ),
+    .ce_payload                      (ce_payload                              ),
+    .ce_ready                        (ce_ready                                ),
+    .ce_valid                        (ce_valid                                ),
     // QSFP TX interface ------------------------------------------------------
-    .qsfp_tx_tdata                  (qsfp_tx_tdata                            ),
-    .qsfp_tx_tkeep_user             (qsfp_tx_tkeep_user                       ),
-    .qsfp_tx_tlast                  (qsfp_tx_tlast                            ),
-    .qsfp_tx_tvalid                 (qsfp_tx_tvalid                           ),
-    .qsfp_tx_tready                 (qsfp_tx_tready                           )
+    .qsfp_tx_tdata                   (qsfp_tx_tdata                           ),
+    .qsfp_tx_tkeep_user              (qsfp_tx_tkeep_user                      ),
+    .qsfp_tx_tlast                   (qsfp_tx_tlast                           ),
+    .qsfp_tx_tvalid                  (qsfp_tx_tvalid                          ),
+    .qsfp_tx_tready                  (qsfp_tx_tready                          )
   );
 
   // ==============================================================================================

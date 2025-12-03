@@ -119,6 +119,12 @@ package mhdma_pkg;
   localparam int CE_RAM_LATENCY        = 1;
   localparam int CE_DATA_COUNT_W       =  $clog2(CE_DEPTH)+1;
 
+  // QSFP RX fifo: FIFO CE
+  localparam int CERX_DATA_W           = MRMAC_AXIS_W;
+  localparam int CERX_DEPTH            = CT_NB_COEF;
+  localparam int CERX_RAM_LATENCY      = 1;
+  localparam int CERX_DATA_COUNT_W     =  $clog2(CE_DEPTH)+1;
+
   // =========================================================================================== //
   // identification opcode
   // =========================================================================================== //
@@ -174,6 +180,18 @@ package mhdma_pkg;
   localparam int H2_IOP_ID_OFS      = 8 + SIZE_B_W + IOP_ID_W;
   localparam int H2_SIZE_B_OFS      = 8 + SIZE_B_W;
   localparam int H2_EMPTY_OFS       = 8;
+
+  typedef struct packed {
+    logic                  valid;
+    logic [MAC_ADDR_W-1:0] src_mac_addr;
+    logic [ SEQ_NUM_W-1:0] seq_num;
+    logic [  HPU_ID_W-1:0] hpu_id;
+    logic [  SIZE_B_W-1:0] size_b;
+    logic [  REQ_ID_W-1:0] req_id;
+    logic [  IOP_ID_W-1:0] iop_id;
+    logic [SRC_ADDR_W-1:0] src_addr;
+    logic [DST_ADDR_W-1:0] dst_addr;
+  } header_t;
 
   // =========================================================================================== //
   // Functions

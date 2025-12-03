@@ -30,16 +30,7 @@ module mhdma_slave
   input  logic [ETH_PC-1:0][2*REG_DATA_W-1:0] regf_ct_mem_addr,
   output logic             [  REG_DATA_W-1:0] regf_notify_payload,
   // Received header ----------------------------------------------------------
-  input  logic             [  MAC_ADDR_W-1:0] rx_dst_mac_addr,
-  input  logic             [   SEQ_NUM_W-1:0] rx_sec_num,           // toremove
-  input  logic             [    HPU_ID_W-1:0] rx_hpu_id,
-  input  logic             [    REQ_ID_W-1:0] rx_req_id,            // toremove
-  input  logic             [  MAC_ADDR_W-1:0] rx_src_mac_addr,      // toremove
-  input  logic             [    SIZE_B_W-1:0] rx_size_b,
-  input  logic             [    IOP_ID_W-1:0] rx_iop_id,
-  input  logic             [  SRC_ADDR_W-1:0] rx_ct_src_addr,
-  input  logic             [  DST_ADDR_W-1:0] rx_ct_dst_addr,
-  input  logic                                rx_header_valid,
+  input  header_t                             decoded_header,
   // Command interface --------------------------------------------------------
   input  logic                                notify_request_received,
   input  logic                                read_request_received,
@@ -82,10 +73,8 @@ module mhdma_slave
   localparam [AXI4_SIZE_W-1:0] MHDMA_ARSIZE = $clog2(AXI4_DATA_BYTES);
   localparam NB_MRMRAC_WORDS_PER_READ = AXI4_DATA_W/MRMAC_AXIS_W;
 
-  // generate cannot be in packages
-  // PC_NB_READS: how many reads are needed per PCs
   // TOREVIEW
-  // TODO
+  // generate cannot be in packages, same snippet must be in slave & master module
   generate
     for (genvar gen_i = 0; gen_i < ETH_PC; gen_i = gen_i + 1) begin : gen_localparam
       localparam int PC_NB_WORDS = (PC_CT_BYTES[gen_i] / AXI4_DATA_BYTES);
@@ -146,20 +135,20 @@ module mhdma_slave
   logic                 nrx_cmd_rdy;
   logic                 nrx_cmd_rdy_tmp;
 
-  // we temp rx_header_valid in order to read, at next clock cycle the fifo
+  // we temp decoded_header.valid in order to read, at next clock cycle the fifo
   always_ff @(posedge clk_mrmac) begin
     if (~resetn_mrmac) begin
       nrx_cmd_rdy_tmp <= 1'b0;
     end else begin
-      if (~notify_ack_allowed & rx_header_valid) begin
-        nrx_cmd_rdy_tmp <= rx_header_valid;
+      if (~notify_ack_allowed & decoded_header.valid) begin
+        nrx_cmd_rdy_tmp <= decoded_header.valid;
       end else if (notify_ack_allowed) begin
-        nrx_cmd_rdy_tmp <= rx_header_valid;
+        nrx_cmd_rdy_tmp <= decoded_header.valid;
       end
     end
   end
 
-  assign nrx_cmd_in_we = (nrx_state == NTX_TRANSMIT_ACK) & rx_header_valid & nrx_cmd_in_rdy;
+  assign nrx_cmd_in_we = (nrx_state == NTX_TRANSMIT_ACK) & decoded_header.valid & nrx_cmd_in_rdy;
 
   // in order to not lose any commands if we receive several notify
   fifo_ram_rdy_vld # (
@@ -170,7 +159,7 @@ module mhdma_slave
     .clk    (clk_mrmac),
     .s_rst_n(resetn_mrmac),
 
-    .in_data({rx_ct_src_addr, rx_hpu_id, rx_iop_id}),
+    .in_data({decoded_header.src_addr, decoded_header.hpu_id, decoded_header.iop_id}),
     .in_vld (nrx_cmd_in_we),
     .in_rdy (nrx_cmd_in_rdy),
 
@@ -292,7 +281,7 @@ module mhdma_slave
   logic                       rreq_cmd_out_valid;
   logic                       rreq_cmd_out_ready;
 
-  assign rreq_cmd_data_in = {rx_hpu_id, rx_iop_id, rx_ct_dst_addr, rx_ct_src_addr};
+  assign rreq_cmd_data_in = {decoded_header.hpu_id, decoded_header.iop_id, decoded_header.dst_addr, decoded_header.src_addr};
   assign rreq_cmd_we = rreq_cmd_ready & read_request_received; //TODO: add when payload is ready
   assign rreq_cmd_out_ready = ct_emission_request_in_use;
 
@@ -375,7 +364,6 @@ module mhdma_slave
 
   logic rreq_ready_pulse;
   assign rreq_ready_pulse = rreq_ready & ~rreq_readyD;
-
 
   // process an axi4-read on each PC --------------------------------------------------------------
   //  - arlen the burst size is dictated from parameter MAX_BURST_SIZE
@@ -594,7 +582,7 @@ module mhdma_slave
     end else begin
       // when read request registers are ready we can trigger the shift register.
       // when the last signal is fired we can trigger the second PC
-      if (rreq_ready_pulse | axi4_read_last[0] | axi4_read_last[1]) begin
+      if (rreq_ready_pulse | axi4_read_last[0]) begin
         axi4_read_pc <= {axi4_read_pc[ETH_PC-2:0], rreq_ready_pulse};
       end else if (axi4_read_last[1]) begin
         axi4_read_pc <= 'h0;
@@ -620,7 +608,7 @@ module mhdma_slave
   logic [    CE_DATA_W-1:0] fifo_ce_in_data;
   logic                     fifo_ce_in_vld;
   logic                     fifo_ce_in_rdy;
-  logic [ MRMAC_AXIS_W-1:0] fifo_ce_out_data;
+  logic [    CE_DATA_W-1:0] fifo_ce_out_data;
   logic                     fifo_ce_out_vld;
 
   // data in input are already in the correct form for sending directly to the lane
@@ -664,7 +652,8 @@ module mhdma_slave
   assign ce_payload = ce_valid ? fifo_ce_out_data : 'h0;
 
   // header propagation ---------------------------------------------------------------------------
-  logic [MAC_ADDR_W-1:0] dst_mac_addr;
+  // TODO: can be simplified ?
+  logic [MAC_ADDR_W-1:0] src_mac_addr;
   logic [  HPU_ID_W-1:0] hpu_id;
   logic [  SIZE_B_W-1:0] size_b;
   logic [  IOP_ID_W-1:0] iop_id;
@@ -672,16 +661,17 @@ module mhdma_slave
   logic [SRC_ADDR_W-1:0] ct_src_addr;
 
   always_ff @(posedge clk_mrmac) begin
-    if (rx_header_valid) begin
-      dst_mac_addr <= rx_dst_mac_addr;
-      hpu_id       <= rx_hpu_id;
-      size_b       <= rx_size_b;
-      iop_id       <= rx_iop_id;
-      ct_src_addr  <= rx_ct_src_addr;
-      ct_dst_addr  <= rx_ct_dst_addr;
+    if (decoded_header.valid) begin
+      src_mac_addr <= decoded_header.src_mac_addr;
+      hpu_id       <= decoded_header.hpu_id;
+      size_b       <= decoded_header.size_b;
+      iop_id       <= decoded_header.iop_id;
+      ct_src_addr  <= decoded_header.src_addr;
+      ct_dst_addr  <= decoded_header.dst_addr;
     end
   end
 
-  assign ce_header_payload = {dst_mac_addr, iop_id, hpu_id, size_b, ct_dst_addr, ct_src_addr};
+  // our destination mac address was the source of what we received
+  assign ce_header_payload = {src_mac_addr, iop_id, hpu_id, size_b, ct_dst_addr, ct_src_addr};
 
 endmodule

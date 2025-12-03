@@ -10,9 +10,16 @@
 // ==============================================================================================
 
 module mhdma_master
-  import mhdma_pkg::*;              // for all mhdma modules
-  import axi_if_shell_axil_pkg::*;  // REG_DATA_W
-#() (
+  import mhdma_pkg::*;               // for all mhdma modules
+  import axi_if_eth_axi_pkg::*;      // AXI4
+  import axi_if_shell_axil_pkg::*;   // REG_DATA_W
+  import axi_if_common_param_pkg::*; // HBM page
+#(
+  parameter                int CDC_SYNC_STAGES = 2,
+  parameter                int MAX_BURST_SIZE  = PAGE_BYTES/AXI4_DATA_BYTES,
+  parameter [ETH_PC-1:0][15:0] PC_CT_BYTES     = '{'h2000, 'h2020},
+  parameter              [3:0] PC_STRIDE       = 'hB
+) (
   // Ethernet configuration interface -----------------------------------------
   input  logic                                clk_cfg,
   input  logic                                resetn_cfg,
@@ -35,29 +42,56 @@ module mhdma_master
   output logic                                new_notify_request_pending,
 
   input  logic                                notify_ack_received,
-  input  logic                                ciphertext_received,
+
+  output logic                                ct_emission_all_packets_received,
   // from master to packet formatter -------------------------------------------
-  output logic             [  DST_ADDR_W-1:0] master_dst_addr,
-  output logic             [  SRC_ADDR_W-1:0] master_src_addr,
-  output logic             [    SIZE_B_W-1:0] master_size_b,
-  output logic             [    REQ_ID_W-1:0] master_req_id,
-  output logic             [    IOP_ID_W-1:0] master_iop_id,
-  output logic             [    HPU_ID_W-1:0] master_hpu_id,
-  output logic                                master_header_valid,
+  output header_t                             format_header,
   // ciphertext payload -------------------------------------------------------
   input  logic             [MRMAC_AXIS_W-1:0] rx_tdata,
-  input  logic                                rx_tsop,
+  input  logic                                rx_tvalid,
   input  logic                                rx_tlast,
-  input  logic                                rx_tvalid
+  output logic                                cerx_reception_ready,
+  // Received header ----------------------------------------------------------
+  input  header_t                             decoded_header,
+  // Axi4 interface for NMU ---------------------------------------------------
+  output logic [ETH_PC-1:0][AXI4_ID_W-1:0]    m_axi4_awid,
+  output logic [ETH_PC-1:0][AXI4_ADD_W-1:0]   m_axi4_awaddr,
+  output logic [ETH_PC-1:0][AXI4_LEN_W-1:0]   m_axi4_awlen,
+  output logic [ETH_PC-1:0][AXI4_SIZE_W-1:0]  m_axi4_awsize,
+  output logic [ETH_PC-1:0][AXI4_BURST_W-1:0] m_axi4_awburst,
+  output logic [ETH_PC-1:0]                   m_axi4_awvalid,
+  input  logic [ETH_PC-1:0]                   m_axi4_awready,
+  output logic [ETH_PC-1:0][AXI4_DATA_W-1:0]  m_axi4_wdata,
+  output logic [ETH_PC-1:0][AXI4_STRB_W-1:0]  m_axi4_wstrb,
+  output logic [ETH_PC-1:0]                   m_axi4_wlast,
+  output logic [ETH_PC-1:0]                   m_axi4_wvalid,
+  input  logic [ETH_PC-1:0]                   m_axi4_wready,
+  input  logic [ETH_PC-1:0][AXI4_ID_W-1:0]    m_axi4_bid,
+  input  logic [ETH_PC-1:0][AXI4_RESP_W-1:0]  m_axi4_bresp,
+  input  logic [ETH_PC-1:0]                   m_axi4_bvalid,
+  output logic [ETH_PC-1:0]                   m_axi4_bready,
   // flags for stats ----------------------------------------------------------
   // statistics ---------------------------------------------------------------
   // error --------------------------------------------------------------------
+  output error_packet_id_mismatch
 );
 
   // =========================================================================================== //
   // localparam
   // =========================================================================================== //
-  localparam int CDC_SYNC_STAGES = 2;
+  localparam [AXI4_SIZE_W-1:0] MHDMA_ARSIZE = $clog2(AXI4_DATA_BYTES);
+  localparam NB_MRMRAC_WORDS_PER_READ = AXI4_DATA_W/MRMAC_AXIS_W;
+
+  // TOREVIEW
+  // generate cannot be in packages, same snippet must be in slave & master module
+  generate
+    for (genvar gen_i = 0; gen_i < ETH_PC; gen_i = gen_i + 1) begin : gen_localparam
+      localparam int PC_NB_WORDS = (PC_CT_BYTES[gen_i] / AXI4_DATA_BYTES);
+      localparam int PC_NB_READS_BURST = (PC_NB_WORDS / MAX_BURST_SIZE);
+      localparam int PC_REMAINS = (PC_NB_WORDS % MAX_BURST_SIZE);
+      localparam int PC_NB_READS = (PC_REMAINS!=0) ? PC_NB_READS_BURST + 1 : PC_NB_READS_BURST;
+    end
+  endgenerate
 
   // =========================================================================================== //
   // CDC from regf to mrmac clock
@@ -229,15 +263,15 @@ module mhdma_master
     nrqq_cmd_vld <= nrqq_out_vld;
 
   // Header information ---------------------------------------------------------------------------
-  assign master_dst_addr = notify_request_allowed ?         'h0   : read_request_allowed ? rrqq_dst_addr : 'h0;
-  assign master_src_addr = notify_request_allowed ? nrqq_src_addr : read_request_allowed ? rrqq_src_addr : 'h0;
-  assign master_size_b   = notify_request_allowed ? nrqq_size_b   : read_request_allowed ? rrqq_size_b   : 'h0;
-  assign master_req_id   = notify_request_allowed ? nrqq_req_id   : read_request_allowed ? rrqq_req_id   : 'h0;
-  assign master_iop_id   = notify_request_allowed ? nrqq_iop_id   : read_request_allowed ? rrqq_iop_id   : 'h0;
-  assign master_hpu_id   = notify_request_allowed ? nrqq_hpu_id   : read_request_allowed ? rrqq_hpu_id   : 'h0;
+  assign format_header.dst_addr = notify_request_allowed ?         'h0   : read_request_allowed ? rrqq_dst_addr : 'h0;
+  assign format_header.src_addr = notify_request_allowed ? nrqq_src_addr : read_request_allowed ? rrqq_src_addr : 'h0;
+  assign format_header.size_b   = notify_request_allowed ? nrqq_size_b   : read_request_allowed ? rrqq_size_b   : 'h0;
+  assign format_header.req_id   = notify_request_allowed ? nrqq_req_id   : read_request_allowed ? rrqq_req_id   : 'h0;
+  assign format_header.iop_id   = notify_request_allowed ? nrqq_iop_id   : read_request_allowed ? rrqq_iop_id   : 'h0;
+  assign format_header.hpu_id   = notify_request_allowed ? nrqq_hpu_id   : read_request_allowed ? rrqq_hpu_id   : 'h0;
 
   // valid signal for formatting frames
-  assign master_header_valid = notify_request_allowed ? nrqq_cmd_vld : read_request_allowed ? rrqq_cmd_vld : 1'b0;
+  assign format_header.valid    = notify_request_allowed ? nrqq_cmd_vld : read_request_allowed ? rrqq_cmd_vld : 1'b0;
 
   // ----------------------------------------------------------------------------------------------
   // when we have the data of both request identifier and addresses, we consume the information
@@ -323,7 +357,6 @@ module mhdma_master
   logic       rreq_timeout_cdc;
   logic       rreq_ct_transmitted;
   logic       rreq_send_request;
-  logic       error_packet_id_mismatch;
 
   always_ff @(posedge clk_mrmac) begin
     if (~resetn_mrmac) rreq_state <= RR_WAIT_REQUEST;
@@ -357,5 +390,143 @@ module mhdma_master
   assign rreq_ct_transmitted = 1'b0;
 
   assign rreq_send_request = (rreq_state == RR_SEND_REQUEST) ? 1'b1: 1'b0;
+
+  // =========================================================================================== //
+  // Ciphertext reception
+  //
+  // Assumptions:
+  // We had previously garanteed to launch a Read request only and only if fifo is empty and ready
+  //
+  // Errors:
+  // TODO
+  // err_ce_rx_unexpected_ct: we should see ciphertext over rx link only read_request_allowed
+  // err_ce_rx_too_much_data: we received too much data and tried to overflow the fifo
+  // =========================================================================================== //
+  // ce-rx input interface
+  logic [CE_DATA_W-1:0] fifo_cerx_in_data;
+  logic                 fifo_cerx_in_vld;
+  logic                 fifo_cerx_in_rdy;
+  // ce-rx output interface
+  logic [CE_DATA_W-1:0] fifo_cerx_out_data;
+  logic                 fifo_cerx_out_vld;
+  logic                 fifo_cerx_out_ready;
+  // ce-rx counters
+  logic [CERX_DATA_COUNT_W:0] fifo_cerx_cnt;    // counts the number of words used in fifo
+  logic [CERX_DATA_COUNT_W:0] fifo_cerx_cnt_rx; // counts the number of words received over RX link
+
+  always_ff @(posedge clk_mrmac) begin
+    if (~resetn_mrmac) begin
+      fifo_cerx_cnt <= 'h0;
+    end else begin
+      if (read_request_allowed & (fifo_cerx_in_vld & fifo_cerx_in_rdy)) begin
+        fifo_cerx_cnt <= fifo_cerx_cnt + 1;
+      end else if (read_request_allowed & fifo_cerx_out_ready & fifo_cerx_out_vld) begin
+        fifo_cerx_cnt <= fifo_cerx_cnt - 1;
+      end
+    end
+  end
+
+  always_ff @(posedge clk_mrmac) begin
+    if (~resetn_mrmac) begin
+      fifo_cerx_cnt_rx <= 'h0;
+    end else begin
+      if (read_request_allowed & fifo_cerx_in_vld & fifo_cerx_in_rdy) begin
+        fifo_cerx_cnt_rx <= fifo_cerx_cnt_rx + 1;
+      end if (read_request_allowed & (fifo_cerx_cnt_rx == CT_NB_COEF)) begin
+        fifo_cerx_cnt_rx <= 'h0;
+      end
+    end
+  end
+
+  assign fifo_cerx_in_vld  = rx_tvalid;
+  assign fifo_cerx_in_data = rx_tdata;
+
+  fifo_ram_rdy_vld # (
+    .WIDTH             (CERX_DATA_W     ),
+    .DEPTH             (CERX_DEPTH      ),
+    .RAM_LATENCY       (CERX_RAM_LATENCY)
+  ) fifo_ce_rx (
+    .clk        (clk_mrmac   ),
+    .s_rst_n    (resetn_mrmac),
+
+    .in_data    (fifo_cerx_in_data),
+    .in_vld     (fifo_cerx_in_vld ),
+    .in_rdy     (fifo_cerx_in_rdy ),
+
+    .out_data   (fifo_cerx_out_data ),
+    .out_vld    (fifo_cerx_out_vld  ),
+    .out_rdy    (fifo_cerx_out_ready)
+  );
+  assign cerx_reception_ready = (fifo_cerx_cnt == 0) & fifo_cerx_in_rdy;
+
+  assign ct_emission_all_packets_received = 0;
+  assign fifo_cerx_out_ready = 0;
+
+  // =========================================================================================== //
+  // Write into HBM
+  // all @mrmac domain
+  // TODO
+  // How much time do we spend between read request and all coefficients arrived & stored ?
+  // How much time between read request and first coefficient ?
+  // How much time is spent bewteen receiving all words and storing theml in hbm ?
+  // =========================================================================================== //
+
+  // Exactly as for RX we write into each PC one at a time
+  //  - we have two fifos, one for each PC
+  //  - between fifo_ce_rx and fifo_wr_pc we will avoid stalling as much as possible
+  //  - we must transmit to regif relevant info and raise interrupt when all words ready in hbm
+
+  logic [DST_ADDR_W-1:0] received_dst_addr;
+  logic [  IOP_ID_W-1:0] received_iop_id;
+  logic [  HPU_ID_W-1:0] received_hpu_id;
+
+  always_ff @(posedge clk_mrmac) begin
+    if (decoded_header.valid) begin
+      received_dst_addr <= decoded_header.dst_addr;
+      received_iop_id   <= decoded_header.iop_id;
+      received_hpu_id   <= decoded_header.hpu_id;
+    end
+  end
+
+  // packet pulses
+  logic new_pkt_reception;
+  logic first_pkt_reception;
+  logic last_pkt_reception;
+
+  assign new_pkt_reception = read_request_allowed & decoded_header.valid & (decoded_header.req_id==REQ_ID_EMISSION);
+
+  // because we count seq_num=0 as first packet, last is NB_PACKETS_FULL
+  assign first_pkt_reception = new_pkt_reception & (decoded_header.seq_num == 0);
+  assign last_pkt_reception  = new_pkt_reception & (decoded_header.seq_num == NB_PACKETS_FULL);
+
+  // phys_addr = hbm_pc_offset + ctId * ciphertext_size
+  logic [ETH_PC-1:0] [AXI4_ADD_W-1:0] phy_addr;
+  generate
+    for (genvar gen_p=0; gen_p<ETH_PC; gen_p=gen_p+1)
+      always_ff @(posedge clk_mrmac)
+          if (decoded_header.valid)
+            phy_addr[gen_p] <= regf_ct_mem_addr[gen_p] + (received_dst_addr << PC_STRIDE);
+  endgenerate
+
+  logic [ETH_PC-1:0] axi4_read_pc;
+
+  // which PC must be read ------------------------------------------------------------------------
+  // those two processes are defined for two PCS only.
+
+  // launch reads over the two PCs independently
+  always_ff @(posedge clk_mrmac) begin : prc_read_one_at_a_time
+    if (~resetn_mrmac) begin
+      axi4_read_pc <= 'h0;
+    end else begin
+      // when read request registers are ready we can trigger the shift register.
+      // when the last signal is fired we can trigger the second PC
+      if (first_pkt_reception | m_axi4_wlast[0]) begin
+        axi4_read_pc <= {axi4_read_pc[ETH_PC-2:0], first_pkt_reception};
+      end else if (m_axi4_wlast[1]) begin
+        axi4_read_pc <= 'h0;
+      end
+    end
+  end
+
 
 endmodule
