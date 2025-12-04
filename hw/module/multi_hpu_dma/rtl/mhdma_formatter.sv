@@ -195,8 +195,8 @@ module mhdma_formatter
 
   // we have to trigger signal one cycle earlier to have sending_request on time
   assign stop_sending_small_frame      = small_frame && (tx_cnt == NB_WORDS_SMALL_PACKETS-1);
-  assign stop_sending_ce_full_frame    = ct_emission_allowed && (tx_cnt == ETH_HEADER_SIZE+NB_WORDS_PAYLOAD-1);
-  assign stop_sending_ce_partial_frame = ce_last_packet && (tx_cnt == (NB_WORDS_LAST_PACKET+ETH_HEADER_SIZE-1));
+  assign stop_sending_ce_full_frame    = ct_emission_allowed && (tx_cnt == NB_WORDS_CUST_HEADER_SIZE+NB_WORDS_PAYLOAD-1);
+  assign stop_sending_ce_partial_frame = ce_last_packet && (tx_cnt == (NB_WORDS_LAST_PACKET+NB_WORDS_CUST_HEADER_SIZE-1));
 
   always_ff @(posedge clk_mrmac) begin
     if (~resetn_mrmac) begin
@@ -239,7 +239,7 @@ module mhdma_formatter
   assign header_dst_addr            = master_request ? format_header.dst_addr              : notify_ack_allowed ? 'h0                        : ct_emission_allowed ? ce_dst_addr : 'h0;
   assign header_iop_id              = master_request ? format_header.iop_id                : notify_ack_allowed ? nack_iop_id                : ct_emission_allowed ? ce_iop_id : 'h0;
 
-  assign header_eth_len = small_frame ? ETH_LEN_MIN : ETH_LEN_MAX;
+  assign header_eth_len = small_frame ? ETH_LEN_MIN : ce_last_packet ? ETH_LEN_LAST_PKT : ETH_LEN_MAX;
   assign header_seq_num = small_frame ? 'h0         : ct_emission_allowed ? ce_seq_num : 'h0;
   assign header_size_b  = small_frame ? 'h0         : ct_emission_allowed ? ce_size_b  : 'h0;
 
@@ -248,9 +248,11 @@ module mhdma_formatter
       'h1 :
         tx_header = {MAC_OUI, header_target_hpu_mac_addr, MAC_OUI[MAC_OUI_W-1:8]};
       'h2 :
-        tx_header = {MAC_OUI[7:0], current_hpu_mac, header_eth_len, header_req_id, current_hpu_id, header_seq_num};
+        tx_header = {MAC_OUI[7:0], current_hpu_mac, header_eth_len, 8'hF8, 8'hF8};
       'h3 :
-        tx_header = {header_src_addr, header_dst_addr, header_iop_id, header_size_b, 8'b0};
+        tx_header = {8'h03, header_req_id, current_hpu_id, header_seq_num, header_src_addr, header_dst_addr, header_iop_id};
+      'h4 :
+        tx_header = {header_size_b, 56'h0};
       default:
         tx_header = 'h0;
     endcase
@@ -292,7 +294,7 @@ module mhdma_formatter
     if (~resetn_mrmac) begin
       ce_stalling <= 1'b0;
     end else begin
-      if (tx_cnt == ETH_HEADER_SIZE+NB_WORDS_PAYLOAD) begin
+      if (tx_cnt == NB_WORDS_CUST_HEADER_SIZE+NB_WORDS_PAYLOAD) begin
         ce_stalling <= 1'b1;
       end else if (tx_header_last) begin
         ce_stalling <= 1'b0;
@@ -354,8 +356,8 @@ module mhdma_formatter
 
   // ----------------------------------------------------------------------------------------------
   assign tx_small_last  = (tx_cnt == NB_WORDS_MIN);
-  assign tx_header_last = (tx_cnt == ETH_HEADER_SIZE);
-  assign tx_last_word   = (ct_emission_allowed & ~ce_last_packet) ? (tx_cnt == ETH_HEADER_SIZE+NB_WORDS_PAYLOAD) : (tx_cnt == (NB_WORDS_LAST_PACKET+ETH_HEADER_SIZE));
+  assign tx_header_last = (tx_cnt == NB_WORDS_CUST_HEADER_SIZE);
+  assign tx_last_word   = (ct_emission_allowed & ~ce_last_packet) ? (tx_cnt == NB_WORDS_CUST_HEADER_SIZE+NB_WORDS_PAYLOAD) : (tx_cnt == (NB_WORDS_LAST_PACKET+NB_WORDS_CUST_HEADER_SIZE));
 
   assign tx_data  = small_frame ? tx_header : (ct_emission_allowed & ce_header) ? tx_header : (ct_emission_allowed & ce_valid & ce_ready) ? ce_payload :'h0;
   assign tx_last  = small_frame ? tx_small_last : ct_emission_allowed ? tx_last_word : 1'b0;

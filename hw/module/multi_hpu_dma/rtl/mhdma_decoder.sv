@@ -37,6 +37,7 @@ module mhdma_decoder
   // On RX lanes, should know as soon as possible what type of packets I should see
   // First frame I can check that the destination address is me
   logic [MAC_ADDR_W-1:0] dst_mac_addr;
+  logic [ETHERNET_LEN-1:0] eth_len;
   // Second frame I will know who is the sender, request ID, seq num
   logic [SEQ_NUM_W-1:0]  sec_num;
   logic [HPU_ID_W-1:0]   hpu_id;
@@ -78,11 +79,10 @@ module mhdma_decoder
     end
   end
 
-  /* FRAME 0:
-   * dst_mac_addr
-   *    destination mac address is not needed from the first clock cycle
-   *    this register will help define if next words in receptions are valid
-   */
+  // FRAME 0 ------------------------------------------------------------------
+  // dst_mac_addr
+  //    destination mac address is not needed from the first clock cycle
+  //    this register will help define if next words in receptions are valid
   logic rx_valid;
   always_ff @(posedge clk_mrmac)
     if (~resetn_mrmac) begin
@@ -95,43 +95,42 @@ module mhdma_decoder
 
   assign rx_valid = (current_hpu_mac == dst_mac_addr) ? 1'b1 : 1'b0;
 
-  /* FRAME 1 :
-   * sec_num, request_id, hpu_id, src_mac_address
-   * ethernet len is skipped: not used for now
-   */
+  // FRAME 1 ------------------------------------------------------------------
+  // src_mac_address and eth len
   always_ff @(posedge clk_mrmac) begin
     if ((qsfp_rx_tvalid) & (rx_counter == 1)) begin
-        sec_num <= qsfp_rx_tdata_bs[H1_SEQ_NUM_OFS-1:0];
-        hpu_id  <= qsfp_rx_tdata_bs[H1_HPU_ID_OFS-1:H1_SEQ_NUM_OFS];
-        // Ethernet len is ignored
+        eth_len      <= qsfp_rx_tdata_bs[H1_SRC_ETH_LEN_OFS-1:16];
         src_mac_addr <= qsfp_rx_tdata_bs[H1_SRC_MAC_ADDR_OFS-1:H1_SRC_ETH_LEN_OFS];
       end
   end
 
-  // it is mandatory to reset request ID when invalid: we build pulses around it
+
+  // FRAME 2 ------------------------------------------------------------------
+  // req_id, hpu_id, sec_num, src_addr, dst_addr and iop_id
+  always_ff @(posedge clk_mrmac) begin
+    if ((qsfp_rx_tvalid) & (rx_counter == 2)) begin
+      hpu_id      <= qsfp_rx_tdata_bs[H2_HPU_ID_OFS-1:H2_SEQ_NUM_OFS];
+      sec_num     <= qsfp_rx_tdata_bs[H2_SEQ_NUM_OFS-1:H2_CT_SRC_ADDR_OFS];
+      ct_src_addr <= qsfp_rx_tdata_bs[H2_CT_SRC_ADDR_OFS-1:H2_CT_DST_ADDR_OFS];
+      ct_dst_addr <= qsfp_rx_tdata_bs[H2_CT_DST_ADDR_OFS-1:H2_IOP_ID_OFS];
+      iop_id      <= qsfp_rx_tdata_bs[H2_IOP_ID_OFS-1:0];
+    end
+  end
+
+  // it is mandatory to reset req_id when invalid: we build pulses around it
   always_ff @(posedge clk_mrmac) begin
     if (qsfp_rx_tvalid) begin
-      if (rx_counter == 1) begin
-        req_id <= qsfp_rx_tdata_bs[H1_REQ_ID_OFS-1:H1_HPU_ID_OFS];
+      if (rx_counter == 2) begin
+        req_id <= qsfp_rx_tdata_bs[H2_REQ_ID_OFS-1:H2_HPU_ID_OFS];
       end
     end else begin
       req_id <= 'h0;
     end
   end
 
-  /* FRAME 2:
-   * iop_id, src/dst addresses
-   * size_b for triggering error
-   */
-  always_ff @(posedge clk_mrmac) begin
-    if ((qsfp_rx_tvalid) & (rx_counter == 2)) begin
-      iop_id      <= qsfp_rx_tdata_bs[H2_IOP_ID_OFS-1:H2_SIZE_B_OFS];
-      ct_dst_addr <= qsfp_rx_tdata_bs[H2_CT_DST_ADDR_OFS-1:H2_IOP_ID_OFS];
-      ct_src_addr <= qsfp_rx_tdata_bs[H2_CT_SRC_ADDR_OFS-1:H2_CT_DST_ADDR_OFS];
-    end
-  end
-
-  assign size_b = ((rx_counter == 2) & rx_valid) ? qsfp_rx_tdata_bs[H2_SIZE_B_OFS-1:H2_EMPTY_OFS] : 'h0;
+  // FRAME 3 ------------------------------------------------------------------
+  // size_b
+  assign size_b = ((rx_counter == 3) & rx_valid) ? qsfp_rx_tdata_bs[H3_SIZE_B_OFS-1:H3_EMPTY_OFS] : 'h0;
 
   // assigning output -----------------------------------------------------------------------------
 
@@ -164,7 +163,7 @@ module mhdma_decoder
   assign ciphertext_emission_received = ce_received   & ~ce_receivedD;
 
   // header information
-  assign rx_header.valid        = (rx_counter == 3) ? 1'b1 : 1'b0;
+  assign rx_header.valid        = (rx_counter == NB_WORDS_CUST_HEADER_SIZE) ? 1'b1 : 1'b0;
   assign rx_header.src_mac_addr = src_mac_addr;
   assign rx_header.seq_num      = sec_num;
   assign rx_header.hpu_id       = hpu_id;

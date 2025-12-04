@@ -36,21 +36,24 @@ package mhdma_pkg;
   // ETH_NB_BYTES_PAYLOAD must be divisible by MRMAC_AXIS_W. 1472 is the closest to 1518.
   localparam int ETH_NB_BYTES_PAYLOAD = 1472;
   localparam int ETH_NB_BYTES_MIN     = 64;
-  localparam int ETH_HEADER_SIZE      = 3;
+  localparam int ETH_NB_BYTES_HEADER  = 14;
+  localparam int ETH_NB_BYTES_CRC     = 4;
+
+  localparam int NB_WORDS_CUST_HEADER_SIZE = 4;
 
   localparam int NB_WORDS_PAYLOAD = ETH_NB_BYTES_PAYLOAD / (MRMAC_AXIS_W/8);
   localparam int NB_WORDS_SMALL_PACKETS = ETH_NB_BYTES_MIN / (MRMAC_AXIS_W/8);
-
-  localparam int NB_WORDS_MAX = NB_WORDS_PAYLOAD + ETH_HEADER_SIZE;
+  localparam int NB_WORDS_MAX = NB_WORDS_PAYLOAD + NB_WORDS_CUST_HEADER_SIZE;
   localparam int NB_WORDS_MIN = NB_WORDS_SMALL_PACKETS;
-
-  localparam [15:0] ETH_LEN_MIN = NB_WORDS_SMALL_PACKETS - ETH_HEADER_SIZE ;
-  localparam [15:0] ETH_LEN_MAX = NB_WORDS_PAYLOAD + ETH_HEADER_SIZE;
 
   localparam int NB_PACKETS_FULL = $floor(CT_SIZE_BYTE/ETH_NB_BYTES_PAYLOAD);
   localparam int LAST_PACKET_BYTE_SIZE = CT_SIZE_BYTE - (NB_PACKETS_FULL*ETH_NB_BYTES_PAYLOAD);
   localparam int NB_WORDS_LAST_PACKET_USEFULL = LAST_PACKET_BYTE_SIZE/8;
   localparam int NB_WORDS_LAST_PACKET = (NB_WORDS_LAST_PACKET_USEFULL < NB_WORDS_SMALL_PACKETS) ? NB_WORDS_SMALL_PACKETS : NB_WORDS_LAST_PACKET_USEFULL;
+
+  localparam [15:0] ETH_LEN_MIN      = ETH_NB_BYTES_MIN - ETH_NB_BYTES_HEADER - ETH_NB_BYTES_CRC;
+  localparam [15:0] ETH_LEN_MAX      = ETH_NB_BYTES_PAYLOAD;
+  localparam [15:0] ETH_LEN_LAST_PKT = LAST_PACKET_BYTE_SIZE;
 
   // Ethernet header: sizes ---------------------------------------------------
   localparam int MAC_ADDR_W   = 24;
@@ -169,17 +172,18 @@ package mhdma_pkg;
   localparam int H0_DST_MAC_ADDR_OFS = 16 + MAC_ADDR_W;
   localparam int H0_SRC_OUI_OFS = 16;
 
-  localparam int H1_SRC_MAC_ADDR_OFS = SEQ_NUM_W + HPU_ID_W + REQ_ID_W + ETHERNET_LEN + MAC_ADDR_W;
-  localparam int H1_SRC_ETH_LEN_OFS  = SEQ_NUM_W + HPU_ID_W + REQ_ID_W + ETHERNET_LEN;
-  localparam int H1_REQ_ID_OFS       = SEQ_NUM_W + HPU_ID_W + REQ_ID_W;
-  localparam int H1_HPU_ID_OFS       = SEQ_NUM_W + HPU_ID_W;
-  localparam int H1_SEQ_NUM_OFS      = SEQ_NUM_W;
+  localparam int H1_SRC_MAC_ADDR_OFS = 16 + ETHERNET_LEN + MAC_ADDR_W;
+  localparam int H1_SRC_ETH_LEN_OFS  = 16 + ETHERNET_LEN;
 
-  localparam int H2_CT_SRC_ADDR_OFS = 8 + SIZE_B_W + IOP_ID_W + SRC_ADDR_W + DST_ADDR_W;
-  localparam int H2_CT_DST_ADDR_OFS = 8 + SIZE_B_W + IOP_ID_W + SRC_ADDR_W;
-  localparam int H2_IOP_ID_OFS      = 8 + SIZE_B_W + IOP_ID_W;
-  localparam int H2_SIZE_B_OFS      = 8 + SIZE_B_W;
-  localparam int H2_EMPTY_OFS       = 8;
+  localparam int H2_REQ_ID_OFS      = IOP_ID_W + DST_ADDR_W + SRC_ADDR_W + SEQ_NUM_W + HPU_ID_W + REQ_ID_W;
+  localparam int H2_HPU_ID_OFS      = IOP_ID_W + DST_ADDR_W + SRC_ADDR_W + SEQ_NUM_W + HPU_ID_W;
+  localparam int H2_SEQ_NUM_OFS     = IOP_ID_W + DST_ADDR_W + SRC_ADDR_W + SEQ_NUM_W;
+  localparam int H2_CT_SRC_ADDR_OFS = IOP_ID_W + DST_ADDR_W + SRC_ADDR_W;
+  localparam int H2_CT_DST_ADDR_OFS = IOP_ID_W + DST_ADDR_W;
+  localparam int H2_IOP_ID_OFS      = IOP_ID_W;
+
+  localparam int H3_SIZE_B_OFS      = 48 + SIZE_B_W;
+  localparam int H3_EMPTY_OFS       = 48;
 
   typedef struct packed {
     logic                  valid;
