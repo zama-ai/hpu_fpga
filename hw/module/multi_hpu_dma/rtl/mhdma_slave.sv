@@ -450,10 +450,10 @@ module mhdma_slave
       assign read_fifo_we = m_axi4_rvalid[gen_rd] & read_fifo_ready & ct_emission_request_in_use;
 
       fifo_ram_rdy_vld # (
-        .WIDTH      (READ_PC_DATA_W),
-        .DEPTH      (READ_PC_DEPTH),
-        .RAM_LATENCY(READ_PC_RAM_LATENCY)
-      ) fifo_read_pc (
+        .WIDTH      (FIFO_PC_DATA_W),
+        .DEPTH      (FIFO_PC_DEPTH),
+        .RAM_LATENCY(FIFO_PC_RAM_LATENCY)
+      ) fifo_pc_read (
         .clk    (clk_mrmac),
         .s_rst_n(resetn_mrmac),
 

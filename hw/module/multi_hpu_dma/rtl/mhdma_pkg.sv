@@ -110,11 +110,11 @@ package mhdma_pkg;
   localparam int RQQ_CMD_DATA_COUNT_W  =  $clog2(RREQ_CMD_DEPTH)+1;
 
   // = Ciphertext Emission: URAMs
-  // reading each PC
-  localparam int READ_PC_DATA_W        = AXI4_DATA_W;
-  localparam int READ_PC_DEPTH         = CT_NB_WORDS_AXI4;
-  localparam int READ_PC_RAM_LATENCY   = 1;
-  localparam int READ_PC_DATA_COUNT_W  =  $clog2(READ_PC_DEPTH)+1;
+  // reading/ writing to each PC
+  localparam int FIFO_PC_DATA_W        = AXI4_DATA_W;
+  localparam int FIFO_PC_DEPTH         = CT_NB_WORDS_AXI4/2;
+  localparam int FIFO_PC_RAM_LATENCY   = 1;
+  localparam int FIFO_PC_DATA_COUNT_W  =  $clog2(FIFO_PC_DEPTH)+1;
 
   // QSFP TX fifo: FIFO CE
   localparam int CE_DATA_W             = MRMAC_AXIS_W;

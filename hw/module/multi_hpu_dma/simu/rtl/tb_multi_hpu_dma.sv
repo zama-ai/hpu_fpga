@@ -668,16 +668,16 @@ module tb_multi_hpu_dma;
   logic [59:0] val_id = 0;
 
   initial begin
-    for (int gen_hpu = 0; gen_hpu < HPU_NB; ++gen_hpu) begin
+    // for (int gen_hpu = 0; gen_hpu < HPU_NB; ++gen_hpu) begin
       for (int gen_pc = 0; gen_pc < ETH_PC; ++gen_pc) begin
         for (int k = 0; k < 2**MEM_SIM_SIZE; ++k) begin
           logic [255:0] value = '0; //TODO
           for (int j = 0; j < 4; ++j) begin
             logic [63:0] w;
-            w[63:62] = gen_hpu;
-            w[61:60] = gen_pc;
+            w[63:62] = 0;
+            w[61:60] = 0;//gen_pc;
             w[59:46] = 'h0;
-            w[47:40] = k;
+            w[47:40] = 0;//k;
             w[39:32] = 'h0;
             w[31:0] = val_id;
             value |= (w << (j*64));
@@ -685,13 +685,17 @@ module tb_multi_hpu_dma;
           end
           // TODO: why this don't work?
           // gen_mem_hpu[gen_hpu].gen_mem_pc[gen_pc].axi4_mem_ct.axi4_ram_ct_wr.mem[k] = value;
-          gen_mem_hpu[0].gen_mem_pc[0].axi4_mem_ct.axi4_ram_ct_wr.mem[k] = value;
-          gen_mem_hpu[0].gen_mem_pc[1].axi4_mem_ct.axi4_ram_ct_wr.mem[k] = value;
           gen_mem_hpu[1].gen_mem_pc[0].axi4_mem_ct.axi4_ram_ct_wr.mem[k] = value;
           gen_mem_hpu[1].gen_mem_pc[1].axi4_mem_ct.axi4_ram_ct_wr.mem[k] = value;
         end
       end
-    end
+      for (int gen_pc = 0; gen_pc < ETH_PC; ++gen_pc) begin
+        for (int k = 0; k < 2**MEM_SIM_SIZE; ++k) begin
+          gen_mem_hpu[0].gen_mem_pc[0].axi4_mem_ct.axi4_ram_ct_wr.mem[k] = 'h0;
+          gen_mem_hpu[0].gen_mem_pc[1].axi4_mem_ct.axi4_ram_ct_wr.mem[k] = 'h0;
+      end
+      end
+    // end
   end
 
 // ============================================================================================== --

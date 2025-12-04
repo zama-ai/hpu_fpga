@@ -212,6 +212,23 @@ module mhdma_bridge
     // Ethernet configuration interface ---------------------------------------
     .clk_cfg                         (clk_cfg                                 ),
     .resetn_cfg                      (resetn_cfg                              ),
+    // Axi4 interface ---------------------------------------------------------
+    .m_axi4_awid                     (m_axi4_awid                             ),
+    .m_axi4_awaddr                   (m_axi4_awaddr                           ),
+    .m_axi4_awlen                    (m_axi4_awlen                            ),
+    .m_axi4_awsize                   (m_axi4_awsize                           ),
+    .m_axi4_awburst                  (m_axi4_awburst                          ),
+    .m_axi4_awvalid                  (m_axi4_awvalid                          ),
+    .m_axi4_awready                  (m_axi4_awready                          ),
+    .m_axi4_wdata                    (m_axi4_wdata                            ),
+    .m_axi4_wstrb                    (m_axi4_wstrb                            ),
+    .m_axi4_wlast                    (m_axi4_wlast                            ),
+    .m_axi4_wvalid                   (m_axi4_wvalid                           ),
+    .m_axi4_wready                   (m_axi4_wready                           ),
+    .m_axi4_bid                      (m_axi4_bid                              ),
+    .m_axi4_bresp                    (m_axi4_bresp                            ),
+    .m_axi4_bvalid                   (m_axi4_bvalid                           ),
+    .m_axi4_bready                   (m_axi4_bready                           ),
     // Ethernet fast clock interface ------------------------------------------
     .clk_mrmac                       (clk_mrmac                               ),
     .resetn_mrmac                    (resetn_mrmac                            ),

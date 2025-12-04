@@ -175,11 +175,11 @@ module mhdma_decoder
 
   // payload interface to master module -----------------------------------------------------------
   always_ff @(posedge clk_mrmac)
-    if (ce_received & qsfp_rx_tvalid & (qsfp_rx_tkeep_user == 'hFF) & (rx_counter>2))
+    if (ce_received & qsfp_rx_tvalid & (qsfp_rx_tkeep_user == 'hFF) & (rx_counter>NB_WORDS_CUST_HEADER_SIZE-1))
       rx_tdata <= qsfp_rx_tdata_bs;
 
   always_ff @(posedge clk_mrmac) begin
-    if (ce_received & qsfp_rx_tvalid & (qsfp_rx_tkeep_user == 'hFF) & (rx_counter>2)) begin
+    if (ce_received & qsfp_rx_tvalid & (qsfp_rx_tkeep_user == 'hFF) & (rx_counter>NB_WORDS_CUST_HEADER_SIZE-1)) begin
       rx_tvalid <= 1'b1;
     end else begin
       rx_tvalid <= 1'b0;

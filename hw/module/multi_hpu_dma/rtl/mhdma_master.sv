@@ -61,11 +61,13 @@ module mhdma_master
   output logic [ETH_PC-1:0][AXI4_BURST_W-1:0] m_axi4_awburst,
   output logic [ETH_PC-1:0]                   m_axi4_awvalid,
   input  logic [ETH_PC-1:0]                   m_axi4_awready,
+
   output logic [ETH_PC-1:0][AXI4_DATA_W-1:0]  m_axi4_wdata,
   output logic [ETH_PC-1:0][AXI4_STRB_W-1:0]  m_axi4_wstrb,
   output logic [ETH_PC-1:0]                   m_axi4_wlast,
   output logic [ETH_PC-1:0]                   m_axi4_wvalid,
   input  logic [ETH_PC-1:0]                   m_axi4_wready,
+
   input  logic [ETH_PC-1:0][AXI4_ID_W-1:0]    m_axi4_bid,
   input  logic [ETH_PC-1:0][AXI4_RESP_W-1:0]  m_axi4_bresp,
   input  logic [ETH_PC-1:0]                   m_axi4_bvalid,
@@ -80,16 +82,16 @@ module mhdma_master
   // localparam
   // =========================================================================================== //
   localparam [AXI4_SIZE_W-1:0] MHDMA_ARSIZE = $clog2(AXI4_DATA_BYTES);
-  localparam NB_MRMRAC_WORDS_PER_READ = AXI4_DATA_W/MRMAC_AXIS_W;
+  localparam NB_MRMRAC_WORDS_PER_WRITE = AXI4_DATA_W/MRMAC_AXIS_W;
 
   // TOREVIEW
   // generate cannot be in packages, same snippet must be in slave & master module
   generate
     for (genvar gen_i = 0; gen_i < ETH_PC; gen_i = gen_i + 1) begin : gen_localparam
       localparam int PC_NB_WORDS = (PC_CT_BYTES[gen_i] / AXI4_DATA_BYTES);
-      localparam int PC_NB_READS_BURST = (PC_NB_WORDS / MAX_BURST_SIZE);
+      localparam int PC_NB_WRITES_BURST = (PC_NB_WORDS / MAX_BURST_SIZE);
       localparam int PC_REMAINS = (PC_NB_WORDS % MAX_BURST_SIZE);
-      localparam int PC_NB_READS = (PC_REMAINS!=0) ? PC_NB_READS_BURST + 1 : PC_NB_READS_BURST;
+      localparam int PC_NB_WRITES = (PC_REMAINS!=0) ? PC_NB_WRITES_BURST + 1 : PC_NB_WRITES_BURST;
     end
   endgenerate
 
@@ -409,7 +411,7 @@ module mhdma_master
   // ce-rx output interface
   logic [CE_DATA_W-1:0] fifo_cerx_out_data;
   logic                 fifo_cerx_out_vld;
-  logic                 fifo_cerx_out_ready;
+  logic                 fifo_cerx_out_rdy;
   // ce-rx counters
   logic [CERX_DATA_COUNT_W:0] fifo_cerx_cnt;    // counts the number of words used in fifo
   logic [CERX_DATA_COUNT_W:0] fifo_cerx_cnt_rx; // counts the number of words received over RX link
@@ -420,7 +422,7 @@ module mhdma_master
     end else begin
       if (read_request_allowed & (fifo_cerx_in_vld & fifo_cerx_in_rdy)) begin
         fifo_cerx_cnt <= fifo_cerx_cnt + 1;
-      end else if (read_request_allowed & fifo_cerx_out_ready & fifo_cerx_out_vld) begin
+      end else if (read_request_allowed & fifo_cerx_out_rdy & fifo_cerx_out_vld) begin
         fifo_cerx_cnt <= fifo_cerx_cnt - 1;
       end
     end
@@ -455,12 +457,15 @@ module mhdma_master
 
     .out_data   (fifo_cerx_out_data ),
     .out_vld    (fifo_cerx_out_vld  ),
-    .out_rdy    (fifo_cerx_out_ready)
+    .out_rdy    (fifo_cerx_out_rdy)
   );
   assign cerx_reception_ready = (fifo_cerx_cnt == 0) & fifo_cerx_in_rdy;
 
   assign ct_emission_all_packets_received = 0;
-  assign fifo_cerx_out_ready = 0;
+
+ // ready signal of sending fifo according to which one we should use
+  logic fifo_pc_backpressure;
+  assign fifo_cerx_out_rdy = fifo_pc_backpressure;
 
   // =========================================================================================== //
   // Write into HBM
@@ -508,25 +513,289 @@ module mhdma_master
             phy_addr[gen_p] <= regf_ct_mem_addr[gen_p] + (received_dst_addr << PC_STRIDE);
   endgenerate
 
-  logic [ETH_PC-1:0] axi4_read_pc;
 
-  // which PC must be read ------------------------------------------------------------------------
-  // those two processes are defined for two PCS only.
+  logic [ETH_PC-1:0] axi4_write_pc;
+  // word distribution to each fifo pc ------------------------------------------------------------
+  logic [CERX_DATA_COUNT_W:0] fifo_cerx_cnt_tx;
+  logic [ETH_PC-1:0]          target_fifo;
 
-  // launch reads over the two PCs independently
-  always_ff @(posedge clk_mrmac) begin : prc_read_one_at_a_time
+  always_ff @(posedge clk_mrmac) begin
     if (~resetn_mrmac) begin
-      axi4_read_pc <= 'h0;
+      fifo_cerx_cnt_tx <= 'h0;
     end else begin
-      // when read request registers are ready we can trigger the shift register.
-      // when the last signal is fired we can trigger the second PC
-      if (first_pkt_reception | m_axi4_wlast[0]) begin
-        axi4_read_pc <= {axi4_read_pc[ETH_PC-2:0], first_pkt_reception};
-      end else if (m_axi4_wlast[1]) begin
-        axi4_read_pc <= 'h0;
+      if (fifo_cerx_out_vld & fifo_cerx_out_rdy) begin
+        fifo_cerx_cnt_tx <= fifo_cerx_cnt_tx +1;
       end
     end
   end
 
+  // which fifo must be filled ?
+  always_ff @(posedge clk_mrmac) begin
+    if (~resetn_mrmac) begin
+      target_fifo <= 2'b00;
+    end else begin
+      if (fifo_cerx_cnt_tx < CT_NB_COEF/2) begin
+        target_fifo <= 2'b01;
+      end else if (fifo_cerx_cnt_tx > CT_NB_COEF/2) begin
+        target_fifo <= 2'b10;
+      end
+    end
+  end
+
+  // launch reads over the two PCs independently
+  always_ff @(posedge clk_mrmac) begin : prc_write_pc_one_at_a_time
+    if (~resetn_mrmac) begin
+      axi4_write_pc <= 'h0;
+    end else begin
+      // when read request registers are ready we can trigger the shift register.
+      // when the last signal is fired we can trigger the second PC
+      if (first_pkt_reception | m_axi4_wlast[0]) begin
+        axi4_write_pc <= {axi4_write_pc[ETH_PC-2:0], first_pkt_reception};
+      end else if (m_axi4_wlast[1]) begin
+        axi4_write_pc <= 'h0;
+      end
+    end
+  end
+
+  // deserialization of 64bits words (MRMAC) to 256b (AXI4_DATA_W)
+
+  logic [FIFO_PC_DATA_W-1:0]                    realined_word;
+  logic [$clog2(NB_MRMRAC_WORDS_PER_WRITE)-1:0] realign_cnt;
+  logic                                         realined_word_vld;
+
+  always_ff @(posedge clk_mrmac) begin
+    if(~resetn_mrmac) begin
+      realign_cnt <= 'h0;
+    end else begin
+      if (fifo_cerx_out_vld & fifo_cerx_out_rdy) begin
+        realign_cnt <= realign_cnt + 1;
+      end else begin
+        realign_cnt <= 'h0;
+      end
+    end
+  end
+
+  always_ff @(posedge clk_mrmac)
+    if (fifo_cerx_out_vld & fifo_cerx_out_rdy)
+      realined_word[realign_cnt*MRMAC_AXIS_W+:MRMAC_AXIS_W] <= fifo_cerx_out_data;
+
+  always_ff @(posedge clk_mrmac) begin
+    if (~resetn_mrmac) begin
+      realined_word_vld <= 1'b0;
+    end else begin
+      // we are valid when realign_cnt = 0 but because realign_cnt had to be init
+      // we are valid one cc after realign_cnt = 3
+      if (realign_cnt == 3) begin
+        realined_word_vld <= 1'b1;
+      end else begin
+        realined_word_vld <= 1'b0;
+      end
+    end
+  end
+
+  generate
+    for (genvar gen_wr=0; gen_wr<ETH_PC; gen_wr++) begin : gen_ce_write
+      logic [FIFO_PC_DATA_W-1:0] fifo_pc_wr_in_data;
+      logic                      fifo_pc_wr_in_vld;
+      logic                      fifo_pc_wr_in_rdy;
+      // ce-rx output interface
+      logic [FIFO_PC_DATA_W-1:0] fifo_pc_wr_out_data;
+      logic                      fifo_pc_wr_out_vld;
+      logic                      fifo_pc_wr_out_rdy;
+      // control
+      logic [FIFO_PC_DATA_COUNT_W-1:0] fifo_pc_wr_cnt;
+      logic                            enough_words;
+
+      fifo_ram_rdy_vld # (
+        .WIDTH(FIFO_PC_DATA_W),
+        .DEPTH(FIFO_PC_DEPTH)
+      ) fifo_pc_wr (
+        .clk     (clk_mrmac         ),
+        .s_rst_n (resetn_mrmac      ),
+
+        .in_data (realined_word     ),
+        .in_vld  (fifo_pc_wr_in_vld ),
+        .in_rdy  (fifo_pc_wr_in_rdy ),
+
+        .out_data(fifo_pc_wr_out_data),
+        .out_vld (fifo_pc_wr_out_vld ),
+        .out_rdy (fifo_pc_wr_out_rdy )
+      );
+
+      assign fifo_pc_wr_in_vld = target_fifo[gen_wr] & realined_word_vld ;
+
+      always_ff @(posedge clk_mrmac) begin
+        if (~resetn_mrmac) begin
+          fifo_pc_wr_cnt <= 'h0;
+        end else begin
+          if (fifo_pc_wr_in_vld & fifo_pc_wr_in_rdy) begin
+            fifo_pc_wr_cnt <= fifo_pc_wr_cnt + 1;
+          end else if (fifo_pc_wr_out_rdy & fifo_pc_wr_out_vld) begin
+            fifo_pc_wr_cnt <= fifo_pc_wr_cnt - 1;
+          end
+        end
+      end
+
+      always_ff @(posedge clk_mrmac) begin
+        if (~resetn_mrmac) begin
+          enough_words <= 1'b0;
+        end else begin
+          if (fifo_pc_wr_cnt == gen_localparam[gen_wr].PC_NB_WORDS-1) begin
+            enough_words <= 1'b1;
+          end else if(m_axi4_wlast[gen_wr]) begin
+            enough_words <= 1'b0;
+          end
+        end
+      end
+
+      // ======================================================================================= //
+      // Address
+      // ======================================================================================= //
+      // We must write PC_NB_WRITES + PC_REMAINS addresses
+      logic [$clog2(gen_localparam[gen_wr].PC_NB_WRITES):0] axi_write_cnt;
+      logic                                                 axi_awrite;
+      logic                                                 axi_awriteD;
+      logic                                                 aw_valid;
+
+      always_ff @(posedge clk_mrmac)
+        axi_awrite <= (axi_write_cnt > 0) && axi4_write_pc[gen_wr] && m_axi4_awready[gen_wr] & enough_words;
+
+      always_ff @(posedge clk_mrmac)
+        axi_awriteD <= axi_awrite;
+
+      // write done is just a front edge detector with a level
+      assign aw_valid = axi_awrite & ~axi_awriteD;
+
+      // Counts the number of address writes that is left to do
+      always_ff @(posedge clk_mrmac) begin
+        if (~resetn_mrmac) begin
+          axi_write_cnt <= gen_localparam[gen_wr].PC_NB_WRITES;
+        end else begin
+          if (aw_valid) begin
+            axi_write_cnt <= axi_write_cnt - 1;
+          end else if (m_axi4_wlast[gen_wr]) begin
+            axi_write_cnt <= gen_localparam[gen_wr].PC_NB_WRITES;
+          end
+        end
+      end
+
+      // Address channel --------------------------------------------------------------------------
+      logic [AXI4_ADD_W-1:0] mhdma_write_addr;
+      // read address takes the physical address computed earlier as soon as the value is ready
+      // when starting the reading process we compute the offset accounting burst sequence
+      always_ff @(posedge clk_mrmac) begin
+        if (axi_write_cnt == gen_localparam[gen_wr].PC_NB_WRITES) begin
+          mhdma_write_addr <= phy_addr[gen_wr];
+        end else if (aw_valid) begin
+          mhdma_write_addr <= mhdma_write_addr + (AXI4_DATA_BYTES*MAX_BURST_SIZE);
+        end
+      end
+
+      // m_axi4_awid ignored
+      assign m_axi4_awaddr[gen_wr]  = (aw_valid & m_axi4_awready[gen_wr]) ? mhdma_write_addr :'h0;
+      assign m_axi4_awsize[gen_wr]  = (aw_valid & m_axi4_awready[gen_wr]) ? MHDMA_ARSIZE    :'h0;
+      assign m_axi4_awburst[gen_wr] = (aw_valid & m_axi4_awready[gen_wr]) ? 2'b01           :'h0; // incr
+      assign m_axi4_awvalid[gen_wr] = (aw_valid & m_axi4_awready[gen_wr]) ? 1'b1            :'h0;
+
+      always_comb begin
+        if ((gen_localparam[gen_wr].PC_REMAINS != 0) && (axi_write_cnt == 0)) begin
+          m_axi4_awlen[gen_wr] = (aw_valid && m_axi4_awready[gen_wr]) ? gen_localparam[gen_wr].PC_REMAINS-1 : 'h0;
+        end else begin
+          m_axi4_awlen[gen_wr] = (aw_valid && m_axi4_awready[gen_wr]) ? MAX_BURST_SIZE-1 : 'h0;
+        end
+      end
+
+      // Data channel -----------------------------------------------------------------------------
+      logic axi_write;
+      logic [$clog2(gen_localparam[gen_wr].PC_NB_WORDS):0] axi_word_cnt;
+
+      always_ff @(posedge clk_mrmac) begin
+        if (~resetn_mrmac) begin
+          axi_write <= 1'b0;
+        end else begin
+          if (aw_valid) begin
+            axi_write <= 1'b1;
+          end else if (m_axi4_wlast[gen_wr]) begin
+            axi_write <= 1'b0;
+          end
+        end
+      end
+
+      always_ff @(posedge clk_mrmac) begin
+        if (~resetn_mrmac) begin
+          axi_word_cnt <= MAX_BURST_SIZE;
+        end else begin
+          if (m_axi4_wvalid[gen_wr] & m_axi4_wready[gen_wr]) begin
+            axi_word_cnt <= axi_word_cnt -1;
+          end else if (m_axi4_wlast[gen_wr]) begin
+            axi_word_cnt <= MAX_BURST_SIZE;
+          end
+        end
+      end
+
+      assign m_axi4_wlast[gen_wr]  = ((axi_write & m_axi4_wready[gen_wr]) & (axi_word_cnt == 1)) ? 1'b1 : 1'b0;
+      assign m_axi4_wstrb[gen_wr]  = (axi_write & m_axi4_wready[gen_wr]) ? 32'hFFFFFFFF : 'h0;
+      assign m_axi4_wvalid[gen_wr] = axi_write & fifo_pc_wr_out_vld & fifo_pc_wr_out_rdy;
+
+      assign m_axi4_wdata[gen_wr]  = m_axi4_wvalid[gen_wr] ? fifo_pc_wr_out_data : 'h0;
+
+      // we can start to write to HBM when we have enough words in FIFO and HBM is ready to receive words
+      assign fifo_pc_wr_out_rdy = m_axi4_wready[gen_wr] & enough_words;
+
+      // Write response channel -------------------------------------------------------------------
+      // let's do simple and be ready for response at all time
+
+      // BRESP encoding
+      localparam OKAY   = 2'b00;
+      localparam EXOKAY = 2'b01;
+      localparam SLVERR = 2'b10;
+      localparam DECERR = 2'b11;
+
+      // Assert BREADY when ready to accept responses
+      // Can be always high for simple designs, or controlled based on internal state
+      always_ff @(posedge clk_mrmac) begin
+        if (~resetn_mrmac) begin
+          m_axi4_bready[gen_wr] <= 1'b0;
+        end else begin
+          // Assert ready when expecting a response
+          m_axi4_bready[gen_wr] <= 1'b1;
+        end
+      end
+
+      logic write_complete;
+      logic write_error;
+      logic expected_wid;
+
+      // Handle write response
+      always_ff @(clk_mrmac) begin
+        if (~resetn_mrmac) begin
+          write_complete <= 1'b0;
+          write_error <= 1'b0;
+        end else begin
+          write_complete <= 1'b0;  // Pulse
+          write_error <= 1'b0;
+
+          // Response handshake occurs when both valid and ready
+          if (m_axi4_bvalid[gen_wr] && m_axi4_bready[gen_wr]) begin
+            // Check BID matches expected transaction ID
+            if (m_axi4_bid[gen_wr] == expected_wid) begin
+              write_complete <= 1'b1;
+
+              // Check response status
+              case (m_axi4_bresp)
+                OKAY:   write_error <= 1'b0;  // Success
+                EXOKAY: write_error <= 1'b0;  // Exclusive access success
+                SLVERR: write_error <= 1'b1;  // Slave error
+                DECERR: write_error <= 1'b1;  // Decode error
+              endcase
+            end
+          end
+        end
+      end
+
+    end
+  endgenerate
+
+  assign fifo_pc_backpressure = target_fifo ? gen_ce_write[1].fifo_pc_wr_in_rdy :  gen_ce_write[0].fifo_pc_wr_in_rdy;
 
 endmodule
