@@ -48,6 +48,7 @@ module mhdma_bridge
   output logic [ETH_PC-1:0]                       m_axi4_wlast,
   output logic [ETH_PC-1:0]                       m_axi4_wvalid,
   input  logic [ETH_PC-1:0]                       m_axi4_wready,
+  // Write response channel
   input  logic [ETH_PC-1:0][  AXI4_ID_W-1:0]      m_axi4_bid,
   input  logic [ETH_PC-1:0][AXI4_RESP_W-1:0]      m_axi4_bresp,
   input  logic [ETH_PC-1:0]                       m_axi4_bvalid,
@@ -58,6 +59,7 @@ module mhdma_bridge
   input  logic                 [  REG_DATA_W-1:0] regf_req_id,
   input  logic                 [  REG_DATA_W-1:0] regf_req_addr,
   output logic                 [  REG_DATA_W-1:0] regf_notify_payload,
+  output logic                 [  REG_DATA_W-1:0] regf_read_payload,
   // control ------------------------------------------------------------------
   input  logic                                    received_req,
   output logic                                    request_consumed,
@@ -69,6 +71,7 @@ module mhdma_bridge
   // statistics ---------------------------------------------------------------
   input  logic                                    clear_interrupt_notify,
   output logic                                    interrupt_notify,
+  input  logic                                    clear_interrupt_rr,
   output logic                                    interrupt_read_request,
   input  logic [15:0]                             timeout_duration,
   // QSFP system interface ----------------------------------------------------
@@ -188,8 +191,6 @@ module mhdma_bridge
   logic read_request_received;
   logic ciphertext_emission_received;
 
-  logic ct_emission_all_packets_received;
-
   header_t format_header;
   header_t decoded_header;
 
@@ -236,6 +237,7 @@ module mhdma_bridge
     .regf_ct_mem_addr                (regf_ct_mem_addr                        ),
     .regf_req_id                     (regf_req_id                             ),
     .regf_req_addr                   (regf_req_addr                           ),
+    .regf_read_payload               (regf_read_payload                       ),
     // register control -------------------------------------------------------
     .received_req                    (received_req                            ),
     .request_consumed                (request_consumed                        ),
@@ -245,12 +247,14 @@ module mhdma_bridge
     .new_read_request_pending        (new_read_request_pending                ),
     .new_notify_request_pending      (new_notify_request_pending              ),
     .notify_ack_received             (notify_ack_received                     ),
-    .ct_emission_all_packets_received(ct_emission_all_packets_received        ),
     .cerx_reception_ready            (cerx_reception_ready                    ),
     // payload from decoder ---------------------------------------------------
     .rx_tdata                        (rx_tdata                                ),
     .rx_tvalid                       (rx_tvalid                               ),
     .rx_tlast                        (rx_tlast                                ),
+    // interrupt --------------------------------------------------------------
+    .clear_interrupt_rr              (clear_interrupt_rr                      ),
+    .interrupt_read_request          (interrupt_read_request                  ),
     // header interface -------------------------------------------------------
     .decoded_header                  (decoded_header                          ),
     .format_header                   (format_header                           )
@@ -347,7 +351,7 @@ module mhdma_bridge
     .new_notify_ack_pending          (new_notify_ack_pending                  ),
     .new_read_request_pending        (new_read_request_pending                ),
     .new_notify_request_pending      (new_notify_request_pending              ),
-    .ct_emission_all_packets_received(ct_emission_all_packets_received        ),
+    .ct_emission_all_packets_received(interrupt_read_request                  ),
     .cerx_reception_ready            (cerx_reception_ready                    ),
     // master interface -------------------------------------------------------
     .format_header                   (format_header                           ),

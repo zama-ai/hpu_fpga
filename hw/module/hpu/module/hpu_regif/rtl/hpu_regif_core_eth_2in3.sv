@@ -1,7 +1,7 @@
 // ============================================================================================== //
 // Description  : Axi4-lite register bank
 // This file was generated with rust regmap generator:
-//  * Date:  2025-11-19
+//  * Date:  2025-12-08
 //  * Tool_version: bd49564daf1a99d615cb6dbb121b54bfbeef8b22
 // ---------------------------------------------------------------------------------------------- //
 // xR[n]W[na]
@@ -30,8 +30,8 @@
 //      : Value provided by the RTL. The host can read it with notify. The write data is processed by the RTL.
 // ============================================================================================== //
 module hpu_regif_core_eth_2in3
-import axi_if_common_param_pkg::*;
 import axi_if_shell_axil_pkg::*;
+import axi_if_common_param_pkg::*;
 import hpu_regif_core_eth_2in3_pkg::*;
 #()(
   input  logic                           clk,
@@ -87,6 +87,9 @@ import hpu_regif_core_eth_2in3_pkg::*;
   // Register IO: request_notify
     , output request_notify_t r_request_notify
     , input  request_notify_t r_request_notify_upd
+  // Register IO: request_read_request
+    , output request_read_request_t r_request_read_request
+    , input  request_read_request_t r_request_read_request_upd
   // Register IO: request_stat_notify
     , output request_stat_notify_t r_request_stat_notify
     , input  request_stat_notify_t r_request_stat_notify_upd
@@ -351,6 +354,14 @@ import hpu_regif_core_eth_2in3_pkg::*;
     request_notify_default.node_id = 'h0;
     request_notify_default.src_addr = 'h0;
   end
+//-- Default request_read_request
+  request_read_request_t request_read_request_default;
+  always_comb begin
+    request_read_request_default = 'h0;
+    request_read_request_default.iop_id = 'h0;
+    request_read_request_default.node_id = 'h0;
+    request_read_request_default.src_addr = 'h0;
+  end
 //-- Default request_stat_notify
   request_stat_notify_t request_stat_notify_default;
   always_comb begin
@@ -597,6 +608,17 @@ import hpu_regif_core_eth_2in3_pkg::*;
     end
     else begin
       r_request_notify       <= r_request_notifyD;
+    end
+  end
+// Register FF: request_read_request
+  logic [REG_DATA_W-1:0] r_request_read_requestD;
+  assign r_request_read_requestD       = r_request_read_request_upd;
+  always_ff @(posedge clk) begin
+    if (!s_rst_n) begin
+      r_request_read_request       <= request_read_request_default;
+    end
+    else begin
+      r_request_read_request       <= r_request_read_requestD;
     end
   end
 // Register FF: request_stat_notify
@@ -915,6 +937,9 @@ import hpu_regif_core_eth_2in3_pkg::*;
           end
           REQUEST_NOTIFY_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register request_notify
             axil_rdataD = r_request_notify;
+          end
+          REQUEST_READ_REQUEST_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register request_read_request
+            axil_rdataD = r_request_read_request;
           end
           REQUEST_STAT_NOTIFY_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register request_stat_notify
             axil_rdataD = r_request_stat_notify;

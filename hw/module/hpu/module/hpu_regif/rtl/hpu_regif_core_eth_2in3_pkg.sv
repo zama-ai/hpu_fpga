@@ -1,7 +1,7 @@
 // ============================================================================================== //
 // Description  : register  map address definition package
 // This file was generated with rust regmap generator:
-//  * Date:  2025-11-19
+//  * Date:  2025-12-08
 //  * Tool_version: bd49564daf1a99d615cb6dbb121b54bfbeef8b22
 // ---------------------------------------------------------------------------------------------- //
 //
@@ -57,10 +57,17 @@ package hpu_regif_core_eth_2in3_pkg;
    } request_notify_t;
   localparam int REQUEST_NOTIFY_OFS = 'h50108;
   typedef struct packed {
+    logic [(16-1):0] src_addr;
+    logic [(8-1):0] padding_8;
+    logic [(4-1):0] node_id;
+    logic [(4-1):0] iop_id;
+   } request_read_request_t;
+  localparam int REQUEST_READ_REQUEST_OFS = 'h5010c;
+  typedef struct packed {
     logic [(16-1):0] cnt_notify_read;
     logic [(16-1):0] cnt_notify_ack;
    } request_stat_notify_t;
-  localparam int REQUEST_STAT_NOTIFY_OFS = 'h5010c;
+  localparam int REQUEST_STAT_NOTIFY_OFS = 'h50110;
   typedef struct packed {
     logic [(1-1):0] reset_registers;
     logic [(1-1):0] tx_loop;

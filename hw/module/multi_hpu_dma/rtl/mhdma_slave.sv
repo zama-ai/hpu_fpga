@@ -133,20 +133,6 @@ module mhdma_slave
   logic [NRX_WIDTH-1:0] nrx_cmd_data;
   logic                 nrx_cmd_valid;
   logic                 nrx_cmd_rdy;
-  logic                 nrx_cmd_rdy_tmp;
-
-  // we temp decoded_header.valid in order to read, at next clock cycle the fifo
-  always_ff @(posedge clk_mrmac) begin
-    if (~resetn_mrmac) begin
-      nrx_cmd_rdy_tmp <= 1'b0;
-    end else begin
-      if (~notify_ack_allowed & decoded_header.valid) begin
-        nrx_cmd_rdy_tmp <= decoded_header.valid;
-      end else if (notify_ack_allowed) begin
-        nrx_cmd_rdy_tmp <= decoded_header.valid;
-      end
-    end
-  end
 
   assign nrx_cmd_in_we = (nrx_state == NTX_TRANSMIT_ACK) & decoded_header.valid & nrx_cmd_in_rdy;
 
@@ -415,7 +401,7 @@ module mhdma_slave
       assign axi4_read_last[gen_rd] = ((axi_read && m_axi4_arready[gen_rd]) & (axi_read_cnt == 0)) ? 1'b1 : 1'b0;
 
       always_comb begin
-        if ((gen_localparam[gen_rd].PC_REMAINS !=0) && (axi_read_cnt == gen_localparam[gen_rd].PC_NB_READS)) begin
+        if ((gen_localparam[gen_rd].PC_REMAINS !=0) && (axi_read_cnt == 0)) begin
           m_axi4_arlen[gen_rd] = (axi_read && m_axi4_arready[gen_rd]) ? gen_localparam[gen_rd].PC_REMAINS-1 : 'h0;
         end else begin
           m_axi4_arlen[gen_rd] = (axi_read && m_axi4_arready[gen_rd]) ? MAX_BURST_SIZE-1 : 'h0;
@@ -445,7 +431,6 @@ module mhdma_slave
       logic [AXI4_DATA_W-1:0] read_fifo_out_dataD;
       logic                   read_fifo_out_valid;
       logic                   read_fifo_out_ready;
-      logic                   all_words_have_arrived;
 
       assign read_fifo_we = m_axi4_rvalid[gen_rd] & read_fifo_ready & ct_emission_request_in_use;
 
@@ -465,21 +450,6 @@ module mhdma_slave
         .out_vld (read_fifo_out_valid),
         .out_rdy (read_fifo_out_ready)
       );
-
-      logic [$clog2(gen_localparam[gen_rd].PC_NB_WORDS)-1:0] read_fifo_how_much_words_arrived;
-      always_ff @(posedge clk_mrmac) begin
-        if (~resetn_mrmac) begin
-          read_fifo_how_much_words_arrived <= 'h0;
-        end else begin
-          if (read_fifo_we) begin
-            read_fifo_how_much_words_arrived <= read_fifo_how_much_words_arrived + 1;
-          end else if (all_words_have_arrived) begin
-            read_fifo_how_much_words_arrived <= 'h0;
-          end
-        end
-      end
-
-      assign all_words_have_arrived = (read_fifo_how_much_words_arrived == gen_localparam[gen_rd].PC_NB_WORDS - 1);
 
       // we are going to read 4 times slower the fifo than we are feeding it
       logic [$clog2(NB_MRMRAC_WORDS_PER_READ)-1:0]         slow_pace_count;
@@ -511,17 +481,17 @@ module mhdma_slave
         end
       end
 
-      always_ff @(posedge clk_mrmac) begin
-        if(~resetn_mrmac) begin
-          pc_read_finished <= 1'b0;
-        end else begin
-          if (read_fifo_out_cnt == gen_localparam[gen_rd].PC_NB_WORDS) begin
-            pc_read_finished <= 1'b1;
-          end else begin
-            pc_read_finished <= 1'b0;
-          end
-        end
+      // because in one read we have NB_MRMRAC_WORDS_PER_READ, we must delay the signal pc_read_finished
+      logic [NB_MRMRAC_WORDS_PER_READ-1:0] temp_finished_flag;
+      always_ff @(posedge clk_mrmac)
+        temp_finished_flag[0] <= (read_fifo_out_cnt == gen_localparam[gen_rd].PC_NB_WORDS);
+
+      for (genvar gen_i = 1; gen_i<NB_MRMRAC_WORDS_PER_READ; gen_i++) begin
+        always_ff @(posedge clk_mrmac)
+          temp_finished_flag[gen_i] <= temp_finished_flag[gen_i-1];
       end
+
+      assign pc_read_finished = temp_finished_flag[NB_MRMRAC_WORDS_PER_READ-1];
 
       // read word each 4 clock cycles, we trigger at 1 as slow_pace_count default is 0
       assign read_fifo_out_ready = (slow_pace_count == 1) && reading_which_pc[gen_rd] & fifo_ce_pc_in_rdy[gen_rd];
@@ -536,7 +506,7 @@ module mhdma_slave
       end
 
       logic [$clog2(NB_MRMRAC_WORDS_PER_READ)-1:0] realign_cnt;
-      logic                                      start_deserialize;
+      logic                                        start_deserialize;
 
       always_ff @(posedge clk_mrmac) begin
         if(~resetn_mrmac)begin

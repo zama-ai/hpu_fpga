@@ -46,6 +46,22 @@ module tb_multi_hpu_dma;
   localparam int MEM_SIM_SIZE = 18;         // must be < 22
   localparam int SIZE_B_SIM   = 'h40;
 
+  localparam int MAX_BURST_SIZE  = PAGE_BYTES/AXI4_DATA_BYTES;
+  localparam [ETH_PC-1:0][15:0] PC_CT_BYTES = '{'h2000, 'h2020};
+  localparam              [3:0] PC_STRIDE   = 'hB;
+
+
+  // TOREVIEW
+  // generate cannot be in packages, same snippet must be in slave & master module
+  generate
+    for (genvar gen_i = 0; gen_i < ETH_PC; gen_i = gen_i + 1) begin : gen_localparam
+      localparam int PC_NB_WORDS = (PC_CT_BYTES[gen_i] / AXI4_DATA_BYTES);
+      localparam int PC_NB_BURST = (PC_NB_WORDS / MAX_BURST_SIZE);
+      localparam int PC_REMAINS = (PC_NB_WORDS % MAX_BURST_SIZE);
+      localparam int PC_NB = (PC_REMAINS!=0) ? PC_NB_BURST + 1 : PC_NB_BURST;
+    end
+  endgenerate
+
 // ============================================================================================== --
 // clock, reset
 // ============================================================================================== --
@@ -98,8 +114,10 @@ module tb_multi_hpu_dma;
   bit error_tb_notify;
   bit error_register_read;
   bit error_notify_rx;
+  bit error_rr_payload;
+  bit error_write_missmatch;
 
-  assign error = error_tb_notify | error_register_read | error_notify_rx;
+  assign error = error_tb_notify | error_register_read | error_notify_rx | error_rr_payload | error_write_missmatch;
 
   always_ff @(posedge clk_control)
     if (error) begin
@@ -561,6 +579,13 @@ module tb_multi_hpu_dma;
   logic [SIZE_B_W-1:0] req_size_b;
   assign req_size_b = 'h4000;
 
+
+  logic [DST_ADDR_W-1:0] received_address;
+  logic [HPU_ID_W-1:0] received_hpu_id;
+  logic [IOP_ID_W-1:0] received_iop_id;
+
+  logic [31:0] regf_start_addr_ofs;
+
   // scenario -------------------------------------------------------------------------------------
   initial begin
     maxil_drv_if_hpu_a.init();
@@ -569,6 +594,7 @@ module tb_multi_hpu_dma;
     reset_registers = 'h0;
     tx_loop         = 'h0;
     rx_to_tx        = 'h0;
+    regf_start_addr_ofs = 'h0;
     repeat(20) @(posedge clk_control);
 
     /* In this scenario we must define theses test-cases :
@@ -653,9 +679,22 @@ module tb_multi_hpu_dma;
     $display("\nC - Sending a Read request");
     read_request(random_hpu_b, iop_id, iop_src_addr, iop_dst_addr);
 
-    // TODO: add checker
+    wait (hpu_a.interrupt_read_request == 1'b1);
+    maxil_drv_if_hpu_a.read_trans(REQUEST_READ_REQUEST_OFS, read_data);
 
-    repeat(800) @(posedge clk_control);
+    received_address = read_data[31:16];
+    received_hpu_id  = read_data[11:8];
+    received_iop_id  = read_data[7:0];
+
+    assert (read_data == {iop_dst_addr, 4'b0, random_hpu_b, iop_id}) else begin
+      $display("[ERROR]: Missmatch between expected and received read request payload on regif");
+      $display("address : %2x :: %2x", received_address, iop_dst_addr);
+      $display(" iop:id : %2x :: %2x", received_iop_id, iop_id);
+      $display(" hpu:id : %2x :: %2x", received_hpu_id, random_hpu_b);
+      error_rr_payload = 1'b1;
+    end
+
+    check_memories(iop_src_addr, iop_dst_addr);
 
     $display("%t > INFO: End simulation",$time);
     repeat(20) @(posedge clk_control);
@@ -671,7 +710,7 @@ module tb_multi_hpu_dma;
     // for (int gen_hpu = 0; gen_hpu < HPU_NB; ++gen_hpu) begin
       for (int gen_pc = 0; gen_pc < ETH_PC; ++gen_pc) begin
         for (int k = 0; k < 2**MEM_SIM_SIZE; ++k) begin
-          logic [255:0] value = '0; //TODO
+          automatic logic [255:0] value = '0;
           for (int j = 0; j < 4; ++j) begin
             logic [63:0] w;
             w[63:62] = 0;
@@ -887,6 +926,50 @@ module tb_multi_hpu_dma;
         error_tb_notify = 1'b1;
       end
 
+    end
+  endtask
+
+// ============================================================================================== --
+// Checker
+// ============================================================================================== --
+  /* Checker
+  * memory content should be the same between HPU_A and HPU_B for PC_0 and PC_1
+  * assumption: we chose in this test to do read request from HPU A to B
+  * anything can be in HPU B memory. on HPU A we have only the copied values of hpu B
+  */
+  task automatic check_memories(
+    input logic [SRC_ADDR_W-1:0] src_addr,
+    input logic [DST_ADDR_W-1:0] dst_addr
+  );
+    int addr_hpu_0;
+    int addr_hpu_1;
+    logic mismatch_found;
+    begin
+      mismatch_found = 1'b0;
+
+      // PC 0
+      addr_hpu_0 = regf_start_addr_ofs + ((dst_addr << PC_STRIDE))/32 ; // where copied word should be
+      addr_hpu_1 = regf_start_addr_ofs + ((src_addr << PC_STRIDE))/32 ;
+
+      $display("addr_hpu_0 = %x", addr_hpu_0);
+      $display("addr_hpu_1 = %x", addr_hpu_1);
+
+      // Direct comparison of memory locations
+      for (int k = 0; k < gen_localparam[0].PC_NB_WORDS; k++) begin
+
+        // I read from 0 to PC_NB_WORDS in HPU_B and
+        if ( gen_mem_hpu[0].gen_mem_pc[0].axi4_mem_ct.axi4_ram_ct_wr.mem[addr_hpu_0 + k] != gen_mem_hpu[1].gen_mem_pc[0].axi4_mem_ct.axi4_ram_ct_wr.mem[addr_hpu_1 + k] ) begin
+          $display("Memory mismatch at PC=%0d, offset=%0d: HPU_0[%0d]=%0h != HPU_1[%0d]=%0h", 0, k,
+                    addr_hpu_0 + k, gen_mem_hpu[0].gen_mem_pc[0].axi4_mem_ct.axi4_ram_ct_wr.mem[addr_hpu_0 + k],
+                    addr_hpu_1 + k, gen_mem_hpu[1].gen_mem_pc[0].axi4_mem_ct.axi4_ram_ct_wr.mem[addr_hpu_1 + k]);
+          mismatch_found = 1;
+          error_write_missmatch = 1'b1;
+        end
+      end
+      // PC 1
+
+      if (~mismatch_found)
+        $display("Memory check PASSED: HPU_A and HPU_B contents match");
     end
   endtask
 
