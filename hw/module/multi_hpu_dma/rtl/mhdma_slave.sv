@@ -154,6 +154,8 @@ module mhdma_slave
     .out_rdy (nrx_cmd_rdy)
   );
 
+  // TODO: notify_ack_allowed ?
+
   // signals that will be propagated to format module for ack
   assign nrx_cmd_payload = nrx_cmd_valid ? nrx_cmd_data : 'h0;
   assign nrx_valid       = nrx_cmd_valid;
@@ -582,8 +584,8 @@ module mhdma_slave
   logic                     fifo_ce_out_vld;
 
   // data in input are already in the correct form for sending directly to the lane
-  assign  fifo_ce_in_vld  = (reading_which_pc[0] == 1) ? fifo_ce_pc_in_vld[0]  : fifo_ce_pc_in_vld[1];
-  assign  fifo_ce_in_data = fifo_ce_in_vld ? ((reading_which_pc[0] == 1) ? fifo_ce_pc_in_data[0] : fifo_ce_pc_in_data[1]) : 'h0;
+  assign  fifo_ce_in_vld  = (reading_which_pc[0] == 1) ? fifo_ce_pc_in_vld[0]  : (reading_which_pc[1] == 1) ? fifo_ce_pc_in_vld[1] : 1'b0;
+  assign  fifo_ce_in_data = fifo_ce_in_vld & (reading_which_pc[0] == 1) ? fifo_ce_pc_in_data[0] : fifo_ce_in_vld & (reading_which_pc[1] == 1)  ? fifo_ce_pc_in_data[1] : 'h0;
 
   // backpressure over ready for each fifo
   assign fifo_ce_pc_in_rdy[0] = (reading_which_pc == 1) ? fifo_ce_in_rdy : 1'b0;

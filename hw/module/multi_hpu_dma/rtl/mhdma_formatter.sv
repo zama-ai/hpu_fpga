@@ -172,6 +172,7 @@ module mhdma_formatter
   logic [  HPU_ID_W-1:0] nack_hpu_id;
   logic [  IOP_ID_W-1:0] nack_iop_id;
 
+  // TODO: test several notify
   always_ff @(posedge clk_mrmac) begin
     if (nrx_valid) begin
       nack_src_addr <= nrx_cmd_payload[NRX_SRC_ADDR_OFS-1:NRX_HPU_ID_OFS];

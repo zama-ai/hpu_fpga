@@ -958,7 +958,7 @@ module tb_multi_hpu_dma;
       for (int k = 0; k < gen_localparam[0].PC_NB_WORDS; k++) begin
 
         // I read from 0 to PC_NB_WORDS in HPU_B and
-        if ( gen_mem_hpu[0].gen_mem_pc[0].axi4_mem_ct.axi4_ram_ct_wr.mem[addr_hpu_0 + k] != gen_mem_hpu[1].gen_mem_pc[0].axi4_mem_ct.axi4_ram_ct_wr.mem[addr_hpu_1 + k] ) begin
+        if (gen_mem_hpu[0].gen_mem_pc[0].axi4_mem_ct.axi4_ram_ct_wr.mem[addr_hpu_0 + k] != gen_mem_hpu[1].gen_mem_pc[0].axi4_mem_ct.axi4_ram_ct_wr.mem[addr_hpu_1 + k]) begin
           $display("Memory mismatch at PC=%0d, offset=%0d: HPU_0[%0d]=%0h != HPU_1[%0d]=%0h", 0, k,
                     addr_hpu_0 + k, gen_mem_hpu[0].gen_mem_pc[0].axi4_mem_ct.axi4_ram_ct_wr.mem[addr_hpu_0 + k],
                     addr_hpu_1 + k, gen_mem_hpu[1].gen_mem_pc[0].axi4_mem_ct.axi4_ram_ct_wr.mem[addr_hpu_1 + k]);
@@ -967,6 +967,18 @@ module tb_multi_hpu_dma;
         end
       end
       // PC 1
+      // Direct comparison of memory locations
+      for (int k = 0; k < gen_localparam[1].PC_NB_WORDS; k++) begin
+
+        // I read from 0 to PC_NB_WORDS in HPU_B and
+        if (gen_mem_hpu[0].gen_mem_pc[1].axi4_mem_ct.axi4_ram_ct_wr.mem[addr_hpu_0 + k] != gen_mem_hpu[1].gen_mem_pc[1].axi4_mem_ct.axi4_ram_ct_wr.mem[addr_hpu_1 + k]) begin
+          $display("Memory mismatch at PC=%0d, offset=%0d: HPU_0[%0d]=%0h != HPU_1[%0d]=%0h", 1, k,
+                    addr_hpu_0 + k, gen_mem_hpu[0].gen_mem_pc[1].axi4_mem_ct.axi4_ram_ct_wr.mem[addr_hpu_0 + k],
+                    addr_hpu_1 + k, gen_mem_hpu[1].gen_mem_pc[1].axi4_mem_ct.axi4_ram_ct_wr.mem[addr_hpu_1 + k]);
+          mismatch_found = 1;
+          error_write_missmatch = 1'b1;
+        end
+      end
 
       if (~mismatch_found)
         $display("Memory check PASSED: HPU_A and HPU_B contents match");

@@ -484,18 +484,6 @@ module mhdma_master
   //  - between fifo_ce_rx and fifo_wr_pc we will avoid stalling as much as possible
   //  - we must transmit to regif relevant info and raise interrupt when all words ready in hbm
 
-  logic [DST_ADDR_W-1:0] received_dst_addr;
-  logic [  IOP_ID_W-1:0] received_iop_id;
-  logic [  HPU_ID_W-1:0] received_hpu_id;
-
-  always_ff @(posedge clk_mrmac) begin
-    if (decoded_header.valid) begin
-      received_dst_addr <= decoded_header.dst_addr;
-      received_iop_id   <= decoded_header.iop_id;
-      received_hpu_id   <= decoded_header.hpu_id;
-    end
-  end
-
   // packet pulses
   logic new_pkt_reception;
   logic first_pkt_reception;
@@ -507,15 +495,39 @@ module mhdma_master
   assign first_pkt_reception = new_pkt_reception & (decoded_header.seq_num == 0);
   assign last_pkt_reception  = new_pkt_reception & (decoded_header.seq_num == NB_PACKETS_FULL);
 
+  logic [DST_ADDR_W-1:0] received_dst_addr;
+  logic [  IOP_ID_W-1:0] received_iop_id;
+  logic [  HPU_ID_W-1:0] received_hpu_id;
+  logic                  received_valid;
+
+  always_ff @(posedge clk_mrmac) begin
+    if (decoded_header.valid) begin
+      received_dst_addr <= decoded_header.dst_addr;
+      received_iop_id   <= decoded_header.iop_id;
+      received_hpu_id   <= decoded_header.hpu_id;
+    end
+  end
+  always_ff @(posedge clk_mrmac)
+    received_valid<=decoded_header.valid;
+
   // phys_addr = hbm_pc_offset + ctId * ciphertext_size
   logic [ETH_PC-1:0] [AXI4_ADD_W-1:0] phy_addr;
+  logic dst_addr_valid;
+  logic phy_addr_valid;
+
+  assign dst_addr_valid = received_valid & (decoded_header.req_id == REQ_ID_EMISSION) & (decoded_header.seq_num ==0);
+
   generate
     for (genvar gen_p=0; gen_p<ETH_PC; gen_p=gen_p+1)
       always_ff @(posedge clk_mrmac)
-          if (decoded_header.valid)
+          if (dst_addr_valid)
             phy_addr[gen_p] <= regf_ct_mem_addr[gen_p] + (received_dst_addr << PC_STRIDE);
   endgenerate
 
+  always_ff @(posedge clk_mrmac)
+    phy_addr_valid <= dst_addr_valid;
+
+  // TODO: if seq_num != 0 and  received_dst_addr != previous, raise an errror
 
   logic [ETH_PC-1:0] axi4_write_pc;
   // word distribution to each fifo pc ------------------------------------------------------------
@@ -545,7 +557,7 @@ module mhdma_master
     end
   end
 
-  // launch reads over the two PCs independently
+  // launch reads over the two PCs independently one at a time
   generate
     for (genvar gen_i=0; gen_i<ETH_PC; gen_i++) begin : gen_last_cnt
       logic [$clog2(gen_localparam[gen_i].PC_NB_WRITES):0] pc_last_cnt;
@@ -554,7 +566,7 @@ module mhdma_master
           pc_last_cnt <= 'h0;
         end else begin
           if(m_axi4_wlast[gen_i]) begin
-            pc_last_cnt <= pc_last_cnt[gen_i]+1;
+            pc_last_cnt <= pc_last_cnt+1;
           end else if (pc_last_cnt == gen_localparam[gen_i].PC_NB_WRITES) begin
             pc_last_cnt <= 'h0;
           end
@@ -579,10 +591,21 @@ module mhdma_master
   end
 
   // deserialization of 64bits words (MRMAC) to 256b (AXI4_DATA_W)
-
   logic [FIFO_PC_DATA_W-1:0]                    realined_word;
   logic [$clog2(NB_MRMRAC_WORDS_PER_WRITE)-1:0] realign_cnt;
   logic                                         realined_word_vld;
+
+  // // because in one read we have NB_MRMRAC_WORDS_PER_WRITE, we must delay the signal pc_read_finished
+  // logic [NB_MRMRAC_WORDS_PER_WRITE-1:0] temp_finished_flag;
+  // always_ff @(posedge clk_mrmac)
+  //   temp_finished_flag[0] <= fifo_cerx_out_vld & fifo_cerx_out_rdy;
+
+  // generate
+  // for (genvar gen_i = 1; gen_i<NB_MRMRAC_WORDS_PER_WRITE; gen_i++) begin
+  //   always_ff @(posedge clk_mrmac)
+  //     temp_finished_flag[gen_i] <= temp_finished_flag[gen_i-1];
+  // end
+  // endgenerate
 
   always_ff @(posedge clk_mrmac) begin
     if(~resetn_mrmac) begin
@@ -662,18 +685,6 @@ module mhdma_master
         end
       end
 
-      always_ff @(posedge clk_mrmac) begin
-        if (~resetn_mrmac) begin
-          enough_words <= 1'b0;
-        end else begin
-          if (fifo_pc_wr_cnt == MAX_BURST_SIZE) begin
-            enough_words <= 1'b1;
-          end else if(m_axi4_wlast[gen_wr]) begin
-            enough_words <= 1'b0;
-          end
-        end
-      end
-
       // ======================================================================================= //
       // Address
       // ======================================================================================= //
@@ -682,6 +693,20 @@ module mhdma_master
       logic                                                 axi_awrite;
       logic                                                 axi_awriteD;
       logic                                                 aw_valid;
+
+      always_ff @(posedge clk_mrmac) begin
+        if (~resetn_mrmac) begin
+          enough_words <= 1'b0;
+        end else begin
+          if(m_axi4_wlast[gen_wr])begin
+            enough_words <= 1'b0;
+          end else if ((gen_localparam[gen_wr].PC_REMAINS != 0) & (axi_write_cnt == 1)) begin
+            enough_words <= fifo_pc_wr_out_vld;
+          end else if (fifo_pc_wr_cnt >= MAX_BURST_SIZE) begin
+            enough_words <= 1'b1;
+          end
+        end
+      end
 
       always_ff @(posedge clk_mrmac)
         axi_awrite <= (axi_write_cnt > 0) && axi4_write_pc[gen_wr] && m_axi4_awready[gen_wr] & enough_words;
@@ -697,7 +722,7 @@ module mhdma_master
         if (~resetn_mrmac) begin
           axi_write_cnt <= gen_localparam[gen_wr].PC_NB_WRITES;
         end else begin
-          if (aw_valid) begin
+          if (m_axi4_wlast[gen_wr] & ~(axi_write_cnt == 0)) begin
             axi_write_cnt <= axi_write_cnt - 1;
           end else if (m_axi4_wlast[gen_wr] & (axi_write_cnt == 0)) begin
             axi_write_cnt <= gen_localparam[gen_wr].PC_NB_WRITES;
@@ -710,7 +735,7 @@ module mhdma_master
       // read address takes the physical address computed earlier as soon as the value is ready
       // when starting the reading process we compute the offset accounting burst sequence
       always_ff @(posedge clk_mrmac) begin
-        if (axi_write_cnt == gen_localparam[gen_wr].PC_NB_WRITES) begin
+        if (phy_addr_valid) begin
           mhdma_write_addr <= phy_addr[gen_wr];
         end else if (m_axi4_wlast[gen_wr]) begin
           mhdma_write_addr <= mhdma_write_addr + (AXI4_DATA_BYTES*MAX_BURST_SIZE);
@@ -744,7 +769,7 @@ module mhdma_master
       assign m_axi4_awvalid[gen_wr] = (aw_valid & m_axi4_awready[gen_wr]) ? 1'b1             :'h0;
 
       always_comb begin
-        if ((gen_localparam[gen_wr].PC_REMAINS != 0) && (axi_write_cnt == 0)) begin
+        if ((gen_localparam[gen_wr].PC_REMAINS != 0) && (axi_write_cnt == 1)) begin
           m_axi4_awlen[gen_wr] = (aw_valid && m_axi4_awready[gen_wr]) ? gen_localparam[gen_wr].PC_REMAINS-1 : 'h0;
         end else begin
           m_axi4_awlen[gen_wr] = (aw_valid && m_axi4_awready[gen_wr]) ? MAX_BURST_SIZE-1 : 'h0;
@@ -771,10 +796,17 @@ module mhdma_master
         if (~resetn_mrmac) begin
           axi_word_cnt <= MAX_BURST_SIZE;
         end else begin
-          if (m_axi4_wlast[gen_wr]) begin
-            axi_word_cnt <= MAX_BURST_SIZE;
-          end else if (m_axi4_wvalid[gen_wr] & m_axi4_wready[gen_wr]) begin
-            axi_word_cnt <= axi_word_cnt -1;
+          if ((axi_write_cnt != 1) | (gen_localparam[gen_wr].PC_REMAINS == 0)) begin
+            // when we are not in the last word or when we don't have remaining words (= only bursts)
+            if (m_axi4_wlast[gen_wr]) begin
+              axi_word_cnt <= MAX_BURST_SIZE;
+            end else if (m_axi4_wvalid[gen_wr] & m_axi4_wready[gen_wr]) begin
+              axi_word_cnt <= axi_word_cnt -1;
+            end
+          end else begin
+            // when we don't have only bursts and have remaining words
+            // we find how many are left and process them
+            axi_word_cnt <= fifo_pc_wr_cnt;
           end
         end
       end
@@ -845,21 +877,21 @@ module mhdma_master
   // We already check that we send the correct number of workds into HBM with axi_word_cnt on both PC.
   // by design we cannot have several writes in HBM with different read request
   logic itr_read_request;
-  logic [ETH_PC-1:0] write_complete_cnt;
+  logic [$clog2(gen_localparam[0].PC_NB_WRITES + gen_localparam[1].PC_NB_WRITES):0] write_complete_cnt;
 
   always_ff @(posedge clk_mrmac) begin
     if (~resetn_mrmac) begin
       write_complete_cnt <= 'h0;
     end else begin
-      if ( gen_ce_write[0].write_complete | gen_ce_write[1].write_complete ) begin
+      if (gen_ce_write[0].write_complete | gen_ce_write[1].write_complete ) begin
         write_complete_cnt <= write_complete_cnt +1;
-      end else if(write_complete_cnt == 2) begin
+      end else if(write_complete_cnt == (gen_localparam[0].PC_NB_WRITES + gen_localparam[1].PC_NB_WRITES)) begin
         write_complete_cnt <= 'h0;
       end
     end
   end
 
-  assign itr_read_request = (write_complete_cnt == 2) ? 1'b1 : 1'b0;
+  assign itr_read_request = (write_complete_cnt == (gen_localparam[0].PC_NB_WRITES + gen_localparam[1].PC_NB_WRITES)) ? 1'b1 : 1'b0;
 
   // regf payload information ---------------------------------------------------------------------
   logic [REG_DATA_W-1:0] rr_in_data;
