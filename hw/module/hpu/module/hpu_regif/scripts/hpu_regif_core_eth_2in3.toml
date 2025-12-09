@@ -118,7 +118,7 @@ offset= 0x100
   description="Different parameters for qsfp lines"
   owner="User"
   read_access="Read"
-  write_access="Write"
+  write_access="WriteNotify"
   field.size_b  = {size_b=16, offset_b=0,  default={Cst=0x4000}, description="size request in bytes, default is ct size"}
   field.node_id = {size_b=4,  offset_b=16, default={Cst=0x0},    description="node id or HPU target id"}
   field.req_id  = {size_b=4,  offset_b=20, default={Cst=0x0},    description="request identifier"}
@@ -128,14 +128,14 @@ offset= 0x100
   description="request address"
   owner="User"
   read_access="Read"
-  write_access="Write"
+  write_access="WriteNotify"
   field.src = {size_b=16, offset_b=0,  default={Cst=0x0}, description="ciphertext source address"}
   field.dst = {size_b=16, offset_b=16, default={Cst=0x0}, description="ciphertext destination address"}
 
 [section.request.register.notify]
   description="When a notify is received, this register will be updated"
   owner="Kernel"
-  read_access="Read"
+  read_access="ReadNotify"
   write_access="None"
   field.iop_id    = {size_b=4,  offset_b=0,  default={Cst=0x0}, description="what is the IOP ID of received Notify"}
   field.node_id   = {size_b=4,  offset_b=4,  default={Cst=0x0}, description="what HPU is the source of this Notify"}
@@ -144,7 +144,7 @@ offset= 0x100
 [section.request.register.read_request]
   description="When a read request has bneen processed, this register will be updated"
   owner="Kernel"
-  read_access="Read"
+  read_access="ReadNotify"
   write_access="None"
   field.iop_id    = {size_b=4,  offset_b=0,  default={Cst=0x0}, description="what is the IOP ID of received ct"}
   field.node_id   = {size_b=4,  offset_b=4,  default={Cst=0x0}, description="from what HPU has been retreived this ct"}

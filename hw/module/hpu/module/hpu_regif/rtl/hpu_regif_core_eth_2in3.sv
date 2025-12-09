@@ -1,7 +1,7 @@
 // ============================================================================================== //
 // Description  : Axi4-lite register bank
 // This file was generated with rust regmap generator:
-//  * Date:  2025-12-08
+//  * Date:  2025-12-09
 //  * Tool_version: bd49564daf1a99d615cb6dbb121b54bfbeef8b22
 // ---------------------------------------------------------------------------------------------- //
 // xR[n]W[na]
@@ -30,8 +30,8 @@
 //      : Value provided by the RTL. The host can read it with notify. The write data is processed by the RTL.
 // ============================================================================================== //
 module hpu_regif_core_eth_2in3
-import axi_if_shell_axil_pkg::*;
 import axi_if_common_param_pkg::*;
+import axi_if_shell_axil_pkg::*;
 import hpu_regif_core_eth_2in3_pkg::*;
 #()(
   input  logic                           clk,
@@ -82,14 +82,18 @@ import hpu_regif_core_eth_2in3_pkg::*;
     , output logic [REG_DATA_W-1: 0] r_hpu_id_seven
   // Register IO: request_req_id
     , output request_req_id_t r_request_req_id
+    , output logic r_request_req_id_wr_en
   // Register IO: request_req_addr
     , output request_req_addr_t r_request_req_addr
+    , output logic r_request_req_addr_wr_en
   // Register IO: request_notify
     , output request_notify_t r_request_notify
     , input  request_notify_t r_request_notify_upd
+    , output logic r_request_notify_rd_en
   // Register IO: request_read_request
     , output request_read_request_t r_request_read_request
     , input  request_read_request_t r_request_read_request_upd
+    , output logic r_request_read_request_rd_en
   // Register IO: request_stat_notify
     , output request_stat_notify_t r_request_stat_notify
     , input  request_stat_notify_t r_request_stat_notify_upd
@@ -360,7 +364,7 @@ import hpu_regif_core_eth_2in3_pkg::*;
     request_read_request_default = 'h0;
     request_read_request_default.iop_id = 'h0;
     request_read_request_default.node_id = 'h0;
-    request_read_request_default.src_addr = 'h0;
+    request_read_request_default.dst_addr = 'h0;
   end
 //-- Default request_stat_notify
   request_stat_notify_t request_stat_notify_default;
@@ -580,6 +584,16 @@ import hpu_regif_core_eth_2in3_pkg::*;
 // Register FF: request_req_id
   logic [REG_DATA_W-1:0] r_request_req_idD;
   assign r_request_req_idD = (wr_en_ok && (wr_add[AXIL_ADD_RANGE_W-1:0] == REQUEST_REQ_ID_OFS[AXIL_ADD_RANGE_W-1:0]))? wr_data: r_request_req_id;
+  logic r_request_req_id_wr_enD;
+  assign r_request_req_id_wr_enD = wr_en_ok && (wr_add[AXIL_ADD_RANGE_W-1:0] == REQUEST_REQ_ID_OFS[AXIL_ADD_RANGE_W-1:0]);
+  always_ff @(posedge clk) begin
+    if (!s_rst_n) begin
+      r_request_req_id_wr_en <= 1'b0;
+    end
+    else begin
+      r_request_req_id_wr_en <= r_request_req_id_wr_enD;
+    end
+  end
   always_ff @(posedge clk) begin
     if (!s_rst_n) begin
       r_request_req_id       <= request_req_id_default;
@@ -591,6 +605,16 @@ import hpu_regif_core_eth_2in3_pkg::*;
 // Register FF: request_req_addr
   logic [REG_DATA_W-1:0] r_request_req_addrD;
   assign r_request_req_addrD = (wr_en_ok && (wr_add[AXIL_ADD_RANGE_W-1:0] == REQUEST_REQ_ADDR_OFS[AXIL_ADD_RANGE_W-1:0]))? wr_data: r_request_req_addr;
+  logic r_request_req_addr_wr_enD;
+  assign r_request_req_addr_wr_enD = wr_en_ok && (wr_add[AXIL_ADD_RANGE_W-1:0] == REQUEST_REQ_ADDR_OFS[AXIL_ADD_RANGE_W-1:0]);
+  always_ff @(posedge clk) begin
+    if (!s_rst_n) begin
+      r_request_req_addr_wr_en <= 1'b0;
+    end
+    else begin
+      r_request_req_addr_wr_en <= r_request_req_addr_wr_enD;
+    end
+  end
   always_ff @(posedge clk) begin
     if (!s_rst_n) begin
       r_request_req_addr       <= request_req_addr_default;
@@ -602,25 +626,13 @@ import hpu_regif_core_eth_2in3_pkg::*;
 // Register FF: request_notify
   logic [REG_DATA_W-1:0] r_request_notifyD;
   assign r_request_notifyD       = r_request_notify_upd;
-  always_ff @(posedge clk) begin
-    if (!s_rst_n) begin
-      r_request_notify       <= request_notify_default;
-    end
-    else begin
-      r_request_notify       <= r_request_notifyD;
-    end
-  end
+  assign r_request_notify_rd_en = rd_en_ok && (rd_add[AXIL_ADD_RANGE_W-1:0] == REQUEST_NOTIFY_OFS[AXIL_ADD_RANGE_W-1:0]);
+  assign r_request_notify = r_request_notify_upd;
 // Register FF: request_read_request
   logic [REG_DATA_W-1:0] r_request_read_requestD;
   assign r_request_read_requestD       = r_request_read_request_upd;
-  always_ff @(posedge clk) begin
-    if (!s_rst_n) begin
-      r_request_read_request       <= request_read_request_default;
-    end
-    else begin
-      r_request_read_request       <= r_request_read_requestD;
-    end
-  end
+  assign r_request_read_request_rd_en = rd_en_ok && (rd_add[AXIL_ADD_RANGE_W-1:0] == REQUEST_READ_REQUEST_OFS[AXIL_ADD_RANGE_W-1:0]);
+  assign r_request_read_request = r_request_read_request_upd;
 // Register FF: request_stat_notify
   logic [REG_DATA_W-1:0] r_request_stat_notifyD;
   assign r_request_stat_notifyD       = r_request_stat_notify_upd;

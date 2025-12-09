@@ -5,8 +5,8 @@
   "offset": 0,
   "range": 393216,
   "ext_pkg": [
-    "axi_if_common_param_pkg",
-    "axi_if_shell_axil_pkg"
+    "axi_if_shell_axil_pkg",
+    "axi_if_common_param_pkg"
   ],
   "section": [
     {
@@ -4383,7 +4383,7 @@
           "description": "Different parameters for qsfp lines",
           "owner": "User",
           "read_access": "Read",
-          "write_access": "Write",
+          "write_access": "WriteNotify",
           "offset": 327936,
           "default": {
             "ParamsField": {
@@ -4452,7 +4452,7 @@
           "description": "request address",
           "owner": "User",
           "read_access": "Read",
-          "write_access": "Write",
+          "write_access": "WriteNotify",
           "offset": 327940,
           "default": {
             "ParamsField": {
@@ -4494,7 +4494,7 @@
           "name": "notify",
           "description": "When a notify is received, this register will be updated",
           "owner": "Kernel",
-          "read_access": "Read",
+          "read_access": "ReadNotify",
           "write_access": "None",
           "offset": 327944,
           "default": {
@@ -4550,7 +4550,7 @@
           "name": "read_request",
           "description": "When a read request has bneen processed, this register will be updated",
           "owner": "Kernel",
-          "read_access": "Read",
+          "read_access": "ReadNotify",
           "write_access": "None",
           "offset": 327948,
           "default": {
@@ -4566,7 +4566,7 @@
                   "'h0"
                 ],
                 [
-                  "src_addr",
+                  "dst_addr",
                   "'h0"
                 ]
               ]
@@ -4592,8 +4592,8 @@
               }
             },
             {
-              "name": "src_addr",
-              "description": "what is the source address of the received ct",
+              "name": "dst_addr",
+              "description": "where is the ct",
               "size_b": 16,
               "offset_b": 16,
               "default": {

@@ -1,5 +1,5 @@
 # HPU_REGIF_CORE documentation
-**Date**: 2025-12-08
+**Date**: 2025-12-09
 **Tool Version**: bd49564daf1a99d615cb6dbb121b54bfbeef8b22
 
 ## RegisterMap Overview
@@ -17,7 +17,7 @@ HPU ethernet configuration register interface. Will be accessed by RPU to define
 **Offset**: 0x0
 **Range**: 0x60000
 **Word Size (b)**: 32
-**External Packages**: "axi_if_common_param_pkg.sv","axi_if_shell_axil_pkg.sv"
+**External Packages**: "axi_if_shell_axil_pkg.sv","axi_if_common_param_pkg.sv"
 
 
 ---
@@ -4281,7 +4281,7 @@ Below is a summary of all the registers in the current section request:
 - **Description**: Different parameters for qsfp lines
 - **Owner**: User
 - **Read Access**: Read
-- **Write Access**: Write
+- **Write Access**: WriteNotify
 - **Offset**: 0x50100
 - **Default**: C.f. fields
 
@@ -4307,7 +4307,7 @@ Register req_id contains following Sub-fields:
 - **Description**: request address
 - **Owner**: User
 - **Read Access**: Read
-- **Write Access**: Write
+- **Write Access**: WriteNotify
 - **Offset**: 0x50104
 - **Default**: C.f. fields
 
@@ -4330,7 +4330,7 @@ Register req_addr contains following Sub-fields:
 
 - **Description**: When a notify is received, this register will be updated
 - **Owner**: Kernel
-- **Read Access**: Read
+- **Read Access**: ReadNotify
 - **Write Access**: None
 - **Offset**: 0x50108
 - **Default**: C.f. fields
@@ -4355,7 +4355,7 @@ Register notify contains following Sub-fields:
 
 - **Description**: When a read request has bneen processed, this register will be updated
 - **Owner**: Kernel
-- **Read Access**: Read
+- **Read Access**: ReadNotify
 - **Write Access**: None
 - **Offset**: 0x5010c
 - **Default**: C.f. fields
@@ -4369,7 +4369,7 @@ Register read_request contains following Sub-fields:
 |-----------:|:--------:|:------:|:------------:|:--------------|
 | iop_id      | 0 | 4 |0| what is the IOP ID of received ct |
 | node_id      | 4 | 4 |0| from what HPU has been retreived this ct |
-| src_addr      | 16 | 16 |0| what is the source address of the received ct |
+| dst_addr      | 16 | 16 |0| where is the ct |
 
 
 
