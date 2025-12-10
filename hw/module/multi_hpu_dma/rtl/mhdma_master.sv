@@ -311,7 +311,7 @@ module mhdma_master
       NTX_SEND_NOTIFY:
         ntx_next_state = notify_request_sent ? NTX_WAIT_ACK : NTX_SEND_NOTIFY;
       NTX_WAIT_ACK:
-        ntx_next_state = notify_ack_received ? NTX_WAIT_REQUEST : (ntx_timeout_cdc ? NTX_SEND_NOTIFY : ntx_next_state);
+        ntx_next_state = notify_ack_received ? NTX_WAIT_REQUEST : (ntx_timeout_cdc ? NTX_SEND_NOTIFY : ntx_state);
     endcase
   end
 

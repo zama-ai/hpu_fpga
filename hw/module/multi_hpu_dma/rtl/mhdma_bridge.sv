@@ -299,6 +299,7 @@ module mhdma_bridge
     .new_ct_emission_request_pending(new_ct_emission_request_pending          ),
     .notify_ack_allowed             (notify_ack_allowed                       ),
     .ct_emission_allowed            (ct_emission_allowed                      ),
+    .ct_emission_finished           (ct_emission_all_packets_received         ),
     // notify ack payload -----------------------------------------------------
     .nrx_cmd_payload                (nrx_cmd_payload                          ),
     .nrx_valid                      (nrx_valid                                ),

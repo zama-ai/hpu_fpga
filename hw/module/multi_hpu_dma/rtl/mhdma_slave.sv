@@ -15,9 +15,9 @@ module mhdma_slave
   import axi_if_shell_axil_pkg::*;   // REG_DATA_W
   import axi_if_common_param_pkg::*; // HBM page
 #(
-  parameter                int CDC_SYNC_STAGES = 2,
-  parameter                int MAX_BURST_SIZE  = PAGE_BYTES/AXI4_DATA_BYTES,
-  parameter              [3:0] PC_STRIDE       = 'hB,
+  parameter int   CDC_SYNC_STAGES = 2,
+  parameter int   MAX_BURST_SIZE  = PAGE_BYTES/AXI4_DATA_BYTES,
+  parameter [3:0] PC_STRIDE       = 'hB,
   // must not add default values to theses parameters, comming from bridge module
   parameter int PC_NB_WORDS       [ETH_PC],
   parameter int PC_REMAINS        [ETH_PC],
@@ -43,6 +43,8 @@ module mhdma_slave
 
   input  logic                                notify_ack_allowed,
   input  logic                                ct_emission_allowed,
+
+  input  logic                                ct_emission_finished,
   // format interface ---------------------------------------------------------
   output logic             [   NRX_WIDTH-1:0] nrx_cmd_payload,
   output logic                                nrx_valid,
@@ -123,10 +125,12 @@ module mhdma_slave
   logic [NRX_WIDTH-1:0] nrx_cmd_data;
   logic                 nrx_cmd_valid;
   logic                 nrx_cmd_rdy;
+  logic                 fifo_2clk_rdy;
 
   assign nrx_cmd_in_we = (nrx_state == NTX_TRANSMIT_ACK) & decoded_header.valid & nrx_cmd_in_rdy;
 
   // in order to not lose any commands if we receive several notify
+  // nrx_cmd_data is redirected as well to notify ack and to regif interface via 2clk fifo
   fifo_ram_rdy_vld # (
     .WIDTH      (NRX_WIDTH),
     .DEPTH      (NRX_DEPTH),
@@ -144,27 +148,20 @@ module mhdma_slave
     .out_rdy (nrx_cmd_rdy)
   );
 
-  // TODO: notify_ack_allowed ?
+  // backpressure from both 2clk fifo and nack
+  assign nrx_cmd_rdy = fifo_2clk_rdy & notify_ack_allowed;
 
   // signals that will be propagated to format module for ack
   assign nrx_cmd_payload = nrx_cmd_valid ? nrx_cmd_data : 'h0;
   assign nrx_valid       = nrx_cmd_valid;
 
-  // NRX REGF queue ----------------------------------------------------------
+  // regfile interface --------------------------------------------------------
   // === MRMAC domain
   logic [SRC_ADDR_W-1:0]     nrx_ct_src_addr;
   logic [HPU_ID_W-1:0]       nrx_hpu_id;
   logic [IOP_ID_W-1:0]       nrx_iop_id;
-  //  fifo in
   logic [NRX_REGF_WIDTH-1:0] nrxq_in_data;
-  // tmp
-  logic [NRX_REGF_WIDTH-1:0] nrxq_data_kept;
-  logic                      nrxq_data_kept_avail;
-  logic                      nrxq_data_vld;
-
   // === CFG domain
-  logic                      nrxq_out_rdy;
-  logic                      nrxq_out_vld;
   logic                      nrqq_out_vld;
   logic                      nrqq_out_rdy;
 
@@ -186,7 +183,7 @@ module mhdma_slave
     .in_clk   (clk_mrmac),
     .in_rstn  (resetn_mrmac),
     .in_data  (nrxq_in_data),
-    .in_rdy   (nrx_cmd_rdy),
+    .in_rdy   (fifo_2clk_rdy),
     .in_vld   (nrx_cmd_valid),
     // Read Domain ports: CFG domain
     .out_clk  (clk_cfg),
@@ -231,7 +228,7 @@ module mhdma_slave
   assign ct_emission_request_in_use = (cem_state == CEM_READ_N_SEND) ? 1'b1: 1'b0;
 
   // TODO:
-  assign cem_over = 1'b0;
+  assign cem_over = ct_emission_all_packets_received;
 
   // sending command to read request command queue ------------------------------------------------
   // when qsfp tlast is ready we are sure that all commands have been correctly received
