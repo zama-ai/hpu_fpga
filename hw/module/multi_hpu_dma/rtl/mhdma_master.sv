@@ -892,6 +892,7 @@ module mhdma_master
   // regf payload information ---------------------------------------------------------------------
   logic [REG_DATA_W-1:0] rr_in_data;
   logic                  rr_out_vld;
+  logic                  rr_out_rdy;
 
   assign rr_in_data = {received_dst_addr, 4'b0, received_hpu_id, received_iop_id};
 
@@ -912,23 +913,11 @@ module mhdma_master
     .out_clk  (clk_cfg),
     .out_rstn (resetn_cfg),
     .out_data (regf_read_payload),
-    .out_rdy  (~interrupt_read_request),
+    .out_rdy  (rr_out_rdy),
     .out_vld  (rr_out_vld)
   );
 
-  logic itr_rr_cfg;
+  assign interrupt_read_request = rr_out_vld;
+  assign rr_out_rdy = interrupt_read_request & clear_interrupt_rr;
 
-  always_ff @(posedge clk_cfg) begin
-    if (~resetn_cfg) begin
-      itr_rr_cfg <= 1'b0;
-    end else begin
-      if(rr_out_vld) begin
-        itr_rr_cfg <= 1'b1;
-      end else if (clear_interrupt_rr) begin
-        itr_rr_cfg <= 1'b0;
-      end
-    end
-  end
-
-  assign interrupt_read_request = itr_rr_cfg;
 endmodule

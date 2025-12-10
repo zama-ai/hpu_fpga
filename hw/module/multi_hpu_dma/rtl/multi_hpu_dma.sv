@@ -221,15 +221,17 @@ module multi_hpu_dma
     .r_hbm_axi4_addr_2in3_ct_pc1_lsb    (r_ct_mem_addr[1][0*REG_DATA_W+:REG_DATA_W]),
     .r_hbm_axi4_addr_2in3_ct_pc1_msb    (r_ct_mem_addr[1][1*REG_DATA_W+:REG_DATA_W]),
     // RPU requests -------------------------------------------------------------------------------
-    .r_request_req_id_wr_en   (r_request_req_id_wr_en),
-    .r_request_req_id         (r_request_req_id),
-    .r_request_req_addr_wr_en (r_request_req_addr_wr_en),
-    .r_request_req_addr       (r_request_req_addr),
+    .r_request_req_id_wr_en                (r_request_req_id_wr_en),
+    .r_request_req_id                      (r_request_req_id),
+
+    .r_request_req_addr_wr_en              (r_request_req_addr_wr_en),
+    .r_request_req_addr                    (r_request_req_addr),
     // Updated from RTL only ----------------------------------------------------------------------
     .r_request_read_request_upd            (r_request_read),
-    .r_request_read_request_rd_en   (clear_interrupt_rr),
-    .r_request_notify_upd (r_request_notify),
-    .r_request_notify_rd_en (clear_interrupt_notify),
+    .r_request_read_request_rd_en          (clear_interrupt_rr),
+
+    .r_request_notify_upd                  (r_request_notify),
+    .r_request_notify_rd_en                (clear_interrupt_notify),
     // control ------------------------------------------------------------------------------------
     .r_system_line                         (r_system_line),
     .r_reset_datapath                      (r_reset_datapath),
