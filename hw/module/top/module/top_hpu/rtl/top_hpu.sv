@@ -61,12 +61,6 @@ module top_hpu #(
   input  logic        gt_ref_clk_n,
   input  logic        gt_ref_clk_p,
 
-  // HBM ----------------------------------------------------------------------
-  input  logic [0:0]  top_hbm_ref_clk_0_clk_n,
-  input  logic [0:0]  top_hbm_ref_clk_0_clk_p,
-  input  logic [0:0]  top_hbm_ref_clk_1_clk_p,
-  input  logic [0:0]  top_hbm_ref_clk_1_clk_n,
-
   // Transceivers --------------------------------------------------------------
   // bank 111: for use with GTM in the lower clock region X0Y7, GTM_QUAD_X0Y9
   input  logic [3:0] qsfp3_4x_grx_n,

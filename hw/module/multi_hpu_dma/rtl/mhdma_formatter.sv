@@ -66,6 +66,74 @@ module mhdma_formatter
     end
   end
 
+  // =========================================================================================== //
+  // Ciphertext emission specific
+  // =========================================================================================== //
+  // During CE we need to increment seq_num for each packet sent
+  // For the arbiter we need the information to release the fsm that all have been sent
+  logic [SEQ_NUM_W-1:0] ce_seq_num;
+  logic                 ct_emission_all_packets_transmitted;
+
+  // =========================================================================================== //
+  // Building headers
+  // =========================================================================================== //
+  logic [$clog2(NB_WORDS_MAX)+1:0]   tx_cnt;
+  logic [      MRMAC_AXIS_W/8-1:0]   tx_byte_enable;
+  logic [      MRMAC_AXIS_W/8-1:0]   tx_byte_enable_d;
+  logic [$clog2(MRMAC_AXIS_W/8)-1:0] last_word_bytes;
+  logic                              sending_request;
+
+  // Header cycle by cycle construction ---------------------------------------
+  logic [  MAC_ADDR_W-1:0] header_target_hpu_mac_addr;
+  logic [ETHERNET_LEN-1:0] header_eth_len;
+  logic [   SEQ_NUM_W-1:0] header_seq_num;
+  logic [  DST_ADDR_W-1:0] header_dst_addr;
+  logic [  SRC_ADDR_W-1:0] header_src_addr;
+  logic [    SIZE_B_W-1:0] header_size_b;
+  logic [    REQ_ID_W-1:0] header_req_id;
+  logic [    IOP_ID_W-1:0] header_iop_id;
+  logic                    tx_last;
+
+  assign last_word_bytes = (ETH_NB_BYTES_HEADER + header_eth_len) & {$clog2(MRMAC_AXIS_W/8){1'b1}};
+
+  always_comb begin
+    case (last_word_bytes)
+      'h0 :
+        tx_byte_enable_d <= 8'hFF;
+      'h1 :
+        tx_byte_enable_d <= 8'h01;
+      'h2 :
+        tx_byte_enable_d <= 8'h03;
+      'h3 :
+        tx_byte_enable_d <= 8'h07;
+      'h4 :
+        tx_byte_enable_d <= 8'h0F;
+      'h5 :
+        tx_byte_enable_d <= 8'h1F;
+      'h6 :
+        tx_byte_enable_d <= 8'h3F;
+      'h7 :
+        tx_byte_enable_d <= 8'h7F;
+      default :
+        tx_byte_enable_d <= 8'h0;
+    endcase
+  end
+
+  always_ff @(posedge clk_mrmac) begin
+    if (~resetn_mrmac) begin
+      tx_byte_enable <= 8'h00;
+    end else begin
+      if (sending_request & qsfp_tx_tready) begin
+        if ((tx_cnt == 0) | ~small_frame)
+          tx_byte_enable <= 8'hFF;
+        else if (small_frame && (tx_cnt == (NB_WORDS_MIN-1)) )
+          tx_byte_enable <= tx_byte_enable_d;
+        else if (tx_last)
+          tx_byte_enable <= 8'h00;
+      end
+    end
+  end
+
   always_ff @(posedge clk_mrmac) begin
     if (~resetn_mrmac) begin
       small_frame <= 1'b0;
@@ -82,16 +150,12 @@ module mhdma_formatter
   // Building headers
   // =========================================================================================== //
   // TX signals
-  logic [$clog2(NB_WORDS_MAX)+1:0] tx_cnt;
   logic                            tx_valid;
   logic [        MRMAC_AXIS_W-1:0] tx_data;
   logic [        MRMAC_AXIS_W-1:0] tx_header;
   logic                            tx_header_last;  // last header word
   logic                            tx_small_last;   // last word of a small packet
   logic                            tx_last_word;
-  logic                            tx_last;
-
-  logic [SEQ_NUM_W-1:0] ce_seq_num; // During CE we need to increment seq_num for each packet sent
 
   // ciphertext emission --------------------------------------------------------------------------
   // we need to build header and stall ciphertext arrial until we are ready
@@ -184,7 +248,6 @@ module mhdma_formatter
   // header transmission -------------------------------------------------------------------------
   // we are sending a request on qsfp lane when we have a pulse on header start-of-packet
   // deasserting this request when we hit enough words on the counter
-  logic sending_request;
   logic header_sop;
   // to simplify notations we define each cases as :
   logic stop_sending_small_frame;      // notify / notify-ack / read-request
@@ -222,16 +285,6 @@ module mhdma_formatter
       end
     end
   end
-
-  // Header cycle by cycle construction ---------------------------------------
-  logic [  MAC_ADDR_W-1:0] header_target_hpu_mac_addr;
-  logic [ETHERNET_LEN-1:0] header_eth_len;
-  logic [   SEQ_NUM_W-1:0] header_seq_num;
-  logic [  DST_ADDR_W-1:0] header_dst_addr;
-  logic [  SRC_ADDR_W-1:0] header_src_addr;
-  logic [    SIZE_B_W-1:0] header_size_b;
-  logic [    REQ_ID_W-1:0] header_req_id;
-  logic [    IOP_ID_W-1:0] header_iop_id;
 
   // header assignation depending on request
   assign header_target_hpu_mac_addr = master_request ? hpu_mac_table[format_header.hpu_id] : notify_ack_allowed ? hpu_mac_table[nack_hpu_id] : ct_emission_allowed ? ce_dst_mac_addr : 'h0;
@@ -344,7 +397,6 @@ module mhdma_formatter
   endgenerate
 
   // For the arbiter we need the information to release the fsm that all have been sent
-  logic ct_emission_all_packets_transmitted;
   always_ff @(posedge clk_mrmac) begin
     if (~resetn_mrmac) begin
       ct_emission_all_packets_transmitted <= 1'b0;
@@ -430,7 +482,7 @@ module mhdma_formatter
   // =========================================================================================== //
   assign qsfp_tx_tdata      = mhdma_pkg::byte_swap(tx_data);
   assign qsfp_tx_tvalid     = tx_valid;
-  assign qsfp_tx_tkeep_user = tx_valid ? 'hFF : 0;
+  assign qsfp_tx_tkeep_user = {3'b000, tx_byte_enable};
   assign qsfp_tx_tlast      = small_frame  ? tx_small_last: tx_last;
 
 endmodule

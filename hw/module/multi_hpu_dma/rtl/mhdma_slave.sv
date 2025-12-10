@@ -175,6 +175,8 @@ module mhdma_slave
   // === CFG domain
   logic                      nrxq_out_rdy;
   logic                      nrxq_out_vld;
+  logic                      nrqq_out_vld;
+  logic                      nrqq_out_rdy;
 
   assign nrx_ct_src_addr = nrx_cmd_data[NRX_SRC_ADDR_OFS-1:NRX_HPU_ID_OFS];
   assign nrx_hpu_id      = nrx_cmd_data[NRX_HPU_ID_OFS-1:NRX_IOP_ID_OFS];
@@ -200,24 +202,12 @@ module mhdma_slave
     .out_clk  (clk_cfg),
     .out_rstn (resetn_cfg),
     .out_data (regf_notify_payload),
-    .out_rdy  (~interrupt_notify),
+    .out_rdy  (nrqq_out_rdy),
     .out_vld  (nrqq_out_vld)
   );
 
-  logic itr_notify;
-  always_ff @(posedge clk_cfg) begin
-    if (~resetn_cfg) begin
-      itr_notify <= 1'b0;
-    end else begin
-      if(nrqq_out_vld) begin
-        itr_notify <= 1'b1;
-      end else if (clear_interrupt_notify) begin
-        itr_notify <= 1'b0;
-      end
-    end
-  end
-
-  assign interrupt_notify = itr_notify;
+  assign interrupt_notify = nrqq_out_vld;
+  assign nrqq_out_rdy = interrupt_notify & clear_interrupt_notify;
 
   // ==============================================================================================
   // Ciphertext EMission (CEM)

@@ -26,6 +26,7 @@ module hpu_3parts_2in3_core
   import axi_if_ksk_axi_pkg::*;
   import axi_if_glwe_axi_pkg::*;
   import axi_if_ct_axi_pkg::*;
+  import axi_if_eth_axi_pkg::*;
   import axi_if_trc_axi_pkg::*;
   import regf_common_param_pkg::*;
   import pem_common_param_pkg::*;
@@ -122,7 +123,7 @@ module hpu_3parts_2in3_core
   output pep_rif_elt_t                       pep_rif_elt,
 
   // Multi-HPU-DMA
-  `HPU_AXI4_IO(eth_hbm, ETH_HBM, axi_if_ksk_axi_pkg, [ETH_PC-1:0])
+  `HPU_AXI4_IO(eth_hbm, ETH_HBM, axi_if_eth_axi_pkg, [ETH_PC-1:0])
   output logic                                       interrupt_notify,
   output logic                                       interrupt_read_request,
   // QSFP system interface
@@ -458,14 +459,14 @@ module hpu_3parts_2in3_core
   // initialize axi4 signals ----------------------------------------------------------------------
   // Tie-off m_axi4 unused features
   `HPU_AXI4_TIE_GL_UNUSED(eth_hbm, [ETH_PC-1:0], ETH_PC)
-  `HPU_AXI4_TIE_WR_UNUSED(eth_hbm, [ETH_PC-1:0])
 
-  // used axi_if_eth_axi_pkg::AXI4_ADD_W for address. this is tied to what the package chose
-
+  // /!\ Workaround : simulation AXI4_ETH_HBM_ADD_W may be different from
+  // the AXI4_ETH_HBM_ADD_W of the package (= the synthesized value).
+  // Use intermediate variable.
   logic [ETH_PC-1:0][axi_if_eth_axi_pkg::AXI4_ADD_W-1:0] m_axi4_eth_hbm_araddr_tmp;
   always_comb
     for (int i=0; i<ETH_PC; i=i+1)
-      m_axi4_eth_hbm_araddr[i] = m_axi4_eth_hbm_araddr_tmp[i][axi_if_eth_axi_pkg::AXI4_ADD_W-1:0];
+      m_axi4_eth_hbm_araddr[i] = m_axi4_eth_hbm_araddr_tmp[i][AXI4_ETH_HBM_ADD_W-1:0];
 
 // pragma translate_off
   always_ff @(posedge prc_mrmac_clk)
@@ -475,9 +476,9 @@ module hpu_3parts_2in3_core
     else begin
       for (int i=0; i<ETH_PC; i=i+1) begin
         if (m_axi4_eth_hbm_arvalid[i]) begin
-          assert(m_axi4_eth_hbm_araddr_tmp[i] >> axi_if_eth_axi_pkg::AXI4_ADD_W == '0)
+          assert(m_axi4_eth_hbm_araddr_tmp[i] >> AXI4_ETH_HBM_ADD_W == '0)
           else begin
-            $fatal(1,"%t > ERROR: HBM ETHERNET AXI [%d] address overflows. Simulation supports only %d bits: 0x%0x.",$time, i, axi_if_eth_axi_pkg::AXI4_ADD_W, m_axi4_eth_hbm_araddr_tmp[i]);
+            $fatal(1,"%t > ERROR: HBM ETHERNET AXI [%d] address overflows. Simulation supports only %d bits: 0x%0x.",$time, i, AXI4_ETH_HBM_ADD_W, m_axi4_eth_hbm_araddr_tmp[i]);
           end
         end
       end
@@ -487,7 +488,7 @@ module hpu_3parts_2in3_core
   logic [ETH_PC-1:0][axi_if_eth_axi_pkg::AXI4_ADD_W-1:0] m_axi4_eth_hbm_awaddr_tmp;
   always_comb
     for (int i=0; i<ETH_PC; i=i+1)
-      m_axi4_eth_hbm_araddr[i] = m_axi4_eth_hbm_awaddr_tmp[i][axi_if_eth_axi_pkg::AXI4_ADD_W-1:0];
+      m_axi4_eth_hbm_awaddr[i] = m_axi4_eth_hbm_awaddr_tmp[i][AXI4_ETH_HBM_ADD_W-1:0];
 
 // pragma translate_off
   always_ff @(posedge prc_mrmac_clk)
@@ -497,9 +498,9 @@ module hpu_3parts_2in3_core
     else begin
       for (int i=0; i<ETH_PC; i=i+1) begin
         if (m_axi4_eth_hbm_arvalid[i]) begin
-          assert(m_axi4_eth_hbm_awaddr_tmp[i] >> axi_if_eth_axi_pkg::AXI4_ADD_W == '0)
+          assert(m_axi4_eth_hbm_awaddr_tmp[i] >> AXI4_ETH_HBM_ADD_W == '0)
           else begin
-            $fatal(1,"%t > ERROR: HBM ETHERNET AXI [%d] address overflows. Simulation supports only %d bits: 0x%0x.",$time, i, axi_if_eth_axi_pkg::AXI4_ADD_W, m_axi4_eth_hbm_awaddr_tmp[i]);
+            $fatal(1,"%t > ERROR: HBM ETHERNET AXI [%d] address overflows. Simulation supports only %d bits: 0x%0x.",$time, i, AXI4_ETH_HBM_ADD_W, m_axi4_eth_hbm_awaddr_tmp[i]);
           end
         end
       end

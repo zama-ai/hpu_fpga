@@ -191,6 +191,8 @@ module mhdma_bridge
   logic read_request_received;
   logic ciphertext_emission_received;
 
+  logic ct_emission_all_packets_received;
+
   header_t format_header;
   header_t decoded_header;
 
@@ -247,6 +249,7 @@ module mhdma_bridge
     .new_read_request_pending        (new_read_request_pending                ),
     .new_notify_request_pending      (new_notify_request_pending              ),
     .notify_ack_received             (notify_ack_received                     ),
+    .ct_emission_all_packets_received(ct_emission_all_packets_received        ),
     .cerx_reception_ready            (cerx_reception_ready                    ),
     // payload from decoder ---------------------------------------------------
     .rx_tdata                        (rx_tdata                                ),
@@ -351,7 +354,7 @@ module mhdma_bridge
     .new_notify_ack_pending          (new_notify_ack_pending                  ),
     .new_read_request_pending        (new_read_request_pending                ),
     .new_notify_request_pending      (new_notify_request_pending              ),
-    .ct_emission_all_packets_received(interrupt_read_request                  ),
+    .ct_emission_all_packets_received(ct_emission_all_packets_received        ),
     .cerx_reception_ready            (cerx_reception_ready                    ),
     // master interface -------------------------------------------------------
     .format_header                   (format_header                           ),

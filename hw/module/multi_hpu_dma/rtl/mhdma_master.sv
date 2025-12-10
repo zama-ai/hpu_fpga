@@ -44,6 +44,7 @@ module mhdma_master
 
   input  logic                                notify_ack_received,
 
+  output logic                                ct_emission_all_packets_received,
   // from master to packet formatter -------------------------------------------
   output header_t                             format_header,
   // ciphertext payload -------------------------------------------------------
@@ -464,6 +465,7 @@ module mhdma_master
   );
   assign cerx_reception_ready = (fifo_cerx_cnt == 0) & fifo_cerx_in_rdy;
 
+  // TODO
   assign ct_emission_all_packets_received = 0;
 
  // ready signal of sending fifo according to which one we should use
@@ -484,6 +486,7 @@ module mhdma_master
   //  - between fifo_ce_rx and fifo_wr_pc we will avoid stalling as much as possible
   //  - we must transmit to regif relevant info and raise interrupt when all words ready in hbm
 
+  // TODO:check use
   // packet pulses
   logic new_pkt_reception;
   logic first_pkt_reception;

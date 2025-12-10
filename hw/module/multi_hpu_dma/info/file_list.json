@@ -62,8 +62,7 @@
     ],
     "constraint_files": [
         "hw/module/multi_hpu_dma/constraint/multi_hpu_dma_timing_constraints_local.xdc",
-        "hw/module/multi_hpu_dma/constraint/multi_hpu_dma_timing_constraints_hier.xdc",
-        "hw/module/multi_hpu_dma/constraint/mhdma_bridge_timing_constraints_local.xdc"
+        "hw/module/multi_hpu_dma/constraint/multi_hpu_dma_timing_constraints_hier.xdc"
     ],
     "dependency_dir": [
         "hw/common_lib/cdc/module/xpm_fifo_async_wrapper",
