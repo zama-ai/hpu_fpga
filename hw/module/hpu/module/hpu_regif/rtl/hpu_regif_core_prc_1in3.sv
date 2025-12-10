@@ -1,8 +1,8 @@
 // ============================================================================================== //
 // Description  : Axi4-lite register bank
 // This file was generated with rust regmap generator:
-//  * Date:  2025-10-17
-//  * Tool_version: bd49564daf1a99d615cb6dbb121b54bfbeef8b22
+//  * Date:  2025-11-20
+//  * Tool_version: 27d9e880d531030160fd8749c606142942d5558d
 // ---------------------------------------------------------------------------------------------- //
 // xR[n]W[na]
 // |-> who is in charge of the register update logic : u -> User

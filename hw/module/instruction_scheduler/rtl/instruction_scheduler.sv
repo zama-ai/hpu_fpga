@@ -20,6 +20,9 @@ module instruction_scheduler
     input logic  clk,        // clock
     input logic  s_rst_n,    // synchronous reset
 
+    input logic  cfg_clk,
+    input logic  cfg_srst_n,
+
     // Quasi static
     input logic use_bpip,
 
@@ -32,6 +35,7 @@ module instruction_scheduler
     input  logic                 insn_ack_rdy,
     output logic[PE_INST_W-1: 0] insn_ack_cnt,
     output logic                 insn_ack_vld,
+    output logic                 insn_ack_int,
 
     // PE interface
     // Each PE have a rdy/vld interface with insn as payload
@@ -87,7 +91,7 @@ module instruction_scheduler
 
   // Pool Query
   logic                    query_rdy;
-  isc_query_cmd_e              query_cmd;
+  isc_query_cmd_e          query_cmd;
   isc_insn_t               query_refill;
   logic [INSN_KIND_W-1: 0] query_pe_rd_ack;
   logic [INSN_KIND_W-1: 0] query_pe_wr_ack;
@@ -96,6 +100,14 @@ module instruction_scheduler
   isc_query_ack_t          query_ack;
   logic                    query_ack_vld;
 
+  // interrupt
+  logic insn_ack_interrupt;
+  logic interrupt_leveled;
+  logic interrupt_leveled_D;
+  logic cfg_interrupt_resync;
+  logic cfg_interrupt_r0;
+  logic cfg_interrupt_r1;
+  logic cfg_interrupt_pulse;
 
 // ============================================================================================== //
 // Insn & Insn_ack stream Rdy/Vld buffering
@@ -147,6 +159,44 @@ fifo_element #(
   .out_vld (insn_ack_vld),
   .out_rdy (insn_ack_rdy)
 );
+
+// ============================================================================================== //
+// Insn & Insn_ack stream Rdy/Vld buffering
+// ============================================================================================== //
+always_ff @(posedge clk)
+  if (!s_rst_n) begin
+    interrupt_leveled <= 1'b0;
+  end
+  else begin
+    interrupt_leveled <= interrupt_leveled_D;
+  end
+
+assign insn_ack_interrupt  = insn_ack_vld & insn_ack_rdy;
+assign interrupt_leveled_D = insn_ack_interrupt ? ~interrupt_leveled : interrupt_leveled;
+
+xpm_cdc_single_wrapper #(
+  .CDC_SYNC_STAGES ( 2 ) ,
+  .SRC_INPUT_REG   ( 0 )
+) sync_interrupt (
+  .src_clk  ( clk     ) ,
+  .dest_clk ( cfg_clk ) ,
+  .src_in   ( interrupt_leveled ) ,
+  .dest_out ( cfg_interrupt_resync )
+);
+
+always_ff @(posedge cfg_clk)
+  if (!cfg_srst_n) begin
+    cfg_interrupt_r0     <= 1'b0;
+    cfg_interrupt_r1     <= 1'b0;
+    cfg_interrupt_pulse  <= 1'b0;
+  end
+  else begin
+    cfg_interrupt_r0     <= cfg_interrupt_resync;
+    cfg_interrupt_r1     <= cfg_interrupt_r0;
+    cfg_interrupt_pulse  <= cfg_interrupt_r1 ^ cfg_interrupt_r0;
+  end
+
+assign insn_ack_int = cfg_interrupt_pulse;
 
 // ============================================================================================== //
 // PE ACK buffering
@@ -504,6 +554,37 @@ assign query_vld = !query_ack_vld;
             $realtime, query_refill.dst_id.isc.id, query_refill.dst_id.mask+1);
         end
       end
+
     end
+
+  logic        _cfg_clk_r0;
+  logic        _cfg_clk_r1;
+  logic [14:0] _cfg_clk_cycle_cnt;
+  logic [14:0] _cfg_clk_period;
+  logic [15:0] _intr_dist;
+  logic [15:0] _intr_min_dist;
+
+  always @(posedge clk)
+      if (!s_rst_n) begin
+          _cfg_clk_r0        <= 1'b0;
+          _cfg_clk_r1        <= 1'b0;
+          _cfg_clk_cycle_cnt <= '0;
+          _cfg_clk_period    <= '0;
+          _intr_dist         <= '0;
+          _intr_min_dist     <= '1;
+      end
+      else begin
+          _cfg_clk_r0        <= cfg_clk;
+          _cfg_clk_r1        <= _cfg_clk_r0;
+          _cfg_clk_cycle_cnt <= _cfg_clk_r0 & ~_cfg_clk_r1 ? '0 : ( (_cfg_clk_cycle_cnt == '1) ? _cfg_clk_cycle_cnt : _cfg_clk_cycle_cnt + 1 );
+          _cfg_clk_period    <= _cfg_clk_cycle_cnt > _cfg_clk_period ? _cfg_clk_cycle_cnt : _cfg_clk_period;
+          _intr_dist         <= insn_ack_interrupt ? '0 : (_intr_dist == '1) ? _intr_dist : _intr_dist + 1;
+          _intr_min_dist     <= ((insn_ack_vld & insn_ack_rdy) && (_intr_min_dist > _intr_dist)) ? _intr_dist : _intr_min_dist;
+          assert ( _intr_min_dist > (_cfg_clk_period << 1) )
+          else begin
+            $fatal(1,"%t > ERROR: Interrupt (IOp ACK) should not toggle faster than cfg_clk can catch (interrupt dist %d < %d cycles of x2 cfg clk period)", $time, _intr_min_dist, _cfg_clk_period << 1);
+          end
+      end
+
 // pragma translate_on
 endmodule

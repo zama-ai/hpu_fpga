@@ -3604,6 +3604,58 @@
       ]
     },
     {
+      "name": "debug",
+      "description": "Register used for debug purpose",
+      "offset": 131584,
+      "bytes_align": 4,
+      "range": 4,
+      "register": [
+        {
+          "name": "int",
+          "description": "debug register to test interrupts",
+          "owner": "User",
+          "read_access": "Read",
+          "write_access": "Write",
+          "offset": 131584,
+          "default": {
+            "ParamsField": {
+              "params": [],
+              "name_val": [
+                [
+                  "int0",
+                  "'h0"
+                ],
+                [
+                  "int0_cnt",
+                  "'h0"
+                ]
+              ]
+            }
+          },
+          "field": [
+            {
+              "name": "int0",
+              "description": "debug int line 0",
+              "size_b": 1,
+              "offset_b": 0,
+              "default": {
+                "Cst": 0
+              }
+            },
+            {
+              "name": "int0_cnt",
+              "description": "cnt of int trigger",
+              "size_b": 16,
+              "offset_b": 16,
+              "default": {
+                "Cst": 0
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
       "name": "entry_prc_3in3",
       "description": "entry_prc_3in3 section with known value used for debug.",
       "offset": 196608,

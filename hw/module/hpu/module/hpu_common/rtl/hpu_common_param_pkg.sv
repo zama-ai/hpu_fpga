@@ -83,6 +83,17 @@ package hpu_common_param_pkg;
   localparam int               KS_IF_COEF_NB        = (LBY < REGF_COEF_NB) ? LBY : REGF_SEQ_COEF_NB;
   localparam int               KS_IF_SUBW_NB        = (LBY < REGF_COEF_NB) ? 1 : REGF_SEQ;
 
+  //== Interrupt
+  typedef struct packed {
+    logic mhdma_readdone_interrupt;
+    logic mhdma_notify_interrupt;
+    logic part1_unused_interrupt;
+    logic isc_iop_ack_interrupt;
+    logic debug_interrupt;
+  } interrupt_t;
+
+  localparam int INTERRUPT_W = $bits(interrupt_t);
+
   //== Trace
   localparam int               TRC_DEPTH            = 1024; // Physical RAM depth to store the info
   localparam int               TRC_MEM_DEPTH        = 32;   // HBM depth in MByte unit

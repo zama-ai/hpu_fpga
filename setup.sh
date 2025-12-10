@@ -94,7 +94,7 @@ export TV_HW_VERSION="split_v1.5"
 export GTV_VERSION="v1.4.1"
 
 # tfhe-rs version
-export TFHERS_VERSION="v2.8"
+export TFHERS_VERSION="v2.9"
 
 # Complete PATH with Xilinx's tools
 echo "INFO > Run $XILINX_VIVADO/settings64.sh"

@@ -49,8 +49,10 @@ module tb_hpu;
   localparam int MEM_WR_CMD_BUF_DEPTH = 1; // Should be >= 1
   localparam int MEM_RD_CMD_BUF_DEPTH = 4; // Should be >= 1
   // Data latency
-  localparam int MEM_WR_DATA_LATENCY = 1; // Should be >= 1
-  localparam int MEM_RD_DATA_LATENCY = 53; // Should be >= 1
+  parameter int MEM_WR_DATA_LATENCY = 1; // Should be >= 1
+  parameter int MEM_RD_DATA_LATENCY = 53; // Should be >= 1
+  parameter int MEM_WR_DATA_LAT_DELAY = 300; // Delay between the PCs
+  parameter int MEM_RD_DATA_LAT_DELAY = 350;
   // Set random on ready valid, on write path
   localparam bit MEM_USE_WR_RANDOM = 1; // TOREVIEW
   // Set random on ready valid, on read path
@@ -167,7 +169,7 @@ module tb_hpu;
   bit cfg_clk;
   bit a_rst_n; // asynchronous reset
   bit s_rst_n; // synchronous reset
-  bit cfg_srst_n; // synchronous clock
+  bit cfg_srst_n; // synchronous reset to cfg_clk
 
   initial begin
     clk     = 1'b0;
@@ -233,7 +235,7 @@ module tb_hpu;
 // ============================================================================================== --
 // input / output signals
 // ============================================================================================== --
-logic [3:0]                          hpu_irq;
+logic [4:0]                          hpu_irq;
 
 // AxiLite interface ======================================================================
 logic [1:0][AXIL_ADD_W-1:0]          tb_axil_prc_awaddr;
@@ -816,8 +818,8 @@ logic                                        axi4_trc_bready;
         .ID_WIDTH  (AXI4_PEM_ID_W),
         .WR_CMD_BUF_DEPTH (MEM_WR_CMD_BUF_DEPTH),
         .RD_CMD_BUF_DEPTH (MEM_RD_CMD_BUF_DEPTH),
-        .WR_DATA_LATENCY (MEM_WR_DATA_LATENCY + gen_p * 300),
-        .RD_DATA_LATENCY (MEM_RD_DATA_LATENCY + gen_p * 350),
+        .WR_DATA_LATENCY (MEM_WR_DATA_LATENCY + gen_p * MEM_WR_DATA_LAT_DELAY),
+        .RD_DATA_LATENCY (MEM_RD_DATA_LATENCY + gen_p * MEM_RD_DATA_LAT_DELAY),
         .USE_WR_RANDOM (MEM_USE_WR_RANDOM),
         .USE_RD_RANDOM (MEM_USE_RD_RANDOM)
       ) axi4_mem_ct (
@@ -925,8 +927,8 @@ logic                                        axi4_trc_bready;
         .ID_WIDTH  (AXI4_GLWE_ID_W),
         .WR_CMD_BUF_DEPTH (MEM_WR_CMD_BUF_DEPTH),
         .RD_CMD_BUF_DEPTH (MEM_RD_CMD_BUF_DEPTH),
-        .WR_DATA_LATENCY (MEM_WR_DATA_LATENCY + gen_p * 300),
-        .RD_DATA_LATENCY (MEM_RD_DATA_LATENCY + gen_p * 350),
+        .WR_DATA_LATENCY (MEM_WR_DATA_LATENCY + gen_p * MEM_WR_DATA_LAT_DELAY),
+        .RD_DATA_LATENCY (MEM_RD_DATA_LATENCY + gen_p * MEM_RD_DATA_LAT_DELAY),
         .USE_WR_RANDOM (1'b0),
         .USE_RD_RANDOM (MEM_USE_RD_RANDOM)
       ) axi4_mem_glwe (
@@ -981,8 +983,8 @@ logic                                        axi4_trc_bready;
         .ID_WIDTH  (AXI4_BSK_ID_W),
         .WR_CMD_BUF_DEPTH (MEM_WR_CMD_BUF_DEPTH),
         .RD_CMD_BUF_DEPTH (MEM_RD_CMD_BUF_DEPTH),
-        .WR_DATA_LATENCY (MEM_WR_DATA_LATENCY + gen_p * 300),
-        .RD_DATA_LATENCY (MEM_RD_DATA_LATENCY + gen_p * 350),
+        .WR_DATA_LATENCY (MEM_WR_DATA_LATENCY + gen_p * MEM_WR_DATA_LAT_DELAY),
+        .RD_DATA_LATENCY (MEM_RD_DATA_LATENCY + gen_p * MEM_RD_DATA_LAT_DELAY),
         .USE_WR_RANDOM (1'b0),
         .USE_RD_RANDOM (MEM_USE_RD_RANDOM)
       ) axi4_mem_bsk (
@@ -1036,8 +1038,8 @@ logic                                        axi4_trc_bready;
         .ID_WIDTH  (AXI4_KSK_ID_W),
         .WR_CMD_BUF_DEPTH (MEM_WR_CMD_BUF_DEPTH),
         .RD_CMD_BUF_DEPTH (MEM_RD_CMD_BUF_DEPTH),
-        .WR_DATA_LATENCY (MEM_WR_DATA_LATENCY + gen_p * 300),
-        .RD_DATA_LATENCY (MEM_RD_DATA_LATENCY + gen_p * 350),
+        .WR_DATA_LATENCY (MEM_WR_DATA_LATENCY + gen_p * MEM_WR_DATA_LAT_DELAY),
+        .RD_DATA_LATENCY (MEM_RD_DATA_LATENCY + gen_p * MEM_RD_DATA_LAT_DELAY),
         .USE_WR_RANDOM (1'b0),
         .USE_RD_RANDOM (MEM_USE_RD_RANDOM)
       ) axi4_mem_ksk (

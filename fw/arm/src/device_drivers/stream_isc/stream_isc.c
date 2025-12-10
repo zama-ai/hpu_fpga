@@ -81,16 +81,13 @@ int read_isc_ack_cnt(void) {
 
 /* Pop an Ack from AXIs ---------------------------------------------------------------------------
  *
- * This function retur an IOpAck from AxisStream, return 0 in case of empty stream
+ * This function returns an IOpAck from AxisStream, or 0 in case of empty stream
  */
 uint32_t pop_isc_ack() {
-    uint32_t  iop_ack = 0;
+    uint32_t iop_ack = 0;
 
-    if (read_isc_ack_cnt() == 0) {
-        PLL_ERR("AMC:read_isc", "cannot read fifo data right now RDFO is 0");
-    } else {
+    if (read_isc_ack_cnt() > 0) {
         iop_ack = * (volatile uint32_t *) (XPAR_AXI_FIFO_0_BASEADDR + 0x20);
-        PLL_INF("AMC:isc", "Read IOpAck %d from the isc axis.", iop_ack);
     }
     return iop_ack;
 }

@@ -73,6 +73,7 @@ module top_hpu #(
 // localparam
 // ----------------------------------------------------------------------------------------- //
   import top_common_param_pkg::*;
+  import hpu_common_param_pkg::INTERRUPT_W;
   import axi_if_common_param_pkg::*;
   import axi_if_trc_axi_pkg::*;
   import axi_if_ct_axi_pkg::*;
@@ -146,10 +147,10 @@ module top_hpu #(
   logic         axis_s_tx_tvalid;
 
   /* Interrupts ---------------------------------------------------------------
-   * only one interrupt on the rtl side but inside block design
-   * the maximum number is defined
+   * HPU is driving a maximum of INTERRUPT_W (today 5) interrupts
+   * the maximum number defined block design is 6
    */
-  logic [3:0] hpu_interrupt;
+  logic [INTERRUPT_W-1:0] hpu_interrupt;
   logic [5:0] rtl_interrupt;
 
   /* Clock Reset --------------------------------------------------------------
@@ -657,10 +658,7 @@ module top_hpu #(
   // =========================================================================================== //
   // Connections
   // =========================================================================================== //
-  assign rtl_interrupt[0]   = hpu_interrupt[0]; // TODO
-  assign rtl_interrupt[3:1] = 3'b0;
-  assign rtl_interrupt[4]   = interrupt_notify;
-  assign rtl_interrupt[5]   = interrupt_read_request;
+  assign rtl_interrupt = {1'b0, hpu_interrupt};
 
   // from isc to bd, stream is one word at a time
   assign axis_s_rx_tlast = 1'b1;

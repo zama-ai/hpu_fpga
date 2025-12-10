@@ -54,12 +54,12 @@
         }
     ],
     "constraint_files": [
-        "hw/module/instruction_scheduler/constraint/isc_timing_constraints_local.xdc",
-        "hw/module/instruction_scheduler/constraint/isc_timing_constraints_hier.xdc"
+        "hw/module/instruction_scheduler/constraint/isc_timing_constraints_local.xdc"
     ],
     "dependency_dir": [
         "hw/common_lib/common",
         "hw/common_lib/fifo",
+        "hw/common_lib/cdc/module/xpm_cdc_single_wrapper",
         "hw/module/pe_pbs/module/pep_common",
         "hw/module/param",
         "hw/module/regfile/module/regf_common",

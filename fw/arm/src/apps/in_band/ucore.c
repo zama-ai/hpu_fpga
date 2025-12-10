@@ -158,7 +158,7 @@ uint32_t get_lookup(IOpHeader_t header, Lookup_t* lookup){
   size_t entry = *((uint32_t* ) entry_addr);
   if ( (entry < 0x20000) ||
        (entry > 0x4000000) ) {
-    PLL_ERR("get_lookup", "entry offset if wrong %x > 0x4000000", entry);
+    PLL_ERR("get_lookup", "entry offset is wrong %x (should be in range 0x20000-0x4000000)", entry);
     lookup->len = 0;
     lookup->ptr = NULL;
     return 1;

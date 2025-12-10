@@ -29,8 +29,9 @@ module tb_instruction_scheduler;
 // ============================================================================================== --
 // localparam
 // ============================================================================================== --
-  localparam int CLK_HALF_PERIOD = 1;
-  localparam int ARST_ACTIVATION = 17;
+  localparam int CLK_HALF_PERIOD     = 1;
+  localparam int LPD_CLK_HALF_PERIOD = 10;
+  localparam int ARST_ACTIVATION     = 17;
 
   localparam int SLOT_NB=8;
 
@@ -66,8 +67,10 @@ module tb_instruction_scheduler;
 // clock, reset
 // ============================================================================================== --
   bit clk;
+  bit cfg_clk;
   bit a_rst_n; // asynchronous reset
   bit s_rst_n; // synchronous reset
+  bit cfg_srst_n; // synchronous reset to cfg_clk
 
   initial begin
     clk     = 1'b0;
@@ -81,6 +84,14 @@ module tb_instruction_scheduler;
 
   always_ff @(posedge clk) begin
     s_rst_n <= a_rst_n;
+  end
+
+  always begin
+    #LPD_CLK_HALF_PERIOD cfg_clk = ~cfg_clk;
+  end
+
+  always_ff @(posedge cfg_clk) begin
+    cfg_srst_n <= a_rst_n;
   end
 
 // ============================================================================================== --
@@ -115,6 +126,7 @@ module tb_instruction_scheduler;
   logic                 insn_ack_rdy;
   logic[PE_INST_W-1: 0] insn_ack_cnt;
   logic                 insn_ack_vld;
+  logic                 insn_ack_int;
 
   // Pe_Mem interface
   logic                 pem_load_rdy;
@@ -153,6 +165,9 @@ module tb_instruction_scheduler;
     .clk                (clk    ),
     .s_rst_n            (s_rst_n),
 
+    .cfg_clk            (cfg_clk),
+    .cfg_srst_n         (cfg_srst_n),
+
     .use_bpip           (use_bpip),
 
     // Insn input stream and ack
@@ -163,6 +178,7 @@ module tb_instruction_scheduler;
     .insn_ack_rdy(insn_ack_rdy),
     .insn_ack_cnt(insn_ack_cnt),
     .insn_ack_vld(insn_ack_vld),
+    .insn_ack_int(insn_ack_int),
 
     // PE interfaces
     .pem_rdy(pem_rdy),
