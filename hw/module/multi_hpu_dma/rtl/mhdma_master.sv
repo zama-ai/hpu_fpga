@@ -305,12 +305,12 @@ module mhdma_master
     else ntx_state <= ntx_next_state;
   end
 
-  logic notify_request_allowedD;
+  logic notify_request_allowed_tmp;
   always_ff @(posedge clk_mrmac)
-    notify_request_allowedD <= notify_request_allowed;
+    notify_request_allowed_tmp <= notify_request_allowed;
 
   logic notify_request_sent;
-  assign notify_request_sent = notify_request_allowedD & ~notify_request_allowed;
+  assign notify_request_sent = notify_request_allowed_tmp & ~notify_request_allowed;
 
   always_comb begin
     ntx_next_state = NTX_XXX;
@@ -369,12 +369,12 @@ module mhdma_master
     else rreq_state <= rreq_next_state;
   end
 
-  logic read_request_allowedD;
+  logic read_request_allowed_tmp;
   always_ff @(posedge clk_mrmac)
-    read_request_allowedD <= read_request_allowed;
+    read_request_allowed_tmp <= read_request_allowed;
 
   logic read_request_sent;
-  assign read_request_sent = read_request_allowedD & ~read_request_allowed;
+  assign read_request_sent = read_request_allowed_tmp & ~read_request_allowed;
 
   always_comb begin
     rreq_next_state = RR_XXX;
@@ -694,7 +694,7 @@ module mhdma_master
       // We must write PC_NB_WRITES + PC_REMAINS addresses
       logic [$clog2(gen_localparam[gen_wr].PC_NB_WRITES):0] axi_write_cnt;
       logic                                                 axi_awrite;
-      logic                                                 axi_awriteD;
+      logic                                                 axi_awrite_tmp;
       logic                                                 aw_valid;
 
       always_ff @(posedge clk_mrmac) begin
@@ -715,10 +715,10 @@ module mhdma_master
         axi_awrite <= (axi_write_cnt > 0) && axi4_write_pc[gen_wr] && m_axi4_awready[gen_wr] & enough_words;
 
       always_ff @(posedge clk_mrmac)
-        axi_awriteD <= axi_awrite;
+        axi_awrite_tmp <= axi_awrite;
 
       // write done is just a front edge detector with a level
-      assign aw_valid = axi_awrite & ~axi_awriteD;
+      assign aw_valid = axi_awrite & ~axi_awrite_tmp;
 
       // Counts the number of address writes that is left to do
       always_ff @(posedge clk_mrmac) begin
@@ -747,13 +747,13 @@ module mhdma_master
 
       // we use axi4_write_pc front edge detection for computing expected wid
       logic [AXI4_ID_W-1:0] expected_wid;
-      logic                 axi4_write_pcD;
+      logic                 axi4_write_pc_tmp;
       logic                 wid_valid;
 
       always_ff @(posedge clk_mrmac)
-        axi4_write_pcD <= axi4_write_pc[gen_wr];
+        axi4_write_pc_tmp <= axi4_write_pc[gen_wr];
 
-      assign wid_valid = axi4_write_pc[gen_wr] & ~axi4_write_pcD;
+      assign wid_valid = axi4_write_pc[gen_wr] & ~axi4_write_pc_tmp;
 
       always_ff @(posedge clk_mrmac) begin
         if (~resetn_mrmac) begin

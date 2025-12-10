@@ -149,8 +149,8 @@ module mhdma_bridge
   end
 
   // just to simplify notations
-  logic [          HPU_ID_W-1:0] current_hpu_id;
-  logic [        MAC_ADDR_W-1:0] current_hpu_mac;
+  logic [          HPU_ID_W-1:0] current_hpu_idD;
+  logic [        MAC_ADDR_W-1:0] current_hpu_macD;
   logic [$clog2(NB_MAX_HPU)-1:0] hpu_index;
 
   always_comb begin
@@ -160,16 +160,16 @@ module mhdma_bridge
               hpu_index = i;
   end
 
-  assign current_hpu_mac = error_id_def | (one_hot_id==0)? 'h0 : hpu_mac_table[hpu_index];
-  assign current_hpu_id  = error_id_def | (one_hot_id==0)? 'h0 : hpu_id_table[hpu_index];
+  assign current_hpu_macD = error_id_def | (one_hot_id==0)? 'h0 : hpu_mac_table[hpu_index];
+  assign current_hpu_idD  = error_id_def | (one_hot_id==0)? 'h0 : hpu_id_table[hpu_index];
 
   // theses two registers are here to ease P&R
-  logic [  HPU_ID_W-1:0] current_hpu_idD;
-  logic [MAC_ADDR_W-1:0] current_hpu_macD;
+  logic [  HPU_ID_W-1:0] current_hpu_id;
+  logic [MAC_ADDR_W-1:0] current_hpu_mac;
 
   always_ff @(posedge clk_mrmac) begin
-    current_hpu_idD  <= current_hpu_id;
-    current_hpu_macD <= current_hpu_mac;
+    current_hpu_id  <= current_hpu_idD;
+    current_hpu_mac <= current_hpu_macD;
   end
 
   // ==============================================================================================
@@ -324,7 +324,7 @@ module mhdma_bridge
     .read_request_received       (read_request_received                       ),
     .ciphertext_emission_received(ciphertext_emission_received                ),
     // Header information -----------------------------------------------------
-    .current_hpu_mac             (current_hpu_macD                            ),
+    .current_hpu_mac             (current_hpu_mac                             ),
     .rx_header                   (decoded_header                              ),
      // RX payload ------------------------------------------------------------
     .rx_tdata                    (rx_tdata                                    ),
@@ -343,8 +343,8 @@ module mhdma_bridge
     .resetn_mrmac                    (resetn_mrmac                            ),
     // Bridge interface -------------------------------------------------------
     .hpu_mac_table                   (hpu_mac_table                           ),
-    .current_hpu_id                  (current_hpu_idD                         ),
-    .current_hpu_mac                 (current_hpu_macD                        ),
+    .current_hpu_id                  (current_hpu_id                          ),
+    .current_hpu_mac                 (current_hpu_mac                         ),
     // Command interface ------------------------------------------------------
     .ct_emission_allowed             (ct_emission_allowed                     ),
     .notify_ack_allowed              (notify_ack_allowed                      ),

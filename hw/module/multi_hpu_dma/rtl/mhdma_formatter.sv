@@ -191,17 +191,17 @@ module mhdma_formatter
   logic ce_start_of_header; // pulse: header transmission for all packets
   logic ce_start_emission;  // pulse: start of first header transmission
   logic ce_sop_header;      // pulse: start-of headers between packets
-  logic ce_first_headerD;
+  logic ce_first_header_tmp;
 
   always_ff @(posedge clk_mrmac)
-    ce_first_headerD <= ce_first_header;
+    ce_first_header_tmp <= ce_first_header;
 
-  assign ce_start_emission = ce_first_header & ~ce_first_headerD;
+  assign ce_start_emission = ce_first_header & ~ce_first_header_tmp;
   assign ce_start_of_header = ce_start_emission | ce_sop_header;
 
   // decoding header payload --------------------------------------------------
   // header is propagated well before we receive any data on fifo tx
-  logic [ CEH_WIDTH-1:0] ce_header_payloadD;
+  logic [ CEH_WIDTH-1:0] ce_header_payload_tmp;
   logic [DST_ADDR_W-1:0] ce_dst_addr;
   logic [SRC_ADDR_W-1:0] ce_src_addr;
   logic [  SIZE_B_W-1:0] ce_size_b;
@@ -210,14 +210,14 @@ module mhdma_formatter
   logic [MAC_ADDR_W-1:0] ce_dst_mac_addr;
 
   always_ff @(posedge clk_mrmac)
-    ce_header_payloadD <= ce_header_payload;
+    ce_header_payload_tmp <= ce_header_payload;
 
-  assign ce_dst_mac_addr = ce_header_payloadD[CEH_DST_MAC_ADDR_OFS-1:CEH_IOP_ID_OFS];
-  assign ce_iop_id       = ce_header_payloadD[CEH_IOP_ID_OFS-1:CEH_HPU_ID_OFS];
-  assign ce_hpu_id       = ce_header_payloadD[CEH_HPU_ID_OFS-1:CEH_SIZE_B_OFS];
-  assign ce_size_b       = ce_header_payloadD[CEH_SIZE_B_OFS-1:CEH_DST_ADDR_OFS];
-  assign ce_dst_addr     = ce_header_payloadD[CEH_DST_ADDR_OFS-1:CEH_SRC_ADDR_OFS];
-  assign ce_src_addr     = ce_header_payloadD[CEH_SRC_ADDR_OFS-1:0];
+  assign ce_dst_mac_addr = ce_header_payload_tmp[CEH_DST_MAC_ADDR_OFS-1:CEH_IOP_ID_OFS];
+  assign ce_iop_id       = ce_header_payload_tmp[CEH_IOP_ID_OFS-1:CEH_HPU_ID_OFS];
+  assign ce_hpu_id       = ce_header_payload_tmp[CEH_HPU_ID_OFS-1:CEH_SIZE_B_OFS];
+  assign ce_size_b       = ce_header_payload_tmp[CEH_SIZE_B_OFS-1:CEH_DST_ADDR_OFS];
+  assign ce_dst_addr     = ce_header_payload_tmp[CEH_DST_ADDR_OFS-1:CEH_SRC_ADDR_OFS];
+  assign ce_src_addr     = ce_header_payload_tmp[CEH_SRC_ADDR_OFS-1:0];
 
   always_ff @(posedge clk_mrmac) begin
     if (~resetn_mrmac) begin
@@ -340,7 +340,7 @@ module mhdma_formatter
 
   logic ce_stalling;             // level: up when we need to send header between packets
   logic ce_stalling_last_packet; // level: up when we need to fill last packet by zeros
-  logic ce_stallingD;
+  logic ce_stalling_tmp;
 
   // we should stall the emission of coefficents after we have to correct number of words
   // we should unstall when header has left
@@ -371,9 +371,9 @@ module mhdma_formatter
   // new header pulse
   // to define if we have a new header to send we can just do a positive edge detection
   always_ff @(posedge clk_mrmac)
-    ce_stallingD <= ce_stalling;
+    ce_stalling_tmp <= ce_stalling;
 
-  assign ce_sop_header = ce_stalling & ~ce_stallingD;
+  assign ce_sop_header = ce_stalling & ~ce_stalling_tmp;
 
   // level active when we have headers on ciphertext emission
   logic ce_header;

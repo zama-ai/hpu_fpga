@@ -88,13 +88,13 @@ module mhdma_slave
   // general
   // =========================================================================================== //
   // here we want to handle only pulses to move away from our current state or write into fifo
-  logic notify_request_receivedD;
+  logic notify_request_received_tmp;
+  logic notify_request;
 
   always_ff @(posedge clk_mrmac)
-    notify_request_receivedD <= notify_request_received;
+    notify_request_received_tmp <= notify_request_received;
 
-  logic notify_request;
-  assign notify_request = notify_request_received & ~notify_request_receivedD;
+  assign notify_request = notify_request_received & ~notify_request_received_tmp;
 
   // ==============================================================================================
   // Notify RX (NRX)
@@ -334,14 +334,14 @@ module mhdma_slave
   // Is read request ready ------------------------------------------------------------------------
   // flag that states that read request is ready
   logic rreq_ready;
-  logic rreq_readyD;
+  logic rreq_ready_tmp;
   always_ff @(posedge clk_mrmac)
     rreq_ready <= rreq_cmd_out_valid & rreq_cmd_out_ready;
   always_ff @(posedge clk_mrmac)
-    rreq_readyD <= rreq_ready;
+    rreq_ready_tmp <= rreq_ready;
 
   logic rreq_ready_pulse;
-  assign rreq_ready_pulse = rreq_ready & ~rreq_readyD;
+  assign rreq_ready_pulse = rreq_ready & ~rreq_ready_tmp;
 
   // process an axi4-read on each PC --------------------------------------------------------------
   //  - arlen the burst size is dictated from parameter MAX_BURST_SIZE
@@ -420,7 +420,6 @@ module mhdma_slave
       logic                   read_fifo_ready; // ~full
       // output part
       logic [AXI4_DATA_W-1:0] read_fifo_out_data;
-      logic [AXI4_DATA_W-1:0] read_fifo_out_dataD;
       logic                   read_fifo_out_valid;
       logic                   read_fifo_out_ready;
 

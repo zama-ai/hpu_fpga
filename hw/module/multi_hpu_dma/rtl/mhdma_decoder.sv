@@ -63,12 +63,12 @@ module mhdma_decoder
   // - Read request goes to write fifo to go to HBM : RRFIFO
   // - Ciphertext Emission goes to queue            : CEQ
   logic qsfp_rx_tsop;
-  logic qsfp_rx_tvalidD;
+  logic qsfp_rx_tvalid_tmp;
 
   always_ff @(posedge clk_mrmac)
-    qsfp_rx_tvalidD <= qsfp_rx_tvalid;
+    qsfp_rx_tvalid_tmp <= qsfp_rx_tvalid;
 
-  assign qsfp_rx_tsop = qsfp_rx_tvalid & ~qsfp_rx_tvalidD;
+  assign qsfp_rx_tsop = qsfp_rx_tvalid & ~qsfp_rx_tvalid_tmp;
 
   logic [$clog2(ETH_LEN_MAX):0] rx_counter;
   always_ff @(posedge clk_mrmac) begin
@@ -135,32 +135,32 @@ module mhdma_decoder
   // assigning output -----------------------------------------------------------------------------
 
   // decoding commands
-  logic nack_received;
-  logic nr_received;
-  logic rr_received;
-  logic ce_received;
-
-  assign nack_received = (rx_valid & (req_id == REQ_ID_ACK_NOTIFY_TX)) ? 1'b1 : 1'b0;
-  assign nr_received   = (rx_valid & (req_id == REQ_ID_NOTIFY_TX))     ? 1'b1 : 1'b0;
-  assign rr_received   = (rx_valid & (req_id == REQ_ID_READ))          ? 1'b1 : 1'b0;
-  assign ce_received   = (rx_valid & (req_id == REQ_ID_EMISSION))      ? 1'b1 : 1'b0;
-
   logic nack_receivedD;
   logic nr_receivedD;
   logic rr_receivedD;
   logic ce_receivedD;
 
+  logic nack_received;
+  logic nr_received;
+  logic rr_received;
+  logic ce_received;
+
+  assign nack_receivedD = (rx_valid & (req_id == REQ_ID_ACK_NOTIFY_TX)) ? 1'b1 : 1'b0;
+  assign nr_receivedD   = (rx_valid & (req_id == REQ_ID_NOTIFY_TX))     ? 1'b1 : 1'b0;
+  assign rr_receivedD   = (rx_valid & (req_id == REQ_ID_READ))          ? 1'b1 : 1'b0;
+  assign ce_receivedD   = (rx_valid & (req_id == REQ_ID_EMISSION))      ? 1'b1 : 1'b0;
+
   always_ff @(posedge clk_mrmac) begin
-    nack_receivedD <= nack_received;
-    nr_receivedD <= nr_received;
-    rr_receivedD <= rr_received;
-    ce_receivedD <= ce_received;
+    nack_received <= nack_receivedD;
+    nr_received <= nr_receivedD;
+    rr_received <= rr_receivedD;
+    ce_received <= ce_receivedD;
   end
 
-  assign notify_ack_received          = nack_received & ~nack_receivedD;
-  assign notify_request_received      = nr_received   & ~nr_receivedD;
-  assign read_request_received        = rr_received   & ~rr_receivedD;
-  assign ciphertext_emission_received = ce_received   & ~ce_receivedD;
+  assign notify_ack_received          = nack_receivedD & ~nack_received;
+  assign notify_request_received      = nr_receivedD   & ~nr_received;
+  assign read_request_received        = rr_receivedD   & ~rr_received;
+  assign ciphertext_emission_received = ce_receivedD   & ~ce_received;
 
   // header information
   assign rx_header.valid        = (rx_counter == NB_WORDS_CUST_HEADER_SIZE) ? 1'b1 : 1'b0;
