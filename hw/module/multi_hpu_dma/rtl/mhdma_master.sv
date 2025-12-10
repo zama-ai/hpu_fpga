@@ -409,28 +409,21 @@ module mhdma_master
   logic                 fifo_cerx_out_rdy;
   // ce-rx counters
   logic [CERX_DATA_COUNT_W:0] fifo_cerx_cnt;    // counts the number of words used in fifo
-  logic [CERX_DATA_COUNT_W:0] fifo_cerx_cnt_rx; // counts the number of words received over RX link
+
+  logic                       cnt_cerx_up;
+  logic                       cnt_cerx_down;
+
+  assign cnt_cerx_up   = read_request_allowed & (fifo_cerx_in_vld & fifo_cerx_in_rdy);
+  assign cnt_cerx_down = read_request_allowed & (fifo_cerx_out_rdy & fifo_cerx_out_vld);
 
   always_ff @(posedge clk_mrmac) begin
     if (~resetn_mrmac) begin
       fifo_cerx_cnt <= 'h0;
     end else begin
-      if (read_request_allowed & (fifo_cerx_in_vld & fifo_cerx_in_rdy)) begin
+      if (cnt_cerx_up & ~cnt_cerx_down) begin
         fifo_cerx_cnt <= fifo_cerx_cnt + 1;
-      end else if (read_request_allowed & fifo_cerx_out_rdy & fifo_cerx_out_vld) begin
+      end else if (~cnt_cerx_up & cnt_cerx_down) begin
         fifo_cerx_cnt <= fifo_cerx_cnt - 1;
-      end
-    end
-  end
-
-  always_ff @(posedge clk_mrmac) begin
-    if (~resetn_mrmac) begin
-      fifo_cerx_cnt_rx <= 'h0;
-    end else begin
-      if (read_request_allowed & fifo_cerx_in_vld & fifo_cerx_in_rdy) begin
-        fifo_cerx_cnt_rx <= fifo_cerx_cnt_rx + 1;
-      end if (read_request_allowed & (fifo_cerx_cnt_rx == CT_NB_COEF)) begin
-        fifo_cerx_cnt_rx <= 'h0;
       end
     end
   end
@@ -531,6 +524,8 @@ module mhdma_master
     end else begin
       if (fifo_cerx_out_vld & fifo_cerx_out_rdy) begin
         fifo_cerx_cnt_tx <= fifo_cerx_cnt_tx +1;
+      end else if (ct_emission_all_packets_received) begin
+        fifo_cerx_cnt_tx <= 'h0;
       end
     end
   end
@@ -541,9 +536,13 @@ module mhdma_master
     if (~resetn_mrmac) begin
       target_fifo <= 2'b00;
     end else begin
-      if (fifo_cerx_cnt_tx < 4*PC_NB_WORDS[0]) begin
+      // we target first fifo when we have less than PC_NB_WORDS*NB_MRMRAC_WORDS_PER_WRITE
+      // we reset (to fifo 0) when we have the double, note that we could receive more words but they could be invalid
+      // this is in case axi data width in not divisible by mrmac data size
+      if (fifo_cerx_cnt_tx < NB_MRMRAC_WORDS_PER_WRITE*PC_NB_WORDS[0]) begin
+      // if ((fifo_cerx_cnt_tx < NB_MRMRAC_WORDS_PER_WRITE*PC_NB_WORDS[0]) | (fifo_cerx_cnt_tx>=2*NB_MRMRAC_WORDS_PER_WRITE*PC_NB_WORDS[0])) begin
         target_fifo <= 2'b01;
-      end else begin
+      end else if (fifo_cerx_cnt_tx == NB_MRMRAC_WORDS_PER_WRITE*PC_NB_WORDS[0]) begin
         target_fifo <= 2'b10;
       end
     end
@@ -586,18 +585,6 @@ module mhdma_master
   logic [FIFO_PC_DATA_W-1:0]                    realined_word;
   logic [$clog2(NB_MRMRAC_WORDS_PER_WRITE)-1:0] realign_cnt;
   logic                                         realined_word_vld;
-
-  // // because in one read we have NB_MRMRAC_WORDS_PER_WRITE, we must delay the signal pc_read_finished
-  // logic [NB_MRMRAC_WORDS_PER_WRITE-1:0] temp_finished_flag;
-  // always_ff @(posedge clk_mrmac)
-  //   temp_finished_flag[0] <= fifo_cerx_out_vld & fifo_cerx_out_rdy;
-
-  // generate
-  // for (genvar gen_i = 1; gen_i<NB_MRMRAC_WORDS_PER_WRITE; gen_i++) begin
-  //   always_ff @(posedge clk_mrmac)
-  //     temp_finished_flag[gen_i] <= temp_finished_flag[gen_i-1];
-  // end
-  // endgenerate
 
   always_ff @(posedge clk_mrmac) begin
     if(~resetn_mrmac) begin
@@ -714,9 +701,9 @@ module mhdma_master
         if (~resetn_mrmac) begin
           axi_write_cnt <= PC_NB_WRITES[gen_wr];
         end else begin
-          if (m_axi4_wlast[gen_wr] & ~(axi_write_cnt == 0)) begin
+          if (m_axi4_wlast[gen_wr] & ~(axi_write_cnt == 1)) begin
             axi_write_cnt <= axi_write_cnt - 1;
-          end else if (m_axi4_wlast[gen_wr] & (axi_write_cnt == 0)) begin
+          end else if (m_axi4_wlast[gen_wr] & (axi_write_cnt == 1)) begin
             axi_write_cnt <= PC_NB_WRITES[gen_wr];
           end
         end
@@ -788,17 +775,18 @@ module mhdma_master
         if (~resetn_mrmac) begin
           axi_word_cnt <= MAX_BURST_SIZE;
         end else begin
-          if ((axi_write_cnt != 1) | (PC_REMAINS[gen_wr] == 0)) begin
-            // when we are not in the last word or when we don't have remaining words (= only bursts)
-            if (m_axi4_wlast[gen_wr]) begin
+          if (ct_emission_all_packets_received) begin                             // all transactions done, reset the counter
               axi_word_cnt <= MAX_BURST_SIZE;
-            end else if (m_axi4_wvalid[gen_wr] & m_axi4_wready[gen_wr]) begin
-              axi_word_cnt <= axi_word_cnt -1;
-            end
           end else begin
-            // when we don't have only bursts and have remaining words
-            // we find how many are left and process them
-            axi_word_cnt <= fifo_pc_wr_cnt;
+            if ((axi_write_cnt != 1) | (PC_REMAINS[gen_wr] == 0)) begin           // (not last trans) or (full bursts trans)
+              if (m_axi4_wlast[gen_wr]) begin
+                axi_word_cnt <= MAX_BURST_SIZE;
+              end else if (m_axi4_wvalid[gen_wr] & m_axi4_wready[gen_wr]) begin
+                axi_word_cnt <= axi_word_cnt -1;
+              end
+            end else begin                                                        // last trans & remain param not zero
+              axi_word_cnt <= fifo_pc_wr_cnt;
+            end
           end
         end
       end

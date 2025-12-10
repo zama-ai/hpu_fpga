@@ -58,7 +58,7 @@ module mhdma_formatter
     if (~resetn_mrmac) begin
       master_request <= 1'b0;
     end else begin
-      if(qsfp_tx_tlast) begin
+      if((notify_request_allowed & qsfp_tx_tlast) | (ct_emission_all_packets_received & read_request_allowed)) begin
         master_request <= 1'b0;
       end else if (read_request_allowed | notify_request_allowed) begin
         master_request <= 1'b1;
@@ -325,6 +325,7 @@ module mhdma_formatter
 
   // How many words did we receive yet ?
   logic [$clog2(NB_WORDS_PAYLOAD):0] ce_word_counter;
+  logic                              ce_word_cnt_reset;
 
   always_ff @(posedge clk_mrmac) begin
     if (~resetn_mrmac) begin
@@ -336,9 +337,13 @@ module mhdma_formatter
         end else begin
           ce_word_counter <= ce_word_counter + 1;
         end
+      end else if (ce_word_cnt_reset) begin
+        ce_word_counter <= 'h0;
       end
     end
   end
+  always_ff @(posedge clk_mrmac)
+    ce_word_cnt_reset <= ct_emission_all_packets_transmitted;
 
   logic ce_stalling;             // level: up when we need to send header between packets
   logic ce_stalling_last_packet; // level: up when we need to fill last packet by zeros

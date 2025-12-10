@@ -558,6 +558,7 @@ module tb_multi_hpu_dma;
     end
   endgenerate
 
+  int random_iter;
   // Signals --------------------------------------------------------------------------------------
   logic [REG_DATA_W-1:0] read_data;
   // must not bee too short, not too long
@@ -642,59 +643,68 @@ module tb_multi_hpu_dma;
 
     // Classical use-case =========================================================================
     $display("B - Notification that a ciphertext is ready from one HPU to another");
-    // or how this should be used most of the time
-    // for now size_b is fixed, all our ciphertext are 16.384kB (size_b=0x4000)
-    iop_id       = $urandom();
-    iop_src_addr = $urandom_range(0, 1<<SRC_ADDR_W);
-    iop_dst_addr = $urandom_range(0, 1<<DST_ADDR_W);
+    random_iter = $urandom_range(64, 2);
+    $display("Proceeding of %d times notify and read request", random_iter);
 
-    repeat(100) @(posedge clk_control);
-    // Sending a NOTIFY from HPU-B to HPU-A -------------------------------------------------------
-    notify_request(random_hpu_b, random_hpu_a, iop_id, iop_src_addr);
+    for (int i = 0; i < random_iter; i++) begin
+      $display("iter %d ---------------------------------------------------------------------------", random_iter);
 
-    // if a Notify is received by HPU A we should be able to confirm it by reading in the regf
-    notify_payload = {iop_src_addr, 4'b0, random_hpu_b, iop_id};
+      // or how this should be used most of the time
+      // for now size_b is fixed, all our ciphertext are 16.384kB (size_b=0x4000)
+      iop_id       = $urandom();
+      iop_src_addr = $urandom_range(0, 1<<SRC_ADDR_W);
+      iop_dst_addr = $urandom_range(0, 1<<DST_ADDR_W);
 
-    wait (hpu_a.interrupt_notify == 1'b1);
-    $display("%t > INFO: Interrupt detected, checking Notify payload \n",$time);
-    maxil_drv_if_hpu_a.read_trans(REQUEST_NOTIFY_OFS, read_data);
+      repeat(100) @(posedge clk_control);
+      // Sending a NOTIFY from HPU-B to HPU-A -------------------------------------------------------
+      notify_request(random_hpu_b, random_hpu_a, iop_id, iop_src_addr);
 
-    assert (read_data == notify_payload) else begin
-      $display("%t > [ERROR]: Payload DATA incorrect %x %x", $time, read_data, notify_payload);
-      $display("%t > [ERROR]: iop_src_addr  = %x ", $time, iop_src_addr);
-      $display("%t > [ERROR]: random_hpu_b  = %x ", $time, random_hpu_b);
-      $display("%t > [ERROR]: iop_id        = %x ", $time, iop_id);
+      // if a Notify is received by HPU A we should be able to confirm it by reading in the regf
+      notify_payload = {iop_src_addr, 4'b0, random_hpu_b, iop_id};
 
-      error_notify_rx = 1'b1;
+      wait (hpu_a.interrupt_notify == 1'b1);
+      $display("%t > INFO: Interrupt detected, checking Notify payload \n",$time);
+      maxil_drv_if_hpu_a.read_trans(REQUEST_NOTIFY_OFS, read_data);
+
+      assert (read_data == notify_payload) else begin
+        $display("%t > [ERROR]: Payload DATA incorrect %x %x", $time, read_data, notify_payload);
+        $display("%t > [ERROR]: iop_src_addr  = %x ", $time, iop_src_addr);
+        $display("%t > [ERROR]: random_hpu_b  = %x ", $time, random_hpu_b);
+        $display("%t > [ERROR]: iop_id        = %x ", $time, iop_id);
+
+        error_notify_rx = 1'b1;
+      end
+      $display("%t > INFO: Payload matches expected \n",$time);
+
+      maxil_drv_if_hpu_a.read_trans(REQUEST_STAT_NOTIFY_OFS, read_data);
+      $display("[INFO]: stat @HPU_A: how long data stayed before read? %x", read_data[15:0]);
+      maxil_drv_if_hpu_b.read_trans(REQUEST_STAT_NOTIFY_OFS, read_data);
+      $display("[INFO]: stat @HPU_B: how long acknowledge took? %x", read_data[31:16]);
+
+      repeat(100) @(posedge clk_control);
+      // Sending a read request from HPU-A to HPU-B -------------------------------------------------
+      $display("\nC - Sending a Read request");
+      read_request(random_hpu_b, iop_id, iop_src_addr, iop_dst_addr);
+
+      wait (hpu_a.interrupt_read_request == 1'b1);
+      maxil_drv_if_hpu_a.read_trans(REQUEST_READ_REQUEST_OFS, read_data);
+
+      received_address = read_data[31:16];
+      received_hpu_id  = read_data[11:8];
+      received_iop_id  = read_data[7:0];
+
+      assert (read_data == {iop_dst_addr, 4'b0, random_hpu_b, iop_id}) else begin
+        $display("[ERROR]: Missmatch between expected and received read request payload on regif");
+        $display("address : %2x :: %2x", received_address, iop_dst_addr);
+        $display(" iop:id : %2x :: %2x", received_iop_id, iop_id);
+        $display(" hpu:id : %2x :: %2x", received_hpu_id, random_hpu_b);
+        error_rr_payload = 1'b1;
+      end
+
+      check_memories(iop_src_addr, iop_dst_addr);
+
+
     end
-    $display("%t > INFO: Payload matches expected \n",$time);
-
-    maxil_drv_if_hpu_a.read_trans(REQUEST_STAT_NOTIFY_OFS, read_data);
-    $display("[INFO]: stat @HPU_A: how long data stayed before read? %x", read_data[15:0]);
-    maxil_drv_if_hpu_b.read_trans(REQUEST_STAT_NOTIFY_OFS, read_data);
-    $display("[INFO]: stat @HPU_B: how long acknowledge took? %x", read_data[31:16]);
-
-    repeat(100) @(posedge clk_control);
-    // Sending a read request from HPU-A to HPU-B -------------------------------------------------
-    $display("\nC - Sending a Read request");
-    read_request(random_hpu_b, iop_id, iop_src_addr, iop_dst_addr);
-
-    wait (hpu_a.interrupt_read_request == 1'b1);
-    maxil_drv_if_hpu_a.read_trans(REQUEST_READ_REQUEST_OFS, read_data);
-
-    received_address = read_data[31:16];
-    received_hpu_id  = read_data[11:8];
-    received_iop_id  = read_data[7:0];
-
-    assert (read_data == {iop_dst_addr, 4'b0, random_hpu_b, iop_id}) else begin
-      $display("[ERROR]: Missmatch between expected and received read request payload on regif");
-      $display("address : %2x :: %2x", received_address, iop_dst_addr);
-      $display(" iop:id : %2x :: %2x", received_iop_id, iop_id);
-      $display(" hpu:id : %2x :: %2x", received_hpu_id, random_hpu_b);
-      error_rr_payload = 1'b1;
-    end
-
-    check_memories(iop_src_addr, iop_dst_addr);
 
     $display("%t > INFO: End simulation",$time);
     repeat(20) @(posedge clk_control);

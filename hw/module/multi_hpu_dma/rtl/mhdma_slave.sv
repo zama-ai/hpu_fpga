@@ -208,7 +208,6 @@ module mhdma_slave
 
   st_cem cem_state;
   st_cem cem_next_state;
-  logic  cem_over;
 
   always_ff @(posedge clk_mrmac) begin
     if (~resetn_mrmac) cem_state <= CEM_WAIT_REQUEST;
@@ -221,14 +220,11 @@ module mhdma_slave
       CEM_WAIT_REQUEST:
         cem_next_state = new_ct_emission_request_pending ? CEM_READ_N_SEND : CEM_WAIT_REQUEST;
       CEM_READ_N_SEND:
-        cem_next_state = cem_over ? CEM_WAIT_REQUEST : CEM_READ_N_SEND;
+        cem_next_state = ct_emission_finished ? CEM_WAIT_REQUEST : CEM_READ_N_SEND;
     endcase
   end
 
   assign ct_emission_request_in_use = (cem_state == CEM_READ_N_SEND) ? 1'b1: 1'b0;
-
-  // TODO:
-  assign cem_over = ct_emission_all_packets_received;
 
   // sending command to read request command queue ------------------------------------------------
   // when qsfp tlast is ready we are sure that all commands have been correctly received
@@ -268,14 +264,17 @@ module mhdma_slave
   );
 
   logic [RQQ_CMD_DATA_COUNT_W-1:0] rreq_cnt;
+  logic                            rreq_cnt_down;
+
+  assign rreq_cnt_down = rreq_cmd_out_valid & rreq_cmd_out_ready;
 
   always_ff @(posedge clk_mrmac) begin
     if (~resetn_mrmac) begin
       rreq_cnt <= 'h0;
     end else begin
-      if (rreq_cmd_we) begin
+      if (rreq_cmd_we & ~rreq_cnt_down) begin
         rreq_cnt <= rreq_cnt + 1;
-      end else if (rreq_cmd_out_valid & rreq_cmd_out_ready) begin
+      end else if (rreq_cnt_down & ~rreq_cmd_we) begin
         rreq_cnt <= rreq_cnt - 1;
       end
     end
@@ -567,13 +566,19 @@ module mhdma_slave
   assign fifo_ce_pc_in_rdy[0] = (reading_which_pc == 1) ? fifo_ce_in_rdy : 1'b0;
   assign fifo_ce_pc_in_rdy[1] = (reading_which_pc == 2) ? fifo_ce_in_rdy : 1'b0;
 
+  logic cnt_fifo_up;
+  logic cnt_fifo_down;
+
+  assign cnt_fifo_up   = fifo_ce_in_vld & fifo_ce_in_rdy;
+  assign cnt_fifo_down = ce_valid & ce_ready;
+
   always_ff @(posedge clk_mrmac) begin
     if (~resetn_mrmac) begin
       fifo_ce_cnt <= 'h0;
     end else begin
-      if (fifo_ce_in_vld & fifo_ce_in_rdy) begin
+      if (cnt_fifo_up & ~cnt_fifo_down) begin
         fifo_ce_cnt <= fifo_ce_cnt + 1;
-      end else if (ce_valid & fifo_ce_out_vld) begin
+      end else if (cnt_fifo_down & ~cnt_fifo_up) begin
         fifo_ce_cnt <= fifo_ce_cnt - 1;
       end
     end
