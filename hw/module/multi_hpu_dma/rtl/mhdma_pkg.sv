@@ -20,6 +20,9 @@ package mhdma_pkg;
   localparam int CT_NB_WORDS_MRMAC = CT_SIZE; // because coef size is MRMAC size
   localparam int CT_NB_WORDS_AXI4  = CT_SIZE/AXI4_DATA_W;
 
+  // AXI
+  localparam [AXI4_SIZE_W-1:0] MHDMA_ARSIZE = $clog2(AXI4_DATA_BYTES);
+
   // =========================================================================================== //
   // Ethernet
   // =========================================================================================== //
@@ -213,5 +216,54 @@ package mhdma_pkg;
     end
     return data_out;
   endfunction
+
+
+  // parameter generation
+  // to be reviewed
+  typedef int unpacked_array_t [ETH_PC];
+
+  function automatic unpacked_array_t compute_nb_words (
+    input int pc_ct_bytes [ETH_PC]
+  );
+    int pc_nb_words [ETH_PC];
+    for (int i = 0; i < ETH_PC; i++) begin
+      pc_nb_words[i] = pc_ct_bytes[i] / AXI4_DATA_BYTES;
+    end
+    return pc_nb_words;
+  endfunction
+
+  function automatic unpacked_array_t compute_nb_bursts(
+    input int pc_nb_words[ETH_PC],
+    input int                      max_burst_size
+  );
+    int pc_nb_bursts[ETH_PC];
+    for (int i = 0; i < ETH_PC; i++) begin
+      pc_nb_bursts[i] = pc_nb_words[i] / max_burst_size;
+    end
+    return pc_nb_bursts;
+  endfunction
+
+  function automatic unpacked_array_t compute_remaining_words(
+    input int pc_nb_words[ETH_PC],
+    input int                      max_burst_size
+  );
+    int pc_nb_remaining[ETH_PC];
+    for (int i = 0; i < ETH_PC; i++) begin
+      pc_nb_remaining[i] = pc_nb_words[i] % max_burst_size;
+    end
+    return pc_nb_remaining;
+  endfunction
+
+  function automatic unpacked_array_t compute_nb_transactions(
+    input int pc_nb_remain[ETH_PC],
+    input int pc_nb_bursts[ETH_PC]
+  );
+    int pc_nb_trans [ETH_PC];
+    for (int i = 0; i < ETH_PC; i++) begin
+      pc_nb_trans[i] = (pc_nb_remain[i] != 0) ? pc_nb_bursts[i] + pc_nb_remain[i] : pc_nb_bursts[i];
+    end
+    return pc_nb_trans;
+  endfunction
+
 
 endpackage

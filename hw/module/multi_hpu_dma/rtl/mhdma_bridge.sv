@@ -95,9 +95,14 @@ module mhdma_bridge
 
   //TODO: review theses two values, if not divisible by 32 it will be wrong
   localparam [3:0] PC_STRIDE                = 'hB;
-  localparam [ETH_PC-1:0][15:0] PC_CT_BYTES = '{'h2000, 'h2020};
+  localparam int PC_CT_BYTES [ETH_PC]= '{'h2000, 'h2020};
 
   localparam int MAX_BURST_SIZE = PAGE_BYTES/AXI4_DATA_BYTES;
+
+  localparam int PC_NB_WORDS [ETH_PC] = compute_nb_words(PC_CT_BYTES);
+  localparam int PC_NB_BURST [ETH_PC] = compute_nb_bursts(PC_NB_WORDS, MAX_BURST_SIZE);
+  localparam int PC_REMAINS  [ETH_PC] = compute_remaining_words(PC_NB_WORDS, MAX_BURST_SIZE);
+  localparam int PC_NB_TRANS [ETH_PC] = compute_nb_transactions(PC_REMAINS,PC_NB_BURST);
 
   // =========================================================================================== //
   // CDC from regf to mrmac clock
@@ -211,7 +216,12 @@ module mhdma_bridge
   logic                     rx_tlast;
   logic                     cerx_reception_ready;
 
-  mhdma_master mhdma_master (
+  mhdma_master #(
+    .PC_STRIDE         (PC_STRIDE),
+    .PC_NB_WORDS       (PC_NB_WORDS),
+    .PC_REMAINS        (PC_REMAINS),
+    .PC_NB_WRITES      (PC_NB_TRANS)
+  ) mhdma_master (
     // Ethernet configuration interface ---------------------------------------
     .clk_cfg                         (clk_cfg                                 ),
     .resetn_cfg                      (resetn_cfg                              ),
@@ -266,8 +276,10 @@ module mhdma_bridge
   mhdma_slave # (
     .CDC_SYNC_STAGES                (CDC_SYNC_STAGES                          ),
     .MAX_BURST_SIZE                 (MAX_BURST_SIZE                           ),
-    .PC_CT_BYTES                    (PC_CT_BYTES                              ),
-    .PC_STRIDE                      (PC_STRIDE                                )
+    .PC_STRIDE                      (PC_STRIDE                                ),
+    .PC_NB_WORDS                    (PC_NB_WORDS                              ),
+    .PC_REMAINS                     (PC_REMAINS                               ),
+    .PC_NB_READS                    (PC_NB_TRANS                              )
   ) mhdma_slave (
     // Ethernet configuration interface ---------------------------------------
     .clk_cfg                        (clk_cfg                                  ),

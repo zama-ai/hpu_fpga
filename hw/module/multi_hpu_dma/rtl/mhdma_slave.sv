@@ -17,8 +17,11 @@ module mhdma_slave
 #(
   parameter                int CDC_SYNC_STAGES = 2,
   parameter                int MAX_BURST_SIZE  = PAGE_BYTES/AXI4_DATA_BYTES,
-  parameter [ETH_PC-1:0][15:0] PC_CT_BYTES     = '{'h2000, 'h2020},
-  parameter              [3:0] PC_STRIDE       = 'hB
+  parameter              [3:0] PC_STRIDE       = 'hB,
+  // must not add default values to theses parameters, comming from bridge module
+  parameter int PC_NB_WORDS       [ETH_PC],
+  parameter int PC_REMAINS        [ETH_PC],
+  parameter int PC_NB_READS       [ETH_PC]
 ) (
   // Ethernet configuration interface -----------------------------------------
   input  logic                                clk_cfg,
@@ -70,19 +73,7 @@ module mhdma_slave
   // =========================================================================================== //
   // localparam
   // =========================================================================================== //
-  localparam [AXI4_SIZE_W-1:0] MHDMA_ARSIZE = $clog2(AXI4_DATA_BYTES);
   localparam NB_MRMRAC_WORDS_PER_READ = AXI4_DATA_W/MRMAC_AXIS_W;
-
-  // TOREVIEW
-  // generate cannot be in packages, same snippet must be in slave & master module
-  generate
-    for (genvar gen_i = 0; gen_i < ETH_PC; gen_i = gen_i + 1) begin : gen_localparam
-      localparam int PC_NB_WORDS = (PC_CT_BYTES[gen_i] / AXI4_DATA_BYTES);
-      localparam int PC_NB_READS_BURST = (PC_NB_WORDS / MAX_BURST_SIZE);
-      localparam int PC_REMAINS = (PC_NB_WORDS % MAX_BURST_SIZE);
-      localparam int PC_NB_READS = (PC_REMAINS!=0) ? PC_NB_READS_BURST + 1 : PC_NB_READS_BURST;
-    end
-  endgenerate
 
   // =========================================================================================== //
   // general
@@ -353,14 +344,14 @@ module mhdma_slave
   // TODO: TOREVIEW :: we probably could read at the same time the two PCs and not one by one
   generate
     for (genvar gen_rd=0; gen_rd<ETH_PC; gen_rd++) begin : gen_ce_reads
-      logic [$clog2(gen_localparam[gen_rd].PC_NB_READS):0] axi_read_cnt;
+      logic [$clog2(PC_NB_READS[gen_rd]):0] axi_read_cnt;
       logic                                                axi_read;
 
       // Counts the number of clock cycles that must perform reads taking account bursts
       // because we decrement from axi4_read_pc we add one to count all words
       always_ff @(posedge clk_mrmac) begin
         if (~resetn_mrmac) begin
-          axi_read_cnt <= gen_localparam[gen_rd].PC_NB_READS;
+          axi_read_cnt <= PC_NB_READS[gen_rd];
           axi_read <= 1'b0;
         end else begin
           if ((axi_read_cnt > 0) && axi4_read_pc[gen_rd] && m_axi4_arready[gen_rd]) begin
@@ -368,7 +359,7 @@ module mhdma_slave
             axi_read_cnt <= axi_read_cnt - 1;
           end else if (axi4_read_last[gen_rd]) begin
             axi_read <= 1'b0;
-            axi_read_cnt <= gen_localparam[gen_rd].PC_NB_READS;
+            axi_read_cnt <= PC_NB_READS[gen_rd];
           end
         end
       end
@@ -377,7 +368,7 @@ module mhdma_slave
       // read address takes the physical address computed earlier as soon as the value is ready
       // when starting the reading process we compute the offset accounting burst sequence
       always_ff @(posedge clk_mrmac) begin
-        if (axi_read_cnt == gen_localparam[gen_rd].PC_NB_READS) begin
+        if (axi_read_cnt == PC_NB_READS[gen_rd]) begin
           mhdma_read_addr <= phy_addr[gen_rd];
         end else begin
           mhdma_read_addr <= mhdma_read_addr + (AXI4_DATA_BYTES*MAX_BURST_SIZE);
@@ -393,8 +384,8 @@ module mhdma_slave
       assign axi4_read_last[gen_rd] = ((axi_read && m_axi4_arready[gen_rd]) & (axi_read_cnt == 0)) ? 1'b1 : 1'b0;
 
       always_comb begin
-        if ((gen_localparam[gen_rd].PC_REMAINS !=0) && (axi_read_cnt == 0)) begin
-          m_axi4_arlen[gen_rd] = (axi_read && m_axi4_arready[gen_rd]) ? gen_localparam[gen_rd].PC_REMAINS-1 : 'h0;
+        if ((PC_REMAINS[gen_rd] !=0) && (axi_read_cnt == 0)) begin
+          m_axi4_arlen[gen_rd] = (axi_read && m_axi4_arready[gen_rd]) ? PC_REMAINS[gen_rd]-1 : 'h0;
         end else begin
           m_axi4_arlen[gen_rd] = (axi_read && m_axi4_arready[gen_rd]) ? MAX_BURST_SIZE-1 : 'h0;
         end
@@ -444,7 +435,7 @@ module mhdma_slave
 
       // we are going to read 4 times slower the fifo than we are feeding it
       logic [$clog2(NB_MRMRAC_WORDS_PER_READ)-1:0]         slow_pace_count;
-      logic [$clog2(gen_localparam[gen_rd].PC_NB_WORDS):0] read_fifo_out_cnt;
+      logic [$clog2(PC_NB_WORDS[gen_rd]):0] read_fifo_out_cnt;
       logic                                                pc_read_finished;
 
       always_ff @(posedge clk_mrmac) begin
@@ -466,7 +457,7 @@ module mhdma_slave
         end else begin
           if (read_fifo_out_ready & read_fifo_out_valid) begin
             read_fifo_out_cnt <= read_fifo_out_cnt +1;
-          end else if (read_fifo_out_cnt == gen_localparam[gen_rd].PC_NB_WORDS)  begin
+          end else if (read_fifo_out_cnt == PC_NB_WORDS[gen_rd])  begin
             read_fifo_out_cnt <= 'h0;
           end
         end
@@ -475,7 +466,7 @@ module mhdma_slave
       // because in one read we have NB_MRMRAC_WORDS_PER_READ, we must delay the signal pc_read_finished
       logic [NB_MRMRAC_WORDS_PER_READ-1:0] temp_finished_flag;
       always_ff @(posedge clk_mrmac)
-        temp_finished_flag[0] <= (read_fifo_out_cnt == gen_localparam[gen_rd].PC_NB_WORDS);
+        temp_finished_flag[0] <= (read_fifo_out_cnt == PC_NB_WORDS[gen_rd]);
 
       for (genvar gen_i = 1; gen_i<NB_MRMRAC_WORDS_PER_READ; gen_i++) begin
         always_ff @(posedge clk_mrmac)

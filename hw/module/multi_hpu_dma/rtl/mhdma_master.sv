@@ -17,8 +17,11 @@ module mhdma_master
 #(
   parameter                int CDC_SYNC_STAGES = 2,
   parameter                int MAX_BURST_SIZE  = PAGE_BYTES/AXI4_DATA_BYTES,
-  parameter [ETH_PC-1:0][15:0] PC_CT_BYTES     = '{'h2000, 'h2020},
-  parameter              [3:0] PC_STRIDE       = 'hB
+  parameter              [3:0] PC_STRIDE       = 'hB,
+  // must not add default values to theses parameters, comming from bridge module
+  parameter int PC_NB_WORDS        [ETH_PC],
+  parameter int PC_REMAINS         [ETH_PC],
+  parameter int PC_NB_WRITES       [ETH_PC]
 ) (
   // Ethernet configuration interface -----------------------------------------
   input  logic                                clk_cfg,
@@ -85,19 +88,7 @@ module mhdma_master
   // =========================================================================================== //
   // localparam
   // =========================================================================================== //
-  localparam [AXI4_SIZE_W-1:0] MHDMA_ARSIZE = $clog2(AXI4_DATA_BYTES);
   localparam NB_MRMRAC_WORDS_PER_WRITE = AXI4_DATA_W/MRMAC_AXIS_W;
-
-  // TOREVIEW
-  // generate cannot be in packages, same snippet must be in slave & master module
-  generate
-    for (genvar gen_i = 0; gen_i < ETH_PC; gen_i = gen_i + 1) begin : gen_localparam
-      localparam int PC_NB_WORDS = (PC_CT_BYTES[gen_i] / AXI4_DATA_BYTES);
-      localparam int PC_NB_WRITES_BURST = (PC_NB_WORDS / MAX_BURST_SIZE);
-      localparam int PC_REMAINS = (PC_NB_WORDS % MAX_BURST_SIZE);
-      localparam int PC_NB_WRITES = (PC_REMAINS!=0) ? PC_NB_WRITES_BURST + 1 : PC_NB_WRITES_BURST;
-    end
-  endgenerate
 
   // =========================================================================================== //
   // CDC from regf to mrmac clock
@@ -545,11 +536,12 @@ module mhdma_master
   end
 
   // which fifo must be filled ?
+  // TODO
   always_ff @(posedge clk_mrmac) begin
     if (~resetn_mrmac) begin
       target_fifo <= 2'b00;
     end else begin
-      if (fifo_cerx_cnt_tx < 4*gen_localparam[0].PC_NB_WORDS) begin
+      if (fifo_cerx_cnt_tx < 4*PC_NB_WORDS[0]) begin
         target_fifo <= 2'b01;
       end else begin
         target_fifo <= 2'b10;
@@ -560,14 +552,14 @@ module mhdma_master
   // launch reads over the two PCs independently one at a time
   generate
     for (genvar gen_i=0; gen_i<ETH_PC; gen_i++) begin : gen_last_cnt
-      logic [$clog2(gen_localparam[gen_i].PC_NB_WRITES):0] pc_last_cnt;
+      logic [$clog2(PC_NB_WRITES[gen_i]):0] pc_last_cnt;
       always_ff @(posedge clk_mrmac) begin
         if (~resetn_mrmac)begin
           pc_last_cnt <= 'h0;
         end else begin
           if(m_axi4_wlast[gen_i]) begin
             pc_last_cnt <= pc_last_cnt+1;
-          end else if (pc_last_cnt == gen_localparam[gen_i].PC_NB_WRITES) begin
+          end else if (pc_last_cnt == PC_NB_WRITES[gen_i]) begin
             pc_last_cnt <= 'h0;
           end
         end
@@ -582,9 +574,9 @@ module mhdma_master
     if (~resetn_mrmac) begin
       axi4_write_pc <= 'h0;
     end else begin
-      if (first_pkt_reception | (gen_last_cnt[0].pc_last_cnt == gen_localparam[0].PC_NB_WRITES)) begin
+      if (first_pkt_reception | (gen_last_cnt[0].pc_last_cnt == PC_NB_WRITES[0])) begin
         axi4_write_pc <= {axi4_write_pc[ETH_PC-2:0], first_pkt_reception};
-      end else if (gen_last_cnt[1].pc_last_cnt == gen_localparam[1].PC_NB_WRITES) begin
+      end else if (gen_last_cnt[1].pc_last_cnt == PC_NB_WRITES[1]) begin
         axi4_write_pc <= 'h0;
       end
     end
@@ -689,7 +681,7 @@ module mhdma_master
       // Address
       // ======================================================================================= //
       // We must write PC_NB_WRITES + PC_REMAINS addresses
-      logic [$clog2(gen_localparam[gen_wr].PC_NB_WRITES):0] axi_write_cnt;
+      logic [$clog2(PC_NB_WRITES[gen_wr]):0] axi_write_cnt;
       logic                                                 axi_awrite;
       logic                                                 axi_awrite_tmp;
       logic                                                 aw_valid;
@@ -700,7 +692,7 @@ module mhdma_master
         end else begin
           if(m_axi4_wlast[gen_wr])begin
             enough_words <= 1'b0;
-          end else if ((gen_localparam[gen_wr].PC_REMAINS != 0) & (axi_write_cnt == 1)) begin
+          end else if ((PC_REMAINS[gen_wr] != 0) & (axi_write_cnt == 1)) begin
             enough_words <= fifo_pc_wr_out_vld;
           end else if (fifo_pc_wr_cnt >= MAX_BURST_SIZE) begin
             enough_words <= 1'b1;
@@ -720,12 +712,12 @@ module mhdma_master
       // Counts the number of address writes that is left to do
       always_ff @(posedge clk_mrmac) begin
         if (~resetn_mrmac) begin
-          axi_write_cnt <= gen_localparam[gen_wr].PC_NB_WRITES;
+          axi_write_cnt <= PC_NB_WRITES[gen_wr];
         end else begin
           if (m_axi4_wlast[gen_wr] & ~(axi_write_cnt == 0)) begin
             axi_write_cnt <= axi_write_cnt - 1;
           end else if (m_axi4_wlast[gen_wr] & (axi_write_cnt == 0)) begin
-            axi_write_cnt <= gen_localparam[gen_wr].PC_NB_WRITES;
+            axi_write_cnt <= PC_NB_WRITES[gen_wr];
           end
         end
       end
@@ -769,8 +761,8 @@ module mhdma_master
       assign m_axi4_awvalid[gen_wr] = (aw_valid & m_axi4_awready[gen_wr]) ? 1'b1             :'h0;
 
       always_comb begin
-        if ((gen_localparam[gen_wr].PC_REMAINS != 0) && (axi_write_cnt == 1)) begin
-          m_axi4_awlen[gen_wr] = (aw_valid && m_axi4_awready[gen_wr]) ? gen_localparam[gen_wr].PC_REMAINS-1 : 'h0;
+        if ((PC_REMAINS[gen_wr] != 0) && (axi_write_cnt == 1)) begin
+          m_axi4_awlen[gen_wr] = (aw_valid && m_axi4_awready[gen_wr]) ? PC_REMAINS[gen_wr]-1 : 'h0;
         end else begin
           m_axi4_awlen[gen_wr] = (aw_valid && m_axi4_awready[gen_wr]) ? MAX_BURST_SIZE-1 : 'h0;
         end
@@ -778,7 +770,7 @@ module mhdma_master
 
       // Data channel -----------------------------------------------------------------------------
       logic axi_write;
-      logic [$clog2(gen_localparam[gen_wr].PC_NB_WORDS):0] axi_word_cnt;
+      logic [$clog2(PC_NB_WORDS[gen_wr]):0] axi_word_cnt;
 
       always_ff @(posedge clk_mrmac) begin
         if (~resetn_mrmac) begin
@@ -796,7 +788,7 @@ module mhdma_master
         if (~resetn_mrmac) begin
           axi_word_cnt <= MAX_BURST_SIZE;
         end else begin
-          if ((axi_write_cnt != 1) | (gen_localparam[gen_wr].PC_REMAINS == 0)) begin
+          if ((axi_write_cnt != 1) | (PC_REMAINS[gen_wr] == 0)) begin
             // when we are not in the last word or when we don't have remaining words (= only bursts)
             if (m_axi4_wlast[gen_wr]) begin
               axi_word_cnt <= MAX_BURST_SIZE;
@@ -877,7 +869,7 @@ module mhdma_master
   // We already check that we send the correct number of workds into HBM with axi_word_cnt on both PC.
   // by design we cannot have several writes in HBM with different read request
   logic itr_read_request;
-  logic [$clog2(gen_localparam[0].PC_NB_WRITES + gen_localparam[1].PC_NB_WRITES):0] write_complete_cnt;
+  logic [$clog2(PC_NB_WRITES[0] + PC_NB_WRITES[1]):0] write_complete_cnt;
 
   always_ff @(posedge clk_mrmac) begin
     if (~resetn_mrmac) begin
@@ -885,13 +877,13 @@ module mhdma_master
     end else begin
       if (gen_ce_write[0].write_complete | gen_ce_write[1].write_complete ) begin
         write_complete_cnt <= write_complete_cnt +1;
-      end else if(write_complete_cnt == (gen_localparam[0].PC_NB_WRITES + gen_localparam[1].PC_NB_WRITES)) begin
+      end else if(write_complete_cnt == (PC_NB_WRITES[0] + PC_NB_WRITES[1])) begin
         write_complete_cnt <= 'h0;
       end
     end
   end
 
-  assign itr_read_request = (write_complete_cnt == (gen_localparam[0].PC_NB_WRITES + gen_localparam[1].PC_NB_WRITES)) ? 1'b1 : 1'b0;
+  assign itr_read_request = (write_complete_cnt == (PC_NB_WRITES[0] + PC_NB_WRITES[1])) ? 1'b1 : 1'b0;
 
   // itr_read_request is a pulse and can be used as a way to determine when to quit ST_READ_REQ
   // TODO: check that we don't need seq_num check or errors here and it's enough
