@@ -465,9 +465,6 @@ module mhdma_master
   );
   assign cerx_reception_ready = (fifo_cerx_cnt == 0) & fifo_cerx_in_rdy;
 
-  // TODO
-  assign ct_emission_all_packets_received = 0;
-
  // ready signal of sending fifo according to which one we should use
   logic fifo_pc_backpressure;
   assign fifo_cerx_out_rdy = fifo_pc_backpressure;
@@ -895,6 +892,10 @@ module mhdma_master
   end
 
   assign itr_read_request = (write_complete_cnt == (gen_localparam[0].PC_NB_WRITES + gen_localparam[1].PC_NB_WRITES)) ? 1'b1 : 1'b0;
+
+  // itr_read_request is a pulse and can be used as a way to determine when to quit ST_READ_REQ
+  // TODO: check that we don't need seq_num check or errors here and it's enough
+  assign ct_emission_all_packets_received = itr_read_request;
 
   // regf payload information ---------------------------------------------------------------------
   logic [REG_DATA_W-1:0] rr_in_data;
