@@ -187,6 +187,8 @@ module mhdma_formatter
     end
   end
 
+  assign ce_end_of_packet = qsfp_tx_tlast & (ce_seq_num == NB_PACKETS_FULL);
+
   // let's build CE start-of-header pulse
   logic ce_start_of_header; // pulse: header transmission for all packets
   logic ce_start_emission;  // pulse: start of first header transmission

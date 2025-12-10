@@ -52,14 +52,13 @@ module mhdma_slave
   output logic                                ce_valid,
   input  logic                                ce_ready,
   // Axi4 interface for NMU ---------------------------------------------------
-  output logic [ETH_PC-1:0][   AXI4_ID_W-1:0] m_axi4_arid,
   output logic [ETH_PC-1:0][  AXI4_ADD_W-1:0] m_axi4_araddr,
   output logic [ETH_PC-1:0][  AXI4_LEN_W-1:0] m_axi4_arlen,
   output logic [ETH_PC-1:0][ AXI4_SIZE_W-1:0] m_axi4_arsize,
   output logic [ETH_PC-1:0][AXI4_BURST_W-1:0] m_axi4_arburst,
   output logic [ETH_PC-1:0]                   m_axi4_arvalid,
   input  logic [ETH_PC-1:0]                   m_axi4_arready,
-  input  logic [ETH_PC-1:0][  AXI4_ID_W-1:0]  m_axi4_rid,
+
   input  logic [ETH_PC-1:0][AXI4_DATA_W-1:0]  m_axi4_rdata,
   input  logic [ETH_PC-1:0][AXI4_RESP_W-1:0]  m_axi4_rresp,
   input  logic [ETH_PC-1:0]                   m_axi4_rlast,

@@ -308,14 +308,13 @@ module mhdma_bridge
     .ce_ready                       (ce_ready                                 ),
     .ce_valid                       (ce_valid                                 ),
     // AXI4-4 full read interface ---------------------------------------------
-    .m_axi4_arid                    (m_axi4_arid                              ),
     .m_axi4_araddr                  (m_axi4_araddr                            ),
     .m_axi4_arlen                   (m_axi4_arlen                             ),
     .m_axi4_arsize                  (m_axi4_arsize                            ),
     .m_axi4_arburst                 (m_axi4_arburst                           ),
     .m_axi4_arvalid                 (m_axi4_arvalid                           ),
     .m_axi4_arready                 (m_axi4_arready                           ),
-    .m_axi4_rid                     (m_axi4_rid                               ),
+
     .m_axi4_rdata                   (m_axi4_rdata                             ),
     .m_axi4_rresp                   (m_axi4_rresp                             ),
     .m_axi4_rlast                   (m_axi4_rlast                             ),
