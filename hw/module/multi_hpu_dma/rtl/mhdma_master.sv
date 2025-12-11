@@ -315,30 +315,32 @@ module mhdma_master
     endcase
   end
 
-  logic [15:0] cnt_notify_ack;
-  always_ff @(posedge clk_cfg) begin
-    if (~resetn_cfg) begin
-      ntx_timeout <= 1'b0;
-    end else begin
-      // TODO:regf_timeout_dur
-      if (cnt_notify_ack >= regf_timeout_dur) begin
-        ntx_timeout <= 1'b1;
-      end else begin
-        ntx_timeout <= 1'b0;
-      end
-    end
-  end
+  assign ntx_timeout_cdc = 0;
 
-  xpm_cdc_single_wrapper # (
-    .CDC_SYNC_STAGES(CDC_SYNC_STAGES),
-    .SRC_INPUT_REG  (0)
-  ) cdc_single_ntx_timeout (
-    .src_clk(clk_cfg),
-    .src_in (ntx_timeout),
+  // logic [15:0] cnt_notify_ack;
+  // always_ff @(posedge clk_cfg) begin
+  //   if (~resetn_cfg) begin
+  //     ntx_timeout <= 1'b0;
+  //   end else begin
+  //     // TODO:regf_timeout_dur
+  //     if (cnt_notify_ack >= regf_timeout_dur) begin
+  //       ntx_timeout <= 1'b1;
+  //     end else begin
+  //       ntx_timeout <= 1'b0;
+  //     end
+  //   end
+  // end
 
-    .dest_clk(clk_mrmac),
-    .dest_out(ntx_timeout_cdc)
-  );
+  // xpm_cdc_single_wrapper # (
+  //   .CDC_SYNC_STAGES(CDC_SYNC_STAGES),
+  //   .SRC_INPUT_REG  (0)
+  // ) cdc_single_ntx_timeout (
+  //   .src_clk(clk_cfg),
+  //   .src_in (ntx_timeout),
+
+  //   .dest_clk(clk_mrmac),
+  //   .dest_out(ntx_timeout_cdc)
+  // );
 
   // Read request ---------------------------------------------------------------------------------
   typedef enum logic [1:0] {
