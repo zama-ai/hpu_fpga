@@ -7,6 +7,7 @@
 #
 # ==============================================================================================
 
+# To be reviewed
 set_false_path -to [get_cells -hierarchical -filter {NAME =~ *mhdma_trace/nb_word_mrmac_cdc_reg[0]*}]
 set_false_path -to [get_cells -hierarchical -filter {NAME =~ *mhdma_trace/reset_registers_cdc_reg[0]*}]
 
@@ -21,7 +22,10 @@ set_false_path -to [get_cells -hierarchical -filter {NAME =~ *mhdma_trace/cdc_tx
 set_false_path -to [get_cells -hierarchical -filter {NAME =~ *mhdma_trace/cdc_tx_data_valid_reg[0]*}]
 set_false_path -to [get_cells -hierarchical -filter {NAME =~ *mhdma_trace/cdc_rd_data_count_reg[0]*}]
 
+# Quasi static signals
 set_false_path -to [get_cells -hierarchical -filter {NAME =~ *mhdma_bridge/*hpu_ids_cdc_reg*}]
+
+# raises concerning warnings:
 set_false_path -to [get_cells -hierarchical -filter {NAME =~ *mhdma_slave/*phy_addr_reg*}] -from [get_cells -hierarchical -filter {NAME =~ *hpu_regif_core_eth_2in3/*addr_2in3_ct_*}]
 set_false_path -to [get_cells -hierarchical -filter {NAME =~ *mhdma_master/*phy_addr_reg*}] -from [get_cells -hierarchical -filter {NAME =~ *hpu_regif_core_eth_2in3/*addr_2in3_ct_*}]
 
