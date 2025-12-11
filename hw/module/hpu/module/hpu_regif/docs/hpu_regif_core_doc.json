@@ -5,8 +5,8 @@
   "offset": 0,
   "range": 393216,
   "ext_pkg": [
-    "axi_if_shell_axil_pkg",
-    "axi_if_common_param_pkg"
+    "axi_if_common_param_pkg",
+    "axi_if_shell_axil_pkg"
   ],
   "section": [
     {
@@ -4134,14 +4134,14 @@
       ]
     },
     {
-      "name": "system",
+      "name": "mhdma_system",
       "description": "system configuration",
       "offset": 327680,
       "bytes_align": 4,
       "range": 8,
       "register": [
         {
-          "name": "line",
+          "name": "lane",
           "description": "Different parameters for qsfp lines",
           "owner": "User",
           "read_access": "Read",
@@ -4224,7 +4224,7 @@
       ]
     },
     {
-      "name": "reset",
+      "name": "mhdma_reset",
       "description": "Controllable resets for transceivers",
       "offset": 327700,
       "bytes_align": 4,
@@ -4319,7 +4319,7 @@
       ]
     },
     {
-      "name": "hpu_id",
+      "name": "mhdma_hpu_id",
       "description": "HPU ID containing all possible targets. For all IDs we have HPU MAC address, software ID and a flag for current hpu",
       "offset": 327760,
       "bytes_align": 4,
@@ -4424,7 +4424,7 @@
       ]
     },
     {
-      "name": "request",
+      "name": "mhdma_request",
       "description": "Request registers interface",
       "offset": 327936,
       "bytes_align": 4,
@@ -4700,7 +4700,7 @@
       ]
     },
     {
-      "name": "line",
+      "name": "mhdma_lane",
       "description": "Line parameter sections",
       "offset": 328192,
       "bytes_align": 4,
@@ -4765,7 +4765,7 @@
       ]
     },
     {
-      "name": "hbm_axi4_addr_2in3",
+      "name": "mhdma_hbm_axi4_addr_2in3",
       "description": "HBM AXI4 connection address offset",
       "offset": 331776,
       "bytes_align": 4,
@@ -4969,7 +4969,7 @@
       ]
     },
     {
-      "name": "stat",
+      "name": "mhdma_stat",
       "description": "fifo write part",
       "offset": 331852,
       "bytes_align": 4,

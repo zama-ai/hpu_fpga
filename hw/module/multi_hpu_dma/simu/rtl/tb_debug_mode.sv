@@ -328,7 +328,7 @@ module tb_debug_mode;
   task automatic init_registers;
     begin
     // (1) Reading MAC REGISTERS ------------------------------------------------------------------
-      maxil_drv_if.read_trans(SYSTEM_LINE_OFS, rdata);
+      maxil_drv_if.read_trans(MHDMA_SYSTEM_LANE_OFS, rdata);
       assert (rdata == 'h0) else begin
         $display("%t > ERROR:register SYSTEM_LINE_OFS not correctly read %h",$time, rdata);
         error_register = 1'b1;
@@ -340,14 +340,14 @@ module tb_debug_mode;
     debug_flag    = 1'b0;
     @(posedge clk_control);
 
-    maxil_drv_if.write_trans(SYSTEM_LINE_OFS, line_parameter);
+    maxil_drv_if.write_trans(MHDMA_SYSTEM_LANE_OFS, line_parameter);
 
     rst_rx_datapath = 4'b0100;
     rst_tx_datapath = 4'b1011;
     rst_all         = 4'b0101;
     @(posedge clk_control);
 
-    maxil_drv_if.write_trans(RESET_DATAPATH_OFS, reset_parameter);
+    maxil_drv_if.write_trans(MHDMA_RESET_DATAPATH_OFS, reset_parameter);
 
     if ((gt_line_rate == line_rate) && (gt_loopback == line_loopback) && (dut.line_sel == line_select)) begin
       $display("    > line parameter correctly configured");
@@ -368,7 +368,7 @@ module tb_debug_mode;
     gt_tx_reset_done= 4'b1111;
     @(posedge clk_control);
 
-    maxil_drv_if.read_trans(RESET_MONITOR_OFS, reset_monitor);
+    maxil_drv_if.read_trans(MHDMA_RESET_MONITOR_OFS, reset_monitor);
 
     if(( reset_monitor[3:0] == gt_tx_reset_done) && ( reset_monitor[7:4] == gt_rx_reset_done)) begin
       $display("    > reset monitor register correctly read");
@@ -402,7 +402,7 @@ module tb_debug_mode;
       line_loopback = 3'b010;
       @(posedge clk_control);
 
-      maxil_drv_if.write_trans(SYSTEM_LINE_OFS, line_parameter);
+      maxil_drv_if.write_trans(MHDMA_SYSTEM_LANE_OFS, line_parameter);
 
       // ready starts
       qsfp_tx_tready[line_select] = 1'b1;
@@ -440,8 +440,8 @@ module tb_debug_mode;
       end
 
       // has the register count from start of packet to start of packet changed ?
-      maxil_drv_if.read_trans(STAT_SOP_CNT_A_OFS, sop_count[31:0]);
-      maxil_drv_if.read_trans(STAT_SOP_CNT_B_OFS, sop_count[63:32]);
+      maxil_drv_if.read_trans(MHDMA_STAT_SOP_CNT_A_OFS, sop_count[31:0]);
+      maxil_drv_if.read_trans(MHDMA_STAT_SOP_CNT_B_OFS, sop_count[63:32]);
 
 
       assert (sop_count == 11) else begin
@@ -463,7 +463,7 @@ module tb_debug_mode;
       line_loopback = 3'b000;
       @(posedge clk_control);
 
-      maxil_drv_if.write_trans(SYSTEM_LINE_OFS, line_parameter);
+      maxil_drv_if.write_trans(MHDMA_SYSTEM_LANE_OFS, line_parameter);
 
       // Checks the rx datapath -------------------------------------------------------------------
       enable_noise_on_rx = 1'b1;
@@ -509,16 +509,16 @@ module tb_debug_mode;
       line_select   = 2'b01;  // 1st line selected
       tx_loop       = 1'b1;
 
-      maxil_drv_if.write_trans(SYSTEM_LINE_OFS, line_parameter);
-      maxil_drv_if.write_trans(LINE_DEBUG_OFS,  line_debug);
+      maxil_drv_if.write_trans(MHDMA_SYSTEM_LANE_OFS, line_parameter);
+      maxil_drv_if.write_trans(MHDMA_LANE_DEBUG_OFS,  line_debug);
 
       qsfp_tx_tready[line_select] = 1'b1;
 
       // what values are clk_count and valid_words_count?
-      maxil_drv_if.read_trans(STAT_CLK_A_OFS, clk_count[31:00]);
-      maxil_drv_if.read_trans(STAT_CLK_B_OFS, clk_count[63:32]);
-      maxil_drv_if.read_trans(STAT_VALID_WORDS_A_OFS, valid_words_count[31:00]);
-      maxil_drv_if.read_trans(STAT_VALID_WORDS_B_OFS, valid_words_count[63:32]);
+      maxil_drv_if.read_trans(MHDMA_STAT_CLK_A_OFS, clk_count[31:00]);
+      maxil_drv_if.read_trans(MHDMA_STAT_CLK_B_OFS, clk_count[63:32]);
+      maxil_drv_if.read_trans(MHDMA_STAT_VALID_WORDS_A_OFS, valid_words_count[31:00]);
+      maxil_drv_if.read_trans(MHDMA_STAT_VALID_WORDS_B_OFS, valid_words_count[63:32]);
 
       $display("    >  @ init nb valid words %0d and nb of clock went by %0d", valid_words_count, clk_count);
 
@@ -537,12 +537,12 @@ module tb_debug_mode;
       tx_loop = 1'b0;
       @(clk_control);
 
-      maxil_drv_if.write_trans(LINE_DEBUG_OFS,  line_debug);
+      maxil_drv_if.write_trans(MHDMA_LANE_DEBUG_OFS,  line_debug);
 
-      maxil_drv_if.read_trans(STAT_CLK_A_OFS, clk_count[31:00]);
-      maxil_drv_if.read_trans(STAT_CLK_B_OFS, clk_count[63:32]);
-      maxil_drv_if.read_trans(STAT_VALID_WORDS_A_OFS, valid_words_count[31:00]);
-      maxil_drv_if.read_trans(STAT_VALID_WORDS_B_OFS, valid_words_count[63:32]);
+      maxil_drv_if.read_trans(MHDMA_STAT_CLK_A_OFS, clk_count[31:00]);
+      maxil_drv_if.read_trans(MHDMA_STAT_CLK_B_OFS, clk_count[63:32]);
+      maxil_drv_if.read_trans(MHDMA_STAT_VALID_WORDS_A_OFS, valid_words_count[31:00]);
+      maxil_drv_if.read_trans(MHDMA_STAT_VALID_WORDS_B_OFS, valid_words_count[63:32]);
 
       $display("    >  after 50cc: nb valid words %0d and nb of clock went by %0d", valid_words_count, clk_count);
 
@@ -561,15 +561,15 @@ module tb_debug_mode;
       reset_registers = 1'b1;
       @(posedge clk_control);
 
-      maxil_drv_if.write_trans(LINE_DEBUG_OFS,  line_debug);
+      maxil_drv_if.write_trans(MHDMA_LANE_DEBUG_OFS,  line_debug);
 
       line_loopback      = 3'b000;
       reset_registers    = 1'b0;
       rx_to_tx           = 1'b1;
 
       @(posedge clk_control);
-      maxil_drv_if.write_trans(LINE_DEBUG_OFS,  line_debug);
-      maxil_drv_if.write_trans(SYSTEM_LINE_OFS, line_parameter);
+      maxil_drv_if.write_trans(MHDMA_LANE_DEBUG_OFS,  line_debug);
+      maxil_drv_if.write_trans(MHDMA_SYSTEM_LANE_OFS, line_parameter);
 
 
       enable_noise_on_rx = 1'b1;
@@ -580,12 +580,12 @@ module tb_debug_mode;
       rx_to_tx           = 1'b0;
 
       @(posedge clk_control);
-      maxil_drv_if.write_trans(LINE_DEBUG_OFS,  line_debug);
+      maxil_drv_if.write_trans(MHDMA_LANE_DEBUG_OFS,  line_debug);
 
-      maxil_drv_if.read_trans(STAT_CLK_A_OFS, clk_count[31:00]);
-      maxil_drv_if.read_trans(STAT_CLK_B_OFS, clk_count[63:32]);
-      maxil_drv_if.read_trans(STAT_VALID_WORDS_A_OFS, valid_words_count[31:00]);
-      maxil_drv_if.read_trans(STAT_VALID_WORDS_B_OFS, valid_words_count[63:32]);
+      maxil_drv_if.read_trans(MHDMA_STAT_CLK_A_OFS, clk_count[31:00]);
+      maxil_drv_if.read_trans(MHDMA_STAT_CLK_B_OFS, clk_count[63:32]);
+      maxil_drv_if.read_trans(MHDMA_STAT_VALID_WORDS_A_OFS, valid_words_count[31:00]);
+      maxil_drv_if.read_trans(MHDMA_STAT_VALID_WORDS_B_OFS, valid_words_count[63:32]);
       $display(" nb of valid words %0d and nb of clock went by %0d after rx to tx mode", valid_words_count, clk_count);
 
       empty_fifo();

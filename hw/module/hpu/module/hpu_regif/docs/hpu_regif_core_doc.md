@@ -1,6 +1,6 @@
 # HPU_REGIF_CORE documentation
-**Date**: 2025-11-20
-**Tool Version**: 27d9e880d531030160fd8749c606142942d5558d
+**Date**: 2025-12-11
+**Tool Version**: bd49564daf1a99d615cb6dbb121b54bfbeef8b22
 
 ## RegisterMap Overview
 
@@ -17,7 +17,7 @@ HPU ethernet configuration register interface. Will be accessed by RPU to define
 **Offset**: 0x0
 **Range**: 0x60000
 **Word Size (b)**: 32
-**External Packages**: "axi_if_shell_axil_pkg.sv","axi_if_common_param_pkg.sv"
+**External Packages**: "axi_if_common_param_pkg.sv","axi_if_shell_axil_pkg.sv"
 
 
 ---
@@ -44,16 +44,16 @@ Below is a summary of all the registers in the current register map:
 | [status_3in3](#section-status-3in3) | 0x30010 | 0x4 | HPU status of parts 2in3 and 3in3 |
 | [bsk_avail](#section-bsk-avail) | 0x31000 | 0x8 | BSK availability configuration |
 | [runtime_3in3](#section-runtime-3in3) | 0x32000 | 0x48 | Runtime information |
-| [system](#section-system) | 0x50000 | 0x8 | system configuration |
-| [reset](#section-reset) | 0x50014 | 0x8 | Controllable resets for transceivers |
-| [hpu_id](#section-hpu-id) | 0x50050 | 0x20 | HPU ID containing all possible targets. For all IDs we have HPU MAC address, software ID and a flag for current hpu |
-| [request](#section-request) | 0x50100 | 0x14 | Request registers interface |
-| [line](#section-line) | 0x50200 | 0x4 | Line parameter sections |
-| [hbm_axi4_addr_2in3](#section-hbm-axi4-addr-2in3) | 0x51000 | 0x10 | HBM AXI4 connection address offset |
+| [mhdma_system](#section-mhdma-system) | 0x50000 | 0x8 | system configuration |
+| [mhdma_reset](#section-mhdma-reset) | 0x50014 | 0x8 | Controllable resets for transceivers |
+| [mhdma_hpu_id](#section-mhdma-hpu-id) | 0x50050 | 0x20 | HPU ID containing all possible targets. For all IDs we have HPU MAC address, software ID and a flag for current hpu |
+| [mhdma_request](#section-mhdma-request) | 0x50100 | 0x14 | Request registers interface |
+| [mhdma_lane](#section-mhdma-lane) | 0x50200 | 0x4 | Line parameter sections |
+| [mhdma_hbm_axi4_addr_2in3](#section-mhdma-hbm-axi4-addr-2in3) | 0x51000 | 0x10 | HBM AXI4 connection address offset |
 | [fifo_write](#section-fifo-write) | 0x5101c | 0x10 | fifo write part |
 | [fifo_read](#section-fifo-read) | 0x5102c | 0xc | fifo write part |
 | [cnt](#section-cnt) | 0x5103c | 0xc | fifo write part |
-| [stat](#section-stat) | 0x5104c | 0x1c | fifo write part |
+| [mhdma_stat](#section-mhdma-stat) | 0x5104c | 0x1c | fifo write part |
 
 
 ---
@@ -4033,22 +4033,22 @@ Register pep_bskif_req_info_1 contains following Sub-fields:
 
 
 
-## Section system
+## Section mhdma-system
 
 ### Register Overview
 
-Below is a summary of all the registers in the current section system:
+Below is a summary of all the registers in the current section mhdma_system:
 
 | Name             | Offset | Access | Description |
 |-----------------:|:------:|:------:|:------------|
-| [line](#register-systemline) | 0x50000 | RW |  Different parameters for qsfp lines |
-| [timeout](#register-systemtimeout) | 0x50004 | RW |  16 bit Timeout: time before re-launching a request, in clock cycles |
+| [lane](#register-mhdma-systemlane) | 0x50000 | RW |  Different parameters for qsfp lines |
+| [timeout](#register-mhdma-systemtimeout) | 0x50004 | RW |  16 bit Timeout: time before re-launching a request, in clock cycles |
 
 
 ---
 
 
-### Register system.line
+### Register mhdma-system.lane
 
 - **Description**: Different parameters for qsfp lines
 - **Owner**: User
@@ -4060,7 +4060,7 @@ Below is a summary of all the registers in the current section system:
 
 #### Field Details
 
-Register line contains following Sub-fields:
+Register lane contains following Sub-fields:
 
 | Field Name | Offset_b | Size_b | Default      | Description   |
 |-----------:|:--------:|:------:|:------------:|:--------------|
@@ -4074,7 +4074,7 @@ Register line contains following Sub-fields:
 ---
 
 
-### Register system.timeout
+### Register mhdma-system.timeout
 
 - **Description**: 16 bit Timeout: time before re-launching a request, in clock cycles
 - **Owner**: User
@@ -4091,22 +4091,22 @@ Register line contains following Sub-fields:
 
 
 
-## Section reset
+## Section mhdma-reset
 
 ### Register Overview
 
-Below is a summary of all the registers in the current section reset:
+Below is a summary of all the registers in the current section mhdma_reset:
 
 | Name             | Offset | Access | Description |
 |-----------------:|:------:|:------:|:------------|
-| [datapath](#register-resetdatapath) | 0x50014 | RW |  GTM datapath resets |
-| [monitor](#register-resetmonitor) | 0x50018 | R. |  Reset done flag for monitoring |
+| [datapath](#register-mhdma-resetdatapath) | 0x50014 | RW |  GTM datapath resets |
+| [monitor](#register-mhdma-resetmonitor) | 0x50018 | R. |  Reset done flag for monitoring |
 
 
 ---
 
 
-### Register reset.datapath
+### Register mhdma-reset.datapath
 
 - **Description**: GTM datapath resets
 - **Owner**: User
@@ -4131,7 +4131,7 @@ Register datapath contains following Sub-fields:
 ---
 
 
-### Register reset.monitor
+### Register mhdma-reset.monitor
 
 - **Description**: Reset done flag for monitoring
 - **Owner**: Kernel
@@ -4156,28 +4156,28 @@ Register monitor contains following Sub-fields:
 
 
 
-## Section hpu-id
+## Section mhdma-hpu-id
 
 ### Register Overview
 
-Below is a summary of all the registers in the current section hpu_id:
+Below is a summary of all the registers in the current section mhdma_hpu_id:
 
 | Name             | Offset | Access | Description |
 |-----------------:|:------:|:------:|:------------|
-| [zero](#register-hpu-idzero) | 0x50050 | RW |  HPU ID zero |
-| [one](#register-hpu-idone) | 0x50054 | RW |  HPU ID one |
-| [two](#register-hpu-idtwo) | 0x50058 | RW |  HPU ID two |
-| [three](#register-hpu-idthree) | 0x5005c | RW |  HPU ID three |
-| [four](#register-hpu-idfour) | 0x50060 | RW |  HPU ID four |
-| [five](#register-hpu-idfive) | 0x50064 | RW |  HPU ID five |
-| [six](#register-hpu-idsix) | 0x50068 | RW |  HPU ID six |
-| [seven](#register-hpu-idseven) | 0x5006c | RW |  HPU ID seven |
+| [zero](#register-mhdma-hpu-idzero) | 0x50050 | RW |  HPU ID zero |
+| [one](#register-mhdma-hpu-idone) | 0x50054 | RW |  HPU ID one |
+| [two](#register-mhdma-hpu-idtwo) | 0x50058 | RW |  HPU ID two |
+| [three](#register-mhdma-hpu-idthree) | 0x5005c | RW |  HPU ID three |
+| [four](#register-mhdma-hpu-idfour) | 0x50060 | RW |  HPU ID four |
+| [five](#register-mhdma-hpu-idfive) | 0x50064 | RW |  HPU ID five |
+| [six](#register-mhdma-hpu-idsix) | 0x50068 | RW |  HPU ID six |
+| [seven](#register-mhdma-hpu-idseven) | 0x5006c | RW |  HPU ID seven |
 
 
 ---
 
 
-### Register hpu-id.zero
+### Register mhdma-hpu-id.zero
 
 - **Description**: HPU ID zero
 - **Owner**: User
@@ -4192,7 +4192,7 @@ Below is a summary of all the registers in the current section hpu_id:
 ---
 
 
-### Register hpu-id.one
+### Register mhdma-hpu-id.one
 
 - **Description**: HPU ID one
 - **Owner**: User
@@ -4207,7 +4207,7 @@ Below is a summary of all the registers in the current section hpu_id:
 ---
 
 
-### Register hpu-id.two
+### Register mhdma-hpu-id.two
 
 - **Description**: HPU ID two
 - **Owner**: User
@@ -4222,7 +4222,7 @@ Below is a summary of all the registers in the current section hpu_id:
 ---
 
 
-### Register hpu-id.three
+### Register mhdma-hpu-id.three
 
 - **Description**: HPU ID three
 - **Owner**: User
@@ -4237,7 +4237,7 @@ Below is a summary of all the registers in the current section hpu_id:
 ---
 
 
-### Register hpu-id.four
+### Register mhdma-hpu-id.four
 
 - **Description**: HPU ID four
 - **Owner**: User
@@ -4252,7 +4252,7 @@ Below is a summary of all the registers in the current section hpu_id:
 ---
 
 
-### Register hpu-id.five
+### Register mhdma-hpu-id.five
 
 - **Description**: HPU ID five
 - **Owner**: User
@@ -4267,7 +4267,7 @@ Below is a summary of all the registers in the current section hpu_id:
 ---
 
 
-### Register hpu-id.six
+### Register mhdma-hpu-id.six
 
 - **Description**: HPU ID six
 - **Owner**: User
@@ -4282,7 +4282,7 @@ Below is a summary of all the registers in the current section hpu_id:
 ---
 
 
-### Register hpu-id.seven
+### Register mhdma-hpu-id.seven
 
 - **Description**: HPU ID seven
 - **Owner**: User
@@ -4299,25 +4299,25 @@ Below is a summary of all the registers in the current section hpu_id:
 
 
 
-## Section request
+## Section mhdma-request
 
 ### Register Overview
 
-Below is a summary of all the registers in the current section request:
+Below is a summary of all the registers in the current section mhdma_request:
 
 | Name             | Offset | Access | Description |
 |-----------------:|:------:|:------:|:------------|
-| [req_id](#register-requestreq-id) | 0x50100 | RW |  Different parameters for qsfp lines |
-| [req_addr](#register-requestreq-addr) | 0x50104 | RW |  request address |
-| [notify](#register-requestnotify) | 0x50108 | R. |  When a notify is received, this register will be updated |
-| [read_request](#register-requestread-request) | 0x5010c | R. |  When a read request has bneen processed, this register will be updated |
-| [stat_notify](#register-requeststat-notify) | 0x50110 | R. |  requests statistics each counter is up to 40seconds |
+| [req_id](#register-mhdma-requestreq-id) | 0x50100 | RW |  Different parameters for qsfp lines |
+| [req_addr](#register-mhdma-requestreq-addr) | 0x50104 | RW |  request address |
+| [notify](#register-mhdma-requestnotify) | 0x50108 | R. |  When a notify is received, this register will be updated |
+| [read_request](#register-mhdma-requestread-request) | 0x5010c | R. |  When a read request has bneen processed, this register will be updated |
+| [stat_notify](#register-mhdma-requeststat-notify) | 0x50110 | R. |  requests statistics each counter is up to 40seconds |
 
 
 ---
 
 
-### Register request.req-id
+### Register mhdma-request.req-id
 
 - **Description**: Different parameters for qsfp lines
 - **Owner**: User
@@ -4343,7 +4343,7 @@ Register req_id contains following Sub-fields:
 ---
 
 
-### Register request.req-addr
+### Register mhdma-request.req-addr
 
 - **Description**: request address
 - **Owner**: User
@@ -4367,7 +4367,7 @@ Register req_addr contains following Sub-fields:
 ---
 
 
-### Register request.notify
+### Register mhdma-request.notify
 
 - **Description**: When a notify is received, this register will be updated
 - **Owner**: Kernel
@@ -4392,7 +4392,7 @@ Register notify contains following Sub-fields:
 ---
 
 
-### Register request.read-request
+### Register mhdma-request.read-request
 
 - **Description**: When a read request has bneen processed, this register will be updated
 - **Owner**: Kernel
@@ -4417,7 +4417,7 @@ Register read_request contains following Sub-fields:
 ---
 
 
-### Register request.stat-notify
+### Register mhdma-request.stat-notify
 
 - **Description**: requests statistics each counter is up to 40seconds
 - **Owner**: Kernel
@@ -4443,21 +4443,21 @@ Register stat_notify contains following Sub-fields:
 
 
 
-## Section line
+## Section mhdma-lane
 
 ### Register Overview
 
-Below is a summary of all the registers in the current section line:
+Below is a summary of all the registers in the current section mhdma_lane:
 
 | Name             | Offset | Access | Description |
 |-----------------:|:------:|:------:|:------------|
-| [debug](#register-linedebug) | 0x50200 | RW |  Different parameters for debugging qsfp lines |
+| [debug](#register-mhdma-lanedebug) | 0x50200 | RW |  Different parameters for debugging qsfp lines |
 
 
 ---
 
 
-### Register line.debug
+### Register mhdma-lane.debug
 
 - **Description**: Different parameters for debugging qsfp lines
 - **Owner**: User
@@ -4484,24 +4484,24 @@ Register debug contains following Sub-fields:
 
 
 
-## Section hbm-axi4-addr-2in3
+## Section mhdma-hbm-axi4-addr-2in3
 
 ### Register Overview
 
-Below is a summary of all the registers in the current section hbm_axi4_addr_2in3:
+Below is a summary of all the registers in the current section mhdma_hbm_axi4_addr_2in3:
 
 | Name             | Offset | Access | Description |
 |-----------------:|:------:|:------:|:------------|
-| [ct_pc0_lsb](#register-hbm-axi4-addr-2in3ct-pc0-lsb) | 0x51000 | RW |  Address offset for each ciphertext HBM AXI4 connection |
-| [ct_pc0_msb](#register-hbm-axi4-addr-2in3ct-pc0-msb) | 0x51004 | RW |  Address offset for each ciphertext HBM AXI4 connection |
-| [ct_pc1_lsb](#register-hbm-axi4-addr-2in3ct-pc1-lsb) | 0x51008 | RW |  Address offset for each ciphertext HBM AXI4 connection |
-| [ct_pc1_msb](#register-hbm-axi4-addr-2in3ct-pc1-msb) | 0x5100c | RW |  Address offset for each ciphertext HBM AXI4 connection |
+| [ct_pc0_lsb](#register-mhdma-hbm-axi4-addr-2in3ct-pc0-lsb) | 0x51000 | RW |  Address offset for each ciphertext HBM AXI4 connection |
+| [ct_pc0_msb](#register-mhdma-hbm-axi4-addr-2in3ct-pc0-msb) | 0x51004 | RW |  Address offset for each ciphertext HBM AXI4 connection |
+| [ct_pc1_lsb](#register-mhdma-hbm-axi4-addr-2in3ct-pc1-lsb) | 0x51008 | RW |  Address offset for each ciphertext HBM AXI4 connection |
+| [ct_pc1_msb](#register-mhdma-hbm-axi4-addr-2in3ct-pc1-msb) | 0x5100c | RW |  Address offset for each ciphertext HBM AXI4 connection |
 
 
 ---
 
 
-### Register hbm-axi4-addr-2in3.ct-pc0-lsb
+### Register mhdma-hbm-axi4-addr-2in3.ct-pc0-lsb
 
 - **Description**: Address offset for each ciphertext HBM AXI4 connection
 - **Owner**: User
@@ -4516,7 +4516,7 @@ Below is a summary of all the registers in the current section hbm_axi4_addr_2in
 ---
 
 
-### Register hbm-axi4-addr-2in3.ct-pc0-msb
+### Register mhdma-hbm-axi4-addr-2in3.ct-pc0-msb
 
 - **Description**: Address offset for each ciphertext HBM AXI4 connection
 - **Owner**: User
@@ -4531,7 +4531,7 @@ Below is a summary of all the registers in the current section hbm_axi4_addr_2in
 ---
 
 
-### Register hbm-axi4-addr-2in3.ct-pc1-lsb
+### Register mhdma-hbm-axi4-addr-2in3.ct-pc1-lsb
 
 - **Description**: Address offset for each ciphertext HBM AXI4 connection
 - **Owner**: User
@@ -4546,7 +4546,7 @@ Below is a summary of all the registers in the current section hbm_axi4_addr_2in
 ---
 
 
-### Register hbm-axi4-addr-2in3.ct-pc1-msb
+### Register mhdma-hbm-axi4-addr-2in3.ct-pc1-msb
 
 - **Description**: Address offset for each ciphertext HBM AXI4 connection
 - **Owner**: User
@@ -4768,27 +4768,27 @@ Below is a summary of all the registers in the current section cnt:
 
 
 
-## Section stat
+## Section mhdma-stat
 
 ### Register Overview
 
-Below is a summary of all the registers in the current section stat:
+Below is a summary of all the registers in the current section mhdma_stat:
 
 | Name             | Offset | Access | Description |
 |-----------------:|:------:|:------:|:------------|
-| [status](#register-statstatus) | 0x5104c | R. |  fifo status |
-| [clk_a](#register-statclk-a) | 0x51050 | R. |  clock counts lsb |
-| [clk_b](#register-statclk-b) | 0x51054 | R. |  clock counts msb |
-| [valid_words_a](#register-statvalid-words-a) | 0x51058 | R. |  valid rx word counter lsb |
-| [valid_words_b](#register-statvalid-words-b) | 0x5105c | R. |  valid rx word counter msb |
-| [sop_cnt_a](#register-statsop-cnt-a) | 0x51060 | R. |  clock counter between tx sop and rx sop lsb |
-| [sop_cnt_b](#register-statsop-cnt-b) | 0x51064 | R. |  clock counter between tx sop and rx sop msb |
+| [status](#register-mhdma-statstatus) | 0x5104c | R. |  fifo status |
+| [clk_a](#register-mhdma-statclk-a) | 0x51050 | R. |  clock counts lsb |
+| [clk_b](#register-mhdma-statclk-b) | 0x51054 | R. |  clock counts msb |
+| [valid_words_a](#register-mhdma-statvalid-words-a) | 0x51058 | R. |  valid rx word counter lsb |
+| [valid_words_b](#register-mhdma-statvalid-words-b) | 0x5105c | R. |  valid rx word counter msb |
+| [sop_cnt_a](#register-mhdma-statsop-cnt-a) | 0x51060 | R. |  clock counter between tx sop and rx sop lsb |
+| [sop_cnt_b](#register-mhdma-statsop-cnt-b) | 0x51064 | R. |  clock counter between tx sop and rx sop msb |
 
 
 ---
 
 
-### Register stat.status
+### Register mhdma-stat.status
 
 - **Description**: fifo status
 - **Owner**: Kernel
@@ -4803,7 +4803,7 @@ Below is a summary of all the registers in the current section stat:
 ---
 
 
-### Register stat.clk-a
+### Register mhdma-stat.clk-a
 
 - **Description**: clock counts lsb
 - **Owner**: Kernel
@@ -4818,7 +4818,7 @@ Below is a summary of all the registers in the current section stat:
 ---
 
 
-### Register stat.clk-b
+### Register mhdma-stat.clk-b
 
 - **Description**: clock counts msb
 - **Owner**: Kernel
@@ -4833,7 +4833,7 @@ Below is a summary of all the registers in the current section stat:
 ---
 
 
-### Register stat.valid-words-a
+### Register mhdma-stat.valid-words-a
 
 - **Description**: valid rx word counter lsb
 - **Owner**: Kernel
@@ -4848,7 +4848,7 @@ Below is a summary of all the registers in the current section stat:
 ---
 
 
-### Register stat.valid-words-b
+### Register mhdma-stat.valid-words-b
 
 - **Description**: valid rx word counter msb
 - **Owner**: Kernel
@@ -4863,7 +4863,7 @@ Below is a summary of all the registers in the current section stat:
 ---
 
 
-### Register stat.sop-cnt-a
+### Register mhdma-stat.sop-cnt-a
 
 - **Description**: clock counter between tx sop and rx sop lsb
 - **Owner**: Kernel
@@ -4878,7 +4878,7 @@ Below is a summary of all the registers in the current section stat:
 ---
 
 
-### Register stat.sop-cnt-b
+### Register mhdma-stat.sop-cnt-b
 
 - **Description**: clock counter between tx sop and rx sop msb
 - **Owner**: Kernel

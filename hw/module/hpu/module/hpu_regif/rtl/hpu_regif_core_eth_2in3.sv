@@ -1,7 +1,7 @@
 // ============================================================================================== //
 // Description  : Axi4-lite register bank
 // This file was generated with rust regmap generator:
-//  * Date:  2025-12-09
+//  * Date:  2025-12-11
 //  * Tool_version: bd49564daf1a99d615cb6dbb121b54bfbeef8b22
 // ---------------------------------------------------------------------------------------------- //
 // xR[n]W[na]
@@ -55,58 +55,58 @@ import hpu_regif_core_eth_2in3_pkg::*;
   input  logic                          s_axil_rready,
   // Registered version of wdata
   output logic [AXIL_DATA_W-1:0]        r_axil_wdata
-  // Register IO: system_line
-    , output system_line_t r_system_line
-  // Register IO: system_timeout
-    , output logic [REG_DATA_W-1: 0] r_system_timeout
-  // Register IO: reset_datapath
-    , output reset_datapath_t r_reset_datapath
-  // Register IO: reset_monitor
-    , output reset_monitor_t r_reset_monitor
-    , input  reset_monitor_t r_reset_monitor_upd
-  // Register IO: hpu_id_zero
-    , output logic [REG_DATA_W-1: 0] r_hpu_id_zero
-  // Register IO: hpu_id_one
-    , output logic [REG_DATA_W-1: 0] r_hpu_id_one
-  // Register IO: hpu_id_two
-    , output logic [REG_DATA_W-1: 0] r_hpu_id_two
-  // Register IO: hpu_id_three
-    , output logic [REG_DATA_W-1: 0] r_hpu_id_three
-  // Register IO: hpu_id_four
-    , output logic [REG_DATA_W-1: 0] r_hpu_id_four
-  // Register IO: hpu_id_five
-    , output logic [REG_DATA_W-1: 0] r_hpu_id_five
-  // Register IO: hpu_id_six
-    , output logic [REG_DATA_W-1: 0] r_hpu_id_six
-  // Register IO: hpu_id_seven
-    , output logic [REG_DATA_W-1: 0] r_hpu_id_seven
-  // Register IO: request_req_id
-    , output request_req_id_t r_request_req_id
-    , output logic r_request_req_id_wr_en
-  // Register IO: request_req_addr
-    , output request_req_addr_t r_request_req_addr
-    , output logic r_request_req_addr_wr_en
-  // Register IO: request_notify
-    , output request_notify_t r_request_notify
-    , input  request_notify_t r_request_notify_upd
-    , output logic r_request_notify_rd_en
-  // Register IO: request_read_request
-    , output request_read_request_t r_request_read_request
-    , input  request_read_request_t r_request_read_request_upd
-    , output logic r_request_read_request_rd_en
-  // Register IO: request_stat_notify
-    , output request_stat_notify_t r_request_stat_notify
-    , input  request_stat_notify_t r_request_stat_notify_upd
-  // Register IO: line_debug
-    , output line_debug_t r_line_debug
-  // Register IO: hbm_axi4_addr_2in3_ct_pc0_lsb
-    , output logic [REG_DATA_W-1: 0] r_hbm_axi4_addr_2in3_ct_pc0_lsb
-  // Register IO: hbm_axi4_addr_2in3_ct_pc0_msb
-    , output logic [REG_DATA_W-1: 0] r_hbm_axi4_addr_2in3_ct_pc0_msb
-  // Register IO: hbm_axi4_addr_2in3_ct_pc1_lsb
-    , output logic [REG_DATA_W-1: 0] r_hbm_axi4_addr_2in3_ct_pc1_lsb
-  // Register IO: hbm_axi4_addr_2in3_ct_pc1_msb
-    , output logic [REG_DATA_W-1: 0] r_hbm_axi4_addr_2in3_ct_pc1_msb
+  // Register IO: mhdma_system_lane
+    , output mhdma_system_lane_t r_mhdma_system_lane
+  // Register IO: mhdma_system_timeout
+    , output logic [REG_DATA_W-1: 0] r_mhdma_system_timeout
+  // Register IO: mhdma_reset_datapath
+    , output mhdma_reset_datapath_t r_mhdma_reset_datapath
+  // Register IO: mhdma_reset_monitor
+    , output mhdma_reset_monitor_t r_mhdma_reset_monitor
+    , input  mhdma_reset_monitor_t r_mhdma_reset_monitor_upd
+  // Register IO: mhdma_hpu_id_zero
+    , output logic [REG_DATA_W-1: 0] r_mhdma_hpu_id_zero
+  // Register IO: mhdma_hpu_id_one
+    , output logic [REG_DATA_W-1: 0] r_mhdma_hpu_id_one
+  // Register IO: mhdma_hpu_id_two
+    , output logic [REG_DATA_W-1: 0] r_mhdma_hpu_id_two
+  // Register IO: mhdma_hpu_id_three
+    , output logic [REG_DATA_W-1: 0] r_mhdma_hpu_id_three
+  // Register IO: mhdma_hpu_id_four
+    , output logic [REG_DATA_W-1: 0] r_mhdma_hpu_id_four
+  // Register IO: mhdma_hpu_id_five
+    , output logic [REG_DATA_W-1: 0] r_mhdma_hpu_id_five
+  // Register IO: mhdma_hpu_id_six
+    , output logic [REG_DATA_W-1: 0] r_mhdma_hpu_id_six
+  // Register IO: mhdma_hpu_id_seven
+    , output logic [REG_DATA_W-1: 0] r_mhdma_hpu_id_seven
+  // Register IO: mhdma_request_req_id
+    , output mhdma_request_req_id_t r_mhdma_request_req_id
+    , output logic r_mhdma_request_req_id_wr_en
+  // Register IO: mhdma_request_req_addr
+    , output mhdma_request_req_addr_t r_mhdma_request_req_addr
+    , output logic r_mhdma_request_req_addr_wr_en
+  // Register IO: mhdma_request_notify
+    , output mhdma_request_notify_t r_mhdma_request_notify
+    , input  mhdma_request_notify_t r_mhdma_request_notify_upd
+    , output logic r_mhdma_request_notify_rd_en
+  // Register IO: mhdma_request_read_request
+    , output mhdma_request_read_request_t r_mhdma_request_read_request
+    , input  mhdma_request_read_request_t r_mhdma_request_read_request_upd
+    , output logic r_mhdma_request_read_request_rd_en
+  // Register IO: mhdma_request_stat_notify
+    , output mhdma_request_stat_notify_t r_mhdma_request_stat_notify
+    , input  mhdma_request_stat_notify_t r_mhdma_request_stat_notify_upd
+  // Register IO: mhdma_lane_debug
+    , output mhdma_lane_debug_t r_mhdma_lane_debug
+  // Register IO: mhdma_hbm_axi4_addr_2in3_ct_pc0_lsb
+    , output logic [REG_DATA_W-1: 0] r_mhdma_hbm_axi4_addr_2in3_ct_pc0_lsb
+  // Register IO: mhdma_hbm_axi4_addr_2in3_ct_pc0_msb
+    , output logic [REG_DATA_W-1: 0] r_mhdma_hbm_axi4_addr_2in3_ct_pc0_msb
+  // Register IO: mhdma_hbm_axi4_addr_2in3_ct_pc1_lsb
+    , output logic [REG_DATA_W-1: 0] r_mhdma_hbm_axi4_addr_2in3_ct_pc1_lsb
+  // Register IO: mhdma_hbm_axi4_addr_2in3_ct_pc1_msb
+    , output logic [REG_DATA_W-1: 0] r_mhdma_hbm_axi4_addr_2in3_ct_pc1_msb
   // Register IO: fifo_write_number_of_words
     , output logic [REG_DATA_W-1: 0] r_fifo_write_number_of_words
   // Register IO: fifo_write_words_to_write_a
@@ -134,27 +134,27 @@ import hpu_regif_core_eth_2in3_pkg::*;
   // Register IO: cnt_words
     , output logic [REG_DATA_W-1: 0] r_cnt_words
     , input  logic [REG_DATA_W-1: 0] r_cnt_words_upd
-  // Register IO: stat_status
-    , output logic [REG_DATA_W-1: 0] r_stat_status
-    , input  logic [REG_DATA_W-1: 0] r_stat_status_upd
-  // Register IO: stat_clk_a
-    , output logic [REG_DATA_W-1: 0] r_stat_clk_a
-    , input  logic [REG_DATA_W-1: 0] r_stat_clk_a_upd
-  // Register IO: stat_clk_b
-    , output logic [REG_DATA_W-1: 0] r_stat_clk_b
-    , input  logic [REG_DATA_W-1: 0] r_stat_clk_b_upd
-  // Register IO: stat_valid_words_a
-    , output logic [REG_DATA_W-1: 0] r_stat_valid_words_a
-    , input  logic [REG_DATA_W-1: 0] r_stat_valid_words_a_upd
-  // Register IO: stat_valid_words_b
-    , output logic [REG_DATA_W-1: 0] r_stat_valid_words_b
-    , input  logic [REG_DATA_W-1: 0] r_stat_valid_words_b_upd
-  // Register IO: stat_sop_cnt_a
-    , output logic [REG_DATA_W-1: 0] r_stat_sop_cnt_a
-    , input  logic [REG_DATA_W-1: 0] r_stat_sop_cnt_a_upd
-  // Register IO: stat_sop_cnt_b
-    , output logic [REG_DATA_W-1: 0] r_stat_sop_cnt_b
-    , input  logic [REG_DATA_W-1: 0] r_stat_sop_cnt_b_upd
+  // Register IO: mhdma_stat_status
+    , output logic [REG_DATA_W-1: 0] r_mhdma_stat_status
+    , input  logic [REG_DATA_W-1: 0] r_mhdma_stat_status_upd
+  // Register IO: mhdma_stat_clk_a
+    , output logic [REG_DATA_W-1: 0] r_mhdma_stat_clk_a
+    , input  logic [REG_DATA_W-1: 0] r_mhdma_stat_clk_a_upd
+  // Register IO: mhdma_stat_clk_b
+    , output logic [REG_DATA_W-1: 0] r_mhdma_stat_clk_b
+    , input  logic [REG_DATA_W-1: 0] r_mhdma_stat_clk_b_upd
+  // Register IO: mhdma_stat_valid_words_a
+    , output logic [REG_DATA_W-1: 0] r_mhdma_stat_valid_words_a
+    , input  logic [REG_DATA_W-1: 0] r_mhdma_stat_valid_words_a_upd
+  // Register IO: mhdma_stat_valid_words_b
+    , output logic [REG_DATA_W-1: 0] r_mhdma_stat_valid_words_b
+    , input  logic [REG_DATA_W-1: 0] r_mhdma_stat_valid_words_b_upd
+  // Register IO: mhdma_stat_sop_cnt_a
+    , output logic [REG_DATA_W-1: 0] r_mhdma_stat_sop_cnt_a
+    , input  logic [REG_DATA_W-1: 0] r_mhdma_stat_sop_cnt_a_upd
+  // Register IO: mhdma_stat_sop_cnt_b
+    , output logic [REG_DATA_W-1: 0] r_mhdma_stat_sop_cnt_b
+    , input  logic [REG_DATA_W-1: 0] r_mhdma_stat_sop_cnt_b_upd
 );
 // ============================================================================================== --
 // localparam
@@ -284,115 +284,115 @@ import hpu_regif_core_eth_2in3_pkg::*;
 // ============================================================================================== --
 // Default value signals
 // ============================================================================================== --
-//-- Default system_line
-  system_line_t system_line_default;
+//-- Default mhdma_system_lane
+  mhdma_system_lane_t mhdma_system_lane_default;
   always_comb begin
-    system_line_default = 'h0;
-    system_line_default.select = 'h0;
-    system_line_default.loopback = 'h0;
-    system_line_default.rate = 'h0;
-    system_line_default.debug = 'h0;
+    mhdma_system_lane_default = 'h0;
+    mhdma_system_lane_default.select = 'h0;
+    mhdma_system_lane_default.loopback = 'h0;
+    mhdma_system_lane_default.rate = 'h0;
+    mhdma_system_lane_default.debug = 'h0;
   end
-//-- Default system_timeout
-  logic [REG_DATA_W-1:0]system_timeout_default;
-  assign system_timeout_default = 'h9c40;
-//-- Default reset_datapath
-  reset_datapath_t reset_datapath_default;
+//-- Default mhdma_system_timeout
+  logic [REG_DATA_W-1:0]mhdma_system_timeout_default;
+  assign mhdma_system_timeout_default = 'h9c40;
+//-- Default mhdma_reset_datapath
+  mhdma_reset_datapath_t mhdma_reset_datapath_default;
   always_comb begin
-    reset_datapath_default = 'h0;
-    reset_datapath_default.gt_all = 'h0;
-    reset_datapath_default.tx_rst = 'h0;
-    reset_datapath_default.rx_rst = 'h0;
+    mhdma_reset_datapath_default = 'h0;
+    mhdma_reset_datapath_default.gt_all = 'h0;
+    mhdma_reset_datapath_default.tx_rst = 'h0;
+    mhdma_reset_datapath_default.rx_rst = 'h0;
   end
-//-- Default reset_monitor
-  reset_monitor_t reset_monitor_default;
+//-- Default mhdma_reset_monitor
+  mhdma_reset_monitor_t mhdma_reset_monitor_default;
   always_comb begin
-    reset_monitor_default = 'h0;
-    reset_monitor_default.rst_done = 'h0;
+    mhdma_reset_monitor_default = 'h0;
+    mhdma_reset_monitor_default.rst_done = 'h0;
   end
-//-- Default hpu_id_zero
-  logic [REG_DATA_W-1:0]hpu_id_zero_default;
-  assign hpu_id_zero_default = 'h0;
-//-- Default hpu_id_one
-  logic [REG_DATA_W-1:0]hpu_id_one_default;
-  assign hpu_id_one_default = 'h0;
-//-- Default hpu_id_two
-  logic [REG_DATA_W-1:0]hpu_id_two_default;
-  assign hpu_id_two_default = 'h0;
-//-- Default hpu_id_three
-  logic [REG_DATA_W-1:0]hpu_id_three_default;
-  assign hpu_id_three_default = 'h0;
-//-- Default hpu_id_four
-  logic [REG_DATA_W-1:0]hpu_id_four_default;
-  assign hpu_id_four_default = 'h0;
-//-- Default hpu_id_five
-  logic [REG_DATA_W-1:0]hpu_id_five_default;
-  assign hpu_id_five_default = 'h0;
-//-- Default hpu_id_six
-  logic [REG_DATA_W-1:0]hpu_id_six_default;
-  assign hpu_id_six_default = 'h0;
-//-- Default hpu_id_seven
-  logic [REG_DATA_W-1:0]hpu_id_seven_default;
-  assign hpu_id_seven_default = 'h0;
-//-- Default request_req_id
-  request_req_id_t request_req_id_default;
+//-- Default mhdma_hpu_id_zero
+  logic [REG_DATA_W-1:0]mhdma_hpu_id_zero_default;
+  assign mhdma_hpu_id_zero_default = 'h0;
+//-- Default mhdma_hpu_id_one
+  logic [REG_DATA_W-1:0]mhdma_hpu_id_one_default;
+  assign mhdma_hpu_id_one_default = 'h0;
+//-- Default mhdma_hpu_id_two
+  logic [REG_DATA_W-1:0]mhdma_hpu_id_two_default;
+  assign mhdma_hpu_id_two_default = 'h0;
+//-- Default mhdma_hpu_id_three
+  logic [REG_DATA_W-1:0]mhdma_hpu_id_three_default;
+  assign mhdma_hpu_id_three_default = 'h0;
+//-- Default mhdma_hpu_id_four
+  logic [REG_DATA_W-1:0]mhdma_hpu_id_four_default;
+  assign mhdma_hpu_id_four_default = 'h0;
+//-- Default mhdma_hpu_id_five
+  logic [REG_DATA_W-1:0]mhdma_hpu_id_five_default;
+  assign mhdma_hpu_id_five_default = 'h0;
+//-- Default mhdma_hpu_id_six
+  logic [REG_DATA_W-1:0]mhdma_hpu_id_six_default;
+  assign mhdma_hpu_id_six_default = 'h0;
+//-- Default mhdma_hpu_id_seven
+  logic [REG_DATA_W-1:0]mhdma_hpu_id_seven_default;
+  assign mhdma_hpu_id_seven_default = 'h0;
+//-- Default mhdma_request_req_id
+  mhdma_request_req_id_t mhdma_request_req_id_default;
   always_comb begin
-    request_req_id_default = 'h0;
-    request_req_id_default.size_b = 'h4000;
-    request_req_id_default.node_id = 'h0;
-    request_req_id_default.req_id = 'h0;
-    request_req_id_default.iop_id = 'h0;
+    mhdma_request_req_id_default = 'h0;
+    mhdma_request_req_id_default.size_b = 'h4000;
+    mhdma_request_req_id_default.node_id = 'h0;
+    mhdma_request_req_id_default.req_id = 'h0;
+    mhdma_request_req_id_default.iop_id = 'h0;
   end
-//-- Default request_req_addr
-  request_req_addr_t request_req_addr_default;
+//-- Default mhdma_request_req_addr
+  mhdma_request_req_addr_t mhdma_request_req_addr_default;
   always_comb begin
-    request_req_addr_default = 'h0;
-    request_req_addr_default.src = 'h0;
-    request_req_addr_default.dst = 'h0;
+    mhdma_request_req_addr_default = 'h0;
+    mhdma_request_req_addr_default.src = 'h0;
+    mhdma_request_req_addr_default.dst = 'h0;
   end
-//-- Default request_notify
-  request_notify_t request_notify_default;
+//-- Default mhdma_request_notify
+  mhdma_request_notify_t mhdma_request_notify_default;
   always_comb begin
-    request_notify_default = 'h0;
-    request_notify_default.iop_id = 'h0;
-    request_notify_default.node_id = 'h0;
-    request_notify_default.src_addr = 'h0;
+    mhdma_request_notify_default = 'h0;
+    mhdma_request_notify_default.iop_id = 'h0;
+    mhdma_request_notify_default.node_id = 'h0;
+    mhdma_request_notify_default.src_addr = 'h0;
   end
-//-- Default request_read_request
-  request_read_request_t request_read_request_default;
+//-- Default mhdma_request_read_request
+  mhdma_request_read_request_t mhdma_request_read_request_default;
   always_comb begin
-    request_read_request_default = 'h0;
-    request_read_request_default.iop_id = 'h0;
-    request_read_request_default.node_id = 'h0;
-    request_read_request_default.dst_addr = 'h0;
+    mhdma_request_read_request_default = 'h0;
+    mhdma_request_read_request_default.iop_id = 'h0;
+    mhdma_request_read_request_default.node_id = 'h0;
+    mhdma_request_read_request_default.dst_addr = 'h0;
   end
-//-- Default request_stat_notify
-  request_stat_notify_t request_stat_notify_default;
+//-- Default mhdma_request_stat_notify
+  mhdma_request_stat_notify_t mhdma_request_stat_notify_default;
   always_comb begin
-    request_stat_notify_default = 'h0;
-    request_stat_notify_default.cnt_notify_ack = 'h0;
-    request_stat_notify_default.cnt_notify_read = 'h0;
+    mhdma_request_stat_notify_default = 'h0;
+    mhdma_request_stat_notify_default.cnt_notify_ack = 'h0;
+    mhdma_request_stat_notify_default.cnt_notify_read = 'h0;
   end
-//-- Default line_debug
-  line_debug_t line_debug_default;
+//-- Default mhdma_lane_debug
+  mhdma_lane_debug_t mhdma_lane_debug_default;
   always_comb begin
-    line_debug_default = 'h0;
-    line_debug_default.rx_to_tx = 'h0;
-    line_debug_default.tx_loop = 'h0;
-    line_debug_default.reset_registers = 'h0;
+    mhdma_lane_debug_default = 'h0;
+    mhdma_lane_debug_default.rx_to_tx = 'h0;
+    mhdma_lane_debug_default.tx_loop = 'h0;
+    mhdma_lane_debug_default.reset_registers = 'h0;
   end
-//-- Default hbm_axi4_addr_2in3_ct_pc0_lsb
-  logic [REG_DATA_W-1:0]hbm_axi4_addr_2in3_ct_pc0_lsb_default;
-  assign hbm_axi4_addr_2in3_ct_pc0_lsb_default = 'h0;
-//-- Default hbm_axi4_addr_2in3_ct_pc0_msb
-  logic [REG_DATA_W-1:0]hbm_axi4_addr_2in3_ct_pc0_msb_default;
-  assign hbm_axi4_addr_2in3_ct_pc0_msb_default = 'h0;
-//-- Default hbm_axi4_addr_2in3_ct_pc1_lsb
-  logic [REG_DATA_W-1:0]hbm_axi4_addr_2in3_ct_pc1_lsb_default;
-  assign hbm_axi4_addr_2in3_ct_pc1_lsb_default = 'h0;
-//-- Default hbm_axi4_addr_2in3_ct_pc1_msb
-  logic [REG_DATA_W-1:0]hbm_axi4_addr_2in3_ct_pc1_msb_default;
-  assign hbm_axi4_addr_2in3_ct_pc1_msb_default = 'h0;
+//-- Default mhdma_hbm_axi4_addr_2in3_ct_pc0_lsb
+  logic [REG_DATA_W-1:0]mhdma_hbm_axi4_addr_2in3_ct_pc0_lsb_default;
+  assign mhdma_hbm_axi4_addr_2in3_ct_pc0_lsb_default = 'h0;
+//-- Default mhdma_hbm_axi4_addr_2in3_ct_pc0_msb
+  logic [REG_DATA_W-1:0]mhdma_hbm_axi4_addr_2in3_ct_pc0_msb_default;
+  assign mhdma_hbm_axi4_addr_2in3_ct_pc0_msb_default = 'h0;
+//-- Default mhdma_hbm_axi4_addr_2in3_ct_pc1_lsb
+  logic [REG_DATA_W-1:0]mhdma_hbm_axi4_addr_2in3_ct_pc1_lsb_default;
+  assign mhdma_hbm_axi4_addr_2in3_ct_pc1_lsb_default = 'h0;
+//-- Default mhdma_hbm_axi4_addr_2in3_ct_pc1_msb
+  logic [REG_DATA_W-1:0]mhdma_hbm_axi4_addr_2in3_ct_pc1_msb_default;
+  assign mhdma_hbm_axi4_addr_2in3_ct_pc1_msb_default = 'h0;
 //-- Default fifo_write_number_of_words
   logic [REG_DATA_W-1:0]fifo_write_number_of_words_default;
   assign fifo_write_number_of_words_default = 'h0;
@@ -423,280 +423,280 @@ import hpu_regif_core_eth_2in3_pkg::*;
 //-- Default cnt_words
   logic [REG_DATA_W-1:0]cnt_words_default;
   assign cnt_words_default = 'h0;
-//-- Default stat_status
-  logic [REG_DATA_W-1:0]stat_status_default;
-  assign stat_status_default = 'h0;
-//-- Default stat_clk_a
-  logic [REG_DATA_W-1:0]stat_clk_a_default;
-  assign stat_clk_a_default = 'h0;
-//-- Default stat_clk_b
-  logic [REG_DATA_W-1:0]stat_clk_b_default;
-  assign stat_clk_b_default = 'h0;
-//-- Default stat_valid_words_a
-  logic [REG_DATA_W-1:0]stat_valid_words_a_default;
-  assign stat_valid_words_a_default = 'h0;
-//-- Default stat_valid_words_b
-  logic [REG_DATA_W-1:0]stat_valid_words_b_default;
-  assign stat_valid_words_b_default = 'h0;
-//-- Default stat_sop_cnt_a
-  logic [REG_DATA_W-1:0]stat_sop_cnt_a_default;
-  assign stat_sop_cnt_a_default = 'h0;
-//-- Default stat_sop_cnt_b
-  logic [REG_DATA_W-1:0]stat_sop_cnt_b_default;
-  assign stat_sop_cnt_b_default = 'h0;
+//-- Default mhdma_stat_status
+  logic [REG_DATA_W-1:0]mhdma_stat_status_default;
+  assign mhdma_stat_status_default = 'h0;
+//-- Default mhdma_stat_clk_a
+  logic [REG_DATA_W-1:0]mhdma_stat_clk_a_default;
+  assign mhdma_stat_clk_a_default = 'h0;
+//-- Default mhdma_stat_clk_b
+  logic [REG_DATA_W-1:0]mhdma_stat_clk_b_default;
+  assign mhdma_stat_clk_b_default = 'h0;
+//-- Default mhdma_stat_valid_words_a
+  logic [REG_DATA_W-1:0]mhdma_stat_valid_words_a_default;
+  assign mhdma_stat_valid_words_a_default = 'h0;
+//-- Default mhdma_stat_valid_words_b
+  logic [REG_DATA_W-1:0]mhdma_stat_valid_words_b_default;
+  assign mhdma_stat_valid_words_b_default = 'h0;
+//-- Default mhdma_stat_sop_cnt_a
+  logic [REG_DATA_W-1:0]mhdma_stat_sop_cnt_a_default;
+  assign mhdma_stat_sop_cnt_a_default = 'h0;
+//-- Default mhdma_stat_sop_cnt_b
+  logic [REG_DATA_W-1:0]mhdma_stat_sop_cnt_b_default;
+  assign mhdma_stat_sop_cnt_b_default = 'h0;
 // ============================================================================================== --
 // Write reg
 // ============================================================================================== --
   // To ease the code, use REG_DATA_W as register size.
   // Unused bits will be simplified by the synthesizer
-// Register FF: system_line
-  logic [REG_DATA_W-1:0] r_system_lineD;
-  assign r_system_lineD = (wr_en_ok && (wr_add[AXIL_ADD_RANGE_W-1:0] == SYSTEM_LINE_OFS[AXIL_ADD_RANGE_W-1:0]))? wr_data: r_system_line;
+// Register FF: mhdma_system_lane
+  logic [REG_DATA_W-1:0] r_mhdma_system_laneD;
+  assign r_mhdma_system_laneD = (wr_en_ok && (wr_add[AXIL_ADD_RANGE_W-1:0] == MHDMA_SYSTEM_LANE_OFS[AXIL_ADD_RANGE_W-1:0]))? wr_data: r_mhdma_system_lane;
   always_ff @(posedge clk) begin
     if (!s_rst_n) begin
-      r_system_line       <= system_line_default;
+      r_mhdma_system_lane       <= mhdma_system_lane_default;
     end
     else begin
-      r_system_line       <= r_system_lineD;
+      r_mhdma_system_lane       <= r_mhdma_system_laneD;
     end
   end
-// Register FF: system_timeout
-  logic [REG_DATA_W-1:0] r_system_timeoutD;
-  assign r_system_timeoutD = (wr_en_ok && (wr_add[AXIL_ADD_RANGE_W-1:0] == SYSTEM_TIMEOUT_OFS[AXIL_ADD_RANGE_W-1:0]))? wr_data: r_system_timeout;
+// Register FF: mhdma_system_timeout
+  logic [REG_DATA_W-1:0] r_mhdma_system_timeoutD;
+  assign r_mhdma_system_timeoutD = (wr_en_ok && (wr_add[AXIL_ADD_RANGE_W-1:0] == MHDMA_SYSTEM_TIMEOUT_OFS[AXIL_ADD_RANGE_W-1:0]))? wr_data: r_mhdma_system_timeout;
   always_ff @(posedge clk) begin
     if (!s_rst_n) begin
-      r_system_timeout       <= system_timeout_default;
+      r_mhdma_system_timeout       <= mhdma_system_timeout_default;
     end
     else begin
-      r_system_timeout       <= r_system_timeoutD;
+      r_mhdma_system_timeout       <= r_mhdma_system_timeoutD;
     end
   end
-// Register FF: reset_datapath
-  logic [REG_DATA_W-1:0] r_reset_datapathD;
-  assign r_reset_datapathD = (wr_en_ok && (wr_add[AXIL_ADD_RANGE_W-1:0] == RESET_DATAPATH_OFS[AXIL_ADD_RANGE_W-1:0]))? wr_data: r_reset_datapath;
+// Register FF: mhdma_reset_datapath
+  logic [REG_DATA_W-1:0] r_mhdma_reset_datapathD;
+  assign r_mhdma_reset_datapathD = (wr_en_ok && (wr_add[AXIL_ADD_RANGE_W-1:0] == MHDMA_RESET_DATAPATH_OFS[AXIL_ADD_RANGE_W-1:0]))? wr_data: r_mhdma_reset_datapath;
   always_ff @(posedge clk) begin
     if (!s_rst_n) begin
-      r_reset_datapath       <= reset_datapath_default;
+      r_mhdma_reset_datapath       <= mhdma_reset_datapath_default;
     end
     else begin
-      r_reset_datapath       <= r_reset_datapathD;
+      r_mhdma_reset_datapath       <= r_mhdma_reset_datapathD;
     end
   end
-// Register FF: reset_monitor
-  logic [REG_DATA_W-1:0] r_reset_monitorD;
-  assign r_reset_monitorD       = r_reset_monitor_upd;
+// Register FF: mhdma_reset_monitor
+  logic [REG_DATA_W-1:0] r_mhdma_reset_monitorD;
+  assign r_mhdma_reset_monitorD       = r_mhdma_reset_monitor_upd;
   always_ff @(posedge clk) begin
     if (!s_rst_n) begin
-      r_reset_monitor       <= reset_monitor_default;
+      r_mhdma_reset_monitor       <= mhdma_reset_monitor_default;
     end
     else begin
-      r_reset_monitor       <= r_reset_monitorD;
+      r_mhdma_reset_monitor       <= r_mhdma_reset_monitorD;
     end
   end
-// Register FF: hpu_id_zero
-  logic [REG_DATA_W-1:0] r_hpu_id_zeroD;
-  assign r_hpu_id_zeroD = (wr_en_ok && (wr_add[AXIL_ADD_RANGE_W-1:0] == HPU_ID_ZERO_OFS[AXIL_ADD_RANGE_W-1:0]))? wr_data: r_hpu_id_zero;
+// Register FF: mhdma_hpu_id_zero
+  logic [REG_DATA_W-1:0] r_mhdma_hpu_id_zeroD;
+  assign r_mhdma_hpu_id_zeroD = (wr_en_ok && (wr_add[AXIL_ADD_RANGE_W-1:0] == MHDMA_HPU_ID_ZERO_OFS[AXIL_ADD_RANGE_W-1:0]))? wr_data: r_mhdma_hpu_id_zero;
   always_ff @(posedge clk) begin
     if (!s_rst_n) begin
-      r_hpu_id_zero       <= hpu_id_zero_default;
+      r_mhdma_hpu_id_zero       <= mhdma_hpu_id_zero_default;
     end
     else begin
-      r_hpu_id_zero       <= r_hpu_id_zeroD;
+      r_mhdma_hpu_id_zero       <= r_mhdma_hpu_id_zeroD;
     end
   end
-// Register FF: hpu_id_one
-  logic [REG_DATA_W-1:0] r_hpu_id_oneD;
-  assign r_hpu_id_oneD = (wr_en_ok && (wr_add[AXIL_ADD_RANGE_W-1:0] == HPU_ID_ONE_OFS[AXIL_ADD_RANGE_W-1:0]))? wr_data: r_hpu_id_one;
+// Register FF: mhdma_hpu_id_one
+  logic [REG_DATA_W-1:0] r_mhdma_hpu_id_oneD;
+  assign r_mhdma_hpu_id_oneD = (wr_en_ok && (wr_add[AXIL_ADD_RANGE_W-1:0] == MHDMA_HPU_ID_ONE_OFS[AXIL_ADD_RANGE_W-1:0]))? wr_data: r_mhdma_hpu_id_one;
   always_ff @(posedge clk) begin
     if (!s_rst_n) begin
-      r_hpu_id_one       <= hpu_id_one_default;
+      r_mhdma_hpu_id_one       <= mhdma_hpu_id_one_default;
     end
     else begin
-      r_hpu_id_one       <= r_hpu_id_oneD;
+      r_mhdma_hpu_id_one       <= r_mhdma_hpu_id_oneD;
     end
   end
-// Register FF: hpu_id_two
-  logic [REG_DATA_W-1:0] r_hpu_id_twoD;
-  assign r_hpu_id_twoD = (wr_en_ok && (wr_add[AXIL_ADD_RANGE_W-1:0] == HPU_ID_TWO_OFS[AXIL_ADD_RANGE_W-1:0]))? wr_data: r_hpu_id_two;
+// Register FF: mhdma_hpu_id_two
+  logic [REG_DATA_W-1:0] r_mhdma_hpu_id_twoD;
+  assign r_mhdma_hpu_id_twoD = (wr_en_ok && (wr_add[AXIL_ADD_RANGE_W-1:0] == MHDMA_HPU_ID_TWO_OFS[AXIL_ADD_RANGE_W-1:0]))? wr_data: r_mhdma_hpu_id_two;
   always_ff @(posedge clk) begin
     if (!s_rst_n) begin
-      r_hpu_id_two       <= hpu_id_two_default;
+      r_mhdma_hpu_id_two       <= mhdma_hpu_id_two_default;
     end
     else begin
-      r_hpu_id_two       <= r_hpu_id_twoD;
+      r_mhdma_hpu_id_two       <= r_mhdma_hpu_id_twoD;
     end
   end
-// Register FF: hpu_id_three
-  logic [REG_DATA_W-1:0] r_hpu_id_threeD;
-  assign r_hpu_id_threeD = (wr_en_ok && (wr_add[AXIL_ADD_RANGE_W-1:0] == HPU_ID_THREE_OFS[AXIL_ADD_RANGE_W-1:0]))? wr_data: r_hpu_id_three;
+// Register FF: mhdma_hpu_id_three
+  logic [REG_DATA_W-1:0] r_mhdma_hpu_id_threeD;
+  assign r_mhdma_hpu_id_threeD = (wr_en_ok && (wr_add[AXIL_ADD_RANGE_W-1:0] == MHDMA_HPU_ID_THREE_OFS[AXIL_ADD_RANGE_W-1:0]))? wr_data: r_mhdma_hpu_id_three;
   always_ff @(posedge clk) begin
     if (!s_rst_n) begin
-      r_hpu_id_three       <= hpu_id_three_default;
+      r_mhdma_hpu_id_three       <= mhdma_hpu_id_three_default;
     end
     else begin
-      r_hpu_id_three       <= r_hpu_id_threeD;
+      r_mhdma_hpu_id_three       <= r_mhdma_hpu_id_threeD;
     end
   end
-// Register FF: hpu_id_four
-  logic [REG_DATA_W-1:0] r_hpu_id_fourD;
-  assign r_hpu_id_fourD = (wr_en_ok && (wr_add[AXIL_ADD_RANGE_W-1:0] == HPU_ID_FOUR_OFS[AXIL_ADD_RANGE_W-1:0]))? wr_data: r_hpu_id_four;
+// Register FF: mhdma_hpu_id_four
+  logic [REG_DATA_W-1:0] r_mhdma_hpu_id_fourD;
+  assign r_mhdma_hpu_id_fourD = (wr_en_ok && (wr_add[AXIL_ADD_RANGE_W-1:0] == MHDMA_HPU_ID_FOUR_OFS[AXIL_ADD_RANGE_W-1:0]))? wr_data: r_mhdma_hpu_id_four;
   always_ff @(posedge clk) begin
     if (!s_rst_n) begin
-      r_hpu_id_four       <= hpu_id_four_default;
+      r_mhdma_hpu_id_four       <= mhdma_hpu_id_four_default;
     end
     else begin
-      r_hpu_id_four       <= r_hpu_id_fourD;
+      r_mhdma_hpu_id_four       <= r_mhdma_hpu_id_fourD;
     end
   end
-// Register FF: hpu_id_five
-  logic [REG_DATA_W-1:0] r_hpu_id_fiveD;
-  assign r_hpu_id_fiveD = (wr_en_ok && (wr_add[AXIL_ADD_RANGE_W-1:0] == HPU_ID_FIVE_OFS[AXIL_ADD_RANGE_W-1:0]))? wr_data: r_hpu_id_five;
+// Register FF: mhdma_hpu_id_five
+  logic [REG_DATA_W-1:0] r_mhdma_hpu_id_fiveD;
+  assign r_mhdma_hpu_id_fiveD = (wr_en_ok && (wr_add[AXIL_ADD_RANGE_W-1:0] == MHDMA_HPU_ID_FIVE_OFS[AXIL_ADD_RANGE_W-1:0]))? wr_data: r_mhdma_hpu_id_five;
   always_ff @(posedge clk) begin
     if (!s_rst_n) begin
-      r_hpu_id_five       <= hpu_id_five_default;
+      r_mhdma_hpu_id_five       <= mhdma_hpu_id_five_default;
     end
     else begin
-      r_hpu_id_five       <= r_hpu_id_fiveD;
+      r_mhdma_hpu_id_five       <= r_mhdma_hpu_id_fiveD;
     end
   end
-// Register FF: hpu_id_six
-  logic [REG_DATA_W-1:0] r_hpu_id_sixD;
-  assign r_hpu_id_sixD = (wr_en_ok && (wr_add[AXIL_ADD_RANGE_W-1:0] == HPU_ID_SIX_OFS[AXIL_ADD_RANGE_W-1:0]))? wr_data: r_hpu_id_six;
+// Register FF: mhdma_hpu_id_six
+  logic [REG_DATA_W-1:0] r_mhdma_hpu_id_sixD;
+  assign r_mhdma_hpu_id_sixD = (wr_en_ok && (wr_add[AXIL_ADD_RANGE_W-1:0] == MHDMA_HPU_ID_SIX_OFS[AXIL_ADD_RANGE_W-1:0]))? wr_data: r_mhdma_hpu_id_six;
   always_ff @(posedge clk) begin
     if (!s_rst_n) begin
-      r_hpu_id_six       <= hpu_id_six_default;
+      r_mhdma_hpu_id_six       <= mhdma_hpu_id_six_default;
     end
     else begin
-      r_hpu_id_six       <= r_hpu_id_sixD;
+      r_mhdma_hpu_id_six       <= r_mhdma_hpu_id_sixD;
     end
   end
-// Register FF: hpu_id_seven
-  logic [REG_DATA_W-1:0] r_hpu_id_sevenD;
-  assign r_hpu_id_sevenD = (wr_en_ok && (wr_add[AXIL_ADD_RANGE_W-1:0] == HPU_ID_SEVEN_OFS[AXIL_ADD_RANGE_W-1:0]))? wr_data: r_hpu_id_seven;
+// Register FF: mhdma_hpu_id_seven
+  logic [REG_DATA_W-1:0] r_mhdma_hpu_id_sevenD;
+  assign r_mhdma_hpu_id_sevenD = (wr_en_ok && (wr_add[AXIL_ADD_RANGE_W-1:0] == MHDMA_HPU_ID_SEVEN_OFS[AXIL_ADD_RANGE_W-1:0]))? wr_data: r_mhdma_hpu_id_seven;
   always_ff @(posedge clk) begin
     if (!s_rst_n) begin
-      r_hpu_id_seven       <= hpu_id_seven_default;
+      r_mhdma_hpu_id_seven       <= mhdma_hpu_id_seven_default;
     end
     else begin
-      r_hpu_id_seven       <= r_hpu_id_sevenD;
+      r_mhdma_hpu_id_seven       <= r_mhdma_hpu_id_sevenD;
     end
   end
-// Register FF: request_req_id
-  logic [REG_DATA_W-1:0] r_request_req_idD;
-  assign r_request_req_idD = (wr_en_ok && (wr_add[AXIL_ADD_RANGE_W-1:0] == REQUEST_REQ_ID_OFS[AXIL_ADD_RANGE_W-1:0]))? wr_data: r_request_req_id;
-  logic r_request_req_id_wr_enD;
-  assign r_request_req_id_wr_enD = wr_en_ok && (wr_add[AXIL_ADD_RANGE_W-1:0] == REQUEST_REQ_ID_OFS[AXIL_ADD_RANGE_W-1:0]);
+// Register FF: mhdma_request_req_id
+  logic [REG_DATA_W-1:0] r_mhdma_request_req_idD;
+  assign r_mhdma_request_req_idD = (wr_en_ok && (wr_add[AXIL_ADD_RANGE_W-1:0] == MHDMA_REQUEST_REQ_ID_OFS[AXIL_ADD_RANGE_W-1:0]))? wr_data: r_mhdma_request_req_id;
+  logic r_mhdma_request_req_id_wr_enD;
+  assign r_mhdma_request_req_id_wr_enD = wr_en_ok && (wr_add[AXIL_ADD_RANGE_W-1:0] == MHDMA_REQUEST_REQ_ID_OFS[AXIL_ADD_RANGE_W-1:0]);
   always_ff @(posedge clk) begin
     if (!s_rst_n) begin
-      r_request_req_id_wr_en <= 1'b0;
+      r_mhdma_request_req_id_wr_en <= 1'b0;
     end
     else begin
-      r_request_req_id_wr_en <= r_request_req_id_wr_enD;
-    end
-  end
-  always_ff @(posedge clk) begin
-    if (!s_rst_n) begin
-      r_request_req_id       <= request_req_id_default;
-    end
-    else begin
-      r_request_req_id       <= r_request_req_idD;
-    end
-  end
-// Register FF: request_req_addr
-  logic [REG_DATA_W-1:0] r_request_req_addrD;
-  assign r_request_req_addrD = (wr_en_ok && (wr_add[AXIL_ADD_RANGE_W-1:0] == REQUEST_REQ_ADDR_OFS[AXIL_ADD_RANGE_W-1:0]))? wr_data: r_request_req_addr;
-  logic r_request_req_addr_wr_enD;
-  assign r_request_req_addr_wr_enD = wr_en_ok && (wr_add[AXIL_ADD_RANGE_W-1:0] == REQUEST_REQ_ADDR_OFS[AXIL_ADD_RANGE_W-1:0]);
-  always_ff @(posedge clk) begin
-    if (!s_rst_n) begin
-      r_request_req_addr_wr_en <= 1'b0;
-    end
-    else begin
-      r_request_req_addr_wr_en <= r_request_req_addr_wr_enD;
+      r_mhdma_request_req_id_wr_en <= r_mhdma_request_req_id_wr_enD;
     end
   end
   always_ff @(posedge clk) begin
     if (!s_rst_n) begin
-      r_request_req_addr       <= request_req_addr_default;
+      r_mhdma_request_req_id       <= mhdma_request_req_id_default;
     end
     else begin
-      r_request_req_addr       <= r_request_req_addrD;
+      r_mhdma_request_req_id       <= r_mhdma_request_req_idD;
     end
   end
-// Register FF: request_notify
-  logic [REG_DATA_W-1:0] r_request_notifyD;
-  assign r_request_notifyD       = r_request_notify_upd;
-  assign r_request_notify_rd_en = rd_en_ok && (rd_add[AXIL_ADD_RANGE_W-1:0] == REQUEST_NOTIFY_OFS[AXIL_ADD_RANGE_W-1:0]);
-  assign r_request_notify = r_request_notify_upd;
-// Register FF: request_read_request
-  logic [REG_DATA_W-1:0] r_request_read_requestD;
-  assign r_request_read_requestD       = r_request_read_request_upd;
-  assign r_request_read_request_rd_en = rd_en_ok && (rd_add[AXIL_ADD_RANGE_W-1:0] == REQUEST_READ_REQUEST_OFS[AXIL_ADD_RANGE_W-1:0]);
-  assign r_request_read_request = r_request_read_request_upd;
-// Register FF: request_stat_notify
-  logic [REG_DATA_W-1:0] r_request_stat_notifyD;
-  assign r_request_stat_notifyD       = r_request_stat_notify_upd;
+// Register FF: mhdma_request_req_addr
+  logic [REG_DATA_W-1:0] r_mhdma_request_req_addrD;
+  assign r_mhdma_request_req_addrD = (wr_en_ok && (wr_add[AXIL_ADD_RANGE_W-1:0] == MHDMA_REQUEST_REQ_ADDR_OFS[AXIL_ADD_RANGE_W-1:0]))? wr_data: r_mhdma_request_req_addr;
+  logic r_mhdma_request_req_addr_wr_enD;
+  assign r_mhdma_request_req_addr_wr_enD = wr_en_ok && (wr_add[AXIL_ADD_RANGE_W-1:0] == MHDMA_REQUEST_REQ_ADDR_OFS[AXIL_ADD_RANGE_W-1:0]);
   always_ff @(posedge clk) begin
     if (!s_rst_n) begin
-      r_request_stat_notify       <= request_stat_notify_default;
+      r_mhdma_request_req_addr_wr_en <= 1'b0;
     end
     else begin
-      r_request_stat_notify       <= r_request_stat_notifyD;
+      r_mhdma_request_req_addr_wr_en <= r_mhdma_request_req_addr_wr_enD;
     end
   end
-// Register FF: line_debug
-  logic [REG_DATA_W-1:0] r_line_debugD;
-  assign r_line_debugD = (wr_en_ok && (wr_add[AXIL_ADD_RANGE_W-1:0] == LINE_DEBUG_OFS[AXIL_ADD_RANGE_W-1:0]))? wr_data: r_line_debug;
   always_ff @(posedge clk) begin
     if (!s_rst_n) begin
-      r_line_debug       <= line_debug_default;
+      r_mhdma_request_req_addr       <= mhdma_request_req_addr_default;
     end
     else begin
-      r_line_debug       <= r_line_debugD;
+      r_mhdma_request_req_addr       <= r_mhdma_request_req_addrD;
     end
   end
-// Register FF: hbm_axi4_addr_2in3_ct_pc0_lsb
-  logic [REG_DATA_W-1:0] r_hbm_axi4_addr_2in3_ct_pc0_lsbD;
-  assign r_hbm_axi4_addr_2in3_ct_pc0_lsbD = (wr_en_ok && (wr_add[AXIL_ADD_RANGE_W-1:0] == HBM_AXI4_ADDR_2IN3_CT_PC0_LSB_OFS[AXIL_ADD_RANGE_W-1:0]))? wr_data: r_hbm_axi4_addr_2in3_ct_pc0_lsb;
+// Register FF: mhdma_request_notify
+  logic [REG_DATA_W-1:0] r_mhdma_request_notifyD;
+  assign r_mhdma_request_notifyD       = r_mhdma_request_notify_upd;
+  assign r_mhdma_request_notify_rd_en = rd_en_ok && (rd_add[AXIL_ADD_RANGE_W-1:0] == MHDMA_REQUEST_NOTIFY_OFS[AXIL_ADD_RANGE_W-1:0]);
+  assign r_mhdma_request_notify = r_mhdma_request_notify_upd;
+// Register FF: mhdma_request_read_request
+  logic [REG_DATA_W-1:0] r_mhdma_request_read_requestD;
+  assign r_mhdma_request_read_requestD       = r_mhdma_request_read_request_upd;
+  assign r_mhdma_request_read_request_rd_en = rd_en_ok && (rd_add[AXIL_ADD_RANGE_W-1:0] == MHDMA_REQUEST_READ_REQUEST_OFS[AXIL_ADD_RANGE_W-1:0]);
+  assign r_mhdma_request_read_request = r_mhdma_request_read_request_upd;
+// Register FF: mhdma_request_stat_notify
+  logic [REG_DATA_W-1:0] r_mhdma_request_stat_notifyD;
+  assign r_mhdma_request_stat_notifyD       = r_mhdma_request_stat_notify_upd;
   always_ff @(posedge clk) begin
     if (!s_rst_n) begin
-      r_hbm_axi4_addr_2in3_ct_pc0_lsb       <= hbm_axi4_addr_2in3_ct_pc0_lsb_default;
+      r_mhdma_request_stat_notify       <= mhdma_request_stat_notify_default;
     end
     else begin
-      r_hbm_axi4_addr_2in3_ct_pc0_lsb       <= r_hbm_axi4_addr_2in3_ct_pc0_lsbD;
+      r_mhdma_request_stat_notify       <= r_mhdma_request_stat_notifyD;
     end
   end
-// Register FF: hbm_axi4_addr_2in3_ct_pc0_msb
-  logic [REG_DATA_W-1:0] r_hbm_axi4_addr_2in3_ct_pc0_msbD;
-  assign r_hbm_axi4_addr_2in3_ct_pc0_msbD = (wr_en_ok && (wr_add[AXIL_ADD_RANGE_W-1:0] == HBM_AXI4_ADDR_2IN3_CT_PC0_MSB_OFS[AXIL_ADD_RANGE_W-1:0]))? wr_data: r_hbm_axi4_addr_2in3_ct_pc0_msb;
+// Register FF: mhdma_lane_debug
+  logic [REG_DATA_W-1:0] r_mhdma_lane_debugD;
+  assign r_mhdma_lane_debugD = (wr_en_ok && (wr_add[AXIL_ADD_RANGE_W-1:0] == MHDMA_LANE_DEBUG_OFS[AXIL_ADD_RANGE_W-1:0]))? wr_data: r_mhdma_lane_debug;
   always_ff @(posedge clk) begin
     if (!s_rst_n) begin
-      r_hbm_axi4_addr_2in3_ct_pc0_msb       <= hbm_axi4_addr_2in3_ct_pc0_msb_default;
+      r_mhdma_lane_debug       <= mhdma_lane_debug_default;
     end
     else begin
-      r_hbm_axi4_addr_2in3_ct_pc0_msb       <= r_hbm_axi4_addr_2in3_ct_pc0_msbD;
+      r_mhdma_lane_debug       <= r_mhdma_lane_debugD;
     end
   end
-// Register FF: hbm_axi4_addr_2in3_ct_pc1_lsb
-  logic [REG_DATA_W-1:0] r_hbm_axi4_addr_2in3_ct_pc1_lsbD;
-  assign r_hbm_axi4_addr_2in3_ct_pc1_lsbD = (wr_en_ok && (wr_add[AXIL_ADD_RANGE_W-1:0] == HBM_AXI4_ADDR_2IN3_CT_PC1_LSB_OFS[AXIL_ADD_RANGE_W-1:0]))? wr_data: r_hbm_axi4_addr_2in3_ct_pc1_lsb;
+// Register FF: mhdma_hbm_axi4_addr_2in3_ct_pc0_lsb
+  logic [REG_DATA_W-1:0] r_mhdma_hbm_axi4_addr_2in3_ct_pc0_lsbD;
+  assign r_mhdma_hbm_axi4_addr_2in3_ct_pc0_lsbD = (wr_en_ok && (wr_add[AXIL_ADD_RANGE_W-1:0] == MHDMA_HBM_AXI4_ADDR_2IN3_CT_PC0_LSB_OFS[AXIL_ADD_RANGE_W-1:0]))? wr_data: r_mhdma_hbm_axi4_addr_2in3_ct_pc0_lsb;
   always_ff @(posedge clk) begin
     if (!s_rst_n) begin
-      r_hbm_axi4_addr_2in3_ct_pc1_lsb       <= hbm_axi4_addr_2in3_ct_pc1_lsb_default;
+      r_mhdma_hbm_axi4_addr_2in3_ct_pc0_lsb       <= mhdma_hbm_axi4_addr_2in3_ct_pc0_lsb_default;
     end
     else begin
-      r_hbm_axi4_addr_2in3_ct_pc1_lsb       <= r_hbm_axi4_addr_2in3_ct_pc1_lsbD;
+      r_mhdma_hbm_axi4_addr_2in3_ct_pc0_lsb       <= r_mhdma_hbm_axi4_addr_2in3_ct_pc0_lsbD;
     end
   end
-// Register FF: hbm_axi4_addr_2in3_ct_pc1_msb
-  logic [REG_DATA_W-1:0] r_hbm_axi4_addr_2in3_ct_pc1_msbD;
-  assign r_hbm_axi4_addr_2in3_ct_pc1_msbD = (wr_en_ok && (wr_add[AXIL_ADD_RANGE_W-1:0] == HBM_AXI4_ADDR_2IN3_CT_PC1_MSB_OFS[AXIL_ADD_RANGE_W-1:0]))? wr_data: r_hbm_axi4_addr_2in3_ct_pc1_msb;
+// Register FF: mhdma_hbm_axi4_addr_2in3_ct_pc0_msb
+  logic [REG_DATA_W-1:0] r_mhdma_hbm_axi4_addr_2in3_ct_pc0_msbD;
+  assign r_mhdma_hbm_axi4_addr_2in3_ct_pc0_msbD = (wr_en_ok && (wr_add[AXIL_ADD_RANGE_W-1:0] == MHDMA_HBM_AXI4_ADDR_2IN3_CT_PC0_MSB_OFS[AXIL_ADD_RANGE_W-1:0]))? wr_data: r_mhdma_hbm_axi4_addr_2in3_ct_pc0_msb;
   always_ff @(posedge clk) begin
     if (!s_rst_n) begin
-      r_hbm_axi4_addr_2in3_ct_pc1_msb       <= hbm_axi4_addr_2in3_ct_pc1_msb_default;
+      r_mhdma_hbm_axi4_addr_2in3_ct_pc0_msb       <= mhdma_hbm_axi4_addr_2in3_ct_pc0_msb_default;
     end
     else begin
-      r_hbm_axi4_addr_2in3_ct_pc1_msb       <= r_hbm_axi4_addr_2in3_ct_pc1_msbD;
+      r_mhdma_hbm_axi4_addr_2in3_ct_pc0_msb       <= r_mhdma_hbm_axi4_addr_2in3_ct_pc0_msbD;
+    end
+  end
+// Register FF: mhdma_hbm_axi4_addr_2in3_ct_pc1_lsb
+  logic [REG_DATA_W-1:0] r_mhdma_hbm_axi4_addr_2in3_ct_pc1_lsbD;
+  assign r_mhdma_hbm_axi4_addr_2in3_ct_pc1_lsbD = (wr_en_ok && (wr_add[AXIL_ADD_RANGE_W-1:0] == MHDMA_HBM_AXI4_ADDR_2IN3_CT_PC1_LSB_OFS[AXIL_ADD_RANGE_W-1:0]))? wr_data: r_mhdma_hbm_axi4_addr_2in3_ct_pc1_lsb;
+  always_ff @(posedge clk) begin
+    if (!s_rst_n) begin
+      r_mhdma_hbm_axi4_addr_2in3_ct_pc1_lsb       <= mhdma_hbm_axi4_addr_2in3_ct_pc1_lsb_default;
+    end
+    else begin
+      r_mhdma_hbm_axi4_addr_2in3_ct_pc1_lsb       <= r_mhdma_hbm_axi4_addr_2in3_ct_pc1_lsbD;
+    end
+  end
+// Register FF: mhdma_hbm_axi4_addr_2in3_ct_pc1_msb
+  logic [REG_DATA_W-1:0] r_mhdma_hbm_axi4_addr_2in3_ct_pc1_msbD;
+  assign r_mhdma_hbm_axi4_addr_2in3_ct_pc1_msbD = (wr_en_ok && (wr_add[AXIL_ADD_RANGE_W-1:0] == MHDMA_HBM_AXI4_ADDR_2IN3_CT_PC1_MSB_OFS[AXIL_ADD_RANGE_W-1:0]))? wr_data: r_mhdma_hbm_axi4_addr_2in3_ct_pc1_msb;
+  always_ff @(posedge clk) begin
+    if (!s_rst_n) begin
+      r_mhdma_hbm_axi4_addr_2in3_ct_pc1_msb       <= mhdma_hbm_axi4_addr_2in3_ct_pc1_msb_default;
+    end
+    else begin
+      r_mhdma_hbm_axi4_addr_2in3_ct_pc1_msb       <= r_mhdma_hbm_axi4_addr_2in3_ct_pc1_msbD;
     end
   end
 // Register FF: fifo_write_number_of_words
@@ -809,81 +809,81 @@ import hpu_regif_core_eth_2in3_pkg::*;
       r_cnt_words       <= r_cnt_wordsD;
     end
   end
-// Register FF: stat_status
-  logic [REG_DATA_W-1:0] r_stat_statusD;
-  assign r_stat_statusD       = r_stat_status_upd;
+// Register FF: mhdma_stat_status
+  logic [REG_DATA_W-1:0] r_mhdma_stat_statusD;
+  assign r_mhdma_stat_statusD       = r_mhdma_stat_status_upd;
   always_ff @(posedge clk) begin
     if (!s_rst_n) begin
-      r_stat_status       <= stat_status_default;
+      r_mhdma_stat_status       <= mhdma_stat_status_default;
     end
     else begin
-      r_stat_status       <= r_stat_statusD;
+      r_mhdma_stat_status       <= r_mhdma_stat_statusD;
     end
   end
-// Register FF: stat_clk_a
-  logic [REG_DATA_W-1:0] r_stat_clk_aD;
-  assign r_stat_clk_aD       = r_stat_clk_a_upd;
+// Register FF: mhdma_stat_clk_a
+  logic [REG_DATA_W-1:0] r_mhdma_stat_clk_aD;
+  assign r_mhdma_stat_clk_aD       = r_mhdma_stat_clk_a_upd;
   always_ff @(posedge clk) begin
     if (!s_rst_n) begin
-      r_stat_clk_a       <= stat_clk_a_default;
+      r_mhdma_stat_clk_a       <= mhdma_stat_clk_a_default;
     end
     else begin
-      r_stat_clk_a       <= r_stat_clk_aD;
+      r_mhdma_stat_clk_a       <= r_mhdma_stat_clk_aD;
     end
   end
-// Register FF: stat_clk_b
-  logic [REG_DATA_W-1:0] r_stat_clk_bD;
-  assign r_stat_clk_bD       = r_stat_clk_b_upd;
+// Register FF: mhdma_stat_clk_b
+  logic [REG_DATA_W-1:0] r_mhdma_stat_clk_bD;
+  assign r_mhdma_stat_clk_bD       = r_mhdma_stat_clk_b_upd;
   always_ff @(posedge clk) begin
     if (!s_rst_n) begin
-      r_stat_clk_b       <= stat_clk_b_default;
+      r_mhdma_stat_clk_b       <= mhdma_stat_clk_b_default;
     end
     else begin
-      r_stat_clk_b       <= r_stat_clk_bD;
+      r_mhdma_stat_clk_b       <= r_mhdma_stat_clk_bD;
     end
   end
-// Register FF: stat_valid_words_a
-  logic [REG_DATA_W-1:0] r_stat_valid_words_aD;
-  assign r_stat_valid_words_aD       = r_stat_valid_words_a_upd;
+// Register FF: mhdma_stat_valid_words_a
+  logic [REG_DATA_W-1:0] r_mhdma_stat_valid_words_aD;
+  assign r_mhdma_stat_valid_words_aD       = r_mhdma_stat_valid_words_a_upd;
   always_ff @(posedge clk) begin
     if (!s_rst_n) begin
-      r_stat_valid_words_a       <= stat_valid_words_a_default;
+      r_mhdma_stat_valid_words_a       <= mhdma_stat_valid_words_a_default;
     end
     else begin
-      r_stat_valid_words_a       <= r_stat_valid_words_aD;
+      r_mhdma_stat_valid_words_a       <= r_mhdma_stat_valid_words_aD;
     end
   end
-// Register FF: stat_valid_words_b
-  logic [REG_DATA_W-1:0] r_stat_valid_words_bD;
-  assign r_stat_valid_words_bD       = r_stat_valid_words_b_upd;
+// Register FF: mhdma_stat_valid_words_b
+  logic [REG_DATA_W-1:0] r_mhdma_stat_valid_words_bD;
+  assign r_mhdma_stat_valid_words_bD       = r_mhdma_stat_valid_words_b_upd;
   always_ff @(posedge clk) begin
     if (!s_rst_n) begin
-      r_stat_valid_words_b       <= stat_valid_words_b_default;
+      r_mhdma_stat_valid_words_b       <= mhdma_stat_valid_words_b_default;
     end
     else begin
-      r_stat_valid_words_b       <= r_stat_valid_words_bD;
+      r_mhdma_stat_valid_words_b       <= r_mhdma_stat_valid_words_bD;
     end
   end
-// Register FF: stat_sop_cnt_a
-  logic [REG_DATA_W-1:0] r_stat_sop_cnt_aD;
-  assign r_stat_sop_cnt_aD       = r_stat_sop_cnt_a_upd;
+// Register FF: mhdma_stat_sop_cnt_a
+  logic [REG_DATA_W-1:0] r_mhdma_stat_sop_cnt_aD;
+  assign r_mhdma_stat_sop_cnt_aD       = r_mhdma_stat_sop_cnt_a_upd;
   always_ff @(posedge clk) begin
     if (!s_rst_n) begin
-      r_stat_sop_cnt_a       <= stat_sop_cnt_a_default;
+      r_mhdma_stat_sop_cnt_a       <= mhdma_stat_sop_cnt_a_default;
     end
     else begin
-      r_stat_sop_cnt_a       <= r_stat_sop_cnt_aD;
+      r_mhdma_stat_sop_cnt_a       <= r_mhdma_stat_sop_cnt_aD;
     end
   end
-// Register FF: stat_sop_cnt_b
-  logic [REG_DATA_W-1:0] r_stat_sop_cnt_bD;
-  assign r_stat_sop_cnt_bD       = r_stat_sop_cnt_b_upd;
+// Register FF: mhdma_stat_sop_cnt_b
+  logic [REG_DATA_W-1:0] r_mhdma_stat_sop_cnt_bD;
+  assign r_mhdma_stat_sop_cnt_bD       = r_mhdma_stat_sop_cnt_b_upd;
   always_ff @(posedge clk) begin
     if (!s_rst_n) begin
-      r_stat_sop_cnt_b       <= stat_sop_cnt_b_default;
+      r_mhdma_stat_sop_cnt_b       <= mhdma_stat_sop_cnt_b_default;
     end
     else begin
-      r_stat_sop_cnt_b       <= r_stat_sop_cnt_bD;
+      r_mhdma_stat_sop_cnt_b       <= r_mhdma_stat_sop_cnt_bD;
     end
   end
 // ============================================================================================== --
@@ -905,71 +905,71 @@ import hpu_regif_core_eth_2in3_pkg::*;
         else begin
           axil_rrespD = AXI4_OKAY;
           case(rd_add[AXIL_ADD_RANGE_W-1:0])
-          SYSTEM_LINE_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register system_line
-            axil_rdataD = r_system_line;
+          MHDMA_SYSTEM_LANE_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register mhdma_system_lane
+            axil_rdataD = r_mhdma_system_lane;
           end
-          SYSTEM_TIMEOUT_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register system_timeout
-            axil_rdataD = r_system_timeout;
+          MHDMA_SYSTEM_TIMEOUT_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register mhdma_system_timeout
+            axil_rdataD = r_mhdma_system_timeout;
           end
-          RESET_DATAPATH_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register reset_datapath
-            axil_rdataD = r_reset_datapath;
+          MHDMA_RESET_DATAPATH_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register mhdma_reset_datapath
+            axil_rdataD = r_mhdma_reset_datapath;
           end
-          RESET_MONITOR_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register reset_monitor
-            axil_rdataD = r_reset_monitor;
+          MHDMA_RESET_MONITOR_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register mhdma_reset_monitor
+            axil_rdataD = r_mhdma_reset_monitor;
           end
-          HPU_ID_ZERO_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register hpu_id_zero
-            axil_rdataD = r_hpu_id_zero;
+          MHDMA_HPU_ID_ZERO_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register mhdma_hpu_id_zero
+            axil_rdataD = r_mhdma_hpu_id_zero;
           end
-          HPU_ID_ONE_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register hpu_id_one
-            axil_rdataD = r_hpu_id_one;
+          MHDMA_HPU_ID_ONE_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register mhdma_hpu_id_one
+            axil_rdataD = r_mhdma_hpu_id_one;
           end
-          HPU_ID_TWO_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register hpu_id_two
-            axil_rdataD = r_hpu_id_two;
+          MHDMA_HPU_ID_TWO_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register mhdma_hpu_id_two
+            axil_rdataD = r_mhdma_hpu_id_two;
           end
-          HPU_ID_THREE_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register hpu_id_three
-            axil_rdataD = r_hpu_id_three;
+          MHDMA_HPU_ID_THREE_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register mhdma_hpu_id_three
+            axil_rdataD = r_mhdma_hpu_id_three;
           end
-          HPU_ID_FOUR_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register hpu_id_four
-            axil_rdataD = r_hpu_id_four;
+          MHDMA_HPU_ID_FOUR_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register mhdma_hpu_id_four
+            axil_rdataD = r_mhdma_hpu_id_four;
           end
-          HPU_ID_FIVE_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register hpu_id_five
-            axil_rdataD = r_hpu_id_five;
+          MHDMA_HPU_ID_FIVE_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register mhdma_hpu_id_five
+            axil_rdataD = r_mhdma_hpu_id_five;
           end
-          HPU_ID_SIX_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register hpu_id_six
-            axil_rdataD = r_hpu_id_six;
+          MHDMA_HPU_ID_SIX_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register mhdma_hpu_id_six
+            axil_rdataD = r_mhdma_hpu_id_six;
           end
-          HPU_ID_SEVEN_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register hpu_id_seven
-            axil_rdataD = r_hpu_id_seven;
+          MHDMA_HPU_ID_SEVEN_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register mhdma_hpu_id_seven
+            axil_rdataD = r_mhdma_hpu_id_seven;
           end
-          REQUEST_REQ_ID_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register request_req_id
-            axil_rdataD = r_request_req_id;
+          MHDMA_REQUEST_REQ_ID_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register mhdma_request_req_id
+            axil_rdataD = r_mhdma_request_req_id;
           end
-          REQUEST_REQ_ADDR_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register request_req_addr
-            axil_rdataD = r_request_req_addr;
+          MHDMA_REQUEST_REQ_ADDR_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register mhdma_request_req_addr
+            axil_rdataD = r_mhdma_request_req_addr;
           end
-          REQUEST_NOTIFY_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register request_notify
-            axil_rdataD = r_request_notify;
+          MHDMA_REQUEST_NOTIFY_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register mhdma_request_notify
+            axil_rdataD = r_mhdma_request_notify;
           end
-          REQUEST_READ_REQUEST_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register request_read_request
-            axil_rdataD = r_request_read_request;
+          MHDMA_REQUEST_READ_REQUEST_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register mhdma_request_read_request
+            axil_rdataD = r_mhdma_request_read_request;
           end
-          REQUEST_STAT_NOTIFY_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register request_stat_notify
-            axil_rdataD = r_request_stat_notify;
+          MHDMA_REQUEST_STAT_NOTIFY_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register mhdma_request_stat_notify
+            axil_rdataD = r_mhdma_request_stat_notify;
           end
-          LINE_DEBUG_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register line_debug
-            axil_rdataD = r_line_debug;
+          MHDMA_LANE_DEBUG_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register mhdma_lane_debug
+            axil_rdataD = r_mhdma_lane_debug;
           end
-          HBM_AXI4_ADDR_2IN3_CT_PC0_LSB_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register hbm_axi4_addr_2in3_ct_pc0_lsb
-            axil_rdataD = r_hbm_axi4_addr_2in3_ct_pc0_lsb;
+          MHDMA_HBM_AXI4_ADDR_2IN3_CT_PC0_LSB_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register mhdma_hbm_axi4_addr_2in3_ct_pc0_lsb
+            axil_rdataD = r_mhdma_hbm_axi4_addr_2in3_ct_pc0_lsb;
           end
-          HBM_AXI4_ADDR_2IN3_CT_PC0_MSB_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register hbm_axi4_addr_2in3_ct_pc0_msb
-            axil_rdataD = r_hbm_axi4_addr_2in3_ct_pc0_msb;
+          MHDMA_HBM_AXI4_ADDR_2IN3_CT_PC0_MSB_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register mhdma_hbm_axi4_addr_2in3_ct_pc0_msb
+            axil_rdataD = r_mhdma_hbm_axi4_addr_2in3_ct_pc0_msb;
           end
-          HBM_AXI4_ADDR_2IN3_CT_PC1_LSB_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register hbm_axi4_addr_2in3_ct_pc1_lsb
-            axil_rdataD = r_hbm_axi4_addr_2in3_ct_pc1_lsb;
+          MHDMA_HBM_AXI4_ADDR_2IN3_CT_PC1_LSB_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register mhdma_hbm_axi4_addr_2in3_ct_pc1_lsb
+            axil_rdataD = r_mhdma_hbm_axi4_addr_2in3_ct_pc1_lsb;
           end
-          HBM_AXI4_ADDR_2IN3_CT_PC1_MSB_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register hbm_axi4_addr_2in3_ct_pc1_msb
-            axil_rdataD = r_hbm_axi4_addr_2in3_ct_pc1_msb;
+          MHDMA_HBM_AXI4_ADDR_2IN3_CT_PC1_MSB_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register mhdma_hbm_axi4_addr_2in3_ct_pc1_msb
+            axil_rdataD = r_mhdma_hbm_axi4_addr_2in3_ct_pc1_msb;
           end
           FIFO_WRITE_NUMBER_OF_WORDS_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register fifo_write_number_of_words
             axil_rdataD = r_fifo_write_number_of_words;
@@ -1001,26 +1001,26 @@ import hpu_regif_core_eth_2in3_pkg::*;
           CNT_WORDS_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register cnt_words
             axil_rdataD = r_cnt_words;
           end
-          STAT_STATUS_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register stat_status
-            axil_rdataD = r_stat_status;
+          MHDMA_STAT_STATUS_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register mhdma_stat_status
+            axil_rdataD = r_mhdma_stat_status;
           end
-          STAT_CLK_A_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register stat_clk_a
-            axil_rdataD = r_stat_clk_a;
+          MHDMA_STAT_CLK_A_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register mhdma_stat_clk_a
+            axil_rdataD = r_mhdma_stat_clk_a;
           end
-          STAT_CLK_B_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register stat_clk_b
-            axil_rdataD = r_stat_clk_b;
+          MHDMA_STAT_CLK_B_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register mhdma_stat_clk_b
+            axil_rdataD = r_mhdma_stat_clk_b;
           end
-          STAT_VALID_WORDS_A_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register stat_valid_words_a
-            axil_rdataD = r_stat_valid_words_a;
+          MHDMA_STAT_VALID_WORDS_A_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register mhdma_stat_valid_words_a
+            axil_rdataD = r_mhdma_stat_valid_words_a;
           end
-          STAT_VALID_WORDS_B_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register stat_valid_words_b
-            axil_rdataD = r_stat_valid_words_b;
+          MHDMA_STAT_VALID_WORDS_B_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register mhdma_stat_valid_words_b
+            axil_rdataD = r_mhdma_stat_valid_words_b;
           end
-          STAT_SOP_CNT_A_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register stat_sop_cnt_a
-            axil_rdataD = r_stat_sop_cnt_a;
+          MHDMA_STAT_SOP_CNT_A_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register mhdma_stat_sop_cnt_a
+            axil_rdataD = r_mhdma_stat_sop_cnt_a;
           end
-          STAT_SOP_CNT_B_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register stat_sop_cnt_b
-            axil_rdataD = r_stat_sop_cnt_b;
+          MHDMA_STAT_SOP_CNT_B_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register mhdma_stat_sop_cnt_b
+            axil_rdataD = r_mhdma_stat_sop_cnt_b;
           end
           default:
             axil_rdataD = REG_DATA_W'('h0BAD_ADD1); // Default value

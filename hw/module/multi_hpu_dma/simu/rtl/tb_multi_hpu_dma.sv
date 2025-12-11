@@ -664,7 +664,7 @@ module tb_multi_hpu_dma;
 
       wait (hpu_a.interrupt_notify == 1'b1);
       $display("%t > INFO: Interrupt detected, checking Notify payload \n",$time);
-      maxil_drv_if_hpu_a.read_trans(REQUEST_NOTIFY_OFS, read_data);
+      maxil_drv_if_hpu_a.read_trans(MHDMA_REQUEST_NOTIFY_OFS, read_data);
 
       assert (read_data == notify_payload) else begin
         $display("%t > [ERROR]: Payload DATA incorrect %x %x", $time, read_data, notify_payload);
@@ -676,9 +676,9 @@ module tb_multi_hpu_dma;
       end
       $display("%t > INFO: Payload matches expected \n",$time);
 
-      maxil_drv_if_hpu_a.read_trans(REQUEST_STAT_NOTIFY_OFS, read_data);
+      maxil_drv_if_hpu_a.read_trans(MHDMA_REQUEST_STAT_NOTIFY_OFS, read_data);
       $display("[INFO]: stat @HPU_A: how long data stayed before read? %x", read_data[15:0]);
-      maxil_drv_if_hpu_b.read_trans(REQUEST_STAT_NOTIFY_OFS, read_data);
+      maxil_drv_if_hpu_b.read_trans(MHDMA_REQUEST_STAT_NOTIFY_OFS, read_data);
       $display("[INFO]: stat @HPU_B: how long acknowledge took? %x", read_data[31:16]);
 
       repeat(100) @(posedge clk_control);
@@ -687,7 +687,7 @@ module tb_multi_hpu_dma;
       read_request(random_hpu_b, iop_id, iop_src_addr, iop_dst_addr);
 
       wait (hpu_a.interrupt_read_request == 1'b1);
-      maxil_drv_if_hpu_a.read_trans(REQUEST_READ_REQUEST_OFS, read_data);
+      maxil_drv_if_hpu_a.read_trans(MHDMA_REQUEST_READ_REQUEST_OFS, read_data);
 
       received_address = read_data[31:16];
       received_hpu_id  = read_data[11:8];
@@ -756,7 +756,7 @@ module tb_multi_hpu_dma;
   task automatic init_registers;
     begin
     // Reading system REGISTERS -------------------------------------------------------------------
-      maxil_drv_if_hpu_a.read_trans(SYSTEM_LINE_OFS, rdata);
+      maxil_drv_if_hpu_a.read_trans(MHDMA_SYSTEM_LANE_OFS, rdata);
       assert (rdata == 'h0) else begin
         $display("%t > ERROR:register SYSTEM_LINE_OFS not correctly read %h",$time, rdata);
         error_register_read = 1'b1;
@@ -769,16 +769,16 @@ module tb_multi_hpu_dma;
     debug_flag    = 1'b0;
     @(posedge clk_control);
 
-    maxil_drv_if_hpu_a.write_trans(SYSTEM_LINE_OFS, line_parameter);
-    maxil_drv_if_hpu_b.write_trans(SYSTEM_LINE_OFS, line_parameter);
+    maxil_drv_if_hpu_a.write_trans(MHDMA_SYSTEM_LANE_OFS, line_parameter);
+    maxil_drv_if_hpu_b.write_trans(MHDMA_SYSTEM_LANE_OFS, line_parameter);
 
     rst_rx_datapath = 4'b0100;
     rst_tx_datapath = 4'b1011;
     rst_all         = 4'b0101;
     @(posedge clk_control);
 
-    maxil_drv_if_hpu_a.write_trans(RESET_DATAPATH_OFS, reset_parameter);
-    maxil_drv_if_hpu_b.write_trans(RESET_DATAPATH_OFS, reset_parameter);
+    maxil_drv_if_hpu_a.write_trans(MHDMA_RESET_DATAPATH_OFS, reset_parameter);
+    maxil_drv_if_hpu_b.write_trans(MHDMA_RESET_DATAPATH_OFS, reset_parameter);
 
     assert ((gt_line_rate[0] == line_rate) && (gt_line_rate[1] == line_rate)) else begin
       $display("[ERROR] line_rate has unexpected value %x %x %x",gt_line_rate[0], gt_line_rate[1], line_rate);
@@ -808,8 +808,8 @@ module tb_multi_hpu_dma;
     end
     @(posedge clk_control);
 
-    maxil_drv_if_hpu_a.read_trans(RESET_MONITOR_OFS, reset_monitor[0]);
-    maxil_drv_if_hpu_b.read_trans(RESET_MONITOR_OFS, reset_monitor[1]);
+    maxil_drv_if_hpu_a.read_trans(MHDMA_RESET_MONITOR_OFS, reset_monitor[0]);
+    maxil_drv_if_hpu_b.read_trans(MHDMA_RESET_MONITOR_OFS, reset_monitor[1]);
 
     assert ((reset_monitor[3:0] != gt_tx_reset_done) | (reset_monitor[7:4] != gt_rx_reset_done)) else begin
       $display("[ERROR] reset monitor has not been read correctly");
@@ -875,8 +875,8 @@ module tb_multi_hpu_dma;
         end
 
         $display("| HPU_ID=%0d :: MAC=%6x |", i, mac_addr);
-        maxil_drv_if_hpu_a.write_trans(HPU_ID_ZERO_OFS+(4*i), register_mac_addr_a);
-        maxil_drv_if_hpu_b.write_trans(HPU_ID_ZERO_OFS+(4*i), register_mac_addr_b);
+        maxil_drv_if_hpu_a.write_trans(MHDMA_HPU_ID_ZERO_OFS+(4*i), register_mac_addr_a);
+        maxil_drv_if_hpu_b.write_trans(MHDMA_HPU_ID_ZERO_OFS+(4*i), register_mac_addr_b);
       end
       $display("└------------------------┘");
 
@@ -901,8 +901,8 @@ module tb_multi_hpu_dma;
       read_req_addr = {dest_addr, src_addr};
       read_req_id = {iop_id, REQ_ID_READ, node_id, req_size_b};
 
-      maxil_drv_if_hpu_a.write_trans(REQUEST_REQ_ADDR_OFS, read_req_addr);
-      maxil_drv_if_hpu_a.write_trans(REQUEST_REQ_ID_OFS, read_req_id);
+      maxil_drv_if_hpu_a.write_trans(MHDMA_REQUEST_REQ_ADDR_OFS, read_req_addr);
+      maxil_drv_if_hpu_a.write_trans(MHDMA_REQUEST_REQ_ID_OFS, read_req_id);
       // there is as well the hbm pc offsets to write from RPU pov but in simulation we let it set to 0
     end
   endtask
@@ -927,11 +927,11 @@ module tb_multi_hpu_dma;
       read_req_id = {iop_id, REQ_ID_NOTIFY_TX, dst_node_id, req_size_b};
 
       if (src_node_id == random_hpu_a) begin
-        maxil_drv_if_hpu_a.write_trans(REQUEST_REQ_ADDR_OFS, read_req_addr);
-        maxil_drv_if_hpu_a.write_trans(REQUEST_REQ_ID_OFS, read_req_id);
+        maxil_drv_if_hpu_a.write_trans(MHDMA_REQUEST_REQ_ADDR_OFS, read_req_addr);
+        maxil_drv_if_hpu_a.write_trans(MHDMA_REQUEST_REQ_ID_OFS, read_req_id);
       end else if (src_node_id == random_hpu_b) begin
-        maxil_drv_if_hpu_b.write_trans(REQUEST_REQ_ADDR_OFS, read_req_addr);
-        maxil_drv_if_hpu_b.write_trans(REQUEST_REQ_ID_OFS, read_req_id);
+        maxil_drv_if_hpu_b.write_trans(MHDMA_REQUEST_REQ_ADDR_OFS, read_req_addr);
+        maxil_drv_if_hpu_b.write_trans(MHDMA_REQUEST_REQ_ID_OFS, read_req_id);
       end else begin
         $display("[ERROR] you are trying to send a Notify request from an HPU non instantiated");
         error_tb_notify = 1'b1;

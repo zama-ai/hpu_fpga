@@ -219,57 +219,57 @@ module multi_hpu_dma
     .s_axil_rready                         (s_axil_dma_rready                                     ),
     .r_axil_wdata                          (/* */                                                 ),
     // HPU ids ------------------------------------------------------------------------------------
-    .r_hpu_id_zero                         (r_regf_hpu_ids[0]                                     ),
-    .r_hpu_id_one                          (r_regf_hpu_ids[1]                                     ),
-    .r_hpu_id_two                          (r_regf_hpu_ids[2]                                     ),
-    .r_hpu_id_three                        (r_regf_hpu_ids[3]                                     ),
-    .r_hpu_id_four                         (r_regf_hpu_ids[4]                                     ),
-    .r_hpu_id_five                         (r_regf_hpu_ids[5]                                     ),
-    .r_hpu_id_six                          (r_regf_hpu_ids[6]                                     ),
-    .r_hpu_id_seven                        (r_regf_hpu_ids[7]                                     ),
+    .r_mhdma_hpu_id_zero                   (r_regf_hpu_ids[0]                                     ),
+    .r_mhdma_hpu_id_one                    (r_regf_hpu_ids[1]                                     ),
+    .r_mhdma_hpu_id_two                    (r_regf_hpu_ids[2]                                     ),
+    .r_mhdma_hpu_id_three                  (r_regf_hpu_ids[3]                                     ),
+    .r_mhdma_hpu_id_four                   (r_regf_hpu_ids[4]                                     ),
+    .r_mhdma_hpu_id_five                   (r_regf_hpu_ids[5]                                     ),
+    .r_mhdma_hpu_id_six                    (r_regf_hpu_ids[6]                                     ),
+    .r_mhdma_hpu_id_seven                  (r_regf_hpu_ids[7]                                     ),
     // HBM ----------------------------------------------------------------------------------------
-    .r_hbm_axi4_addr_2in3_ct_pc0_lsb       (r_ct_mem_addr[0][0*REG_DATA_W+:REG_DATA_W]            ),
-    .r_hbm_axi4_addr_2in3_ct_pc0_msb       (r_ct_mem_addr[0][1*REG_DATA_W+:REG_DATA_W]            ),
-    .r_hbm_axi4_addr_2in3_ct_pc1_lsb       (r_ct_mem_addr[1][0*REG_DATA_W+:REG_DATA_W]            ),
-    .r_hbm_axi4_addr_2in3_ct_pc1_msb       (r_ct_mem_addr[1][1*REG_DATA_W+:REG_DATA_W]            ),
+    .r_mhdma_hbm_axi4_addr_2in3_ct_pc0_lsb (r_ct_mem_addr[0][0*REG_DATA_W+:REG_DATA_W]            ),
+    .r_mhdma_hbm_axi4_addr_2in3_ct_pc0_msb (r_ct_mem_addr[0][1*REG_DATA_W+:REG_DATA_W]            ),
+    .r_mhdma_hbm_axi4_addr_2in3_ct_pc1_lsb (r_ct_mem_addr[1][0*REG_DATA_W+:REG_DATA_W]            ),
+    .r_mhdma_hbm_axi4_addr_2in3_ct_pc1_msb (r_ct_mem_addr[1][1*REG_DATA_W+:REG_DATA_W]            ),
     // RPU requests -------------------------------------------------------------------------------
-    .r_request_req_id_wr_en                (r_request_req_id_wr_en                                ),
-    .r_request_req_id                      (r_request_req_id                                      ),
+    .r_mhdma_request_req_id_wr_en          (r_request_req_id_wr_en                                ),
+    .r_mhdma_request_req_id                (r_request_req_id                                      ),
 
-    .r_request_req_addr_wr_en              (r_request_req_addr_wr_en                              ),
-    .r_request_req_addr                    (r_request_req_addr                                    ),
+    .r_mhdma_request_req_addr_wr_en        (r_request_req_addr_wr_en                              ),
+    .r_mhdma_request_req_addr              (r_request_req_addr                                    ),
     // Updated from RTL only ----------------------------------------------------------------------
-    .r_request_read_request_upd            (request_read_tmp                                      ),
-    .r_request_read_request_rd_en          (clear_interrupt_rr                                    ),
+    .r_mhdma_request_read_request_upd      (request_read_tmp                                      ),
+    .r_mhdma_request_read_request_rd_en    (clear_interrupt_rr                                    ),
 
-    .r_request_notify_upd                  (request_notify_tmp                                    ),
-    .r_request_notify_rd_en                (clear_interrupt_notify                                ),
+    .r_mhdma_request_notify_upd            (request_notify_tmp                                    ),
+    .r_mhdma_request_notify_rd_en          (clear_interrupt_notify                                ),
     // control ------------------------------------------------------------------------------------
-    .r_system_line                         (r_system_line                                         ),
-    .r_reset_datapath                      (r_reset_datapath                                      ),
-    .r_reset_monitor_upd                   (reset_monitor_tmp                                     ),
-    .r_line_debug                          (r_line_debug                                          ),
-    .r_system_timeout                      (r_system_timeout                                      ),
+    .r_mhdma_system_lane                   (r_system_line                                         ),
+    .r_mhdma_reset_datapath                (r_reset_datapath                                      ),
+    .r_mhdma_reset_monitor_upd             (reset_monitor_tmp                                     ),
+    .r_mhdma_lane_debug                    (r_line_debug                                          ),
+    .r_mhdma_system_timeout                (r_system_timeout                                      ),
     // stats --------------------------------------------------------------------------------------
     // from bridge
-    .r_request_stat_notify_upd             ({r_cnt_notify_ack, r_cnt_notify_read}                 ),
+    .r_mhdma_request_stat_notify_upd       ({r_cnt_notify_ack, r_cnt_notify_read}                 ), // to be removed or renamed?
     // from trace module
-    .r_fifo_write_number_of_words          (r_nb_word                                             ),
-    .r_fifo_write_words_to_write_a         (r_wr_word_a                                           ),
-    .r_fifo_write_words_to_write_b         (r_wr_word_b                                           ),
-    .r_fifo_write_fifo_write_data_count_upd({ {(AXIL_DATA_W-NB_WORD_W){1'b0}}, r_wr_data_count}   ),
-    .r_fifo_read_words_to_read_a_upd       (r_rd_word[AXIL_DATA_W-1:0]                            ),
-    .r_fifo_read_words_to_read_b_upd       (r_rd_word[2*AXIL_DATA_W-1:AXIL_DATA_W]                ),
-    .r_fifo_read_fifo_read_data_count_upd  ({ {(AXIL_DATA_W-NB_WORD_W){1'b0}}, r_rd_data_count}   ),
-    .r_cnt_trig_rd_upd                     (trigger_rd_cnt_out                                    ),
-    .r_cnt_tx_wr_upd                       (tx_wr_en_cnt                                          ),
-    .r_stat_clk_a_upd                      (clk_cnt_out[31:0]                                     ),
-    .r_stat_clk_b_upd                      (clk_cnt_out[63:32]                                    ),
-    .r_stat_valid_words_a_upd              (valid_words_out[31:0]                                 ),
-    .r_stat_valid_words_b_upd              (valid_words_out[63:32]                                ),
-    .r_stat_sop_cnt_a_upd                  (sop_cnt_out[31:0]                                     ),
-    .r_stat_sop_cnt_b_upd                  (sop_cnt_out[63:32]                                    ),
-    .r_stat_status_upd                     (r_status_debug                                        )
+    .r_fifo_write_number_of_words          (r_nb_word                                             ), // to be removed or renamed?
+    .r_fifo_write_words_to_write_a         (r_wr_word_a                                           ), // to be removed or renamed?
+    .r_fifo_write_words_to_write_b         (r_wr_word_b                                           ), // to be removed or renamed?
+    .r_fifo_write_fifo_write_data_count_upd({ {(AXIL_DATA_W-NB_WORD_W){1'b0}}, r_wr_data_count}   ), // to be removed or renamed?
+    .r_fifo_read_words_to_read_a_upd       (r_rd_word[AXIL_DATA_W-1:0]                            ), // to be removed or renamed?
+    .r_fifo_read_words_to_read_b_upd       (r_rd_word[2*AXIL_DATA_W-1:AXIL_DATA_W]                ), // to be removed or renamed?
+    .r_fifo_read_fifo_read_data_count_upd  ({ {(AXIL_DATA_W-NB_WORD_W){1'b0}}, r_rd_data_count}   ), // to be removed or renamed?
+    .r_cnt_trig_rd_upd                     (trigger_rd_cnt_out                                    ), // to be removed or renamed?
+    .r_cnt_tx_wr_upd                       (tx_wr_en_cnt                                          ), // to be removed or renamed?
+    .r_mhdma_stat_clk_a_upd                (clk_cnt_out[31:0]                                     ),
+    .r_mhdma_stat_clk_b_upd                (clk_cnt_out[63:32]                                    ),
+    .r_mhdma_stat_valid_words_a_upd        (valid_words_out[31:0]                                 ),
+    .r_mhdma_stat_valid_words_b_upd        (valid_words_out[63:32]                                ),
+    .r_mhdma_stat_sop_cnt_a_upd            (sop_cnt_out[31:0]                                     ),
+    .r_mhdma_stat_sop_cnt_b_upd            (sop_cnt_out[63:32]                                    ),
+    .r_mhdma_stat_status_upd               (r_status_debug                                        )
   );
 
   // Logic around regfile -------------------------------------------------------------------------
@@ -301,8 +301,8 @@ module multi_hpu_dma
     end
   end
 
-  // clear statistic counter on notify
-  assign rst_cnt_notify = (s_axil_dma_araddr == REQUEST_STAT_NOTIFY_OFS) && s_axil_dma_arready;
+  // clear statistic counter on notify //TODO
+  assign rst_cnt_notify = (s_axil_dma_araddr == MHDMA_REQUEST_STAT_NOTIFY_OFS) && s_axil_dma_arready;
 
   // for the trace module --
   // read_ack is a pulse that partly controls the rx_fifo read, must be in configuration clock freq
