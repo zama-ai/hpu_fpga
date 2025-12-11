@@ -693,7 +693,9 @@ module tb_multi_hpu_dma;
       received_hpu_id  = read_data[11:8];
       received_iop_id  = read_data[7:0];
 
-      assert (read_data == {iop_dst_addr, 4'b0, random_hpu_b, iop_id}) else begin
+      assert (read_data == {iop_dst_addr, 4'b0, random_hpu_b, iop_id}) begin
+        $display("[INFO] Read request register value match expected");
+      end else begin
         $display("[ERROR]: Missmatch between expected and received read request payload on regif");
         $display("address : %2x :: %2x", received_address, iop_dst_addr);
         $display(" iop:id : %2x :: %2x", received_iop_id, iop_id);
@@ -702,7 +704,6 @@ module tb_multi_hpu_dma;
       end
 
       check_memories(iop_src_addr, iop_dst_addr);
-
 
     end
 

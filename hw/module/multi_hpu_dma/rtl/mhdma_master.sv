@@ -34,7 +34,7 @@ module mhdma_master
   input  logic             [  REG_DATA_W-1:0] regf_req_id,
   input  logic             [  REG_DATA_W-1:0] regf_req_addr,
   input  logic             [REG_DATA_W/2-1:0] regf_timeout_dur,
-  input  logic             [  REG_DATA_W-1:0] regf_read_payload,
+  output logic             [  REG_DATA_W-1:0] regf_read_payload,
   // register control --------------------------------------------------------
   input  logic                                received_req,
   output logic                                request_consumed,
