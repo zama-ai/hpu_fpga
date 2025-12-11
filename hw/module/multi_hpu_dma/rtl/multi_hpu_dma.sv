@@ -184,6 +184,18 @@ module multi_hpu_dma
   logic [31:0]             trigger_rd_cnt_out;
   logic [31:0]             tx_wr_en_cnt;
 
+  // updated registers ----------------------------------------------------------------------------
+  // This registers are needed to ease timing
+  logic [REG_DATA_W-1:0] request_read_tmp;
+  logic [REG_DATA_W-1:0] request_notify_tmp;
+  logic [REG_DATA_W-1:0] reset_monitor_tmp;
+
+  always_ff @(posedge clk_eth_cfg) begin
+    request_read_tmp   <= r_request_read;
+    request_notify_tmp <= r_request_notify;
+    reset_monitor_tmp  <= r_reset_monitor;
+  end
+
   hpu_regif_core_eth_2in3  hpu_regif_core_eth_2in3 (
     // configuration interface --------------------------------------------------------------------
     .clk                                   (clk_eth_cfg                                           ),
@@ -227,15 +239,15 @@ module multi_hpu_dma
     .r_request_req_addr_wr_en              (r_request_req_addr_wr_en                              ),
     .r_request_req_addr                    (r_request_req_addr                                    ),
     // Updated from RTL only ----------------------------------------------------------------------
-    .r_request_read_request_upd            (r_request_read                                        ),
+    .r_request_read_request_upd            (request_read_tmp                                      ),
     .r_request_read_request_rd_en          (clear_interrupt_rr                                    ),
 
-    .r_request_notify_upd                  (r_request_notify                                      ),
+    .r_request_notify_upd                  (request_notify_tmp                                    ),
     .r_request_notify_rd_en                (clear_interrupt_notify                                ),
     // control ------------------------------------------------------------------------------------
     .r_system_line                         (r_system_line                                         ),
     .r_reset_datapath                      (r_reset_datapath                                      ),
-    .r_reset_monitor_upd                   (r_reset_monitor                                       ),
+    .r_reset_monitor_upd                   (reset_monitor_tmp                                     ),
     .r_line_debug                          (r_line_debug                                          ),
     .r_system_timeout                      (r_system_timeout                                      ),
     // stats --------------------------------------------------------------------------------------

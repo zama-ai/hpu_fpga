@@ -66,6 +66,11 @@ module mhdma_formatter
     end
   end
 
+  // this register is needed to ease timing
+  logic [NB_MAX_HPU-1:0][MAC_ADDR_W-1:0] hpu_mac_table_tmp;
+  always_ff @(posedge clk_mrmac)
+    hpu_mac_table_tmp <= hpu_mac_table;
+
   // =========================================================================================== //
   // Ciphertext emission specific
   // =========================================================================================== //
@@ -289,7 +294,7 @@ module mhdma_formatter
   end
 
   // header assignation depending on request
-  assign header_target_hpu_mac_addr = master_request ? hpu_mac_table[format_header.hpu_id] : notify_ack_allowed ? hpu_mac_table[nack_hpu_id] : ct_emission_allowed ? ce_dst_mac_addr : 'h0;
+  assign header_target_hpu_mac_addr = master_request ? hpu_mac_table_tmp[format_header.hpu_id] : notify_ack_allowed ? hpu_mac_table_tmp[nack_hpu_id] : ct_emission_allowed ? ce_dst_mac_addr : 'h0;
   assign header_req_id              = master_request ? format_header.req_id                : notify_ack_allowed ? REQ_ID_ACK_NOTIFY_TX       : ct_emission_allowed ? REQ_ID_EMISSION : 'h0;
   assign header_src_addr            = master_request ? format_header.src_addr              : notify_ack_allowed ? nack_src_addr              : ct_emission_allowed ? ce_src_addr : 'h0;
   assign header_dst_addr            = master_request ? format_header.dst_addr              : notify_ack_allowed ? 'h0                        : ct_emission_allowed ? ce_dst_addr : 'h0;
