@@ -177,14 +177,14 @@ int main(void) {
 
   IOpHeader_t header;
   IOpMapping_t mapping;
-  IOpOperand_t operand;
-  IOpOperand_t opaddr;
+  IOpOperandProp_t operand_prop;
+  IOpOperandAddr_t operand_addr;
   IOpImmHeader_t imm_header;
   OperandBundle_t dst_bundle;
   OperandBundle_t src_bundle;
   ImmediatBundle_t imm_bundle;
 
-  uint32_t iop_complete_len = parse_iop(data, 40, &header, &mapping, &operand, &opaddr, &imm_header, &dst_bundle, &src_bundle, &imm_bundle);
+  uint32_t iop_complete_len = parse_iop(data, 40, &header, &mapping, &operand_prop, &operand_addr, &imm_header, &dst_bundle, &src_bundle, &imm_bundle);
 
   uint8_t current_iid = dst_bundle.operand[0].iid;
   printf("IOp id %d [0x%x] [dst %d] [src %d] [imm %d] [stream_len %d]\n", current_iid, header.header.opcode, dst_bundle.len, src_bundle.len, imm_bundle.len, iop_complete_len);

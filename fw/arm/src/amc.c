@@ -191,6 +191,11 @@ static void vTaskFuncMain( void );
  */
 static void vConfigurePartitionTable( void );
 
+/**
+ * @brief Read runtime configuration from memory
+ *        Discard cache status to enforce that it's latest version of the cfg
+ */
+static void updt_ucore_cfg(UcoreCfg_t* cfg);
 
 /******************************************************************************/
 /* Local variables                                                            */
@@ -465,12 +470,17 @@ static void vTaskFuncMain( void )
     * fromAmiIopqTail = iopq_tail;
     HAL_FLUSH_CACHE_DATA( (uintptr_t) (fromAmiIopqTail), sizeof(uint32_t) );
 
+    // Runtime configuration
+    UcoreCfg_t ucore_cfg = {0};
+
     // IOp/Dop translation buffer
     uint32_t iop_buffer[IOP_MAX_WORDS];
     uint32_t dop_buffer[DOP_BUFFER_SIZE];
     // Various structure used by iop parser
     IOpHeader_t header;
-    IOpOperand_t operand;
+    IOpMapping_t mapping;
+    IOpOperandProp_t operand_prop;
+    IOpOperandAddr_t operand_addr;
     IOpImmHeader_t imm_header;
     OperandBundle_t dst_bundle;
     OperandBundle_t src_bundle;
@@ -509,6 +519,10 @@ static void vTaskFuncMain( void )
             }
             PLL_INF("AMC", "Fw received IOP request, translation into DOP needed [head 0x%x; tail 0x%x]", iopq_head, iopq_tail);
 
+            // Update ucore configuration
+            updt_ucore_cfg(&ucore_cfg);
+            PLL_INF("AMC", "Current core config: node_id %d", ucore_cfg.node_id);
+
             // 1. Compute bytes to read from queue
             uint32_t read_bytes = (iopq_used_bytes > IOP_MAX_BYTES)? IOP_MAX_BYTES: iopq_used_bytes;
 
@@ -543,8 +557,8 @@ static void vTaskFuncMain( void )
             // Parse IOp and store in lookup for ack
             // uint32_t iop_complete_len = 0x10;
             PLL_INF("ParseIOp", "@slot[%d] header 0x%x [len_bytes %d]", chunk_idx, iop_buffer[0], read_bytes);
-            uint32_t iop_complete_len = parse_iop(iop_buffer, read_bytes, &header, &operand, &imm_header, &dst_bundle, &src_bundle, &imm_bundle);
-            PLL_INF("ParseIOp", "IOp [0x%x] [dst %d] [src %d] [imm %d] [stream_len %d]", header.header.opcode, dst_bundle.len, src_bundle.len, imm_bundle.len, iop_complete_len);
+            uint32_t iop_complete_len = parse_iop(iop_buffer, read_bytes, &header, &mapping, &operand_prop, &operand_addr, &imm_header, &dst_bundle, &src_bundle, &imm_bundle);
+            PLL_INF("ParseIOp", "IOp [0x%x] [map %x] [dst %d] [src %d] [imm %d] [stream_len %d]", header.header.opcode, mapping.raw, dst_bundle.len, src_bundle.len, imm_bundle.len, iop_complete_len);
 
             if (iop_complete_len != 0) {
                 // Update tail of IOp queue
@@ -555,7 +569,7 @@ static void vTaskFuncMain( void )
 
 
                 // Retrieved DOp stream, patch it and send it to Isc
-                if (get_lookup(header, &dop_entry)) {
+                if (get_lookup(header, mapping, ucore_cfg.node_id, &dop_entry)) {
                     PLL_ERR("IOpQ", "Incorrect IOp processed [head 0x%x, last-tail 0x%x, current-tail 0x%x]", iopq_head, iopq_tail, (iopq_tail - iop_complete_len));
                     PLL_ERR("IOpQ", "chunk_idx %x chunk_size %d iop_complete_len %d", chunk_idx, chunk_size, iop_complete_len);
                     iOSAL_Task_SleepTicks(2000);
@@ -1264,3 +1278,19 @@ static void vConfigurePartitionTable( void )
     HAL_FLUSH_CACHE_DATA( ( HAL_RPU_SHARED_MEMORY_BASE_ADDR + xPartTable.xStatus.ulStatusOff ),
                           xPartTable.xStatus.ulStatusLen );
 }
+
+/**
+ * @brief Read runtime configuration from memory
+ *        Discard cache status to enforce that it's latest version of the cfg
+ */
+static void updt_ucore_cfg(UcoreCfg_t* cfg)
+{
+  // Invalidate cache
+  HAL_INVALIDATE_CACHE_DATA( (uintptr_t)DOP_FW_ADDR , FW_RUNTIME_MAX_WORD * sizeof(uint32_t));
+  // Read value
+  // NB: pvOSAL_MemCpy seems completly bugged on small size. replace it with explicit pointer read
+  // pvOSAL_MemCpy((void*)DOP_FW_ADDR, (void*) cfg, sizeof(UcoreCfg_t));
+ *cfg = *((volatile UcoreCfg_t*) DOP_FW_ADDR);
+
+}
+
