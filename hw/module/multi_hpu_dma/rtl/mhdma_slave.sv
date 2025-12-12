@@ -79,15 +79,6 @@ module mhdma_slave
   // =========================================================================================== //
   // general
   // =========================================================================================== //
-  // here we want to handle only pulses to move away from our current state or write into fifo
-  logic notify_request_received_tmp;
-  logic notify_request;
-
-  always_ff @(posedge clk_mrmac)
-    notify_request_received_tmp <= notify_request_received;
-
-  assign notify_request = notify_request_received & ~notify_request_received_tmp;
-
   // ==============================================================================================
   // Notify RX (NRX)
   // ==============================================================================================
@@ -120,14 +111,14 @@ module mhdma_slave
   assign new_notify_ack_pending =  (nrx_state == NTX_TRANSMIT_ACK) ? 1'b1 : 1'b0;
 
   // Notify command queue -----------------------------------------------------
-  logic                 nrx_cmd_in_we;
+  logic                 nrx_cmd_in_vld;
   logic                 nrx_cmd_in_rdy;
   logic [NRX_WIDTH-1:0] nrx_cmd_data;
-  logic                 nrx_cmd_valid;
+  logic                 nrx_cmd_vld;
   logic                 nrx_cmd_rdy;
   logic                 fifo_2clk_rdy;
 
-  assign nrx_cmd_in_we = (nrx_state == NTX_TRANSMIT_ACK) & decoded_header.valid & nrx_cmd_in_rdy;
+  assign nrx_cmd_in_vld = (nrx_state == NTX_TRANSMIT_ACK) & decoded_header.valid & nrx_cmd_in_rdy;
 
   // in order to not lose any commands if we receive several notify
   // nrx_cmd_data is redirected as well to notify ack and to regif interface via 2clk fifo
@@ -140,11 +131,11 @@ module mhdma_slave
     .s_rst_n(resetn_mrmac),
 
     .in_data({decoded_header.src_addr, decoded_header.hpu_id, decoded_header.iop_id}),
-    .in_vld (nrx_cmd_in_we),
+    .in_vld (nrx_cmd_in_vld),
     .in_rdy (nrx_cmd_in_rdy),
 
     .out_data(nrx_cmd_data),
-    .out_vld (nrx_cmd_valid),
+    .out_vld (nrx_cmd_vld),
     .out_rdy (nrx_cmd_rdy)
   );
 
@@ -152,8 +143,8 @@ module mhdma_slave
   assign nrx_cmd_rdy = fifo_2clk_rdy & notify_ack_allowed;
 
   // signals that will be propagated to format module for ack
-  assign nrx_cmd_payload = nrx_cmd_valid ? nrx_cmd_data : 'h0;
-  assign nrx_valid       = nrx_cmd_valid;
+  assign nrx_cmd_payload = nrx_cmd_vld ? nrx_cmd_data : 'h0;
+  assign nrx_valid       = nrx_cmd_vld;
 
   // regfile interface --------------------------------------------------------
   // === MRMAC domain
@@ -184,7 +175,7 @@ module mhdma_slave
     .in_rstn  (resetn_mrmac),
     .in_data  (nrxq_in_data),
     .in_rdy   (fifo_2clk_rdy),
-    .in_vld   (nrx_cmd_valid),
+    .in_vld   (nrx_cmd_vld),
     // Read Domain ports: CFG domain
     .out_clk  (clk_cfg),
     .out_rstn (resetn_cfg),

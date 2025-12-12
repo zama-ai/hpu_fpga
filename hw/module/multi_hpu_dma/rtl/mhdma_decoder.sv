@@ -152,9 +152,9 @@ module mhdma_decoder
 
   always_ff @(posedge clk_mrmac) begin
     nack_received <= nack_receivedD;
-    nr_received <= nr_receivedD;
-    rr_received <= rr_receivedD;
-    ce_received <= ce_receivedD;
+    nr_received   <= nr_receivedD;
+    rr_received   <= rr_receivedD;
+    ce_received   <= ce_receivedD;
   end
 
   assign notify_ack_received          = nack_receivedD & ~nack_received;
