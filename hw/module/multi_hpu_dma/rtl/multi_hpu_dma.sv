@@ -106,9 +106,9 @@ module multi_hpu_dma
   // ============================================================================================ --
   // Signal
   // ============================================================================================ --
-  logic [$clog2(QSFP_LANE_NB):0] line_sel;
-  logic                          clear_interrupt_notify;
-  logic                          clear_interrupt_rr;
+  logic [$clog2(QSFP_LANE_NB)-1:0] line_sel;
+  logic                            clear_interrupt_notify;
+  logic                            clear_interrupt_rr;
 
   // ============================================================================================ //
   // Register file
@@ -146,7 +146,7 @@ module multi_hpu_dma
   logic                 stat_tx_wr_rst_busy;
   logic                 stat_qsfp_tx_tready;
 
-  assign line_sel      = r_system_line[1:0];
+  assign line_sel      = 2'b0;
   assign gt_loopback   = r_system_line[4:2];
   assign gt_line_rate  = r_system_line[13:5];
   assign debug         = r_system_line[31];

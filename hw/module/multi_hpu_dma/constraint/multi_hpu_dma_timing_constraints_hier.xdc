@@ -24,6 +24,7 @@ set_false_path -to [get_cells -hierarchical -filter {NAME =~ *mhdma_trace/cdc_rd
 
 # Quasi static signals
 set_false_path -to [get_cells -hierarchical -filter {NAME =~ *mhdma_bridge/*hpu_ids_cdc_reg*}]
+set_false_path -from [get_cells -hierarchical -filter {NAME =~ */*mhdma_lane_debug_reg*}]
 
 # raises concerning warnings:
 set_false_path -to [get_cells -hierarchical -filter {NAME =~ *mhdma_slave/*phy_addr_reg*}] -from [get_cells -hierarchical -filter {NAME =~ *hpu_regif_core_eth_2in3/*addr_2in3_ct_*}]
