@@ -338,7 +338,7 @@ module mhdma_bridge
     // Header information -----------------------------------------------------
     .current_hpu_mac             (current_hpu_mac                             ),
     .rx_header                   (decoded_header                              ),
-     // RX payload ------------------------------------------------------------
+    // RX payload ------------------------------------------------------------
     .rx_tdata                    (rx_tdata                                    ),
     .rx_tvalid                   (rx_tvalid                                   ),
     .rx_tlast                    (rx_tlast                                    ),

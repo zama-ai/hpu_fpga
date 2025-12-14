@@ -42,7 +42,7 @@ module mhdma_slave
   output logic                                new_ct_emission_request_pending,
 
   input  logic                                notify_ack_allowed,
-  input  logic                                ct_emission_allowed,
+  input  logic                                ct_emission_allowed, //  not used?
 
   input  logic                                ct_emission_finished,
   // format interface ---------------------------------------------------------
@@ -139,12 +139,19 @@ module mhdma_slave
     .out_rdy (nrx_cmd_rdy)
   );
 
+  logic notify_ack_allowed_tmp;
+  logic notify_ack_front_edge;
+  always_ff @(posedge clk_mrmac)
+    notify_ack_allowed_tmp <= notify_ack_allowed;
+
+  assign notify_ack_front_edge = notify_ack_allowed & ~ notify_ack_allowed_tmp;
+
   // backpressure from both 2clk fifo and nack
-  assign nrx_cmd_rdy = fifo_2clk_rdy & notify_ack_allowed;
+  assign nrx_cmd_rdy = fifo_2clk_rdy & notify_ack_front_edge;
 
   // signals that will be propagated to format module for ack
   assign nrx_cmd_payload = nrx_cmd_vld ? nrx_cmd_data : 'h0;
-  assign nrx_valid       = nrx_cmd_vld;
+  assign nrx_valid       = nrx_cmd_vld & nrx_cmd_rdy;
 
   // regfile interface --------------------------------------------------------
   // === MRMAC domain
@@ -175,7 +182,7 @@ module mhdma_slave
     .in_rstn  (resetn_mrmac),
     .in_data  (nrxq_in_data),
     .in_rdy   (fifo_2clk_rdy),
-    .in_vld   (nrx_cmd_vld),
+    .in_vld   (nrx_valid),
     // Read Domain ports: CFG domain
     .out_clk  (clk_cfg),
     .out_rstn (resetn_cfg),
