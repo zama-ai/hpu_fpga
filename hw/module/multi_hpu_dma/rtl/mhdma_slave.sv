@@ -42,7 +42,7 @@ module mhdma_slave
   output logic                                new_ct_emission_request_pending,
 
   input  logic                                notify_ack_allowed,
-  input  logic                                ct_emission_allowed, //  not used?
+  input  logic                                ct_emission_allowed,
 
   input  logic                                ct_emission_finished,
   // format interface ---------------------------------------------------------
@@ -76,9 +76,6 @@ module mhdma_slave
   // =========================================================================================== //
   localparam NB_MRMRAC_WORDS_PER_READ = AXI4_DATA_W/MRMAC_AXIS_W;
 
-  // =========================================================================================== //
-  // general
-  // =========================================================================================== //
   // ==============================================================================================
   // Notify RX (NRX)
   // ==============================================================================================
@@ -216,7 +213,7 @@ module mhdma_slave
     cem_next_state = CEM_XXX;
     case (cem_state)
       CEM_WAIT_REQUEST:
-        cem_next_state = new_ct_emission_request_pending ? CEM_READ_N_SEND : CEM_WAIT_REQUEST;
+        cem_next_state = ct_emission_allowed ? CEM_READ_N_SEND : CEM_WAIT_REQUEST;
       CEM_READ_N_SEND:
         cem_next_state = ct_emission_finished ? CEM_WAIT_REQUEST : CEM_READ_N_SEND;
     endcase
