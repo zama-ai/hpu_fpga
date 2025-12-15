@@ -54,19 +54,11 @@ module mhdma_formatter
   logic small_frame;
   // there is only one slave request: ciphertext emission
 
-  logic qsfp_tx_tlast_tmp;
-  logic ct_emission_all_packets_received_tmp;
-
-  always_ff @(posedge clk_mrmac) begin
-    qsfp_tx_tlast_tmp<= qsfp_tx_tlast;
-    ct_emission_all_packets_received_tmp<= ct_emission_all_packets_received;
-  end
-
   always_ff @(posedge clk_mrmac) begin
     if (~resetn_mrmac) begin
       master_request <= 1'b0;
     end else begin
-      if((notify_request_allowed & qsfp_tx_tlast_tmp) | (ct_emission_all_packets_received_tmp & read_request_allowed)) begin
+      if((notify_request_allowed & qsfp_tx_tlast) | (ct_emission_all_packets_received & read_request_allowed)) begin
         master_request <= 1'b0;
       end else if (read_request_allowed | notify_request_allowed) begin
         master_request <= 1'b1;
@@ -151,7 +143,7 @@ module mhdma_formatter
     if (~resetn_mrmac) begin
       small_frame <= 1'b0;
     end else begin
-      if (qsfp_tx_tlast_tmp) begin
+      if (qsfp_tx_tlast) begin
         small_frame <= 1'b0;
       end else if (master_request | notify_ack_allowed) begin
         small_frame <= 1'b1;
@@ -213,9 +205,7 @@ module mhdma_formatter
 
   assign ce_start_emission = ce_first_header & ~ce_first_header_tmp;
 
-  always_ff @(posedge clk_mrmac)
-    ce_start_of_header <= ce_start_emission | ce_sop_header;
-  // assign ce_start_of_header = ce_start_emission | ce_sop_header;
+  assign ce_start_of_header = ce_start_emission | ce_sop_header;
 
   // decoding header payload --------------------------------------------------
   // header is propagated well before we receive any data on fifo tx
@@ -491,37 +481,10 @@ module mhdma_formatter
     endcase
   end
 
-  always_ff @(posedge clk_mrmac) begin
-    if (tx_state == ST_CT_EMISSION) begin
-      ct_emission_allowed <= 1'b1;
-    end else begin
-      ct_emission_allowed <= 1'b0;
-    end
-  end
-
-  always_ff @(posedge clk_mrmac) begin
-    if (tx_state == ST_NACK) begin
-      notify_ack_allowed <= 1'b1;
-    end else begin
-      notify_ack_allowed <= 1'b0;
-    end
-  end
-
-  always_ff @(posedge clk_mrmac) begin
-    if (tx_state == ST_READ_REQ) begin
-      read_request_allowed <= 1'b1;
-    end else begin
-      read_request_allowed <= 1'b0;
-    end
-  end
-
-  always_ff @(posedge clk_mrmac) begin
-    if (tx_state == ST_NOTIFY) begin
-      notify_request_allowed <= 1'b1;
-    end else begin
-      notify_request_allowed <= 1'b0;
-    end
-  end
+  assign ct_emission_allowed    = (tx_state == ST_CT_EMISSION) ? 1'b1 : 1'b0;
+  assign notify_ack_allowed     = (tx_state == ST_NACK)        ? 1'b1 : 1'b0;
+  assign read_request_allowed   = (tx_state == ST_READ_REQ)    ? 1'b1 : 1'b0;
+  assign notify_request_allowed = (tx_state == ST_NOTIFY)      ? 1'b1 : 1'b0;
 
   assign header_sop = master_request ? format_header.valid : notify_ack_allowed ? nrx_valid : ct_emission_allowed ? ce_start_of_header : 1'b0;
 
