@@ -116,8 +116,9 @@ module tb_multi_hpu_dma;
   bit error_notify_rx;
   bit error_rr_payload;
   bit error_write_missmatch;
+  bit error_interrupt_notify;
 
-  assign error = error_tb_notify | error_register_read | error_notify_rx | error_rr_payload | error_write_missmatch;
+  assign error = error_tb_notify | error_register_read | error_notify_rx | error_rr_payload | error_write_missmatch | error_interrupt_notify;
 
   always_ff @(posedge clk_control)
     if (error) begin
@@ -575,6 +576,8 @@ module tb_multi_hpu_dma;
 
   // for checking
   logic [REG_DATA_W-1:0] notify_payload;
+  logic [REG_DATA_W-1:0] expected_notify_payload;
+  logic [MRMAC_AXIS_W-1:0] notify_payload_ref_q[$];
 
   // Fixed for now, might evolve later
   logic [SIZE_B_W-1:0] req_size_b;
@@ -587,6 +590,8 @@ module tb_multi_hpu_dma;
 
   logic [31:0] regf_start_addr_ofs;
 
+
+  int arbitrary_notify_nb;
   // scenario -------------------------------------------------------------------------------------
   initial begin
     maxil_drv_if_hpu_a.init();
@@ -642,14 +647,10 @@ module tb_multi_hpu_dma;
     // TODO: add checker
 
     // Classical use-case =========================================================================
-    $display("B - Notification that a ciphertext is ready from one HPU to another");
-    random_iter = $urandom_range(64, 2);
-    $display("Proceeding of %d times notify and read request", random_iter);
+    random_iter = $urandom_range(32, 2);
+    $display("\nB - Notification that a ciphertext is ready from one HPU to another, done %0d times", random_iter);
 
     for (int i = 0; i < random_iter; i++) begin
-      $display("iter %d ---------------------------------------------------------------------------", random_iter);
-
-      // or how this should be used most of the time
       // for now size_b is fixed, all our ciphertext are 16.384kB (size_b=0x4000)
       iop_id       = $urandom();
       iop_src_addr = $urandom_range(0, 1<<SRC_ADDR_W);
@@ -663,7 +664,8 @@ module tb_multi_hpu_dma;
       notify_payload = {iop_src_addr, 4'b0, random_hpu_b, iop_id};
 
       wait (hpu_a.interrupt_notify == 1'b1);
-      $display("%t > INFO: Interrupt detected, checking Notify payload \n",$time);
+
+      // Interrupt detected, checking Notify payload
       maxil_drv_if_hpu_a.read_trans(MHDMA_REQUEST_NOTIFY_OFS, read_data);
 
       assert (read_data == notify_payload) else begin
@@ -674,16 +676,15 @@ module tb_multi_hpu_dma;
 
         error_notify_rx = 1'b1;
       end
-      $display("%t > INFO: Payload matches expected \n",$time);
 
-      maxil_drv_if_hpu_a.read_trans(MHDMA_REQUEST_STAT_NOTIFY_OFS, read_data);
-      $display("[INFO]: stat @HPU_A: how long data stayed before read? %x", read_data[15:0]);
-      maxil_drv_if_hpu_b.read_trans(MHDMA_REQUEST_STAT_NOTIFY_OFS, read_data);
-      $display("[INFO]: stat @HPU_B: how long acknowledge took? %x", read_data[31:16]);
+      // TODO: check stats
+      // maxil_drv_if_hpu_a.read_trans(MHDMA_REQUEST_STAT_NOTIFY_OFS, read_data);
+      // $display("[INFO]: stat @HPU_A: how long data stayed before read? %x", read_data[15:0]);
+      // maxil_drv_if_hpu_b.read_trans(MHDMA_REQUEST_STAT_NOTIFY_OFS, read_data);
+      // $display("[INFO]: stat @HPU_B: how long acknowledge took? %x", read_data[31:16]);
 
       repeat(100) @(posedge clk_control);
       // Sending a read request from HPU-A to HPU-B -------------------------------------------------
-      $display("\nC - Sending a Read request");
       read_request(random_hpu_b, iop_id, iop_src_addr, iop_dst_addr);
 
       wait (hpu_a.interrupt_read_request == 1'b1);
@@ -693,19 +694,63 @@ module tb_multi_hpu_dma;
       received_hpu_id  = read_data[11:8];
       received_iop_id  = read_data[7:0];
 
-      assert (read_data == {iop_dst_addr, 4'b0, random_hpu_b, iop_id}) begin
-        $display("[INFO] Read request register value match expected");
-      end else begin
-        $display("[ERROR]: Missmatch between expected and received read request payload on regif");
-        $display("address : %2x :: %2x", received_address, iop_dst_addr);
-        $display(" iop:id : %2x :: %2x", received_iop_id, iop_id);
-        $display(" hpu:id : %2x :: %2x", received_hpu_id, random_hpu_b);
+      assert (read_data == {iop_dst_addr, 4'b0, random_hpu_b, iop_id}) else begin
+        $display("%t > [ERROR]: Missmatch between expected and received read request payload on regif", $time);
+        $display("%t > [ERROR]: address : %2x :: %2x", $time, received_address, iop_dst_addr);
+        $display("%t > [ERROR]:  iop:id : %2x :: %2x", $time, received_iop_id, iop_id);
+        $display("%t > [ERROR]:  hpu:id : %2x :: %2x", $time, received_hpu_id, random_hpu_b);
         error_rr_payload = 1'b1;
       end
 
       check_memories(iop_src_addr, iop_dst_addr);
-
     end
+
+    // Piling notify requests =====================================================================
+    arbitrary_notify_nb = 15;
+    $display("\nC - Notification that a ciphertext is ready from one HPU to another, x %0d", arbitrary_notify_nb);
+
+    for (int i = 0; i < arbitrary_notify_nb; i++) begin
+      // for now size_b is fixed, all our ciphertext are 16.384kB (size_b=0x4000)
+      iop_id       = $urandom();
+      iop_src_addr = $urandom_range(0, 1<<SRC_ADDR_W);
+      iop_dst_addr = $urandom_range(0, 1<<DST_ADDR_W);
+
+      repeat(10) @(posedge clk_control);
+      // Sending a NOTIFY from HPU-B to HPU-A -------------------------------------------------------
+      notify_request(random_hpu_b, random_hpu_a, iop_id, iop_src_addr);
+
+      // if a Notify is received by HPU A we should be able to confirm it by reading in the regf
+      notify_payload = {iop_src_addr, 4'b0, random_hpu_b, iop_id};
+      notify_payload_ref_q.push_front(notify_payload);
+    end
+
+    $display("%t > INFO : All %0d Notify have been sent from B to A \n",$time, arbitrary_notify_nb);
+
+    for (int i = 0; i < arbitrary_notify_nb; i++) begin
+
+      // we must wait for interrupt to be raised before reading
+      wait (hpu_a.interrupt_notify == 1'b1);
+      maxil_drv_if_hpu_a.read_trans(MHDMA_REQUEST_NOTIFY_OFS, read_data);
+      expected_notify_payload = notify_payload_ref_q.pop_back();
+
+      assert (read_data == expected_notify_payload) else begin
+        $display("%t > [ERROR]: Payload DATA incorrect (received %x) =! (exp %x)", $time, read_data, expected_notify_payload);
+        $display("%t > [ERROR]: iop_src_addr  = %x ", $time, iop_src_addr);
+        $display("%t > [ERROR]: random_hpu_b  = %x ", $time, random_hpu_b);
+        $display("%t > [ERROR]: iop_id        = %x ", $time, iop_id);
+        error_notify_rx = 1'b1;
+      end
+    end
+
+    @(posedge clk_control);
+    if (hpu_a.interrupt_notify == 1'b0) begin
+      $display("%t > INFO: Interrupt on HPU_A has been lowered\n",$time);
+    end else begin
+      $display("%t > [ERROR]: Interrupt on HPU_A has not been lowered\n",$time);
+      error_interrupt_notify = 1'b1;
+    end
+
+    // Piling read requests =====================================================================
 
     $display("%t > INFO: End simulation",$time);
     repeat(20) @(posedge clk_control);
@@ -921,7 +966,6 @@ module tb_multi_hpu_dma;
     logic [REG_DATA_W-1:00] read_req_id;
     logic [REG_DATA_W-1:00] read_req_addr;
     begin
-      $display("\n[INFO] Sending a Notify request from HPU-%0x to HPU-%0x", src_node_id, dst_node_id);
 
       read_req_addr = {16'b0, src_addr}; //TODO
       read_req_id = {iop_id, REQ_ID_NOTIFY_TX, dst_node_id, req_size_b};
