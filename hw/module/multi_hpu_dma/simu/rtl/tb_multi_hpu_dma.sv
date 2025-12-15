@@ -573,6 +573,12 @@ module tb_multi_hpu_dma;
   logic [SRC_ADDR_W-1:0] iop_src_addr;
   logic [DST_ADDR_W-1:0] iop_dst_addr;
 
+  // for checking memories from several read requests at once
+  logic [SRC_ADDR_W-1:0] rr_src_addr_ref_q[$];
+  logic [DST_ADDR_W-1:0] rr_dst_addr_ref_q[$];
+  logic [SRC_ADDR_W-1:0] exp_src_addr;
+  logic [DST_ADDR_W-1:0] exp_dst_addr;
+
   // for checking
   logic [  REG_DATA_W-1:0] notify_payload;
   logic [  REG_DATA_W-1:0] expected_notify_payload;
@@ -615,11 +621,12 @@ module tb_multi_hpu_dma;
      *  -------------------------------------------------------------------------------------------
      * > we must see that the ciphertext moved from memory X to Y
      *  ===========================================================================================
-     * - Piling requests:
+     * - Piling Notify requests:
      *                > X Notifies to Y that several ciphertexts are ready
-     *                > Y then reads all ciphertexts
      *  -------------------------------------------------------------------------------------------
-     * > all ciphertexts must have moved from memory X to Y
+     * - Piling Read requests:
+     *                > X sends read requests to Y
+     * > we must see that the ciphertext moved from memory X to Y for each of the read requests
      *  ===========================================================================================
      * - Notfiy timeout
      *                > X Notifies to Y that a ciphertexts is ready
@@ -754,18 +761,19 @@ module tb_multi_hpu_dma;
 
     // Piling read requests =====================================================================
     arbitrary_read_req_nb = XPM_MIN_FIFO_DEPTH;
-    $display("\nD - read request from one HPU to another, x %0d times", arbitrary_notify_nb);
+    $display("\nD - read request from one HPU to another, x %0d times", arbitrary_read_req_nb);
 
     for (int i = 0; i < arbitrary_read_req_nb; i ++) begin
-      iop_id       = i;//$urandom();
-      iop_src_addr = 0;//$urandom_range(0, 1<<SRC_ADDR_W);
-      iop_dst_addr = 0;//$urandom_range(0, 1<<DST_ADDR_W);
+      iop_id       = $urandom();
+      iop_src_addr = $urandom_range(0, 1<<SRC_ADDR_W);
+      iop_dst_addr = $urandom_range(0, 1<<DST_ADDR_W);
       read_request(random_hpu_b, iop_id, iop_src_addr, iop_dst_addr);
 
       rr_payload = {iop_dst_addr, 4'b0, random_hpu_b, iop_id};
       rr_payload_ref_q.push_front(rr_payload);
-      // TODO: toreview if we send a read request before we did actually the read request we loose data
-      wait (hpu_a.mhdma_bridge.mhdma_master.itr_read_request == 1'b1);
+      rr_src_addr_ref_q.push_front(iop_src_addr);
+      rr_dst_addr_ref_q.push_front(iop_dst_addr);
+
     end
 
     for (int i = 0; i < arbitrary_read_req_nb; i++) begin
@@ -781,9 +789,14 @@ module tb_multi_hpu_dma;
         $display("%t > [ERROR]: iop_id        = %x ", $time, iop_id);
         error_notify_rx = 1'b1;
       end
+
+      exp_src_addr = rr_src_addr_ref_q.pop_back();
+      exp_dst_addr = rr_dst_addr_ref_q.pop_back();
+
+      check_memories(iop_src_addr, iop_dst_addr);
     end
 
-    $display("%t > INFO : All %0d read request have been sent \n",$time, arbitrary_read_req_nb);
+    $display("%t > INFO : All %0d read request have been sent  and memory models checked\n",$time, arbitrary_read_req_nb);
 
     $display("%t > INFO: End simulation",$time);
     repeat(20) @(posedge clk_control);
@@ -802,26 +815,20 @@ module tb_multi_hpu_dma;
           automatic logic [255:0] value = '0;
           for (int j = 0; j < 4; ++j) begin
             logic [63:0] w;
-            w[63:62] = 0;
-            w[61:60] = 0;//gen_pc;
-            w[59:46] = 'h0;
-            w[47:40] = 0;//k;
-            w[39:32] = 'h0;
-            w[31:0] = val_id;
+            // for debugging:
+            // w[63:32] = 'h0;
+            // w[31:0] = val_id;
+            w[63:32] = $urandom();
+            w[31:0] = $urandom();
             value |= (w << (j*64));
             val_id++;
           end
-          // TODO: why this don't work?
-          // gen_mem_hpu[gen_hpu].gen_mem_pc[gen_pc].axi4_mem_ct.axi4_ram_ct_wr.mem[k] = value;
+          // TODO / TOREVIEW: Limitiation on dynamical definitions :/
           gen_mem_hpu[1].gen_mem_pc[0].axi4_mem_ct.axi4_ram_ct_wr.mem[k] = value;
           gen_mem_hpu[1].gen_mem_pc[1].axi4_mem_ct.axi4_ram_ct_wr.mem[k] = value;
+          gen_mem_hpu[0].gen_mem_pc[0].axi4_mem_ct.axi4_ram_ct_wr.mem[k] = !value;
+          gen_mem_hpu[0].gen_mem_pc[1].axi4_mem_ct.axi4_ram_ct_wr.mem[k] = !value;
         end
-      end
-      for (int gen_pc = 0; gen_pc < ETH_PC; ++gen_pc) begin
-        for (int k = 0; k < 2**MEM_SIM_SIZE; ++k) begin
-          gen_mem_hpu[0].gen_mem_pc[0].axi4_mem_ct.axi4_ram_ct_wr.mem[k] = 'h0;
-          gen_mem_hpu[0].gen_mem_pc[1].axi4_mem_ct.axi4_ram_ct_wr.mem[k] = 'h0;
-      end
       end
     // end
   end
@@ -841,7 +848,7 @@ module tb_multi_hpu_dma;
       end
 
     // ASSIGN REGISTERS & CHECK -------------------------------------------------------------------
-    line_rate     = 8'hAB;  // random, no idea what it should be
+    line_rate     = 8'hAB;  // arbitary: in reality should be 0
     line_loopback = 3'b100; // 3 near end pcs loopback
     line_select   = 2'b10;  // 2nd line selected
     debug_flag    = 1'b0;
@@ -898,7 +905,7 @@ module tb_multi_hpu_dma;
     // keeping default value
 
     // Setting up credible values -------------------------------------------------------------
-    // no loopback, no reset, not in debug lane0 selected
+    // no loopback, no reset, not in debug & lane0 selected
     line_rate     = 8'h0;
     line_loopback = 3'b000;
     line_select   = 2'b00;

@@ -151,7 +151,14 @@ module mhdma_master
   );
 
   assign new_read_request_pending = rrqq_out_vld;
-  assign rrqq_out_rdy = read_request_allowed;
+
+  logic read_request_allowed_reg;
+
+  always_ff @(posedge clk_mrmac)
+    read_request_allowed_reg <= read_request_allowed;
+
+  // ready is valid only when we see a rising edge on an allowed read request.
+  assign rrqq_out_rdy = read_request_allowed & ~read_request_allowed_reg;
 
   // current read request, sampled when valid is toggled
   logic [DST_ADDR_W-1:0] rrqq_dst_addr;
@@ -160,9 +167,10 @@ module mhdma_master
   logic [  REQ_ID_W-1:0] rrqq_req_id;
   logic [  IOP_ID_W-1:0] rrqq_iop_id;
   logic [  HPU_ID_W-1:0] rrqq_hpu_id;
+  logic                  rrqq_vld;
 
   always_ff @(posedge clk_mrmac) begin : read_request_sampling
-    if (rrqq_out_vld) begin
+    if (rrqq_out_rdy & rrqq_out_vld) begin
       rrqq_src_addr <= rrqq_out_data[CMD_SRC_ADDR_OFS-1:0];
       rrqq_dst_addr <= rrqq_out_data[CMD_DST_ADDR_OFS-1:CMD_SRC_ADDR_OFS];
       rrqq_size_b   <= rrqq_out_data[CMD_SIZE_B_OFS-1:CMD_DST_ADDR_OFS];
@@ -172,9 +180,8 @@ module mhdma_master
     end
   end
 
-  logic rrqq_cmd_vld;
   always_ff @(posedge clk_mrmac)
-    rrqq_cmd_vld <= rrqq_out_vld;
+    rrqq_vld <= rrqq_out_rdy & rrqq_out_vld;
 
   // Notify ReQuest Queue (NRQQ) ------------------------------------------------------------------
   // === CFG domain
@@ -268,7 +275,7 @@ module mhdma_master
   assign format_header.hpu_id   = notify_request_allowed ? nrqq_hpu_id   : read_request_allowed ? rrqq_hpu_id   : 'h0;
 
   // valid signal for formatting frames
-  assign format_header.valid    = notify_request_allowed ? nrqq_cmd_vld : read_request_allowed ? rrqq_cmd_vld : 1'b0;
+  assign format_header.valid    = notify_request_allowed ? nrqq_cmd_vld : read_request_allowed ? rrqq_vld : 1'b0;
 
   // ----------------------------------------------------------------------------------------------
   // when we have the data of both request identifier and addresses, we consume the information

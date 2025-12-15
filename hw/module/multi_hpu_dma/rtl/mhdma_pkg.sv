@@ -89,6 +89,7 @@ package mhdma_pkg;
   // fifo specific parameters
   // =========================================================================================== //
   // minimal depth for 64 using XPM fifo is 16
+  // LIMITATION: XPM_MIN_FIFO_DEPTH is the max number of command that can be sent before processed (RR & Notify)
   localparam int XPM_MIN_FIFO_DEPTH    = 16;
 
   // = Commands
@@ -114,7 +115,7 @@ package mhdma_pkg;
 
   // read request command queue: URAM fifo
   localparam int RREQ_CMD_DATA_W       = HPU_ID_W+IOP_ID_W+SRC_ADDR_W+DST_ADDR_W;
-  localparam int RREQ_CMD_DEPTH        = 16;
+  localparam int RREQ_CMD_DEPTH        = XPM_MIN_FIFO_DEPTH;
   localparam int RREQ_CMD_RAM_LATENCY  = 1;
   localparam int RQQ_CMD_DATA_COUNT_W  =  $clog2(RREQ_CMD_DEPTH)+1;
 

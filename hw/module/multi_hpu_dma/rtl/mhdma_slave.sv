@@ -223,6 +223,16 @@ module mhdma_slave
     endcase
   end
 
+  // for consuming data into read-request command queue we need to know when there is a start of ce
+  logic ct_emission_allowed_reg;
+  logic start_of_ct_emission;
+
+  always_ff @(posedge clk_mrmac)
+    ct_emission_allowed_reg <= ct_emission_allowed;
+
+  assign start_of_ct_emission = ct_emission_allowed & ~ct_emission_allowed_reg;
+
+  // in use signal is simply a guardrail for control
   assign ct_emission_request_in_use = (cem_state == CEM_READ_N_SEND) ? 1'b1: 1'b0;
 
   // sending command to read request command queue ------------------------------------------------
@@ -234,16 +244,16 @@ module mhdma_slave
   //    > SRC ADDR
   // RREQ_CMD_DATA_W is defined in the package
 
-  logic [RREQ_CMD_DATA_W-1:0] rreq_cmd_data_in;
-  logic [RREQ_CMD_DATA_W-1:0] rreq_cmd_out_data;
-  logic                       rreq_cmd_ready; // ~full
-  logic                       rreq_cmd_we;
-  logic                       rreq_cmd_out_valid;
-  logic                       rreq_cmd_out_ready;
+  logic [RREQ_CMD_DATA_W-1:0] rreq_cmd_in_data;
+  logic                       rreq_cmd_in_vld;
+  logic                       rreq_cmd_in_rdy; // ~full
 
-  assign rreq_cmd_data_in = {decoded_header.hpu_id, decoded_header.iop_id, decoded_header.dst_addr, decoded_header.src_addr};
-  assign rreq_cmd_we = rreq_cmd_ready & read_request_received; //TODO: add when payload is ready
-  assign rreq_cmd_out_ready = ct_emission_request_in_use;
+  logic [RREQ_CMD_DATA_W-1:0] rreq_cmd_out_data;
+  logic                       rreq_cmd_out_vld;
+  logic                       rreq_cmd_out_rdy;
+
+  assign rreq_cmd_in_data = {decoded_header.hpu_id, decoded_header.iop_id, decoded_header.dst_addr, decoded_header.src_addr};
+  assign rreq_cmd_in_vld = rreq_cmd_in_rdy & read_request_received; //TODO: add when payload is ready
 
   fifo_ram_rdy_vld # (
     .WIDTH      (RREQ_CMD_DATA_W),
@@ -253,27 +263,31 @@ module mhdma_slave
     .clk    (clk_mrmac),
     .s_rst_n(resetn_mrmac),
 
-    .in_data(rreq_cmd_data_in),
-    .in_vld (rreq_cmd_we),
-    .in_rdy (rreq_cmd_ready),
+    .in_data(rreq_cmd_in_data),
+    .in_vld (rreq_cmd_in_vld),
+    .in_rdy (rreq_cmd_in_rdy),
 
     .out_data(rreq_cmd_out_data),
-    .out_vld (rreq_cmd_out_valid),
-    .out_rdy (rreq_cmd_out_ready)
+    .out_vld (rreq_cmd_out_vld),
+    .out_rdy (rreq_cmd_out_rdy)
   );
+
+  assign rreq_cmd_out_rdy = start_of_ct_emission;
 
   logic [RQQ_CMD_DATA_COUNT_W-1:0] rreq_cnt;
   logic                            rreq_cnt_down;
+  logic                            rreq_cnt_up;
 
-  assign rreq_cnt_down = rreq_cmd_out_valid & rreq_cmd_out_ready;
+  assign rreq_cnt_down = rreq_cmd_out_vld & rreq_cmd_out_rdy;
+  assign rreq_cnt_up   = rreq_cmd_in_vld & rreq_cmd_in_rdy;
 
   always_ff @(posedge clk_mrmac) begin
     if (~resetn_mrmac) begin
       rreq_cnt <= 'h0;
     end else begin
-      if (rreq_cmd_we & ~rreq_cnt_down) begin
+      if (rreq_cnt_up & ~rreq_cnt_down) begin
         rreq_cnt <= rreq_cnt + 1;
-      end else if (rreq_cnt_down & ~rreq_cmd_we) begin
+      end else if (rreq_cnt_down & ~rreq_cnt_up) begin
         rreq_cnt <= rreq_cnt - 1;
       end
     end
@@ -281,7 +295,7 @@ module mhdma_slave
   assign new_ct_emission_request_pending = (rreq_cnt != 0) ? 1'b1 : 1'b0;
 
   logic error_rreq_cmd_full_packet_drop;
-  // assign error_rreq_cmd_full_packet_drop = qsfp_rx_tlast & ~rreq_cmd_ready;
+  // assign error_rreq_cmd_full_packet_drop = qsfp_rx_tlast & ~rreq_cmd_in_rdy;
 
   // =========================================================================================== //
   // Read into HBM
@@ -299,20 +313,20 @@ module mhdma_slave
 
 
   always_ff @(posedge clk_mrmac)
-    if (rreq_cmd_out_valid & rreq_cmd_out_ready)
+    if (rreq_cmd_out_vld & rreq_cmd_out_rdy)
       read_request_cmd <= rreq_cmd_out_data;
 
   assign rr_hpu_id      = read_request_cmd[RR_HPU_ID_OFS-1:RR_IOP_ID_OFS];
   assign rr_iop_id      = read_request_cmd[RR_IOP_ID_OFS-1:RR_DST_ID_OFS];
   assign rr_ct_dst_addr = read_request_cmd[RR_DST_ID_OFS-1:RR_SRC_ID_OFS];
-  assign rr_ct_src_addr = (rreq_cmd_out_valid & rreq_cmd_out_ready) ? rreq_cmd_out_data[RR_SRC_ID_OFS-1:0] : 0;
+  assign rr_ct_src_addr = (rreq_cmd_out_vld & rreq_cmd_out_rdy) ? rreq_cmd_out_data[RR_SRC_ID_OFS-1:0] : 0;
 
   // phys_addr = hbm_pc_offset + ctId * ciphertext_size
   logic [ETH_PC-1:0] [AXI4_ADD_W-1:0] phy_addr;
   generate
     for (genvar gen_p=0; gen_p<ETH_PC; gen_p=gen_p+1)
       always_ff @(posedge clk_mrmac)
-          if (rreq_cmd_out_valid & rreq_cmd_out_ready)
+          if (rreq_cmd_out_vld & rreq_cmd_out_rdy)
             phy_addr[gen_p] <= regf_ct_mem_addr[gen_p] + (rr_ct_src_addr << PC_STRIDE);
   endgenerate
 
@@ -321,7 +335,7 @@ module mhdma_slave
   logic rreq_ready;
   logic rreq_ready_tmp;
   always_ff @(posedge clk_mrmac)
-    rreq_ready <= rreq_cmd_out_valid & rreq_cmd_out_ready;
+    rreq_ready <= rreq_cmd_out_vld & rreq_cmd_out_rdy;
   always_ff @(posedge clk_mrmac)
     rreq_ready_tmp <= rreq_ready;
 
