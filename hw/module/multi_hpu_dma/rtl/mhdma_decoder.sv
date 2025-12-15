@@ -104,7 +104,6 @@ module mhdma_decoder
       end
   end
 
-
   // FRAME 2 ------------------------------------------------------------------
   // req_id, hpu_id, sec_num, src_addr, dst_addr and iop_id
   always_ff @(posedge clk_mrmac) begin

@@ -203,7 +203,8 @@ module mhdma_bridge
 
   // Slave payload and header for ciphertext emission
   logic [NRX_WIDTH-1:0]     nrx_cmd_payload;
-  logic                     nrx_valid;
+  logic                     nrx_cmd_valid;
+
   logic                     notify_ack_sent;
   logic [    CEH_WIDTH-1:0] ce_header_payload;
   logic [ MRMAC_AXIS_W-1:0] ce_payload;
@@ -302,7 +303,7 @@ module mhdma_bridge
     .ct_emission_finished           (ct_emission_all_packets_received         ),
     // notify ack payload -----------------------------------------------------
     .nrx_cmd_payload                (nrx_cmd_payload                          ),
-    .nrx_valid                      (nrx_valid                                ),
+    .nrx_cmd_valid                  (nrx_cmd_valid                            ),
     .notify_ack_sent                (notify_ack_sent                          ),
     .ce_header_payload              (ce_header_payload                        ),
     .ce_payload                     (ce_payload                               ),
@@ -372,7 +373,7 @@ module mhdma_bridge
     .format_header                   (format_header                           ),
     // slave interface --------------------------------------------------------
     .nrx_cmd_payload                 (nrx_cmd_payload                         ),
-    .nrx_valid                       (nrx_valid                               ),
+    .nrx_cmd_valid                   (nrx_cmd_valid                           ),
     .notify_ack_sent                 (notify_ack_sent                         ),
     .ce_header_payload               (ce_header_payload                       ),
     .ce_payload                      (ce_payload                              ),

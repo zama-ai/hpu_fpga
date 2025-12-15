@@ -47,8 +47,10 @@ module mhdma_slave
   input  logic                                ct_emission_finished,
   // format interface ---------------------------------------------------------
   output logic             [   NRX_WIDTH-1:0] nrx_cmd_payload,
-  output logic                                nrx_valid,
+  output logic                                nrx_cmd_valid,
+
   input  logic                                notify_ack_sent,
+
   output logic             [   CEH_WIDTH-1:0] ce_header_payload,
   output logic             [MRMAC_AXIS_W-1:0] ce_payload,
   output logic                                ce_valid,
@@ -107,18 +109,23 @@ module mhdma_slave
 
   assign new_notify_ack_pending =  (nrx_state == NTX_TRANSMIT_ACK) ? 1'b1 : 1'b0;
 
-  // Notify command queue -----------------------------------------------------
+  // Notify RX command queue --------------------------------------------------
   logic                 nrx_cmd_in_vld;
   logic                 nrx_cmd_in_rdy;
-  logic [NRX_WIDTH-1:0] nrx_cmd_data;
-  logic                 nrx_cmd_vld;
-  logic                 nrx_cmd_rdy;
-  logic                 fifo_2clk_rdy;
 
   assign nrx_cmd_in_vld = (nrx_state == NTX_TRANSMIT_ACK) & decoded_header.valid & nrx_cmd_in_rdy;
 
-  // in order to not lose any commands if we receive several notify
-  // nrx_cmd_data is redirected as well to notify ack and to regif interface via 2clk fifo
+  // erreur notify lost
+
+  logic [NRX_WIDTH-1:0] nrx_cmd_out_data;
+  logic                 nrx_cmd_out_vld;
+  logic                 nrx_cmd_out_rdy;
+
+  // nrx_cmd valid and payload are propagated to regif as well as formatter module for sending ack
+  assign nrx_cmd_payload = nrx_cmd_out_data;
+  assign nrx_cmd_valid   = nrx_cmd_out_vld;
+
+  // command fifo for notify RX, received from decoder
   fifo_ram_rdy_vld # (
     .WIDTH      (NRX_WIDTH),
     .DEPTH      (NRX_DEPTH),
@@ -131,40 +138,34 @@ module mhdma_slave
     .in_vld (nrx_cmd_in_vld),
     .in_rdy (nrx_cmd_in_rdy),
 
-    .out_data(nrx_cmd_data),
-    .out_vld (nrx_cmd_vld),
-    .out_rdy (nrx_cmd_rdy)
+    .out_data(nrx_cmd_out_data),
+    .out_vld (nrx_cmd_out_vld),
+    .out_rdy (nrx_cmd_out_rdy)
   );
 
-  logic notify_ack_allowed_tmp;
-  logic notify_ack_front_edge;
-  always_ff @(posedge clk_mrmac)
-    notify_ack_allowed_tmp <= notify_ack_allowed;
-
-  assign notify_ack_front_edge = notify_ack_allowed & ~ notify_ack_allowed_tmp;
-
-  // backpressure from both 2clk fifo and nack
-  assign nrx_cmd_rdy = fifo_2clk_rdy & notify_ack_front_edge;
-
-  // signals that will be propagated to format module for ack
-  assign nrx_cmd_payload = nrx_cmd_vld ? nrx_cmd_data : 'h0;
-  assign nrx_valid       = nrx_cmd_vld & nrx_cmd_rdy;
-
-  // regfile interface --------------------------------------------------------
+  // Notify RX regfile interface --------------------------------------------------------
   // === MRMAC domain
-  logic [SRC_ADDR_W-1:0]     nrx_ct_src_addr;
-  logic [HPU_ID_W-1:0]       nrx_hpu_id;
-  logic [IOP_ID_W-1:0]       nrx_iop_id;
-  logic [NRX_REGF_WIDTH-1:0] nrxq_in_data;
+  logic [NRX_REGF_WIDTH-1:0] nrx_regf_in_data;
+  logic                      nrx_regf_in_rdy;
+  logic                      nrx_regf_in_vld;
+
+  // re-organization for regif interface
+  logic [SRC_ADDR_W-1:0] nrx_ct_src_addr;
+  logic [HPU_ID_W-1:0]   nrx_hpu_id;
+  logic [IOP_ID_W-1:0]   nrx_iop_id;
+
+  assign nrx_ct_src_addr  = nrx_cmd_payload[NRX_SRC_ADDR_OFS-1:NRX_HPU_ID_OFS];
+  assign nrx_hpu_id       = nrx_cmd_payload[NRX_HPU_ID_OFS-1:NRX_IOP_ID_OFS];
+  assign nrx_iop_id       = nrx_cmd_payload[NRX_IOP_ID_OFS-1:0];
+
+  assign nrx_regf_in_data = {nrx_ct_src_addr, 4'b0, nrx_hpu_id, nrx_iop_id};
+  assign nrx_regf_in_vld  = nrx_cmd_valid & nrx_cmd_out_rdy;
+  assign nrx_cmd_out_rdy  = nrx_regf_in_rdy & notify_ack_sent;
+
   // === CFG domain
-  logic                      nrqq_out_vld;
-  logic                      nrqq_out_rdy;
-
-  assign nrx_ct_src_addr = nrx_cmd_data[NRX_SRC_ADDR_OFS-1:NRX_HPU_ID_OFS];
-  assign nrx_hpu_id      = nrx_cmd_data[NRX_HPU_ID_OFS-1:NRX_IOP_ID_OFS];
-  assign nrx_iop_id      = nrx_cmd_data[NRX_IOP_ID_OFS-1:0];
-
-  assign nrxq_in_data = {nrx_ct_src_addr, 4'b0, nrx_hpu_id, nrx_iop_id};
+  logic [REG_DATA_W-1:0] nrx_regf_out_data;
+  logic                  nrx_regf_out_rdy;
+  logic                  nrx_regf_out_vld;
 
   // this fifo transforms rx commands into a 32 bit readable word for regfile
   fifo_ram_rdy_vld_2clk # (
@@ -173,23 +174,26 @@ module mhdma_slave
     .WIDTH           (NRX_REGF_WIDTH),
     .DEPTH           (XPM_MIN_FIFO_DEPTH),
     .FIFO_MEMORY_TYPE(NRX_REGF_MEMORY_TYPE)
-  ) nrx_fifo_ram_rdy_vld_2clk (
+  ) fifo_nrx_regf (
     // Write Domain ports: MRMAC domain
     .in_clk   (clk_mrmac),
     .in_rstn  (resetn_mrmac),
-    .in_data  (nrxq_in_data),
-    .in_rdy   (fifo_2clk_rdy),
-    .in_vld   (nrx_valid),
+    .in_data  (nrx_regf_in_data),
+    .in_rdy   (nrx_regf_in_rdy),
+    .in_vld   (nrx_regf_in_vld),
     // Read Domain ports: CFG domain
     .out_clk  (clk_cfg),
     .out_rstn (resetn_cfg),
-    .out_data (regf_notify_payload),
-    .out_rdy  (nrqq_out_rdy),
-    .out_vld  (nrqq_out_vld)
+    .out_data (nrx_regf_out_data),
+    .out_rdy  (nrx_regf_out_rdy),
+    .out_vld  (nrx_regf_out_vld)
   );
 
-  assign interrupt_notify = nrqq_out_vld;
-  assign nrqq_out_rdy = interrupt_notify & clear_interrupt_notify;
+  assign nrx_regf_out_rdy = interrupt_notify & clear_interrupt_notify;
+
+  // directly to regif interface
+  assign regf_notify_payload = nrx_regf_out_data;
+  assign interrupt_notify = nrx_regf_out_vld;
 
   // ==============================================================================================
   // Ciphertext EMission (CEM)

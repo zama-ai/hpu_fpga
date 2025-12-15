@@ -32,7 +32,7 @@ module mhdma_formatter
   input  header_t                                   format_header,
   // slave interface ----------------------------------------------------------
   input  logic                 [     NRX_WIDTH-1:0] nrx_cmd_payload,
-  input  logic                                      nrx_valid,
+  input  logic                                      nrx_cmd_valid,
   output logic                                      notify_ack_sent,
   input  logic                 [     CEH_WIDTH-1:0] ce_header_payload,
   input  logic                 [  MRMAC_AXIS_W-1:0] ce_payload,
@@ -246,7 +246,7 @@ module mhdma_formatter
 
   // TODO: test several notify
   always_ff @(posedge clk_mrmac) begin
-    if (nrx_valid) begin
+    if (nrx_cmd_valid) begin
       nack_src_addr <= nrx_cmd_payload[NRX_SRC_ADDR_OFS-1:NRX_HPU_ID_OFS];
       nack_hpu_id   <= nrx_cmd_payload[NRX_HPU_ID_OFS-1:NRX_IOP_ID_OFS];
       nack_iop_id   <= nrx_cmd_payload[NRX_IOP_ID_OFS-1:0];
@@ -266,7 +266,7 @@ module mhdma_formatter
   assign ce_last_packet = ct_emission_allowed & (ce_seq_num == NB_PACKETS_FULL);
 
   // we have to trigger signal one cycle earlier to have sending_request on time
-  assign stop_sending_small_frame      = small_frame && (tx_cnt == NB_WORDS_SMALL_PACKETS-1);
+  assign stop_sending_small_frame      = small_frame && (tx_cnt == NB_WORDS_MIN);
   assign stop_sending_ce_full_frame    = ct_emission_allowed && (tx_cnt == NB_WORDS_CUST_HEADER_SIZE+NB_WORDS_PAYLOAD-1);
   assign stop_sending_ce_partial_frame = ce_last_packet && (tx_cnt == (NB_WORDS_LAST_PACKET+NB_WORDS_CUST_HEADER_SIZE-1));
 
@@ -486,7 +486,14 @@ module mhdma_formatter
   assign read_request_allowed   = (tx_state == ST_READ_REQ)    ? 1'b1 : 1'b0;
   assign notify_request_allowed = (tx_state == ST_NOTIFY)      ? 1'b1 : 1'b0;
 
-  assign header_sop = master_request ? format_header.valid : notify_ack_allowed ? nrx_valid : ct_emission_allowed ? ce_start_of_header : 1'b0;
+  logic notify_ack_allowed_reg;
+  logic notify_ack_pulse;
+  always_ff @(posedge clk_mrmac)
+    notify_ack_allowed_reg <= notify_ack_allowed;
+
+  assign notify_ack_pulse = notify_ack_allowed & ~notify_ack_allowed_reg;
+
+  assign header_sop = master_request ? format_header.valid : notify_ack_allowed ? notify_ack_pulse : ct_emission_allowed ? ce_start_of_header : 1'b0;
 
   assign notify_ack_sent = tx_small_last && (tx_state == ST_NACK);
 
