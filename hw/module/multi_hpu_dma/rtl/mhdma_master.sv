@@ -881,11 +881,18 @@ module mhdma_master
   assign ct_emission_all_packets_received = itr_read_request;
 
   // regf payload information ---------------------------------------------------------------------
-  logic [REG_DATA_W-1:0] rr_in_data;
-  logic                  rr_out_vld;
-  logic                  rr_out_rdy;
+  logic [REG_DATA_W-1:0] rr_regf_in_data;
+  logic                  rr_regf_in_rdy;
+  logic                  rr_regf_in_vld;
 
-  assign rr_in_data = {received_dst_addr, 4'b0, received_hpu_id, received_iop_id};
+  logic [REG_DATA_W-1:0] rr_regf_out_data;
+  logic                  rr_regf_out_vld;
+  logic                  rr_regf_out_rdy;
+
+  // rr_regf_in_rdy there is no back pressurew
+  assign rr_regf_in_data = {received_dst_addr, 4'b0, received_hpu_id, received_iop_id};
+
+  assign rr_regf_in_vld =itr_read_request;
 
   fifo_ram_rdy_vld_2clk # (
     .CDC_SYNC_STAGES (CDC_SYNC_STAGES),
@@ -897,18 +904,20 @@ module mhdma_master
     // Write Domain ports: MRMAC domain
     .in_clk   (clk_mrmac),
     .in_rstn  (resetn_mrmac),
-    .in_data  (rr_in_data),
-    .in_rdy   (/* UNUSED */),
-    .in_vld   (itr_read_request),
+    .in_data  (rr_regf_in_data),
+    .in_rdy   (rr_regf_in_rdy),
+    .in_vld   (rr_regf_in_vld),
     // Read Domain ports: CFG domain
     .out_clk  (clk_cfg),
     .out_rstn (resetn_cfg),
-    .out_data (regf_read_payload),
-    .out_rdy  (rr_out_rdy),
-    .out_vld  (rr_out_vld)
+    .out_data (rr_regf_out_data),
+    .out_rdy  (rr_regf_out_rdy),
+    .out_vld  (rr_regf_out_vld)
   );
 
-  assign interrupt_read_request = rr_out_vld;
-  assign rr_out_rdy = interrupt_read_request & clear_interrupt_rr;
+  assign rr_regf_out_rdy = interrupt_read_request & clear_interrupt_rr;
+
+  assign regf_read_payload = rr_regf_out_data;
+  assign interrupt_read_request = rr_regf_out_vld;
 
 endmodule

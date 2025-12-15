@@ -159,7 +159,7 @@ module mhdma_slave
   assign nrx_iop_id       = nrx_cmd_payload[NRX_IOP_ID_OFS-1:0];
 
   assign nrx_regf_in_data = {nrx_ct_src_addr, 4'b0, nrx_hpu_id, nrx_iop_id};
-  assign nrx_regf_in_vld  = nrx_cmd_valid & nrx_cmd_out_rdy;
+  assign nrx_regf_in_vld  = nrx_cmd_out_vld & nrx_cmd_out_rdy;
   assign nrx_cmd_out_rdy  = nrx_regf_in_rdy & notify_ack_sent;
 
   // === CFG domain

@@ -180,7 +180,6 @@ module tb_multi_hpu_dma;
   // TODO: for now always ready
   assign sim_qsfp_tx_tready = 4'b1111;
 
-
   // AXI4 to HBM: HPUA ----------------------------------------------------------------------------
   // Read channel
   logic [ETH_PC-1:0][   AXI4_ID_W-1:0]    hpu_a_axi4_arid;
@@ -575,9 +574,13 @@ module tb_multi_hpu_dma;
   logic [DST_ADDR_W-1:0] iop_dst_addr;
 
   // for checking
-  logic [REG_DATA_W-1:0] notify_payload;
-  logic [REG_DATA_W-1:0] expected_notify_payload;
+  logic [  REG_DATA_W-1:0] notify_payload;
+  logic [  REG_DATA_W-1:0] expected_notify_payload;
   logic [MRMAC_AXIS_W-1:0] notify_payload_ref_q[$];
+
+  logic [  REG_DATA_W-1:0] rr_payload;
+  logic [  REG_DATA_W-1:0] rr_payload_expected;
+  logic [MRMAC_AXIS_W-1:0] rr_payload_ref_q[$];
 
   // Fixed for now, might evolve later
   logic [SIZE_B_W-1:0] req_size_b;
@@ -590,8 +593,9 @@ module tb_multi_hpu_dma;
 
   logic [31:0] regf_start_addr_ofs;
 
-
   int arbitrary_notify_nb;
+  int arbitrary_read_req_nb;
+
   // scenario -------------------------------------------------------------------------------------
   initial begin
     maxil_drv_if_hpu_a.init();
@@ -706,7 +710,7 @@ module tb_multi_hpu_dma;
     end
 
     // Piling notify requests =====================================================================
-    arbitrary_notify_nb = 15;
+    arbitrary_notify_nb = XPM_MIN_FIFO_DEPTH; // if we have a full fifo on fifo_nrx_regf, we will lose notifies
     $display("\nC - Notification that a ciphertext is ready from one HPU to another, x %0d", arbitrary_notify_nb);
 
     for (int i = 0; i < arbitrary_notify_nb; i++) begin
@@ -724,7 +728,7 @@ module tb_multi_hpu_dma;
       notify_payload_ref_q.push_front(notify_payload);
     end
 
-    $display("%t > INFO : All %0d Notify have been sent from B to A \n",$time, arbitrary_notify_nb);
+    $display("%t > INFO : All %0d Notify have been sent from B to A \n", $time, arbitrary_notify_nb);
 
     for (int i = 0; i < arbitrary_notify_nb; i++) begin
 
@@ -743,14 +747,43 @@ module tb_multi_hpu_dma;
     end
 
     @(posedge clk_control);
-    if (hpu_a.interrupt_notify == 1'b0) begin
-      $display("%t > INFO: Interrupt on HPU_A has been lowered\n",$time);
-    end else begin
+    if (hpu_a.interrupt_notify == 1'b1) begin
       $display("%t > [ERROR]: Interrupt on HPU_A has not been lowered\n",$time);
       error_interrupt_notify = 1'b1;
     end
 
     // Piling read requests =====================================================================
+    arbitrary_read_req_nb = XPM_MIN_FIFO_DEPTH;
+    $display("\nD - read request from one HPU to another, x %0d times", arbitrary_notify_nb);
+
+    for (int i = 0; i < arbitrary_read_req_nb; i ++) begin
+      iop_id       = i;//$urandom();
+      iop_src_addr = 0;//$urandom_range(0, 1<<SRC_ADDR_W);
+      iop_dst_addr = 0;//$urandom_range(0, 1<<DST_ADDR_W);
+      read_request(random_hpu_b, iop_id, iop_src_addr, iop_dst_addr);
+
+      rr_payload = {iop_dst_addr, 4'b0, random_hpu_b, iop_id};
+      rr_payload_ref_q.push_front(rr_payload);
+      // TODO: toreview if we send a read request before we did actually the read request we loose data
+      wait (hpu_a.mhdma_bridge.mhdma_master.itr_read_request == 1'b1);
+    end
+
+    for (int i = 0; i < arbitrary_read_req_nb; i++) begin
+      // we must wait for interrupt to be raised before reading
+      wait (hpu_a.interrupt_read_request == 1'b1);
+      maxil_drv_if_hpu_a.read_trans(MHDMA_REQUEST_READ_REQUEST_OFS, read_data);
+      rr_payload_expected = rr_payload_ref_q.pop_back();
+
+      assert (read_data == rr_payload_expected) else begin
+        $display("%t > [ERROR]: Payload DATA incorrect (received %x) =! (exp %x)", $time, read_data, rr_payload_expected);
+        $display("%t > [ERROR]: iop_dst_addr  = %x ", $time, iop_dst_addr);
+        $display("%t > [ERROR]: random_hpu_b  = %x ", $time, random_hpu_b);
+        $display("%t > [ERROR]: iop_id        = %x ", $time, iop_id);
+        error_notify_rx = 1'b1;
+      end
+    end
+
+    $display("%t > INFO : All %0d read request have been sent \n",$time, arbitrary_read_req_nb);
 
     $display("%t > INFO: End simulation",$time);
     repeat(20) @(posedge clk_control);
@@ -940,8 +973,6 @@ module tb_multi_hpu_dma;
     logic [REG_DATA_W-1:00] read_req_id;
     logic [REG_DATA_W-1:00] read_req_addr;
     begin
-      $display("[INFO] Sending a read request from HPU-%0x to HPU-%0x",random_hpu_a ,node_id);
-
       // see package
       read_req_addr = {dest_addr, src_addr};
       read_req_id = {iop_id, REQ_ID_READ, node_id, req_size_b};
