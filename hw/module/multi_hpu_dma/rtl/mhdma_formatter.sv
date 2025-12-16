@@ -145,7 +145,7 @@ module mhdma_formatter
     end else begin
       if (qsfp_tx_tlast) begin
         small_frame <= 1'b0;
-      end else if (master_request | notify_ack_allowed) begin
+      end else if ((read_request_allowed | notify_request_allowed) | notify_ack_allowed) begin
         small_frame <= 1'b1;
       end
     end
@@ -266,7 +266,7 @@ module mhdma_formatter
   assign ce_last_packet = ct_emission_allowed & (ce_seq_num == NB_PACKETS_FULL);
 
   // we have to trigger signal one cycle earlier to have sending_request on time
-  assign stop_sending_small_frame      = small_frame && (tx_cnt == NB_WORDS_MIN);
+  assign stop_sending_small_frame      = small_frame && (tx_cnt == NB_WORDS_MIN-1);
   assign stop_sending_ce_full_frame    = ct_emission_allowed && (tx_cnt == NB_WORDS_CUST_HEADER_SIZE+NB_WORDS_PAYLOAD-1);
   assign stop_sending_ce_partial_frame = ce_last_packet && (tx_cnt == (NB_WORDS_LAST_PACKET+NB_WORDS_CUST_HEADER_SIZE-1));
 
