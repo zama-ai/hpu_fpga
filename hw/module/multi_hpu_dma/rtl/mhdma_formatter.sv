@@ -86,7 +86,7 @@ module mhdma_formatter
   logic [      MRMAC_AXIS_W/8-1:0]   tx_byte_enable;
   logic [      MRMAC_AXIS_W/8-1:0]   tx_byte_enable_d;
   logic [$clog2(MRMAC_AXIS_W/8)-1:0] last_word_bytes;
-  logic                              sending_request;
+  logic                              okay_to_send_request;
 
   // Header cycle by cycle construction ---------------------------------------
   logic [  MAC_ADDR_W-1:0] header_target_hpu_mac_addr;
@@ -128,7 +128,7 @@ module mhdma_formatter
     if (~resetn_mrmac) begin
       tx_byte_enable <= 8'h00;
     end else begin
-      if (sending_request & qsfp_tx_tready) begin
+      if (okay_to_send_request & qsfp_tx_tready) begin
         if ((tx_cnt == 0) | ~small_frame)
           tx_byte_enable <= 8'hFF;
         else if (small_frame && (tx_cnt == (NB_WORDS_MIN-1)) )
@@ -262,22 +262,25 @@ module mhdma_formatter
   logic stop_sending_ce_full_frame;    // ciphertext-emission: when we send ETH_NB_BYTES_PAYLOAD
   logic stop_sending_ce_partial_frame; // ciphertext-emission: when we send LAST_PACKET_BYTE_SIZE
   logic ce_last_packet;
+  logic end_of_frame;
 
   assign ce_last_packet = ct_emission_allowed & (ce_seq_num == NB_PACKETS_FULL);
 
-  // we have to trigger signal one cycle earlier to have sending_request on time
-  assign stop_sending_small_frame      = small_frame && (tx_cnt == NB_WORDS_MIN-1);
-  assign stop_sending_ce_full_frame    = ct_emission_allowed && (tx_cnt == NB_WORDS_CUST_HEADER_SIZE+NB_WORDS_PAYLOAD-1);
-  assign stop_sending_ce_partial_frame = ce_last_packet && (tx_cnt == (NB_WORDS_LAST_PACKET+NB_WORDS_CUST_HEADER_SIZE-1));
+  // we have to trigger signal one cycle earlier to have okay_to_send_request on time
+  assign stop_sending_small_frame      = small_frame && (tx_cnt == NB_WORDS_MIN);
+  assign stop_sending_ce_full_frame    = ct_emission_allowed && (tx_cnt == NB_WORDS_CUST_HEADER_SIZE+NB_WORDS_PAYLOAD);
+  assign stop_sending_ce_partial_frame = ce_last_packet && (tx_cnt == (NB_WORDS_LAST_PACKET+NB_WORDS_CUST_HEADER_SIZE));
+
+  assign end_of_frame = stop_sending_small_frame | stop_sending_ce_full_frame | stop_sending_ce_partial_frame;
 
   always_ff @(posedge clk_mrmac) begin
     if (~resetn_mrmac) begin
-      sending_request <= 1'b0;
+      okay_to_send_request <= 1'b0;
     end else begin
       if (header_sop) begin
-        sending_request <= 1'b1;
-      end else if (stop_sending_small_frame | stop_sending_ce_full_frame | stop_sending_ce_partial_frame) begin
-        sending_request <= 1'b0;
+        okay_to_send_request <= 1'b1;
+      end else if (end_of_frame) begin
+        okay_to_send_request <= 1'b0;
       end
     end
   end
@@ -286,7 +289,7 @@ module mhdma_formatter
     if (~resetn_mrmac) begin
       tx_cnt <= 'h0;
     end else begin
-      if (sending_request & qsfp_tx_tready) begin
+      if (okay_to_send_request & ~end_of_frame & qsfp_tx_tready) begin
         tx_cnt <= tx_cnt+1;
       end else begin
         tx_cnt <= 'h0;
