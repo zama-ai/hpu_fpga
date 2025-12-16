@@ -117,8 +117,9 @@ module tb_multi_hpu_dma;
   bit error_rr_payload;
   bit error_write_missmatch;
   bit error_interrupt_notify;
+  bit error_assert;
 
-  assign error = error_tb_notify | error_register_read | error_notify_rx | error_rr_payload | error_write_missmatch | error_interrupt_notify;
+  assign error = error_tb_notify | error_register_read | error_notify_rx | error_rr_payload | error_write_missmatch | error_interrupt_notify | error_assert;
 
   always_ff @(posedge clk_control)
     if (error) begin
@@ -677,7 +678,7 @@ end
 
     // Classical use-case =========================================================================
     random_iter = $urandom_range(32, 2);
-    $display("\nB - Notification that a ciphertext is ready from one HPU to another, done %0d times", random_iter);
+    $display("\nB - Notification & read request from one HPU to another, done %0d times", random_iter);
 
     for (int i = 0; i < random_iter; i++) begin
       // for now size_b is fixed, all our ciphertext are 16.384kB (size_b=0x4000)
@@ -1099,5 +1100,67 @@ end
         $display("[INFO]: Memory check PASSED: HPU_A and HPU_B contents match");
     end
   endtask
+
+
+  // ============================================================================================== --
+  // SVA
+  // ============================================================================================== --
+  // Assumption: if TX is correct, so is RX
+
+  // After TLAST, not TVALID
+  property no_valid_after_last(int lane);
+    @(posedge clk_mrmac) disable iff (~s_rstn_mrmac)
+    (qsfp_tx_tvalid[lane] && sim_qsfp_tx_tready[lane] && qsfp_tx_tlast[lane]) |=> ~qsfp_tx_tvalid[lane];
+  endproperty
+
+  // TX/RX AXIS valid must stay stable until ready
+  property axis_stable(int lane);
+    @(posedge clk_mrmac) disable iff (!s_rstn_mrmac)
+    (qsfp_tx_tvalid[lane] && ~sim_qsfp_tx_tready[lane]) |=> $stable(qsfp_tx_tvalid[lane]) && $stable(qsfp_tx_tdata[lane]) && $stable(qsfp_tx_tkeep_user[lane]);
+  endproperty
+
+  // TLAST requires TVALID
+  property mrmac_tlast_valid(int lane);
+    @(posedge clk_mrmac) disable iff (~s_rstn_mrmac)
+    qsfp_tx_tlast[lane] |-> qsfp_tx_tvalid[lane];
+  endproperty
+
+  // Minimum Ethernet frame size (64 bytes) on valid frames - MRMAC inserts 4 bytes so we check for 60
+  property mrmac_min_frame_size(int lane);
+    int byte_count;
+    @(posedge clk_mrmac) disable iff (~s_rstn_mrmac)
+    (!$past(qsfp_tx_tvalid[lane]) && qsfp_tx_tvalid[lane], byte_count=0) |->
+      (qsfp_tx_tvalid[lane] && sim_qsfp_tx_tready[lane], byte_count += $countones(qsfp_tx_tkeep_user[lane]))[*1:$] ##0
+      (qsfp_tx_tlast[lane] && (byte_count >= 60));
+  endproperty
+
+  generate
+    for (genvar i = 0; i < 4; i++) begin
+      assert_no_valid_after_last: assert property(no_valid_after_last(i))
+        else begin
+          $error("[ERROR-SVA]: tx_valid still asserted after tx_last");
+          error_assert = 1'b1;
+        end
+
+      assert_tlast_requires_tvalid: assert property(mrmac_tlast_valid(i))
+        else begin
+          $error("[ERROR-SVA]: saw t_last when not valid");
+          error_assert = 1'b1;
+        end
+
+      correct_min_size: assert property(mrmac_min_frame_size(i))
+        else begin
+          $error("[ERROR-SVA]: incorrect minimum size");
+          error_assert = 1'b1;
+        end
+
+      axis_is_stable_when_unconsumed: assert property(axis_stable(i))
+        else begin
+          $error("[ERROR]: Value changed when ready fell");
+          error_assert = 1'b1;
+        end
+
+    end
+  endgenerate
 
 endmodule
