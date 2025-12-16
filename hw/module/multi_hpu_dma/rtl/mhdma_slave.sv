@@ -131,16 +131,18 @@ module mhdma_slave
     .DEPTH      (NRX_DEPTH),
     .RAM_LATENCY(NRX_DATA_COUNT_W)
   ) fifo_nrx_commands (
-    .clk    (clk_mrmac),
-    .s_rst_n(resetn_mrmac),
+    .clk         (clk_mrmac),
+    .s_rst_n     (resetn_mrmac),
 
-    .in_data({decoded_header.src_addr, decoded_header.hpu_id, decoded_header.iop_id}),
-    .in_vld (nrx_cmd_in_vld),
-    .in_rdy (nrx_cmd_in_rdy),
+    .in_data     ({decoded_header.src_addr, decoded_header.hpu_id, decoded_header.iop_id}),
+    .in_vld      (nrx_cmd_in_vld),
+    .in_rdy      (nrx_cmd_in_rdy),
 
-    .out_data(nrx_cmd_out_data),
-    .out_vld (nrx_cmd_out_vld),
-    .out_rdy (nrx_cmd_out_rdy)
+    .out_data    (nrx_cmd_out_data),
+    .out_vld     (nrx_cmd_out_vld),
+    .out_rdy     (nrx_cmd_out_rdy),
+
+    .almost_full (/* UNUSED */)
   );
 
   // Notify RX regfile interface --------------------------------------------------------
@@ -176,17 +178,18 @@ module mhdma_slave
     .FIFO_MEMORY_TYPE(NRX_REGF_MEMORY_TYPE)
   ) fifo_nrx_regf (
     // Write Domain ports: MRMAC domain
-    .in_clk   (clk_mrmac),
-    .in_rstn  (resetn_mrmac),
-    .in_data  (nrx_regf_in_data),
-    .in_rdy   (nrx_regf_in_rdy),
-    .in_vld   (nrx_regf_in_vld),
+    .in_clk      (clk_mrmac),
+    .in_rstn     (resetn_mrmac),
+    .in_data     (nrx_regf_in_data),
+    .in_rdy      (nrx_regf_in_rdy),
+    .in_vld      (nrx_regf_in_vld),
+    .almost_full (/* UNUSED */),
     // Read Domain ports: CFG domain
-    .out_clk  (clk_cfg),
-    .out_rstn (resetn_cfg),
-    .out_data (nrx_regf_out_data),
-    .out_rdy  (nrx_regf_out_rdy),
-    .out_vld  (nrx_regf_out_vld)
+    .out_clk     (clk_cfg),
+    .out_rstn    (resetn_cfg),
+    .out_data    (nrx_regf_out_data),
+    .out_rdy     (nrx_regf_out_rdy),
+    .out_vld     (nrx_regf_out_vld)
   );
 
   assign nrx_regf_out_rdy = interrupt_notify & clear_interrupt_notify;
@@ -260,16 +263,18 @@ module mhdma_slave
     .DEPTH      (RREQ_CMD_DEPTH),
     .RAM_LATENCY(RREQ_CMD_RAM_LATENCY)
   ) rreq_command_queue (
-    .clk    (clk_mrmac),
-    .s_rst_n(resetn_mrmac),
+    .clk         (clk_mrmac),
+    .s_rst_n     (resetn_mrmac),
 
-    .in_data(rreq_cmd_in_data),
-    .in_vld (rreq_cmd_in_vld),
-    .in_rdy (rreq_cmd_in_rdy),
+    .in_data     (rreq_cmd_in_data),
+    .in_vld      (rreq_cmd_in_vld),
+    .in_rdy      (rreq_cmd_in_rdy),
 
-    .out_data(rreq_cmd_out_data),
-    .out_vld (rreq_cmd_out_vld),
-    .out_rdy (rreq_cmd_out_rdy)
+    .out_data    (rreq_cmd_out_data),
+    .out_vld     (rreq_cmd_out_vld),
+    .out_rdy     (rreq_cmd_out_rdy),
+
+    .almost_full (/* UNUSED */)
   );
 
   assign rreq_cmd_out_rdy = start_of_ct_emission;
@@ -429,16 +434,18 @@ module mhdma_slave
         .DEPTH      (FIFO_PC_DEPTH),
         .RAM_LATENCY(FIFO_PC_RAM_LATENCY)
       ) fifo_pc_read (
-        .clk    (clk_mrmac),
-        .s_rst_n(resetn_mrmac),
+        .clk         (clk_mrmac),
+        .s_rst_n     (resetn_mrmac),
 
-        .in_data(m_axi4_rdata[gen_rd]),
-        .in_vld (read_fifo_we),
-        .in_rdy (read_fifo_ready),
+        .in_data     (m_axi4_rdata[gen_rd]),
+        .in_vld      (read_fifo_we),
+        .in_rdy      (read_fifo_ready),
 
-        .out_data(read_fifo_out_data),
-        .out_vld (read_fifo_out_valid),
-        .out_rdy (read_fifo_out_ready)
+        .out_data    (read_fifo_out_data),
+        .out_vld     (read_fifo_out_valid),
+        .out_rdy     (read_fifo_out_ready),
+
+        .almost_full (/* UNUSED */)
       );
 
       // we are going to read 4 times slower the fifo than we are feeding it
@@ -602,16 +609,17 @@ module mhdma_slave
     .DEPTH      (CE_DEPTH),
     .RAM_LATENCY(CE_DATA_COUNT_W)
   ) fifo_ce (
-    .clk    (clk_mrmac),
-    .s_rst_n(resetn_mrmac),
+    .clk         (clk_mrmac),
+    .s_rst_n     (resetn_mrmac),
 
-    .in_data(fifo_ce_in_data),
-    .in_vld (fifo_ce_in_vld),
-    .in_rdy (fifo_ce_in_rdy),
+    .in_data     (fifo_ce_in_data),
+    .in_vld      (fifo_ce_in_vld),
+    .in_rdy      (fifo_ce_in_rdy),
 
-    .out_data(fifo_ce_out_data),
-    .out_vld (fifo_ce_out_vld),
-    .out_rdy (ce_ready)
+    .out_data    (fifo_ce_out_data),
+    .out_vld     (fifo_ce_out_vld),
+    .out_rdy     (ce_ready),
+    .almost_full (/* UNUSED */)
   );
 
   assign ce_valid = fifo_ce_out_vld;

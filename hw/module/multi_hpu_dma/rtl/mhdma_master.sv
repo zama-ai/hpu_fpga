@@ -137,17 +137,18 @@ module mhdma_master
     .FIFO_MEMORY_TYPE(RQQ_MEMORY_TYPE)
   ) rrqq_fifo_ram_rdy_vld_2clk (
     // CFG domain
-    .in_clk   (clk_cfg),
-    .in_rstn  (resetn_cfg),
-    .in_data  (rrqq_in_data),
-    .in_rdy   (rrqq_in_rdy),
-    .in_vld   (rrqq_in_vld),
+    .in_clk      (clk_cfg),
+    .in_rstn     (resetn_cfg),
+    .in_data     (rrqq_in_data),
+    .in_rdy      (rrqq_in_rdy),
+    .in_vld      (rrqq_in_vld),
+    .almost_full (/* UNUSED */),
     // MRMAC domain
-    .out_clk  (clk_mrmac),
-    .out_rstn (resetn_mrmac),
-    .out_data (rrqq_out_data),
-    .out_rdy  (rrqq_out_rdy),
-    .out_vld  (rrqq_out_vld)
+    .out_clk     (clk_mrmac),
+    .out_rstn    (resetn_mrmac),
+    .out_data    (rrqq_out_data),
+    .out_rdy     (rrqq_out_rdy),
+    .out_vld     (rrqq_out_vld)
   );
 
   assign new_read_request_pending = rrqq_out_vld;
@@ -227,17 +228,18 @@ module mhdma_master
     .FIFO_MEMORY_TYPE(NRQQ_MEMORY_TYPE)
   ) nrqq_fifo_ram_rdy_vld_2clk (
     // CFG domain
-    .in_clk   (clk_cfg),
-    .in_rstn  (resetn_cfg),
-    .in_data  (nrqq_in_data),
-    .in_rdy   (nrqq_in_rdy),
-    .in_vld   (nrqq_data_vld),
+    .in_clk      (clk_cfg),
+    .in_rstn     (resetn_cfg),
+    .in_data     (nrqq_in_data),
+    .in_rdy      (nrqq_in_rdy),
+    .in_vld      (nrqq_data_vld),
+    .almost_full (/* UNUSED */),
     //  MRMAC domain
-    .out_clk  (clk_mrmac),
-    .out_rstn (resetn_mrmac),
-    .out_data (nrqq_out_data),
-    .out_rdy  (nrqq_out_rdy),
-    .out_vld  (nrqq_out_vld)
+    .out_clk     (clk_mrmac),
+    .out_rstn    (resetn_mrmac),
+    .out_data    (nrqq_out_data),
+    .out_rdy     (nrqq_out_rdy),
+    .out_vld     (nrqq_out_vld)
   );
 
   assign new_notify_request_pending = nrqq_out_vld;
@@ -446,16 +448,18 @@ module mhdma_master
     .DEPTH             (CERX_DEPTH      ),
     .RAM_LATENCY       (CERX_RAM_LATENCY)
   ) fifo_ce_rx (
-    .clk        (clk_mrmac   ),
-    .s_rst_n    (resetn_mrmac),
+    .clk         (clk_mrmac   ),
+    .s_rst_n     (resetn_mrmac),
 
-    .in_data    (fifo_cerx_in_data),
-    .in_vld     (fifo_cerx_in_vld ),
-    .in_rdy     (fifo_cerx_in_rdy ),
+    .in_data     (fifo_cerx_in_data),
+    .in_vld      (fifo_cerx_in_vld ),
+    .in_rdy      (fifo_cerx_in_rdy ),
 
-    .out_data   (fifo_cerx_out_data ),
-    .out_vld    (fifo_cerx_out_vld  ),
-    .out_rdy    (fifo_cerx_out_rdy)
+    .out_data    (fifo_cerx_out_data ),
+    .out_vld     (fifo_cerx_out_vld  ),
+    .out_rdy     (fifo_cerx_out_rdy),
+
+    .almost_full (/* UNUSED */)
   );
   assign cerx_reception_ready = (fifo_cerx_cnt == 0) & fifo_cerx_in_rdy;
 
@@ -640,16 +644,18 @@ module mhdma_master
         .WIDTH(FIFO_PC_DATA_W),
         .DEPTH(FIFO_PC_DEPTH)
       ) fifo_pc_wr (
-        .clk     (clk_mrmac         ),
-        .s_rst_n (resetn_mrmac      ),
+        .clk         (clk_mrmac         ),
+        .s_rst_n     (resetn_mrmac      ),
 
-        .in_data (realined_word     ),
-        .in_vld  (fifo_pc_wr_in_vld ),
-        .in_rdy  (fifo_pc_wr_in_rdy ),
+        .in_data     (realined_word     ),
+        .in_vld      (fifo_pc_wr_in_vld ),
+        .in_rdy      (fifo_pc_wr_in_rdy ),
 
-        .out_data(fifo_pc_wr_out_data),
-        .out_vld (fifo_pc_wr_out_vld ),
-        .out_rdy (fifo_pc_wr_out_rdy )
+        .out_data    (fifo_pc_wr_out_data),
+        .out_vld     (fifo_pc_wr_out_vld ),
+        .out_rdy     (fifo_pc_wr_out_rdy ),
+
+        .almost_full (/* UNUSED */)
       );
 
       assign fifo_pc_wr_in_vld = target_fifo[gen_wr] & realined_word_vld ;
@@ -909,17 +915,18 @@ module mhdma_master
     .FIFO_MEMORY_TYPE(NRX_REGF_MEMORY_TYPE)
   ) rr_resp_ram_rdy_vld_2clk (
     // Write Domain ports: MRMAC domain
-    .in_clk   (clk_mrmac),
-    .in_rstn  (resetn_mrmac),
-    .in_data  (rr_regf_in_data),
-    .in_rdy   (rr_regf_in_rdy),
-    .in_vld   (rr_regf_in_vld),
+    .in_clk      (clk_mrmac),
+    .in_rstn     (resetn_mrmac),
+    .in_data     (rr_regf_in_data),
+    .in_rdy      (rr_regf_in_rdy),
+    .in_vld      (rr_regf_in_vld),
+    .almost_full (/* UNUSED */),
     // Read Domain ports: CFG domain
-    .out_clk  (clk_cfg),
-    .out_rstn (resetn_cfg),
-    .out_data (rr_regf_out_data),
-    .out_rdy  (rr_regf_out_rdy),
-    .out_vld  (rr_regf_out_vld)
+    .out_clk     (clk_cfg),
+    .out_rstn    (resetn_cfg),
+    .out_data    (rr_regf_out_data),
+    .out_rdy     (rr_regf_out_rdy),
+    .out_vld     (rr_regf_out_vld)
   );
 
   assign rr_regf_out_rdy = interrupt_read_request & clear_interrupt_rr;

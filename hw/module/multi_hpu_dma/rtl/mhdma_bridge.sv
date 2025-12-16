@@ -250,6 +250,7 @@ module mhdma_bridge
     .regf_ct_mem_addr                (regf_ct_mem_addr                        ),
     .regf_req_id                     (regf_req_id                             ),
     .regf_req_addr                   (regf_req_addr                           ),
+    .regf_timeout_dur                (/* UNUSED */                            ),
     .regf_read_payload               (regf_read_payload                       ),
     // register control -------------------------------------------------------
     .received_req                    (received_req                            ),
@@ -271,7 +272,8 @@ module mhdma_bridge
     .interrupt_read_request          (interrupt_read_request                  ),
     // header interface -------------------------------------------------------
     .decoded_header                  (decoded_header                          ),
-    .format_header                   (format_header                           )
+    .format_header                   (format_header                           ),
+    .error_packet_id_mismatch        (/* UNUSED */                            )
   );
 
   mhdma_slave # (

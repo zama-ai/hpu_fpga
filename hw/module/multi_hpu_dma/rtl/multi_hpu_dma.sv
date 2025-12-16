@@ -217,7 +217,7 @@ module multi_hpu_dma
     .s_axil_rresp                          (s_axil_dma_rresp                                      ),
     .s_axil_rvalid                         (s_axil_dma_rvalid                                     ),
     .s_axil_rready                         (s_axil_dma_rready                                     ),
-    .r_axil_wdata                          (/* */                                                 ),
+    .r_axil_wdata                          (/* UNUSED */                                          ),
     // HPU ids ------------------------------------------------------------------------------------
     .r_mhdma_hpu_id_zero                   (r_regf_hpu_ids[0]                                     ),
     .r_mhdma_hpu_id_one                    (r_regf_hpu_ids[1]                                     ),

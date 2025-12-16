@@ -170,12 +170,20 @@ module tb_multi_hpu_dma;
   logic [QSFP_LANE_NB-1:0][MRMAC_TKEEP_W-1:0] qsfp_tx_tkeep_user;
   logic [QSFP_LANE_NB-1:0]                    qsfp_tx_tlast;
   logic [QSFP_LANE_NB-1:0]                    qsfp_tx_tvalid;
+  logic [QSFP_LANE_NB-1:0][MRMAC_AXIS_W-1:0 ] qsfp_tx_tdata_delayed;
+  logic [QSFP_LANE_NB-1:0][MRMAC_TKEEP_W-1:0] qsfp_tx_tkeep_user_delayed;
+  logic [QSFP_LANE_NB-1:0]                    qsfp_tx_tlast_delayed;
+  logic [QSFP_LANE_NB-1:0]                    qsfp_tx_tvalid_delayed;
   logic [QSFP_LANE_NB-1:0]                    sim_qsfp_tx_tready;
   // == RX
   logic [QSFP_LANE_NB-1:0][MRMAC_AXIS_W-1:0 ] qsfp_rx_tdata;
   logic [QSFP_LANE_NB-1:0][MRMAC_TKEEP_W-1:0] qsfp_rx_tkeep_user;
   logic [QSFP_LANE_NB-1:0]                    qsfp_rx_tlast;
   logic [QSFP_LANE_NB-1:0]                    qsfp_rx_tvalid;
+  logic [QSFP_LANE_NB-1:0][MRMAC_AXIS_W-1:0 ] qsfp_rx_tdata_delayed;
+  logic [QSFP_LANE_NB-1:0][MRMAC_TKEEP_W-1:0] qsfp_rx_tkeep_user_delayed;
+  logic [QSFP_LANE_NB-1:0]                    qsfp_rx_tlast_delayed;
+  logic [QSFP_LANE_NB-1:0]                    qsfp_rx_tvalid_delayed;
 
   // TODO: for now always ready
   assign sim_qsfp_tx_tready = 4'b1111;
@@ -209,9 +217,7 @@ module tb_multi_hpu_dma;
   logic [ETH_PC-1:0]                      hpu_a_axi4_wvalid;
   logic [ETH_PC-1:0]                      hpu_a_axi4_wready;
   logic [ETH_PC-1:0][  AXI4_ID_W-1:0]     hpu_a_axi4_bid;
-  logic [ETH_PC-1:0][AXI4_RESP_W-1:0]     hpu_a_axi4_bresp;
-  logic [ETH_PC-1:0]                      hpu_a_axi4_bvalid;
-  logic [ETH_PC-1:0]                      hpu_a_axi4_bready;
+
   // cnx to memory models -------------------------------------------------------------------------
   logic [ETH_PC-1:0][HPU_NB-1:0][AXI4_ID_W-1:0]       axi4_ct_awid;
   logic [ETH_PC-1:0][HPU_NB-1:0][AXI4_ADD_W-1:0]      axi4_ct_awaddr;
@@ -355,10 +361,10 @@ module tb_multi_hpu_dma;
     .qsfp_tx_tvalid    (qsfp_tx_tvalid          ),
     .qsfp_tx_tready    (sim_qsfp_tx_tready      ),
 
-    .qsfp_rx_tdata     (qsfp_rx_tdata           ),
-    .qsfp_rx_tkeep_user(qsfp_rx_tkeep_user      ),
-    .qsfp_rx_tlast     (qsfp_rx_tlast           ),
-    .qsfp_rx_tvalid    (qsfp_rx_tvalid          ),
+    .qsfp_rx_tdata     (qsfp_rx_tdata_delayed           ),
+    .qsfp_rx_tkeep_user(qsfp_rx_tkeep_user_delayed      ),
+    .qsfp_rx_tlast     (qsfp_rx_tlast_delayed           ),
+    .qsfp_rx_tvalid    (qsfp_rx_tvalid_delayed          ),
 
     .gt_line_rate        (gt_line_rate[0]        ),
     .gt_loopback         (gt_loopback[0]         ),
@@ -433,10 +439,10 @@ module tb_multi_hpu_dma;
     .qsfp_tx_tvalid    (qsfp_rx_tvalid),
     .qsfp_tx_tready    (sim_qsfp_tx_tready),
 
-    .qsfp_rx_tdata     (qsfp_tx_tdata),
-    .qsfp_rx_tkeep_user(qsfp_tx_tkeep_user),
-    .qsfp_rx_tlast     (qsfp_tx_tlast),
-    .qsfp_rx_tvalid    (qsfp_tx_tvalid),
+    .qsfp_rx_tdata     (qsfp_tx_tdata_delayed),
+    .qsfp_rx_tkeep_user(qsfp_tx_tkeep_user_delayed),
+    .qsfp_rx_tlast     (qsfp_tx_tlast_delayed),
+    .qsfp_rx_tvalid    (qsfp_tx_tvalid_delayed),
 
     .gt_line_rate        (gt_line_rate[1]        ),
     .gt_loopback         (gt_loopback[1]         ),
@@ -446,6 +452,18 @@ module tb_multi_hpu_dma;
     .gt_rx_reset_done    (gt_rx_reset_done[1]    ),
     .gt_tx_reset_done    (gt_tx_reset_done[1]    )
 );
+
+always @(*) begin
+  qsfp_tx_tdata_delayed      <= #100ns qsfp_tx_tdata;
+  qsfp_tx_tkeep_user_delayed <= #100ns qsfp_tx_tkeep_user;
+  qsfp_tx_tlast_delayed      <= #100ns qsfp_tx_tlast;
+  qsfp_tx_tvalid_delayed     <= #100ns qsfp_tx_tvalid;
+
+  qsfp_rx_tdata_delayed      <= #100ns qsfp_rx_tdata;
+  qsfp_rx_tkeep_user_delayed <= #100ns qsfp_rx_tkeep_user;
+  qsfp_rx_tlast_delayed      <= #100ns qsfp_rx_tlast;
+  qsfp_rx_tvalid_delayed     <= #100ns qsfp_rx_tvalid;
+end
 
 // ============================================================================================== --
 // Scenario
@@ -519,7 +537,7 @@ module tb_multi_hpu_dma;
           .clk           (clk_mrmac                         ),
           .rst           (~s_rstn_mrmac                     ),
           .s_axi4_awid   (axi4_ct_awid[gen_hpu][gen_pc]     ),
-          .s_axi4_awaddr (axi4_ct_awaddr[gen_hpu][gen_pc]   ),
+          .s_axi4_awaddr (axi4_ct_awaddr[gen_hpu][gen_pc][MEM_SIM_SIZE-1:0]),
           .s_axi4_awlen  (axi4_ct_awlen[gen_hpu][gen_pc]    ),
           .s_axi4_awsize (axi4_ct_awsize[gen_hpu][gen_pc]   ),
           .s_axi4_awburst(axi4_ct_awburst[gen_hpu][gen_pc]  ),
@@ -538,7 +556,7 @@ module tb_multi_hpu_dma;
           .s_axi4_bvalid (axi4_ct_bvalid[gen_hpu][gen_pc]   ),
           .s_axi4_bready (axi4_ct_bready[gen_hpu][gen_pc]   ),
           .s_axi4_arid   (axi4_ct_arid[gen_hpu][gen_pc]     ),
-          .s_axi4_araddr (axi4_ct_araddr[gen_hpu][gen_pc]   ),
+          .s_axi4_araddr (axi4_ct_araddr[gen_hpu][gen_pc][MEM_SIM_SIZE-1:0]),
           .s_axi4_arlen  (axi4_ct_arlen[gen_hpu][gen_pc]    ),
           .s_axi4_arsize (axi4_ct_arsize[gen_hpu][gen_pc]   ),
           .s_axi4_arburst(axi4_ct_arburst[gen_hpu][gen_pc]  ),
@@ -896,8 +914,12 @@ module tb_multi_hpu_dma;
     maxil_drv_if_hpu_a.read_trans(MHDMA_RESET_MONITOR_OFS, reset_monitor[0]);
     maxil_drv_if_hpu_b.read_trans(MHDMA_RESET_MONITOR_OFS, reset_monitor[1]);
 
-    assert ((reset_monitor[3:0] != gt_tx_reset_done) | (reset_monitor[7:4] != gt_rx_reset_done)) else begin
-      $display("[ERROR] reset monitor has not been read correctly");
+    assert ((reset_monitor[0][3:0] != gt_tx_reset_done) | (reset_monitor[0][7:4] != gt_rx_reset_done)) else begin
+      $display("[ERROR] reset monitor has not been read correctly in HPU A");
+      error_register_read = 1'b1;
+    end
+    assert ((reset_monitor[1][3:0] != gt_tx_reset_done) | (reset_monitor[1][7:4] != gt_rx_reset_done)) else begin
+      $display("[ERROR] reset monitor has not been read correctly in HPU B");
       error_register_read = 1'b1;
     end
 
