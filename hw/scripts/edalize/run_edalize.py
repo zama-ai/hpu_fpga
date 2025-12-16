@@ -701,7 +701,7 @@ if __name__ == '__main__':
         tool_options_d[tool]["part"]=os.getenv("XILINX_PART")
         tool_options_d[tool]["ooc"]=False
     elif (tool == "xsim"):
-        tool_options_d[tool]["xelab_options"]=["-debug typical"]
+        tool_options_d[tool]["xelab_options"]=["-debug typical -define XSIM"]
         tool_options_d[tool]["xsim_options"]=["-sv_seed {:d}".format(args.seed)]
         tool_options_d[tool]["xsim_options"].append("-ignore_coverage")
         tool_options_d[tool]["cov"] = False
