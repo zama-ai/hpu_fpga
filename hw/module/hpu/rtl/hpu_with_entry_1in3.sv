@@ -306,7 +306,6 @@ module hpu_with_entry_1in3
     .trace_data         (isc_trace_data)
   );
 
-  // unused for now
   always_comb begin
     interrupt                       = '0;
     interrupt.isc_iop_ack_interrupt = isc_ack_int;

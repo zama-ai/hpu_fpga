@@ -62,6 +62,8 @@ module hpu_3parts_2in3_core
   input logic                                prc_mrmac_clk,    // mrmac clock at axis speed
   input logic                                prc_mrmac_srst_n, // mrmac clock at axis speed
 
+  output interrupt_t                         interrupt,
+
   input  logic [AXIL_ADD_W-1:0]              s_axil_dma_awaddr,
   input  logic                               s_axil_dma_awvalid,
   output logic                               s_axil_dma_awready,
@@ -124,8 +126,6 @@ module hpu_3parts_2in3_core
 
   // Multi-HPU-DMA
   `HPU_AXI4_IO(eth_hbm, ETH_HBM, axi_if_eth_axi_pkg, [ETH_PC-1:0])
-  output logic                                       interrupt_notify,
-  output logic                                       interrupt_read_request,
   // QSFP system interface
   // == TX
   output logic [QSFP_LANE_NB-1:0][MRMAC_AXIS_W-1:0]  qsfp_tx_tdata,
@@ -155,6 +155,8 @@ module hpu_3parts_2in3_core
 // ============================================================================================== --
 // Signals
 // ============================================================================================== --
+  logic                                   interrupt_notify;
+  logic                                   interrupt_read_request;
   // -------------------------------------------------------------------------------------------- --
   // Control
   // -------------------------------------------------------------------------------------------- --
@@ -558,5 +560,11 @@ module hpu_3parts_2in3_core
     .gt_rx_reset_done       (gt_rx_reset_done),
     .gt_tx_reset_done       (gt_tx_reset_done)
   );
+
+  always_comb begin
+    interrupt                          = '0;
+    interrupt.mhdma_notify_interrupt   = interrupt_notify;
+    interrupt.mhdma_readdone_interrupt = interrupt_read_request;
+  end
 
 endmodule

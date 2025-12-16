@@ -367,8 +367,6 @@ module hpu_3parts
   assign in_p2_p3_sll_ctrl.ntt_proc_cmd_avail = out_p1_p2_sll_ctrl.ntt_proc_cmd_avail;
   assign in_p2_p3_sll_ctrl.bsk_ctrl = out_p1_p2_sll_ctrl.bsk_ctrl;
   assign in_p2_p1_sll_ctrl.bsk_ctrl = out_p3_p2_sll_ctrl.bsk_ctrl;
-  // TODO: remove that when 2in3 drives its interrupt
-  assign hpu_2in3_interrupt = '0;
   assign in_p2_p3_sll_interrupt     = out_p1_p2_sll_interrupt | hpu_2in3_interrupt;
 
   hpu_qual_sll #(
@@ -551,6 +549,8 @@ module hpu_3parts
     .prc_mrmac_clk              (prc_mrmac_clk),
     .prc_mrmac_srst_n           (prc_mrmac_srst_n),
 
+    .interrupt                  (hpu_2in3_interrupt),
+
     .s_axil_dma_awaddr          (s_axil_dma_2in3_awaddr),
     .s_axil_dma_awvalid         (s_axil_dma_2in3_awvalid),
     .s_axil_dma_awready         (s_axil_dma_2in3_awready),
@@ -570,9 +570,6 @@ module hpu_3parts
     .s_axil_dma_rready          (s_axil_dma_2in3_rready),
 
     `HPU_AXI4_FULL_INSTANCE(eth_hbm, eth_hbm,,[ETH_PC-1:0])
-
-    .interrupt_notify           (interrupt_notify),
-    .interrupt_read_request     (interrupt_read_request),
 
     .decomp_ntt_data_avail      (out_p1_p2_sll_ctrl.decomp_ntt_ctrl.data_avail),
     .decomp_ntt_data            (out_p1_p2_sll_data.decomp_ntt_data.data),
