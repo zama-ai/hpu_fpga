@@ -243,7 +243,13 @@ module mhdma_master
   );
 
   assign new_notify_request_pending = nrqq_out_vld;
-  assign nrqq_out_rdy = notify_request_allowed;
+
+  // we must consume only one request at a time
+  logic notify_request_allowed_reg;
+  always_ff @(posedge clk_mrmac)
+    notify_request_allowed_reg <= notify_request_allowed;
+
+  assign nrqq_out_rdy = notify_request_allowed & ~notify_request_allowed_reg;
 
   // current notify request, sampled when valid is toggled
   logic [SRC_ADDR_W-1:0] nrqq_src_addr;
@@ -255,7 +261,7 @@ module mhdma_master
   // none of theses information are in the first word:
   //  => sampled on the same clock cycle as sending first frame
   always_ff @(posedge clk_mrmac) begin : notify_request_sampling
-    if (nrqq_out_vld) begin
+    if (nrqq_out_rdy & nrqq_out_vld) begin
       nrqq_iop_id    <= nrqq_out_data[CMD_IOP_ID_OFS-1:CMD_REQ_ID_OFS];
       nrqq_req_id    <= nrqq_out_data[CMD_REQ_ID_OFS-1:CMD_HPU_ID_OFS];
       nrqq_hpu_id    <= nrqq_out_data[CMD_HPU_ID_OFS-1:CMD_SIZE_B_OFS];
@@ -266,7 +272,7 @@ module mhdma_master
 
   logic nrqq_cmd_vld;
   always_ff @(posedge clk_mrmac)
-    nrqq_cmd_vld <= nrqq_out_vld;
+    nrqq_cmd_vld <= nrqq_out_rdy & nrqq_out_vld;
 
   // Header information ---------------------------------------------------------------------------
   assign format_header.dst_addr = notify_request_allowed ?         'h0   : read_request_allowed ? rrqq_dst_addr : 'h0;
