@@ -67,6 +67,7 @@ module mhdma_bridge
   output logic [15:0]                             stat_cnt_notify_ack,
   output logic [15:0]                             stat_cnt_notify_read,
   // reset counters
+  input  logic                                    rst_retry_notify_cnt,
   input  logic                                    rst_cnt_notify,
   // statistics ---------------------------------------------------------------
   input  logic                                    clear_interrupt_notify,
@@ -370,7 +371,11 @@ module mhdma_bridge
     .new_read_request_pending        (new_read_request_pending                ),
     .new_notify_request_pending      (new_notify_request_pending              ),
     .ct_emission_all_packets_received(ct_emission_all_packets_received        ),
+    .notify_ack_received             (notify_ack_received                     ),
     .cerx_reception_ready            (cerx_reception_ready                    ),
+    .timeout_duration                (timeout_duration                        ),
+    // reset counters
+    .rst_retry_notify_cnt            (rst_retry_notify_cnt                    ),
     // master interface -------------------------------------------------------
     .format_header                   (format_header                           ),
     // slave interface --------------------------------------------------------

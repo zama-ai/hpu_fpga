@@ -23,6 +23,8 @@ package mhdma_pkg;
   // AXI
   localparam [AXI4_SIZE_W-1:0] MHDMA_ARSIZE = $clog2(AXI4_DATA_BYTES);
 
+  localparam int TIMEOUT_W = 16;
+
   // =========================================================================================== //
   // Ethernet
   // =========================================================================================== //
@@ -78,12 +80,18 @@ package mhdma_pkg;
   localparam int SRC_ADDR_W   = 16;
   localparam int DST_ADDR_W   = 16;
 
+  localparam int LLC_W        = 8;
+
   // ce header transmission size to formatter
   localparam int CEH_WIDTH = MAC_ADDR_W+HPU_ID_W+SIZE_B_W+IOP_ID_W+DST_ADDR_W+SRC_ADDR_W;
 
   // Ethernet header: values --------------------------------------------------
   localparam [MAC_OUI_W-1:0] MAC_OUI = 'h000A35;
   localparam [ SIZE_B_W-1:0] SIZE_B  = 'h4000; // fixed for now to 16.384
+
+  localparam [LLC_W-1:0] LLC_DSAP = 'hF8;
+  localparam [LLC_W-1:0] LLC_SSAP = 'hF8;
+  localparam [LLC_W-1:0] LLC_CTRL = 'h03;
 
   // =========================================================================================== //
   // fifo specific parameters

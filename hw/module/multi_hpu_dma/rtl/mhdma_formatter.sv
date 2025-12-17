@@ -28,6 +28,12 @@ module mhdma_formatter
 
   input  logic                                      ct_emission_all_packets_received,
   input  logic                                      cerx_reception_ready,
+
+  input  logic                                      notify_ack_received,
+
+  input  logic                      [TIMEOUT_W-1:0] timeout_duration,
+
+  input  logic                                      rst_retry_notify_cnt,
   // master interface ---------------------------------------------------------
   input  header_t                                   format_header,
   // slave interface ----------------------------------------------------------
@@ -52,6 +58,7 @@ module mhdma_formatter
   // simplify notations
   logic master_request;
   logic small_frame;
+  logic retry_notify;
   // there is only one slave request: ciphertext emission
 
   always_ff @(posedge clk_mrmac) begin
@@ -298,13 +305,41 @@ module mhdma_formatter
   end
 
   // header assignation depending on request
-  assign header_target_hpu_mac_addr = master_request ? hpu_mac_table_tmp[format_header.hpu_id] : notify_ack_allowed ? hpu_mac_table_tmp[nack_hpu_id] : ct_emission_allowed ? ce_dst_mac_addr : 'h0;
-  assign header_req_id              = master_request ? format_header.req_id                : notify_ack_allowed ? REQ_ID_ACK_NOTIFY_TX       : ct_emission_allowed ? REQ_ID_EMISSION : 'h0;
-  assign header_src_addr            = master_request ? format_header.src_addr              : notify_ack_allowed ? nack_src_addr              : ct_emission_allowed ? ce_src_addr : 'h0;
-  assign header_dst_addr            = master_request ? format_header.dst_addr              : notify_ack_allowed ? 'h0                        : ct_emission_allowed ? ce_dst_addr : 'h0;
-  assign header_iop_id              = master_request ? format_header.iop_id                : notify_ack_allowed ? nack_iop_id                : ct_emission_allowed ? ce_iop_id : 'h0;
+  always_comb begin
+    if (master_request & ~retry_notify) begin
+      header_target_hpu_mac_addr =  hpu_mac_table_tmp[format_header.hpu_id];
+      header_req_id              =  format_header.req_id;
+      header_src_addr            =  format_header.src_addr;
+      header_dst_addr            =  format_header.dst_addr;
+      header_iop_id              =  format_header.iop_id;
+    end else if (master_request & retry_notify) begin
+      header_target_hpu_mac_addr =  hpu_mac_table_tmp[prev_format_header.hpu_id];
+      header_req_id              =  prev_format_header.req_id;
+      header_src_addr            =  prev_format_header.src_addr;
+      header_dst_addr            =  prev_format_header.dst_addr;
+      header_iop_id              =  prev_format_header.iop_id;
+    end else if (notify_ack_allowed) begin
+      header_target_hpu_mac_addr = hpu_mac_table_tmp[nack_hpu_id];
+      header_req_id              = REQ_ID_ACK_NOTIFY_TX;
+      header_src_addr            = nack_src_addr;
+      header_dst_addr            = 'h0;
+      header_iop_id              = nack_iop_id;
+    end else if (ct_emission_allowed) begin
+      header_target_hpu_mac_addr =  ce_dst_mac_addr;
+      header_req_id              =  REQ_ID_EMISSION;
+      header_src_addr            =  ce_src_addr;
+      header_dst_addr            =  ce_dst_addr;
+      header_iop_id              =  ce_iop_id;
+    end else begin
+      header_target_hpu_mac_addr = 'h0;
+      header_req_id              = 'h0;
+      header_src_addr            = 'h0;
+      header_dst_addr            = 'h0;
+      header_iop_id              = 'h0;
+    end
+  end
 
-  assign header_eth_len = small_frame ? ETH_LEN_MIN : ce_last_packet ? ETH_LEN_LAST_PKT : ETH_LEN_MAX;
+  assign header_eth_len = small_frame ? ETH_LEN_MIN : ce_last_packet      ? ETH_LEN_LAST_PKT : ETH_LEN_MAX;
   assign header_seq_num = small_frame ? 'h0         : ct_emission_allowed ? ce_seq_num : 'h0;
   assign header_size_b  = small_frame ? 'h0         : ct_emission_allowed ? ce_size_b  : 'h0;
 
@@ -313,9 +348,9 @@ module mhdma_formatter
       'h1 :
         tx_header = {MAC_OUI, header_target_hpu_mac_addr, MAC_OUI[MAC_OUI_W-1:8]};
       'h2 :
-        tx_header = {MAC_OUI[7:0], current_hpu_mac, header_eth_len, 8'hF8, 8'hF8};
+        tx_header = {MAC_OUI[7:0], current_hpu_mac, header_eth_len, LLC_DSAP, LLC_SSAP};
       'h3 :
-        tx_header = {8'h03, header_req_id, current_hpu_id, header_seq_num, header_src_addr, header_dst_addr, header_iop_id};
+        tx_header = {LLC_CTRL, header_req_id, current_hpu_id, header_seq_num, header_src_addr, header_dst_addr, header_iop_id};
       'h4 :
         tx_header = {header_size_b, 56'h0};
       default:
@@ -435,6 +470,9 @@ module mhdma_formatter
   // =========================================================================================== //
   // Small arbiter
   // =========================================================================================== //
+  logic timeout_reached_notify;
+  logic timeout_reached_read_request;
+
   // simple FSM that changes state from IDLE when a new request is pensing
   // desasserts from the state allowed when the full frame has been sent
 
@@ -444,7 +482,9 @@ module mhdma_formatter
     ST_CT_EMISSION = 3'b010,
     ST_NACK        = 3'b011,
     ST_READ_REQ    = 3'b100,
-    ST_NOTIFY      = 3'b101
+    ST_NOTIFY      = 3'b101,
+    ST_WAIT_ACK    = 3'b110,
+    ST_WAIT_RR     = 3'b111
   } st_tx;
 
   st_tx tx_state;
@@ -480,7 +520,10 @@ module mhdma_formatter
       ST_READ_REQ:
         tx_next_state =  ct_emission_all_packets_received ? ST_IDLE : ST_READ_REQ;
       ST_NOTIFY:
-        tx_next_state =  tx_small_last ? ST_IDLE : ST_NOTIFY;
+        tx_next_state =  tx_small_last ? ST_WAIT_ACK : ST_NOTIFY;
+      ST_WAIT_ACK:
+        // (Assumption) transmission is not instantaneous, notify_ack_received cannot arrive before tx_small_last
+        tx_next_state =  notify_ack_received ? ST_IDLE : timeout_reached_notify ? ST_NOTIFY : ST_WAIT_ACK;
     endcase
   end
 
@@ -489,6 +532,8 @@ module mhdma_formatter
   assign read_request_allowed   = (tx_state == ST_READ_REQ)    ? 1'b1 : 1'b0;
   assign notify_request_allowed = (tx_state == ST_NOTIFY)      ? 1'b1 : 1'b0;
 
+  assign notify_ack_sent = tx_small_last && (tx_state == ST_NACK);
+
   logic notify_ack_allowed_reg;
   logic notify_ack_pulse;
   always_ff @(posedge clk_mrmac)
@@ -496,9 +541,54 @@ module mhdma_formatter
 
   assign notify_ack_pulse = notify_ack_allowed & ~notify_ack_allowed_reg;
 
-  assign header_sop = master_request ? format_header.valid : notify_ack_allowed ? notify_ack_pulse : ct_emission_allowed ? ce_start_of_header : 1'b0;
+  // assign header_sop = master_request ? format_header.valid : notify_ack_allowed ? notify_ack_pulse : ct_emission_allowed ? ce_start_of_header : 1'b0;
+  assign header_sop = (format_header.valid & master_request) | notify_ack_pulse | ce_start_of_header | retry_notify;
 
-  assign notify_ack_sent = tx_small_last && (tx_state == ST_NACK);
+  header_t prev_format_header;
+
+  always_ff @(posedge clk_mrmac)
+    if (format_header.valid)
+      prev_format_header <= format_header;
+
+  // timeout --------------------------------------------------------------------------------------
+  logic [TIMEOUT_W-1:0] to_dur;
+  logic [TIMEOUT_W-1:0] to_notify_cnt;
+
+  always_ff @(posedge clk_mrmac)
+    to_dur <= timeout_duration;
+
+  always_ff @(posedge clk_mrmac) begin : timeout_counter
+    if (~resetn_mrmac) begin
+      to_notify_cnt <= 'h0;
+    end else begin
+      if ((tx_state == ST_WAIT_ACK)) begin
+        to_notify_cnt <= to_notify_cnt + 1;
+      end else begin
+        to_notify_cnt <= 'h0;
+      end
+    end
+  end
+
+  assign timeout_reached_notify = (to_notify_cnt == to_dur);
+
+  always_ff @(posedge clk_mrmac)
+    retry_notify <= timeout_reached_notify;
+
+  logic [TIMEOUT_W-1:0] retry_notify_cnt;
+
+  always_ff @(posedge clk_mrmac) begin
+    if(~resetn_mrmac) begin
+      retry_notify_cnt <= 'h0;
+    end else begin
+      if (rst_retry_notify_cnt) begin
+        retry_notify_cnt <= 'h0;
+      end else begin
+        if (timeout_reached_notify) begin
+          retry_notify_cnt <= retry_notify_cnt + 1;
+        end
+      end
+    end
+  end
 
   // =========================================================================================== //
   // AXI4-stream

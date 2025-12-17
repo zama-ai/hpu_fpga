@@ -742,9 +742,9 @@ end
 
     for (int i = 0; i < arbitrary_notify_nb; i++) begin
       // for now size_b is fixed, all our ciphertext are 16.384kB (size_b=0x4000)
-      iop_id       = $urandom();
-      iop_src_addr = $urandom_range(0, 1<<SRC_ADDR_W);
-      iop_dst_addr = $urandom_range(0, 1<<DST_ADDR_W);
+      iop_id       = i;//$urandom();
+      iop_src_addr = 0;//$urandom_range(0, 1<<SRC_ADDR_W);
+      iop_dst_addr = 0;//$urandom_range(0, 1<<DST_ADDR_W);
 
       repeat(10) @(posedge clk_control);
       // Sending a NOTIFY from HPU-B to HPU-A -------------------------------------------------------

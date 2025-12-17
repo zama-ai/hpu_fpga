@@ -131,6 +131,9 @@ module multi_hpu_dma
   logic [15:0] r_cnt_notify_ack;
   logic [15:0] r_cnt_notify_read;
   logic        rst_cnt_notify;
+  logic rst_retry_notify_cnt;
+
+  assign rst_retry_notify_cnt = 0; //TODO
 
   // signals derived from registers
   logic                 tx_loop;
@@ -406,6 +409,7 @@ module multi_hpu_dma
     .stat_cnt_notify_ack   (r_cnt_notify_ack                                                      ),
     .stat_cnt_notify_read  (r_cnt_notify_read                                                     ),
     .rst_cnt_notify        (rst_cnt_notify                                                        ),
+    .rst_retry_notify_cnt  (rst_retry_notify_cnt                                                  ),
     // QSFP interface one lane --------------------------------------------------------------------
     // tx
     .qsfp_tx_tdata         (axis_tx_tdata                                                         ),
