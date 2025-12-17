@@ -257,6 +257,8 @@ AXC_PROXY_DRIVER_EXTERNAL_DEVICE_CONFIG xDimmDevice =
 uint64_t ullAmcInitStatus = 0;
 uint64_t isc_intr_global_cnt = 0;
 uint64_t debug_intr_global_cnt = 0;
+uint64_t intr_notify_cnt = 0;
+uint32_t intr_notify_data = 0;
 uint32_t ackq_head = 0;
 uint32_t ackq_tail = 0;
 volatile uint32_t *toAmiIopAckqHead = ( volatile uint32_t* )( HAL_RPU_SHARED_MEMORY_BASE_ADDR + OFFSET_TO_AMI_IOPACKQ_HEAD );
@@ -311,6 +313,16 @@ void vInterruptHandler_debug( void* pvCallBackRef ) {
     // write int register at 0 to stop interrupt
     // write cnt in upper 16b
     *( ( volatile uint32_t * )(XPAR_AXI_LPD_BASEADDR + 0x20200) ) = ((debug_intr_global_cnt & 0xFFFF) << 16) | 0x0;
+}
+
+/*
+ * @brief   debug only interrupt handler
+ */
+void vInterruptHandler_mhdma_notify( void* pvCallBackRef ) {
+    intr_notify_cnt = intr_notify_cnt + 1;
+    // read request::notify 0x50108
+    HAL_INVALIDATE_CACHE_DATA( (uintptr_t)(XPAR_AXI_LPD_BASEADDR + 0x50108) , sizeof(uint32_t) );
+    intr_notify_data = * (volatile uint32_t *) (XPAR_AXI_LPD_BASEADDR + 0x50108);
 }
 
 /*
@@ -423,7 +435,17 @@ static void vTaskFuncMain( void )
     if( OSAL_ERRORS_NONE != iOSAL_Interrupt_Enable( XPAR_FABRIC_RTL_INTERRUPT_0_INTR) ) {
        PLL_ERR( AMC_NAME, "failed enabling interrupt hpu_interrupt[0](debug)\r\n" );
     } else {
-       PLL_INF( AMC_NAME, "enabling hpu_interrupt[4] on level\r\n" );
+       PLL_INF( AMC_NAME, "enabling hpu_interrupt[0](debug) on level\r\n" );
+    }
+    if( OSAL_ERRORS_NONE != iOSAL_Interrupt_Setup( XPAR_FABRIC_RTL_INTERRUPT_3_INTR, vInterruptHandler_mhdma_notify, NULL ) ) {
+       PLL_ERR( AMC_NAME, "failed init interrupt hpu_interrupt[3](notify)\r\n" );
+    } else {
+       PLL_INF( AMC_NAME, "interrupt handler on hpu_interrupt[3](notify) initialised\r\n" );
+    }
+    if( OSAL_ERRORS_NONE != iOSAL_Interrupt_Enable( XPAR_FABRIC_RTL_INTERRUPT_3_INTR) ) {
+       PLL_ERR( AMC_NAME, "failed enabling interrupt hpu_interrupt[3](notify)\r\n" );
+    } else {
+       PLL_INF( AMC_NAME, "enabling hpu_interrupt[3](notify) on level\r\n" );
     }
 
     // Init IOp queue descriptor
@@ -479,10 +501,12 @@ static void vTaskFuncMain( void )
         //      This buffer have the depth of the longest supported IOp (Currently fixed at compile time)
         //      After parsing only the used bytes are consumed from the queue
         if (iopq_used_bytes != 0 && !stop_consuming_iop) {
-            //if (debug_intr_global_cnt%2 == 0) {
-            //    PLL_ERR("AMC", "interrupt[1](isc) count %d edges", isc_intr_global_cnt);
-            //    PLL_ERR("AMC", "interrupt[0](debug) count %d level at 1", debug_intr_global_cnt);
-            //}
+            if (debug_intr_global_cnt%2 == 0) {
+                PLL_ERR("AMC", "interrupt[1](isc) count %d edges", isc_intr_global_cnt);
+                PLL_ERR("AMC", "interrupt[0](debug) count %d level at 1", debug_intr_global_cnt);
+                PLL_ERR("AMC", "interrupt[3](mhdma notify) count %d", intr_notify_cnt);
+                PLL_ERR("AMC", "interrupt[3](mhdma notify) last-data %x", intr_notify_data);
+            }
             PLL_INF("AMC", "Fw received IOP request, translation into DOP needed [head 0x%x; tail 0x%x]", iopq_head, iopq_tail);
 
             // 1. Compute bytes to read from queue
