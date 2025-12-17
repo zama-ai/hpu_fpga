@@ -33,9 +33,21 @@ module mhdma_formatter
 
   input  logic                      [TIMEOUT_W-1:0] timeout_duration,
 
-  input  logic                                      rst_retry_notify_cnt,
   // master interface ---------------------------------------------------------
   input  header_t                                   format_header,
+  // statistics ---------------------------------------------------------------
+  // counters
+  output logic [TIMEOUT_W-1:0]                      stat_cnt_notify,
+  output logic [TIMEOUT_W-1:0]                      stat_cnt_notify_ack,
+  output logic [TIMEOUT_W-1:0]                      stat_cnt_notify_timeout,
+  output logic [TIMEOUT_W-1:0]                      stat_cnt_notify_retries,
+  // reset counters
+  input  logic                                      rst_cnt_notify,
+  input  logic                                      rst_cnt_notify_ack,
+  input  logic                                      rst_cnt_timeout, //unused
+  input  logic                                      rst_cnt_notify_retry,
+  // register
+  output logic [2:0]                                stat_fsm_formatter,
   // slave interface ----------------------------------------------------------
   input  logic                 [     NRX_WIDTH-1:0] nrx_cmd_payload,
   input  logic                                      nrx_cmd_valid,
@@ -574,13 +586,46 @@ module mhdma_formatter
   always_ff @(posedge clk_mrmac)
     retry_notify <= timeout_reached_notify;
 
+  // =========================================================================================== //
+  // Statistics
+  // =========================================================================================== //
   logic [TIMEOUT_W-1:0] retry_notify_cnt;
+  logic [TIMEOUT_W-1:0] notify_cnt;
+  logic [TIMEOUT_W-1:0] notify_ack_cnt;
+
+  always_ff @(posedge clk_mrmac) begin
+    if (~resetn_mrmac) begin
+      notify_cnt <= 'h0;
+    end else begin
+      if (rst_cnt_notify) begin
+        notify_cnt <= 'h0;
+      end else begin
+        if (notify_request_allowed & tx_small_last) begin
+          notify_cnt <= notify_cnt + 1;
+        end
+      end
+    end
+  end
+
+  always_ff @(posedge clk_mrmac) begin
+    if (~resetn_mrmac) begin
+      notify_ack_cnt <= 'h0;
+    end else begin
+      if (rst_cnt_notify_ack) begin
+        notify_ack_cnt <= 'h0;
+      end else begin
+        if (notify_ack_pulse) begin
+          notify_ack_cnt <= notify_ack_cnt + 1;
+        end
+      end
+    end
+  end
 
   always_ff @(posedge clk_mrmac) begin
     if(~resetn_mrmac) begin
       retry_notify_cnt <= 'h0;
     end else begin
-      if (rst_retry_notify_cnt) begin
+      if (rst_cnt_notify_retry) begin
         retry_notify_cnt <= 'h0;
       end else begin
         if (timeout_reached_notify) begin
@@ -589,6 +634,13 @@ module mhdma_formatter
       end
     end
   end
+
+  assign stat_cnt_notify_retries = retry_notify_cnt;
+  assign stat_cnt_notify_timeout = to_notify_cnt;    // mybe not usefull
+  assign stat_cnt_notify         = notify_cnt;
+  assign stat_cnt_notify_ack     = notify_ack_cnt;
+
+  assign stat_fsm_formatter = tx_state;
 
   // =========================================================================================== //
   // AXI4-stream

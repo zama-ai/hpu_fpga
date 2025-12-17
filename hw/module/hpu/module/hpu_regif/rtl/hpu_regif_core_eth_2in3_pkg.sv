@@ -1,7 +1,7 @@
 // ============================================================================================== //
 // Description  : register  map address definition package
 // This file was generated with rust regmap generator:
-//  * Date:  2025-12-11
+//  * Date:  2025-12-17
 //  * Tool_version: bd49564daf1a99d615cb6dbb121b54bfbeef8b22
 // ---------------------------------------------------------------------------------------------- //
 //
@@ -17,6 +17,7 @@ package hpu_regif_core_eth_2in3_pkg;
    } mhdma_system_lane_t;
   localparam int MHDMA_SYSTEM_LANE_OFS = 'h50000;
   localparam int MHDMA_SYSTEM_TIMEOUT_OFS = 'h50004;
+  localparam int MHDMA_SYSTEM_FSM_VALUE_OFS = 'h50008;
   typedef struct packed {
     logic [(20-1):0] padding_12;
     logic [(4-1):0] rx_rst;
@@ -64,10 +65,25 @@ package hpu_regif_core_eth_2in3_pkg;
    } mhdma_request_read_request_t;
   localparam int MHDMA_REQUEST_READ_REQUEST_OFS = 'h5010c;
   typedef struct packed {
-    logic [(16-1):0] cnt_notify_read;
-    logic [(16-1):0] cnt_notify_ack;
+    logic [(16-1):0] cnt_read;
+    logic [(16-1):0] padding_0;
    } mhdma_request_stat_notify_t;
   localparam int MHDMA_REQUEST_STAT_NOTIFY_OFS = 'h50110;
+  typedef struct packed {
+    logic [(16-1):0] padding_16;
+    logic [(16-1):0] cnt_ack;
+   } mhdma_request_stat_notify_ack_t;
+  localparam int MHDMA_REQUEST_STAT_NOTIFY_ACK_OFS = 'h50114;
+  typedef struct packed {
+    logic [(16-1):0] cnt_timeout;
+    logic [(16-1):0] padding_0;
+   } mhdma_request_stat_notify_timeout_t;
+  localparam int MHDMA_REQUEST_STAT_NOTIFY_TIMEOUT_OFS = 'h50118;
+  typedef struct packed {
+    logic [(16-1):0] cnt_retry;
+    logic [(16-1):0] padding_0;
+   } mhdma_request_stat_notify_timeout_retry_t;
+  localparam int MHDMA_REQUEST_STAT_NOTIFY_TIMEOUT_RETRY_OFS = 'h5011c;
   typedef struct packed {
     logic [(1-1):0] reset_registers;
     logic [(1-1):0] tx_loop;

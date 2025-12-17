@@ -64,11 +64,17 @@ module mhdma_bridge
   input  logic                                    received_req,
   output logic                                    request_consumed,
   // statistics ---------------------------------------------------------------
-  output logic [15:0]                             stat_cnt_notify_ack,
-  output logic [15:0]                             stat_cnt_notify_read,
+  output logic [TIMEOUT_W-1:0]                    stat_cnt_notify,
+  output logic [TIMEOUT_W-1:0]                    stat_cnt_notify_ack,
+  output logic [TIMEOUT_W-1:0]                    stat_cnt_notify_timeout,
+  output logic [TIMEOUT_W-1:0]                    stat_cnt_notify_retries,
   // reset counters
-  input  logic                                    rst_retry_notify_cnt,
   input  logic                                    rst_cnt_notify,
+  input  logic                                    rst_cnt_notify_ack,
+  input  logic                                    rst_cnt_notify_retry,
+  input  logic                                    rst_cnt_timeout,
+  // registers
+  output logic [REG_DATA_W-1:0]                   stat_reg_fsm,
   // statistics ---------------------------------------------------------------
   input  logic                                    clear_interrupt_notify,
   output logic                                    interrupt_notify,
@@ -104,6 +110,13 @@ module mhdma_bridge
   localparam int PC_NB_BURST [ETH_PC] = compute_nb_bursts(PC_NB_WORDS, MAX_BURST_SIZE);
   localparam int PC_REMAINS  [ETH_PC] = compute_remaining_words(PC_NB_WORDS, MAX_BURST_SIZE);
   localparam int PC_NB_TRANS [ETH_PC] = compute_nb_transactions(PC_REMAINS,PC_NB_BURST);
+
+  // statistics
+  logic [2:0] stat_fsm_formatter;
+  logic [1:0] stat_fsm_notify_rx;
+  logic [1:0] stat_fsm_cem;
+  logic [1:0] stat_fsm_notify;
+  logic [1:0] stat_fsm_read_req;
 
   // =========================================================================================== //
   // CDC from regf to mrmac clock
@@ -256,6 +269,10 @@ module mhdma_bridge
     // register control -------------------------------------------------------
     .received_req                    (received_req                            ),
     .request_consumed                (request_consumed                        ),
+    // statistics -------------------------------------------------------------
+    // register
+    .stat_fsm_notify                 (stat_fsm_notify                         ),
+    .stat_fsm_read_req               (stat_fsm_read_req                       ),
     // flags ------------------------------------------------------------------
     .read_request_allowed            (read_request_allowed                    ),
     .notify_request_allowed          (notify_request_allowed                  ),
@@ -312,6 +329,10 @@ module mhdma_bridge
     .ce_payload                     (ce_payload                               ),
     .ce_ready                       (ce_ready                                 ),
     .ce_valid                       (ce_valid                                 ),
+    // statistics -------------------------------------------------------------
+    // register
+    .stat_fsm_notify_rx             (stat_fsm_notify_rx                       ),
+    .stat_fsm_cem                   (stat_fsm_cem                             ),
     // AXI4-4 full read interface ---------------------------------------------
     .m_axi4_araddr                  (m_axi4_araddr                            ),
     .m_axi4_arlen                   (m_axi4_arlen                             ),
@@ -374,8 +395,19 @@ module mhdma_bridge
     .notify_ack_received             (notify_ack_received                     ),
     .cerx_reception_ready            (cerx_reception_ready                    ),
     .timeout_duration                (timeout_duration                        ),
+    // statistics -------------------------------------------------------------
+    // counters
+    .stat_cnt_notify                 (stat_cnt_notify                         ),
+    .stat_cnt_notify_ack             (stat_cnt_notify_ack                     ),
+    .stat_cnt_notify_timeout         (stat_cnt_notify_timeout                 ),
+    .stat_cnt_notify_retries         (stat_cnt_notify_retries                 ),
     // reset counters
-    .rst_retry_notify_cnt            (rst_retry_notify_cnt                    ),
+    .rst_cnt_notify                  (rst_cnt_notify                          ),
+    .rst_cnt_notify_ack              (rst_cnt_notify_ack                      ),
+    .rst_cnt_notify_retry            (rst_cnt_notify_retry                    ),
+    .rst_cnt_timeout                 (rst_cnt_timeout                         ),
+    // registers
+    .stat_fsm_formatter              (stat_fsm_formatter                      ),
     // master interface -------------------------------------------------------
     .format_header                   (format_header                           ),
     // slave interface --------------------------------------------------------
@@ -424,6 +456,8 @@ module mhdma_bridge
   // specific for FPGA
   // TODO: reseync miust be reworked
   // =========================================================================================== //
+  assign stat_reg_fsm = {12'b0, 2'b0, stat_fsm_formatter,  2'b0,stat_fsm_read_req, 2'b0,stat_fsm_cem, 2'b0,stat_fsm_notify_rx,  2'b0,stat_fsm_notify};
+
   // logic [15:0] cnt_notify_ack; defined before for timeout
   // logic [15:0] cnt_notify_read;
 

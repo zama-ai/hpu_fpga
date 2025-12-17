@@ -1,5 +1,5 @@
 # HPU_REGIF_CORE documentation
-**Date**: 2025-12-11
+**Date**: 2025-12-17
 **Tool Version**: bd49564daf1a99d615cb6dbb121b54bfbeef8b22
 
 ## RegisterMap Overview
@@ -17,7 +17,7 @@ HPU ethernet configuration register interface. Will be accessed by RPU to define
 **Offset**: 0x0
 **Range**: 0x60000
 **Word Size (b)**: 32
-**External Packages**: "axi_if_common_param_pkg.sv","axi_if_shell_axil_pkg.sv"
+**External Packages**: "axi_if_shell_axil_pkg.sv","axi_if_common_param_pkg.sv"
 
 
 ---
@@ -44,10 +44,10 @@ Below is a summary of all the registers in the current register map:
 | [status_3in3](#section-status-3in3) | 0x30010 | 0x4 | HPU status of parts 2in3 and 3in3 |
 | [bsk_avail](#section-bsk-avail) | 0x31000 | 0x8 | BSK availability configuration |
 | [runtime_3in3](#section-runtime-3in3) | 0x32000 | 0x48 | Runtime information |
-| [mhdma_system](#section-mhdma-system) | 0x50000 | 0x8 | system configuration |
+| [mhdma_system](#section-mhdma-system) | 0x50000 | 0xc | system configuration |
 | [mhdma_reset](#section-mhdma-reset) | 0x50014 | 0x8 | Controllable resets for transceivers |
 | [mhdma_hpu_id](#section-mhdma-hpu-id) | 0x50050 | 0x20 | HPU ID containing all possible targets. For all IDs we have HPU MAC address, software ID and a flag for current hpu |
-| [mhdma_request](#section-mhdma-request) | 0x50100 | 0x14 | Request registers interface |
+| [mhdma_request](#section-mhdma-request) | 0x50100 | 0x20 | Request registers interface |
 | [mhdma_lane](#section-mhdma-lane) | 0x50200 | 0x4 | Line parameter sections |
 | [mhdma_hbm_axi4_addr_2in3](#section-mhdma-hbm-axi4-addr-2in3) | 0x51000 | 0x10 | HBM AXI4 connection address offset |
 | [fifo_write](#section-fifo-write) | 0x5101c | 0x10 | fifo write part |
@@ -4043,6 +4043,7 @@ Below is a summary of all the registers in the current section mhdma_system:
 |-----------------:|:------:|:------:|:------------|
 | [lane](#register-mhdma-systemlane) | 0x50000 | RW |  Different parameters for qsfp lines |
 | [timeout](#register-mhdma-systemtimeout) | 0x50004 | RW |  16 bit Timeout: time before re-launching a request, in clock cycles |
+| [fsm_value](#register-mhdma-systemfsm-value) | 0x50008 | R. |  fsm status of the module |
 
 
 ---
@@ -4082,6 +4083,21 @@ Register lane contains following Sub-fields:
 - **Write Access**: Write
 - **Offset**: 0x50004
 - **Default**: 40000
+
+
+
+
+---
+
+
+### Register mhdma-system.fsm-value
+
+- **Description**: fsm status of the module
+- **Owner**: Kernel
+- **Read Access**: Read
+- **Write Access**: None
+- **Offset**: 0x50008
+- **Default**: 0
 
 
 
@@ -4312,6 +4328,9 @@ Below is a summary of all the registers in the current section mhdma_request:
 | [notify](#register-mhdma-requestnotify) | 0x50108 | R. |  When a notify is received, this register will be updated |
 | [read_request](#register-mhdma-requestread-request) | 0x5010c | R. |  When a read request has bneen processed, this register will be updated |
 | [stat_notify](#register-mhdma-requeststat-notify) | 0x50110 | R. |  requests statistics each counter is up to 40seconds |
+| [stat_notify_ack](#register-mhdma-requeststat-notify-ack) | 0x50114 | R. |  requests statistics each counter is up to 40seconds |
+| [stat_notify_timeout](#register-mhdma-requeststat-notify-timeout) | 0x50118 | R. |  requests statistics each counter is up to 40seconds |
+| [stat_notify_timeout_retry](#register-mhdma-requeststat-notify-timeout-retry) | 0x5011c | R. |  requests statistics each counter is up to 40seconds |
 
 
 ---
@@ -4421,7 +4440,7 @@ Register read_request contains following Sub-fields:
 
 - **Description**: requests statistics each counter is up to 40seconds
 - **Owner**: Kernel
-- **Read Access**: Read
+- **Read Access**: ReadNotify
 - **Write Access**: None
 - **Offset**: 0x50110
 - **Default**: C.f. fields
@@ -4433,8 +4452,76 @@ Register stat_notify contains following Sub-fields:
 
 | Field Name | Offset_b | Size_b | Default      | Description   |
 |-----------:|:--------:|:------:|:------------:|:--------------|
-| cnt_notify_ack      | 0 | 16 |0| counter from send notify up to ack |
-| cnt_notify_read      | 16 | 16 |0| counter from reception up to reading reg |
+| cnt_read      | 16 | 16 |0| number of notify that have been sent |
+
+
+
+---
+
+
+### Register mhdma-request.stat-notify-ack
+
+- **Description**: requests statistics each counter is up to 40seconds
+- **Owner**: Kernel
+- **Read Access**: ReadNotify
+- **Write Access**: None
+- **Offset**: 0x50114
+- **Default**: C.f. fields
+
+
+#### Field Details
+
+Register stat_notify_ack contains following Sub-fields:
+
+| Field Name | Offset_b | Size_b | Default      | Description   |
+|-----------:|:--------:|:------:|:------------:|:--------------|
+| cnt_ack      | 0 | 16 |0| number of notify ack that have been received |
+
+
+
+---
+
+
+### Register mhdma-request.stat-notify-timeout
+
+- **Description**: requests statistics each counter is up to 40seconds
+- **Owner**: Kernel
+- **Read Access**: ReadNotify
+- **Write Access**: None
+- **Offset**: 0x50118
+- **Default**: C.f. fields
+
+
+#### Field Details
+
+Register stat_notify_timeout contains following Sub-fields:
+
+| Field Name | Offset_b | Size_b | Default      | Description   |
+|-----------:|:--------:|:------:|:------------:|:--------------|
+| cnt_timeout      | 16 | 16 |0| timeout counter on notify |
+
+
+
+---
+
+
+### Register mhdma-request.stat-notify-timeout-retry
+
+- **Description**: requests statistics each counter is up to 40seconds
+- **Owner**: Kernel
+- **Read Access**: ReadNotify
+- **Write Access**: None
+- **Offset**: 0x5011c
+- **Default**: C.f. fields
+
+
+#### Field Details
+
+Register stat_notify_timeout_retry contains following Sub-fields:
+
+| Field Name | Offset_b | Size_b | Default      | Description   |
+|-----------:|:--------:|:------:|:------------:|:--------------|
+| cnt_retry      | 16 | 16 |0| counter of number of retries that have been done |
 
 
 

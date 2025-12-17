@@ -57,6 +57,10 @@ module mhdma_master
   output logic                                cerx_reception_ready,
   // Received header ----------------------------------------------------------
   input  header_t                             decoded_header,
+  // statistics ---------------------------------------------------------------
+  // register
+  output logic [1:0]                          stat_fsm_notify,
+  output logic [1:0]                          stat_fsm_read_req,
   // Axi4 interface for NMU ---------------------------------------------------
   output logic [ETH_PC-1:0][AXI4_ID_W-1:0]    m_axi4_awid,
   output logic [ETH_PC-1:0][AXI4_ADD_W-1:0]   m_axi4_awaddr,
@@ -939,5 +943,11 @@ module mhdma_master
 
   assign regf_read_payload = rr_regf_out_data;
   assign interrupt_read_request = rr_regf_out_vld;
+
+  // =========================================================================================== //
+  // Statistics
+  // =========================================================================================== //
+  assign stat_fsm_notify   = ntx_state;
+  assign stat_fsm_read_req = rreq_state;
 
 endmodule

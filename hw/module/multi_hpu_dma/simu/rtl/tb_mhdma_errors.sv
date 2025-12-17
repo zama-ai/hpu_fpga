@@ -591,6 +591,25 @@ module tb_mhdma_errors;
     wait(hpu_a.mhdma_bridge.mhdma_formatter.tx_state == 3'b001);
     $display("%t > [INFO]: formatter FSM has gotten back to IDLE", $time);
 
+    maxil_drv_if.read_trans(MHDMA_REQUEST_STAT_NOTIFY_OFS, read_data);
+    $display("[INFO] MHDMA_REQUEST_STAT_NOTIFY_OFS                 : %0x ", read_data);
+    maxil_drv_if.read_trans(MHDMA_REQUEST_STAT_NOTIFY_ACK_OFS, read_data);
+    $display("[INFO] MHDMA_REQUEST_STAT_NOTIFY_ACK_OFS             : %0x ", read_data);
+    maxil_drv_if.read_trans(MHDMA_REQUEST_STAT_NOTIFY_TIMEOUT_OFS, read_data);
+    $display("[INFO] MHDMA_REQUEST_STAT_NOTIFY_TIMEOUT_OFS         : %0x ", read_data);
+    maxil_drv_if.read_trans(MHDMA_REQUEST_STAT_NOTIFY_TIMEOUT_RETRY_OFS, read_data);
+    $display("[INFO] MHDMA_REQUEST_STAT_NOTIFY_TIMEOUT_RETRY_OFS   : %0x ", read_data);
+
+    $display("[INFO] re-read after reset --------------------------------------------");
+    maxil_drv_if.read_trans(MHDMA_REQUEST_STAT_NOTIFY_OFS, read_data);
+    $display("[INFO] MHDMA_REQUEST_STAT_NOTIFY_OFS                 : %0x ", read_data);
+    maxil_drv_if.read_trans(MHDMA_REQUEST_STAT_NOTIFY_ACK_OFS, read_data);
+    $display("[INFO] MHDMA_REQUEST_STAT_NOTIFY_ACK_OFS             : %0x ", read_data);
+    maxil_drv_if.read_trans(MHDMA_REQUEST_STAT_NOTIFY_TIMEOUT_OFS, read_data);
+    $display("[INFO] MHDMA_REQUEST_STAT_NOTIFY_TIMEOUT_OFS         : %0x ", read_data);
+    maxil_drv_if.read_trans(MHDMA_REQUEST_STAT_NOTIFY_TIMEOUT_RETRY_OFS, read_data);
+    $display("[INFO] MHDMA_REQUEST_STAT_NOTIFY_TIMEOUT_RETRY_OFS   : %0x ", read_data);
+
     $display("%t > INFO: End simulation",$time);
     repeat(20) @(posedge clk_control);
     end_of_test = 1'b1;

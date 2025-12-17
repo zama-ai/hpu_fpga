@@ -127,13 +127,40 @@ module multi_hpu_dma
   logic                 [REG_DATA_W-1:0]   r_reset_monitor;
   logic                 [REG_DATA_W-1:0]   r_line_debug;
   logic                 [REG_DATA_W-1:0]   r_status_debug;
-  // Statistics
+
+
+  // Statistics Counters --------------------------------------------------------------------------
+  // counters @eth
+  logic [TIMEOUT_W-1:0] cnt_notify_eth;
+  logic [TIMEOUT_W-1:0] cnt_notify_ack_eth;
+  logic [TIMEOUT_W-1:0] cnt_timeout_eth;
+  logic [TIMEOUT_W-1:0] cnt_retry_notify_eth;
+  // counters @cfg
+  logic [TIMEOUT_W-1:0] cnt_notify_cfg;
+  logic [TIMEOUT_W-1:0] cnt_notify_ack_cfg;
+  logic [TIMEOUT_W-1:0] cnt_timeout_cfg;
+  logic [TIMEOUT_W-1:0] cnt_retry_notify_cfg;
+
+  // reset counters @eth
+  logic                 rst_cnt_notify_eth;
+  logic                 rst_cnt_notify_ack_eth;
+  logic                 rst_cnt_timeout_eth;
+  logic                 rst_cnt_retry_notify_eth;
+  // reset counters @cfg
+  logic                 rst_cnt_notify_cfg;
+  logic                 rst_cnt_notify_ack_cfg;
+  logic                 rst_cnt_timeout_cfg;
+  logic                 rst_cnt_retry_notify_cfg;
+
+  // Statistics Registers -------------------------------------------------------------------------
+  // FSM value
+  logic [REG_DATA_W-1:0] r_fsm_value_eth;
+  logic [REG_DATA_W-1:0] r_fsm_value_cfg;
+
+
   logic [15:0] r_cnt_notify_ack;
   logic [15:0] r_cnt_notify_read;
   logic        rst_cnt_notify;
-  logic rst_retry_notify_cnt;
-
-  assign rst_retry_notify_cnt = 0; //TODO
 
   // signals derived from registers
   logic                 tx_loop;
@@ -254,9 +281,22 @@ module multi_hpu_dma
     .r_mhdma_lane_debug                    (r_line_debug                                          ),
     .r_mhdma_system_timeout                (r_system_timeout                                      ),
     // stats --------------------------------------------------------------------------------------
-    // from bridge
-    .r_mhdma_request_stat_notify_upd       ({r_cnt_notify_ack, r_cnt_notify_read}                 ), // to be removed or renamed?
-    // from trace module
+    // On Notify
+    .r_mhdma_request_stat_notify_upd                (cnt_notify_cfg                               ),
+    .r_mhdma_request_stat_notify_rd_en              (rst_cnt_notify_cfg                           ),
+
+    .r_mhdma_request_stat_notify_ack_upd            (cnt_notify_ack_cfg                           ),
+    .r_mhdma_request_stat_notify_ack_rd_en          (rst_cnt_notify_ack_cfg                       ),
+
+    .r_mhdma_request_stat_notify_timeout_upd        (cnt_timeout_cfg                              ),
+    .r_mhdma_request_stat_notify_timeout_rd_en      (rst_cnt_timeout_cfg                          ),
+
+    .r_mhdma_request_stat_notify_timeout_retry_upd  (cnt_retry_notify_cfg                         ),
+    .r_mhdma_request_stat_notify_timeout_retry_rd_en(rst_cnt_retry_notify_cfg                     ),
+
+    .r_mhdma_system_fsm_value_upd                   (r_fsm_value_cfg                              ),
+
+// from trace module
     .r_fifo_write_number_of_words          (r_nb_word                                             ), // to be removed or renamed?
     .r_fifo_write_words_to_write_a         (r_wr_word_a                                           ), // to be removed or renamed?
     .r_fifo_write_words_to_write_b         (r_wr_word_b                                           ), // to be removed or renamed?
@@ -341,6 +381,125 @@ module multi_hpu_dma
   // merging half words into a single one
   assign r_wr_word = write_ack ? {r_wr_word_a, r_wr_word_b} :0;
 
+
+  // CDC for regfile -------------------------------------------------------------------------------
+  // TODO: this is temporary
+  // single from config to ethenet clock
+
+  // Counters ===================================================================================
+  xpm_cdc_single_wrapper #(
+    .CDC_SYNC_STAGES ( 2 ) ,
+    .SRC_INPUT_REG   ( 0 )
+  ) cdc_rst_cnt_notify (
+    .src_clk  ( clk_eth_cfg     ) ,
+    .dest_clk ( clk_eth_mrmac ) ,
+    .src_in   ( rst_cnt_notify_cfg ) ,
+    .dest_out ( rst_cnt_notify_eth )
+  ); //temporary
+  xpm_cdc_gray #(
+    .DEST_SYNC_FF(4),                   // Range: 2-10 synchronizer stages
+    .INIT_SYNC_FF(0),                   // 0=disable simulation init values
+    .REG_OUTPUT(0),                     // 0=combinatorial output, 1=registered output
+    .SIM_ASSERT_CHK(0),                 // 0=disable simulation messages
+    .SIM_LOSSLESS_GRAY_CHK(0),          // 0=disable lossless check
+    .WIDTH(TIMEOUT_W)                   // TIMEOUT_W-bit counter width (range: 2-32)
+  ) xpm_cdc_gray_cnt_notify (
+    .src_clk(clk_eth_mrmac),            // 1-bit input: source clock
+    .src_in_bin(cnt_notify_eth),        // TIMEOUT_W-bit input: binary counter to synchronize
+
+    .dest_clk(clk_eth_cfg),             // 1-bit input: destination clock
+    .dest_out_bin(cnt_notify_cfg)       // TIMEOUT_W-bit output: binary value in dest domain
+  );//temporary
+
+  xpm_cdc_single_wrapper #(
+    .CDC_SYNC_STAGES ( 2 ) ,
+    .SRC_INPUT_REG   ( 0 )
+  ) cdc_rst_cnt_notify_ack (
+    .src_clk  ( clk_eth_cfg     ) ,
+    .dest_clk ( clk_eth_mrmac ) ,
+    .src_in   ( rst_cnt_notify_ack_cfg ) ,
+    .dest_out ( rst_cnt_notify_ack_eth )
+  );//temporary
+  xpm_cdc_gray #(
+    .DEST_SYNC_FF(4),                   // Range: 2-10 synchronizer stages
+    .INIT_SYNC_FF(0),                   // 0=disable simulation init values
+    .REG_OUTPUT(0),                     // 0=combinatorial output, 1=registered output
+    .SIM_ASSERT_CHK(0),                 // 0=disable simulation messages
+    .SIM_LOSSLESS_GRAY_CHK(0),          // 0=disable lossless check
+    .WIDTH(TIMEOUT_W)                   // TIMEOUT_W-bit counter width (range: 2-32)
+  ) xpm_cdc_gray_cnt_notify_ack (
+    .src_clk(clk_eth_mrmac),            // 1-bit input: source clock
+    .src_in_bin(cnt_notify_ack_eth),    // TIMEOUT_W-bit input: binary counter to synchronize
+
+    .dest_clk(clk_eth_cfg),             // 1-bit input: destination clock
+    .dest_out_bin(cnt_notify_ack_cfg)   // TIMEOUT_W-bit output: binary value in dest domain
+  );//temporary
+
+  xpm_cdc_single_wrapper #(
+    .CDC_SYNC_STAGES ( 2 ) ,
+    .SRC_INPUT_REG   ( 0 )
+  ) cdc_rst_cnt_timeout (
+    .src_clk  ( clk_eth_cfg     ) ,
+    .dest_clk ( clk_eth_mrmac ) ,
+    .src_in   ( rst_cnt_timeout_cfg ) ,
+    .dest_out ( rst_cnt_timeout_eth )
+  );//temporary
+  xpm_cdc_gray #(
+    .DEST_SYNC_FF(4),                   // Range: 2-10 synchronizer stages
+    .INIT_SYNC_FF(0),                   // 0=disable simulation init values
+    .REG_OUTPUT(0),                     // 0=combinatorial output, 1=registered output
+    .SIM_ASSERT_CHK(0),                 // 0=disable simulation messages
+    .SIM_LOSSLESS_GRAY_CHK(0),          // 0=disable lossless check
+    .WIDTH(TIMEOUT_W)                   // TIMEOUT_W-bit counter width (range: 2-32)
+  ) xpm_cdc_gray_cnt_notify_to (
+    .src_clk(clk_eth_mrmac),            // 1-bit input: source clock
+    .src_in_bin(cnt_timeout_eth),       // TIMEOUT_W-bit input: binary counter to synchronize
+
+    .dest_clk(clk_eth_cfg),             // 1-bit input: destination clock
+    .dest_out_bin(cnt_timeout_cfg)      // TIMEOUT_W-bit output: binary value in dest domain
+  );//temporary
+
+  xpm_cdc_single_wrapper #(
+    .CDC_SYNC_STAGES ( 2 ) ,
+    .SRC_INPUT_REG   ( 0 )
+  ) cdc_rst_cnt_notify_retry (
+    .src_clk  ( clk_eth_cfg     ) ,
+    .dest_clk ( clk_eth_mrmac ) ,
+    .src_in   ( rst_cnt_retry_notify_cfg ) ,
+    .dest_out ( rst_cnt_retry_notify_eth )
+  );//temporary
+  xpm_cdc_gray #(
+    .DEST_SYNC_FF(4),                   // Range: 2-10 synchronizer stages
+    .INIT_SYNC_FF(0),                   // 0=disable simulation init values
+    .REG_OUTPUT(0),                     // 0=combinatorial output, 1=registered output
+    .SIM_ASSERT_CHK(0),                 // 0=disable simulation messages
+    .SIM_LOSSLESS_GRAY_CHK(0),          // 0=disable lossless check
+    .WIDTH(TIMEOUT_W)                   // TIMEOUT_W-bit counter width (range: 2-32)
+  ) xpm_cdc_gray_cnt_notify_retry (
+    .src_clk(clk_eth_mrmac),            // 1-bit input: source clock
+    .src_in_bin(cnt_retry_notify_eth),  // TIMEOUT_W-bit input: binary counter to synchronize
+
+    .dest_clk(clk_eth_cfg),             // 1-bit input: destination clock
+    .dest_out_bin(cnt_retry_notify_cfg) // TIMEOUT_W-bit output: binary value in dest domain
+  );//temporary
+
+  // Registers ====================================================================================
+  xpm_cdc_gray #(
+    .DEST_SYNC_FF(4),                   // Range: 2-10 synchronizer stages
+    .INIT_SYNC_FF(0),                   // 0=disable simulation init values
+    .REG_OUTPUT(0),                     // 0=combinatorial output, 1=registered output
+    .SIM_ASSERT_CHK(0),                 // 0=disable simulation messages
+    .SIM_LOSSLESS_GRAY_CHK(0),          // 0=disable lossless check
+    .WIDTH(REG_DATA_W)                  // REG_DATA_W-bit counter width (range: 2-32)
+  ) xpm_cdc_gray_reg_fsm (
+    .src_clk(clk_eth_mrmac),            // 1-bit input: source clock
+    .src_in_bin(r_fsm_value_eth),       // TIMEOUT_W-bit input: binary counter to synchronize
+
+    .dest_clk(clk_eth_cfg),             // 1-bit input: destination clock
+    .dest_out_bin(r_fsm_value_cfg)      // TIMEOUT_W-bit output: binary value in dest domain
+  );//temporary
+
+
   // ============================================================================================ //
   // Multi-HPU-DMA bridge from NOC to axi4-stream & regf control
   // ============================================================================================ //
@@ -406,10 +565,18 @@ module multi_hpu_dma
     .interrupt_read_request(interrupt_read_request                                                ),
     .timeout_duration      (r_system_timeout[15:0]                                                ),
     // statistics ---------------------------------------------------------------------------------
-    .stat_cnt_notify_ack   (r_cnt_notify_ack                                                      ),
-    .stat_cnt_notify_read  (r_cnt_notify_read                                                     ),
-    .rst_cnt_notify        (rst_cnt_notify                                                        ),
-    .rst_retry_notify_cnt  (rst_retry_notify_cnt                                                  ),
+    // counters
+    .stat_cnt_notify         (cnt_notify_eth                                                      ),
+    .stat_cnt_notify_ack     (cnt_notify_ack_eth                                                  ),
+    .stat_cnt_notify_timeout (cnt_timeout_eth                                                     ),
+    .stat_cnt_notify_retries (cnt_retry_notify_eth                                                ),
+    // resets
+    .rst_cnt_notify          (rst_cnt_notify_eth                                                  ),
+    .rst_cnt_notify_ack      (rst_cnt_notify_ack_eth                                              ),
+    .rst_cnt_timeout         (rst_cnt_timeout_eth                                                 ),
+    .rst_cnt_notify_retry    (rst_cnt_retry_notify_eth                                            ),
+    // registers
+    .stat_reg_fsm          (r_fsm_value_eth                                                       ),
     // QSFP interface one lane --------------------------------------------------------------------
     // tx
     .qsfp_tx_tdata         (axis_tx_tdata                                                         ),

@@ -55,6 +55,10 @@ module mhdma_slave
   output logic             [MRMAC_AXIS_W-1:0] ce_payload,
   output logic                                ce_valid,
   input  logic                                ce_ready,
+  // statistics ---------------------------------------------------------------
+  // register
+  output logic [1:0]                          stat_fsm_notify_rx,
+  output logic [1:0]                          stat_fsm_cem,
   // Axi4 interface for NMU ---------------------------------------------------
   output logic [ETH_PC-1:0][  AXI4_ADD_W-1:0] m_axi4_araddr,
   output logic [ETH_PC-1:0][  AXI4_LEN_W-1:0] m_axi4_arlen,
@@ -647,5 +651,11 @@ module mhdma_slave
 
   // our destination mac address was the source of what we received
   assign ce_header_payload = {src_mac_addr, iop_id, hpu_id, size_b, ct_dst_addr, ct_src_addr};
+
+  // =========================================================================================== //
+  // Statistics
+  // =========================================================================================== //
+  assign stat_fsm_notify_rx  =  nrx_state ; //TODO toremove
+  assign stat_fsm_cem        = cem_state;
 
 endmodule
