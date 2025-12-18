@@ -607,32 +607,45 @@ module tb_mhdma_errors;
     maxil_drv_if.read_trans(MHDMA_REQUEST_STAT_NOTIFY_TIMEOUT_RETRY_OFS, read_data);
     $display("[INFO] MHDMA_REQUEST_STAT_NOTIFY_TIMEOUT_RETRY_OFS   : %0x ", read_data);
 
-    $display("C - no ack for a time and a new notify pening"); // ---------------------------------
+    $display("D - no ack for a time and a new notify pening"); // ---------------------------------
     iop_id       = 678;
     iop_src_addr = 99;
-    notify_request(hpu_a_id, hpu_b_id, iop_id, iop_src_addr);
+    // TODO: bug here
+    // notify_request(hpu_a_id, hpu_b_id, iop_id, iop_src_addr);
+    // repeat(2*TIMEOUT_DUR[15:0]) @(posedge clk_mrmac);
 
-    repeat(2*TIMEOUT_DUR[15:0]) @(posedge clk_mrmac);
+    // iop_id       = 777;
+    // iop_src_addr = 98;
+    // notify_request(hpu_a_id, hpu_b_id, iop_id, iop_src_addr);
 
-    iop_id       = 777;
-    iop_src_addr = 98;
-    notify_request(hpu_a_id, hpu_b_id, iop_id, iop_src_addr);
+    // notify_ack(hpu_a_id, hpu_b_mac_addr, hpu_b_id, hpu_b_mac_addr);
+    // notify_ack(hpu_a_id, hpu_b_mac_addr, hpu_b_id, hpu_b_mac_addr);
 
-    notify_ack(hpu_a_id, hpu_b_mac_addr, hpu_b_id, hpu_b_mac_addr);
-    notify_ack(hpu_a_id, hpu_b_mac_addr, hpu_b_id, hpu_b_mac_addr);
+    // Ciphertext emission error ==================================================================
+    // HPU_A sends a read request and receives
+    // - (e) a correct ciphertext
+    // - (f) nothing
+    // - (g) an incorrect ce (wrong seq_num)
+    iop_id       = $urandom();
+    iop_src_addr = $urandom_range(0, 1<<SRC_ADDR_W);
 
-    // // Ciphertext emission error ==================================================================
-    // // HPU_A sends a read request and receives
-    // // - (d) a correct ciphertext
-    // // - (e) nothing
-    // // - (f) an incorrect ce (wrong seq_num)
-    // iop_id       = $urandom();
-    // iop_src_addr = $urandom_range(0, 1<<SRC_ADDR_W);
+    $display("E - Read request is emitted by HPU_A and correctly answered"); // -------------------
+    read_request(hpu_b_id, iop_id, iop_src_addr, iop_dst_addr);
 
-    // $display("D - Read request is emitted by HPU_A and correctly answered"); // -------------------
-    // read_request(hpu_b_id, iop_id, iop_src_addr, iop_dst_addr);
+    emulate_ciphertext_emission(hpu_a_id, hpu_a_mac_addr, hpu_b_id, hpu_b_mac_addr, 0);
 
-    // emulate_ciphertext_emission(hpu_a_id, hpu_a_mac_addr, hpu_b_id, hpu_b_mac_addr, 0);
+    wait(hpu_a.mhdma_bridge.mhdma_formatter.tx_state == 3'b001);
+    $display("%t > [INFO-E]: formatter FSM has gotten back to IDLE", $time);
+
+    $display("F - Read request is emitted by HPU_A and not answered for twice timout amount"); // -
+    read_request(hpu_b_id, iop_id, iop_src_addr, iop_dst_addr);
+
+    repeat(2*TIMEOUT_DUR[31:16]) @(posedge clk_mrmac);
+
+    emulate_ciphertext_emission(hpu_a_id, hpu_a_mac_addr, hpu_b_id, hpu_b_mac_addr, 0);
+    $display("%t > [INFO-F]: formatter FSM has gotten back to IDLE", $time);
+
+    wait(hpu_a.mhdma_bridge.mhdma_formatter.tx_state == 3'b001);
 
     $display("%t > INFO: End simulation",$time);
     repeat(20) @(posedge clk_control);

@@ -47,7 +47,7 @@ module mhdma_master
 
   input  logic                                notify_ack_received,
 
-  output logic                                ct_emission_all_packets_received,
+  output logic                                packets_received,
   // from master to packet formatter -------------------------------------------
   output header_t                             format_header,
   output logic                                format_retry_notify,
@@ -92,8 +92,6 @@ module mhdma_master
   input  logic [ETH_PC-1:0][AXI4_RESP_W-1:0]  m_axi4_bresp,
   input  logic [ETH_PC-1:0]                   m_axi4_bvalid,
   output logic [ETH_PC-1:0]                   m_axi4_bready,
-  // flags for stats ----------------------------------------------------------
-  // statistics ---------------------------------------------------------------
   // interrupt ---------------------------------------------------------------
   input  logic                                clear_interrupt_rr,
   output logic                                interrupt_read_request,
@@ -445,7 +443,6 @@ module mhdma_master
 
   // TODO:s
   assign error_packet_id_mismatch = 1'b0;
-  assign rreq_timeout_cdc = 1'b0;
   assign rreq_ct_transmitted = 1'b0;
 
   assign rreq_send_request = (rreq_state == RR_SEND_REQUEST) ? 1'b1: 1'b0;
@@ -588,7 +585,7 @@ module mhdma_master
     end else begin
       if (fifo_cerx_out_vld & fifo_cerx_out_rdy) begin
         fifo_cerx_cnt_tx <= fifo_cerx_cnt_tx +1;
-      end else if (ct_emission_all_packets_received) begin
+      end else if (packets_received) begin
         fifo_cerx_cnt_tx <= 'h0;
       end
     end
@@ -841,7 +838,7 @@ module mhdma_master
         if (~resetn_mrmac) begin
           axi_word_cnt <= MAX_BURST_SIZE;
         end else begin
-          if (ct_emission_all_packets_received) begin                             // all transactions done, reset the counter
+          if (packets_received) begin                                            // all transactions done, reset the counter
               axi_word_cnt <= MAX_BURST_SIZE;
           end else begin
             if ((axi_write_cnt != 1) | (PC_REMAINS[gen_wr] == 0)) begin           // (not last trans) or (full bursts trans)
@@ -941,7 +938,7 @@ module mhdma_master
 
   // itr_read_request is a pulse and can be used as a way to determine when to quit ST_READ_REQ
   // TODO: check that we don't need seq_num check or errors here and it's enough
-  assign ct_emission_all_packets_received = itr_read_request;
+  assign packets_received = itr_read_request;
 
   // regf payload information ---------------------------------------------------------------------
   logic [REG_DATA_W-1:0] rr_regf_in_data;

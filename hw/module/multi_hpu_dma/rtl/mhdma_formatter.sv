@@ -26,10 +26,12 @@ module mhdma_formatter
   input  logic                                      new_read_request_pending,
   input  logic                                      new_notify_request_pending,
 
-  input  logic                                      ct_emission_all_packets_received,
   input  logic                                      cerx_reception_ready,
 
+  // slave interface ---------------------------------------------------------
+  output  logic                                     packets_emitted,
   // master interface ---------------------------------------------------------
+  input  logic                                      ce_received,
   input  header_t                                   format_header,
   input  logic                                      retry_notify,
   input  logic                                      retry_read_request,
@@ -105,7 +107,6 @@ module mhdma_formatter
   logic                 ce_first_header;      // level: up for first packet header (used for tx & backpressure)
   logic                 ce_first_header_sent; // level: up when first packet header has been sent
   logic                 ce_last_packet;       // level: up when last packet is transmitting
-  logic                 ce_all_packets_transmitted;
   logic                 ce_end_of_packet;   // pulse: last word of last packet
   logic                 ce_start_of_header; // pulse: header transmission for all packets
   logic                 ce_start_emission;  // pulse: start of first header transmission
@@ -160,7 +161,7 @@ module mhdma_formatter
   assign tx_header_last = (tx_cnt == NB_WORDS_CUST_HEADER_SIZE);
   assign tx_last_word   = (ct_emission_allowed & ~ce_last_packet) ? (tx_cnt == NB_WORDS_FULL) : (tx_cnt == NB_WORDS_PARTIAL);
 
-  assign header_sop = format_header.valid | notify_ack_pulse | ce_start_of_header | retry_notify;
+  assign header_sop = format_header.valid | notify_ack_pulse | ce_start_of_header | retry_notify | retry_read_request;
 
   // =========================================================================================== //
   // Ciphertext Emission (CE)
@@ -400,7 +401,7 @@ module mhdma_formatter
   end
 
   always_ff @(posedge clk_mrmac)
-    ce_word_cnt_reset <= ce_all_packets_transmitted;
+    ce_word_cnt_reset <= packets_emitted;
 
   // we should stall the emission of coefficents after we have to correct number of words
   // we should unstall when header has left
@@ -459,9 +460,9 @@ module mhdma_formatter
   // For the arbiter we need the information to release the fsm that all have been sent
   always_ff @(posedge clk_mrmac) begin
     if (~resetn_mrmac) begin
-      ce_all_packets_transmitted <= 1'b0;
+      packets_emitted <= 1'b0;
     end else begin
-      ce_all_packets_transmitted <= stop_sending_ce_partial_frame;
+      packets_emitted <= stop_sending_ce_partial_frame;
     end
   end
 
@@ -506,11 +507,11 @@ module mhdma_formatter
           end
         end
       ST_CT_EMISSION:
-        tx_next_state = ce_all_packets_transmitted ? ST_IDLE : ST_CT_EMISSION;
+        tx_next_state = packets_emitted ? ST_IDLE : ST_CT_EMISSION;
       ST_NACK:
         tx_next_state =  tx_small_last ? ST_IDLE : ST_NACK;
       ST_READ_REQ:
-        tx_next_state =  ct_emission_all_packets_received ? ST_IDLE : ST_READ_REQ;
+        tx_next_state =  ce_received ? ST_IDLE : ST_READ_REQ;
       ST_NOTIFY:
         tx_next_state =  tx_small_last ? ST_IDLE : ST_NOTIFY;
     endcase

@@ -210,7 +210,8 @@ module mhdma_bridge
   logic read_request_received;
   logic ciphertext_emission_received;
 
-  logic ct_emission_all_packets_received;
+  logic format_packets_emitted;
+  logic format_ct_received;
 
   // formatter
   header_t format_header;
@@ -293,7 +294,6 @@ module mhdma_bridge
     .new_read_request_pending        (new_read_request_pending                ),
     .new_notify_request_pending      (new_notify_request_pending              ),
     .notify_ack_received             (notify_ack_received                     ),
-    .ct_emission_all_packets_received(ct_emission_all_packets_received        ),
     .cerx_reception_ready            (cerx_reception_ready                    ),
     // payload from decoder ---------------------------------------------------
     .rx_tdata                        (rx_tdata                                ),
@@ -306,6 +306,7 @@ module mhdma_bridge
     .format_header                   (format_header                           ),
     .format_retry_notify             (retry_notify                            ),
     .format_retry_read_request       (retry_read_request                      ),
+    .packets_received                (format_ct_received                      ),
     // header interface -------------------------------------------------------
     .decoded_header                  (decoded_header                          ),
     .error_packet_id_mismatch        (/* UNUSED */                            )
@@ -337,7 +338,8 @@ module mhdma_bridge
     .new_ct_emission_request_pending(new_ct_emission_request_pending          ),
     .notify_ack_allowed             (notify_ack_allowed                       ),
     .ct_emission_allowed            (ct_emission_allowed                      ),
-    .ct_emission_finished           (ct_emission_all_packets_received         ),
+    // formatter ---------------------------------------------------------------
+    .ct_emission_finished           (format_packets_emitted                   ),
     // notify ack payload -----------------------------------------------------
     .nrx_cmd_payload                (nrx_cmd_payload                          ),
     .nrx_cmd_valid                  (nrx_cmd_valid                            ),
@@ -408,12 +410,14 @@ module mhdma_bridge
     .new_notify_ack_pending          (new_notify_ack_pending                  ),
     .new_read_request_pending        (new_read_request_pending                ),
     .new_notify_request_pending      (new_notify_request_pending              ),
-    .ct_emission_all_packets_received(ct_emission_all_packets_received        ),
     .cerx_reception_ready            (cerx_reception_ready                    ),
     // statistics -------------------------------------------------------------
     // registers
     .stat_fsm_formatter              (stat_fsm_formatter                      ),
+    // slave interface --------------------------------------------------------
+    .packets_emitted                 (format_packets_emitted                  ),
     // master interface -------------------------------------------------------
+    .ce_received                     (format_ct_received                      ),
     .format_header                   (format_header                           ),
     .retry_notify                    (retry_notify                            ),
     .retry_read_request              (retry_read_request                      ),
