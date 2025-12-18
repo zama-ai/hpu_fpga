@@ -63,8 +63,15 @@ module mhdma_formatter
   // =========================================================================================== //
   // this register is needed to ease timing
   logic [NB_MAX_HPU-1:0][MAC_ADDR_W-1:0] hpu_mac_table_tmp;
+
   always_ff @(posedge clk_mrmac)
     hpu_mac_table_tmp <= hpu_mac_table;
+
+  header_t prev_format_header;
+
+  always_ff @(posedge clk_mrmac)
+    if (format_header.valid)
+      prev_format_header <= format_header;
 
   // =========================================================================================== //
   // Building headers
@@ -154,12 +161,6 @@ module mhdma_formatter
   assign tx_last_word   = (ct_emission_allowed & ~ce_last_packet) ? (tx_cnt == NB_WORDS_FULL) : (tx_cnt == NB_WORDS_PARTIAL);
 
   assign header_sop = format_header.valid | notify_ack_pulse | ce_start_of_header | retry_notify;
-
-  header_t prev_format_header;
-
-  always_ff @(posedge clk_mrmac)
-    if (format_header.valid)
-      prev_format_header <= format_header;
 
   // =========================================================================================== //
   // Ciphertext Emission (CE)
