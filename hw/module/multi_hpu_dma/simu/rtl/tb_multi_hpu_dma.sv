@@ -31,6 +31,7 @@ module tb_multi_hpu_dma;
 
   localparam int FIFO_DEPTH = 512;
   localparam int SIM_MAX_FRAME_CYCLES = 256;
+  localparam int LOOP_NOTIFY = 10;
 
   // ciphertext memories -------------------------------------------------------------------------
   localparam int MEM_WR_CMD_BUF_DEPTH = 4;  // Should be >= 1
@@ -740,11 +741,12 @@ end
     arbitrary_notify_nb = XPM_MIN_FIFO_DEPTH; // if we have a full fifo on fifo_nrx_regf, we will lose notifies
     $display("\nC - Notification that a ciphertext is ready from one HPU to another, x %0d", arbitrary_notify_nb);
 
+    for (int k = 0; k < LOOP_NOTIFY; k++) begin
     for (int i = 0; i < arbitrary_notify_nb; i++) begin
       // for now size_b is fixed, all our ciphertext are 16.384kB (size_b=0x4000)
-      iop_id       = i;//$urandom();
-      iop_src_addr = 0;//$urandom_range(0, 1<<SRC_ADDR_W);
-      iop_dst_addr = 0;//$urandom_range(0, 1<<DST_ADDR_W);
+      iop_id       = $urandom();
+      iop_src_addr = $urandom_range(0, 1<<SRC_ADDR_W);
+      iop_dst_addr = $urandom_range(0, 1<<DST_ADDR_W);
 
       repeat(10) @(posedge clk_control);
       // Sending a NOTIFY from HPU-B to HPU-A -------------------------------------------------------
@@ -771,6 +773,46 @@ end
         $display("%t > [ERROR]: iop_id        = %x ", $time, iop_id);
         error_notify_rx = 1'b1;
       end
+    end
+
+    @(posedge clk_control);
+    if (hpu_a.interrupt_notify == 1'b1) begin
+      $display("%t > [ERROR]: Interrupt on HPU_A has not been lowered\n",$time);
+      error_interrupt_notify = 1'b1;
+    end
+
+    for (int i = 0; i < arbitrary_notify_nb; i++) begin
+      // for now size_b is fixed, all our ciphertext are 16.384kB (size_b=0x4000)
+      iop_id       = $urandom();
+      iop_src_addr = $urandom_range(0, 1<<SRC_ADDR_W);
+      iop_dst_addr = $urandom_range(0, 1<<DST_ADDR_W);
+
+      repeat(10) @(posedge clk_control);
+      // Sending a NOTIFY from HPU-B to HPU-A -------------------------------------------------------
+      notify_request(random_hpu_a, random_hpu_b, iop_id, iop_src_addr);
+
+      // if a Notify is received by HPU A we should be able to confirm it by reading in the regf
+      notify_payload = {iop_src_addr, 4'b0, random_hpu_a, iop_id};
+      notify_payload_ref_q.push_front(notify_payload);
+    end
+
+    $display("%t > INFO : All %0d Notify have been sent from A to B \n", $time, arbitrary_notify_nb);
+
+    for (int i = 0; i < arbitrary_notify_nb; i++) begin
+
+      // we must wait for interrupt to be raised before reading
+      wait (hpu_b.interrupt_notify == 1'b1);
+      maxil_drv_if_hpu_b.read_trans(MHDMA_REQUEST_NOTIFY_OFS, read_data);
+      expected_notify_payload = notify_payload_ref_q.pop_back();
+
+      assert (read_data == expected_notify_payload) else begin
+        $display("%t > [ERROR]: Payload DATA incorrect (received %x) =! (exp %x)", $time, read_data, expected_notify_payload);
+        $display("%t > [ERROR]: iop_src_addr  = %x ", $time, iop_src_addr);
+        $display("%t > [ERROR]: random_hpu_b  = %x ", $time, random_hpu_b);
+        $display("%t > [ERROR]: iop_id        = %x ", $time, iop_id);
+        error_notify_rx = 1'b1;
+      end
+    end
     end
 
     @(posedge clk_control);
