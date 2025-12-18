@@ -133,7 +133,7 @@ module mhdma_slave
   fifo_ram_rdy_vld # (
     .WIDTH      (NRX_WIDTH),
     .DEPTH      (NRX_DEPTH),
-    .RAM_LATENCY(NRX_DATA_COUNT_W)
+    .RAM_LATENCY(NRX_RAM_LATENCY)
   ) fifo_nrx_commands (
     .clk         (clk_mrmac),
     .s_rst_n     (resetn_mrmac),
@@ -611,7 +611,7 @@ module mhdma_slave
   fifo_ram_rdy_vld # (
     .WIDTH      (CE_DATA_W),
     .DEPTH      (CE_DEPTH),
-    .RAM_LATENCY(CE_DATA_COUNT_W)
+    .RAM_LATENCY(CE_RAM_LATENCY)
   ) fifo_ce (
     .clk         (clk_mrmac),
     .s_rst_n     (resetn_mrmac),

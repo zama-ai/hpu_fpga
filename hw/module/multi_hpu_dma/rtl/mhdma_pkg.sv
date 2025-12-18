@@ -119,6 +119,7 @@ package mhdma_pkg;
   // Notify RX payload: distributed
   localparam int NRX_WIDTH             = SRC_ADDR_W + HPU_ID_W + IOP_ID_W;
   localparam int NRX_DEPTH             = 4; //TOREVIEW
+  localparam int NRX_RAM_LATENCY       = 1;
   localparam int NRX_DATA_COUNT_W      =  $clog2(NRX_DEPTH)+1;
 
   // read request command queue: URAM fifo
