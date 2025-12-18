@@ -60,6 +60,7 @@ module mhdma_bridge
   input  logic                 [  REG_DATA_W-1:0] regf_req_addr,
   output logic                 [  REG_DATA_W-1:0] regf_notify_payload,
   output logic                 [  REG_DATA_W-1:0] regf_read_payload,
+  input  logic                 [  REG_DATA_W-1:0] regf_timeout_duration,
   // control ------------------------------------------------------------------
   input  logic                                    received_req,
   output logic                                    request_consumed,
@@ -80,7 +81,6 @@ module mhdma_bridge
   output logic                                    interrupt_notify,
   input  logic                                    clear_interrupt_rr,
   output logic                                    interrupt_read_request,
-  input  logic [15:0]                             timeout_duration,
   // QSFP system interface ----------------------------------------------------
   // == TX
   output logic [MRMAC_AXIS_W-1:0]                 qsfp_tx_tdata,
@@ -212,7 +212,11 @@ module mhdma_bridge
 
   logic ct_emission_all_packets_received;
 
+  // formatter
   header_t format_header;
+  logic retry_notify;
+  logic retry_read_request;
+
   header_t decoded_header;
 
   // Slave payload and header for ciphertext emission
@@ -264,13 +268,23 @@ module mhdma_bridge
     .regf_ct_mem_addr                (regf_ct_mem_addr                        ),
     .regf_req_id                     (regf_req_id                             ),
     .regf_req_addr                   (regf_req_addr                           ),
-    .regf_timeout_dur                (/* UNUSED */                            ),
     .regf_read_payload               (regf_read_payload                       ),
+    .regf_timeout_duration           (regf_timeout_duration                   ),
     // register control -------------------------------------------------------
     .received_req                    (received_req                            ),
     .request_consumed                (request_consumed                        ),
     // statistics -------------------------------------------------------------
-    // register
+    // counters
+    .stat_cnt_notify                 (stat_cnt_notify                         ),
+    .stat_cnt_notify_ack             (stat_cnt_notify_ack                     ),
+    .stat_cnt_notify_timeout         (stat_cnt_notify_timeout                 ),
+    .stat_cnt_notify_retries         (stat_cnt_notify_retries                 ),
+    // reset counters
+    .rst_cnt_notify                  (rst_cnt_notify                          ),
+    .rst_cnt_notify_ack              (rst_cnt_notify_ack                      ),
+    .rst_cnt_notify_retry            (rst_cnt_notify_retry                    ),
+    .rst_cnt_timeout                 (rst_cnt_timeout                         ),
+    // fsms
     .stat_fsm_notify                 (stat_fsm_notify                         ),
     .stat_fsm_read_req               (stat_fsm_read_req                       ),
     // flags ------------------------------------------------------------------
@@ -288,9 +302,12 @@ module mhdma_bridge
     // interrupt --------------------------------------------------------------
     .clear_interrupt_rr              (clear_interrupt_rr                      ),
     .interrupt_read_request          (interrupt_read_request                  ),
+    // formatter interface ----------------------------------------------------
+    .format_header                   (format_header                           ),
+    .format_retry_notify             (retry_notify                            ),
+    .format_retry_read_request       (retry_read_request                      ),
     // header interface -------------------------------------------------------
     .decoded_header                  (decoded_header                          ),
-    .format_header                   (format_header                           ),
     .error_packet_id_mismatch        (/* UNUSED */                            )
   );
 
@@ -392,24 +409,14 @@ module mhdma_bridge
     .new_read_request_pending        (new_read_request_pending                ),
     .new_notify_request_pending      (new_notify_request_pending              ),
     .ct_emission_all_packets_received(ct_emission_all_packets_received        ),
-    .notify_ack_received             (notify_ack_received                     ),
     .cerx_reception_ready            (cerx_reception_ready                    ),
-    .timeout_duration                (timeout_duration                        ),
     // statistics -------------------------------------------------------------
-    // counters
-    .stat_cnt_notify                 (stat_cnt_notify                         ),
-    .stat_cnt_notify_ack             (stat_cnt_notify_ack                     ),
-    .stat_cnt_notify_timeout         (stat_cnt_notify_timeout                 ),
-    .stat_cnt_notify_retries         (stat_cnt_notify_retries                 ),
-    // reset counters
-    .rst_cnt_notify                  (rst_cnt_notify                          ),
-    .rst_cnt_notify_ack              (rst_cnt_notify_ack                      ),
-    .rst_cnt_notify_retry            (rst_cnt_notify_retry                    ),
-    .rst_cnt_timeout                 (rst_cnt_timeout                         ),
     // registers
     .stat_fsm_formatter              (stat_fsm_formatter                      ),
     // master interface -------------------------------------------------------
     .format_header                   (format_header                           ),
+    .retry_notify                    (retry_notify                            ),
+    .retry_read_request              (retry_read_request                      ),
     // slave interface --------------------------------------------------------
     .nrx_cmd_payload                 (nrx_cmd_payload                         ),
     .nrx_cmd_valid                   (nrx_cmd_valid                           ),

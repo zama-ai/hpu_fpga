@@ -1,8 +1,8 @@
 // ============================================================================================== //
 // Description  : Axi4-lite register bank
 // This file was generated with rust regmap generator:
-//  * Date:  2025-12-17
-//  * Tool_version: bd49564daf1a99d615cb6dbb121b54bfbeef8b22
+//  * Date:  2025-12-18
+//  * Tool_version: 27d9e880d531030160fd8749c606142942d5558d
 // ---------------------------------------------------------------------------------------------- //
 // xR[n]W[na]
 // |-> who is in charge of the register update logic : u -> User
@@ -58,7 +58,7 @@ import hpu_regif_core_eth_2in3_pkg::*;
   // Register IO: mhdma_system_lane
     , output mhdma_system_lane_t r_mhdma_system_lane
   // Register IO: mhdma_system_timeout
-    , output logic [REG_DATA_W-1: 0] r_mhdma_system_timeout
+    , output mhdma_system_timeout_t r_mhdma_system_timeout
   // Register IO: mhdma_system_fsm_value
     , output logic [REG_DATA_W-1: 0] r_mhdma_system_fsm_value
     , input  logic [REG_DATA_W-1: 0] r_mhdma_system_fsm_value_upd
@@ -310,8 +310,12 @@ import hpu_regif_core_eth_2in3_pkg::*;
     mhdma_system_lane_default.debug = 'h0;
   end
 //-- Default mhdma_system_timeout
-  logic [REG_DATA_W-1:0]mhdma_system_timeout_default;
-  assign mhdma_system_timeout_default = 'h9c40;
+  mhdma_system_timeout_t mhdma_system_timeout_default;
+  always_comb begin
+    mhdma_system_timeout_default = 'h0;
+    mhdma_system_timeout_default.notify_timeout_dur = 'h9c40;
+    mhdma_system_timeout_default.read_req_timout_dur = 'h9c40;
+  end
 //-- Default mhdma_system_fsm_value
   logic [REG_DATA_W-1:0]mhdma_system_fsm_value_default;
   assign mhdma_system_fsm_value_default = 'h0;

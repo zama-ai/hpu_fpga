@@ -556,6 +556,7 @@ module multi_hpu_dma
     .regf_req_addr         (r_request_req_addr                                                    ),
     .regf_notify_payload   (r_request_notify                                                      ),
     .regf_read_payload     (r_request_read                                                        ),
+    .regf_timeout_duration (r_system_timeout                                                      ),
     // interruptions and control ------------------------------------------------------------------
     .received_req          (&received_req                                                         ),
     .request_consumed      (request_consumed                                                      ),
@@ -563,7 +564,6 @@ module multi_hpu_dma
     .clear_interrupt_rr    (clear_interrupt_rr                                                    ),
     .interrupt_notify      (interrupt_notify                                                      ),
     .interrupt_read_request(interrupt_read_request                                                ),
-    .timeout_duration      (r_system_timeout[15:0]                                                ),
     // statistics ---------------------------------------------------------------------------------
     // counters
     .stat_cnt_notify         (cnt_notify_eth                                                      ),

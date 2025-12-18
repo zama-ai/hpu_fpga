@@ -33,8 +33,8 @@ module mhdma_master
   input  logic [ETH_PC-1:0][2*REG_DATA_W-1:0] regf_ct_mem_addr,
   input  logic             [  REG_DATA_W-1:0] regf_req_id,
   input  logic             [  REG_DATA_W-1:0] regf_req_addr,
-  input  logic             [REG_DATA_W/2-1:0] regf_timeout_dur,
   output logic             [  REG_DATA_W-1:0] regf_read_payload,
+  input  logic               [REG_DATA_W-1:0] regf_timeout_duration,
   // register control --------------------------------------------------------
   input  logic                                received_req,
   output logic                                request_consumed,
@@ -50,6 +50,8 @@ module mhdma_master
   output logic                                ct_emission_all_packets_received,
   // from master to packet formatter -------------------------------------------
   output header_t                             format_header,
+  output logic                                format_retry_notify,
+  output logic                                format_retry_read_request,
   // ciphertext payload -------------------------------------------------------
   input  logic             [MRMAC_AXIS_W-1:0] rx_tdata,
   input  logic                                rx_tvalid,
@@ -58,6 +60,16 @@ module mhdma_master
   // Received header ----------------------------------------------------------
   input  header_t                             decoded_header,
   // statistics ---------------------------------------------------------------
+  // counters
+  output logic [TIMEOUT_W-1:0]                stat_cnt_notify,
+  output logic [TIMEOUT_W-1:0]                stat_cnt_notify_ack,
+  output logic [TIMEOUT_W-1:0]                stat_cnt_notify_retries,
+  output logic [TIMEOUT_W-1:0]                stat_cnt_notify_timeout,
+  // reset counters
+  input  logic                                rst_cnt_notify,
+  input  logic                                rst_cnt_notify_ack,
+  input  logic                                rst_cnt_timeout, //unused
+  input  logic                                rst_cnt_notify_retry,
   // register
   output logic [1:0]                          stat_fsm_notify,
   output logic [1:0]                          stat_fsm_read_req,
@@ -297,30 +309,33 @@ module mhdma_master
   // ==============================================================================================
   // FSM
   // ==============================================================================================
+  logic timeout_reached_notify;
+  logic timeout_reached_read_request;
+
   // Notify TX (NTX) ------------------------------------------------------------------------------
-  // TOREVIEW
   typedef enum logic [1:0] {
     NTX_XXX          = 'x,
-    NTX_WAIT_REQUEST = 2'b00,
-    NTX_WAIT_ACK     = 2'b01,
-    NTX_SEND_NOTIFY  = 2'b10
+    NTX_WAIT_REQUEST = 2'b01,
+    NTX_WAIT_ACK     = 2'b10,
+    NTX_SEND_NOTIFY  = 2'b11
   } st_ntx;
 
   st_ntx ntx_state;
   st_ntx ntx_next_state;
-  logic  ntx_timeout;
-  logic  ntx_timeout_cdc;
 
   always_ff @(posedge clk_mrmac) begin
     if (~resetn_mrmac) ntx_state <= NTX_WAIT_REQUEST;
     else ntx_state <= ntx_next_state;
   end
 
+  // In order to detect if a notify has been transmitted, we can look for a falling adge on allowed signal
+  // When notify request allowed has been lowered it meas that formatter has suceedly processed the request
   logic notify_request_allowed_tmp;
+  logic notify_request_sent;
+
   always_ff @(posedge clk_mrmac)
     notify_request_allowed_tmp <= notify_request_allowed;
 
-  logic notify_request_sent;
   assign notify_request_sent = notify_request_allowed_tmp & ~notify_request_allowed;
 
   always_comb begin
@@ -331,49 +346,21 @@ module mhdma_master
       NTX_SEND_NOTIFY:
         ntx_next_state = notify_request_sent ? NTX_WAIT_ACK : NTX_SEND_NOTIFY;
       NTX_WAIT_ACK:
-        ntx_next_state = notify_ack_received ? NTX_WAIT_REQUEST : (ntx_timeout_cdc ? NTX_SEND_NOTIFY : ntx_state);
+        // (Assumption) transmission is not instantaneous, notify_ack_received cannot arrive before axis tlast
+        ntx_next_state = notify_ack_received ? NTX_WAIT_REQUEST : timeout_reached_notify ? NTX_SEND_NOTIFY : NTX_WAIT_ACK;
     endcase
   end
-
-  assign ntx_timeout_cdc = 0;
-
-  // logic [15:0] cnt_notify_ack;
-  // always_ff @(posedge clk_cfg) begin
-  //   if (~resetn_cfg) begin
-  //     ntx_timeout <= 1'b0;
-  //   end else begin
-  //     // TODO:regf_timeout_dur
-  //     if (cnt_notify_ack >= regf_timeout_dur) begin
-  //       ntx_timeout <= 1'b1;
-  //     end else begin
-  //       ntx_timeout <= 1'b0;
-  //     end
-  //   end
-  // end
-
-  // xpm_cdc_single_wrapper # (
-  //   .CDC_SYNC_STAGES(CDC_SYNC_STAGES),
-  //   .SRC_INPUT_REG  (0)
-  // ) cdc_single_ntx_timeout (
-  //   .src_clk(clk_cfg),
-  //   .src_in (ntx_timeout),
-
-  //   .dest_clk(clk_mrmac),
-  //   .dest_out(ntx_timeout_cdc)
-  // );
 
   // Read request ---------------------------------------------------------------------------------
   typedef enum logic [1:0] {
     RR_XXX          = 'x,
-    RR_WAIT_REQUEST = 2'b00,
-    RR_SEND_REQUEST = 2'b01,
-    RR_WAIT_PACKETS = 2'b10
+    RR_WAIT_REQUEST = 2'b01,
+    RR_SEND_REQUEST = 2'b10,
+    RR_WAIT_PACKETS = 2'b11
   } st_read_req;
 
   st_read_req rreq_state;
   st_read_req rreq_next_state;
-  logic       rreq_timeout;
-  logic       rreq_timeout_cdc;
   logic       rreq_ct_transmitted;
   logic       rreq_send_request;
 
@@ -399,11 +386,64 @@ module mhdma_master
       RR_WAIT_PACKETS:
         // if error_packet_id_mismatch or timeout => RR_SEND_REQUEST
         // if write into hbm is finished => RR_WAIT_REQUEST
-        rreq_next_state = (error_packet_id_mismatch | rreq_timeout_cdc) ? RR_SEND_REQUEST : (rreq_ct_transmitted? RR_WAIT_REQUEST: RR_WAIT_PACKETS);
+        rreq_next_state = (error_packet_id_mismatch | timeout_reached_read_request) ? RR_SEND_REQUEST : (rreq_ct_transmitted? RR_WAIT_REQUEST: RR_WAIT_PACKETS);
     endcase
   end
 
-  // TODO:
+
+  // =========================================================================================== //
+  // Timeouts
+  // =========================================================================================== //
+  logic [TIMEOUT_W-1:0] to_dur_read_req;
+  logic [TIMEOUT_W-1:0] to_dur_notify;
+
+  always_ff @(posedge clk_mrmac)
+    to_dur_read_req <= regf_timeout_duration[REG_DATA_W-1:TIMEOUT_W];
+
+  always_ff @(posedge clk_mrmac)
+    to_dur_notify <= regf_timeout_duration[TIMEOUT_W-1:0];
+
+  // timeout --------------------------------------------------------------------------------------
+  logic [TIMEOUT_W-1:0] to_notify_cnt;
+
+  always_ff @(posedge clk_mrmac) begin : timeout_counter
+    if (~resetn_mrmac) begin
+      to_notify_cnt <= 'h0;
+    end else begin
+      if ((ntx_state == NTX_WAIT_ACK)) begin
+        to_notify_cnt <= to_notify_cnt + 1;
+      end else begin
+        to_notify_cnt <= 'h0;
+      end
+    end
+  end
+
+  assign timeout_reached_notify = (to_notify_cnt == to_dur_notify);
+
+  always_ff @(posedge clk_mrmac)
+    format_retry_notify <= timeout_reached_notify;
+
+  // timeout read request -------------------------------------------------------------------------
+  logic [TIMEOUT_W-1:0] to_read_request_cnt;
+
+  always_ff @(posedge clk_mrmac) begin : timeout_counter_rr
+    if (~resetn_mrmac) begin
+      to_read_request_cnt <= 'h0;
+    end else begin
+      if ((rreq_state == RR_WAIT_PACKETS)) begin
+        to_read_request_cnt <= to_read_request_cnt + 1;
+      end else begin
+        to_read_request_cnt <= 'h0;
+      end
+    end
+  end
+
+  assign timeout_reached_read_request = (to_read_request_cnt == to_dur_read_req);
+
+  always_ff @(posedge clk_mrmac)
+    format_retry_read_request <= timeout_reached_read_request;
+
+  // TODO:s
   assign error_packet_id_mismatch = 1'b0;
   assign rreq_timeout_cdc = 1'b0;
   assign rreq_ct_transmitted = 1'b0;
@@ -947,6 +987,59 @@ module mhdma_master
   // =========================================================================================== //
   // Statistics
   // =========================================================================================== //
+  logic [TIMEOUT_W-1:0] retry_notify_cnt;
+  logic [TIMEOUT_W-1:0] notify_cnt;
+  logic [TIMEOUT_W-1:0] notify_ack_cnt;
+
+  always_ff @(posedge clk_mrmac) begin
+    if (~resetn_mrmac) begin
+      notify_cnt <= 'h0;
+    end else begin
+      if (rst_cnt_notify) begin
+        notify_cnt <= 'h0;
+      end else begin
+        if (notify_request_sent) begin
+          notify_cnt <= notify_cnt + 1;
+        end
+      end
+    end
+  end
+
+  always_ff @(posedge clk_mrmac) begin
+    if (~resetn_mrmac) begin
+      notify_ack_cnt <= 'h0;
+    end else begin
+      if (rst_cnt_notify_ack) begin
+        notify_ack_cnt <= 'h0;
+      end else begin
+        if (notify_ack_received) begin
+          notify_ack_cnt <= notify_ack_cnt + 1;
+        end
+      end
+    end
+  end
+
+  always_ff @(posedge clk_mrmac) begin
+    if(~resetn_mrmac) begin
+      retry_notify_cnt <= 'h0;
+    end else begin
+      if (rst_cnt_notify_retry) begin
+        retry_notify_cnt <= 'h0;
+      end else begin
+        if (timeout_reached_notify) begin
+          retry_notify_cnt <= retry_notify_cnt + 1;
+        end
+      end
+    end
+  end
+
+  assign stat_cnt_notify_retries = retry_notify_cnt;
+  assign stat_cnt_notify         = notify_cnt;
+  assign stat_cnt_notify_ack     = notify_ack_cnt;
+
+  assign stat_cnt_notify_timeout = to_notify_cnt;    // mybe not usefull
+
+
   assign stat_fsm_notify   = ntx_state;
   assign stat_fsm_read_req = rreq_state;
 

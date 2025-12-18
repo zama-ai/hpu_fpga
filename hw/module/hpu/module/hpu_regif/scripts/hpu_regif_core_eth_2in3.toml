@@ -21,11 +21,12 @@ offset= 0x0
   field.debug     = {size_b=1, offset_b=31, default={Cst=0x0}, description="States whether we are in debug mode"}
 
 [section.mhdma_system.register.timeout]
-  description="16 bit Timeout: time before re-launching a request, in clock cycles"
+  description="Timeout: time before re-launching a request, in clock cycles"
   owner="User"
   read_access="Read"
   write_access="Write"
-  default={Cst=0x9C40}
+  field.notify_timeout_dur  = {size_b=16, offset_b=0,  default={Cst=0x9C40}, description="notify request timeout duration"}
+  field.read_req_timout_dur = {size_b=16, offset_b=16, default={Cst=0x9C40}, description="read request timeout duration"}
 
 [section.mhdma_system.register.fsm_value]
   description="fsm status of the module"

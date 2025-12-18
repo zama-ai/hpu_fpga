@@ -1,6 +1,6 @@
 # HPU_REGIF_CORE documentation
-**Date**: 2025-12-17
-**Tool Version**: bd49564daf1a99d615cb6dbb121b54bfbeef8b22
+**Date**: 2025-12-18
+**Tool Version**: 27d9e880d531030160fd8749c606142942d5558d
 
 ## RegisterMap Overview
 
@@ -17,7 +17,7 @@ HPU ethernet configuration register interface. Will be accessed by RPU to define
 **Offset**: 0x0
 **Range**: 0x60000
 **Word Size (b)**: 32
-**External Packages**: "axi_if_shell_axil_pkg.sv","axi_if_common_param_pkg.sv"
+**External Packages**: "axi_if_common_param_pkg.sv","axi_if_shell_axil_pkg.sv"
 
 
 ---
@@ -4042,7 +4042,7 @@ Below is a summary of all the registers in the current section mhdma_system:
 | Name             | Offset | Access | Description |
 |-----------------:|:------:|:------:|:------------|
 | [lane](#register-mhdma-systemlane) | 0x50000 | RW |  Different parameters for qsfp lines |
-| [timeout](#register-mhdma-systemtimeout) | 0x50004 | RW |  16 bit Timeout: time before re-launching a request, in clock cycles |
+| [timeout](#register-mhdma-systemtimeout) | 0x50004 | RW |  Timeout: time before re-launching a request, in clock cycles |
 | [fsm_value](#register-mhdma-systemfsm-value) | 0x50008 | R. |  fsm status of the module |
 
 
@@ -4077,13 +4077,22 @@ Register lane contains following Sub-fields:
 
 ### Register mhdma-system.timeout
 
-- **Description**: 16 bit Timeout: time before re-launching a request, in clock cycles
+- **Description**: Timeout: time before re-launching a request, in clock cycles
 - **Owner**: User
 - **Read Access**: Read
 - **Write Access**: Write
 - **Offset**: 0x50004
-- **Default**: 40000
+- **Default**: C.f. fields
 
+
+#### Field Details
+
+Register timeout contains following Sub-fields:
+
+| Field Name | Offset_b | Size_b | Default      | Description   |
+|-----------:|:--------:|:------:|:------------:|:--------------|
+| notify_timeout_dur      | 0 | 16 |40000| notify request timeout duration |
+| read_req_timout_dur      | 16 | 16 |40000| read request timeout duration |
 
 
 

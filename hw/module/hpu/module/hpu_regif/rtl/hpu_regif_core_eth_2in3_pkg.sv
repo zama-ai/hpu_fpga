@@ -1,8 +1,8 @@
 // ============================================================================================== //
 // Description  : register  map address definition package
 // This file was generated with rust regmap generator:
-//  * Date:  2025-12-17
-//  * Tool_version: bd49564daf1a99d615cb6dbb121b54bfbeef8b22
+//  * Date:  2025-12-18
+//  * Tool_version: 27d9e880d531030160fd8749c606142942d5558d
 // ---------------------------------------------------------------------------------------------- //
 //
 // Should only be used in testbench to drive the register interface
@@ -16,6 +16,10 @@ package hpu_regif_core_eth_2in3_pkg;
     logic [(2-1):0] select;
    } mhdma_system_lane_t;
   localparam int MHDMA_SYSTEM_LANE_OFS = 'h50000;
+  typedef struct packed {
+    logic [(16-1):0] read_req_timout_dur;
+    logic [(16-1):0] notify_timeout_dur;
+   } mhdma_system_timeout_t;
   localparam int MHDMA_SYSTEM_TIMEOUT_OFS = 'h50004;
   localparam int MHDMA_SYSTEM_FSM_VALUE_OFS = 'h50008;
   typedef struct packed {

@@ -37,7 +37,7 @@ module tb_mhdma_errors;
   localparam int FIFO_DEPTH = 512;
 
   localparam int NB_HPU = 8;
-  localparam int TIMEOUT_DUR = 70;
+  localparam [31:0] TIMEOUT_DUR = 'h41460046;
 
   // ciphertext memories -------------------------------------------------------------------------
   localparam int MEM_WR_CMD_BUF_DEPTH = 4;  // Should be >= 1
@@ -55,20 +55,16 @@ module tb_mhdma_errors;
   localparam int SIZE_B_SIM   = 'h40;
 
   localparam int MAX_BURST_SIZE  = PAGE_BYTES/AXI4_DATA_BYTES;
-  localparam [ETH_PC-1:0][15:0] PC_CT_BYTES = '{'h2000, 'h2020};
-  localparam              [3:0] PC_STRIDE   = 'hB;
 
-  // TOREVIEW
-  // generate cannot be in packages, same snippet must be in slave & master module
-  generate
-    for (genvar gen_i = 0; gen_i < ETH_PC; gen_i = gen_i + 1) begin : gen_localparam
-      localparam int PC_NB_WORDS = (PC_CT_BYTES[gen_i] / AXI4_DATA_BYTES);
-      localparam int PC_NB_BURST = (PC_NB_WORDS / MAX_BURST_SIZE);
-      localparam int PC_REMAINS = (PC_NB_WORDS % MAX_BURST_SIZE);
-      localparam int PC_NB = (PC_REMAINS!=0) ? PC_NB_BURST + 1 : PC_NB_BURST;
-    end
-  endgenerate
+  localparam [3:0] PC_STRIDE          = 'hB;
+  localparam int PC_CT_BYTES [ETH_PC] = '{'h2000, 'h2020};
 
+  localparam int PC_NB_WORDS [ETH_PC] = compute_nb_words(PC_CT_BYTES);
+  localparam int PC_NB_BURST [ETH_PC] = compute_nb_bursts(PC_NB_WORDS, MAX_BURST_SIZE);
+  localparam int PC_REMAINS  [ETH_PC] = compute_remaining_words(PC_NB_WORDS, MAX_BURST_SIZE);
+  localparam int PC_NB_TRANS [ETH_PC] = compute_nb_transactions(PC_REMAINS,PC_NB_BURST);
+
+  localparam int TOTAL_NB_PACKETS = $ceil(CT_NB_COEF / NB_WORDS_PAYLOAD) + 1;
 // ============================================================================================== --
 // clock, reset
 // ============================================================================================== --
@@ -547,6 +543,7 @@ module tb_mhdma_errors;
     // - (a) a correct ack
     // - (b) nothing
     // - (c) an incorrect ack (wrong mac addr)
+    // - (d) no ack and a new request is pending
     $display("Loss of acknowledge ==============================================================");
     $display("A - default behavior: a correct ack is received"); // -------------------------------
     iop_id       = $urandom();
@@ -563,7 +560,7 @@ module tb_mhdma_errors;
     iop_src_addr = $urandom_range(0, 1<<SRC_ADDR_W);
     notify_request(hpu_a_id, hpu_b_id, iop_id, iop_src_addr);
 
-    repeat(2*TIMEOUT_DUR) @(posedge clk_mrmac);
+    repeat(2*TIMEOUT_DUR[15:0]) @(posedge clk_mrmac);
 
     notify_ack(hpu_a_id, hpu_a_mac_addr, hpu_b_id, hpu_b_mac_addr);
 
@@ -579,7 +576,7 @@ module tb_mhdma_errors;
 
     repeat(20) @(posedge clk_mrmac);
 
-    if (hpu_a.mhdma_bridge.mhdma_formatter.tx_state == 3'b110) begin
+    if (hpu_a.mhdma_bridge.mhdma_master.ntx_state == 2'b10) begin
       $display("%t > [INFO]: When sending incorrect ack, state is still waiting", $time);
     end else begin
       $display("%t > [ERROR]: When sending incorrect ack state is not waiting", $time);
@@ -609,6 +606,33 @@ module tb_mhdma_errors;
     $display("[INFO] MHDMA_REQUEST_STAT_NOTIFY_TIMEOUT_OFS         : %0x ", read_data);
     maxil_drv_if.read_trans(MHDMA_REQUEST_STAT_NOTIFY_TIMEOUT_RETRY_OFS, read_data);
     $display("[INFO] MHDMA_REQUEST_STAT_NOTIFY_TIMEOUT_RETRY_OFS   : %0x ", read_data);
+
+    $display("C - no ack for a time and a new notify pening"); // ---------------------------------
+    iop_id       = 678;
+    iop_src_addr = 99;
+    notify_request(hpu_a_id, hpu_b_id, iop_id, iop_src_addr);
+
+    repeat(2*TIMEOUT_DUR[15:0]) @(posedge clk_mrmac);
+
+    iop_id       = 777;
+    iop_src_addr = 98;
+    notify_request(hpu_a_id, hpu_b_id, iop_id, iop_src_addr);
+
+    notify_ack(hpu_a_id, hpu_b_mac_addr, hpu_b_id, hpu_b_mac_addr);
+    notify_ack(hpu_a_id, hpu_b_mac_addr, hpu_b_id, hpu_b_mac_addr);
+
+    // // Ciphertext emission error ==================================================================
+    // // HPU_A sends a read request and receives
+    // // - (d) a correct ciphertext
+    // // - (e) nothing
+    // // - (f) an incorrect ce (wrong seq_num)
+    // iop_id       = $urandom();
+    // iop_src_addr = $urandom_range(0, 1<<SRC_ADDR_W);
+
+    // $display("D - Read request is emitted by HPU_A and correctly answered"); // -------------------
+    // read_request(hpu_b_id, iop_id, iop_src_addr, iop_dst_addr);
+
+    // emulate_ciphertext_emission(hpu_a_id, hpu_a_mac_addr, hpu_b_id, hpu_b_mac_addr, 0);
 
     $display("%t > INFO: End simulation",$time);
     repeat(20) @(posedge clk_control);
@@ -668,7 +692,7 @@ module tb_mhdma_errors;
       qsfp_rx_tvalid = 'h0;
 
       // Setting timeout size to both HPUs ----------------------------------------------------------
-      maxil_drv_if.write_trans(MHDMA_SYSTEM_TIMEOUT_OFS, TIMEOUT_DUR);
+      maxil_drv_if.write_trans(MHDMA_SYSTEM_TIMEOUT_OFS, {TIMEOUT_DUR, TIMEOUT_DUR});
 
       // Setting up credible values -------------------------------------------------------------
       // no loopback, no reset, not in debug lane0 selected
@@ -804,6 +828,101 @@ module tb_mhdma_errors;
       qsfp_rx_tlast[lane]      = 1'b0;
       qsfp_rx_tvalid[lane]     = 1'b0;
     end
+  endtask
+
+  /* Performs a Read request from HPU A to HPU B
+    - Since HPU A and HPU B are the same no need to be able to be able to send from both
+    - There is two registers to write to send a read request */
+  task automatic read_request(
+    input logic [  HPU_ID_W-1:0] node_id,
+    input logic [  IOP_ID_W-1:0] iop_id,
+    input logic [SRC_ADDR_W-1:0] src_addr,
+    input logic [DST_ADDR_W-1:0] dest_addr
+  );
+    logic [REG_DATA_W-1:0] read_req_id;
+    logic [REG_DATA_W-1:0] read_req_addr;
+    begin
+      // see package
+      read_req_addr = {dest_addr, src_addr};
+      read_req_id = {iop_id, REQ_ID_READ, node_id, req_size_b};
+
+      maxil_drv_if.write_trans(MHDMA_REQUEST_REQ_ADDR_OFS, read_req_addr);
+      maxil_drv_if.write_trans(MHDMA_REQUEST_REQ_ID_OFS, read_req_id);
+      // there is as well the hbm pc offsets to write from RPU pov but in simulation we let it set to 0
+    end
+  endtask
+
+  /* Sends a correct ciphertext emission
+  */
+  task automatic emulate_ciphertext_emission(
+    input logic [  HPU_ID_W-1:0] target_node_id,
+    input logic [MAC_ADDR_W-1:0] target_mac_addr,
+    input logic [  HPU_ID_W-1:0] source_node_id,
+    input logic [MAC_ADDR_W-1:0] source_mac_addr,
+    input logic                  failure_on_seq_num
+  );
+    begin
+      logic [SEQ_NUM_W-1:0] seq_num_id;
+
+      wait(rx_header.valid);
+
+      for (int i = 0; i < TOTAL_NB_PACKETS; i++) begin
+
+        // TODO: failure
+        seq_num_id = i;
+
+        // First clock cycle ----------------------------------------------------
+        qsfp_rx_tdata[lane]      = {MAC_OUI, target_mac_addr, MAC_OUI[MAC_OUI_W-1:8]};
+        qsfp_rx_tkeep_user[lane] = 'hff;
+        qsfp_rx_tlast[lane]      = 1'b0;
+        qsfp_rx_tvalid[lane]     = 1'b1;
+        @(posedge clk_mrmac);
+
+        // Second clock cycle ----------------------------------------------------
+        qsfp_rx_tdata[lane]      = {MAC_OUI[7:0], source_mac_addr, ETH_LEN_MIN, LLC_DSAP, LLC_SSAP};
+        qsfp_rx_tkeep_user[lane] = 'hff;
+        qsfp_rx_tlast[lane]      = 1'b0;
+        qsfp_rx_tvalid[lane]     = 1'b1;
+        @(posedge clk_mrmac);
+
+        // Third clock cycle ----------------------------------------------------
+        qsfp_rx_tdata[lane]      = {LLC_CTRL, REQ_ID_EMISSION, target_node_id, seq_num_id, rx_header.src_addr, rx_header.dst_addr, rx_header.iop_id};
+        qsfp_rx_tkeep_user[lane] = 'hff;
+        qsfp_rx_tlast[lane]      = 1'b0;
+        qsfp_rx_tvalid[lane]     = 1'b1;
+        @(posedge clk_mrmac);
+
+        // Fourth clock cycle ----------------------------------------------------
+        qsfp_rx_tdata[lane]      = {SIZE_B, 24'b0};
+        qsfp_rx_tkeep_user[lane] = 'hff;
+        qsfp_rx_tlast[lane]      = 1'b0;
+        qsfp_rx_tvalid[lane]     = 1'b1;
+        @(posedge clk_mrmac);
+
+        for (int payload_i = 0; payload_i < NB_WORDS_PAYLOAD  -1 ; payload_i++) begin
+          qsfp_rx_tdata[lane]      = payload_i;
+          qsfp_rx_tkeep_user[lane] = 'hff;
+          qsfp_rx_tlast[lane]      = 1'b0;
+          qsfp_rx_tvalid[lane]     = 1'b1;
+          @(posedge clk_mrmac);
+        end
+
+        // last clock cycle ----------------------------------------------------
+        qsfp_rx_tdata[lane]      = 55;
+        qsfp_rx_tkeep_user[lane] = 'hff;
+        qsfp_rx_tlast[lane]      = 1'b1;
+        qsfp_rx_tvalid[lane]     = 1'b1;
+        @(posedge clk_mrmac);
+
+        // reset
+        qsfp_rx_tdata[lane]      = 'h0;
+        qsfp_rx_tkeep_user[lane] = 'h0;
+        qsfp_rx_tlast[lane]      = 1'b0;
+        qsfp_rx_tvalid[lane]     = 1'b0;
+        repeat(50) @(posedge clk_mrmac);
+      end
+    end
+
   endtask
 
 // ============================================================================================== --
