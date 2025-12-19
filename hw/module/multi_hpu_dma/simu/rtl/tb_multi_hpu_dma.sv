@@ -52,7 +52,6 @@ module tb_multi_hpu_dma;
   localparam [ETH_PC-1:0][15:0] PC_CT_BYTES = '{'h2000, 'h2020};
   localparam              [3:0] PC_STRIDE   = 'hB;
 
-
   // TOREVIEW
   // generate cannot be in packages, same snippet must be in slave & master module
   generate
@@ -839,6 +838,9 @@ end
     end
 
     for (int i = 0; i < arbitrary_read_req_nb; i++) begin
+      iop_id       = $urandom();
+      iop_src_addr = $urandom_range(0, 1<<SRC_ADDR_W);
+      iop_dst_addr = $urandom_range(0, 1<<DST_ADDR_W);
       // we must wait for interrupt to be raised before reading
       wait (hpu_a.interrupt_read_request == 1'b1);
       maxil_drv_if_hpu_a.read_trans(MHDMA_REQUEST_READ_REQUEST_OFS, read_data);

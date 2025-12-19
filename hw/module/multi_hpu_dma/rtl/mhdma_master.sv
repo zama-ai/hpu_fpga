@@ -106,6 +106,9 @@ module mhdma_master
   // =========================================================================================== //
   localparam NB_MRMRAC_WORDS_PER_WRITE = AXI4_DATA_W/MRMAC_AXIS_W;
 
+  // TODO only two PC toreview
+  localparam NB_WORDS_TOTAL = PC_NB_WORDS[0] + PC_NB_WORDS[1];
+
   // =========================================================================================== //
   // CDC from regf to mrmac clock
   // =========================================================================================== //
@@ -447,9 +450,28 @@ module mhdma_master
   logic                 fifo_cerx_out_rdy;
   // ce-rx counters
   logic [CERX_DATA_COUNT_W:0] fifo_cerx_cnt;    // counts the number of words used in fifo
-
   logic                       cnt_cerx_up;
   logic                       cnt_cerx_down;
+  logic                       fifo_pc_backpressure;
+
+  // First thig to do is to be sure that the current values are valid.
+  // If we receive more data than what we expect we must invalidate it and not propagate it.
+  logic [31:0] ce_valid_cnt; // size is arbitrary toreview
+  logic ce_valid;
+
+  always_ff @(posedge clk_mrmac) begin
+    if (~resetn_mrmac) begin
+      ce_valid_cnt <= 'h0;
+    end else begin
+      if (read_request_allowed & rx_tvalid) begin
+        ce_valid_cnt <= ce_valid_cnt + 1;
+      end else if (~read_request_allowed | format_retry_read_request) begin
+        ce_valid_cnt <= 'h0;
+      end
+    end
+  end
+
+  assign ce_valid = (ce_valid_cnt<CT_NB_WORDS_MRMAC);
 
   assign cnt_cerx_up   = read_request_allowed & (fifo_cerx_in_vld & fifo_cerx_in_rdy);
   assign cnt_cerx_down = read_request_allowed & (fifo_cerx_out_rdy & fifo_cerx_out_vld);
@@ -466,12 +488,12 @@ module mhdma_master
     end
   end
 
-  assign fifo_cerx_in_vld  = rx_tvalid;
+  assign fifo_cerx_in_vld  = rx_tvalid & ce_valid;
   assign fifo_cerx_in_data = rx_tdata;
 
   fifo_ram_rdy_vld # (
-    .WIDTH             (CERX_DATA_W     ),
-    .DEPTH             (CERX_DEPTH      ),
+    .WIDTH             (MRMAC_AXIS_W    ),
+    .DEPTH             (CT_NB_COEF      ),
     .RAM_LATENCY       (CERX_RAM_LATENCY)
   ) fifo_ce_rx (
     .clk         (clk_mrmac   ),
@@ -487,10 +509,11 @@ module mhdma_master
 
     .almost_full (/* UNUSED */)
   );
+
+  // if fifo is empty and in_rdy then we can move the formatter FSM state to ST_READ_REQ
   assign cerx_reception_ready = (fifo_cerx_cnt == 0) & fifo_cerx_in_rdy;
 
  // ready signal of sending fifo according to which one we should use
-  logic fifo_pc_backpressure;
   assign fifo_cerx_out_rdy = fifo_pc_backpressure;
 
   // =========================================================================================== //
@@ -571,7 +594,6 @@ module mhdma_master
   end
 
   // which fifo must be filled ?
-  // TODO
   always_ff @(posedge clk_mrmac) begin
     if (~resetn_mrmac) begin
       target_fifo <= 2'b00;
@@ -580,7 +602,6 @@ module mhdma_master
       // we reset (to fifo 0) when we have the double, note that we could receive more words but they could be invalid
       // this is in case axi data width in not divisible by mrmac data size
       if (fifo_cerx_cnt_tx < NB_MRMRAC_WORDS_PER_WRITE*PC_NB_WORDS[0]) begin
-      // if ((fifo_cerx_cnt_tx < NB_MRMRAC_WORDS_PER_WRITE*PC_NB_WORDS[0]) | (fifo_cerx_cnt_tx>=2*NB_MRMRAC_WORDS_PER_WRITE*PC_NB_WORDS[0])) begin
         target_fifo <= 2'b01;
       end else if (fifo_cerx_cnt_tx == NB_MRMRAC_WORDS_PER_WRITE*PC_NB_WORDS[0]) begin
         target_fifo <= 2'b10;
@@ -642,19 +663,32 @@ module mhdma_master
     if (fifo_cerx_out_vld & fifo_cerx_out_rdy)
       realined_word[realign_cnt*MRMAC_AXIS_W+:MRMAC_AXIS_W] <= fifo_cerx_out_data;
 
+  // SR & MUX over NB_MRMRAC_WORDS_PER_WRITE for building valid signal when we cannot fill enough words for a full request
+  // as long as start of the word is correct, if end is incorrect it should be truncated
+  logic [NB_MRMRAC_WORDS_PER_WRITE-1:0] realined_word_vld_tmp;
+
   always_ff @(posedge clk_mrmac) begin
-    if (~resetn_mrmac) begin
-      realined_word_vld <= 1'b0;
+    if ((realign_cnt == 0) & (fifo_cerx_out_vld & fifo_cerx_out_rdy)) begin
+      realined_word_vld_tmp[0] <= 1'b1;
     end else begin
-      // we are valid when realign_cnt = 0 but because realign_cnt had to be init
-      // we are valid one cc after realign_cnt = 3
-      if (realign_cnt == 3) begin
-        realined_word_vld <= 1'b1;
-      end else begin
-        realined_word_vld <= 1'b0;
-      end
+      realined_word_vld_tmp[0] <= 1'b0;
     end
   end
+
+  generate
+    for (genvar gen_vld = 1; gen_vld < NB_MRMRAC_WORDS_PER_WRITE ; gen_vld = gen_vld + 1) begin
+      always_ff @(posedge clk_mrmac) begin
+        if ((realign_cnt == gen_vld) & (fifo_cerx_out_vld & fifo_cerx_out_rdy)) begin
+          // bypass
+          realined_word_vld_tmp[gen_vld] <= 1'b1;
+        end else begin
+          realined_word_vld_tmp[gen_vld] <= realined_word_vld_tmp[gen_vld-1];
+        end
+      end
+    end
+  endgenerate
+
+  assign realined_word_vld = realined_word_vld_tmp[NB_MRMRAC_WORDS_PER_WRITE-1];
 
   generate
     for (genvar gen_wr=0; gen_wr<ETH_PC; gen_wr++) begin : gen_ce_write

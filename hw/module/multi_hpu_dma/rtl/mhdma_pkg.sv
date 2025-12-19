@@ -17,9 +17,6 @@ package mhdma_pkg;
   localparam int CT_SIZE           = CT_NB_COEF * 64;
   localparam int CT_SIZE_BYTE      = CT_SIZE / 8;
 
-  localparam int CT_NB_WORDS_MRMAC = CT_SIZE; // because coef size is MRMAC size
-  localparam int CT_NB_WORDS_AXI4  = CT_SIZE/AXI4_DATA_W;
-
   // AXI
   localparam [AXI4_SIZE_W-1:0] MHDMA_ARSIZE = $clog2(AXI4_DATA_BYTES);
 
@@ -35,6 +32,9 @@ package mhdma_pkg;
   // beware of regfile if modifying this value
   localparam int NB_MAX_HPU   = 8;
   localparam int NB_MAX_HPU_W = $clog2(NB_MAX_HPU);
+
+  localparam int CT_NB_WORDS_MRMAC = CT_SIZE/MRMAC_AXIS_W; // because coef size is MRMAC size
+  localparam int CT_NB_WORDS_AXI4  = CT_SIZE/AXI4_DATA_W;
 
   localparam int QSFP_LANE_NB   = 4;
 
@@ -143,7 +143,7 @@ package mhdma_pkg;
 
   // QSFP RX fifo: FIFO CE
   localparam int CERX_DATA_W           = MRMAC_AXIS_W;
-  localparam int CERX_DEPTH            = CT_NB_COEF;
+  // localparam int CERX_DEPTH            = CT_NB_COEF;
   localparam int CERX_RAM_LATENCY      = 1;
   localparam int CERX_DATA_COUNT_W     =  $clog2(CE_DEPTH)+1;
 

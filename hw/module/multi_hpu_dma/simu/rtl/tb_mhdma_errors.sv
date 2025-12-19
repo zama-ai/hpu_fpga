@@ -914,7 +914,7 @@ module tb_mhdma_errors;
         @(posedge clk_mrmac);
 
         for (int payload_i = 0; payload_i < NB_WORDS_PAYLOAD  -1 ; payload_i++) begin
-          qsfp_rx_tdata[lane]      = payload_i;
+          qsfp_rx_tdata[lane]      = {i,payload_i};
           qsfp_rx_tkeep_user[lane] = 'hff;
           qsfp_rx_tlast[lane]      = 1'b0;
           qsfp_rx_tvalid[lane]     = 1'b1;
