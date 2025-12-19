@@ -213,10 +213,14 @@ module mhdma_bridge
   logic format_packets_emitted;
   logic format_ct_received;
 
-  // formatter
+  // master -> formatter
   header_t format_header;
   logic retry_notify;
   logic retry_read_request;
+
+  // formatter -> master
+  logic notify_sent;
+  logic rreq_sent;
 
   header_t decoded_header;
 
@@ -303,6 +307,8 @@ module mhdma_bridge
     .clear_interrupt_rr              (clear_interrupt_rr                      ),
     .interrupt_read_request          (interrupt_read_request                  ),
     // formatter interface ----------------------------------------------------
+    .format_notify_sent              (notify_sent                             ),
+    .format_rreq_sent                (rreq_sent                               ),
     .format_header                   (format_header                           ),
     .format_retry_notify             (retry_notify                            ),
     .format_retry_read_request       (retry_read_request                      ),
@@ -421,6 +427,8 @@ module mhdma_bridge
     .format_header                   (format_header                           ),
     .retry_notify                    (retry_notify                            ),
     .retry_read_request              (retry_read_request                      ),
+    .notify_sent                     (notify_sent                             ),
+    .rreq_sent                       (rreq_sent                               ),
     // slave interface --------------------------------------------------------
     .nrx_cmd_payload                 (nrx_cmd_payload                         ),
     .nrx_cmd_valid                   (nrx_cmd_valid                           ),

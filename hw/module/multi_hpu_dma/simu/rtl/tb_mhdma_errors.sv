@@ -643,6 +643,7 @@ module tb_mhdma_errors;
     repeat(2*TIMEOUT_DUR[31:16]) @(posedge clk_mrmac);
 
     emulate_ciphertext_emission(hpu_a_id, hpu_a_mac_addr, hpu_b_id, hpu_b_mac_addr, 0);
+    // TODO: bug: fifo is partly filled and gots write complete before end of transmission
     $display("%t > [INFO-F]: formatter FSM has gotten back to IDLE", $time);
 
     wait(hpu_a.mhdma_bridge.mhdma_formatter.tx_state == 3'b001);

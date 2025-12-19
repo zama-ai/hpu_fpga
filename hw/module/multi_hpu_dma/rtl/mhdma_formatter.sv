@@ -35,6 +35,8 @@ module mhdma_formatter
   input  header_t                                   format_header,
   input  logic                                      retry_notify,
   input  logic                                      retry_read_request,
+  output logic                                      notify_sent,
+  output logic                                      rreq_sent,
   // statistics ---------------------------------------------------------------
   // register
   output logic [2:0]                                stat_fsm_formatter,
@@ -517,12 +519,14 @@ module mhdma_formatter
     endcase
   end
 
-  assign ct_emission_allowed    = (tx_state == ST_CT_EMISSION) ? 1'b1 : 1'b0;
-  assign notify_ack_allowed     = (tx_state == ST_NACK)        ? 1'b1 : 1'b0;
-  assign read_request_allowed   = (tx_state == ST_READ_REQ)    ? 1'b1 : 1'b0;
-  assign notify_request_allowed = (tx_state == ST_NOTIFY)      ? 1'b1 : 1'b0;
+  assign ct_emission_allowed    = tx_state == ST_CT_EMISSION;
+  assign notify_ack_allowed     = tx_state == ST_NACK;
+  assign read_request_allowed   = tx_state == ST_READ_REQ;
+  assign notify_request_allowed = tx_state == ST_NOTIFY;
 
-  assign notify_ack_sent        = (tx_state == ST_NACK) & tx_small_last;
+  assign notify_ack_sent  = notify_ack_allowed     & tx_last;
+  assign notify_sent      = notify_request_allowed & tx_last;
+  assign rreq_sent        = read_request_allowed   & tx_last;
 
   // =========================================================================================== //
   // AXI4-stream

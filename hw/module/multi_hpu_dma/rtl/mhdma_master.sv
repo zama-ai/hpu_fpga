@@ -48,10 +48,12 @@ module mhdma_master
   input  logic                                notify_ack_received,
 
   output logic                                packets_received,
-  // from master to packet formatter -------------------------------------------
+  // formatter interface ------------------------------------------------------
   output header_t                             format_header,
   output logic                                format_retry_notify,
   output logic                                format_retry_read_request,
+  input  logic                                format_notify_sent,
+  input  logic                                format_rreq_sent,
   // ciphertext payload -------------------------------------------------------
   input  logic             [MRMAC_AXIS_W-1:0] rx_tdata,
   input  logic                                rx_tvalid,
@@ -326,23 +328,13 @@ module mhdma_master
     else ntx_state <= ntx_next_state;
   end
 
-  // In order to detect if a notify has been transmitted, we can look for a falling adge on allowed signal
-  // When notify request allowed has been lowered it meas that formatter has suceedly processed the request
-  logic notify_request_allowed_tmp;
-  logic notify_request_sent;
-
-  always_ff @(posedge clk_mrmac)
-    notify_request_allowed_tmp <= notify_request_allowed;
-
-  assign notify_request_sent = notify_request_allowed_tmp & ~notify_request_allowed;
-
   always_comb begin
     ntx_next_state = NTX_XXX;
     case (ntx_state)
       NTX_WAIT_REQUEST:
         ntx_next_state = (new_notify_request_pending & notify_request_allowed) ? NTX_SEND_NOTIFY : NTX_WAIT_REQUEST;
       NTX_SEND_NOTIFY:
-        ntx_next_state = notify_request_sent ? NTX_WAIT_ACK : NTX_SEND_NOTIFY;
+        ntx_next_state = format_notify_sent ? NTX_WAIT_ACK : NTX_SEND_NOTIFY;
       NTX_WAIT_ACK:
         // (Assumption) transmission is not instantaneous, notify_ack_received cannot arrive before axis tlast
         ntx_next_state = notify_ack_received ? NTX_WAIT_REQUEST : timeout_reached_notify ? NTX_SEND_NOTIFY : NTX_WAIT_ACK;
@@ -359,20 +351,11 @@ module mhdma_master
 
   st_read_req rreq_state;
   st_read_req rreq_next_state;
-  logic       rreq_ct_transmitted;
-  logic       rreq_send_request;
 
   always_ff @(posedge clk_mrmac) begin
     if (~resetn_mrmac) rreq_state <= RR_WAIT_REQUEST;
     else rreq_state <= rreq_next_state;
   end
-
-  logic read_request_allowed_tmp;
-  always_ff @(posedge clk_mrmac)
-    read_request_allowed_tmp <= read_request_allowed;
-
-  logic read_request_sent;
-  assign read_request_sent = read_request_allowed_tmp & ~read_request_allowed;
 
   always_comb begin
     rreq_next_state = RR_XXX;
@@ -380,14 +363,13 @@ module mhdma_master
       RR_WAIT_REQUEST:
         rreq_next_state = new_read_request_pending ? RR_SEND_REQUEST : RR_WAIT_REQUEST;
       RR_SEND_REQUEST:
-        rreq_next_state =  read_request_sent ? RR_WAIT_PACKETS : RR_SEND_REQUEST;
+        rreq_next_state =  format_rreq_sent ? RR_WAIT_PACKETS : RR_SEND_REQUEST;
       RR_WAIT_PACKETS:
         // if error_packet_id_mismatch or timeout => RR_SEND_REQUEST
         // if write into hbm is finished => RR_WAIT_REQUEST
-        rreq_next_state = (error_packet_id_mismatch | timeout_reached_read_request) ? RR_SEND_REQUEST : (rreq_ct_transmitted? RR_WAIT_REQUEST: RR_WAIT_PACKETS);
+        rreq_next_state = (error_packet_id_mismatch | timeout_reached_read_request) ? RR_SEND_REQUEST : packets_received? RR_WAIT_REQUEST: RR_WAIT_PACKETS;
     endcase
   end
-
 
   // =========================================================================================== //
   // Timeouts
@@ -441,11 +423,8 @@ module mhdma_master
   always_ff @(posedge clk_mrmac)
     format_retry_read_request <= timeout_reached_read_request;
 
-  // TODO:s
+  // TODO:
   assign error_packet_id_mismatch = 1'b0;
-  assign rreq_ct_transmitted = 1'b0;
-
-  assign rreq_send_request = (rreq_state == RR_SEND_REQUEST) ? 1'b1: 1'b0;
 
   // =========================================================================================== //
   // Ciphertext reception
@@ -995,7 +974,7 @@ module mhdma_master
       if (rst_cnt_notify) begin
         notify_cnt <= 'h0;
       end else begin
-        if (notify_request_sent) begin
+        if (format_notify_sent) begin
           notify_cnt <= notify_cnt + 1;
         end
       end
