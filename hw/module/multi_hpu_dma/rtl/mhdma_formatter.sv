@@ -524,9 +524,11 @@ module mhdma_formatter
   assign read_request_allowed   = tx_state == ST_READ_REQ;
   assign notify_request_allowed = tx_state == ST_NOTIFY;
 
-  assign notify_ack_sent  = notify_ack_allowed     & tx_last;
-  assign notify_sent      = notify_request_allowed & tx_last;
-  assign rreq_sent        = read_request_allowed   & tx_last;
+  // we notify to other FSM that request has been granted when we have a start of packet and sending
+  // header_sop is the delimiter instead of last if ever a new request pending is registered for any reason
+  assign notify_ack_sent  = notify_ack_allowed     & header_sop;
+  assign notify_sent      = notify_request_allowed & header_sop;
+  assign rreq_sent        = read_request_allowed   & header_sop;
 
   // =========================================================================================== //
   // AXI4-stream
