@@ -233,6 +233,8 @@ module mhdma_formatter
   // =========================================================================================== //
   // Notify ACK (NACK)
   // =========================================================================================== //
+  logic new_notify_ack_pending_vld;
+
   always_ff @(posedge clk_mrmac) begin
     if (nrx_cmd_valid) begin
       nack_src_addr <= nrx_cmd_payload[NRX_SRC_ADDR_OFS-1:NRX_HPU_ID_OFS];
@@ -246,6 +248,9 @@ module mhdma_formatter
     notify_ack_allowed_reg <= notify_ack_allowed;
 
   assign notify_ack_pulse = notify_ack_allowed & ~notify_ack_allowed_reg;
+
+  // we could have a new notify ack pending request without having a valid decoded value
+  assign new_notify_ack_pending_vld = nrx_cmd_valid &  new_notify_ack_pending;
 
   // =========================================================================================== //
   // Cycle by cycle construction
@@ -497,7 +502,7 @@ module mhdma_formatter
         begin
           if (new_ct_emission_request_pending) begin
             tx_next_state = ST_CT_EMISSION;
-          end else if (new_notify_ack_pending) begin
+          end else if (new_notify_ack_pending_vld) begin
             tx_next_state = ST_NACK;
           end else if (new_read_request_pending & cerx_reception_ready) begin
             // we must allow launching read-request only if ce-rx is ready and empty
@@ -524,11 +529,9 @@ module mhdma_formatter
   assign read_request_allowed   = tx_state == ST_READ_REQ;
   assign notify_request_allowed = tx_state == ST_NOTIFY;
 
-  // we notify to other FSM that request has been granted when we have a start of packet and sending
-  // header_sop is the delimiter instead of last if ever a new request pending is registered for any reason
-  assign notify_ack_sent  = notify_ack_allowed     & header_sop;
-  assign notify_sent      = notify_request_allowed & header_sop;
-  assign rreq_sent        = read_request_allowed   & header_sop;
+  assign notify_ack_sent  = new_notify_ack_pending & tx_last;
+  assign notify_sent      = notify_request_allowed & tx_last;
+  assign rreq_sent        = read_request_allowed   & tx_last;
 
   // =========================================================================================== //
   // AXI4-stream

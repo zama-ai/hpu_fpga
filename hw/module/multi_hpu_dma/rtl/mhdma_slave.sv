@@ -111,13 +111,7 @@ module mhdma_slave
     endcase
   end
 
-  always_ff @(posedge clk_mrmac) begin
-    if (~resetn_mrmac) begin
-      new_notify_ack_pending <= 1'b0;
-    end else begin
-      new_notify_ack_pending <= (nrx_state == NTX_TRANSMIT_ACK);
-    end
-  end
+  assign new_notify_ack_pending = (nrx_state == NTX_TRANSMIT_ACK);
 
   // Notify RX command queue --------------------------------------------------
   logic                 nrx_cmd_in_vld;
