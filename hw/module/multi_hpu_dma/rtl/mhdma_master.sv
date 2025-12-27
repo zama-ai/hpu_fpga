@@ -68,7 +68,10 @@ module mhdma_master
   output logic [REG_DATA_W-1:0]               stat_cnt_notify_ack,
   output logic [REG_DATA_W-1:0]               stat_cnt_notify_retries,
   output logic [REG_DATA_W-1:0]               stat_cnt_notify_timeout,
-  // reset counters
+  // timing
+  output logic [REG_DATA_W-1:0]               stat_t_notify_to_ack,
+  output logic [REG_DATA_W-1:0]               stat_t_rr_to_ce_received,
+  // resets
   input  logic                                rst_cnt_notify,
   input  logic                                rst_cnt_notify_ack,
   input  logic                                rst_cnt_timeout, //unused
@@ -1001,6 +1004,8 @@ module mhdma_master
   logic [REG_DATA_W-1:0] retry_notify_cnt;
   logic [REG_DATA_W-1:0] notify_cnt;
   logic [REG_DATA_W-1:0] notify_ack_cnt;
+  logic [REG_DATA_W-1:0] t_notify_to_ack;
+  logic [REG_DATA_W-1:0] t_rr_to_ce_received;
 
   always_ff @(posedge clk_mrmac) begin
     if (~resetn_mrmac) begin
@@ -1044,6 +1049,80 @@ module mhdma_master
     end
   end
 
+  // timing counter : counter between notify sent from this HPU (on tlast) and ack reception (2nd frame of the header)
+  logic count_notify_ack;
+  always_ff @(posedge clk_mrmac) begin
+    if (~resetn_mrmac) begin
+      count_notify_ack <= 1'b0;
+    end else begin
+      if (format_notify_sent) begin
+        count_notify_ack <= 1'b1;
+      end else if (notify_ack_received) begin
+        count_notify_ack <= 1'b1;
+      end
+    end
+  end
+
+  always_ff @(posedge clk_mrmac) begin
+    if (~resetn_mrmac) begin
+      t_notify_to_ack <= 'h0;
+    end else begin
+      if (format_notify_sent) begin
+        t_notify_to_ack <= t_notify_to_ack + 1;
+      end else begin
+        t_notify_to_ack <= 'h0;
+      end
+    end
+  end
+
+  // timing counter : counter between read request sent from this HPU and all frames have been received
+  logic count_rreq_receive;
+  always_ff @(posedge clk_mrmac) begin
+    if (~resetn_mrmac) begin
+      count_rreq_receive <= 1'b0;
+    end else begin
+      if (format_rreq_sent) begin
+        count_rreq_receive <= 1'b1;
+      end else if (packets_received) begin
+        count_rreq_receive <= 1'b0;
+      end
+    end
+  end
+
+  always_ff @(posedge clk_mrmac) begin
+    if (~resetn_mrmac) begin
+      t_rr_to_ce_received <= 'h0;
+    end else begin
+       if(count_rreq_receive) begin
+        t_rr_to_ce_received <= t_rr_to_ce_received + 1;
+       end else begin
+        t_rr_to_ce_received <= 'h0;
+       end
+    end
+  end
+
+  // value assignation for timing registers -------------------------------------------------------
+  always_ff @(posedge clk_mrmac) begin
+    if (~resetn_mrmac) begin
+      stat_t_notify_to_ack <= 'h0;
+    end else begin
+      if (notify_ack_received) begin
+        stat_t_notify_to_ack <= t_notify_to_ack;
+      end
+    end
+  end
+
+  always_ff @(posedge clk_mrmac) begin
+    if (~resetn_mrmac) begin
+      stat_t_rr_to_ce_received <= 'h0;
+    end else begin
+      if (packets_received) begin
+        stat_t_rr_to_ce_received <= t_rr_to_ce_received;
+      end
+    end
+  end
+
+  //
   assign stat_cnt_notify_retries = retry_notify_cnt;
   assign stat_cnt_notify         = notify_cnt;
   assign stat_cnt_notify_ack     = notify_ack_cnt;

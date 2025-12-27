@@ -70,6 +70,10 @@ module mhdma_bridge
   output logic [REG_DATA_W-1:0]                   stat_cnt_notify_ack,
   output logic [REG_DATA_W-1:0]                   stat_cnt_notify_timeout,
   output logic [REG_DATA_W-1:0]                   stat_cnt_notify_retries,
+  // timing
+  output logic [REG_DATA_W-1:0]                   stat_t_notify_to_ack,
+  output logic [REG_DATA_W-1:0]                   stat_t_rr_to_ce_received,
+  output logic [REG_DATA_W-1:0]                   stat_t_ce_first_to_last_pkt,
   // reset counters
   input  logic                                    rst_cnt_notify,
   input  logic                                    rst_cnt_notify_ack,
@@ -286,6 +290,9 @@ module mhdma_bridge
     .stat_cnt_notify_ack             (stat_cnt_notify_ack                     ),
     .stat_cnt_notify_timeout         (stat_cnt_notify_timeout                 ),
     .stat_cnt_notify_retries         (stat_cnt_notify_retries                 ),
+    // timing
+    .stat_t_notify_to_ack            (stat_t_notify_to_ack                    ),
+    .stat_t_rr_to_ce_received        (stat_t_rr_to_ce_received                ),
     // reset counters
     .rst_cnt_notify                  (rst_cnt_notify                          ),
     .rst_cnt_notify_ack              (rst_cnt_notify_ack                      ),
@@ -390,7 +397,9 @@ module mhdma_bridge
     // Header information -----------------------------------------------------
     .current_hpu_mac             (current_hpu_mac                             ),
     .rx_header                   (decoded_header                              ),
-    // RX payload ------------------------------------------------------------
+    // statistics -------------------------------------------------------------
+    .stat_t_ce_first_to_last_pkt (stat_t_ce_first_to_last_pkt                 ),
+    // RX payload -------------------------------------------------------------
     .rx_tdata                    (rx_tdata                                    ),
     .rx_tvalid                   (rx_tvalid                                   ),
     .rx_tlast                    (rx_tlast                                    ),

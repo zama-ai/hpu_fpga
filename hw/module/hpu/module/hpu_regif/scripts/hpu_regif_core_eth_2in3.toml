@@ -165,32 +165,49 @@ offset= 0x100
   field.dst_addr  = {size_b=16, offset_b=16, default={Cst=0x0}, description="where is the ct"}
 
 [section.mhdma_request.register.stat_notify]
-  description="requests statistics each counter is up to 40seconds"
+  description="Number of notify that have been sent"
   owner="Kernel"
   read_access="ReadNotify"
   write_access="None"
-  field.cnt_read    = {size_b=16, offset_b=16, default={Cst=0x0}, description="number of notify that have been sent"}
-
+  default={Cst=0x0}
 [section.mhdma_request.register.stat_notify_ack]
-  description="requests statistics each counter is up to 40seconds"
+  description="Number of notify ack that have been received"
   owner="Kernel"
   read_access="ReadNotify"
   write_access="None"
-  field.cnt_ack     = {size_b=16, offset_b=0,  default={Cst=0x0}, description="number of notify ack that have been received"}
+  default={Cst=0x0}
+[section.mhdma_request.register.stat_notify_timeout_retry]
+  description="Number of retries that have been done"
+  owner="Kernel"
+  read_access="ReadNotify"
+  write_access="None"
+  default={Cst=0x0}
 
 [section.mhdma_request.register.stat_notify_timeout]
-  description="requests statistics each counter is up to 40seconds"
+  description="timeout counter on notify"
   owner="Kernel"
   read_access="ReadNotify"
   write_access="None"
-  field.cnt_timeout = {size_b=16, offset_b=16, default={Cst=0x0}, description="timeout counter on notify"}
+  default={Cst=0x0}
 
-[section.mhdma_request.register.stat_notify_timeout_retry]
-  description="requests statistics each counter is up to 40seconds"
+[section.mhdma_request.register.stat_t_notify_to_ack]
+  description="time between notify tlast and ack reception in decoder"
   owner="Kernel"
-  read_access="ReadNotify"
+  read_access="Read"
   write_access="None"
-  field.cnt_retry   = {size_b=16, offset_b=16, default={Cst=0x0}, description="counter of number of retries that have been done"}
+  default={Cst=0x0}
+[section.mhdma_request.register.stat_t_rr_to_ce_received]
+  description="time between read request tlast and all pkt received from ce"
+  owner="Kernel"
+  read_access="Read"
+  write_access="None"
+  default={Cst=0x0}
+[section.mhdma_request.register.stat_t_ce_first_to_last_pkt]
+  description="time between first and last pkt on ce"
+  owner="Kernel"
+  read_access="Read"
+  write_access="None"
+  default={Cst=0x0}
 
 # =====================================================================================================================
 [section.mhdma_lane]

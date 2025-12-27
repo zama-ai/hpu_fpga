@@ -512,7 +512,15 @@ module tb_mhdma_errors;
   logic   [HPU_ID_W-1:0] received_hpu_id;
   logic   [IOP_ID_W-1:0] received_iop_id;
 
-  logic [31:0] regf_start_addr_ofs;
+  logic [REG_DATA_W-1:0] regf_start_addr_ofs;
+
+  logic [REG_DATA_W-1:0] stat_notify;
+  logic [REG_DATA_W-1:0] stat_notify_ack;
+  logic [REG_DATA_W-1:0] stat_notify_retry;
+  logic [REG_DATA_W-1:0] stat_notify_timeout;
+  logic [REG_DATA_W-1:0] stat_t_notify_to_ack;
+  logic [REG_DATA_W-1:0] stat_t_rr_to_ce_received;
+  logic [REG_DATA_W-1:0] stat_t_ce_first_to_last_pkt;
 
   // scenario -------------------------------------------------------------------------------------
   initial begin
@@ -648,6 +656,23 @@ module tb_mhdma_errors;
 
     wait(hpu_a.mhdma_bridge.mhdma_formatter.tx_state == 3'b001);
     $display("%t > [INFO-F]: formatter FSM has gotten back to IDLE", $time);
+
+    $display("\n ----------------- HPU_A -------------------------------------");
+    maxil_drv_if.read_trans(MHDMA_REQUEST_STAT_NOTIFY_OFS, stat_notify);
+    maxil_drv_if.read_trans(MHDMA_REQUEST_STAT_NOTIFY_ACK_OFS, stat_notify_ack);
+    maxil_drv_if.read_trans(MHDMA_REQUEST_STAT_NOTIFY_TIMEOUT_RETRY_OFS, stat_notify_retry);
+    maxil_drv_if.read_trans(MHDMA_REQUEST_STAT_NOTIFY_TIMEOUT_OFS, stat_notify_timeout);
+    maxil_drv_if.read_trans(MHDMA_REQUEST_STAT_T_NOTIFY_TO_ACK_OFS, stat_t_notify_to_ack);
+    maxil_drv_if.read_trans(MHDMA_REQUEST_STAT_T_RR_TO_CE_RECEIVED_OFS, stat_t_rr_to_ce_received);
+    maxil_drv_if.read_trans(MHDMA_REQUEST_STAT_T_CE_FIRST_TO_LAST_PKT_OFS, stat_t_ce_first_to_last_pkt);
+    $display(" stat_notify                 : %0d", stat_notify);
+    $display(" stat_notify_ack             : %0d", stat_notify_ack);
+    $display(" stat_notify_retry           : %0d", stat_notify_retry);
+    $display(" stat_notify_timeout         : %0d", stat_notify_timeout);
+    $display(" stat_t_notify_to_ack        : %0d", stat_t_notify_to_ack);
+    $display(" stat_t_rr_to_ce_received    : %0d", stat_t_rr_to_ce_received);
+    $display(" stat_t_ce_first_to_last_pkt : %0d", stat_t_ce_first_to_last_pkt);
+    $display(" ------------------------------------------------------------- \n");
 
     $display("%t > INFO: End simulation",$time);
     repeat(20) @(posedge clk_control);

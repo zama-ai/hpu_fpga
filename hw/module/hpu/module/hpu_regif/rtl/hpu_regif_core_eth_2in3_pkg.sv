@@ -71,26 +71,13 @@ package hpu_regif_core_eth_2in3_pkg;
     logic [(4-1):0] iop_id;
    } mhdma_request_read_request_t;
   localparam int MHDMA_REQUEST_READ_REQUEST_OFS = 'h5010c;
-  typedef struct packed {
-    logic [(16-1):0] cnt_read;
-    logic [(16-1):0] padding_0;
-   } mhdma_request_stat_notify_t;
   localparam int MHDMA_REQUEST_STAT_NOTIFY_OFS = 'h50110;
-  typedef struct packed {
-    logic [(16-1):0] padding_16;
-    logic [(16-1):0] cnt_ack;
-   } mhdma_request_stat_notify_ack_t;
   localparam int MHDMA_REQUEST_STAT_NOTIFY_ACK_OFS = 'h50114;
-  typedef struct packed {
-    logic [(16-1):0] cnt_timeout;
-    logic [(16-1):0] padding_0;
-   } mhdma_request_stat_notify_timeout_t;
-  localparam int MHDMA_REQUEST_STAT_NOTIFY_TIMEOUT_OFS = 'h50118;
-  typedef struct packed {
-    logic [(16-1):0] cnt_retry;
-    logic [(16-1):0] padding_0;
-   } mhdma_request_stat_notify_timeout_retry_t;
-  localparam int MHDMA_REQUEST_STAT_NOTIFY_TIMEOUT_RETRY_OFS = 'h5011c;
+  localparam int MHDMA_REQUEST_STAT_NOTIFY_TIMEOUT_RETRY_OFS = 'h50118;
+  localparam int MHDMA_REQUEST_STAT_NOTIFY_TIMEOUT_OFS = 'h5011c;
+  localparam int MHDMA_REQUEST_STAT_T_NOTIFY_TO_ACK_OFS = 'h50120;
+  localparam int MHDMA_REQUEST_STAT_T_RR_TO_CE_RECEIVED_OFS = 'h50124;
+  localparam int MHDMA_REQUEST_STAT_T_CE_FIRST_TO_LAST_PKT_OFS = 'h50128;
   typedef struct packed {
     logic [(1-1):0] reset_registers;
     logic [(1-1):0] tx_loop;

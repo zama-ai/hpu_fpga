@@ -47,7 +47,7 @@ Below is a summary of all the registers in the current register map:
 | [mhdma_system](#section-mhdma-system) | 0x50000 | 0x10 | system configuration |
 | [mhdma_reset](#section-mhdma-reset) | 0x50014 | 0x8 | Controllable resets for transceivers |
 | [mhdma_hpu_id](#section-mhdma-hpu-id) | 0x50050 | 0x20 | HPU ID containing all possible targets. For all IDs we have HPU MAC address, software ID and a flag for current hpu |
-| [mhdma_request](#section-mhdma-request) | 0x50100 | 0x20 | Request registers interface |
+| [mhdma_request](#section-mhdma-request) | 0x50100 | 0x2c | Request registers interface |
 | [mhdma_lane](#section-mhdma-lane) | 0x50200 | 0x4 | Line parameter sections |
 | [mhdma_hbm_axi4_addr_2in3](#section-mhdma-hbm-axi4-addr-2in3) | 0x51000 | 0x10 | HBM AXI4 connection address offset |
 | [fifo_write](#section-fifo-write) | 0x5101c | 0x10 | fifo write part |
@@ -4359,10 +4359,13 @@ Below is a summary of all the registers in the current section mhdma_request:
 | [req_addr](#register-mhdma-requestreq-addr) | 0x50104 | RW |  request address |
 | [notify](#register-mhdma-requestnotify) | 0x50108 | R. |  When a notify is received, this register will be updated |
 | [read_request](#register-mhdma-requestread-request) | 0x5010c | R. |  When a read request has bneen processed, this register will be updated |
-| [stat_notify](#register-mhdma-requeststat-notify) | 0x50110 | R. |  requests statistics each counter is up to 40seconds |
-| [stat_notify_ack](#register-mhdma-requeststat-notify-ack) | 0x50114 | R. |  requests statistics each counter is up to 40seconds |
-| [stat_notify_timeout](#register-mhdma-requeststat-notify-timeout) | 0x50118 | R. |  requests statistics each counter is up to 40seconds |
-| [stat_notify_timeout_retry](#register-mhdma-requeststat-notify-timeout-retry) | 0x5011c | R. |  requests statistics each counter is up to 40seconds |
+| [stat_notify](#register-mhdma-requeststat-notify) | 0x50110 | R. |  Number of notify that have been sent |
+| [stat_notify_ack](#register-mhdma-requeststat-notify-ack) | 0x50114 | R. |  Number of notify ack that have been received |
+| [stat_notify_timeout_retry](#register-mhdma-requeststat-notify-timeout-retry) | 0x50118 | R. |  Number of retries that have been done |
+| [stat_notify_timeout](#register-mhdma-requeststat-notify-timeout) | 0x5011c | R. |  timeout counter on notify |
+| [stat_t_notify_to_ack](#register-mhdma-requeststat-t-notify-to-ack) | 0x50120 | R. |  time between notify tlast and ack reception in decoder |
+| [stat_t_rr_to_ce_received](#register-mhdma-requeststat-t-rr-to-ce-received) | 0x50124 | R. |  time between read request tlast and all pkt received from ce |
+| [stat_t_ce_first_to_last_pkt](#register-mhdma-requeststat-t-ce-first-to-last-pkt) | 0x50128 | R. |  time between first and last pkt on ce |
 
 
 ---
@@ -4470,21 +4473,13 @@ Register read_request contains following Sub-fields:
 
 ### Register mhdma-request.stat-notify
 
-- **Description**: requests statistics each counter is up to 40seconds
+- **Description**: Number of notify that have been sent
 - **Owner**: Kernel
 - **Read Access**: ReadNotify
 - **Write Access**: None
 - **Offset**: 0x50110
-- **Default**: C.f. fields
+- **Default**: 0
 
-
-#### Field Details
-
-Register stat_notify contains following Sub-fields:
-
-| Field Name | Offset_b | Size_b | Default      | Description   |
-|-----------:|:--------:|:------:|:------------:|:--------------|
-| cnt_read      | 16 | 16 |0| number of notify that have been sent |
 
 
 
@@ -4493,44 +4488,13 @@ Register stat_notify contains following Sub-fields:
 
 ### Register mhdma-request.stat-notify-ack
 
-- **Description**: requests statistics each counter is up to 40seconds
+- **Description**: Number of notify ack that have been received
 - **Owner**: Kernel
 - **Read Access**: ReadNotify
 - **Write Access**: None
 - **Offset**: 0x50114
-- **Default**: C.f. fields
+- **Default**: 0
 
-
-#### Field Details
-
-Register stat_notify_ack contains following Sub-fields:
-
-| Field Name | Offset_b | Size_b | Default      | Description   |
-|-----------:|:--------:|:------:|:------------:|:--------------|
-| cnt_ack      | 0 | 16 |0| number of notify ack that have been received |
-
-
-
----
-
-
-### Register mhdma-request.stat-notify-timeout
-
-- **Description**: requests statistics each counter is up to 40seconds
-- **Owner**: Kernel
-- **Read Access**: ReadNotify
-- **Write Access**: None
-- **Offset**: 0x50118
-- **Default**: C.f. fields
-
-
-#### Field Details
-
-Register stat_notify_timeout contains following Sub-fields:
-
-| Field Name | Offset_b | Size_b | Default      | Description   |
-|-----------:|:--------:|:------:|:------------:|:--------------|
-| cnt_timeout      | 16 | 16 |0| timeout counter on notify |
 
 
 
@@ -4539,21 +4503,73 @@ Register stat_notify_timeout contains following Sub-fields:
 
 ### Register mhdma-request.stat-notify-timeout-retry
 
-- **Description**: requests statistics each counter is up to 40seconds
+- **Description**: Number of retries that have been done
+- **Owner**: Kernel
+- **Read Access**: ReadNotify
+- **Write Access**: None
+- **Offset**: 0x50118
+- **Default**: 0
+
+
+
+
+---
+
+
+### Register mhdma-request.stat-notify-timeout
+
+- **Description**: timeout counter on notify
 - **Owner**: Kernel
 - **Read Access**: ReadNotify
 - **Write Access**: None
 - **Offset**: 0x5011c
-- **Default**: C.f. fields
+- **Default**: 0
 
 
-#### Field Details
 
-Register stat_notify_timeout_retry contains following Sub-fields:
 
-| Field Name | Offset_b | Size_b | Default      | Description   |
-|-----------:|:--------:|:------:|:------------:|:--------------|
-| cnt_retry      | 16 | 16 |0| counter of number of retries that have been done |
+---
+
+
+### Register mhdma-request.stat-t-notify-to-ack
+
+- **Description**: time between notify tlast and ack reception in decoder
+- **Owner**: Kernel
+- **Read Access**: Read
+- **Write Access**: None
+- **Offset**: 0x50120
+- **Default**: 0
+
+
+
+
+---
+
+
+### Register mhdma-request.stat-t-rr-to-ce-received
+
+- **Description**: time between read request tlast and all pkt received from ce
+- **Owner**: Kernel
+- **Read Access**: Read
+- **Write Access**: None
+- **Offset**: 0x50124
+- **Default**: 0
+
+
+
+
+---
+
+
+### Register mhdma-request.stat-t-ce-first-to-last-pkt
+
+- **Description**: time between first and last pkt on ce
+- **Owner**: Kernel
+- **Read Access**: Read
+- **Write Access**: None
+- **Offset**: 0x50128
+- **Default**: 0
+
 
 
 

@@ -7,6 +7,7 @@
 
 module mhdma_decoder
   import mhdma_pkg::*;
+  import axi_if_shell_axil_pkg::*;   // REG_DATA_W
 #() (
   // Ethernet fast clock interface --------------------------------------------
   input  logic                     clk_mrmac,
@@ -23,6 +24,8 @@ module mhdma_decoder
   output logic [MRMAC_AXIS_W-1:0]  rx_tdata,
   output logic                     rx_tvalid,
   output logic                     rx_tlast,
+  //  Statistics --------------------------------------------------------------
+  output logic [REG_DATA_W-1:0]    stat_t_ce_first_to_last_pkt,
   // QSFP system interface ----------------------------------------------------
   // == RX
   input  logic [MRMAC_AXIS_W-1:0]  qsfp_rx_tdata,
@@ -187,5 +190,47 @@ module mhdma_decoder
 
   always_ff @(posedge clk_mrmac)
     rx_tlast <= ce_received & qsfp_rx_tvalid & qsfp_rx_tlast;
+
+
+  // =========================================================================================== //
+  // statistics
+  // =========================================================================================== //
+  logic [REG_DATA_W-1:0] t_first_last_pkt;
+  logic                  count_time_first_to_last;
+
+  always_ff @(posedge clk_mrmac)begin
+    if (~resetn_mrmac)begin
+      count_time_first_to_last <= 1'b0;
+    end else begin
+      if (ce_received & (sec_num == 0) & qsfp_rx_tlast) begin
+        count_time_first_to_last <= 1'b1;
+      end else if (ce_received & (sec_num == NB_PACKETS_FULL) & qsfp_rx_tlast)  begin
+        count_time_first_to_last <= 1'b0;
+      end
+    end
+  end
+
+  always_ff @(posedge clk_mrmac) begin
+    if (~resetn_mrmac) begin
+      t_first_last_pkt <= 'h0;
+    end else begin
+      if (count_time_first_to_last) begin
+        t_first_last_pkt <= t_first_last_pkt + 1;
+      end else begin
+        t_first_last_pkt <= 'h0;
+      end
+    end
+  end
+
+  always_ff@(posedge clk_mrmac) begin
+    if (~resetn_mrmac)begin
+      stat_t_ce_first_to_last_pkt <= 'h0;
+    end else begin
+      if (ce_received & (sec_num == NB_PACKETS_FULL) & qsfp_rx_tlast) begin
+        stat_t_ce_first_to_last_pkt <= t_first_last_pkt;
+      end
+    end
+  end
+
 
 endmodule
