@@ -4138,7 +4138,7 @@
       "description": "system configuration",
       "offset": 327680,
       "bytes_align": 4,
-      "range": 12,
+      "range": 16,
       "register": [
         {
           "name": "lane",
@@ -4210,7 +4210,7 @@
           ]
         },
         {
-          "name": "timeout",
+          "name": "timeout_notify",
           "description": "Timeout: time before re-launching a request, in clock cycles",
           "owner": "User",
           "read_access": "Read",
@@ -4222,11 +4222,7 @@
               "name_val": [
                 [
                   "notify_timeout_dur",
-                  "'h9c40"
-                ],
-                [
-                  "read_req_timout_dur",
-                  "'h9c40"
+                  "'h48000000"
                 ]
               ]
             }
@@ -4235,19 +4231,40 @@
             {
               "name": "notify_timeout_dur",
               "description": "notify request timeout duration",
-              "size_b": 16,
+              "size_b": 32,
               "offset_b": 0,
               "default": {
-                "Cst": 40000
+                "Cst": 1207959552
               }
-            },
+            }
+          ]
+        },
+        {
+          "name": "timeout_read_req",
+          "description": "Timeout: time before re-launching a request, in clock cycles",
+          "owner": "User",
+          "read_access": "Read",
+          "write_access": "Write",
+          "offset": 327688,
+          "default": {
+            "ParamsField": {
+              "params": [],
+              "name_val": [
+                [
+                  "read_req_timout_dur",
+                  "'h48000000"
+                ]
+              ]
+            }
+          },
+          "field": [
             {
               "name": "read_req_timout_dur",
               "description": "read request timeout duration",
-              "size_b": 16,
-              "offset_b": 16,
+              "size_b": 32,
+              "offset_b": 0,
               "default": {
-                "Cst": 40000
+                "Cst": 1207959552
               }
             }
           ]
@@ -4258,7 +4275,7 @@
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "None",
-          "offset": 327688,
+          "offset": 327692,
           "default": {
             "Cst": 0
           },

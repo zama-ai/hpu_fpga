@@ -119,7 +119,8 @@ module multi_hpu_dma
   logic                 [REG_DATA_W-1:0]   r_request_read;
   logic                 [REG_DATA_W-1:0]   r_request_req_id;
   logic                 [REG_DATA_W-1:0]   r_request_req_addr;
-  logic                 [REG_DATA_W-1:0]   r_system_timeout;
+  logic                 [REG_DATA_W-1:0]   r_system_timeout_notify;
+  logic                 [REG_DATA_W-1:0]   r_system_timeout_read_req;
   logic [    ETH_PC-1:0][2*REG_DATA_W-1:0] r_ct_mem_addr;
   // lane control & debug
   logic                 [REG_DATA_W-1:0]   r_system_line;
@@ -131,15 +132,15 @@ module multi_hpu_dma
 
   // Statistics Counters --------------------------------------------------------------------------
   // counters @eth
-  logic [TIMEOUT_W-1:0] cnt_notify_eth;
-  logic [TIMEOUT_W-1:0] cnt_notify_ack_eth;
-  logic [TIMEOUT_W-1:0] cnt_timeout_eth;
-  logic [TIMEOUT_W-1:0] cnt_retry_notify_eth;
+  logic [REG_DATA_W-1:0] cnt_notify_eth;
+  logic [REG_DATA_W-1:0] cnt_notify_ack_eth;
+  logic [REG_DATA_W-1:0] cnt_timeout_eth;
+  logic [REG_DATA_W-1:0] cnt_retry_notify_eth;
   // counters @cfg
-  logic [TIMEOUT_W-1:0] cnt_notify_cfg;
-  logic [TIMEOUT_W-1:0] cnt_notify_ack_cfg;
-  logic [TIMEOUT_W-1:0] cnt_timeout_cfg;
-  logic [TIMEOUT_W-1:0] cnt_retry_notify_cfg;
+  logic [REG_DATA_W-1:0] cnt_notify_cfg;
+  logic [REG_DATA_W-1:0] cnt_notify_ack_cfg;
+  logic [REG_DATA_W-1:0] cnt_timeout_cfg;
+  logic [REG_DATA_W-1:0] cnt_retry_notify_cfg;
 
   // reset counters @eth
   logic                 rst_cnt_notify_eth;
@@ -279,7 +280,8 @@ module multi_hpu_dma
     .r_mhdma_reset_datapath                (r_reset_datapath                                      ),
     .r_mhdma_reset_monitor_upd             (reset_monitor_tmp                                     ),
     .r_mhdma_lane_debug                    (r_line_debug                                          ),
-    .r_mhdma_system_timeout                (r_system_timeout                                      ),
+    .r_mhdma_system_timeout_notify         (r_system_timeout_notify                               ),
+    .r_mhdma_system_timeout_read_req       (r_system_timeout_read_req                             ),
     // stats --------------------------------------------------------------------------------------
     // On Notify
     .r_mhdma_request_stat_notify_upd                (cnt_notify_cfg                               ),
@@ -402,13 +404,13 @@ module multi_hpu_dma
     .REG_OUTPUT(0),                     // 0=combinatorial output, 1=registered output
     .SIM_ASSERT_CHK(0),                 // 0=disable simulation messages
     .SIM_LOSSLESS_GRAY_CHK(0),          // 0=disable lossless check
-    .WIDTH(TIMEOUT_W)                   // TIMEOUT_W-bit counter width (range: 2-32)
+    .WIDTH(REG_DATA_W)                   // REG_DATA_W-bit counter width (range: 2-32)
   ) xpm_cdc_gray_cnt_notify (
     .src_clk(clk_eth_mrmac),            // 1-bit input: source clock
-    .src_in_bin(cnt_notify_eth),        // TIMEOUT_W-bit input: binary counter to synchronize
+    .src_in_bin(cnt_notify_eth),        // REG_DATA_W-bit input: binary counter to synchronize
 
     .dest_clk(clk_eth_cfg),             // 1-bit input: destination clock
-    .dest_out_bin(cnt_notify_cfg)       // TIMEOUT_W-bit output: binary value in dest domain
+    .dest_out_bin(cnt_notify_cfg)       // REG_DATA_W-bit output: binary value in dest domain
   );//temporary
 
   xpm_cdc_single_wrapper #(
@@ -426,13 +428,13 @@ module multi_hpu_dma
     .REG_OUTPUT(0),                     // 0=combinatorial output, 1=registered output
     .SIM_ASSERT_CHK(0),                 // 0=disable simulation messages
     .SIM_LOSSLESS_GRAY_CHK(0),          // 0=disable lossless check
-    .WIDTH(TIMEOUT_W)                   // TIMEOUT_W-bit counter width (range: 2-32)
+    .WIDTH(REG_DATA_W)                   // REG_DATA_W-bit counter width (range: 2-32)
   ) xpm_cdc_gray_cnt_notify_ack (
     .src_clk(clk_eth_mrmac),            // 1-bit input: source clock
-    .src_in_bin(cnt_notify_ack_eth),    // TIMEOUT_W-bit input: binary counter to synchronize
+    .src_in_bin(cnt_notify_ack_eth),    // REG_DATA_W-bit input: binary counter to synchronize
 
     .dest_clk(clk_eth_cfg),             // 1-bit input: destination clock
-    .dest_out_bin(cnt_notify_ack_cfg)   // TIMEOUT_W-bit output: binary value in dest domain
+    .dest_out_bin(cnt_notify_ack_cfg)   // REG_DATA_W-bit output: binary value in dest domain
   );//temporary
 
   xpm_cdc_single_wrapper #(
@@ -450,13 +452,13 @@ module multi_hpu_dma
     .REG_OUTPUT(0),                     // 0=combinatorial output, 1=registered output
     .SIM_ASSERT_CHK(0),                 // 0=disable simulation messages
     .SIM_LOSSLESS_GRAY_CHK(0),          // 0=disable lossless check
-    .WIDTH(TIMEOUT_W)                   // TIMEOUT_W-bit counter width (range: 2-32)
+    .WIDTH(REG_DATA_W)                   // REG_DATA_W-bit counter width (range: 2-32)
   ) xpm_cdc_gray_cnt_notify_to (
     .src_clk(clk_eth_mrmac),            // 1-bit input: source clock
-    .src_in_bin(cnt_timeout_eth),       // TIMEOUT_W-bit input: binary counter to synchronize
+    .src_in_bin(cnt_timeout_eth),       // REG_DATA_W-bit input: binary counter to synchronize
 
     .dest_clk(clk_eth_cfg),             // 1-bit input: destination clock
-    .dest_out_bin(cnt_timeout_cfg)      // TIMEOUT_W-bit output: binary value in dest domain
+    .dest_out_bin(cnt_timeout_cfg)      // REG_DATA_W-bit output: binary value in dest domain
   );//temporary
 
   xpm_cdc_single_wrapper #(
@@ -474,13 +476,13 @@ module multi_hpu_dma
     .REG_OUTPUT(0),                     // 0=combinatorial output, 1=registered output
     .SIM_ASSERT_CHK(0),                 // 0=disable simulation messages
     .SIM_LOSSLESS_GRAY_CHK(0),          // 0=disable lossless check
-    .WIDTH(TIMEOUT_W)                   // TIMEOUT_W-bit counter width (range: 2-32)
+    .WIDTH(REG_DATA_W)                   // REG_DATA_W-bit counter width (range: 2-32)
   ) xpm_cdc_gray_cnt_notify_retry (
     .src_clk(clk_eth_mrmac),            // 1-bit input: source clock
-    .src_in_bin(cnt_retry_notify_eth),  // TIMEOUT_W-bit input: binary counter to synchronize
+    .src_in_bin(cnt_retry_notify_eth),  // REG_DATA_W-bit input: binary counter to synchronize
 
     .dest_clk(clk_eth_cfg),             // 1-bit input: destination clock
-    .dest_out_bin(cnt_retry_notify_cfg) // TIMEOUT_W-bit output: binary value in dest domain
+    .dest_out_bin(cnt_retry_notify_cfg) // REG_DATA_W-bit output: binary value in dest domain
   );//temporary
 
   // Registers ====================================================================================
@@ -493,10 +495,10 @@ module multi_hpu_dma
     .WIDTH(REG_DATA_W)                  // REG_DATA_W-bit counter width (range: 2-32)
   ) xpm_cdc_gray_reg_fsm (
     .src_clk(clk_eth_mrmac),            // 1-bit input: source clock
-    .src_in_bin(r_fsm_value_eth),       // TIMEOUT_W-bit input: binary counter to synchronize
+    .src_in_bin(r_fsm_value_eth),       // REG_DATA_W-bit input: binary counter to synchronize
 
     .dest_clk(clk_eth_cfg),             // 1-bit input: destination clock
-    .dest_out_bin(r_fsm_value_cfg)      // TIMEOUT_W-bit output: binary value in dest domain
+    .dest_out_bin(r_fsm_value_cfg)      // REG_DATA_W-bit output: binary value in dest domain
   );//temporary
 
 
@@ -556,7 +558,8 @@ module multi_hpu_dma
     .regf_req_addr         (r_request_req_addr                                                    ),
     .regf_notify_payload   (r_request_notify                                                      ),
     .regf_read_payload     (r_request_read                                                        ),
-    .regf_timeout_duration (r_system_timeout                                                      ),
+    .regf_timeout_duration_notify (r_system_timeout_notify                                                      ),
+    .regf_timeout_duration_read_req (r_system_timeout_read_req                                                      ),
     // interruptions and control ------------------------------------------------------------------
     .received_req          (&received_req                                                         ),
     .request_consumed      (request_consumed                                                      ),

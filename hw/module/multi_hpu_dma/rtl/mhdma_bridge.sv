@@ -60,15 +60,16 @@ module mhdma_bridge
   input  logic                 [  REG_DATA_W-1:0] regf_req_addr,
   output logic                 [  REG_DATA_W-1:0] regf_notify_payload,
   output logic                 [  REG_DATA_W-1:0] regf_read_payload,
-  input  logic                 [  REG_DATA_W-1:0] regf_timeout_duration,
+  input  logic                 [  REG_DATA_W-1:0] regf_timeout_duration_notify,
+  input  logic                 [  REG_DATA_W-1:0] regf_timeout_duration_read_req,
   // control ------------------------------------------------------------------
   input  logic                                    received_req,
   output logic                                    request_consumed,
   // statistics ---------------------------------------------------------------
-  output logic [TIMEOUT_W-1:0]                    stat_cnt_notify,
-  output logic [TIMEOUT_W-1:0]                    stat_cnt_notify_ack,
-  output logic [TIMEOUT_W-1:0]                    stat_cnt_notify_timeout,
-  output logic [TIMEOUT_W-1:0]                    stat_cnt_notify_retries,
+  output logic [REG_DATA_W-1:0]                   stat_cnt_notify,
+  output logic [REG_DATA_W-1:0]                   stat_cnt_notify_ack,
+  output logic [REG_DATA_W-1:0]                   stat_cnt_notify_timeout,
+  output logic [REG_DATA_W-1:0]                   stat_cnt_notify_retries,
   // reset counters
   input  logic                                    rst_cnt_notify,
   input  logic                                    rst_cnt_notify_ack,
@@ -274,7 +275,8 @@ module mhdma_bridge
     .regf_req_id                     (regf_req_id                             ),
     .regf_req_addr                   (regf_req_addr                           ),
     .regf_read_payload               (regf_read_payload                       ),
-    .regf_timeout_duration           (regf_timeout_duration                   ),
+    .regf_timeout_duration_notify    (regf_timeout_duration_notify            ),
+    .regf_timeout_duration_read_req  (regf_timeout_duration_read_req          ),
     // register control -------------------------------------------------------
     .received_req                    (received_req                            ),
     .request_consumed                (request_consumed                        ),

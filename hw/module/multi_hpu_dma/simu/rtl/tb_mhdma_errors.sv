@@ -37,7 +37,8 @@ module tb_mhdma_errors;
   localparam int FIFO_DEPTH = 512;
 
   localparam int NB_HPU = 8;
-  localparam [31:0] TIMEOUT_DUR = 'h41460046;
+  localparam [31:0] TIMEOUT_DUR_NOTIFY = 'd80;
+  localparam [31:0] TIMEOUT_DUR_READ_REQ = 'd4000;
 
   // ciphertext memories -------------------------------------------------------------------------
   localparam int MEM_WR_CMD_BUF_DEPTH = 4;  // Should be >= 1
@@ -560,7 +561,7 @@ module tb_mhdma_errors;
     iop_src_addr = $urandom_range(0, 1<<SRC_ADDR_W);
     notify_request(hpu_a_id, hpu_b_id, iop_id, iop_src_addr);
 
-    repeat(2*TIMEOUT_DUR[15:0]) @(posedge clk_mrmac);
+    repeat(2*TIMEOUT_DUR_NOTIFY[15:0]) @(posedge clk_mrmac);
 
     notify_ack(hpu_a_id, hpu_a_mac_addr, hpu_b_id, hpu_b_mac_addr);
 
@@ -612,7 +613,7 @@ module tb_mhdma_errors;
     iop_src_addr = 99;
     // TODO: bug here
     // notify_request(hpu_a_id, hpu_b_id, iop_id, iop_src_addr);
-    // repeat(2*TIMEOUT_DUR[15:0]) @(posedge clk_mrmac);
+    // repeat(2*TIMEOUT_DUR_READ_REQ[15:0]) @(posedge clk_mrmac);
 
     // iop_id       = 777;
     // iop_src_addr = 98;
@@ -640,13 +641,13 @@ module tb_mhdma_errors;
     $display("F - Read request is emitted by HPU_A and not answered for twice timout amount"); // -
     read_request(hpu_b_id, iop_id, iop_src_addr, iop_dst_addr);
 
-    repeat(2*TIMEOUT_DUR[31:16]) @(posedge clk_mrmac);
+    repeat(2*TIMEOUT_DUR_READ_REQ[31:16]) @(posedge clk_mrmac);
 
     emulate_ciphertext_emission(hpu_a_id, hpu_a_mac_addr, hpu_b_id, hpu_b_mac_addr, 0);
     // TODO: bug: fifo is partly filled and gots write complete before end of transmission
-    $display("%t > [INFO-F]: formatter FSM has gotten back to IDLE", $time);
 
     wait(hpu_a.mhdma_bridge.mhdma_formatter.tx_state == 3'b001);
+    $display("%t > [INFO-F]: formatter FSM has gotten back to IDLE", $time);
 
     $display("%t > INFO: End simulation",$time);
     repeat(20) @(posedge clk_control);
@@ -705,8 +706,9 @@ module tb_mhdma_errors;
       qsfp_rx_tlast = 'h0;
       qsfp_rx_tvalid = 'h0;
 
-      // Setting timeout size to both HPUs ----------------------------------------------------------
-      maxil_drv_if.write_trans(MHDMA_SYSTEM_TIMEOUT_OFS, {TIMEOUT_DUR, TIMEOUT_DUR});
+      // Setting timeout size ---------------------------------------------------------------------
+      maxil_drv_if.write_trans(MHDMA_SYSTEM_TIMEOUT_NOTIFY_OFS, TIMEOUT_DUR_NOTIFY);
+      maxil_drv_if.write_trans(MHDMA_SYSTEM_TIMEOUT_READ_REQ_OFS, TIMEOUT_DUR_READ_REQ);
 
       // Setting up credible values -------------------------------------------------------------
       // no loopback, no reset, not in debug lane0 selected

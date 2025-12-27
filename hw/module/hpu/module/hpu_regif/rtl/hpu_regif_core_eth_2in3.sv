@@ -1,8 +1,8 @@
 // ============================================================================================== //
 // Description  : Axi4-lite register bank
 // This file was generated with rust regmap generator:
-//  * Date:  2025-12-18
-//  * Tool_version: 27d9e880d531030160fd8749c606142942d5558d
+//  * Date:  2025-12-27
+//  * Tool_version: bd49564daf1a99d615cb6dbb121b54bfbeef8b22
 // ---------------------------------------------------------------------------------------------- //
 // xR[n]W[na]
 // |-> who is in charge of the register update logic : u -> User
@@ -57,8 +57,10 @@ import hpu_regif_core_eth_2in3_pkg::*;
   output logic [AXIL_DATA_W-1:0]        r_axil_wdata
   // Register IO: mhdma_system_lane
     , output mhdma_system_lane_t r_mhdma_system_lane
-  // Register IO: mhdma_system_timeout
-    , output mhdma_system_timeout_t r_mhdma_system_timeout
+  // Register IO: mhdma_system_timeout_notify
+    , output mhdma_system_timeout_notify_t r_mhdma_system_timeout_notify
+  // Register IO: mhdma_system_timeout_read_req
+    , output mhdma_system_timeout_read_req_t r_mhdma_system_timeout_read_req
   // Register IO: mhdma_system_fsm_value
     , output logic [REG_DATA_W-1: 0] r_mhdma_system_fsm_value
     , input  logic [REG_DATA_W-1: 0] r_mhdma_system_fsm_value_upd
@@ -309,12 +311,17 @@ import hpu_regif_core_eth_2in3_pkg::*;
     mhdma_system_lane_default.rate = 'h0;
     mhdma_system_lane_default.debug = 'h0;
   end
-//-- Default mhdma_system_timeout
-  mhdma_system_timeout_t mhdma_system_timeout_default;
+//-- Default mhdma_system_timeout_notify
+  mhdma_system_timeout_notify_t mhdma_system_timeout_notify_default;
   always_comb begin
-    mhdma_system_timeout_default = 'h0;
-    mhdma_system_timeout_default.notify_timeout_dur = 'h9c40;
-    mhdma_system_timeout_default.read_req_timout_dur = 'h9c40;
+    mhdma_system_timeout_notify_default = 'h0;
+    mhdma_system_timeout_notify_default.notify_timeout_dur = 'h48000000;
+  end
+//-- Default mhdma_system_timeout_read_req
+  mhdma_system_timeout_read_req_t mhdma_system_timeout_read_req_default;
+  always_comb begin
+    mhdma_system_timeout_read_req_default = 'h0;
+    mhdma_system_timeout_read_req_default.read_req_timout_dur = 'h48000000;
   end
 //-- Default mhdma_system_fsm_value
   logic [REG_DATA_W-1:0]mhdma_system_fsm_value_default;
@@ -500,15 +507,26 @@ import hpu_regif_core_eth_2in3_pkg::*;
       r_mhdma_system_lane       <= r_mhdma_system_laneD;
     end
   end
-// Register FF: mhdma_system_timeout
-  logic [REG_DATA_W-1:0] r_mhdma_system_timeoutD;
-  assign r_mhdma_system_timeoutD = (wr_en_ok && (wr_add[AXIL_ADD_RANGE_W-1:0] == MHDMA_SYSTEM_TIMEOUT_OFS[AXIL_ADD_RANGE_W-1:0]))? wr_data: r_mhdma_system_timeout;
+// Register FF: mhdma_system_timeout_notify
+  logic [REG_DATA_W-1:0] r_mhdma_system_timeout_notifyD;
+  assign r_mhdma_system_timeout_notifyD = (wr_en_ok && (wr_add[AXIL_ADD_RANGE_W-1:0] == MHDMA_SYSTEM_TIMEOUT_NOTIFY_OFS[AXIL_ADD_RANGE_W-1:0]))? wr_data: r_mhdma_system_timeout_notify;
   always_ff @(posedge clk) begin
     if (!s_rst_n) begin
-      r_mhdma_system_timeout       <= mhdma_system_timeout_default;
+      r_mhdma_system_timeout_notify       <= mhdma_system_timeout_notify_default;
     end
     else begin
-      r_mhdma_system_timeout       <= r_mhdma_system_timeoutD;
+      r_mhdma_system_timeout_notify       <= r_mhdma_system_timeout_notifyD;
+    end
+  end
+// Register FF: mhdma_system_timeout_read_req
+  logic [REG_DATA_W-1:0] r_mhdma_system_timeout_read_reqD;
+  assign r_mhdma_system_timeout_read_reqD = (wr_en_ok && (wr_add[AXIL_ADD_RANGE_W-1:0] == MHDMA_SYSTEM_TIMEOUT_READ_REQ_OFS[AXIL_ADD_RANGE_W-1:0]))? wr_data: r_mhdma_system_timeout_read_req;
+  always_ff @(posedge clk) begin
+    if (!s_rst_n) begin
+      r_mhdma_system_timeout_read_req       <= mhdma_system_timeout_read_req_default;
+    end
+    else begin
+      r_mhdma_system_timeout_read_req       <= r_mhdma_system_timeout_read_reqD;
     end
   end
 // Register FF: mhdma_system_fsm_value
@@ -968,8 +986,11 @@ import hpu_regif_core_eth_2in3_pkg::*;
           MHDMA_SYSTEM_LANE_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register mhdma_system_lane
             axil_rdataD = r_mhdma_system_lane;
           end
-          MHDMA_SYSTEM_TIMEOUT_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register mhdma_system_timeout
-            axil_rdataD = r_mhdma_system_timeout;
+          MHDMA_SYSTEM_TIMEOUT_NOTIFY_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register mhdma_system_timeout_notify
+            axil_rdataD = r_mhdma_system_timeout_notify;
+          end
+          MHDMA_SYSTEM_TIMEOUT_READ_REQ_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register mhdma_system_timeout_read_req
+            axil_rdataD = r_mhdma_system_timeout_read_req;
           end
           MHDMA_SYSTEM_FSM_VALUE_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register mhdma_system_fsm_value
             axil_rdataD = r_mhdma_system_fsm_value;

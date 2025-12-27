@@ -581,8 +581,6 @@ end
   int random_iter;
   // Signals --------------------------------------------------------------------------------------
   logic [REG_DATA_W-1:0] read_data;
-  // must not bee too short, not too long
-  logic [REG_DATA_W-1:0] timeout_size;
 
   // HPU-A and HPU-B node id will be set randomly and mandatorily different
   logic [HPU_ID_W-1:0] random_hpu_a;

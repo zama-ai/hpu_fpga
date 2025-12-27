@@ -1,6 +1,6 @@
 # HPU_REGIF_CORE documentation
-**Date**: 2025-12-18
-**Tool Version**: 27d9e880d531030160fd8749c606142942d5558d
+**Date**: 2025-12-27
+**Tool Version**: bd49564daf1a99d615cb6dbb121b54bfbeef8b22
 
 ## RegisterMap Overview
 
@@ -44,7 +44,7 @@ Below is a summary of all the registers in the current register map:
 | [status_3in3](#section-status-3in3) | 0x30010 | 0x4 | HPU status of parts 2in3 and 3in3 |
 | [bsk_avail](#section-bsk-avail) | 0x31000 | 0x8 | BSK availability configuration |
 | [runtime_3in3](#section-runtime-3in3) | 0x32000 | 0x48 | Runtime information |
-| [mhdma_system](#section-mhdma-system) | 0x50000 | 0xc | system configuration |
+| [mhdma_system](#section-mhdma-system) | 0x50000 | 0x10 | system configuration |
 | [mhdma_reset](#section-mhdma-reset) | 0x50014 | 0x8 | Controllable resets for transceivers |
 | [mhdma_hpu_id](#section-mhdma-hpu-id) | 0x50050 | 0x20 | HPU ID containing all possible targets. For all IDs we have HPU MAC address, software ID and a flag for current hpu |
 | [mhdma_request](#section-mhdma-request) | 0x50100 | 0x20 | Request registers interface |
@@ -4042,8 +4042,9 @@ Below is a summary of all the registers in the current section mhdma_system:
 | Name             | Offset | Access | Description |
 |-----------------:|:------:|:------:|:------------|
 | [lane](#register-mhdma-systemlane) | 0x50000 | RW |  Different parameters for qsfp lines |
-| [timeout](#register-mhdma-systemtimeout) | 0x50004 | RW |  Timeout: time before re-launching a request, in clock cycles |
-| [fsm_value](#register-mhdma-systemfsm-value) | 0x50008 | R. |  fsm status of the module |
+| [timeout_notify](#register-mhdma-systemtimeout-notify) | 0x50004 | RW |  Timeout: time before re-launching a request, in clock cycles |
+| [timeout_read_req](#register-mhdma-systemtimeout-read-req) | 0x50008 | RW |  Timeout: time before re-launching a request, in clock cycles |
+| [fsm_value](#register-mhdma-systemfsm-value) | 0x5000c | R. |  fsm status of the module |
 
 
 ---
@@ -4075,7 +4076,7 @@ Register lane contains following Sub-fields:
 ---
 
 
-### Register mhdma-system.timeout
+### Register mhdma-system.timeout-notify
 
 - **Description**: Timeout: time before re-launching a request, in clock cycles
 - **Owner**: User
@@ -4087,12 +4088,34 @@ Register lane contains following Sub-fields:
 
 #### Field Details
 
-Register timeout contains following Sub-fields:
+Register timeout_notify contains following Sub-fields:
 
 | Field Name | Offset_b | Size_b | Default      | Description   |
 |-----------:|:--------:|:------:|:------------:|:--------------|
-| notify_timeout_dur      | 0 | 16 |40000| notify request timeout duration |
-| read_req_timout_dur      | 16 | 16 |40000| read request timeout duration |
+| notify_timeout_dur      | 0 | 32 |1207959552| notify request timeout duration |
+
+
+
+---
+
+
+### Register mhdma-system.timeout-read-req
+
+- **Description**: Timeout: time before re-launching a request, in clock cycles
+- **Owner**: User
+- **Read Access**: Read
+- **Write Access**: Write
+- **Offset**: 0x50008
+- **Default**: C.f. fields
+
+
+#### Field Details
+
+Register timeout_read_req contains following Sub-fields:
+
+| Field Name | Offset_b | Size_b | Default      | Description   |
+|-----------:|:--------:|:------:|:------------:|:--------------|
+| read_req_timout_dur      | 0 | 32 |1207959552| read request timeout duration |
 
 
 
@@ -4105,7 +4128,7 @@ Register timeout contains following Sub-fields:
 - **Owner**: Kernel
 - **Read Access**: Read
 - **Write Access**: None
-- **Offset**: 0x50008
+- **Offset**: 0x5000c
 - **Default**: 0
 
 

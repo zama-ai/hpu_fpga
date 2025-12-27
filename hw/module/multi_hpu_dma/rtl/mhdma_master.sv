@@ -31,10 +31,11 @@ module mhdma_master
   input  logic                                resetn_mrmac,
   // regf interface -----------------------------------------------------------
   input  logic [ETH_PC-1:0][2*REG_DATA_W-1:0] regf_ct_mem_addr,
-  input  logic             [  REG_DATA_W-1:0] regf_req_id,
-  input  logic             [  REG_DATA_W-1:0] regf_req_addr,
-  output logic             [  REG_DATA_W-1:0] regf_read_payload,
-  input  logic               [REG_DATA_W-1:0] regf_timeout_duration,
+  input  logic               [REG_DATA_W-1:0] regf_req_id,
+  input  logic               [REG_DATA_W-1:0] regf_req_addr,
+  output logic               [REG_DATA_W-1:0] regf_read_payload,
+  input  logic               [REG_DATA_W-1:0] regf_timeout_duration_notify,
+  input  logic               [REG_DATA_W-1:0] regf_timeout_duration_read_req,
   // register control --------------------------------------------------------
   input  logic                                received_req,
   output logic                                request_consumed,
@@ -63,10 +64,10 @@ module mhdma_master
   input  header_t                             decoded_header,
   // statistics ---------------------------------------------------------------
   // counters
-  output logic [TIMEOUT_W-1:0]                stat_cnt_notify,
-  output logic [TIMEOUT_W-1:0]                stat_cnt_notify_ack,
-  output logic [TIMEOUT_W-1:0]                stat_cnt_notify_retries,
-  output logic [TIMEOUT_W-1:0]                stat_cnt_notify_timeout,
+  output logic [REG_DATA_W-1:0]               stat_cnt_notify,
+  output logic [REG_DATA_W-1:0]               stat_cnt_notify_ack,
+  output logic [REG_DATA_W-1:0]               stat_cnt_notify_retries,
+  output logic [REG_DATA_W-1:0]               stat_cnt_notify_timeout,
   // reset counters
   input  logic                                rst_cnt_notify,
   input  logic                                rst_cnt_notify_ack,
@@ -377,17 +378,17 @@ module mhdma_master
   // =========================================================================================== //
   // Timeouts
   // =========================================================================================== //
-  logic [TIMEOUT_W-1:0] to_dur_read_req;
-  logic [TIMEOUT_W-1:0] to_dur_notify;
+  logic [REG_DATA_W-1:0] to_dur_read_req;
+  logic [REG_DATA_W-1:0] to_dur_notify;
 
   always_ff @(posedge clk_mrmac)
-    to_dur_read_req <= regf_timeout_duration[REG_DATA_W-1:TIMEOUT_W];
+    to_dur_read_req <= regf_timeout_duration_read_req;
 
   always_ff @(posedge clk_mrmac)
-    to_dur_notify <= regf_timeout_duration[TIMEOUT_W-1:0];
+    to_dur_notify <= regf_timeout_duration_notify;
 
   // timeout --------------------------------------------------------------------------------------
-  logic [TIMEOUT_W-1:0] to_notify_cnt;
+  logic [REG_DATA_W-1:0] to_notify_cnt;
 
   always_ff @(posedge clk_mrmac) begin : timeout_counter
     if (~resetn_mrmac) begin
@@ -407,7 +408,7 @@ module mhdma_master
     format_retry_notify <= timeout_reached_notify;
 
   // timeout read request -------------------------------------------------------------------------
-  logic [TIMEOUT_W-1:0] to_read_request_cnt;
+  logic [REG_DATA_W-1:0] to_read_request_cnt;
 
   always_ff @(posedge clk_mrmac) begin : timeout_counter_rr
     if (~resetn_mrmac) begin
@@ -997,9 +998,9 @@ module mhdma_master
   // =========================================================================================== //
   // Statistics
   // =========================================================================================== //
-  logic [TIMEOUT_W-1:0] retry_notify_cnt;
-  logic [TIMEOUT_W-1:0] notify_cnt;
-  logic [TIMEOUT_W-1:0] notify_ack_cnt;
+  logic [REG_DATA_W-1:0] retry_notify_cnt;
+  logic [REG_DATA_W-1:0] notify_cnt;
+  logic [REG_DATA_W-1:0] notify_ack_cnt;
 
   always_ff @(posedge clk_mrmac) begin
     if (~resetn_mrmac) begin
