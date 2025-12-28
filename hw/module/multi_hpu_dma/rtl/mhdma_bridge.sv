@@ -2,17 +2,16 @@
 // BSD 3-Clause Clear License
 // Copyright © 2025 ZAMA. All rights reserved.
 // ----------------------------------------------------------------------------------------------
-// Description  : Ethernet bridge to PL and HBM
+// Description  : Bridge between HBM and MRMAC IP
 // ----------------------------------------------------------------------------------------------
-//
+// includes other module for all the control for notify, read request and ciphertext emission
 // ==============================================================================================
 
 module mhdma_bridge
-  import mhdma_pkg::*;
-  import axi_if_shell_axil_pkg::*;
-  import hpu_regif_core_eth_2in3_pkg::*;
-  import axi_if_common_param_pkg::*;
-  import axi_if_eth_axi_pkg::*;
+  import mhdma_pkg::*;                            // multi-hpu-dma
+  import axi_if_shell_axil_pkg::*;                // REG_DATA_W
+  import axi_if_common_param_pkg::*;              // general axi4
+  import axi_if_eth_axi_pkg::*;                   // AXI ethernet
 #() (
   // Ethernet configuration interface -----------------------------------------
   input  logic                                    clk_cfg,
@@ -106,8 +105,8 @@ module mhdma_bridge
   localparam int CDC_SYNC_STAGES = 2;
 
   //TODO: review theses two values, if not divisible by 32 it will be wrong
-  localparam [3:0] PC_STRIDE                = 'hB;
-  localparam int PC_CT_BYTES [ETH_PC]= '{'h2000, 'h2020};
+  localparam [3:0] PC_STRIDE          = 'hB;
+  localparam int PC_CT_BYTES [ETH_PC] = '{'h2000, 'h2020};
 
   localparam int MAX_BURST_SIZE = PAGE_BYTES/AXI4_DATA_BYTES;
 
@@ -116,7 +115,7 @@ module mhdma_bridge
   localparam int PC_REMAINS  [ETH_PC] = compute_remaining_words(PC_NB_WORDS, MAX_BURST_SIZE);
   localparam int PC_NB_TRANS [ETH_PC] = compute_nb_transactions(PC_REMAINS,PC_NB_BURST);
 
-  // statistics
+  // statistics/debug that needs to be propagated to regif
   logic [2:0] stat_fsm_formatter;
   logic [1:0] stat_fsm_notify_rx;
   logic [1:0] stat_fsm_cem;
@@ -245,11 +244,12 @@ module mhdma_bridge
   logic                     rx_tlast;
   logic                     cerx_reception_ready;
 
+  // Master module does the controls for sending read request and Notifies requests
   mhdma_master #(
-    .PC_STRIDE         (PC_STRIDE),
-    .PC_NB_WORDS       (PC_NB_WORDS),
-    .PC_REMAINS        (PC_REMAINS),
-    .PC_NB_WRITES      (PC_NB_TRANS)
+    .PC_STRIDE                       (PC_STRIDE                               ),
+    .PC_NB_WORDS                     (PC_NB_WORDS                             ),
+    .PC_REMAINS                      (PC_REMAINS                              ),
+    .PC_NB_WRITES                    (PC_NB_TRANS                             )
   ) mhdma_master (
     // Ethernet configuration interface ---------------------------------------
     .clk_cfg                         (clk_cfg                                 ),
@@ -327,6 +327,7 @@ module mhdma_bridge
     .error_packet_id_mismatch        (/* UNUSED */                            )
   );
 
+  // Slave module does the control for Notify ack and ciphertext emission
   mhdma_slave # (
     .CDC_SYNC_STAGES                (CDC_SYNC_STAGES                          ),
     .MAX_BURST_SIZE                 (MAX_BURST_SIZE                           ),
@@ -385,6 +386,7 @@ module mhdma_bridge
     .interrupt_notify               (interrupt_notify                         )
   );
 
+  // The decoder gathers axi-stream RX and decodes the received command
   mhdma_decoder mhdma_decoder (
     // Ethernet fast clock interface ------------------------------------------
     .clk_mrmac                   (clk_mrmac                                   ),
@@ -410,6 +412,7 @@ module mhdma_bridge
     .qsfp_rx_tvalid              (qsfp_rx_tvalid                              )
   );
 
+  // the formatter gathers commands from master & slave module and sends it to axis
   mhdma_formatter mhdma_formatter (
     // Ethernet fast clock interface ------------------------------------------
     .clk_mrmac                       (clk_mrmac                               ),

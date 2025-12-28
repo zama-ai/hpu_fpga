@@ -6,7 +6,7 @@
 // ==============================================================================================
 
 module mhdma_formatter
-  import mhdma_pkg::*;
+  import mhdma_pkg::*; // multi-hpu-dma
 #() (
   // Ethernet fast clock interface --------------------------------------------
   input  logic                                      clk_mrmac,

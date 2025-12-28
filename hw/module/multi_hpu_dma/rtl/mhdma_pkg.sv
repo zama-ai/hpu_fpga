@@ -13,11 +13,10 @@ package mhdma_pkg;
   // Parameters
   // =========================================================================================== //
   // BLWE_K = N * GLWE_K
-  localparam int CT_NB_COEF        = BLWE_K + 1;
-  localparam int CT_SIZE           = CT_NB_COEF * 64;
-  localparam int CT_SIZE_BYTE      = CT_SIZE / 8;
+  localparam int CT_NB_COEF   = BLWE_K + 1;
+  localparam int CT_SIZE      = CT_NB_COEF * 64;
+  localparam int CT_SIZE_BYTE = CT_SIZE / 8;
 
-  // AXI
   localparam [AXI4_SIZE_W-1:0] MHDMA_ARSIZE = $clog2(AXI4_DATA_BYTES);
 
   // =========================================================================================== //
@@ -150,8 +149,6 @@ package mhdma_pkg;
   // =========================================================================================== //
   localparam [REQ_ID_W-1:0] REQ_ID_NOTIFY_TX     = 'h2;
   localparam [REQ_ID_W-1:0] REQ_ID_ACK_NOTIFY_TX = 'h3;
-  // localparam [REQ_ID_W-1:0] REQ_ID_NOTIFY_RX     = 'h4;
-  // localparam [REQ_ID_W-1:0] REQ_ID_ACK_NOTIFY_RX = 'h5;
   localparam [REQ_ID_W-1:0] REQ_ID_READ          = 'h6;
   localparam [REQ_ID_W-1:0] REQ_ID_EMISSION      = 'h7;
 

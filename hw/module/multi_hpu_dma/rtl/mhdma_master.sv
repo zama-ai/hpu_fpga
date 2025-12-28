@@ -2,11 +2,11 @@
 // BSD 3-Clause Clear License
 // Copyright © 2025 ZAMA. All rights reserved.
 // ----------------------------------------------------------------------------------------------
-// Description  : Multi-HPU DMA reception module
+// Description  : Multi-HPU DMA Master module
 // ----------------------------------------------------------------------------------------------
-// Receives request from RPU and address them
-// - Notify TX
-// - Read Request
+// Receives requests from RPU and address them
+//
+// This module must be able to send Notify and Read Request to formatter
 // ==============================================================================================
 
 module mhdma_master
@@ -15,13 +15,13 @@ module mhdma_master
   import axi_if_shell_axil_pkg::*;   // REG_DATA_W
   import axi_if_common_param_pkg::*; // HBM page
 #(
-  parameter                int CDC_SYNC_STAGES = 2,
-  parameter                int MAX_BURST_SIZE  = PAGE_BYTES/AXI4_DATA_BYTES,
-  parameter              [3:0] PC_STRIDE       = 'hB,
+  parameter int   CDC_SYNC_STAGES = 2,
+  parameter int   MAX_BURST_SIZE  = PAGE_BYTES/AXI4_DATA_BYTES,
+  parameter [3:0] PC_STRIDE       = 'hB,
   // must not add default values to theses parameters, comming from bridge module
-  parameter int PC_NB_WORDS        [ETH_PC],
-  parameter int PC_REMAINS         [ETH_PC],
-  parameter int PC_NB_WRITES       [ETH_PC]
+  parameter int   PC_NB_WORDS  [ETH_PC],
+  parameter int   PC_REMAINS   [ETH_PC],
+  parameter int   PC_NB_WRITES [ETH_PC]
 ) (
   // Ethernet configuration interface -----------------------------------------
   input  logic                                clk_cfg,

@@ -187,7 +187,7 @@ module tb_multi_hpu_dma;
   logic [QSFP_LANE_NB-1:0]                    qsfp_rx_tlast_delayed;
   logic [QSFP_LANE_NB-1:0]                    qsfp_rx_tvalid_delayed;
 
-  // TODO: for now always ready
+  // Tin this test will always be ready as in reception there is no backpressure from MRMAC
   assign sim_qsfp_tx_tready = 4'b1111;
 
   // AXI4 to HBM: HPUA ----------------------------------------------------------------------------
@@ -1085,7 +1085,7 @@ end
     logic [REG_DATA_W-1:00] read_req_addr;
     begin
 
-      read_req_addr = {16'b0, src_addr}; //TODO
+      read_req_addr = {16'b0, src_addr};
       read_req_id = {iop_id, REQ_ID_NOTIFY_TX, dst_node_id, req_size_b};
 
       if (src_node_id == random_hpu_a) begin

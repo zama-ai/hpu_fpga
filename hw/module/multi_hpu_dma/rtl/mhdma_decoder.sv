@@ -6,8 +6,8 @@
 // ==============================================================================================
 
 module mhdma_decoder
-  import mhdma_pkg::*;
-  import axi_if_shell_axil_pkg::*;   // REG_DATA_W
+  import mhdma_pkg::*;             // multi-hpu-dma
+  import axi_if_shell_axil_pkg::*; // REG_DATA_W
 #() (
   // Ethernet fast clock interface --------------------------------------------
   input  logic                     clk_mrmac,

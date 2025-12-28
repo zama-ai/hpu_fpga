@@ -655,10 +655,11 @@ module tb_mhdma_errors;
     repeat(2*TIMEOUT_DUR_READ_REQ[31:16]) @(posedge clk_mrmac);
 
     emulate_ciphertext_emission(hpu_a_id, hpu_a_mac_addr, hpu_b_id, hpu_b_mac_addr, 0);
-    // TODO: bug: fifo is partly filled and gots write complete before end of transmission
 
     wait(hpu_a.mhdma_bridge.mhdma_formatter.tx_state == 3'b001);
     $display("%t > [INFO-F]: formatter FSM has gotten back to IDLE", $time);
+
+    // TODO: missing wrong seq_num
 
     $display("\n ----------------- HPU_A -------------------------------------");
     maxil_drv_if.read_trans(MHDMA_REQUEST_STAT_NOTIFY_OFS, stat_notify);
@@ -802,7 +803,7 @@ module tb_mhdma_errors;
     logic [REG_DATA_W-1:00] read_req_addr;
     begin
 
-      read_req_addr = {16'b0, src_addr}; //TODO
+      read_req_addr = {16'b0, src_addr};
       read_req_id = {iop_id, REQ_ID_NOTIFY_TX, dst_node_id, req_size_b};
 
       maxil_drv_if.write_trans(MHDMA_REQUEST_REQ_ADDR_OFS, read_req_addr);

@@ -8,10 +8,10 @@
 // ==============================================================================================
 
 module multi_hpu_dma
-  import mhdma_pkg::*;
-  import axi_if_shell_axil_pkg::*;
-  import axi_if_common_param_pkg::*;
-  import hpu_regif_core_eth_2in3_pkg::*;
+  import mhdma_pkg::*;                    // multi-hpu-dma
+  import axi_if_shell_axil_pkg::*;        // axi4-lite + REG_DATA_W
+  import axi_if_common_param_pkg::*;      // general axi4
+  import hpu_regif_core_eth_2in3_pkg::*;  // ethernet regif
 #(
   parameter int FIFO_DEPTH = 512,
   parameter int NB_WORD_W = $clog2(FIFO_DEPTH)+1
@@ -236,6 +236,7 @@ module multi_hpu_dma
     reset_monitor_tmp  <= r_reset_monitor;
   end
 
+  // this module is the regif controling and accessing registers of MHMDA
   hpu_regif_core_eth_2in3  hpu_regif_core_eth_2in3 (
     // configuration interface --------------------------------------------------------------------
     .clk                                   (clk_eth_cfg                                           ),
@@ -292,27 +293,21 @@ module multi_hpu_dma
     .r_mhdma_system_timeout_notify         (r_system_timeout_notify                               ),
     .r_mhdma_system_timeout_read_req       (r_system_timeout_read_req                             ),
     // stats --------------------------------------------------------------------------------------
-    // On Notify
     .r_mhdma_request_stat_notify_upd                (cnt_notify_cfg                               ),
     .r_mhdma_request_stat_notify_rd_en              (rst_cnt_notify_cfg                           ),
-
     .r_mhdma_request_stat_notify_ack_upd            (cnt_notify_ack_cfg                           ),
     .r_mhdma_request_stat_notify_ack_rd_en          (rst_cnt_notify_ack_cfg                       ),
-
     .r_mhdma_request_stat_notify_timeout_upd        (cnt_timeout_cfg                              ),
     .r_mhdma_request_stat_notify_timeout_rd_en      (rst_cnt_timeout_cfg                          ),
-
     .r_mhdma_request_stat_notify_timeout_retry_upd  (cnt_retry_notify_cfg                         ),
     .r_mhdma_request_stat_notify_timeout_retry_rd_en(rst_cnt_retry_notify_cfg                     ),
-
     // timing
     .r_mhdma_request_stat_t_notify_to_ack_upd       (t_notify_to_ack_cfg                          ),
     .r_mhdma_request_stat_t_rr_to_ce_received_upd   (t_rr_to_ce_received_cfg                      ),
     .r_mhdma_request_stat_t_ce_first_to_last_pkt_upd(t_ce_first_to_last_pkt_cfg                   ),
     // registers
     .r_mhdma_system_fsm_value_upd                   (r_fsm_value_cfg                              ),
-
-// from trace module
+    // from trace module --------------------------------------------------------------------------
     .r_fifo_write_number_of_words          (r_nb_word                                             ), // to be removed or renamed?
     .r_fifo_write_words_to_write_a         (r_wr_word_a                                           ), // to be removed or renamed?
     .r_fifo_write_words_to_write_b         (r_wr_word_b                                           ), // to be removed or renamed?
@@ -397,10 +392,10 @@ module multi_hpu_dma
   // merging half words into a single one
   assign r_wr_word = write_ack ? {r_wr_word_a, r_wr_word_b} :0;
 
-
-  // CDC for regfile -------------------------------------------------------------------------------
+  // ============================================================================================ //
+  // CDC for regfile
   // TODO: this is temporary
-  // single from config to ethenet clock
+  // ============================================================================================ //
 
   // Counters ===================================================================================
   xpm_cdc_single_wrapper #(
@@ -557,12 +552,8 @@ module multi_hpu_dma
   );//temporary
   // ==============================================================================================
 
-
-
-
-
   // ============================================================================================ //
-  // Multi-HPU-DMA bridge from NOC to axi4-stream & regf control
+  // Multi-HPU-DMA bridge
   // ============================================================================================ //
   logic [MRMAC_AXIS_W-1:0  ] axis_rx_tdata;
   logic [MRMAC_TKEEP_W-1:0 ] axis_rx_tkeep_user;
@@ -575,86 +566,87 @@ module multi_hpu_dma
   logic                     axis_tx_tvalid;
   logic                     axis_tx_tready;
 
+  // this module is the core of the multi hpu dma: it's the bridge between HBM and MRMAC IP
   mhdma_bridge mhdma_bridge (
-    .clk_cfg               (clk_eth_cfg                                                           ),
-    .resetn_cfg            (resetn_eth_cfg                                                        ),
-    .clk_mrmac             (clk_eth_mrmac                                                         ),
-    .resetn_mrmac          (resetn_eth_mrmac                                                      ),
+    .clk_cfg                        (clk_eth_cfg                                                 ),
+    .resetn_cfg                     (resetn_eth_cfg                                              ),
+    .clk_mrmac                      (clk_eth_mrmac                                               ),
+    .resetn_mrmac                   (resetn_eth_mrmac                                            ),
     // axi4-full for each ETH_PC ------------------------------------------------------------------
-    .m_axi4_arid           (m_axi4_eth_hbm_arid                                                   ),
-    .m_axi4_araddr         (m_axi4_eth_hbm_araddr                                                 ),
-    .m_axi4_arlen          (m_axi4_eth_hbm_arlen                                                  ),
-    .m_axi4_arsize         (m_axi4_eth_hbm_arsize                                                 ),
-    .m_axi4_arburst        (m_axi4_eth_hbm_arburst                                                ),
-    .m_axi4_arvalid        (m_axi4_eth_hbm_arvalid                                                ),
-    .m_axi4_arready        (m_axi4_eth_hbm_arready                                                ),
-    .m_axi4_rid            (m_axi4_eth_hbm_rid                                                    ),
-    .m_axi4_rdata          (m_axi4_eth_hbm_rdata                                                  ),
-    .m_axi4_rresp          (m_axi4_eth_hbm_rresp                                                  ),
-    .m_axi4_rlast          (m_axi4_eth_hbm_rlast                                                  ),
-    .m_axi4_rvalid         (m_axi4_eth_hbm_rvalid                                                 ),
-    .m_axi4_rready         (m_axi4_eth_hbm_rready                                                 ),
-    .m_axi4_awid           (m_axi4_eth_hbm_awid                                                   ),
-    .m_axi4_awaddr         (m_axi4_eth_hbm_awaddr                                                 ),
-    .m_axi4_awlen          (m_axi4_eth_hbm_awlen                                                  ),
-    .m_axi4_awsize         (m_axi4_eth_hbm_awsize                                                 ),
-    .m_axi4_awburst        (m_axi4_eth_hbm_awburst                                                ),
-    .m_axi4_awvalid        (m_axi4_eth_hbm_awvalid                                                ),
-    .m_axi4_awready        (m_axi4_eth_hbm_awready                                                ),
-    .m_axi4_wdata          (m_axi4_eth_hbm_wdata                                                  ),
-    .m_axi4_wstrb          (m_axi4_eth_hbm_wstrb                                                  ),
-    .m_axi4_wlast          (m_axi4_eth_hbm_wlast                                                  ),
-    .m_axi4_wvalid         (m_axi4_eth_hbm_wvalid                                                 ),
-    .m_axi4_wready         (m_axi4_eth_hbm_wready                                                 ),
-    .m_axi4_bid            (m_axi4_eth_hbm_bid                                                    ),
-    .m_axi4_bresp          (m_axi4_eth_hbm_bresp                                                  ),
-    .m_axi4_bvalid         (m_axi4_eth_hbm_bvalid                                                 ),
-    .m_axi4_bready         (m_axi4_eth_hbm_bready                                                 ),
+    .m_axi4_arid                    (m_axi4_eth_hbm_arid                                         ),
+    .m_axi4_araddr                  (m_axi4_eth_hbm_araddr                                       ),
+    .m_axi4_arlen                   (m_axi4_eth_hbm_arlen                                        ),
+    .m_axi4_arsize                  (m_axi4_eth_hbm_arsize                                       ),
+    .m_axi4_arburst                 (m_axi4_eth_hbm_arburst                                      ),
+    .m_axi4_arvalid                 (m_axi4_eth_hbm_arvalid                                      ),
+    .m_axi4_arready                 (m_axi4_eth_hbm_arready                                      ),
+    .m_axi4_rid                     (m_axi4_eth_hbm_rid                                          ),
+    .m_axi4_rdata                   (m_axi4_eth_hbm_rdata                                        ),
+    .m_axi4_rresp                   (m_axi4_eth_hbm_rresp                                        ),
+    .m_axi4_rlast                   (m_axi4_eth_hbm_rlast                                        ),
+    .m_axi4_rvalid                  (m_axi4_eth_hbm_rvalid                                       ),
+    .m_axi4_rready                  (m_axi4_eth_hbm_rready                                       ),
+    .m_axi4_awid                    (m_axi4_eth_hbm_awid                                         ),
+    .m_axi4_awaddr                  (m_axi4_eth_hbm_awaddr                                       ),
+    .m_axi4_awlen                   (m_axi4_eth_hbm_awlen                                        ),
+    .m_axi4_awsize                  (m_axi4_eth_hbm_awsize                                       ),
+    .m_axi4_awburst                 (m_axi4_eth_hbm_awburst                                      ),
+    .m_axi4_awvalid                 (m_axi4_eth_hbm_awvalid                                      ),
+    .m_axi4_awready                 (m_axi4_eth_hbm_awready                                      ),
+    .m_axi4_wdata                   (m_axi4_eth_hbm_wdata                                        ),
+    .m_axi4_wstrb                   (m_axi4_eth_hbm_wstrb                                        ),
+    .m_axi4_wlast                   (m_axi4_eth_hbm_wlast                                        ),
+    .m_axi4_wvalid                  (m_axi4_eth_hbm_wvalid                                       ),
+    .m_axi4_wready                  (m_axi4_eth_hbm_wready                                       ),
+    .m_axi4_bid                     (m_axi4_eth_hbm_bid                                          ),
+    .m_axi4_bresp                   (m_axi4_eth_hbm_bresp                                        ),
+    .m_axi4_bvalid                  (m_axi4_eth_hbm_bvalid                                       ),
+    .m_axi4_bready                  (m_axi4_eth_hbm_bready                                       ),
     // Register interface -------------------------------------------------------------------------
-    .regf_hpu_ids          (r_regf_hpu_ids                                                        ),
-    .regf_ct_mem_addr      (r_ct_mem_addr                                                         ),
-    .regf_req_id           (r_request_req_id                                                      ),
-    .regf_req_addr         (r_request_req_addr                                                    ),
-    .regf_notify_payload   (r_request_notify                                                      ),
-    .regf_read_payload     (r_request_read                                                        ),
-    .regf_timeout_duration_notify   (r_system_timeout_notify                                      ),
-    .regf_timeout_duration_read_req (r_system_timeout_read_req                                    ),
+    .regf_hpu_ids                   (r_regf_hpu_ids                                              ),
+    .regf_ct_mem_addr               (r_ct_mem_addr                                               ),
+    .regf_req_id                    (r_request_req_id                                            ),
+    .regf_req_addr                  (r_request_req_addr                                          ),
+    .regf_notify_payload            (r_request_notify                                            ),
+    .regf_read_payload              (r_request_read                                              ),
+    .regf_timeout_duration_notify   (r_system_timeout_notify                                     ),
+    .regf_timeout_duration_read_req (r_system_timeout_read_req                                   ),
     // interruptions and control ------------------------------------------------------------------
-    .received_req          (&received_req                                                         ),
-    .request_consumed      (request_consumed                                                      ),
-    .clear_interrupt_notify(clear_interrupt_notify                                                ),
-    .clear_interrupt_rr    (clear_interrupt_rr                                                    ),
-    .interrupt_notify      (interrupt_notify                                                      ),
-    .interrupt_read_request(interrupt_read_request                                                ),
+    .received_req                   (&received_req                                               ),
+    .request_consumed               (request_consumed                                            ),
+    .clear_interrupt_notify         (clear_interrupt_notify                                      ),
+    .clear_interrupt_rr             (clear_interrupt_rr                                          ),
+    .interrupt_notify               (interrupt_notify                                            ),
+    .interrupt_read_request         (interrupt_read_request                                      ),
     // statistics ---------------------------------------------------------------------------------
     // counters
-    .stat_cnt_notify         (cnt_notify_eth                                                      ),
-    .stat_cnt_notify_ack     (cnt_notify_ack_eth                                                  ),
-    .stat_cnt_notify_timeout (cnt_timeout_eth                                                     ),
-    .stat_cnt_notify_retries (cnt_retry_notify_eth                                                ),
+    .stat_cnt_notify                (cnt_notify_eth                                              ),
+    .stat_cnt_notify_ack            (cnt_notify_ack_eth                                          ),
+    .stat_cnt_notify_timeout        (cnt_timeout_eth                                             ),
+    .stat_cnt_notify_retries        (cnt_retry_notify_eth                                        ),
     // timing
-    .stat_t_notify_to_ack    (t_notify_to_ack_eth                                                 ),
-    .stat_t_rr_to_ce_received(t_rr_to_ce_received_eth                                             ),
-    .stat_t_ce_first_to_last_pkt(t_ce_first_to_last_pkt_eth                                       ),
+    .stat_t_notify_to_ack           (t_notify_to_ack_eth                                         ),
+    .stat_t_rr_to_ce_received       (t_rr_to_ce_received_eth                                     ),
+    .stat_t_ce_first_to_last_pkt    (t_ce_first_to_last_pkt_eth                                  ),
     // resets
-    .rst_cnt_notify          (rst_cnt_notify_eth                                                  ),
-    .rst_cnt_notify_ack      (rst_cnt_notify_ack_eth                                              ),
-    .rst_cnt_timeout         (rst_cnt_timeout_eth                                                 ),
-    .rst_cnt_notify_retry    (rst_cnt_retry_notify_eth                                            ),
+    .rst_cnt_notify                 (rst_cnt_notify_eth                                          ),
+    .rst_cnt_notify_ack             (rst_cnt_notify_ack_eth                                      ),
+    .rst_cnt_timeout                (rst_cnt_timeout_eth                                         ),
+    .rst_cnt_notify_retry           (rst_cnt_retry_notify_eth                                    ),
     // registers
-    .stat_reg_fsm          (r_fsm_value_eth                                                       ),
+    .stat_reg_fsm                   (r_fsm_value_eth                                             ),
     // QSFP interface one lane --------------------------------------------------------------------
     // tx
-    .qsfp_tx_tdata         (axis_tx_tdata                                                         ),
-    .qsfp_tx_tkeep_user    (axis_tx_tkeep_user                                                    ),
-    .qsfp_tx_tlast         (axis_tx_tlast                                                         ),
-    .qsfp_tx_tvalid        (axis_tx_tvalid                                                        ),
-    .qsfp_tx_tready        (axis_tx_tready                                                        ),
+    .qsfp_tx_tdata                  (axis_tx_tdata                                               ),
+    .qsfp_tx_tkeep_user             (axis_tx_tkeep_user                                          ),
+    .qsfp_tx_tlast                  (axis_tx_tlast                                               ),
+    .qsfp_tx_tvalid                 (axis_tx_tvalid                                              ),
+    .qsfp_tx_tready                 (axis_tx_tready                                              ),
     // rx
-    .qsfp_rx_tdata         (axis_rx_tdata                                                         ),
-    .qsfp_rx_tkeep_user    (axis_rx_tkeep_user                                                    ),
-    .qsfp_rx_tlast         (axis_rx_tlast                                                         ),
-    .qsfp_rx_tvalid        (axis_rx_tvalid                                                        )
+    .qsfp_rx_tdata                  (axis_rx_tdata                                               ),
+    .qsfp_rx_tkeep_user             (axis_rx_tkeep_user                                          ),
+    .qsfp_rx_tlast                  (axis_rx_tlast                                               ),
+    .qsfp_rx_tvalid                 (axis_rx_tvalid                                              )
   );
 
   // ============================================================================================ //

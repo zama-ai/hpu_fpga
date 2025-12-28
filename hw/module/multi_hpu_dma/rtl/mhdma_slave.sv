@@ -2,11 +2,11 @@
 // BSD 3-Clause Clear License
 // Copyright © 2025 ZAMA. All rights reserved.
 // ----------------------------------------------------------------------------------------------
-// Description  : Multi-HPU-DMA slave module
+// Description  : Multi-HPU-DMA Slave module
 // ----------------------------------------------------------------------------------------------
 // Must react to decoded commands
-//  -> Notify RX
-//  -> Ciphertext emission
+//
+// This module handles the logic aroung ciphertext emission and Notify ack
 // ==============================================================================================
 
 module mhdma_slave
@@ -19,9 +19,9 @@ module mhdma_slave
   parameter int   MAX_BURST_SIZE  = PAGE_BYTES/AXI4_DATA_BYTES,
   parameter [3:0] PC_STRIDE       = 'hB,
   // must not add default values to theses parameters, comming from bridge module
-  parameter int PC_NB_WORDS       [ETH_PC],
-  parameter int PC_REMAINS        [ETH_PC],
-  parameter int PC_NB_READS       [ETH_PC]
+  parameter int   PC_NB_WORDS    [ETH_PC],
+  parameter int   PC_REMAINS     [ETH_PC],
+  parameter int   PC_NB_READS    [ETH_PC]
 ) (
   // Ethernet configuration interface -----------------------------------------
   input  logic                                clk_cfg,
@@ -655,8 +655,7 @@ module mhdma_slave
   // =========================================================================================== //
   // Statistics
   // =========================================================================================== //
-
-  assign stat_fsm_notify_rx  =  nrx_state ; //TODO toremove
+  assign stat_fsm_notify_rx  = nrx_state;
   assign stat_fsm_cem        = cem_state;
 
 endmodule
