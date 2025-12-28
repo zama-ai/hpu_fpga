@@ -28,10 +28,11 @@ module mhdma_formatter
 
   input  logic                                      cerx_reception_ready,
 
+  input  logic                                      ce_received,
+  input  logic                                      nack_received,
   // slave interface ---------------------------------------------------------
   output  logic                                     packets_emitted,
   // master interface ---------------------------------------------------------
-  input  logic                                      ce_received,
   input  header_t                                   format_header,
   input  logic                                      retry_notify,
   input  logic                                      retry_read_request,
@@ -516,11 +517,11 @@ module mhdma_formatter
       ST_CT_EMISSION:
         tx_next_state = packets_emitted ? ST_IDLE : ST_CT_EMISSION;
       ST_NACK:
-        tx_next_state =  tx_small_last ? ST_IDLE : ST_NACK;
+        tx_next_state = tx_small_last ? ST_IDLE : ST_NACK;
       ST_READ_REQ:
-        tx_next_state =  ce_received ? ST_IDLE : ST_READ_REQ;
+        tx_next_state = ce_received ? ST_IDLE : ST_READ_REQ;
       ST_NOTIFY:
-        tx_next_state =  tx_small_last ? ST_IDLE : ST_NOTIFY;
+        tx_next_state = nack_received ? ST_IDLE : ST_NOTIFY;
     endcase
   end
 

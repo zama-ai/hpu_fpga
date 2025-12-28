@@ -639,7 +639,6 @@ end
     regf_start_addr_ofs = 'h0;
     repeat(20) @(posedge clk_control);
 
-
     random_iter           = $urandom_range(32, 2);
     arbitrary_notify_nb   = XPM_MIN_FIFO_DEPTH; // if we have a full fifo on fifo_nrx_regf, we will lose notifies
     arbitrary_read_req_nb = XPM_MIN_FIFO_DEPTH;

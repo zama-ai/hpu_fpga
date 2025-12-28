@@ -428,13 +428,14 @@ module mhdma_bridge
     .new_read_request_pending        (new_read_request_pending                ),
     .new_notify_request_pending      (new_notify_request_pending              ),
     .cerx_reception_ready            (cerx_reception_ready                    ),
+    .ce_received                     (format_ct_received                      ),
+    .nack_received                   (notify_ack_received                     ),
     // statistics -------------------------------------------------------------
     // registers
     .stat_fsm_formatter              (stat_fsm_formatter                      ),
     // slave interface --------------------------------------------------------
     .packets_emitted                 (format_packets_emitted                  ),
     // master interface -------------------------------------------------------
-    .ce_received                     (format_ct_received                      ),
     .format_header                   (format_header                           ),
     .retry_notify                    (retry_notify                            ),
     .retry_read_request              (retry_read_request                      ),
@@ -483,74 +484,8 @@ module mhdma_bridge
 
   // =========================================================================================== //
   // Statistics
-  // specific for FPGA
-  // TODO: reseync miust be reworked
   // =========================================================================================== //
   assign stat_reg_fsm = {12'b0, 2'b0, stat_fsm_formatter,  2'b0,stat_fsm_read_req, 2'b0,stat_fsm_cem, 2'b0,stat_fsm_notify_rx,  2'b0,stat_fsm_notify};
-
-  // logic [15:0] cnt_notify_ack; defined before for timeout
-  // logic [15:0] cnt_notify_read;
-
-  // logic start_cnt_notify_ack;
-  // logic notify_ack_received_cdc;
-
-  // /* how long it is between sending a notify request and receiving an acknowledge
-  //  *  - starts when received_req (clk_cfg) is ones
-  //  *  - stops when notify_ack_received (clk mrmac) is one
-  //  */
-  // always_ff @(posedge clk_cfg) begin
-  //   if (~resetn_cfg) begin
-  //     start_cnt_notify_ack <= 1'b0;
-  //   end else begin
-  //     if (received_req & (regf_req_id[23:20] == REQ_ID_NOTIFY_TX)) begin
-  //       start_cnt_notify_ack <= 1'b1;
-  //     end else if(notify_ack_received_cdc) begin
-  //       start_cnt_notify_ack <= 1'b0;
-  //     end
-  //   end
-  // end
-
-  // always_ff @(posedge clk_cfg) begin
-  //   if (~resetn_cfg) begin
-  //     cnt_notify_ack <= 'h0;
-  //   end else begin
-  //     if (start_cnt_notify_ack) begin
-  //       cnt_notify_ack <= cnt_notify_ack + 1;
-  //     end else if (rst_cnt_notify | ntx_timeout) begin
-  //       cnt_notify_ack <= 'h0;
-  //     end
-  //   end
-  // end
-
-  // xpm_cdc_single_wrapper # (
-  //   .CDC_SYNC_STAGES(CDC_SYNC_STAGES),
-  //   .SRC_INPUT_REG  (0)
-  // ) ack_xpm_cdc_single_wrapper (
-  //   .src_clk(clk_mrmac),
-  //   .src_in (notify_ack_received),
-
-  //   .dest_clk(clk_cfg),
-  //   .dest_out(notify_ack_received_cdc)
-  // );
-
-  // /* How long has the data been ready in the regif
-  //  *  - counts when interruption is raised
-  //  *  - itr_notify is on config clock
-  //  */
-  // always_ff @(posedge clk_cfg) begin
-  //   if (~resetn_cfg) begin
-  //     cnt_notify_read <= 'h0;
-  //   end else begin
-  //     if (itr_notify) begin
-  //       cnt_notify_read <= cnt_notify_read +1;
-  //     end else if (rst_cnt_notify) begin
-  //       cnt_notify_read <= 'h0;
-  //     end
-  //   end
-  // end
-
-  // assign stat_cnt_notify_ack  = cnt_notify_ack;
-  // assign stat_cnt_notify_read = cnt_notify_read;
 
   // =========================================================================================== //
   // Error agreggation

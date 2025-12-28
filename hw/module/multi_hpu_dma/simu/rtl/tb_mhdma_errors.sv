@@ -616,19 +616,22 @@ module tb_mhdma_errors;
     maxil_drv_if.read_trans(MHDMA_REQUEST_STAT_NOTIFY_TIMEOUT_RETRY_OFS, read_data);
     $display("[INFO] MHDMA_REQUEST_STAT_NOTIFY_TIMEOUT_RETRY_OFS   : %0x ", read_data);
 
-    $display("D - no ack for a time and a new notify pening"); // ---------------------------------
+    $display("D - no ack for a time and a new notify pending"); // --------------------------------
+    // timout is not what we want to test here : we 10x it
+    maxil_drv_if.write_trans(MHDMA_SYSTEM_TIMEOUT_NOTIFY_OFS, 10*TIMEOUT_DUR_NOTIFY);
     iop_id       = 678;
     iop_src_addr = 99;
-    // TODO: bug here
-    // notify_request(hpu_a_id, hpu_b_id, iop_id, iop_src_addr);
-    // repeat(2*TIMEOUT_DUR_READ_REQ[15:0]) @(posedge clk_mrmac);
+    notify_request(hpu_a_id, hpu_b_id, iop_id, iop_src_addr);
 
-    // iop_id       = 777;
-    // iop_src_addr = 98;
-    // notify_request(hpu_a_id, hpu_b_id, iop_id, iop_src_addr);
+    iop_id       = 777;
+    iop_src_addr = 98;
+    notify_request(hpu_a_id, hpu_b_id, iop_id, iop_src_addr);
 
-    // notify_ack(hpu_a_id, hpu_b_mac_addr, hpu_b_id, hpu_b_mac_addr);
-    // notify_ack(hpu_a_id, hpu_b_mac_addr, hpu_b_id, hpu_b_mac_addr);
+    notify_ack(hpu_a_id, hpu_a_mac_addr, hpu_b_id, hpu_b_mac_addr);
+
+    notify_ack(hpu_a_id, hpu_a_mac_addr, hpu_b_id, hpu_b_mac_addr);
+
+    wait(hpu_a.mhdma_bridge.mhdma_formatter.tx_state == 3'b001);
 
     // Ciphertext emission error ==================================================================
     // HPU_A sends a read request and receives
