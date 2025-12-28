@@ -89,8 +89,8 @@ module mhdma_slave
   // => must trigger interrupt signal when registers are ready to be read
   typedef enum logic [1:0] {
     NTW_XXX          = 'x,
-    NTX_WAIT_REQUEST = 2'b00,
-    NTX_TRANSMIT_ACK = 2'b1
+    NTX_WAIT_REQUEST = 2'b01,
+    NTX_TRANSMIT_ACK = 2'b10
   } st_nrx;
 
   st_nrx nrx_state;
@@ -208,8 +208,8 @@ module mhdma_slave
   // FSM ------------------------------------------------------------------------------------------
   typedef enum logic [1:0] {
     CEM_XXX           = 'x,
-    CEM_WAIT_REQUEST  = 2'b0,
-    CEM_READ_N_SEND   = 2'b1
+    CEM_WAIT_REQUEST  = 2'b01,
+    CEM_READ_N_SEND   = 2'b10
   } st_cem;
 
   st_cem cem_state;
