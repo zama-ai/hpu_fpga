@@ -49,15 +49,15 @@ package mhdma_pkg;
   localparam int NB_WORDS_MIN = NB_WORDS_SMALL_PACKETS;
 
   localparam int NB_PACKETS_FULL = $floor(CT_SIZE_BYTE/ETH_NB_BYTES_PAYLOAD);
-  localparam int LAST_PACKET_BYTE_SIZE_USEFULL = CT_SIZE_BYTE - (NB_PACKETS_FULL*ETH_NB_BYTES_PAYLOAD);
+  localparam int LAST_PACKET_BYTE_SIZE_USEFUL = CT_SIZE_BYTE - (NB_PACKETS_FULL*ETH_NB_BYTES_PAYLOAD);
 
-  // I have LAST_PACKET_BYTE_SIZE usefull bytes. To simplify i'll send a multiple of AXI4_DATA_W
+  // I have LAST_PACKET_BYTE_SIZE useful bytes. To simplify I'll send a multiple of AXI4_DATA_W
   // it is important to have a real concatenation here to be sure to have the ceiling and not be truncated by integer
-  localparam int LAST_PACKET_BYTE_SIZE =  $ceil(real'(LAST_PACKET_BYTE_SIZE_USEFULL) / AXI4_DATA_BYTES)*AXI4_DATA_BYTES;
+  localparam int LAST_PACKET_BYTE_SIZE =  $ceil(real'(LAST_PACKET_BYTE_SIZE_USEFUL) / AXI4_DATA_BYTES)*AXI4_DATA_BYTES;
 
   // If ever I need to send less words and what is allowed by ethernet, we need to fill with zeros
-  localparam int NB_WORDS_LAST_PACKET_USEFULL = LAST_PACKET_BYTE_SIZE/8;
-  localparam int NB_WORDS_LAST_PACKET = (NB_WORDS_LAST_PACKET_USEFULL < NB_WORDS_SMALL_PACKETS) ? NB_WORDS_SMALL_PACKETS : NB_WORDS_LAST_PACKET_USEFULL;
+  localparam int NB_WORDS_LAST_PACKET_USEFUL = LAST_PACKET_BYTE_SIZE/8;
+  localparam int NB_WORDS_LAST_PACKET = (NB_WORDS_LAST_PACKET_USEFUL < NB_WORDS_SMALL_PACKETS) ? NB_WORDS_SMALL_PACKETS : NB_WORDS_LAST_PACKET_USEFUL;
 
   localparam [15:0] ETH_LEN_MIN      = ETH_NB_BYTES_MIN - ETH_NB_BYTES_HEADER - ETH_NB_BYTES_CRC;
   localparam [15:0] ETH_LEN_MAX      = ETH_NB_BYTES_PAYLOAD;

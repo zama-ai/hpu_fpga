@@ -18,7 +18,7 @@ module mhdma_master
   parameter int   CDC_SYNC_STAGES = 2,
   parameter int   MAX_BURST_SIZE  = PAGE_BYTES/AXI4_DATA_BYTES,
   parameter [3:0] PC_STRIDE       = 'hB,
-  // must not add default values to theses parameters, comming from bridge module
+  // must not add default values to theses parameters, coming from bridge module
   parameter int   PC_NB_WORDS  [ETH_PC],
   parameter int   PC_REMAINS   [ETH_PC],
   parameter int   PC_NB_WRITES [ETH_PC]
@@ -437,7 +437,7 @@ module mhdma_master
   // Ciphertext reception
   //
   // Assumptions:
-  // We had previously garanteed to launch a Read request only and only if fifo is empty and ready
+  // We had previously guaranteed to launch a Read request only and only if fifo is empty and ready
   //
   // Errors:
   // TODO
@@ -526,7 +526,7 @@ module mhdma_master
   // TODO
   // How much time do we spend between read request and all coefficients arrived & stored ?
   // How much time between read request and first coefficient ?
-  // How much time is spent bewteen receiving all words and storing theml in hbm ?
+  // How much time is spent between receiving all words and storing theml in hbm ?
   // =========================================================================================== //
 
   // Exactly as for RX we write into each PC one at a time
@@ -578,7 +578,7 @@ module mhdma_master
   always_ff @(posedge clk_mrmac)
     phy_addr_valid <= dst_addr_valid;
 
-  // TODO: if seq_num != 0 and  received_dst_addr != previous, raise an errror
+  // TODO: if seq_num != 0 and  received_dst_addr != previous, raise an error
 
   logic [ETH_PC-1:0] axi4_write_pc;
   // word distribution to each fifo pc ------------------------------------------------------------
@@ -1127,7 +1127,7 @@ module mhdma_master
   assign stat_cnt_notify         = notify_cnt;
   assign stat_cnt_notify_ack     = notify_ack_cnt;
 
-  assign stat_cnt_notify_timeout = to_notify_cnt;    // mybe not usefull
+  assign stat_cnt_notify_timeout = to_notify_cnt;    // maybe not useful
 
 
   assign stat_fsm_notify   = ntx_state;

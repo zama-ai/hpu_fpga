@@ -119,9 +119,9 @@ module tb_mhdma_errors;
   bit error_register_read;
   bit error_notify_rx;
   bit error_rr_payload;
-  bit error_write_missmatch;
+  bit error_write_mismatch;
 
-  assign error = error_tb_notify | error_register_read | error_notify_rx | error_rr_payload | error_write_missmatch;
+  assign error = error_tb_notify | error_register_read | error_notify_rx | error_rr_payload | error_write_mismatch;
 
   always_ff @(posedge clk_control)
     if (error) begin
@@ -617,7 +617,7 @@ module tb_mhdma_errors;
     $display("[INFO] MHDMA_REQUEST_STAT_NOTIFY_TIMEOUT_RETRY_OFS   : %0x ", read_data);
 
     $display("D - no ack for a time and a new notify pending"); // --------------------------------
-    // timout is not what we want to test here : we 10x it
+    // timeout is not what we want to test here : we 10x it
     maxil_drv_if.write_trans(MHDMA_SYSTEM_TIMEOUT_NOTIFY_OFS, 10*TIMEOUT_DUR_NOTIFY);
     iop_id       = 678;
     iop_src_addr = 99;
@@ -649,7 +649,7 @@ module tb_mhdma_errors;
     wait(hpu_a.mhdma_bridge.mhdma_formatter.tx_state == 3'b001);
     $display("%t > [INFO-E]: formatter FSM has gotten back to IDLE", $time);
 
-    $display("F - Read request is emitted by HPU_A and not answered for twice timout amount"); // -
+    $display("F - Read request is emitted by HPU_A and not answered for twice timeout amount"); // -
     read_request(hpu_b_id, iop_id, iop_src_addr, iop_dst_addr);
 
     repeat(2*TIMEOUT_DUR_READ_REQ[31:16]) @(posedge clk_mrmac);
@@ -1004,7 +1004,7 @@ module tb_mhdma_errors;
   //                   addr_hpu_0 + k, gen_mem_hpu[0].gen_mem_pc[0].axi4_mem_ct.axi4_ram_ct_wr.mem[addr_hpu_0 + k],
   //                   addr_hpu_1 + k, gen_mem_hpu[1].gen_mem_pc[0].axi4_mem_ct.axi4_ram_ct_wr.mem[addr_hpu_1 + k]);
   //         mismatch_found = 1;
-  //         error_write_missmatch = 1'b1;
+  //         error_write_mismatch = 1'b1;
   //       end
   //     end
   //     // PC 1
@@ -1017,7 +1017,7 @@ module tb_mhdma_errors;
   //                   addr_hpu_0 + k, gen_mem_hpu[0].gen_mem_pc[1].axi4_mem_ct.axi4_ram_ct_wr.mem[addr_hpu_0 + k],
   //                   addr_hpu_1 + k, gen_mem_hpu[1].gen_mem_pc[1].axi4_mem_ct.axi4_ram_ct_wr.mem[addr_hpu_1 + k]);
   //         mismatch_found = 1;
-  //         error_write_missmatch = 1'b1;
+  //         error_write_mismatch = 1'b1;
   //       end
   //     end
 

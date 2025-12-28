@@ -292,11 +292,11 @@ void vInterruptHandler_isc_ack( void* pvCallBackRef ) {
     if (ackq_free_words != 0) {
         // Write ack value in queue body
         volatile uint32_t* ackq_idx = toAmiIopAckqData + (ackq_head % AMI_IOPACKQ_MAX_WORDS);
-        uint32_t poped_iop_ack = pop_isc_ack();
-        *ackq_idx = poped_iop_ack;
+        uint32_t popped_iop_ack = pop_isc_ack();
+        *ackq_idx = popped_iop_ack;
         HAL_FLUSH_CACHE_DATA( (uintptr_t)ackq_idx, sizeof(uint32_t));
 
-        if (poped_iop_ack > 0) {
+        if (popped_iop_ack > 0) {
             // Update queue head
             ackq_head += 1;
             *toAmiIopAckqHead = ackq_head;

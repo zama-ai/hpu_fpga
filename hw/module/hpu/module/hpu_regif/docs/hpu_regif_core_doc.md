@@ -1,5 +1,5 @@
 # HPU_REGIF_CORE documentation
-**Date**: 2025-12-27
+**Date**: 2025-12-28
 **Tool Version**: bd49564daf1a99d615cb6dbb121b54bfbeef8b22
 
 ## RegisterMap Overview
@@ -4115,7 +4115,7 @@ Register timeout_read_req contains following Sub-fields:
 
 | Field Name | Offset_b | Size_b | Default      | Description   |
 |-----------:|:--------:|:------:|:------------:|:--------------|
-| read_req_timout_dur      | 0 | 32 |1207959552| read request timeout duration |
+| read_req_timeout_dur      | 0 | 32 |1207959552| read request timeout duration |
 
 
 
@@ -4463,7 +4463,7 @@ Register read_request contains following Sub-fields:
 | Field Name | Offset_b | Size_b | Default      | Description   |
 |-----------:|:--------:|:------:|:------------:|:--------------|
 | iop_id      | 0 | 4 |0| what is the IOP ID of received ct |
-| node_id      | 4 | 4 |0| from what HPU has been retreived this ct |
+| node_id      | 4 | 4 |0| from what HPU has been retrieved this ct |
 | dst_addr      | 16 | 16 |0| where is the ct |
 
 

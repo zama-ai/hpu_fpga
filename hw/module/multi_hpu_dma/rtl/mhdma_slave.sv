@@ -6,7 +6,7 @@
 // ----------------------------------------------------------------------------------------------
 // Must react to decoded commands
 //
-// This module handles the logic aroung ciphertext emission and Notify ack
+// This module handles the logic around ciphertext emission and Notify ack
 // ==============================================================================================
 
 module mhdma_slave
@@ -18,7 +18,7 @@ module mhdma_slave
   parameter int   CDC_SYNC_STAGES = 2,
   parameter int   MAX_BURST_SIZE  = PAGE_BYTES/AXI4_DATA_BYTES,
   parameter [3:0] PC_STRIDE       = 'hB,
-  // must not add default values to theses parameters, comming from bridge module
+  // must not add default values to theses parameters, coming from bridge module
   parameter int   PC_NB_WORDS    [ETH_PC],
   parameter int   PC_REMAINS     [ETH_PC],
   parameter int   PC_NB_READS    [ETH_PC]

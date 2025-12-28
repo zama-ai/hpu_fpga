@@ -116,11 +116,11 @@ module tb_multi_hpu_dma;
   bit error_register_read;
   bit error_notify_rx;
   bit error_rr_payload;
-  bit error_write_missmatch;
+  bit error_write_mismatch;
   bit error_interrupt_notify;
   bit error_assert;
 
-  assign error = error_tb_notify | error_register_read | error_notify_rx | error_rr_payload | error_write_missmatch | error_interrupt_notify | error_assert;
+  assign error = error_tb_notify | error_register_read | error_notify_rx | error_rr_payload | error_write_mismatch | error_interrupt_notify | error_assert;
 
   always_ff @(posedge clk_control)
     if (error) begin
@@ -701,7 +701,7 @@ end
       received_iop_id  = read_data[7:0];
 
       assert (read_data == {iop_dst_addr, 4'b0, random_hpu_b, iop_id}) else begin
-        $display("%t > [ERROR]: Missmatch between expected and received read request payload on regif", $time);
+        $display("%t > [ERROR]: mismatch between expected and received read request payload on regif", $time);
         $display("%t > [ERROR]: address : %2x :: %2x", $time, received_address, iop_dst_addr);
         $display("%t > [ERROR]:  iop:id : %2x :: %2x", $time, received_iop_id, iop_id);
         $display("%t > [ERROR]:  hpu:id : %2x :: %2x", $time, received_hpu_id, random_hpu_b);
@@ -899,7 +899,7 @@ end
             value |= (w << (j*64));
             val_id++;
           end
-          // TODO / TOREVIEW: Limitiation on dynamical definitions :/
+          // TODO / TOREVIEW: Limitation on dynamical definitions :/
           gen_mem_hpu[1].gen_mem_pc[0].axi4_mem_ct.axi4_ram_ct_wr.mem[k] = value;
           gen_mem_hpu[1].gen_mem_pc[1].axi4_mem_ct.axi4_ram_ct_wr.mem[k] = value;
           gen_mem_hpu[0].gen_mem_pc[0].axi4_mem_ct.axi4_ram_ct_wr.mem[k] = !value;
@@ -924,7 +924,7 @@ end
       end
 
     // ASSIGN REGISTERS & CHECK -------------------------------------------------------------------
-    line_rate     = 8'hAB;  // arbitary: in reality should be 0
+    line_rate     = 8'hAB;  // arbitrary: in reality should be 0
     line_loopback = 3'b100; // 3 near end pcs loopback
     line_select   = 2'b10;  // 2nd line selected
     debug_flag    = 1'b0;
@@ -1136,7 +1136,7 @@ end
                     addr_hpu_0 + k, gen_mem_hpu[0].gen_mem_pc[0].axi4_mem_ct.axi4_ram_ct_wr.mem[addr_hpu_0 + k],
                     addr_hpu_1 + k, gen_mem_hpu[1].gen_mem_pc[0].axi4_mem_ct.axi4_ram_ct_wr.mem[addr_hpu_1 + k]);
           mismatch_found = 1;
-          error_write_missmatch = 1'b1;
+          error_write_mismatch = 1'b1;
         end
       end
       // PC 1
@@ -1149,7 +1149,7 @@ end
                     addr_hpu_0 + k, gen_mem_hpu[0].gen_mem_pc[1].axi4_mem_ct.axi4_ram_ct_wr.mem[addr_hpu_0 + k],
                     addr_hpu_1 + k, gen_mem_hpu[1].gen_mem_pc[1].axi4_mem_ct.axi4_ram_ct_wr.mem[addr_hpu_1 + k]);
           mismatch_found = 1;
-          error_write_missmatch = 1'b1;
+          error_write_mismatch = 1'b1;
         end
       end
 

@@ -387,7 +387,7 @@ module mhdma_formatter
   logic [$clog2(NB_WORDS_PAYLOAD):0] ce_word_counter;
   logic                              ce_word_cnt_reset;
 
-  // we need to stall words comming from ciphertext emission to build headers
+  // we need to stall words coming from ciphertext emission to build headers
   logic ce_stalling;             // level: up when we need to send header between packets
   logic ce_stalling_last_packet; // level: up when we need to fill last packet by zeros
   logic ce_header;
@@ -411,8 +411,8 @@ module mhdma_formatter
   always_ff @(posedge clk_mrmac)
     ce_word_cnt_reset <= packets_emitted;
 
-  // we should stall the emission of coefficents after we have to correct number of words
-  // we should unstall when header has left
+  // we should stall the emission of coefficients after we have to correct number of words
+  // we should un-stall when header has left
   always_ff @(posedge clk_mrmac) begin
     if (~resetn_mrmac) begin
       ce_stalling <= 1'b0;
@@ -429,7 +429,7 @@ module mhdma_formatter
     if (~resetn_mrmac) begin
       ce_stalling_last_packet <= 1'b0;
     end else begin
-      if (ce_last_packet & (ce_word_counter == NB_WORDS_LAST_PACKET_USEFULL)) begin
+      if (ce_last_packet & (ce_word_counter == NB_WORDS_LAST_PACKET_USEFUL)) begin
         ce_stalling_last_packet <= 1'b1;
       end else begin
         ce_stalling_last_packet <= 1'b0;
@@ -451,7 +451,7 @@ module mhdma_formatter
   // backpressure over ciphertext coefficients
   // active
   //    - when we are in the correct state &
-  //    - when the first header is not startin to be propagated &
+  //    - when the first header is not starting to be propagated &
   //    - qsfp tx is ready &
   //    - we don't need to stall between packets for sending headers
   assign ce_ready = ct_emission_allowed & ce_first_header_sent & qsfp_tx_tready & ~ce_stalling & ~ce_stalling_last_packet;

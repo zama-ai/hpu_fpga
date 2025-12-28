@@ -236,7 +236,7 @@ module multi_hpu_dma
     reset_monitor_tmp  <= r_reset_monitor;
   end
 
-  // this module is the regif controling and accessing registers of MHMDA
+  // this module is the regif controlling and accessing registers of MHMDA
   hpu_regif_core_eth_2in3  hpu_regif_core_eth_2in3 (
     // configuration interface --------------------------------------------------------------------
     .clk                                   (clk_eth_cfg                                           ),

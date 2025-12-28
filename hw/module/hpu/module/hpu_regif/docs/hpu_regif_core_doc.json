@@ -4251,7 +4251,7 @@
               "params": [],
               "name_val": [
                 [
-                  "read_req_timout_dur",
+                  "read_req_timeout_dur",
                   "'h48000000"
                 ]
               ]
@@ -4259,7 +4259,7 @@
           },
           "field": [
             {
-              "name": "read_req_timout_dur",
+              "name": "read_req_timeout_dur",
               "description": "read request timeout duration",
               "size_b": 32,
               "offset_b": 0,
@@ -4696,7 +4696,7 @@
             },
             {
               "name": "node_id",
-              "description": "from what HPU has been retreived this ct",
+              "description": "from what HPU has been retrieved this ct",
               "size_b": 4,
               "offset_b": 4,
               "default": {

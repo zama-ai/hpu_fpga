@@ -1,7 +1,7 @@
 // ============================================================================================== //
 // Description  : Axi4-lite register bank
 // This file was generated with rust regmap generator:
-//  * Date:  2025-12-27
+//  * Date:  2025-12-28
 //  * Tool_version: bd49564daf1a99d615cb6dbb121b54bfbeef8b22
 // ---------------------------------------------------------------------------------------------- //
 // xR[n]W[na]
@@ -330,7 +330,7 @@ import hpu_regif_core_eth_2in3_pkg::*;
   mhdma_system_timeout_read_req_t mhdma_system_timeout_read_req_default;
   always_comb begin
     mhdma_system_timeout_read_req_default = 'h0;
-    mhdma_system_timeout_read_req_default.read_req_timout_dur = 'h48000000;
+    mhdma_system_timeout_read_req_default.read_req_timeout_dur = 'h48000000;
   end
 //-- Default mhdma_system_fsm_value
   logic [REG_DATA_W-1:0]mhdma_system_fsm_value_default;

@@ -32,7 +32,7 @@ offset= 0x0
   owner="User"
   read_access="Read"
   write_access="Write"
-  field.read_req_timout_dur = {size_b=32, offset_b=0, default={Cst=0x48000000}, description="read request timeout duration"}
+  field.read_req_timeout_dur = {size_b=32, offset_b=0, default={Cst=0x48000000}, description="read request timeout duration"}
 
 [section.mhdma_system.register.fsm_value]
   description="fsm status of the module"
@@ -161,7 +161,7 @@ offset= 0x100
   read_access="ReadNotify"
   write_access="None"
   field.iop_id    = {size_b=4,  offset_b=0,  default={Cst=0x0}, description="what is the IOP ID of received ct"}
-  field.node_id   = {size_b=4,  offset_b=4,  default={Cst=0x0}, description="from what HPU has been retreived this ct"}
+  field.node_id   = {size_b=4,  offset_b=4,  default={Cst=0x0}, description="from what HPU has been retrieved this ct"}
   field.dst_addr  = {size_b=16, offset_b=16, default={Cst=0x0}, description="where is the ct"}
 
 [section.mhdma_request.register.stat_notify]
