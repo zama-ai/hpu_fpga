@@ -1058,7 +1058,7 @@ module mhdma_master
       if (format_notify_sent) begin
         count_notify_ack <= 1'b1;
       end else if (notify_ack_received) begin
-        count_notify_ack <= 1'b1;
+        count_notify_ack <= 1'b0;
       end
     end
   end
@@ -1067,7 +1067,7 @@ module mhdma_master
     if (~resetn_mrmac) begin
       t_notify_to_ack <= 'h0;
     end else begin
-      if (format_notify_sent) begin
+      if (count_notify_ack) begin
         t_notify_to_ack <= t_notify_to_ack + 1;
       end else begin
         t_notify_to_ack <= 'h0;

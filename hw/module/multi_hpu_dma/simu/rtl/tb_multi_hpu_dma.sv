@@ -639,6 +639,11 @@ end
     regf_start_addr_ofs = 'h0;
     repeat(20) @(posedge clk_control);
 
+
+    random_iter           = $urandom_range(32, 2);
+    arbitrary_notify_nb   = XPM_MIN_FIFO_DEPTH; // if we have a full fifo on fifo_nrx_regf, we will lose notifies
+    arbitrary_read_req_nb = XPM_MIN_FIFO_DEPTH;
+
     /* In this scenario we must define theses test-cases :
      ==============================================================================================
      * - classical use:
@@ -684,7 +689,6 @@ end
     // TODO: add checker
 
     // Classical use-case =========================================================================
-    random_iter = $urandom_range(32, 2);
     $display("\nB - Notification & read request from one HPU to another, done %0d times", random_iter);
 
     for (int i = 0; i < random_iter; i++) begin
@@ -743,7 +747,6 @@ end
     end
 
     // Piling notify requests =====================================================================
-    arbitrary_notify_nb = XPM_MIN_FIFO_DEPTH; // if we have a full fifo on fifo_nrx_regf, we will lose notifies
     $display("\nC - Notification that a ciphertext is ready from one HPU to another, x %0d", arbitrary_notify_nb);
 
     for (int k = 0; k < LOOP_NOTIFY; k++) begin
@@ -827,7 +830,6 @@ end
     end
 
     // Piling read requests =====================================================================
-    arbitrary_read_req_nb = XPM_MIN_FIFO_DEPTH;
     $display("\nD - read request from one HPU to another, x %0d times", arbitrary_read_req_nb);
 
     for (int i = 0; i < arbitrary_read_req_nb; i ++) begin
