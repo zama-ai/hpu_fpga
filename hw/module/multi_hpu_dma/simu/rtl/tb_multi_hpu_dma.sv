@@ -624,6 +624,10 @@ end
   logic [REG_DATA_W-1:0] stat_t_notify_to_ack;
   logic [REG_DATA_W-1:0] stat_t_rr_to_ce_received;
   logic [REG_DATA_W-1:0] stat_t_ce_first_to_last_pkt;
+  logic [REG_DATA_W-1:0] stat_cnt_nack_received;
+  logic [REG_DATA_W-1:0] stat_cnt_notify_received;
+  logic [REG_DATA_W-1:0] stat_cnt_read_req_received;
+  logic [REG_DATA_W-1:0] stat_cnt_ce_received;
 
   int arbitrary_notify_nb;
   int arbitrary_read_req_nb;
@@ -843,13 +847,17 @@ end
     $display("%t > INFO : All %0d read request have been sent  and memory models checked\n",$time, arbitrary_read_req_nb);
 
     $display("\n ----------------- HPU_A -------------------------------------");
-    maxil_drv_if_hpu_a.read_trans(MHDMA_REQUEST_STAT_NOTIFY_OFS, stat_notify);
-    maxil_drv_if_hpu_a.read_trans(MHDMA_REQUEST_STAT_NOTIFY_ACK_OFS, stat_notify_ack);
-    maxil_drv_if_hpu_a.read_trans(MHDMA_REQUEST_STAT_NOTIFY_TIMEOUT_RETRY_OFS, stat_notify_retry);
-    maxil_drv_if_hpu_a.read_trans(MHDMA_REQUEST_STAT_NOTIFY_TIMEOUT_OFS, stat_notify_timeout);
-    maxil_drv_if_hpu_a.read_trans(MHDMA_REQUEST_STAT_T_NOTIFY_TO_ACK_OFS, stat_t_notify_to_ack);
-    maxil_drv_if_hpu_a.read_trans(MHDMA_REQUEST_STAT_T_RR_TO_CE_RECEIVED_OFS, stat_t_rr_to_ce_received);
+    maxil_drv_if_hpu_a.read_trans(MHDMA_REQUEST_STAT_NOTIFY_OFS,                 stat_notify);
+    maxil_drv_if_hpu_a.read_trans(MHDMA_REQUEST_STAT_NOTIFY_ACK_OFS,             stat_notify_ack);
+    maxil_drv_if_hpu_a.read_trans(MHDMA_REQUEST_STAT_NOTIFY_TIMEOUT_RETRY_OFS,   stat_notify_retry);
+    maxil_drv_if_hpu_a.read_trans(MHDMA_REQUEST_STAT_NOTIFY_TIMEOUT_OFS,         stat_notify_timeout);
+    maxil_drv_if_hpu_a.read_trans(MHDMA_REQUEST_STAT_T_NOTIFY_TO_ACK_OFS,        stat_t_notify_to_ack);
+    maxil_drv_if_hpu_a.read_trans(MHDMA_REQUEST_STAT_T_RR_TO_CE_RECEIVED_OFS,    stat_t_rr_to_ce_received);
     maxil_drv_if_hpu_a.read_trans(MHDMA_REQUEST_STAT_T_CE_FIRST_TO_LAST_PKT_OFS, stat_t_ce_first_to_last_pkt);
+    maxil_drv_if_hpu_a.read_trans(MHDMA_REQUEST_STAT_NB_NACK_RECEIVED_OFS,       stat_cnt_nack_received);
+    maxil_drv_if_hpu_a.read_trans(MHDMA_REQUEST_STAT_NB_NOTIFY_RECEIVED_OFS,     stat_cnt_notify_received);
+    maxil_drv_if_hpu_a.read_trans(MHDMA_REQUEST_STAT_NB_READ_REQ_RECEIVED_OFS,   stat_cnt_read_req_received);
+    maxil_drv_if_hpu_a.read_trans(MHDMA_REQUEST_STAT_NB_CE_RECEIVED_OFS,         stat_cnt_ce_received);
     $display(" stat_notify                 : %0d", stat_notify);
     $display(" stat_notify_ack             : %0d", stat_notify_ack);
     $display(" stat_notify_retry           : %0d", stat_notify_retry);
@@ -857,14 +865,22 @@ end
     $display(" stat_t_notify_to_ack        : %0d", stat_t_notify_to_ack);
     $display(" stat_t_rr_to_ce_received    : %0d", stat_t_rr_to_ce_received);
     $display(" stat_t_ce_first_to_last_pkt : %0d", stat_t_ce_first_to_last_pkt);
+    $display(" stat_cnt_nack_received      : %0d", stat_cnt_nack_received);
+    $display(" stat_cnt_notify_received    : %0d", stat_cnt_notify_received);
+    $display(" stat_cnt_read_req_received  : %0d", stat_cnt_read_req_received);
+    $display(" stat_cnt_ce_received        : %0d", stat_cnt_ce_received);
     $display(" ----------------- HPU_B -------------------------------------");
-    maxil_drv_if_hpu_b.read_trans(MHDMA_REQUEST_STAT_NOTIFY_OFS, stat_notify);
-    maxil_drv_if_hpu_b.read_trans(MHDMA_REQUEST_STAT_NOTIFY_ACK_OFS, stat_notify_ack);
-    maxil_drv_if_hpu_b.read_trans(MHDMA_REQUEST_STAT_NOTIFY_TIMEOUT_RETRY_OFS, stat_notify_retry);
-    maxil_drv_if_hpu_b.read_trans(MHDMA_REQUEST_STAT_NOTIFY_TIMEOUT_OFS, stat_notify_timeout);
-    maxil_drv_if_hpu_b.read_trans(MHDMA_REQUEST_STAT_T_NOTIFY_TO_ACK_OFS, stat_t_notify_to_ack);
-    maxil_drv_if_hpu_b.read_trans(MHDMA_REQUEST_STAT_T_RR_TO_CE_RECEIVED_OFS, stat_t_rr_to_ce_received);
+    maxil_drv_if_hpu_b.read_trans(MHDMA_REQUEST_STAT_NOTIFY_OFS,                 stat_notify);
+    maxil_drv_if_hpu_b.read_trans(MHDMA_REQUEST_STAT_NOTIFY_ACK_OFS,             stat_notify_ack);
+    maxil_drv_if_hpu_b.read_trans(MHDMA_REQUEST_STAT_NOTIFY_TIMEOUT_RETRY_OFS,   stat_notify_retry);
+    maxil_drv_if_hpu_b.read_trans(MHDMA_REQUEST_STAT_NOTIFY_TIMEOUT_OFS,         stat_notify_timeout);
+    maxil_drv_if_hpu_b.read_trans(MHDMA_REQUEST_STAT_T_NOTIFY_TO_ACK_OFS,        stat_t_notify_to_ack);
+    maxil_drv_if_hpu_b.read_trans(MHDMA_REQUEST_STAT_T_RR_TO_CE_RECEIVED_OFS,    stat_t_rr_to_ce_received);
     maxil_drv_if_hpu_b.read_trans(MHDMA_REQUEST_STAT_T_CE_FIRST_TO_LAST_PKT_OFS, stat_t_ce_first_to_last_pkt);
+    maxil_drv_if_hpu_b.read_trans(MHDMA_REQUEST_STAT_NB_NACK_RECEIVED_OFS,       stat_cnt_nack_received);
+    maxil_drv_if_hpu_b.read_trans(MHDMA_REQUEST_STAT_NB_NOTIFY_RECEIVED_OFS,     stat_cnt_notify_received);
+    maxil_drv_if_hpu_b.read_trans(MHDMA_REQUEST_STAT_NB_READ_REQ_RECEIVED_OFS,   stat_cnt_read_req_received);
+    maxil_drv_if_hpu_b.read_trans(MHDMA_REQUEST_STAT_NB_CE_RECEIVED_OFS,         stat_cnt_ce_received);
     $display(" stat_notify                 : %0d", stat_notify);
     $display(" stat_notify_ack             : %0d", stat_notify_ack);
     $display(" stat_notify_retry           : %0d", stat_notify_retry);
@@ -872,6 +888,10 @@ end
     $display(" stat_t_notify_to_ack        : %0d", stat_t_notify_to_ack);
     $display(" stat_t_rr_to_ce_received    : %0d", stat_t_rr_to_ce_received);
     $display(" stat_t_ce_first_to_last_pkt : %0d", stat_t_ce_first_to_last_pkt);
+    $display(" stat_cnt_nack_received      : %0d", stat_cnt_nack_received);
+    $display(" stat_cnt_notify_received    : %0d", stat_cnt_notify_received);
+    $display(" stat_cnt_read_req_received  : %0d", stat_cnt_read_req_received);
+    $display(" stat_cnt_ce_received        : %0d", stat_cnt_ce_received);
     $display(" ------------------------------------------------------------- \n");
 
     $display("%t > INFO: End simulation",$time);
@@ -1057,8 +1077,8 @@ end
     input logic [SRC_ADDR_W-1:0] src_addr,
     input logic [DST_ADDR_W-1:0] dest_addr
   );
-    logic [REG_DATA_W-1:00] read_req_id;
-    logic [REG_DATA_W-1:00] read_req_addr;
+    logic [REG_DATA_W-1:0] read_req_id;
+    logic [REG_DATA_W-1:0] read_req_addr;
     begin
       // see package
       read_req_addr = {dest_addr, src_addr};
@@ -1081,8 +1101,8 @@ end
     input logic [  IOP_ID_W-1:0] iop_id,
     input logic [SRC_ADDR_W-1:0] src_addr
   );
-    logic [REG_DATA_W-1:00] read_req_id;
-    logic [REG_DATA_W-1:00] read_req_addr;
+    logic [REG_DATA_W-1:0] read_req_id;
+    logic [REG_DATA_W-1:0] read_req_addr;
     begin
 
       read_req_addr = {16'b0, src_addr};

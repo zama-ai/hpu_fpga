@@ -4488,7 +4488,7 @@
       "description": "Request registers interface",
       "offset": 327936,
       "bytes_align": 4,
-      "range": 44,
+      "range": 60,
       "register": [
         {
           "name": "req_id",
@@ -4751,7 +4751,7 @@
           "field": null
         },
         {
-          "name": "stat_notify_timeout",
+          "name": "stat_nb_nack_received",
           "description": "timeout counter on notify",
           "owner": "Kernel",
           "read_access": "ReadNotify",
@@ -4763,12 +4763,60 @@
           "field": null
         },
         {
+          "name": "stat_nb_notify_received",
+          "description": "timeout counter on notify",
+          "owner": "Kernel",
+          "read_access": "ReadNotify",
+          "write_access": "None",
+          "offset": 327968,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "stat_nb_read_req_received",
+          "description": "timeout counter on notify",
+          "owner": "Kernel",
+          "read_access": "ReadNotify",
+          "write_access": "None",
+          "offset": 327972,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "stat_nb_ce_received",
+          "description": "timeout counter on notify",
+          "owner": "Kernel",
+          "read_access": "ReadNotify",
+          "write_access": "None",
+          "offset": 327976,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "stat_notify_timeout",
+          "description": "timeout counter on notify",
+          "owner": "Kernel",
+          "read_access": "ReadNotify",
+          "write_access": "None",
+          "offset": 327980,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
           "name": "stat_t_notify_to_ack",
           "description": "time between notify tlast and ack reception in decoder",
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "None",
-          "offset": 327968,
+          "offset": 327984,
           "default": {
             "Cst": 0
           },
@@ -4780,7 +4828,7 @@
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "None",
-          "offset": 327972,
+          "offset": 327988,
           "default": {
             "Cst": 0
           },
@@ -4792,7 +4840,7 @@
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "None",
-          "offset": 327976,
+          "offset": 327992,
           "default": {
             "Cst": 0
           },

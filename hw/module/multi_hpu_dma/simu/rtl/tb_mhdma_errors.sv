@@ -391,9 +391,9 @@ module tb_mhdma_errors;
     .current_hpu_mac             (hpu_b_mac_addr),
 
     .rx_header                   (rx_header),
-    .rx_tdata                    (/* unused */),
-    .rx_tvalid                   (/* unused */),
-    .rx_tlast                    (/* unused */),
+    .rx_tdata_out                (/* unused */),
+    .rx_tvalid_out               (/* unused */),
+    .rx_tlast_out                (/* unused */),
 
     .qsfp_rx_tdata               (qsfp_tx_tdata[lane]),
     .qsfp_rx_tkeep_user          (qsfp_tx_tkeep_user[lane]),

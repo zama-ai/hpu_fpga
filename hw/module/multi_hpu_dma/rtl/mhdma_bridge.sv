@@ -69,15 +69,26 @@ module mhdma_bridge
   output logic [REG_DATA_W-1:0]                   stat_cnt_notify_ack,
   output logic [REG_DATA_W-1:0]                   stat_cnt_notify_timeout,
   output logic [REG_DATA_W-1:0]                   stat_cnt_notify_retries,
+
+  output logic [REG_DATA_W-1:0]                   stat_cnt_nack_received,
+  output logic [REG_DATA_W-1:0]                   stat_cnt_notify_received,
+  output logic [REG_DATA_W-1:0]                   stat_cnt_read_req_received,
+  output logic [REG_DATA_W-1:0]                   stat_cnt_ce_received,
+
   // timing
   output logic [REG_DATA_W-1:0]                   stat_t_notify_to_ack,
   output logic [REG_DATA_W-1:0]                   stat_t_rr_to_ce_received,
   output logic [REG_DATA_W-1:0]                   stat_t_ce_first_to_last_pkt,
+
   // reset counters
   input  logic                                    rst_cnt_notify,
   input  logic                                    rst_cnt_notify_ack,
   input  logic                                    rst_cnt_notify_retry,
   input  logic                                    rst_cnt_timeout,
+  input  logic                                    rst_cnt_nack_received,
+  input  logic                                    rst_cnt_notify_received,
+  input  logic                                    rst_cnt_read_req_received,
+  input  logic                                    rst_cnt_ce_received,
   // registers
   output logic [REG_DATA_W-1:0]                   stat_reg_fsm,
   // statistics ---------------------------------------------------------------
@@ -239,9 +250,9 @@ module mhdma_bridge
   logic                     ce_valid;
 
   // payload for ciphertext reception
-  logic [MRMAC_AXIS_W-1:0]  rx_tdata;
-  logic                     rx_tvalid;
-  logic                     rx_tlast;
+  logic [MRMAC_AXIS_W-1:0]  decoder_rx_tdata;
+  logic                     decoder_rx_tvalid;
+  logic                     decoder_rx_tlast;
   logic                     cerx_reception_ready;
 
   // Master module does the controls for sending read request and Notifies requests
@@ -309,9 +320,9 @@ module mhdma_bridge
     .notify_ack_received             (notify_ack_received                     ),
     .cerx_reception_ready            (cerx_reception_ready                    ),
     // payload from decoder ---------------------------------------------------
-    .rx_tdata                        (rx_tdata                                ),
-    .rx_tvalid                       (rx_tvalid                               ),
-    .rx_tlast                        (rx_tlast                                ),
+    .rx_tdata                        (decoder_rx_tdata                        ),
+    .rx_tvalid                       (decoder_rx_tvalid                       ),
+    .rx_tlast                        (decoder_rx_tlast                        ),
     // interrupt --------------------------------------------------------------
     .clear_interrupt_rr              (clear_interrupt_rr                      ),
     .interrupt_read_request          (interrupt_read_request                  ),
@@ -401,10 +412,20 @@ module mhdma_bridge
     .rx_header                   (decoded_header                              ),
     // statistics -------------------------------------------------------------
     .stat_t_ce_first_to_last_pkt (stat_t_ce_first_to_last_pkt                 ),
+
+    .stat_cnt_nack_received      (stat_cnt_nack_received                      ),
+    .stat_cnt_notify_received    (stat_cnt_notify_received                    ),
+    .stat_cnt_read_req_received  (stat_cnt_read_req_received                  ),
+    .stat_cnt_ce_received        (stat_cnt_ce_received                        ),
+
+    .rst_cnt_nack_received       (rst_cnt_nack_received                       ),
+    .rst_cnt_notify_received     (rst_cnt_notify_received                     ),
+    .rst_cnt_read_req_received   (rst_cnt_read_req_received                   ),
+    .rst_cnt_ce_received         (rst_cnt_ce_received                         ),
     // RX payload -------------------------------------------------------------
-    .rx_tdata                    (rx_tdata                                    ),
-    .rx_tvalid                   (rx_tvalid                                   ),
-    .rx_tlast                    (rx_tlast                                    ),
+    .rx_tdata_out                (decoder_rx_tdata                            ),
+    .rx_tvalid_out               (decoder_rx_tvalid                           ),
+    .rx_tlast_out                (decoder_rx_tlast                            ),
     // QSFP RX interface ------------------------------------------------------
     .qsfp_rx_tdata               (qsfp_rx_tdata                               ),
     .qsfp_rx_tkeep_user          (qsfp_rx_tkeep_user                          ),

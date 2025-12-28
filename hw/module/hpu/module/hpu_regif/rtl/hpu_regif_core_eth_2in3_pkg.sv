@@ -74,10 +74,14 @@ package hpu_regif_core_eth_2in3_pkg;
   localparam int MHDMA_REQUEST_STAT_NOTIFY_OFS = 'h50110;
   localparam int MHDMA_REQUEST_STAT_NOTIFY_ACK_OFS = 'h50114;
   localparam int MHDMA_REQUEST_STAT_NOTIFY_TIMEOUT_RETRY_OFS = 'h50118;
-  localparam int MHDMA_REQUEST_STAT_NOTIFY_TIMEOUT_OFS = 'h5011c;
-  localparam int MHDMA_REQUEST_STAT_T_NOTIFY_TO_ACK_OFS = 'h50120;
-  localparam int MHDMA_REQUEST_STAT_T_RR_TO_CE_RECEIVED_OFS = 'h50124;
-  localparam int MHDMA_REQUEST_STAT_T_CE_FIRST_TO_LAST_PKT_OFS = 'h50128;
+  localparam int MHDMA_REQUEST_STAT_NB_NACK_RECEIVED_OFS = 'h5011c;
+  localparam int MHDMA_REQUEST_STAT_NB_NOTIFY_RECEIVED_OFS = 'h50120;
+  localparam int MHDMA_REQUEST_STAT_NB_READ_REQ_RECEIVED_OFS = 'h50124;
+  localparam int MHDMA_REQUEST_STAT_NB_CE_RECEIVED_OFS = 'h50128;
+  localparam int MHDMA_REQUEST_STAT_NOTIFY_TIMEOUT_OFS = 'h5012c;
+  localparam int MHDMA_REQUEST_STAT_T_NOTIFY_TO_ACK_OFS = 'h50130;
+  localparam int MHDMA_REQUEST_STAT_T_RR_TO_CE_RECEIVED_OFS = 'h50134;
+  localparam int MHDMA_REQUEST_STAT_T_CE_FIRST_TO_LAST_PKT_OFS = 'h50138;
   typedef struct packed {
     logic [(1-1):0] reset_registers;
     logic [(1-1):0] tx_loop;

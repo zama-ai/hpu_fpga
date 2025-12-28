@@ -314,12 +314,10 @@ module mhdma_slave
   // TODO add status signals to know how much time we are not reading into fifo
   // =========================================================================================== //
   logic [RREQ_CMD_DATA_W-1:0] read_request_cmd;
-  // logic [       SIZE_B_W-1:0] ;
   logic [       HPU_ID_W-1:0] rr_hpu_id;
   logic [       IOP_ID_W-1:0] rr_iop_id;
   logic [     SRC_ADDR_W-1:0] rr_ct_src_addr;
   logic [     DST_ADDR_W-1:0] rr_ct_dst_addr;
-
 
   always_ff @(posedge clk_mrmac)
     if (rreq_cmd_out_vld & rreq_cmd_out_rdy)

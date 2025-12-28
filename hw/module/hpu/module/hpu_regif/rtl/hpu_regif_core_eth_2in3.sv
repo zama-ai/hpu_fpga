@@ -111,6 +111,22 @@ import hpu_regif_core_eth_2in3_pkg::*;
     , output logic [REG_DATA_W-1: 0] r_mhdma_request_stat_notify_timeout_retry
     , input  logic [REG_DATA_W-1: 0] r_mhdma_request_stat_notify_timeout_retry_upd
     , output logic r_mhdma_request_stat_notify_timeout_retry_rd_en
+  // Register IO: mhdma_request_stat_nb_nack_received
+    , output logic [REG_DATA_W-1: 0] r_mhdma_request_stat_nb_nack_received
+    , input  logic [REG_DATA_W-1: 0] r_mhdma_request_stat_nb_nack_received_upd
+    , output logic r_mhdma_request_stat_nb_nack_received_rd_en
+  // Register IO: mhdma_request_stat_nb_notify_received
+    , output logic [REG_DATA_W-1: 0] r_mhdma_request_stat_nb_notify_received
+    , input  logic [REG_DATA_W-1: 0] r_mhdma_request_stat_nb_notify_received_upd
+    , output logic r_mhdma_request_stat_nb_notify_received_rd_en
+  // Register IO: mhdma_request_stat_nb_read_req_received
+    , output logic [REG_DATA_W-1: 0] r_mhdma_request_stat_nb_read_req_received
+    , input  logic [REG_DATA_W-1: 0] r_mhdma_request_stat_nb_read_req_received_upd
+    , output logic r_mhdma_request_stat_nb_read_req_received_rd_en
+  // Register IO: mhdma_request_stat_nb_ce_received
+    , output logic [REG_DATA_W-1: 0] r_mhdma_request_stat_nb_ce_received
+    , input  logic [REG_DATA_W-1: 0] r_mhdma_request_stat_nb_ce_received_upd
+    , output logic r_mhdma_request_stat_nb_ce_received_rd_en
   // Register IO: mhdma_request_stat_notify_timeout
     , output logic [REG_DATA_W-1: 0] r_mhdma_request_stat_notify_timeout
     , input  logic [REG_DATA_W-1: 0] r_mhdma_request_stat_notify_timeout_upd
@@ -414,6 +430,18 @@ import hpu_regif_core_eth_2in3_pkg::*;
 //-- Default mhdma_request_stat_notify_timeout_retry
   logic [REG_DATA_W-1:0]mhdma_request_stat_notify_timeout_retry_default;
   assign mhdma_request_stat_notify_timeout_retry_default = 'h0;
+//-- Default mhdma_request_stat_nb_nack_received
+  logic [REG_DATA_W-1:0]mhdma_request_stat_nb_nack_received_default;
+  assign mhdma_request_stat_nb_nack_received_default = 'h0;
+//-- Default mhdma_request_stat_nb_notify_received
+  logic [REG_DATA_W-1:0]mhdma_request_stat_nb_notify_received_default;
+  assign mhdma_request_stat_nb_notify_received_default = 'h0;
+//-- Default mhdma_request_stat_nb_read_req_received
+  logic [REG_DATA_W-1:0]mhdma_request_stat_nb_read_req_received_default;
+  assign mhdma_request_stat_nb_read_req_received_default = 'h0;
+//-- Default mhdma_request_stat_nb_ce_received
+  logic [REG_DATA_W-1:0]mhdma_request_stat_nb_ce_received_default;
+  assign mhdma_request_stat_nb_ce_received_default = 'h0;
 //-- Default mhdma_request_stat_notify_timeout
   logic [REG_DATA_W-1:0]mhdma_request_stat_notify_timeout_default;
   assign mhdma_request_stat_notify_timeout_default = 'h0;
@@ -723,6 +751,26 @@ import hpu_regif_core_eth_2in3_pkg::*;
   assign r_mhdma_request_stat_notify_timeout_retryD       = r_mhdma_request_stat_notify_timeout_retry_upd;
   assign r_mhdma_request_stat_notify_timeout_retry_rd_en = rd_en_ok && (rd_add[AXIL_ADD_RANGE_W-1:0] == MHDMA_REQUEST_STAT_NOTIFY_TIMEOUT_RETRY_OFS[AXIL_ADD_RANGE_W-1:0]);
   assign r_mhdma_request_stat_notify_timeout_retry = r_mhdma_request_stat_notify_timeout_retry_upd;
+// Register FF: mhdma_request_stat_nb_nack_received
+  logic [REG_DATA_W-1:0] r_mhdma_request_stat_nb_nack_receivedD;
+  assign r_mhdma_request_stat_nb_nack_receivedD       = r_mhdma_request_stat_nb_nack_received_upd;
+  assign r_mhdma_request_stat_nb_nack_received_rd_en = rd_en_ok && (rd_add[AXIL_ADD_RANGE_W-1:0] == MHDMA_REQUEST_STAT_NB_NACK_RECEIVED_OFS[AXIL_ADD_RANGE_W-1:0]);
+  assign r_mhdma_request_stat_nb_nack_received = r_mhdma_request_stat_nb_nack_received_upd;
+// Register FF: mhdma_request_stat_nb_notify_received
+  logic [REG_DATA_W-1:0] r_mhdma_request_stat_nb_notify_receivedD;
+  assign r_mhdma_request_stat_nb_notify_receivedD       = r_mhdma_request_stat_nb_notify_received_upd;
+  assign r_mhdma_request_stat_nb_notify_received_rd_en = rd_en_ok && (rd_add[AXIL_ADD_RANGE_W-1:0] == MHDMA_REQUEST_STAT_NB_NOTIFY_RECEIVED_OFS[AXIL_ADD_RANGE_W-1:0]);
+  assign r_mhdma_request_stat_nb_notify_received = r_mhdma_request_stat_nb_notify_received_upd;
+// Register FF: mhdma_request_stat_nb_read_req_received
+  logic [REG_DATA_W-1:0] r_mhdma_request_stat_nb_read_req_receivedD;
+  assign r_mhdma_request_stat_nb_read_req_receivedD       = r_mhdma_request_stat_nb_read_req_received_upd;
+  assign r_mhdma_request_stat_nb_read_req_received_rd_en = rd_en_ok && (rd_add[AXIL_ADD_RANGE_W-1:0] == MHDMA_REQUEST_STAT_NB_READ_REQ_RECEIVED_OFS[AXIL_ADD_RANGE_W-1:0]);
+  assign r_mhdma_request_stat_nb_read_req_received = r_mhdma_request_stat_nb_read_req_received_upd;
+// Register FF: mhdma_request_stat_nb_ce_received
+  logic [REG_DATA_W-1:0] r_mhdma_request_stat_nb_ce_receivedD;
+  assign r_mhdma_request_stat_nb_ce_receivedD       = r_mhdma_request_stat_nb_ce_received_upd;
+  assign r_mhdma_request_stat_nb_ce_received_rd_en = rd_en_ok && (rd_add[AXIL_ADD_RANGE_W-1:0] == MHDMA_REQUEST_STAT_NB_CE_RECEIVED_OFS[AXIL_ADD_RANGE_W-1:0]);
+  assign r_mhdma_request_stat_nb_ce_received = r_mhdma_request_stat_nb_ce_received_upd;
 // Register FF: mhdma_request_stat_notify_timeout
   logic [REG_DATA_W-1:0] r_mhdma_request_stat_notify_timeoutD;
   assign r_mhdma_request_stat_notify_timeoutD       = r_mhdma_request_stat_notify_timeout_upd;
@@ -1084,6 +1132,18 @@ import hpu_regif_core_eth_2in3_pkg::*;
           end
           MHDMA_REQUEST_STAT_NOTIFY_TIMEOUT_RETRY_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register mhdma_request_stat_notify_timeout_retry
             axil_rdataD = r_mhdma_request_stat_notify_timeout_retry;
+          end
+          MHDMA_REQUEST_STAT_NB_NACK_RECEIVED_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register mhdma_request_stat_nb_nack_received
+            axil_rdataD = r_mhdma_request_stat_nb_nack_received;
+          end
+          MHDMA_REQUEST_STAT_NB_NOTIFY_RECEIVED_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register mhdma_request_stat_nb_notify_received
+            axil_rdataD = r_mhdma_request_stat_nb_notify_received;
+          end
+          MHDMA_REQUEST_STAT_NB_READ_REQ_RECEIVED_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register mhdma_request_stat_nb_read_req_received
+            axil_rdataD = r_mhdma_request_stat_nb_read_req_received;
+          end
+          MHDMA_REQUEST_STAT_NB_CE_RECEIVED_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register mhdma_request_stat_nb_ce_received
+            axil_rdataD = r_mhdma_request_stat_nb_ce_received;
           end
           MHDMA_REQUEST_STAT_NOTIFY_TIMEOUT_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register mhdma_request_stat_notify_timeout
             axil_rdataD = r_mhdma_request_stat_notify_timeout;

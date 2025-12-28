@@ -183,6 +183,31 @@ offset= 0x100
   write_access="None"
   default={Cst=0x0}
 
+[section.mhdma_request.register.stat_nb_nack_received]
+  description="timeout counter on notify"
+  owner="Kernel"
+  read_access="ReadNotify"
+  write_access="None"
+  default={Cst=0x0}
+[section.mhdma_request.register.stat_nb_notify_received]
+  description="timeout counter on notify"
+  owner="Kernel"
+  read_access="ReadNotify"
+  write_access="None"
+  default={Cst=0x0}
+[section.mhdma_request.register.stat_nb_read_req_received]
+  description="timeout counter on notify"
+  owner="Kernel"
+  read_access="ReadNotify"
+  write_access="None"
+  default={Cst=0x0}
+[section.mhdma_request.register.stat_nb_ce_received]
+  description="timeout counter on notify"
+  owner="Kernel"
+  read_access="ReadNotify"
+  write_access="None"
+  default={Cst=0x0}
+
 [section.mhdma_request.register.stat_notify_timeout]
   description="timeout counter on notify"
   owner="Kernel"
