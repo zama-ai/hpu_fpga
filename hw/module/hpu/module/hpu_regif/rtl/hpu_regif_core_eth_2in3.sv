@@ -1,7 +1,7 @@
 // ============================================================================================== //
 // Description  : Axi4-lite register bank
 // This file was generated with rust regmap generator:
-//  * Date:  2025-12-28
+//  * Date:  2025-12-29
 //  * Tool_version: bd49564daf1a99d615cb6dbb121b54bfbeef8b22
 // ---------------------------------------------------------------------------------------------- //
 // xR[n]W[na]
@@ -127,10 +127,18 @@ import hpu_regif_core_eth_2in3_pkg::*;
     , output logic [REG_DATA_W-1: 0] r_mhdma_request_stat_nb_ce_received
     , input  logic [REG_DATA_W-1: 0] r_mhdma_request_stat_nb_ce_received_upd
     , output logic r_mhdma_request_stat_nb_ce_received_rd_en
-  // Register IO: mhdma_request_stat_notify_timeout
-    , output logic [REG_DATA_W-1: 0] r_mhdma_request_stat_notify_timeout
-    , input  logic [REG_DATA_W-1: 0] r_mhdma_request_stat_notify_timeout_upd
-    , output logic r_mhdma_request_stat_notify_timeout_rd_en
+  // Register IO: mhdma_request_stat_nb_read_to_hbm
+    , output logic [REG_DATA_W-1: 0] r_mhdma_request_stat_nb_read_to_hbm
+    , input  logic [REG_DATA_W-1: 0] r_mhdma_request_stat_nb_read_to_hbm_upd
+    , output logic r_mhdma_request_stat_nb_read_to_hbm_rd_en
+  // Register IO: mhdma_request_stat_nb_words_received_pc_pc0
+    , output logic [REG_DATA_W-1: 0] r_mhdma_request_stat_nb_words_received_pc_pc0
+    , input  logic [REG_DATA_W-1: 0] r_mhdma_request_stat_nb_words_received_pc_pc0_upd
+    , output logic r_mhdma_request_stat_nb_words_received_pc_pc0_rd_en
+  // Register IO: mhdma_request_stat_nb_words_received_pc_pc1
+    , output logic [REG_DATA_W-1: 0] r_mhdma_request_stat_nb_words_received_pc_pc1
+    , input  logic [REG_DATA_W-1: 0] r_mhdma_request_stat_nb_words_received_pc_pc1_upd
+    , output logic r_mhdma_request_stat_nb_words_received_pc_pc1_rd_en
   // Register IO: mhdma_request_stat_t_notify_to_ack
     , output logic [REG_DATA_W-1: 0] r_mhdma_request_stat_t_notify_to_ack
     , input  logic [REG_DATA_W-1: 0] r_mhdma_request_stat_t_notify_to_ack_upd
@@ -140,6 +148,28 @@ import hpu_regif_core_eth_2in3_pkg::*;
   // Register IO: mhdma_request_stat_t_ce_first_to_last_pkt
     , output logic [REG_DATA_W-1: 0] r_mhdma_request_stat_t_ce_first_to_last_pkt
     , input  logic [REG_DATA_W-1: 0] r_mhdma_request_stat_t_ce_first_to_last_pkt_upd
+  // Register IO: mhdma_request_stat_t_rr_wait_words_pc_pc0
+    , output logic [REG_DATA_W-1: 0] r_mhdma_request_stat_t_rr_wait_words_pc_pc0
+    , input  logic [REG_DATA_W-1: 0] r_mhdma_request_stat_t_rr_wait_words_pc_pc0_upd
+  // Register IO: mhdma_request_stat_t_rr_wait_words_pc_pc1
+    , output logic [REG_DATA_W-1: 0] r_mhdma_request_stat_t_rr_wait_words_pc_pc1
+    , input  logic [REG_DATA_W-1: 0] r_mhdma_request_stat_t_rr_wait_words_pc_pc1_upd
+  // Register IO: mhdma_request_stat_notify_timeout
+    , output logic [REG_DATA_W-1: 0] r_mhdma_request_stat_notify_timeout
+    , input  logic [REG_DATA_W-1: 0] r_mhdma_request_stat_notify_timeout_upd
+    , output logic r_mhdma_request_stat_notify_timeout_rd_en
+  // Register IO: mhdma_request_stat_physical_addr_pc0_lsb
+    , output logic [REG_DATA_W-1: 0] r_mhdma_request_stat_physical_addr_pc0_lsb
+    , input  logic [REG_DATA_W-1: 0] r_mhdma_request_stat_physical_addr_pc0_lsb_upd
+  // Register IO: mhdma_request_stat_physical_addr_pc0_msb
+    , output logic [REG_DATA_W-1: 0] r_mhdma_request_stat_physical_addr_pc0_msb
+    , input  logic [REG_DATA_W-1: 0] r_mhdma_request_stat_physical_addr_pc0_msb_upd
+  // Register IO: mhdma_request_stat_physical_addr_pc1_lsb
+    , output logic [REG_DATA_W-1: 0] r_mhdma_request_stat_physical_addr_pc1_lsb
+    , input  logic [REG_DATA_W-1: 0] r_mhdma_request_stat_physical_addr_pc1_lsb_upd
+  // Register IO: mhdma_request_stat_physical_addr_pc1_msb
+    , output logic [REG_DATA_W-1: 0] r_mhdma_request_stat_physical_addr_pc1_msb
+    , input  logic [REG_DATA_W-1: 0] r_mhdma_request_stat_physical_addr_pc1_msb_upd
   // Register IO: mhdma_lane_debug
     , output mhdma_lane_debug_t r_mhdma_lane_debug
   // Register IO: mhdma_hbm_axi4_addr_2in3_ct_pc0_lsb
@@ -442,9 +472,15 @@ import hpu_regif_core_eth_2in3_pkg::*;
 //-- Default mhdma_request_stat_nb_ce_received
   logic [REG_DATA_W-1:0]mhdma_request_stat_nb_ce_received_default;
   assign mhdma_request_stat_nb_ce_received_default = 'h0;
-//-- Default mhdma_request_stat_notify_timeout
-  logic [REG_DATA_W-1:0]mhdma_request_stat_notify_timeout_default;
-  assign mhdma_request_stat_notify_timeout_default = 'h0;
+//-- Default mhdma_request_stat_nb_read_to_hbm
+  logic [REG_DATA_W-1:0]mhdma_request_stat_nb_read_to_hbm_default;
+  assign mhdma_request_stat_nb_read_to_hbm_default = 'h0;
+//-- Default mhdma_request_stat_nb_words_received_pc_pc0
+  logic [REG_DATA_W-1:0]mhdma_request_stat_nb_words_received_pc_pc0_default;
+  assign mhdma_request_stat_nb_words_received_pc_pc0_default = 'h0;
+//-- Default mhdma_request_stat_nb_words_received_pc_pc1
+  logic [REG_DATA_W-1:0]mhdma_request_stat_nb_words_received_pc_pc1_default;
+  assign mhdma_request_stat_nb_words_received_pc_pc1_default = 'h0;
 //-- Default mhdma_request_stat_t_notify_to_ack
   logic [REG_DATA_W-1:0]mhdma_request_stat_t_notify_to_ack_default;
   assign mhdma_request_stat_t_notify_to_ack_default = 'h0;
@@ -454,6 +490,27 @@ import hpu_regif_core_eth_2in3_pkg::*;
 //-- Default mhdma_request_stat_t_ce_first_to_last_pkt
   logic [REG_DATA_W-1:0]mhdma_request_stat_t_ce_first_to_last_pkt_default;
   assign mhdma_request_stat_t_ce_first_to_last_pkt_default = 'h0;
+//-- Default mhdma_request_stat_t_rr_wait_words_pc_pc0
+  logic [REG_DATA_W-1:0]mhdma_request_stat_t_rr_wait_words_pc_pc0_default;
+  assign mhdma_request_stat_t_rr_wait_words_pc_pc0_default = 'h0;
+//-- Default mhdma_request_stat_t_rr_wait_words_pc_pc1
+  logic [REG_DATA_W-1:0]mhdma_request_stat_t_rr_wait_words_pc_pc1_default;
+  assign mhdma_request_stat_t_rr_wait_words_pc_pc1_default = 'h0;
+//-- Default mhdma_request_stat_notify_timeout
+  logic [REG_DATA_W-1:0]mhdma_request_stat_notify_timeout_default;
+  assign mhdma_request_stat_notify_timeout_default = 'h0;
+//-- Default mhdma_request_stat_physical_addr_pc0_lsb
+  logic [REG_DATA_W-1:0]mhdma_request_stat_physical_addr_pc0_lsb_default;
+  assign mhdma_request_stat_physical_addr_pc0_lsb_default = 'h0;
+//-- Default mhdma_request_stat_physical_addr_pc0_msb
+  logic [REG_DATA_W-1:0]mhdma_request_stat_physical_addr_pc0_msb_default;
+  assign mhdma_request_stat_physical_addr_pc0_msb_default = 'h0;
+//-- Default mhdma_request_stat_physical_addr_pc1_lsb
+  logic [REG_DATA_W-1:0]mhdma_request_stat_physical_addr_pc1_lsb_default;
+  assign mhdma_request_stat_physical_addr_pc1_lsb_default = 'h0;
+//-- Default mhdma_request_stat_physical_addr_pc1_msb
+  logic [REG_DATA_W-1:0]mhdma_request_stat_physical_addr_pc1_msb_default;
+  assign mhdma_request_stat_physical_addr_pc1_msb_default = 'h0;
 //-- Default mhdma_lane_debug
   mhdma_lane_debug_t mhdma_lane_debug_default;
   always_comb begin
@@ -771,11 +828,21 @@ import hpu_regif_core_eth_2in3_pkg::*;
   assign r_mhdma_request_stat_nb_ce_receivedD       = r_mhdma_request_stat_nb_ce_received_upd;
   assign r_mhdma_request_stat_nb_ce_received_rd_en = rd_en_ok && (rd_add[AXIL_ADD_RANGE_W-1:0] == MHDMA_REQUEST_STAT_NB_CE_RECEIVED_OFS[AXIL_ADD_RANGE_W-1:0]);
   assign r_mhdma_request_stat_nb_ce_received = r_mhdma_request_stat_nb_ce_received_upd;
-// Register FF: mhdma_request_stat_notify_timeout
-  logic [REG_DATA_W-1:0] r_mhdma_request_stat_notify_timeoutD;
-  assign r_mhdma_request_stat_notify_timeoutD       = r_mhdma_request_stat_notify_timeout_upd;
-  assign r_mhdma_request_stat_notify_timeout_rd_en = rd_en_ok && (rd_add[AXIL_ADD_RANGE_W-1:0] == MHDMA_REQUEST_STAT_NOTIFY_TIMEOUT_OFS[AXIL_ADD_RANGE_W-1:0]);
-  assign r_mhdma_request_stat_notify_timeout = r_mhdma_request_stat_notify_timeout_upd;
+// Register FF: mhdma_request_stat_nb_read_to_hbm
+  logic [REG_DATA_W-1:0] r_mhdma_request_stat_nb_read_to_hbmD;
+  assign r_mhdma_request_stat_nb_read_to_hbmD       = r_mhdma_request_stat_nb_read_to_hbm_upd;
+  assign r_mhdma_request_stat_nb_read_to_hbm_rd_en = rd_en_ok && (rd_add[AXIL_ADD_RANGE_W-1:0] == MHDMA_REQUEST_STAT_NB_READ_TO_HBM_OFS[AXIL_ADD_RANGE_W-1:0]);
+  assign r_mhdma_request_stat_nb_read_to_hbm = r_mhdma_request_stat_nb_read_to_hbm_upd;
+// Register FF: mhdma_request_stat_nb_words_received_pc_pc0
+  logic [REG_DATA_W-1:0] r_mhdma_request_stat_nb_words_received_pc_pc0D;
+  assign r_mhdma_request_stat_nb_words_received_pc_pc0D       = r_mhdma_request_stat_nb_words_received_pc_pc0_upd;
+  assign r_mhdma_request_stat_nb_words_received_pc_pc0_rd_en = rd_en_ok && (rd_add[AXIL_ADD_RANGE_W-1:0] == MHDMA_REQUEST_STAT_NB_WORDS_RECEIVED_PC_PC0_OFS[AXIL_ADD_RANGE_W-1:0]);
+  assign r_mhdma_request_stat_nb_words_received_pc_pc0 = r_mhdma_request_stat_nb_words_received_pc_pc0_upd;
+// Register FF: mhdma_request_stat_nb_words_received_pc_pc1
+  logic [REG_DATA_W-1:0] r_mhdma_request_stat_nb_words_received_pc_pc1D;
+  assign r_mhdma_request_stat_nb_words_received_pc_pc1D       = r_mhdma_request_stat_nb_words_received_pc_pc1_upd;
+  assign r_mhdma_request_stat_nb_words_received_pc_pc1_rd_en = rd_en_ok && (rd_add[AXIL_ADD_RANGE_W-1:0] == MHDMA_REQUEST_STAT_NB_WORDS_RECEIVED_PC_PC1_OFS[AXIL_ADD_RANGE_W-1:0]);
+  assign r_mhdma_request_stat_nb_words_received_pc_pc1 = r_mhdma_request_stat_nb_words_received_pc_pc1_upd;
 // Register FF: mhdma_request_stat_t_notify_to_ack
   logic [REG_DATA_W-1:0] r_mhdma_request_stat_t_notify_to_ackD;
   assign r_mhdma_request_stat_t_notify_to_ackD       = r_mhdma_request_stat_t_notify_to_ack_upd;
@@ -807,6 +874,77 @@ import hpu_regif_core_eth_2in3_pkg::*;
     end
     else begin
       r_mhdma_request_stat_t_ce_first_to_last_pkt       <= r_mhdma_request_stat_t_ce_first_to_last_pktD;
+    end
+  end
+// Register FF: mhdma_request_stat_t_rr_wait_words_pc_pc0
+  logic [REG_DATA_W-1:0] r_mhdma_request_stat_t_rr_wait_words_pc_pc0D;
+  assign r_mhdma_request_stat_t_rr_wait_words_pc_pc0D       = r_mhdma_request_stat_t_rr_wait_words_pc_pc0_upd;
+  always_ff @(posedge clk) begin
+    if (!s_rst_n) begin
+      r_mhdma_request_stat_t_rr_wait_words_pc_pc0       <= mhdma_request_stat_t_rr_wait_words_pc_pc0_default;
+    end
+    else begin
+      r_mhdma_request_stat_t_rr_wait_words_pc_pc0       <= r_mhdma_request_stat_t_rr_wait_words_pc_pc0D;
+    end
+  end
+// Register FF: mhdma_request_stat_t_rr_wait_words_pc_pc1
+  logic [REG_DATA_W-1:0] r_mhdma_request_stat_t_rr_wait_words_pc_pc1D;
+  assign r_mhdma_request_stat_t_rr_wait_words_pc_pc1D       = r_mhdma_request_stat_t_rr_wait_words_pc_pc1_upd;
+  always_ff @(posedge clk) begin
+    if (!s_rst_n) begin
+      r_mhdma_request_stat_t_rr_wait_words_pc_pc1       <= mhdma_request_stat_t_rr_wait_words_pc_pc1_default;
+    end
+    else begin
+      r_mhdma_request_stat_t_rr_wait_words_pc_pc1       <= r_mhdma_request_stat_t_rr_wait_words_pc_pc1D;
+    end
+  end
+// Register FF: mhdma_request_stat_notify_timeout
+  logic [REG_DATA_W-1:0] r_mhdma_request_stat_notify_timeoutD;
+  assign r_mhdma_request_stat_notify_timeoutD       = r_mhdma_request_stat_notify_timeout_upd;
+  assign r_mhdma_request_stat_notify_timeout_rd_en = rd_en_ok && (rd_add[AXIL_ADD_RANGE_W-1:0] == MHDMA_REQUEST_STAT_NOTIFY_TIMEOUT_OFS[AXIL_ADD_RANGE_W-1:0]);
+  assign r_mhdma_request_stat_notify_timeout = r_mhdma_request_stat_notify_timeout_upd;
+// Register FF: mhdma_request_stat_physical_addr_pc0_lsb
+  logic [REG_DATA_W-1:0] r_mhdma_request_stat_physical_addr_pc0_lsbD;
+  assign r_mhdma_request_stat_physical_addr_pc0_lsbD       = r_mhdma_request_stat_physical_addr_pc0_lsb_upd;
+  always_ff @(posedge clk) begin
+    if (!s_rst_n) begin
+      r_mhdma_request_stat_physical_addr_pc0_lsb       <= mhdma_request_stat_physical_addr_pc0_lsb_default;
+    end
+    else begin
+      r_mhdma_request_stat_physical_addr_pc0_lsb       <= r_mhdma_request_stat_physical_addr_pc0_lsbD;
+    end
+  end
+// Register FF: mhdma_request_stat_physical_addr_pc0_msb
+  logic [REG_DATA_W-1:0] r_mhdma_request_stat_physical_addr_pc0_msbD;
+  assign r_mhdma_request_stat_physical_addr_pc0_msbD       = r_mhdma_request_stat_physical_addr_pc0_msb_upd;
+  always_ff @(posedge clk) begin
+    if (!s_rst_n) begin
+      r_mhdma_request_stat_physical_addr_pc0_msb       <= mhdma_request_stat_physical_addr_pc0_msb_default;
+    end
+    else begin
+      r_mhdma_request_stat_physical_addr_pc0_msb       <= r_mhdma_request_stat_physical_addr_pc0_msbD;
+    end
+  end
+// Register FF: mhdma_request_stat_physical_addr_pc1_lsb
+  logic [REG_DATA_W-1:0] r_mhdma_request_stat_physical_addr_pc1_lsbD;
+  assign r_mhdma_request_stat_physical_addr_pc1_lsbD       = r_mhdma_request_stat_physical_addr_pc1_lsb_upd;
+  always_ff @(posedge clk) begin
+    if (!s_rst_n) begin
+      r_mhdma_request_stat_physical_addr_pc1_lsb       <= mhdma_request_stat_physical_addr_pc1_lsb_default;
+    end
+    else begin
+      r_mhdma_request_stat_physical_addr_pc1_lsb       <= r_mhdma_request_stat_physical_addr_pc1_lsbD;
+    end
+  end
+// Register FF: mhdma_request_stat_physical_addr_pc1_msb
+  logic [REG_DATA_W-1:0] r_mhdma_request_stat_physical_addr_pc1_msbD;
+  assign r_mhdma_request_stat_physical_addr_pc1_msbD       = r_mhdma_request_stat_physical_addr_pc1_msb_upd;
+  always_ff @(posedge clk) begin
+    if (!s_rst_n) begin
+      r_mhdma_request_stat_physical_addr_pc1_msb       <= mhdma_request_stat_physical_addr_pc1_msb_default;
+    end
+    else begin
+      r_mhdma_request_stat_physical_addr_pc1_msb       <= r_mhdma_request_stat_physical_addr_pc1_msbD;
     end
   end
 // Register FF: mhdma_lane_debug
@@ -1145,8 +1283,14 @@ import hpu_regif_core_eth_2in3_pkg::*;
           MHDMA_REQUEST_STAT_NB_CE_RECEIVED_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register mhdma_request_stat_nb_ce_received
             axil_rdataD = r_mhdma_request_stat_nb_ce_received;
           end
-          MHDMA_REQUEST_STAT_NOTIFY_TIMEOUT_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register mhdma_request_stat_notify_timeout
-            axil_rdataD = r_mhdma_request_stat_notify_timeout;
+          MHDMA_REQUEST_STAT_NB_READ_TO_HBM_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register mhdma_request_stat_nb_read_to_hbm
+            axil_rdataD = r_mhdma_request_stat_nb_read_to_hbm;
+          end
+          MHDMA_REQUEST_STAT_NB_WORDS_RECEIVED_PC_PC0_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register mhdma_request_stat_nb_words_received_pc_pc0
+            axil_rdataD = r_mhdma_request_stat_nb_words_received_pc_pc0;
+          end
+          MHDMA_REQUEST_STAT_NB_WORDS_RECEIVED_PC_PC1_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register mhdma_request_stat_nb_words_received_pc_pc1
+            axil_rdataD = r_mhdma_request_stat_nb_words_received_pc_pc1;
           end
           MHDMA_REQUEST_STAT_T_NOTIFY_TO_ACK_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register mhdma_request_stat_t_notify_to_ack
             axil_rdataD = r_mhdma_request_stat_t_notify_to_ack;
@@ -1156,6 +1300,27 @@ import hpu_regif_core_eth_2in3_pkg::*;
           end
           MHDMA_REQUEST_STAT_T_CE_FIRST_TO_LAST_PKT_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register mhdma_request_stat_t_ce_first_to_last_pkt
             axil_rdataD = r_mhdma_request_stat_t_ce_first_to_last_pkt;
+          end
+          MHDMA_REQUEST_STAT_T_RR_WAIT_WORDS_PC_PC0_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register mhdma_request_stat_t_rr_wait_words_pc_pc0
+            axil_rdataD = r_mhdma_request_stat_t_rr_wait_words_pc_pc0;
+          end
+          MHDMA_REQUEST_STAT_T_RR_WAIT_WORDS_PC_PC1_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register mhdma_request_stat_t_rr_wait_words_pc_pc1
+            axil_rdataD = r_mhdma_request_stat_t_rr_wait_words_pc_pc1;
+          end
+          MHDMA_REQUEST_STAT_NOTIFY_TIMEOUT_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register mhdma_request_stat_notify_timeout
+            axil_rdataD = r_mhdma_request_stat_notify_timeout;
+          end
+          MHDMA_REQUEST_STAT_PHYSICAL_ADDR_PC0_LSB_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register mhdma_request_stat_physical_addr_pc0_lsb
+            axil_rdataD = r_mhdma_request_stat_physical_addr_pc0_lsb;
+          end
+          MHDMA_REQUEST_STAT_PHYSICAL_ADDR_PC0_MSB_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register mhdma_request_stat_physical_addr_pc0_msb
+            axil_rdataD = r_mhdma_request_stat_physical_addr_pc0_msb;
+          end
+          MHDMA_REQUEST_STAT_PHYSICAL_ADDR_PC1_LSB_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register mhdma_request_stat_physical_addr_pc1_lsb
+            axil_rdataD = r_mhdma_request_stat_physical_addr_pc1_lsb;
+          end
+          MHDMA_REQUEST_STAT_PHYSICAL_ADDR_PC1_MSB_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register mhdma_request_stat_physical_addr_pc1_msb
+            axil_rdataD = r_mhdma_request_stat_physical_addr_pc1_msb;
           end
           MHDMA_LANE_DEBUG_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register mhdma_lane_debug
             axil_rdataD = r_mhdma_lane_debug;

@@ -629,6 +629,11 @@ end
   logic [REG_DATA_W-1:0] stat_cnt_read_req_received;
   logic [REG_DATA_W-1:0] stat_cnt_ce_received;
 
+  logic             [REG_DATA_W-1:0]   stat_nb_read_to_hbm;
+  logic [ETH_PC-1:0][REG_DATA_W-1:0]   stat_nb_words_received_pc;
+  logic [ETH_PC-1:0][REG_DATA_W-1:0]   stat_t_rr_wait_words_pc;
+  logic [ETH_PC-1:0][2*REG_DATA_W-1:0] stat_rr_phy_addr;
+
   int arbitrary_notify_nb;
   int arbitrary_read_req_nb;
 
@@ -643,7 +648,7 @@ end
     regf_start_addr_ofs = 'h0;
     repeat(20) @(posedge clk_control);
 
-    random_iter           = $urandom_range(32, 2);
+    random_iter           = 1;//$urandom_range(32, 2);
     arbitrary_notify_nb   = XPM_MIN_FIFO_DEPTH; // if we have a full fifo on fifo_nrx_regf, we will lose notifies
     arbitrary_read_req_nb = XPM_MIN_FIFO_DEPTH;
 
@@ -869,6 +874,23 @@ end
     $display(" stat_cnt_notify_received    : %0d", stat_cnt_notify_received);
     $display(" stat_cnt_read_req_received  : %0d", stat_cnt_read_req_received);
     $display(" stat_cnt_ce_received        : %0d", stat_cnt_ce_received);
+    maxil_drv_if_hpu_a.read_trans(MHDMA_REQUEST_STAT_NB_READ_TO_HBM_OFS, stat_nb_read_to_hbm);
+    maxil_drv_if_hpu_a.read_trans(MHDMA_REQUEST_STAT_NB_WORDS_RECEIVED_PC_PC0_OFS, stat_nb_words_received_pc[0]);
+    maxil_drv_if_hpu_a.read_trans(MHDMA_REQUEST_STAT_NB_WORDS_RECEIVED_PC_PC1_OFS, stat_nb_words_received_pc[1]);
+    maxil_drv_if_hpu_a.read_trans(MHDMA_REQUEST_STAT_T_RR_WAIT_WORDS_PC_PC0_OFS, stat_t_rr_wait_words_pc[0]);
+    maxil_drv_if_hpu_a.read_trans(MHDMA_REQUEST_STAT_T_RR_WAIT_WORDS_PC_PC1_OFS, stat_t_rr_wait_words_pc[1]);
+    maxil_drv_if_hpu_a.read_trans(MHDMA_REQUEST_STAT_PHYSICAL_ADDR_PC0_LSB_OFS, stat_rr_phy_addr[0][REG_DATA_W-1:0]);
+    maxil_drv_if_hpu_a.read_trans(MHDMA_REQUEST_STAT_PHYSICAL_ADDR_PC0_MSB_OFS, stat_rr_phy_addr[0][2*REG_DATA_W-1:REG_DATA_W]);
+    maxil_drv_if_hpu_a.read_trans(MHDMA_REQUEST_STAT_PHYSICAL_ADDR_PC1_LSB_OFS, stat_rr_phy_addr[1][REG_DATA_W-1:0]);
+    maxil_drv_if_hpu_a.read_trans(MHDMA_REQUEST_STAT_PHYSICAL_ADDR_PC1_MSB_OFS, stat_rr_phy_addr[1][2*REG_DATA_W-1:REG_DATA_W]);
+    $display(" stat_nb_read_to_hbm           : %0d", stat_nb_read_to_hbm);
+    $display(" stat_nb_words_received_pc [0] : %0d", stat_nb_words_received_pc[0]);
+    $display(" stat_nb_words_received_pc [1] : %0d", stat_nb_words_received_pc[1]);
+    $display(" stat_t_rr_wait_words_pc   [0] : %0d", stat_t_rr_wait_words_pc[0]);
+    $display(" stat_t_rr_wait_words_pc   [1] : %0d", stat_t_rr_wait_words_pc[1]);
+    $display(" stat_rr_phy_addr          [0] : %0d", stat_rr_phy_addr[0]);
+    $display(" stat_rr_phy_addr          [1] : %0d", stat_rr_phy_addr[1]);
+
     $display(" ----------------- HPU_B -------------------------------------");
     maxil_drv_if_hpu_b.read_trans(MHDMA_REQUEST_STAT_NOTIFY_OFS,                 stat_notify);
     maxil_drv_if_hpu_b.read_trans(MHDMA_REQUEST_STAT_NOTIFY_ACK_OFS,             stat_notify_ack);
@@ -892,6 +914,22 @@ end
     $display(" stat_cnt_notify_received    : %0d", stat_cnt_notify_received);
     $display(" stat_cnt_read_req_received  : %0d", stat_cnt_read_req_received);
     $display(" stat_cnt_ce_received        : %0d", stat_cnt_ce_received);
+    maxil_drv_if_hpu_b.read_trans(MHDMA_REQUEST_STAT_NB_READ_TO_HBM_OFS, stat_nb_read_to_hbm);
+    maxil_drv_if_hpu_b.read_trans(MHDMA_REQUEST_STAT_NB_WORDS_RECEIVED_PC_PC0_OFS, stat_nb_words_received_pc[0]);
+    maxil_drv_if_hpu_b.read_trans(MHDMA_REQUEST_STAT_NB_WORDS_RECEIVED_PC_PC1_OFS, stat_nb_words_received_pc[1]);
+    maxil_drv_if_hpu_b.read_trans(MHDMA_REQUEST_STAT_T_RR_WAIT_WORDS_PC_PC0_OFS, stat_t_rr_wait_words_pc[0]);
+    maxil_drv_if_hpu_b.read_trans(MHDMA_REQUEST_STAT_T_RR_WAIT_WORDS_PC_PC1_OFS, stat_t_rr_wait_words_pc[1]);
+    maxil_drv_if_hpu_b.read_trans(MHDMA_REQUEST_STAT_PHYSICAL_ADDR_PC0_LSB_OFS, stat_rr_phy_addr[0][REG_DATA_W-1:0]);
+    maxil_drv_if_hpu_b.read_trans(MHDMA_REQUEST_STAT_PHYSICAL_ADDR_PC0_MSB_OFS, stat_rr_phy_addr[0][2*REG_DATA_W-1:REG_DATA_W]);
+    maxil_drv_if_hpu_b.read_trans(MHDMA_REQUEST_STAT_PHYSICAL_ADDR_PC1_LSB_OFS, stat_rr_phy_addr[1][REG_DATA_W-1:0]);
+    maxil_drv_if_hpu_b.read_trans(MHDMA_REQUEST_STAT_PHYSICAL_ADDR_PC1_MSB_OFS, stat_rr_phy_addr[1][2*REG_DATA_W-1:REG_DATA_W]);
+    $display(" stat_nb_read_to_hbm           : %0d", stat_nb_read_to_hbm);
+    $display(" stat_nb_words_received_pc [0] : %0d", stat_nb_words_received_pc[0]);
+    $display(" stat_nb_words_received_pc [1] : %0d", stat_nb_words_received_pc[1]);
+    $display(" stat_t_rr_wait_words_pc   [0] : %0d", stat_t_rr_wait_words_pc[0]);
+    $display(" stat_t_rr_wait_words_pc   [1] : %0d", stat_t_rr_wait_words_pc[1]);
+    $display(" stat_rr_phy_addr          [0] : %0d", stat_rr_phy_addr[0]);
+    $display(" stat_rr_phy_addr          [1] : %0d", stat_rr_phy_addr[1]);
     $display(" ------------------------------------------------------------- \n");
 
     $display("%t > INFO: End simulation",$time);

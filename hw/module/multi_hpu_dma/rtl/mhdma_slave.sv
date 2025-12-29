@@ -56,9 +56,17 @@ module mhdma_slave
   output logic                                ce_valid,
   input  logic                                ce_ready,
   // statistics ---------------------------------------------------------------
+  // counters
+  output logic             [  REG_DATA_W-1:0] stat_nb_read_to_hbm,
+  output logic [ETH_PC-1:0][  REG_DATA_W-1:0] stat_nb_words_received_pc,
+  output logic [ETH_PC-1:0][  REG_DATA_W-1:0] stat_t_rr_wait_words_pc,
+  // rst
+  input  logic                                rst_nb_read_to_hbm,
+  input  logic [ETH_PC-1:0]                   rst_nb_words_received_pc,
   // register
   output logic [1:0]                          stat_fsm_notify_rx,
   output logic [1:0]                          stat_fsm_cem,
+  output logic [ETH_PC-1:0][2*REG_DATA_W-1:0] stat_rr_phy_addr,
   // Axi4 interface for NMU ---------------------------------------------------
   output logic [ETH_PC-1:0][  AXI4_ADD_W-1:0] m_axi4_araddr,
   output logic [ETH_PC-1:0][  AXI4_LEN_W-1:0] m_axi4_arlen,
@@ -309,9 +317,6 @@ module mhdma_slave
   // =========================================================================================== //
   // Read into HBM
   // all @mrmac domain
-  // TODO add status signals to know how much time we are not reading into fifo
-  // TODO add status signals to know how much time we are not reading into fifo
-  // TODO add status signals to know how much time we are not reading into fifo
   // =========================================================================================== //
   logic [RREQ_CMD_DATA_W-1:0] read_request_cmd;
   logic [       HPU_ID_W-1:0] rr_hpu_id;
@@ -360,7 +365,7 @@ module mhdma_slave
   generate
     for (genvar gen_rd=0; gen_rd<ETH_PC; gen_rd++) begin : gen_ce_reads
       logic [$clog2(PC_NB_READS[gen_rd]):0] axi_read_cnt;
-      logic                                                axi_read;
+      logic                                 axi_read;
 
       // Counts the number of clock cycles that must perform reads taking account bursts
       // because we decrement from axi4_read_pc we add one to count all words
@@ -655,5 +660,87 @@ module mhdma_slave
   // =========================================================================================== //
   assign stat_fsm_notify_rx  = nrx_state;
   assign stat_fsm_cem        = cem_state;
+
+  logic [REG_DATA_W-1:0] nb_read_to_hbm;
+  always_ff @(posedge clk_mrmac) begin
+    if (~resetn_mrmac) begin
+      nb_read_to_hbm <= 'h0;
+    end else begin
+      if (rst_nb_read_to_hbm) begin
+        nb_read_to_hbm <= 'h0;
+      end else begin
+        if ((gen_ce_reads[0].axi_read & m_axi4_arready[0] & m_axi4_arvalid[0]) | (gen_ce_reads[1].axi_read & m_axi4_arready[1] & m_axi4_arvalid[1])) begin
+          nb_read_to_hbm <= nb_read_to_hbm + 1;
+        end
+      end
+    end
+  end
+
+  logic [ETH_PC-1:0][REG_DATA_W-1:0] nb_words_received_pc;
+  generate
+    for (genvar gen_i=0; gen_i<ETH_PC; gen_i++) begin : gen_i_nb_words_received
+      always_ff @(posedge clk_mrmac) begin
+        if (~resetn_mrmac) begin
+          nb_words_received_pc[gen_i] <= 'h0;
+        end else begin
+          if (rst_nb_words_received_pc[gen_i]) begin
+            nb_words_received_pc[gen_i] <= 'h0;
+          end else begin
+            if (m_axi4_rready[gen_i] & m_axi4_rvalid[gen_i]) begin
+              nb_words_received_pc[gen_i] <= nb_words_received_pc[gen_i] + 1;
+            end
+          end
+        end
+      end
+    end
+  endgenerate
+
+  // time waiting for words per pc
+  // temps entre arvalid et rvalid
+  logic [ETH_PC-1:0]                 t_wait_words_en;
+  logic [ETH_PC-1:0][REG_DATA_W-1:0] t_rr_wait_words_pc;
+  generate
+    for (genvar gen_i=0; gen_i<ETH_PC; gen_i++) begin : gen_i_t_wait_for_words_pc
+
+      // note that if we read several times we will include it in the counter
+      always_ff @(posedge clk_mrmac) begin
+        if(~resetn_mrmac) begin
+          t_wait_words_en[gen_i] <= 1'b0;
+        end else begin
+          if (m_axi4_arvalid[gen_i]) begin
+            t_wait_words_en[gen_i] <= 1'b1;
+          end else if (m_axi4_rvalid[gen_i]) begin
+            t_wait_words_en[gen_i] <= 1'b0;
+          end
+        end
+      end
+
+
+      always_ff @(posedge clk_mrmac) begin
+        if (~resetn_mrmac) begin
+          t_rr_wait_words_pc[gen_i] <= 'h0;
+        end else begin
+          if(t_wait_words_en[gen_i]) begin
+            t_rr_wait_words_pc[gen_i] <= t_rr_wait_words_pc[gen_i] +1;
+          end
+        end
+      end
+    end
+  endgenerate
+
+  logic [ETH_PC-1:0][2*REG_DATA_W-1:0] rr_phy_addr;
+  generate
+    for (genvar gen_i=0; gen_i<ETH_PC; gen_i++) begin : gen_i_phy_addr
+      assign rr_phy_addr[gen_i] = phy_addr[gen_i];
+    end
+  endgenerate
+
+  assign stat_rr_phy_addr[0]          = rr_phy_addr[0];
+  assign stat_rr_phy_addr[1]          = rr_phy_addr[1];
+  assign stat_nb_read_to_hbm          = nb_read_to_hbm;
+  assign stat_nb_words_received_pc[0] = nb_words_received_pc[0];
+  assign stat_nb_words_received_pc[1] = nb_words_received_pc[1];
+  assign stat_t_rr_wait_words_pc[0] = t_rr_wait_words_pc[0];
+  assign stat_t_rr_wait_words_pc[1] = t_rr_wait_words_pc[1];
 
 endmodule

@@ -75,10 +75,14 @@ module mhdma_bridge
   output logic [REG_DATA_W-1:0]                   stat_cnt_read_req_received,
   output logic [REG_DATA_W-1:0]                   stat_cnt_ce_received,
 
+  output logic             [REG_DATA_W-1:0]       stat_nb_read_to_hbm,
+  output logic [ETH_PC-1:0][REG_DATA_W-1:0]       stat_nb_words_received_pc,
+
   // timing
   output logic [REG_DATA_W-1:0]                   stat_t_notify_to_ack,
   output logic [REG_DATA_W-1:0]                   stat_t_rr_to_ce_received,
   output logic [REG_DATA_W-1:0]                   stat_t_ce_first_to_last_pkt,
+  output logic [ETH_PC-1:0][REG_DATA_W-1:0]       stat_t_rr_wait_words_pc,
 
   // reset counters
   input  logic                                    rst_cnt_notify,
@@ -89,8 +93,11 @@ module mhdma_bridge
   input  logic                                    rst_cnt_notify_received,
   input  logic                                    rst_cnt_read_req_received,
   input  logic                                    rst_cnt_ce_received,
+  input  logic                                    rst_nb_read_to_hbm,
+  input  logic [ETH_PC-1:0]                       rst_nb_words_received_pc,
   // registers
   output logic [REG_DATA_W-1:0]                   stat_reg_fsm,
+  output logic [ETH_PC-1:0][2*REG_DATA_W-1:0]     stat_rr_phy_addr,
   // statistics ---------------------------------------------------------------
   input  logic                                    clear_interrupt_notify,
   output logic                                    interrupt_notify,
@@ -376,9 +383,17 @@ module mhdma_bridge
     .ce_ready                       (ce_ready                                 ),
     .ce_valid                       (ce_valid                                 ),
     // statistics -------------------------------------------------------------
+    // counters
+    .stat_nb_read_to_hbm            (stat_nb_read_to_hbm                      ),
+    .stat_nb_words_received_pc      (stat_nb_words_received_pc                ),
+    .stat_t_rr_wait_words_pc        (stat_t_rr_wait_words_pc                  ),
+    // rst
+    .rst_nb_read_to_hbm             (rst_nb_read_to_hbm                       ),
+    .rst_nb_words_received_pc       (rst_nb_words_received_pc                 ),
     // register
     .stat_fsm_notify_rx             (stat_fsm_notify_rx                       ),
     .stat_fsm_cem                   (stat_fsm_cem                             ),
+    .stat_rr_phy_addr               (stat_rr_phy_addr                         ),
     // AXI4-4 full read interface ---------------------------------------------
     .m_axi4_araddr                  (m_axi4_araddr                            ),
     .m_axi4_arlen                   (m_axi4_arlen                             ),

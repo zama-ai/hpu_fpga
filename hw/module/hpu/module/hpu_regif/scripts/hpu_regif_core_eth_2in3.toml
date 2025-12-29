@@ -207,13 +207,19 @@ offset= 0x100
   read_access="ReadNotify"
   write_access="None"
   default={Cst=0x0}
-
-[section.mhdma_request.register.stat_notify_timeout]
-  description="timeout counter on notify"
+[section.mhdma_request.register.stat_nb_read_to_hbm]
+  description="counter of number of reads to HBM executed"
   owner="Kernel"
   read_access="ReadNotify"
   write_access="None"
   default={Cst=0x0}
+[section.mhdma_request.register.stat_nb_words_received_pc]
+  description="counter of number of words received by HBM"
+  owner="Kernel"
+  read_access="ReadNotify"
+  write_access="None"
+  default={Cst=0x0}
+  duplicate=["_pc0", "_pc1"]
 
 [section.mhdma_request.register.stat_t_notify_to_ack]
   description="time between notify tlast and ack reception in decoder"
@@ -233,6 +239,28 @@ offset= 0x100
   read_access="Read"
   write_access="None"
   default={Cst=0x0}
+[section.mhdma_request.register.stat_t_rr_wait_words_pc]
+  description="time spent waiting for reads in hbm"
+  owner="Kernel"
+  read_access="Read"
+  write_access="None"
+  default={Cst=0x0}
+  duplicate=["_pc0", "_pc1"]
+
+[section.mhdma_request.register.stat_notify_timeout]
+  description="timeout counter on notify"
+  owner="Kernel"
+  read_access="ReadNotify"
+  write_access="None"
+  default={Cst=0x0}
+
+[section.mhdma_request.register.stat_physical_addr]
+  description="timeout counter on notify"
+  owner="Kernel"
+  read_access="Read"
+  write_access="None"
+  default={Cst=0x0}
+  duplicate=["_pc0_lsb", "_pc0_msb","_pc1_lsb", "_pc1_msb"]
 
 # =====================================================================================================================
 [section.mhdma_lane]

@@ -140,6 +140,9 @@ module multi_hpu_dma
   logic [REG_DATA_W-1:0] cnt_notify_received_eth;
   logic [REG_DATA_W-1:0] cnt_read_req_received_eth;
   logic [REG_DATA_W-1:0] cnt_ce_received_eth;
+  logic             [REG_DATA_W-1:0] cnt_nb_read_to_hbm_eth;
+  logic [ETH_PC-1:0][REG_DATA_W-1:0] cnt_nb_words_received_pc_eth;
+
   // counters @cfg
   logic [REG_DATA_W-1:0] cnt_notify_cfg;
   logic [REG_DATA_W-1:0] cnt_notify_ack_cfg;
@@ -149,6 +152,8 @@ module multi_hpu_dma
   logic [REG_DATA_W-1:0] cnt_notify_received_cfg;
   logic [REG_DATA_W-1:0] cnt_read_req_received_cfg;
   logic [REG_DATA_W-1:0] cnt_ce_received_cfg;
+  logic             [REG_DATA_W-1:0] cnt_nb_read_to_hbm_cfg;
+  logic [ETH_PC-1:0][REG_DATA_W-1:0] cnt_nb_words_received_pc_cfg;
 
   // reset counters @eth
   logic                 rst_cnt_notify_eth;
@@ -159,6 +164,8 @@ module multi_hpu_dma
   logic                 rst_cnt_notify_received_eth;
   logic                 rst_cnt_read_req_received_eth;
   logic                 rst_cnt_ce_received_eth;
+  logic                 rst_nb_read_to_hbm_eth;
+  logic [ETH_PC-1:0]    rst_nb_words_received_pc_eth;
   // reset counters @cfg
   logic                 rst_cnt_notify_cfg;
   logic                 rst_cnt_notify_ack_cfg;
@@ -168,23 +175,26 @@ module multi_hpu_dma
   logic                 rst_cnt_notify_received_cfg;
   logic                 rst_cnt_read_req_received_cfg;
   logic                 rst_cnt_ce_received_cfg;
+  logic                 rst_nb_read_to_hbm_cfg;
+  logic [ETH_PC-1:0]    rst_nb_words_received_pc_cfg;
   // Statistics Registers -------------------------------------------------------------------------
   //timing @eth
   logic [REG_DATA_W-1:0] t_notify_to_ack_eth;
   logic [REG_DATA_W-1:0] t_rr_to_ce_received_eth;
   logic [REG_DATA_W-1:0] t_ce_first_to_last_pkt_eth;
+  logic [ETH_PC-1:0][REG_DATA_W-1:0] t_rr_wait_words_pc_eth;
   //timing @cfg
   logic [REG_DATA_W-1:0] t_notify_to_ack_cfg;
   logic [REG_DATA_W-1:0] t_rr_to_ce_received_cfg;
   logic [REG_DATA_W-1:0] t_ce_first_to_last_pkt_cfg;
+  logic [ETH_PC-1:0][REG_DATA_W-1:0] t_rr_wait_words_pc_cfg;
 
-  // FSM value
+  // registers
   logic [REG_DATA_W-1:0] r_fsm_value_eth;
   logic [REG_DATA_W-1:0] r_fsm_value_cfg;
 
-  logic [15:0] r_cnt_notify_ack;
-  logic [15:0] r_cnt_notify_read;
-  logic        rst_cnt_notify;
+  logic [ETH_PC-1:0][2*REG_DATA_W-1:0] r_rr_phy_addr_eth;
+  logic [ETH_PC-1:0][2*REG_DATA_W-1:0] r_rr_phy_addr_cfg;
 
   // signals derived from registers
   logic                 tx_loop;
@@ -323,12 +333,29 @@ module multi_hpu_dma
     .r_mhdma_request_stat_nb_read_req_received_rd_en(rst_cnt_read_req_received_cfg                ),
     .r_mhdma_request_stat_nb_ce_received_upd        (cnt_ce_received_cfg                          ),
     .r_mhdma_request_stat_nb_ce_received_rd_en      (rst_cnt_ce_received_cfg                      ),
+
+    .r_mhdma_request_stat_nb_read_to_hbm_upd             (cnt_nb_read_to_hbm_cfg                  ),
+    .r_mhdma_request_stat_nb_read_to_hbm_rd_en           (rst_nb_read_to_hbm_cfg                  ),
+
+    .r_mhdma_request_stat_nb_words_received_pc_pc0_upd   (cnt_nb_words_received_pc_cfg[0]         ),
+    .r_mhdma_request_stat_nb_words_received_pc_pc0_rd_en (rst_nb_words_received_pc_cfg[0]         ),
+    .r_mhdma_request_stat_nb_words_received_pc_pc1_upd   (cnt_nb_words_received_pc_cfg[1]         ),
+    .r_mhdma_request_stat_nb_words_received_pc_pc1_rd_en (rst_nb_words_received_pc_cfg[1]         ),
+
     // timing
     .r_mhdma_request_stat_t_notify_to_ack_upd       (t_notify_to_ack_cfg                          ),
     .r_mhdma_request_stat_t_rr_to_ce_received_upd   (t_rr_to_ce_received_cfg                      ),
     .r_mhdma_request_stat_t_ce_first_to_last_pkt_upd(t_ce_first_to_last_pkt_cfg                   ),
+    .r_mhdma_request_stat_t_rr_wait_words_pc_pc0_upd(t_rr_wait_words_pc_cfg[0]                    ),
+    .r_mhdma_request_stat_t_rr_wait_words_pc_pc1_upd(t_rr_wait_words_pc_cfg[1]                    ),
+
     // registers
     .r_mhdma_system_fsm_value_upd                   (r_fsm_value_cfg                              ),
+    .r_mhdma_request_stat_physical_addr_pc0_lsb_upd (r_rr_phy_addr_cfg[0][REG_DATA_W-1:0]           ),
+    .r_mhdma_request_stat_physical_addr_pc0_msb_upd (r_rr_phy_addr_cfg[0][2*REG_DATA_W-1:REG_DATA_W]),
+    .r_mhdma_request_stat_physical_addr_pc1_lsb_upd (r_rr_phy_addr_cfg[1][REG_DATA_W-1:0]           ),
+    .r_mhdma_request_stat_physical_addr_pc1_msb_upd (r_rr_phy_addr_cfg[1][2*REG_DATA_W-1:REG_DATA_W]),
+
     // from trace module --------------------------------------------------------------------------
     .r_fifo_write_number_of_words          (r_nb_word                                             ), // to be removed or renamed?
     .r_fifo_write_words_to_write_a         (r_wr_word_a                                           ), // to be removed or renamed?
@@ -376,9 +403,6 @@ module multi_hpu_dma
       end
     end
   end
-
-  // clear statistic counter on notify //TODO
-  assign rst_cnt_notify = (s_axil_dma_araddr == MHDMA_REQUEST_STAT_NOTIFY_OFS) && s_axil_dma_arready;
 
   // for the trace module --
   // read_ack is a pulse that partly controls the rx_fifo read, must be in configuration clock freq
@@ -612,6 +636,58 @@ module multi_hpu_dma
     .dest_out_bin(cnt_ce_received_cfg) // REG_DATA_W-bit output: binary value in dest domain
   );//temporary
 
+  xpm_cdc_single_wrapper #(
+    .CDC_SYNC_STAGES ( 2 ) ,
+    .SRC_INPUT_REG   ( 0 )
+  ) cdc_rst_cnt_nb_read_to_hbm (
+    .src_clk  ( clk_eth_cfg     ) ,
+    .dest_clk ( clk_eth_mrmac ) ,
+    .src_in   ( rst_nb_read_to_hbm_cfg ) ,
+    .dest_out ( rst_nb_read_to_hbm_eth )
+  );//temporary
+  xpm_cdc_gray #(
+    .DEST_SYNC_FF(4),                   // Range: 2-10 synchronizer stages
+    .INIT_SYNC_FF(0),                   // 0=disable simulation init values
+    .REG_OUTPUT(0),                     // 0=combinatorial output, 1=registered output
+    .SIM_ASSERT_CHK(0),                 // 0=disable simulation messages
+    .SIM_LOSSLESS_GRAY_CHK(0),          // 0=disable lossless check
+    .WIDTH(REG_DATA_W)                   // REG_DATA_W-bit counter width (range: 2-32)
+  ) xpm_cdc_gray_cnt_nb_read_to_hbm (
+    .src_clk(clk_eth_mrmac),            // 1-bit input: source clock
+    .src_in_bin(cnt_nb_read_to_hbm_eth),  // REG_DATA_W-bit input: binary counter to synchronize
+
+    .dest_clk(clk_eth_cfg),             // 1-bit input: destination clock
+    .dest_out_bin(cnt_nb_read_to_hbm_cfg) // REG_DATA_W-bit output: binary value in dest domain
+  );//temporary
+
+  generate
+    for (genvar gen_i=0; gen_i<ETH_PC; gen_i++) begin : gen_i_nb_words_received
+      xpm_cdc_single_wrapper #(
+        .CDC_SYNC_STAGES ( 2 ) ,
+        .SRC_INPUT_REG   ( 0 )
+      ) cdc_rst_cnt_nb_words_received_pc (
+        .src_clk  ( clk_eth_cfg     ) ,
+        .dest_clk ( clk_eth_mrmac ) ,
+        .src_in   ( rst_nb_words_received_pc_cfg[gen_i] ) ,
+        .dest_out ( rst_nb_words_received_pc_eth[gen_i] )
+      );//temporary
+      xpm_cdc_gray #(
+        .DEST_SYNC_FF(4),                   // Range: 2-10 synchronizer stages
+        .INIT_SYNC_FF(0),                   // 0=disable simulation init values
+        .REG_OUTPUT(0),                     // 0=combinatorial output, 1=registered output
+        .SIM_ASSERT_CHK(0),                 // 0=disable simulation messages
+        .SIM_LOSSLESS_GRAY_CHK(0),          // 0=disable lossless check
+        .WIDTH(REG_DATA_W)                   // REG_DATA_W-bit counter width (range: 2-32)
+      ) xpm_cdc_gray_cnt_nb_words_received_pc (
+        .src_clk(clk_eth_mrmac),                           // 1-bit input: source clock
+        .src_in_bin(cnt_nb_words_received_pc_eth[gen_i]),  // REG_DATA_W-bit input: binary counter to synchronize
+
+        .dest_clk(clk_eth_cfg),                            // 1-bit input: destination clock
+        .dest_out_bin(cnt_nb_words_received_pc_cfg[gen_i]) // REG_DATA_W-bit output: binary value in dest domain
+      );//temporary
+    end
+  endgenerate
+
   // Registers ETH -> CFG =========================================================================
   xpm_cdc_gray #(
     .DEST_SYNC_FF(4),                   // Range: 2-10 synchronizer stages
@@ -669,6 +745,55 @@ module multi_hpu_dma
     .dest_clk(clk_eth_cfg),                 // 1-bit input: destination clock
     .dest_out_bin(t_ce_first_to_last_pkt_cfg)  // REG_DATA_W-bit output: binary value in dest domain
   );//temporary
+
+  generate
+    for (genvar gen_i=0; gen_i<ETH_PC; gen_i++) begin
+      xpm_cdc_gray #(
+        .DEST_SYNC_FF(4),                   // Range: 2-10 synchronizer stages
+        .INIT_SYNC_FF(0),                   // 0=disable simulation init values
+        .REG_OUTPUT(0),                     // 0=combinatorial output, 1=registered output
+        .SIM_ASSERT_CHK(0),                 // 0=disable simulation messages
+        .SIM_LOSSLESS_GRAY_CHK(0),          // 0=disable lossless check
+        .WIDTH(REG_DATA_W)                    // REG_DATA_W-bit counter width (range: 2-32)
+      ) xpm_cdc_gray_rr_phy_addr_lsb (
+        .src_clk(clk_eth_mrmac),                // 1-bit input: source clock
+        .src_in_bin(r_rr_phy_addr_eth[gen_i][REG_DATA_W-1:0]),  // REG_DATA_W-bit input: binary counter to synchronize
+
+        .dest_clk(clk_eth_cfg),                 // 1-bit input: destination clock
+        .dest_out_bin(r_rr_phy_addr_cfg[gen_i][REG_DATA_W-1:0]) // REG_DATA_W-bit output: binary value in dest domain
+      );//temporary
+      xpm_cdc_gray #(
+        .DEST_SYNC_FF(4),                   // Range: 2-10 synchronizer stages
+        .INIT_SYNC_FF(0),                   // 0=disable simulation init values
+        .REG_OUTPUT(0),                     // 0=combinatorial output, 1=registered output
+        .SIM_ASSERT_CHK(0),                 // 0=disable simulation messages
+        .SIM_LOSSLESS_GRAY_CHK(0),          // 0=disable lossless check
+        .WIDTH(REG_DATA_W)                    // REG_DATA_W-bit counter width (range: 2-32)
+      ) xpm_cdc_gray_rr_phy_addr_msb (
+        .src_clk(clk_eth_mrmac),                // 1-bit input: source clock
+        .src_in_bin(r_rr_phy_addr_eth[gen_i][2*REG_DATA_W-1:REG_DATA_W]),  // REG_DATA_W-bit input: binary counter to synchronize
+
+        .dest_clk(clk_eth_cfg),                 // 1-bit input: destination clock
+        .dest_out_bin(r_rr_phy_addr_cfg[gen_i][2*REG_DATA_W-1:REG_DATA_W]) // REG_DATA_W-bit output: binary value in dest domain
+      );//temporary
+
+    xpm_cdc_gray #(
+      .DEST_SYNC_FF(4),                   // Range: 2-10 synchronizer stages
+      .INIT_SYNC_FF(0),                   // 0=disable simulation init values
+      .REG_OUTPUT(0),                     // 0=combinatorial output, 1=registered output
+      .SIM_ASSERT_CHK(0),                 // 0=disable simulation messages
+      .SIM_LOSSLESS_GRAY_CHK(0),          // 0=disable lossless check
+      .WIDTH(REG_DATA_W)                  // REG_DATA_W-bit counter width (range: 2-32)
+    ) xpm_cdc_gray_t_rr_wait_words_pc (
+      .src_clk(clk_eth_mrmac),                     // 1-bit input: source clock
+      .src_in_bin(t_rr_wait_words_pc_eth[gen_i]),  // REG_DATA_W-bit input: binary counter to synchronize
+
+      .dest_clk(clk_eth_cfg),                      // 1-bit input: destination clock
+      .dest_out_bin(t_rr_wait_words_pc_cfg[gen_i]) // REG_DATA_W-bit output: binary value in dest domain
+    );//temporary
+    end
+  endgenerate
+
   // ==============================================================================================
 
   // ============================================================================================ //
@@ -747,6 +872,9 @@ module multi_hpu_dma
     .stat_cnt_notify_received       (cnt_notify_received_eth                                     ),
     .stat_cnt_read_req_received     (cnt_read_req_received_eth                                   ),
     .stat_cnt_ce_received           (cnt_ce_received_eth                                         ),
+    .stat_nb_read_to_hbm            (cnt_nb_read_to_hbm_eth                                      ),
+    .stat_nb_words_received_pc      (cnt_nb_words_received_pc_eth                                ),
+    .stat_t_rr_wait_words_pc        (t_rr_wait_words_pc_eth                                      ),
     // timing
     .stat_t_notify_to_ack           (t_notify_to_ack_eth                                         ),
     .stat_t_rr_to_ce_received       (t_rr_to_ce_received_eth                                     ),
@@ -760,8 +888,11 @@ module multi_hpu_dma
     .rst_cnt_notify_received        (rst_cnt_notify_received_eth                                 ),
     .rst_cnt_read_req_received      (rst_cnt_read_req_received_eth                               ),
     .rst_cnt_ce_received            (rst_cnt_ce_received_eth                                     ),
+    .rst_nb_read_to_hbm             (rst_nb_read_to_hbm_eth                                      ),
+    .rst_nb_words_received_pc       (rst_nb_words_received_pc_eth                                ),
     // registers
     .stat_reg_fsm                   (r_fsm_value_eth                                             ),
+    .stat_rr_phy_addr               (r_rr_phy_addr_eth                                           ),
     // QSFP interface one lane --------------------------------------------------------------------
     // tx
     .qsfp_tx_tdata                  (axis_tx_tdata                                               ),
