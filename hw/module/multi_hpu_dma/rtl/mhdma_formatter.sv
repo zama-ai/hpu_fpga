@@ -135,7 +135,7 @@ module mhdma_formatter
     end else begin
       if (okay_to_send_request & ~end_of_packet & qsfp_tx_tready) begin
         tx_cnt <= tx_cnt+1;
-      end else begin
+      end else if (end_of_packet) begin
         tx_cnt <= 'h0;
       end
     end
@@ -154,15 +154,15 @@ module mhdma_formatter
   end
 
   // we have to trigger signal one cycle earlier to have okay_to_send_request on time
-  assign stop_sending_small_packet     = (tx_cnt == NB_WORDS_MIN)      & small_packet;
-  assign stop_sending_ce_full_frame    = (tx_cnt == NB_WORDS_FULL)     & ct_emission_allowed;
-  assign stop_sending_ce_partial_frame = (tx_cnt == (NB_WORDS_PARTIAL) & ce_last_packet);
+  assign stop_sending_small_packet     = qsfp_tx_tready & (tx_cnt == NB_WORDS_MIN)      & small_packet;
+  assign stop_sending_ce_full_frame    = qsfp_tx_tready & (tx_cnt == NB_WORDS_FULL)     & ct_emission_allowed;
+  assign stop_sending_ce_partial_frame = qsfp_tx_tready & (tx_cnt == (NB_WORDS_PARTIAL) & ce_last_packet);
 
   assign end_of_packet = stop_sending_small_packet | stop_sending_ce_full_frame | stop_sending_ce_partial_frame;
 
-  assign tx_small_last  = (tx_cnt == NB_WORDS_MIN);
-  assign tx_header_last = (tx_cnt == NB_WORDS_CUST_HEADER_SIZE);
-  assign tx_last_word   = (ct_emission_allowed & ~ce_last_packet) ? (tx_cnt == NB_WORDS_FULL) : (tx_cnt == NB_WORDS_PARTIAL);
+  assign tx_small_last  = qsfp_tx_tready & (tx_cnt == NB_WORDS_MIN);
+  assign tx_header_last = qsfp_tx_tready & (tx_cnt == NB_WORDS_CUST_HEADER_SIZE);
+  assign tx_last_word   = (ct_emission_allowed & ~ce_last_packet) ? qsfp_tx_tready & (tx_cnt == NB_WORDS_FULL) : qsfp_tx_tready & (tx_cnt == NB_WORDS_PARTIAL);
 
   assign header_sop = format_header.valid | notify_ack_pulse | ce_start_of_header | retry_notify | retry_read_request;
 
@@ -229,7 +229,7 @@ module mhdma_formatter
     end
   end
 
-  assign ce_start_emission = (ce_seq_num == 0) & (ce_valid & ~ce_ready) & ~ce_first_header_sent;
+  assign ce_start_emission = qsfp_tx_tready & (ce_seq_num == 0) & (ce_valid & ~ce_ready) & ~ce_first_header_sent;
 
   // =========================================================================================== //
   // Notify ACK (NACK)
@@ -396,7 +396,7 @@ module mhdma_formatter
     if (~resetn_mrmac) begin
       ce_word_counter <= 'h0;
     end else begin
-      if (ce_valid & ce_ready) begin
+      if (qsfp_tx_tready & (ce_valid & ce_ready)) begin
         if (ce_word_counter == NB_WORDS_PAYLOAD-1) begin
           ce_word_counter <= 'h0;
         end else begin
@@ -417,7 +417,7 @@ module mhdma_formatter
     if (~resetn_mrmac) begin
       ce_stalling <= 1'b0;
     end else begin
-      if (tx_cnt == NB_WORDS_FULL) begin
+      if (qsfp_tx_tready & (tx_cnt == NB_WORDS_FULL)) begin
         ce_stalling <= 1'b1;
       end else if (tx_header_last) begin
         ce_stalling <= 1'b0;
@@ -548,10 +548,12 @@ module mhdma_formatter
   assign tx_valid = ~(tx_cnt == 'h0);
 
   always_ff @(posedge clk_mrmac) begin
-    tx_tdata_reg      <= mhdma_pkg::byte_swap(tx_data);
-    tx_tvalid_reg     <= tx_valid;
-    tx_tkeep_user_reg <= {3'b000, tx_byte_enable};
-    tx_tlast_reg      <= small_packet  ? tx_small_last: tx_last;
+    if (qsfp_tx_tready) begin
+      tx_tdata_reg      <= mhdma_pkg::byte_swap(tx_data);
+      tx_tvalid_reg     <= tx_valid;
+      tx_tkeep_user_reg <= {3'b000, tx_byte_enable};
+      tx_tlast_reg      <= small_packet  ? tx_small_last: tx_last;
+    end
   end
 
   assign qsfp_tx_tdata      = tx_tdata_reg;

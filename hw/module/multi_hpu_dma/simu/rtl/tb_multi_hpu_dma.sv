@@ -33,6 +33,8 @@ module tb_multi_hpu_dma;
   localparam int SIM_MAX_FRAME_CYCLES = 256;
   localparam int LOOP_NOTIFY = 10;
 
+  localparam int BREAK_RDY_VLD = 0;
+
   // ciphertext memories -------------------------------------------------------------------------
   localparam int MEM_WR_CMD_BUF_DEPTH = 4;  // Should be >= 1
   localparam int MEM_RD_CMD_BUF_DEPTH = 1;  // Should be >= 1
@@ -172,23 +174,29 @@ module tb_multi_hpu_dma;
   logic [QSFP_LANE_NB-1:0][MRMAC_TKEEP_W-1:0] qsfp_tx_tkeep_user;
   logic [QSFP_LANE_NB-1:0]                    qsfp_tx_tlast;
   logic [QSFP_LANE_NB-1:0]                    qsfp_tx_tvalid;
+
   logic [QSFP_LANE_NB-1:0][MRMAC_AXIS_W-1:0 ] qsfp_tx_tdata_delayed;
   logic [QSFP_LANE_NB-1:0][MRMAC_TKEEP_W-1:0] qsfp_tx_tkeep_user_delayed;
   logic [QSFP_LANE_NB-1:0]                    qsfp_tx_tlast_delayed;
   logic [QSFP_LANE_NB-1:0]                    qsfp_tx_tvalid_delayed;
-  logic [QSFP_LANE_NB-1:0]                    sim_qsfp_tx_tready;
+  logic [QSFP_LANE_NB-1:0][MRMAC_AXIS_W-1:0 ] qsfp_tx_tdata_rdyvld;
+  logic [QSFP_LANE_NB-1:0][MRMAC_TKEEP_W-1:0] qsfp_tx_tkeep_user_rdyvld;
+  logic [QSFP_LANE_NB-1:0]                    qsfp_tx_tlast_rdyvld;
+  logic [QSFP_LANE_NB-1:0]                    qsfp_tx_tvalid_rdyvld;
   // == RX
   logic [QSFP_LANE_NB-1:0][MRMAC_AXIS_W-1:0 ] qsfp_rx_tdata;
   logic [QSFP_LANE_NB-1:0][MRMAC_TKEEP_W-1:0] qsfp_rx_tkeep_user;
   logic [QSFP_LANE_NB-1:0]                    qsfp_rx_tlast;
   logic [QSFP_LANE_NB-1:0]                    qsfp_rx_tvalid;
+
   logic [QSFP_LANE_NB-1:0][MRMAC_AXIS_W-1:0 ] qsfp_rx_tdata_delayed;
   logic [QSFP_LANE_NB-1:0][MRMAC_TKEEP_W-1:0] qsfp_rx_tkeep_user_delayed;
   logic [QSFP_LANE_NB-1:0]                    qsfp_rx_tlast_delayed;
   logic [QSFP_LANE_NB-1:0]                    qsfp_rx_tvalid_delayed;
-
-  // Tin this test will always be ready as in reception there is no backpressure from MRMAC
-  assign sim_qsfp_tx_tready = 4'b1111;
+  logic [QSFP_LANE_NB-1:0][MRMAC_AXIS_W-1:0 ] qsfp_rx_tdata_rdyvld;
+  logic [QSFP_LANE_NB-1:0][MRMAC_TKEEP_W-1:0] qsfp_rx_tkeep_user_rdyvld;
+  logic [QSFP_LANE_NB-1:0]                    qsfp_rx_tlast_rdyvld;
+  logic [QSFP_LANE_NB-1:0]                    qsfp_rx_tvalid_rdyvld;
 
   // AXI4 to HBM: HPUA ----------------------------------------------------------------------------
   // Read channel
@@ -300,6 +308,19 @@ module tb_multi_hpu_dma;
   logic [HPU_NB-1:0][REG_DATA_W-1:00] reset_monitor;
 
   // HPU A ----------------------------------------------------------------------------------------
+  logic [QSFP_LANE_NB-1:0] [MRMAC_AXIS_W-1:0]  data_buf_a;
+  logic [QSFP_LANE_NB-1:0] [MRMAC_TKEEP_W-1:0] tkeep_buf_a;
+  logic [QSFP_LANE_NB-1:0]                     last_buf_a;
+  logic [QSFP_LANE_NB-1:0]                     has_data_a;
+  logic [QSFP_LANE_NB-1:0]                     random_valid_en_a;
+  logic [QSFP_LANE_NB-1:0]                     sim_qsfp_tx_tready_a;
+
+  logic [QSFP_LANE_NB-1:0] [MRMAC_AXIS_W-1:0]  data_buf_b;
+  logic [QSFP_LANE_NB-1:0] [MRMAC_TKEEP_W-1:0] tkeep_buf_b;
+  logic [QSFP_LANE_NB-1:0]                     last_buf_b;
+  logic [QSFP_LANE_NB-1:0]                     has_data_b;
+  logic [QSFP_LANE_NB-1:0]                     random_valid_en_b;
+  logic [QSFP_LANE_NB-1:0]                     sim_qsfp_tx_tready_b;
   multi_hpu_dma #(
     .FIFO_DEPTH(FIFO_DEPTH)
   ) hpu_a (
@@ -361,7 +382,7 @@ module tb_multi_hpu_dma;
     .qsfp_tx_tkeep_user(qsfp_tx_tkeep_user      ),
     .qsfp_tx_tlast     (qsfp_tx_tlast           ),
     .qsfp_tx_tvalid    (qsfp_tx_tvalid          ),
-    .qsfp_tx_tready    (sim_qsfp_tx_tready      ),
+    .qsfp_tx_tready    (sim_qsfp_tx_tready_a    ),
 
     .qsfp_rx_tdata     (qsfp_rx_tdata_delayed           ),
     .qsfp_rx_tkeep_user(qsfp_rx_tkeep_user_delayed      ),
@@ -376,6 +397,55 @@ module tb_multi_hpu_dma;
     .gt_rx_reset_done    (gt_rx_reset_done[0]    ),
     .gt_tx_reset_done    (gt_tx_reset_done[0]    )
 );
+
+  generate
+  // Random valid control (adjust probability as needed)
+    for (genvar gen_i=0; gen_i<QSFP_LANE_NB; gen_i=gen_i+1) begin
+      always_ff @(posedge clk_mrmac) begin
+        if (~s_rstn_mrmac) begin
+          data_buf_a[gen_i]        <= 'h0;
+          tkeep_buf_a[gen_i]       <= 'h0;
+          last_buf_a[gen_i]        <= 'h0;
+          has_data_a[gen_i]        <= 'h0;
+          random_valid_en_a[gen_i] <= 'h0;
+        end else begin
+          // Generate random valid enable (50% probability)
+          random_valid_en_a[gen_i] <= ($urandom() % 100 < 50);
+
+          // Accept new data from slave when we don't have data buffered
+          if (~has_data_a[gen_i] && qsfp_tx_tvalid[gen_i]) begin
+            data_buf_a[gen_i]  <= qsfp_tx_tdata[gen_i];
+            tkeep_buf_a[gen_i] <= qsfp_tx_tkeep_user[gen_i];
+            last_buf_a[gen_i]  <= qsfp_tx_tlast[gen_i];
+            has_data_a[gen_i]  <= 1'b1;
+          end
+
+          // Send data when random_valid is high (no ready on master)
+          if (has_data_a[gen_i] && random_valid_en_a[gen_i]) begin
+            has_data_a[gen_i] <= 1'b0;
+          end
+        end
+      end
+
+      if (BREAK_RDY_VLD == 1) begin
+        // backpressure
+        assign sim_qsfp_tx_tready_a[gen_i] = ~has_data_a[gen_i];
+        // reception
+        assign qsfp_tx_tdata_rdyvld[gen_i]      = data_buf_a[gen_i];
+        assign qsfp_tx_tkeep_user_rdyvld[gen_i] = tkeep_buf_a[gen_i];
+        assign qsfp_tx_tlast_rdyvld[gen_i]      = last_buf_a[gen_i];
+        assign qsfp_tx_tvalid_rdyvld[gen_i]     = has_data_a[gen_i] && random_valid_en_a[gen_i];
+      end else begin
+        // backpressure
+        assign sim_qsfp_tx_tready_a[gen_i] = 1'b1;
+        // reception
+        assign qsfp_tx_tdata_rdyvld[gen_i]      = qsfp_tx_tdata[gen_i];
+        assign qsfp_tx_tkeep_user_rdyvld[gen_i] = qsfp_tx_tkeep_user[gen_i];
+        assign qsfp_tx_tlast_rdyvld[gen_i]      = qsfp_tx_tlast[gen_i];
+        assign qsfp_tx_tvalid_rdyvld[gen_i]     = qsfp_tx_tvalid[gen_i];
+      end
+    end
+  endgenerate
 
   // HPU B ----------------------------------------------------------------------------------------
   multi_hpu_dma #(
@@ -439,7 +509,7 @@ module tb_multi_hpu_dma;
     .qsfp_tx_tkeep_user(qsfp_rx_tkeep_user),
     .qsfp_tx_tlast     (qsfp_rx_tlast),
     .qsfp_tx_tvalid    (qsfp_rx_tvalid),
-    .qsfp_tx_tready    (sim_qsfp_tx_tready),
+    .qsfp_tx_tready    (sim_qsfp_tx_tready_b),
 
     .qsfp_rx_tdata     (qsfp_tx_tdata_delayed),
     .qsfp_rx_tkeep_user(qsfp_tx_tkeep_user_delayed),
@@ -456,16 +526,65 @@ module tb_multi_hpu_dma;
 );
 
 always @(*) begin
-  qsfp_tx_tdata_delayed      <= #100ns qsfp_tx_tdata;
-  qsfp_tx_tkeep_user_delayed <= #100ns qsfp_tx_tkeep_user;
-  qsfp_tx_tlast_delayed      <= #100ns qsfp_tx_tlast;
-  qsfp_tx_tvalid_delayed     <= #100ns qsfp_tx_tvalid;
+  qsfp_tx_tdata_delayed      <= #100ns qsfp_tx_tdata_rdyvld;
+  qsfp_tx_tkeep_user_delayed <= #100ns qsfp_tx_tkeep_user_rdyvld;
+  qsfp_tx_tlast_delayed      <= #100ns qsfp_tx_tlast_rdyvld;
+  qsfp_tx_tvalid_delayed     <= #100ns qsfp_tx_tvalid_rdyvld;
 
-  qsfp_rx_tdata_delayed      <= #100ns qsfp_rx_tdata;
-  qsfp_rx_tkeep_user_delayed <= #100ns qsfp_rx_tkeep_user;
-  qsfp_rx_tlast_delayed      <= #100ns qsfp_rx_tlast;
-  qsfp_rx_tvalid_delayed     <= #100ns qsfp_rx_tvalid;
+  qsfp_rx_tdata_delayed      <= #100ns qsfp_rx_tdata_rdyvld;
+  qsfp_rx_tkeep_user_delayed <= #100ns qsfp_rx_tkeep_user_rdyvld;
+  qsfp_rx_tlast_delayed      <= #100ns qsfp_rx_tlast_rdyvld;
+  qsfp_rx_tvalid_delayed     <= #100ns qsfp_rx_tvalid_rdyvld;
 end
+
+  generate
+  // Random valid control (adjust probability as needed)
+    for (genvar gen_i=0; gen_i<QSFP_LANE_NB; gen_i=gen_i+1) begin
+      always_ff @(posedge clk_mrmac) begin
+        if (~s_rstn_mrmac) begin
+          data_buf_b[gen_i]        <= 'h0;
+          tkeep_buf_b[gen_i]       <= 'h0;
+          last_buf_b[gen_i]        <= 'h0;
+          has_data_b[gen_i]        <= 'h0;
+          random_valid_en_b[gen_i] <= 'h0;
+        end else begin
+          // Generate random valid enable (50% probability)
+          random_valid_en_b[gen_i] <= ($urandom() % 100 < 50);
+
+          // Accept new data from slave when we don't have data buffered
+          if (~has_data_b[gen_i] && qsfp_rx_tvalid[gen_i]) begin
+            data_buf_b[gen_i]  <= qsfp_rx_tdata[gen_i];
+            tkeep_buf_b[gen_i] <= qsfp_rx_tkeep_user[gen_i];
+            last_buf_b[gen_i]  <= qsfp_rx_tlast[gen_i];
+            has_data_b[gen_i]  <= 1'b1;
+          end
+
+          // Send data when random_valid is high (no ready on master)
+          if (has_data_b[gen_i] && random_valid_en_b[gen_i]) begin
+            has_data_b[gen_i] <= 1'b0;
+          end
+        end
+      end
+
+      if (BREAK_RDY_VLD == 1) begin
+        // backpressure
+        assign sim_qsfp_tx_tready_b[gen_i] = ~has_data_b[gen_i];
+        // reception
+        assign qsfp_rx_tdata_rdyvld[gen_i]      = data_buf_b[gen_i];
+        assign qsfp_rx_tkeep_user_rdyvld[gen_i] = tkeep_buf_b[gen_i];
+        assign qsfp_rx_tlast_rdyvld[gen_i]      = last_buf_b[gen_i];
+        assign qsfp_rx_tvalid_rdyvld[gen_i]     = has_data_b[gen_i] && random_valid_en_b[gen_i];
+      end else begin
+        // backpressure
+        assign sim_qsfp_tx_tready_b[gen_i] = 1'b1;
+        // reception
+        assign qsfp_rx_tdata_rdyvld[gen_i]      = qsfp_rx_tdata[gen_i];
+        assign qsfp_rx_tkeep_user_rdyvld[gen_i] = qsfp_rx_tkeep_user[gen_i];
+        assign qsfp_rx_tlast_rdyvld[gen_i]      = qsfp_rx_tlast[gen_i];
+        assign qsfp_rx_tvalid_rdyvld[gen_i]     = qsfp_rx_tvalid[gen_i];
+      end
+    end
+  endgenerate
 
 // ============================================================================================== --
 // Scenario
@@ -648,7 +767,7 @@ end
     regf_start_addr_ofs = 'h0;
     repeat(20) @(posedge clk_control);
 
-    random_iter           = 1;//$urandom_range(32, 2);
+    random_iter           = $urandom_range(32, 2);
     arbitrary_notify_nb   = XPM_MIN_FIFO_DEPTH; // if we have a full fifo on fifo_nrx_regf, we will lose notifies
     arbitrary_read_req_nb = XPM_MIN_FIFO_DEPTH;
 
@@ -728,9 +847,9 @@ end
     for (int k = 0; k < LOOP_NOTIFY; k++) begin
       for (int i = 0; i < arbitrary_notify_nb; i++) begin
         // for now size_b is fixed, all our ciphertext are 16.384kB (size_b=0x4000)
-        iop_id       = $urandom();
-        iop_src_addr = $urandom_range(0, 1<<SRC_ADDR_W);
-        iop_dst_addr = $urandom_range(0, 1<<DST_ADDR_W);
+        iop_id       = i;//$urandom();
+        iop_src_addr = i;//$urandom_range(0, 1<<SRC_ADDR_W);
+        iop_dst_addr = i;//$urandom_range(0, 1<<DST_ADDR_W);
 
         repeat(10) @(posedge clk_control);
         // Sending a NOTIFY from HPU-B to HPU-A -------------------------------------------------------
@@ -767,9 +886,9 @@ end
 
       for (int i = 0; i < arbitrary_notify_nb; i++) begin
         // for now size_b is fixed, all our ciphertext are 16.384kB (size_b=0x4000)
-        iop_id       = $urandom();
-        iop_src_addr = $urandom_range(0, 1<<SRC_ADDR_W);
-        iop_dst_addr = $urandom_range(0, 1<<DST_ADDR_W);
+        iop_id       = i;//$urandom();
+        iop_src_addr = i;//$urandom_range(0, 1<<SRC_ADDR_W);
+        iop_dst_addr = i;//$urandom_range(0, 1<<DST_ADDR_W);
 
         repeat(10) @(posedge clk_control);
         // Sending a NOTIFY from HPU-B to HPU-A -------------------------------------------------------

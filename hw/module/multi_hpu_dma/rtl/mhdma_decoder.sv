@@ -95,14 +95,6 @@ module mhdma_decoder
   // - Notify RX goes to respective queue           : NRXQ
   // - Read request goes to write fifo to go to HBM : RRFIFO
   // - Ciphertext Emission goes to queue            : CEQ
-  logic qsfp_rx_tsop;
-  logic qsfp_rx_tvalid_tmp;
-
-  always_ff @(posedge clk_mrmac)
-    qsfp_rx_tvalid_tmp <= rx_tvalid_in;
-
-  assign qsfp_rx_tsop = rx_tvalid_in & ~qsfp_rx_tvalid_tmp;
-
   logic [$clog2(ETH_LEN_MAX):0] rx_counter;
   always_ff @(posedge clk_mrmac) begin
     if (~resetn_mrmac) begin
@@ -126,7 +118,7 @@ module mhdma_decoder
       // it is relevant to reset dst_mac_addr here because we build rx_valid from it
       dst_mac_addr <= 'h0;
     end else begin
-      if (rx_tvalid_in & qsfp_rx_tsop) begin
+      if (rx_tvalid_in & (rx_counter == 0)) begin
         dst_mac_addr <= qsfp_rx_tdata_bs[H0_DST_MAC_ADDR_OFS-1:H0_SRC_OUI_OFS];
       end else if (rx_tvalid_in & rx_tlast_in) begin
         dst_mac_addr <= 'h0;
@@ -204,7 +196,8 @@ module mhdma_decoder
   assign ciphertext_emission_received = ce_receivedD   & ~ce_received;
 
   // header information
-  assign rx_header.valid        = (rx_counter == NB_WORDS_CUST_HEADER_SIZE) ? 1'b1 : 1'b0;
+  // tvalid is used if ever we have a drop and rx_counter keeps its value. we need to have a pulse on valid signal
+  assign rx_header.valid        = (qsfp_rx_tvalid & (rx_counter == NB_WORDS_CUST_HEADER_SIZE)) ? 1'b1 : 1'b0;
   assign rx_header.src_mac_addr = src_mac_addr;
   assign rx_header.seq_num      = sec_num;
   assign rx_header.hpu_id       = hpu_id;
