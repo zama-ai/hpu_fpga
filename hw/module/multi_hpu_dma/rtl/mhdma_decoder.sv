@@ -105,10 +105,14 @@ module mhdma_decoder
 
   logic [$clog2(ETH_LEN_MAX):0] rx_counter;
   always_ff @(posedge clk_mrmac) begin
-    if (rx_tvalid_in) begin
-      rx_counter <= rx_counter+1;
-    end else begin
+    if (~resetn_mrmac) begin
       rx_counter <= 0;
+    end else begin
+      if (rx_tvalid_in & ~rx_tlast_in) begin
+        rx_counter <= rx_counter + 1;
+      end else if (rx_tvalid_in & rx_tlast_in) begin
+        rx_counter <= 0;
+      end
     end
   end
 
@@ -122,8 +126,11 @@ module mhdma_decoder
       // it is relevant to reset dst_mac_addr here because we build rx_valid from it
       dst_mac_addr <= 'h0;
     end else begin
-      if (rx_tvalid_in & qsfp_rx_tsop)
+      if (rx_tvalid_in & qsfp_rx_tsop) begin
         dst_mac_addr <= qsfp_rx_tdata_bs[H0_DST_MAC_ADDR_OFS-1:H0_SRC_OUI_OFS];
+      end else if (rx_tvalid_in & rx_tlast_in) begin
+        dst_mac_addr <= 'h0;
+      end
     end
 
   assign rx_valid = (current_hpu_mac == dst_mac_addr) ? 1'b1 : 1'b0;
@@ -151,12 +158,14 @@ module mhdma_decoder
 
   // it is mandatory to reset req_id when invalid: we build pulses around it
   always_ff @(posedge clk_mrmac) begin
-    if (rx_tvalid_in) begin
-      if (rx_counter == 2) begin
-        req_id <= qsfp_rx_tdata_bs[H2_REQ_ID_OFS-1:H2_HPU_ID_OFS];
-      end
-    end else begin
+    if (~resetn_mrmac) begin
       req_id <= 'h0;
+    end else begin
+      if (rx_tvalid_in & (rx_counter == 2)) begin
+        req_id <= qsfp_rx_tdata_bs[H2_REQ_ID_OFS-1:H2_HPU_ID_OFS];
+      end else if (rx_tlast_in) begin
+        req_id <= 'h0;
+      end
     end
   end
 
@@ -207,11 +216,11 @@ module mhdma_decoder
 
   // payload interface to master module -----------------------------------------------------------
   always_ff @(posedge clk_mrmac)
-    if (ce_received & rx_tvalid_in & (rx_tkeep_user_in == 'hFF) & (rx_counter>NB_WORDS_CUST_HEADER_SIZE-1))
+    if (ce_received & rx_tvalid_in & (rx_tkeep_user_in != 'h0) & (rx_counter>NB_WORDS_CUST_HEADER_SIZE-1))
       rx_tdata_out <= qsfp_rx_tdata_bs;
 
   always_ff @(posedge clk_mrmac) begin
-    if (ce_received & rx_tvalid_in & (rx_tkeep_user_in == 'hFF) & (rx_counter>NB_WORDS_CUST_HEADER_SIZE-1)) begin
+    if (ce_received & rx_tvalid_in & (rx_tkeep_user_in != 'h0) & (rx_counter>NB_WORDS_CUST_HEADER_SIZE-1)) begin
       rx_tvalid_out <= 1'b1;
     end else begin
       rx_tvalid_out <= 1'b0;
