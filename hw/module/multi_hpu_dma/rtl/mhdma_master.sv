@@ -68,6 +68,7 @@ module mhdma_master
   output logic [REG_DATA_W-1:0]               stat_cnt_notify_ack,
   output logic [REG_DATA_W-1:0]               stat_cnt_notify_retries,
   output logic [REG_DATA_W-1:0]               stat_cnt_notify_timeout,
+  output logic [REG_DATA_W-1:0]               stat_nb_ce_words_received, //TODO
   // timing
   output logic [REG_DATA_W-1:0]               stat_t_notify_to_ack,
   output logic [REG_DATA_W-1:0]               stat_t_rr_to_ce_received,
@@ -112,6 +113,7 @@ module mhdma_master
 
   // TODO only two PC toreview
   localparam NB_WORDS_TOTAL = PC_NB_WORDS[0] + PC_NB_WORDS[1];
+  localparam NB_WORDS_TO_HBM = (NB_WORDS_TOTAL*AXI4_DATA_W)/MRMAC_AXIS_W;
 
   // =========================================================================================== //
   // CDC from regf to mrmac clock
@@ -475,7 +477,7 @@ module mhdma_master
     end
   end
 
-  assign ce_valid = (ce_valid_cnt<CT_NB_WORDS_MRMAC);
+  assign ce_valid = (ce_valid_cnt<NB_WORDS_TO_HBM);
 
   assign cnt_cerx_up   = read_request_allowed & (fifo_cerx_in_vld & fifo_cerx_in_rdy);
   assign cnt_cerx_down = read_request_allowed & (fifo_cerx_out_rdy & fifo_cerx_out_vld);
@@ -650,49 +652,30 @@ module mhdma_master
   logic [FIFO_PC_DATA_W-1:0]                    realined_word;
   logic [$clog2(NB_MRMRAC_WORDS_PER_WRITE)-1:0] realign_cnt;
   logic                                         realined_word_vld;
+  logic                                         fifo_cerx_out_rdy_vld;
+  logic                                         fifo_cerx_out_rdy_vld_reg;
+
+  assign fifo_cerx_out_rdy_vld = fifo_cerx_out_rdy & fifo_cerx_out_vld;
+  always_ff @(posedge clk_mrmac)
+    fifo_cerx_out_rdy_vld_reg <= fifo_cerx_out_rdy_vld;
 
   always_ff @(posedge clk_mrmac) begin
     if(~resetn_mrmac) begin
       realign_cnt <= 'h0;
     end else begin
-      if (fifo_cerx_out_vld & fifo_cerx_out_rdy) begin
-        realign_cnt <= realign_cnt + 1;
-      end else begin
+       if (fifo_cerx_out_rdy_vld & (realign_cnt == NB_MRMRAC_WORDS_PER_WRITE-1)) begin
         realign_cnt <= 'h0;
+       end else if (fifo_cerx_out_rdy_vld) begin
+        realign_cnt <= realign_cnt + 1;
       end
     end
   end
 
   always_ff @(posedge clk_mrmac)
-    if (fifo_cerx_out_vld & fifo_cerx_out_rdy)
+    if (fifo_cerx_out_rdy_vld)
       realined_word[realign_cnt*MRMAC_AXIS_W+:MRMAC_AXIS_W] <= fifo_cerx_out_data;
 
-  // SR & MUX over NB_MRMRAC_WORDS_PER_WRITE for building valid signal when we cannot fill enough words for a full request
-  // as long as start of the word is correct, if end is incorrect it should be truncated
-  logic [NB_MRMRAC_WORDS_PER_WRITE-1:0] realined_word_vld_tmp;
-
-  always_ff @(posedge clk_mrmac) begin
-    if ((realign_cnt == 0) & (fifo_cerx_out_vld & fifo_cerx_out_rdy)) begin
-      realined_word_vld_tmp[0] <= 1'b1;
-    end else begin
-      realined_word_vld_tmp[0] <= 1'b0;
-    end
-  end
-
-  generate
-    for (genvar gen_vld = 1; gen_vld < NB_MRMRAC_WORDS_PER_WRITE ; gen_vld = gen_vld + 1) begin
-      always_ff @(posedge clk_mrmac) begin
-        if ((realign_cnt == gen_vld) & (fifo_cerx_out_vld & fifo_cerx_out_rdy)) begin
-          // bypass
-          realined_word_vld_tmp[gen_vld] <= 1'b1;
-        end else begin
-          realined_word_vld_tmp[gen_vld] <= realined_word_vld_tmp[gen_vld-1];
-        end
-      end
-    end
-  endgenerate
-
-  assign realined_word_vld = realined_word_vld_tmp[NB_MRMRAC_WORDS_PER_WRITE-1];
+  assign realined_word_vld = (realign_cnt == 0) & fifo_cerx_out_rdy_vld_reg;
 
   generate
     for (genvar gen_wr=0; gen_wr<ETH_PC; gen_wr++) begin : gen_ce_write
@@ -724,12 +707,12 @@ module mhdma_master
 
       assign fifo_pc_wr_in_vld = target_fifo[gen_wr] & realined_word_vld ;
 
-      logic [FIFO_PC_DATA_COUNT_W-1:0] fifo_pc_wr_cnt;
+      logic [FIFO_PC_DATA_COUNT_W:0] fifo_pc_wr_cnt;
       logic                            cnt_fifo_pc_wr_up;
       logic                            cnt_fifo_pc_wr_down;
       logic                            enough_words;
 
-      assign cnt_fifo_pc_wr_up = fifo_pc_wr_in_vld & fifo_pc_wr_in_rdy;
+      assign cnt_fifo_pc_wr_up   = fifo_pc_wr_in_vld & fifo_pc_wr_in_rdy;
       assign cnt_fifo_pc_wr_down = fifo_pc_wr_out_rdy & fifo_pc_wr_out_vld;
 
       always_ff @(posedge clk_mrmac) begin
@@ -1129,6 +1112,15 @@ module mhdma_master
 
   assign stat_cnt_notify_timeout = to_notify_cnt;    // maybe not useful
 
+  always_ff @(posedge clk_mrmac) begin
+    if (~resetn_mrmac) begin
+      stat_nb_ce_words_received <= 'h0;
+    end else begin
+      if (packets_received) begin
+        stat_nb_ce_words_received <= { {(REG_DATA_W-CERX_DATA_COUNT_W){1'b0}}, fifo_cerx_cnt_tx};
+      end
+    end
+  end
 
   assign stat_fsm_notify   = ntx_state;
   assign stat_fsm_read_req = rreq_state;

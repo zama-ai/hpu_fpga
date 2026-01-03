@@ -456,9 +456,9 @@ module mhdma_slave
       );
 
       // we are going to read 4 times slower the fifo than we are feeding it
-      logic [$clog2(NB_MRMRAC_WORDS_PER_READ)-1:0]         slow_pace_count;
-      logic [$clog2(PC_NB_WORDS[gen_rd]):0] read_fifo_out_cnt;
-      logic                                                pc_read_finished;
+      logic [$clog2(NB_MRMRAC_WORDS_PER_READ)-1:0] slow_pace_count;
+      logic [$clog2(PC_NB_WORDS[gen_rd]):0]        read_fifo_out_cnt;
+      logic                                        pc_read_finished;
 
       always_ff @(posedge clk_mrmac) begin
         if (~resetn_mrmac) begin
@@ -478,8 +478,8 @@ module mhdma_slave
           read_fifo_out_cnt <= 'h0;
         end else begin
           if (read_fifo_out_ready & read_fifo_out_valid) begin
-            read_fifo_out_cnt <= read_fifo_out_cnt +1;
-          end else if (read_fifo_out_cnt == PC_NB_WORDS[gen_rd])  begin
+            read_fifo_out_cnt <= read_fifo_out_cnt + 1;
+          end else if (read_fifo_out_cnt == PC_NB_WORDS[gen_rd]) begin
             read_fifo_out_cnt <= 'h0;
           end
         end
@@ -518,7 +518,7 @@ module mhdma_slave
         end else begin
           if (reading_which_pc[gen_rd] & (read_fifo_out_valid & read_fifo_out_ready)) begin
             start_deserialize <= 1'b1;
-          end else if (~reading_which_pc[gen_rd]) begin
+          end else if (temp_finished_flag[NB_MRMRAC_WORDS_PER_READ-2]) begin
             start_deserialize <= 1'b0;
           end
         end
@@ -537,11 +537,11 @@ module mhdma_slave
         end
       end
 
-      always_ff @(posedge clk_mrmac)
-        fifo_ce_pc_in_data[gen_rd] <= ce_data_out[realign_cnt];
+      // always_ff @(posedge clk_mrmac)
+      assign fifo_ce_pc_in_data[gen_rd] = ce_data_out[realign_cnt];
 
-      always_ff @(posedge clk_mrmac)
-          fifo_ce_pc_in_vld[gen_rd] <= start_deserialize;
+      // always_ff @(posedge clk_mrmac)
+      assign fifo_ce_pc_in_vld[gen_rd] = start_deserialize;
 
     end
   endgenerate
@@ -587,7 +587,7 @@ module mhdma_slave
 
   // data in input are already in the correct form for sending directly to the lane
   assign  fifo_ce_in_vld  = (reading_which_pc[0] == 1) ? fifo_ce_pc_in_vld[0]  : (reading_which_pc[1] == 1) ? fifo_ce_pc_in_vld[1] : 1'b0;
-  assign  fifo_ce_in_data = fifo_ce_in_vld & (reading_which_pc[0] == 1) ? fifo_ce_pc_in_data[0] : fifo_ce_in_vld & (reading_which_pc[1] == 1)  ? fifo_ce_pc_in_data[1] : 'h0;
+  assign  fifo_ce_in_data = fifo_ce_in_vld & (reading_which_pc[0] == 1) ? fifo_ce_pc_in_data[0] : fifo_ce_in_vld & (reading_which_pc[1] == 1) ? fifo_ce_pc_in_data[1] : 'h0;
 
   // backpressure over ready for each fifo
   assign fifo_ce_pc_in_rdy[0] = (reading_which_pc == 1) ? fifo_ce_in_rdy : 1'b0;
@@ -614,7 +614,8 @@ module mhdma_slave
   fifo_ram_rdy_vld # (
     .WIDTH      (CE_DATA_W),
     .DEPTH      (CE_DEPTH),
-    .RAM_LATENCY(CE_RAM_LATENCY)
+    .RAM_LATENCY(CE_RAM_LATENCY),
+    .ALMOST_FULL_REMAIN (0)
   ) fifo_ce (
     .clk         (clk_mrmac),
     .s_rst_n     (resetn_mrmac),
@@ -630,7 +631,7 @@ module mhdma_slave
   );
 
   assign ce_valid = fifo_ce_out_vld;
-  assign ce_payload = ce_valid ? fifo_ce_out_data : 'h0;
+  assign ce_payload = fifo_ce_out_data;
 
   // header propagation ---------------------------------------------------------------------------
   // TODO: can be simplified ?

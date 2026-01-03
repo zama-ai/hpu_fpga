@@ -97,10 +97,13 @@ module mhdma_formatter
   logic tx_small_last;  // last word of a small packet
   logic tx_last_word;   // pulse on last word
 
+  // input of axi4stream temp register
+  logic                      tx_tlast_D;
+  logic [  MRMAC_AXIS_W-1:0] tx_tdata_D;
+  logic [ MRMAC_TKEEP_W-1:0] tx_tkeep_user_D;
+  logic                      tx_tvalid_D;
+
   logic [$clog2(NB_WORDS_MAX)+1:0] tx_cnt;
-  logic                            tx_last;
-  logic                            tx_valid;
-  logic [        MRMAC_AXIS_W-1:0] tx_data;
   logic [        MRMAC_AXIS_W-1:0] tx_header;
   // ce -------------------------------------------------------------------------------------------
   // During CE we need to increment seq_num for each packet sent
@@ -170,8 +173,15 @@ module mhdma_formatter
   // Ciphertext Emission (CE)
   // =========================================================================================== //
   assign ce_start_of_header = ce_start_emission | ce_sop_header;
-  assign ce_end_of_packet   = (ce_seq_num == NB_PACKETS_FULL) & qsfp_tx_tlast;
-  assign ce_last_packet     = (ce_seq_num == NB_PACKETS_FULL) & ct_emission_allowed;
+  // assign ce_last_packet     = qsfp_tx_tready & (ce_seq_num == NB_PACKETS_FULL) & ct_emission_allowed;
+  always_ff @(posedge clk_mrmac) begin
+    if (qsfp_tx_tready & (ce_seq_num == NB_PACKETS_FULL) & ct_emission_allowed & ~tx_tlast_D) begin
+      ce_last_packet <= 1'b1;
+    end else if (tx_tlast_D) begin
+      ce_last_packet <= 1'b0;
+    end
+  end
+  assign ce_end_of_packet = ce_last_packet & tx_tlast_D;
 
   always_ff @(posedge clk_mrmac) begin
     if(~resetn_mrmac) begin
@@ -366,7 +376,7 @@ module mhdma_formatter
           tx_byte_enable <= 8'hFF;
         else if (small_packet && (tx_cnt == (NB_WORDS_MIN-1)) )
           tx_byte_enable <= tx_byte_enable_d;
-        else if (tx_last)
+        else if (tx_tlast_D)
           tx_byte_enable <= 8'h00;
       end
     end
@@ -425,18 +435,6 @@ module mhdma_formatter
     end
   end
 
-  always_ff @(posedge clk_mrmac) begin
-    if (~resetn_mrmac) begin
-      ce_stalling_last_packet <= 1'b0;
-    end else begin
-      if (ce_last_packet & (ce_word_counter == NB_WORDS_LAST_PACKET_USEFUL)) begin
-        ce_stalling_last_packet <= 1'b1;
-      end else begin
-        ce_stalling_last_packet <= 1'b0;
-      end
-    end
-  end
-
   // new header pulse
   logic ce_stalling_tmp;
   // to define if we have a new header to send we can just do a positive edge detection
@@ -446,7 +444,7 @@ module mhdma_formatter
   assign ce_sop_header = ce_stalling & ~ce_stalling_tmp;
 
   // level active when we have headers on ciphertext emission
-  assign ce_header = tx_valid &  (ce_first_header | ce_stalling);
+  assign ce_header = tx_tvalid_D & (ce_first_header | ce_stalling);
 
   // backpressure over ciphertext coefficients
   // active
@@ -454,16 +452,7 @@ module mhdma_formatter
   //    - when the first header is not starting to be propagated &
   //    - qsfp tx is ready &
   //    - we don't need to stall between packets for sending headers
-  assign ce_ready = ct_emission_allowed & ce_first_header_sent & qsfp_tx_tready & ~ce_stalling & ~ce_stalling_last_packet;
-
-  // let's take into account when we have full and partially full packets
-  generate
-    if(LAST_PACKET_BYTE_SIZE==0) begin
-      assign ce_end_of_emission = (ce_seq_num == NB_PACKETS_FULL-1) & (ce_word_counter == LAST_PACKET_BYTE_SIZE) ? 1'b1 : 1'b0;
-    end else begin
-      assign ce_end_of_emission = (ce_seq_num == NB_PACKETS_FULL-1) & (ce_word_counter == LAST_PACKET_BYTE_SIZE) ? 1'b1 : 1'b0;
-    end
-  endgenerate
+  assign ce_ready = ct_emission_allowed & ce_first_header_sent & qsfp_tx_tready & ~ce_stalling;
 
   // For the arbiter we need the information to release the fsm that all have been sent
   always_ff @(posedge clk_mrmac) begin
@@ -530,9 +519,9 @@ module mhdma_formatter
   assign read_request_allowed   = tx_state == ST_READ_REQ;
   assign notify_request_allowed = tx_state == ST_NOTIFY;
 
-  assign notify_ack_sent  = new_notify_ack_pending & tx_last;
-  assign notify_sent      = notify_request_allowed & tx_last;
-  assign rreq_sent        = read_request_allowed   & tx_last;
+  assign notify_ack_sent  = new_notify_ack_pending & tx_tlast_D;
+  assign notify_sent      = notify_request_allowed & tx_tlast_D;
+  assign rreq_sent        = read_request_allowed   & tx_tlast_D;
 
   // =========================================================================================== //
   // AXI4-stream
@@ -543,16 +532,17 @@ module mhdma_formatter
   logic                      tx_tlast_reg;
   logic                      tx_tvalid_reg;
 
-  assign tx_last  = small_packet ? tx_small_last : ct_emission_allowed ? tx_last_word : 1'b0;
-  assign tx_data  = small_packet ? tx_header : (ct_emission_allowed & ce_header) ? tx_header : (ct_emission_allowed & ce_valid & ce_ready) ? ce_payload :'h0;
-  assign tx_valid = ~(tx_cnt == 'h0);
+  assign tx_tdata_D      = small_packet ? tx_header : (ct_emission_allowed & ce_header) ? tx_header : (ct_emission_allowed & ce_valid & ce_ready) ? ce_payload :'h0;
+  assign tx_tvalid_D     = ~(tx_cnt == 'h0);
+  assign tx_tkeep_user_D = {3'b000, tx_byte_enable};
+  assign tx_tlast_D      = small_packet ? tx_small_last : ct_emission_allowed ? tx_last_word : 1'b0;
 
   always_ff @(posedge clk_mrmac) begin
     if (qsfp_tx_tready) begin
-      tx_tdata_reg      <= mhdma_pkg::byte_swap(tx_data);
-      tx_tvalid_reg     <= tx_valid;
-      tx_tkeep_user_reg <= {3'b000, tx_byte_enable};
-      tx_tlast_reg      <= small_packet  ? tx_small_last: tx_last;
+      tx_tdata_reg      <= mhdma_pkg::byte_swap(tx_tdata_D);
+      tx_tvalid_reg     <= tx_tvalid_D;
+      tx_tkeep_user_reg <= tx_tkeep_user_D;
+      tx_tlast_reg      <= tx_tlast_D;
     end
   end
 

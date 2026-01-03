@@ -33,7 +33,7 @@ module tb_multi_hpu_dma;
   localparam int SIM_MAX_FRAME_CYCLES = 256;
   localparam int LOOP_NOTIFY = 10;
 
-  localparam int BREAK_RDY_VLD = 0;
+  localparam int BREAK_RDY_VLD = 1;
 
   // ciphertext memories -------------------------------------------------------------------------
   localparam int MEM_WR_CMD_BUF_DEPTH = 4;  // Should be >= 1
@@ -50,20 +50,12 @@ module tb_multi_hpu_dma;
   localparam int MEM_SIM_SIZE = 18;         // must be < 22
   localparam int SIZE_B_SIM   = 'h40;
 
-  localparam int MAX_BURST_SIZE  = PAGE_BYTES/AXI4_DATA_BYTES;
-  localparam [ETH_PC-1:0][15:0] PC_CT_BYTES = '{'h2000, 'h2020};
-  localparam              [3:0] PC_STRIDE   = 'hB;
+  localparam [3:0] PC_STRIDE          = 'hB;
+  localparam int PC_CT_BYTES [ETH_PC] = '{'h2000, 'h2020};
 
-  // TOREVIEW
-  // generate cannot be in packages, same snippet must be in slave & master module
-  generate
-    for (genvar gen_i = 0; gen_i < ETH_PC; gen_i = gen_i + 1) begin : gen_localparam
-      localparam int PC_NB_WORDS = (PC_CT_BYTES[gen_i] / AXI4_DATA_BYTES);
-      localparam int PC_NB_BURST = (PC_NB_WORDS / MAX_BURST_SIZE);
-      localparam int PC_REMAINS = (PC_NB_WORDS % MAX_BURST_SIZE);
-      localparam int PC_NB = (PC_REMAINS!=0) ? PC_NB_BURST + 1 : PC_NB_BURST;
-    end
-  endgenerate
+  localparam int MAX_BURST_SIZE = PAGE_BYTES/AXI4_DATA_BYTES;
+
+  localparam int PC_NB_WORDS [ETH_PC] = compute_nb_words(PC_CT_BYTES);
 
 // ============================================================================================== --
 // clock, reset
@@ -1068,11 +1060,8 @@ end
           automatic logic [255:0] value = '0;
           for (int j = 0; j < 4; ++j) begin
             logic [63:0] w;
-            // for debugging:
-            // w[63:32] = 'h0;
-            // w[31:0] = val_id;
             w[63:32] = $urandom();
-            w[31:0] = $urandom();
+            w[31:0]  = $urandom();
             value |= (w << (j*64));
             val_id++;
           end
@@ -1305,7 +1294,7 @@ end
       $display("addr_hpu_1 = %x", addr_hpu_1);
 
       // Direct comparison of memory locations
-      for (int k = 0; k < gen_localparam[0].PC_NB_WORDS; k++) begin
+      for (int k = 0; k < PC_NB_WORDS[0]; k++) begin
 
         // I read from 0 to PC_NB_WORDS in HPU_B and
         if (gen_mem_hpu[0].gen_mem_pc[0].axi4_mem_ct.axi4_ram_ct_wr.mem[addr_hpu_0 + k] != gen_mem_hpu[1].gen_mem_pc[0].axi4_mem_ct.axi4_ram_ct_wr.mem[addr_hpu_1 + k]) begin
@@ -1316,9 +1305,10 @@ end
           error_write_mismatch = 1'b1;
         end
       end
+
       // PC 1
       // Direct comparison of memory locations
-      for (int k = 0; k < gen_localparam[1].PC_NB_WORDS; k++) begin
+      for (int k = 0; k < PC_NB_WORDS[1]; k++) begin
 
         // I read from 0 to PC_NB_WORDS in HPU_B and
         if (gen_mem_hpu[0].gen_mem_pc[1].axi4_mem_ct.axi4_ram_ct_wr.mem[addr_hpu_0 + k] != gen_mem_hpu[1].gen_mem_pc[1].axi4_mem_ct.axi4_ram_ct_wr.mem[addr_hpu_1 + k]) begin

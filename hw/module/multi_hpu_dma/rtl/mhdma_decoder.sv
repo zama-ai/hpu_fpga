@@ -96,6 +96,7 @@ module mhdma_decoder
   // - Read request goes to write fifo to go to HBM : RRFIFO
   // - Ciphertext Emission goes to queue            : CEQ
   logic [$clog2(ETH_LEN_MAX):0] rx_counter;
+
   always_ff @(posedge clk_mrmac) begin
     if (~resetn_mrmac) begin
       rx_counter <= 0;
@@ -155,7 +156,7 @@ module mhdma_decoder
     end else begin
       if (rx_tvalid_in & (rx_counter == 2)) begin
         req_id <= qsfp_rx_tdata_bs[H2_REQ_ID_OFS-1:H2_HPU_ID_OFS];
-      end else if (rx_tlast_in) begin
+      end else if (rx_tvalid_in & rx_tlast_in) begin
         req_id <= 'h0;
       end
     end

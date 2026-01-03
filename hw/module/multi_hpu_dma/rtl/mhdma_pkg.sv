@@ -53,7 +53,7 @@ package mhdma_pkg;
 
   // I have LAST_PACKET_BYTE_SIZE useful bytes. To simplify I'll send a multiple of AXI4_DATA_W
   // it is important to have a real concatenation here to be sure to have the ceiling and not be truncated by integer
-  localparam int LAST_PACKET_BYTE_SIZE =  $ceil(real'(LAST_PACKET_BYTE_SIZE_USEFUL) / AXI4_DATA_BYTES)*AXI4_DATA_BYTES;
+  localparam int LAST_PACKET_BYTE_SIZE = $ceil(real'(LAST_PACKET_BYTE_SIZE_USEFUL) / AXI4_DATA_BYTES)*AXI4_DATA_BYTES;
 
   // If ever I need to send less words and what is allowed by ethernet, we need to fill with zeros
   localparam int NB_WORDS_LAST_PACKET_USEFUL = LAST_PACKET_BYTE_SIZE/8;
