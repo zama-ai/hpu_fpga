@@ -14,8 +14,6 @@
 // Must be taken into account:
 //  - FIFO depth with XPM must be a power of two -> mandatory from XPM
 //
-// TODO: A bug is still here works in (clk_a, clk_b) (1, 1) (1, 2) and (2, 1) does not
-// I believe this in only testbench based
 // ==============================================================================================
 
 module tb_fifo_ram_rdy_vld_2clk;
@@ -31,13 +29,12 @@ module tb_fifo_ram_rdy_vld_2clk;
   parameter int CDC_SYNC_STAGES    = 2;
   parameter int DEPTH              = 128;
   parameter int OUT_FIFO_DEPTH     = 2;
-  parameter int RAM_LATENCY        = 0; // TODO
+  parameter int RAM_LATENCY        = 0; // TODO: because no ram latency, we must count up to DEPTH_LOCAL-1
   parameter int ALMOST_FULL_REMAIN = 1;
 
   localparam int WIDTH             = 8;
 
   localparam int DEPTH_LOCAL       = DEPTH + OUT_FIFO_DEPTH;
-
 
   localparam int DEPTH_LOCAL_W     = $clog2(DEPTH_LOCAL);
   localparam int RANDOM_ACCESS_CNT = DEPTH*10;
@@ -153,7 +150,19 @@ module tb_fifo_ram_rdy_vld_2clk;
   // Scenario
   // ============================================================================================== --
   logic start;
-  int   access_cnt;
+  logic start_rd;
+  logic start_wr;
+
+  int   write_access_cnt;
+  int   read_access_cnt;
+  logic read_trans;
+  logic write_trans;
+
+  logic write_reset_full;
+  logic write_reset_random;
+
+  logic read_reset_empty;
+  logic read_reset_random;
 
   // we need a small delay here to exit properly read and write reset busy; this is XPM specific
   initial begin
@@ -162,10 +171,37 @@ module tb_fifo_ram_rdy_vld_2clk;
     start = 1'b1;
   end
 
+  assign write_trans = in_vld & in_rdy;
+  assign read_trans  = out_vld & out_rdy;
+
+  // we need to count the number of writes
+  always_ff @(posedge in_clk) begin
+    if (~s_in_rst_n) begin
+      write_access_cnt <= 'h0;
+    end else begin
+      if (write_reset_random | write_reset_full) begin
+        write_access_cnt <= 0;
+      end else if (start_wr & write_trans) begin
+        write_access_cnt <= write_access_cnt+1;
+      end
+    end
+  end
+
+  // we need to count the number of writes
+  always_ff @(posedge out_clk) begin
+    if (~s_in_rst_n) begin
+      read_access_cnt <= 'h0;
+    end else begin
+      if (read_reset_empty | read_reset_random) begin
+        read_access_cnt <= 0;
+      end else if (start_rd & read_trans) begin
+        read_access_cnt <= read_access_cnt+1;
+      end
+    end
+  end
+
   // write FSM ------------------------------------------------------------------------------------
-  int   write_access_cnt;
   int cnt_full;
-  logic start_wr;
   logic st_full_1;
   logic st_random_access_1;
   logic st_full_2;
@@ -193,9 +229,9 @@ module tb_fifo_ram_rdy_vld_2clk;
       ST_IDLE_WR:
         next_state_wr = start_wr ? ST_FULL_1 : state_wr;
       ST_FULL_1:
-        next_state_wr = write_access_cnt == DEPTH_LOCAL ? ST_RANDOM_ACCESS_1 : state_wr;
+        next_state_wr = write_access_cnt == DEPTH_LOCAL-1 ? ST_RANDOM_ACCESS_1 : state_wr;
       ST_RANDOM_ACCESS_1:
-        next_state_wr = write_access_cnt == RANDOM_ACCESS_CNT ? ST_FULL_2 : state_wr;
+        next_state_wr = write_access_cnt == RANDOM_ACCESS_CNT-1  ? ST_FULL_2 : state_wr;
       ST_FULL_2:
         next_state_wr = full_is_stable ? ST_DONE_WR : state_wr;
       ST_DONE_WR:
@@ -207,6 +243,9 @@ module tb_fifo_ram_rdy_vld_2clk;
   assign st_random_access_1 = (state_wr == ST_RANDOM_ACCESS_1);
   assign st_full_2          = (state_wr == ST_FULL_2);
   assign st_done_write      = (state_wr == ST_DONE_WR);
+
+  assign write_reset_full   = ((write_access_cnt==DEPTH_LOCAL-1) & st_full_1);
+  assign write_reset_random = ((write_access_cnt==RANDOM_ACCESS_CNT-1) & st_random_access_1);
 
   // we must count the number of fullms and wait for the signal to be stable.
   // because frequency of clock in and out can be different and we MUST read in ST_RANDOM_ACCESS_1 we must wait that all words from read request are flushed
@@ -235,29 +274,7 @@ module tb_fifo_ram_rdy_vld_2clk;
     end
   end
 
-  // defining conditions for readability
-  logic write_reset_full;
-  logic write_reset_random;
-
-  assign write_reset_full   = ((write_access_cnt==DEPTH_LOCAL) & st_full_1);
-  assign write_reset_random = ((write_access_cnt==RANDOM_ACCESS_CNT) & st_random_access_1);
-
-  // we need to count the number of writes
-  always_ff @(posedge in_clk) begin
-    if (~s_in_rst_n) begin
-      write_access_cnt <= 'h0;
-    end else begin
-      if (in_vld && in_rdy) begin
-        write_access_cnt <= write_access_cnt+1;
-      end else if (write_reset_random | write_reset_full) begin
-        write_access_cnt <= 0;
-      end
-    end
-  end
-
   // read FSM -------------------------------------------------------------------------------------
-  int   read_access_cnt;
-  logic start_rd;
   logic st_random_access_2;
   logic st_empty;
   logic st_empty_throughput;
@@ -280,7 +297,7 @@ module tb_fifo_ram_rdy_vld_2clk;
 
   // we start the read FSM only when write FSM is done
   always_ff @(posedge out_clk)
-    start_rd  <= state_wr == ST_DONE_WR;
+    start_rd <= state_wr == ST_DONE_WR;
 
   always_comb begin
     next_state_rd = RD_XXX;
@@ -288,11 +305,11 @@ module tb_fifo_ram_rdy_vld_2clk;
       ST_IDLE_RD:
         next_state_rd = start_rd ? ST_EMPTY : state_rd;
       ST_EMPTY:
-        next_state_rd = read_access_cnt == DEPTH_LOCAL ? ST_EMPTY_THROUGHPUT : state_rd;
+        next_state_rd = read_access_cnt == DEPTH_LOCAL-1 ? ST_EMPTY_THROUGHPUT : state_rd;
       ST_EMPTY_THROUGHPUT:
-        next_state_rd = read_access_cnt == DEPTH_LOCAL ? ST_RANDOM_ACCESS_2 : state_rd;
+        next_state_rd = read_access_cnt == DEPTH_LOCAL-1 ? ST_RANDOM_ACCESS_2 : state_rd;
       ST_RANDOM_ACCESS_2:
-        next_state_rd = read_access_cnt == RANDOM_ACCESS_CNT ? ST_DONE_RD : state_rd;
+        next_state_rd = read_access_cnt == RANDOM_ACCESS_CNT-1 ? ST_DONE_RD : state_rd;
       ST_DONE_RD:
         next_state_rd = state_rd;
     endcase
@@ -302,26 +319,8 @@ module tb_fifo_ram_rdy_vld_2clk;
   assign st_empty           = (state_rd == ST_EMPTY);
   assign st_empty_throughput= (state_rd == ST_EMPTY_THROUGHPUT);
 
-  // defining conditions for readability
-  logic read_reset_full;
-  logic read_reset_random;
-
-  assign read_reset_full   = ((read_access_cnt==DEPTH_LOCAL) & (st_full_1 | st_empty_throughput));
-  assign read_reset_random = ((read_access_cnt==RANDOM_ACCESS_CNT) & st_random_access_1);
-
-
-  // we need to count the number of writes
-  always_ff @(posedge out_clk) begin
-    if (~s_in_rst_n) begin
-      read_access_cnt <= 'h0;
-    end else begin
-      if ((out_vld & out_rdy) & start_rd) begin
-        read_access_cnt <= read_access_cnt+1;
-      end else if (read_reset_full | read_reset_random) begin
-        read_access_cnt <= 0;
-      end
-    end
-  end
+  assign read_reset_empty   = ((read_access_cnt==DEPTH_LOCAL-1) & (st_empty | st_empty_throughput));
+  assign read_reset_random = ((read_access_cnt==RANDOM_ACCESS_CNT-1) & st_random_access_1);
 
   assign end_of_test = state_rd == ST_DONE_RD;
 
