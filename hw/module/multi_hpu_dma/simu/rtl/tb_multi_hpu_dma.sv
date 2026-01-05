@@ -1360,8 +1360,10 @@ end
       int byte_count;
       @(posedge clk_mrmac) disable iff (~s_rstn_mrmac)
       (!$past(qsfp_tx_tvalid[lane]) && qsfp_tx_tvalid[lane], byte_count=0) |->
-        (qsfp_tx_tvalid[lane] && sim_qsfp_tx_tready_a[lane], byte_count += $countones(qsfp_tx_tkeep_user[lane]))[*1:$] ##0
-        (qsfp_tx_tlast[lane] && (byte_count >= 60));
+        first_match(
+          (qsfp_tx_tvalid[lane], byte_count += (sim_qsfp_tx_tready_a[lane] ? $countones(qsfp_tx_tkeep_user[lane]) : 0))[*1:$] ##0
+          (qsfp_tx_tlast[lane] && sim_qsfp_tx_tready_a[lane])
+        ) ##0 (byte_count >= 60);
     endproperty
 
     generate
