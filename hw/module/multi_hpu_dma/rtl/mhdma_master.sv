@@ -68,7 +68,7 @@ module mhdma_master
   output logic [REG_DATA_W-1:0]               stat_cnt_notify_ack,
   output logic [REG_DATA_W-1:0]               stat_cnt_notify_retries,
   output logic [REG_DATA_W-1:0]               stat_cnt_notify_timeout,
-  output logic [REG_DATA_W-1:0]               stat_nb_ce_words_received, //TODO
+  output logic [REG_DATA_W-1:0]               stat_nb_ce_words_received,
   // timing
   output logic [REG_DATA_W-1:0]               stat_t_notify_to_ack,
   output logic [REG_DATA_W-1:0]               stat_t_rr_to_ce_received,
@@ -77,6 +77,7 @@ module mhdma_master
   input  logic                                rst_cnt_notify_ack,
   input  logic                                rst_cnt_timeout, //unused
   input  logic                                rst_cnt_notify_retry,
+  input  logic                                rst_nb_ce_words_received,
   // register
   output logic [1:0]                          stat_fsm_notify,
   output logic [1:0]                          stat_fsm_read_req,
@@ -751,7 +752,7 @@ module mhdma_master
       end
 
       always_ff @(posedge clk_mrmac)
-        axi_awrite <= (axi_write_cnt > 0) && axi4_write_pc[gen_wr] && m_axi4_awready[gen_wr] & enough_words;
+        axi_awrite <= (axi_write_cnt > 0) && axi4_write_pc[gen_wr] & enough_words;
 
       always_ff @(posedge clk_mrmac)
         axi_awrite_tmp <= axi_awrite;
@@ -804,17 +805,17 @@ module mhdma_master
         end
       end
 
-      assign m_axi4_awid[gen_wr]    = (aw_valid & m_axi4_awready[gen_wr]) ? expected_wid     :'h0;
-      assign m_axi4_awaddr[gen_wr]  = (aw_valid & m_axi4_awready[gen_wr]) ? mhdma_write_addr :'h0;
-      assign m_axi4_awsize[gen_wr]  = (aw_valid & m_axi4_awready[gen_wr]) ? MHDMA_ARSIZE     :'h0;
-      assign m_axi4_awburst[gen_wr] = (aw_valid & m_axi4_awready[gen_wr]) ? 2'b01            :'h0; // incr
-      assign m_axi4_awvalid[gen_wr] = (aw_valid & m_axi4_awready[gen_wr]) ? 1'b1             :'h0;
+      assign m_axi4_awid[gen_wr]    = aw_valid ? expected_wid     :'h0;
+      assign m_axi4_awaddr[gen_wr]  = aw_valid ? mhdma_write_addr :'h0;
+      assign m_axi4_awsize[gen_wr]  = aw_valid ? MHDMA_ARSIZE     :'h0;
+      assign m_axi4_awburst[gen_wr] = aw_valid ? 2'b01            :'h0; // incr
+      assign m_axi4_awvalid[gen_wr] = aw_valid ? 1'b1             :'h0;
 
       always_comb begin
         if ((PC_REMAINS[gen_wr] != 0) && (axi_write_cnt == 1)) begin
-          m_axi4_awlen[gen_wr] = (aw_valid && m_axi4_awready[gen_wr]) ? PC_REMAINS[gen_wr]-1 : 'h0;
+          m_axi4_awlen[gen_wr] = aw_valid ? PC_REMAINS[gen_wr]-1 : 'h0;
         end else begin
-          m_axi4_awlen[gen_wr] = (aw_valid && m_axi4_awready[gen_wr]) ? MAX_BURST_SIZE-1 : 'h0;
+          m_axi4_awlen[gen_wr] = aw_valid ? MAX_BURST_SIZE-1 : 'h0;
         end
       end
 
@@ -1116,8 +1117,12 @@ module mhdma_master
     if (~resetn_mrmac) begin
       stat_nb_ce_words_received <= 'h0;
     end else begin
-      if (packets_received) begin
-        stat_nb_ce_words_received <= { {(REG_DATA_W-CERX_DATA_COUNT_W){1'b0}}, fifo_cerx_cnt_tx};
+      if (rst_nb_ce_words_received) begin
+        stat_nb_ce_words_received <= 'h0;
+      end else begin
+        if (packets_received) begin
+          stat_nb_ce_words_received <= { {(REG_DATA_W-CERX_DATA_COUNT_W){1'b0}}, fifo_cerx_cnt_tx};
+        end
       end
     end
   end

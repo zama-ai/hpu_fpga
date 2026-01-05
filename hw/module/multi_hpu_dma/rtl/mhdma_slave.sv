@@ -361,11 +361,25 @@ module mhdma_slave
   // let's start ciphertext emission when its flag is up and we are not changing command values
   logic [ETH_PC-1:0] axi4_read_pc;
   logic [ETH_PC-1:0] axi4_read_last;
+  logic [ETH_PC-1:0] finished_reading_pc;
   // TODO: TOREVIEW :: we probably could read at the same time the two PCs and not one by one
   generate
     for (genvar gen_rd=0; gen_rd<ETH_PC; gen_rd++) begin : gen_ce_reads
       logic [$clog2(PC_NB_READS[gen_rd]):0] axi_read_cnt;
       logic                                 axi_read;
+      logic                                 waiting_for_answer;
+
+      always_ff @(posedge clk_mrmac) begin
+        if (~resetn_mrmac) begin
+          waiting_for_answer <= 1'b0;
+        end else begin
+          if (axi4_read_last[gen_rd]) begin
+            waiting_for_answer <= 1'b1;
+          end else if (finished_reading_pc[gen_rd]) begin
+            waiting_for_answer <= 1'b0;
+          end
+        end
+      end
 
       // Counts the number of clock cycles that must perform reads taking account bursts
       // because we decrement from axi4_read_pc we add one to count all words
@@ -374,7 +388,7 @@ module mhdma_slave
           axi_read_cnt <= PC_NB_READS[gen_rd];
           axi_read <= 1'b0;
         end else begin
-          if ((axi_read_cnt > 0) && axi4_read_pc[gen_rd] && m_axi4_arready[gen_rd]) begin
+          if ((axi_read_cnt > 0) && axi4_read_pc[gen_rd] && m_axi4_arready[gen_rd] & ~waiting_for_answer) begin
             axi_read <= 1'b1;
             axi_read_cnt <= axi_read_cnt - 1;
           end else if (axi4_read_last[gen_rd]) begin
@@ -396,18 +410,18 @@ module mhdma_slave
       end
 
       // m_axi4_arid[gen_rd] not used
-      assign m_axi4_araddr[gen_rd]  = (axi_read && m_axi4_arready[gen_rd]) ? mhdma_read_addr :'h0;
-      assign m_axi4_arsize[gen_rd]  = (axi_read && m_axi4_arready[gen_rd]) ? MHDMA_ARSIZE    :'h0;
-      assign m_axi4_arburst[gen_rd] = (axi_read && m_axi4_arready[gen_rd]) ? 2'b01           :'h0; // incr
-      assign m_axi4_arvalid[gen_rd] = (axi_read && m_axi4_arready[gen_rd]) ? 1'b1            :'h0;
+      assign m_axi4_araddr[gen_rd]  = axi_read ? mhdma_read_addr :'h0;
+      assign m_axi4_arsize[gen_rd]  = axi_read ? MHDMA_ARSIZE    :'h0;
+      assign m_axi4_arburst[gen_rd] = axi_read ? 2'b01           :'h0; // incr
+      assign m_axi4_arvalid[gen_rd] = axi_read ? 1'b1            :'h0;
       // there is not arlast, this is only an intermediate signal
-      assign axi4_read_last[gen_rd] = ((axi_read && m_axi4_arready[gen_rd]) & (axi_read_cnt == 0)) ? 1'b1 : 1'b0;
+      assign axi4_read_last[gen_rd] = (axi_read & (axi_read_cnt == 0)) ? 1'b1 : 1'b0;
 
       always_comb begin
         if ((PC_REMAINS[gen_rd] !=0) && (axi_read_cnt == 0)) begin
-          m_axi4_arlen[gen_rd] = (axi_read && m_axi4_arready[gen_rd]) ? PC_REMAINS[gen_rd]-1 : 'h0;
+          m_axi4_arlen[gen_rd] = axi_read? PC_REMAINS[gen_rd]-1 : 'h0;
         end else begin
-          m_axi4_arlen[gen_rd] = (axi_read && m_axi4_arready[gen_rd]) ? MAX_BURST_SIZE-1 : 'h0;
+          m_axi4_arlen[gen_rd] = axi_read? MAX_BURST_SIZE-1 : 'h0;
         end
       end
 
@@ -548,6 +562,25 @@ module mhdma_slave
 
   // which PC must be read ------------------------------------------------------------------------
   // those two processes are defined for two PCS only.
+  generate
+    for (genvar gen_rd=0; gen_rd<ETH_PC; gen_rd++) begin : gen_control_pc
+      logic [$clog2(PC_NB_READS[gen_rd]):0] nb_read;
+      // when do I finished reading ?
+      always_ff @(posedge clk_mrmac) begin
+        if (~resetn_mrmac)begin
+          nb_read <= 'h0;
+        end else begin
+          if (m_axi4_rlast[gen_rd] & m_axi4_rvalid[gen_rd]) begin
+            nb_read <= nb_read + 1;
+          end else if (nb_read == PC_NB_READS[gen_rd]) begin
+            nb_read <= 'h0;
+          end
+        end
+      end
+
+      assign finished_reading_pc[gen_rd] = (nb_read == PC_NB_READS[gen_rd]);
+    end
+  endgenerate
 
   // launch reads over the two PCs independently
   always_ff @(posedge clk_mrmac) begin : prc_read_one_at_a_time
@@ -556,9 +589,9 @@ module mhdma_slave
     end else begin
       // when read request registers are ready we can trigger the shift register.
       // when the last signal is fired we can trigger the second PC
-      if (rreq_ready_pulse | axi4_read_last[0]) begin
+      if (rreq_ready_pulse | finished_reading_pc[0]) begin
         axi4_read_pc <= {axi4_read_pc[ETH_PC-2:0], rreq_ready_pulse};
-      end else if (axi4_read_last[1]) begin
+      end else if (finished_reading_pc[1]) begin
         axi4_read_pc <= 'h0;
       end
     end
@@ -670,7 +703,7 @@ module mhdma_slave
       if (rst_nb_read_to_hbm) begin
         nb_read_to_hbm <= 'h0;
       end else begin
-        if ((gen_ce_reads[0].axi_read & m_axi4_arready[0] & m_axi4_arvalid[0]) | (gen_ce_reads[1].axi_read & m_axi4_arready[1] & m_axi4_arvalid[1])) begin
+        if ((gen_ce_reads[0].axi_read & m_axi4_arvalid[0]) | (gen_ce_reads[1].axi_read & m_axi4_arvalid[1])) begin
           nb_read_to_hbm <= nb_read_to_hbm + 1;
         end
       end

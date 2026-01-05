@@ -1,7 +1,7 @@
 // ============================================================================================== //
 // Description  : Axi4-lite register bank
 // This file was generated with rust regmap generator:
-//  * Date:  2025-12-29
+//  * Date:  2026-01-05
 //  * Tool_version: bd49564daf1a99d615cb6dbb121b54bfbeef8b22
 // ---------------------------------------------------------------------------------------------- //
 // xR[n]W[na]
@@ -139,6 +139,10 @@ import hpu_regif_core_eth_2in3_pkg::*;
     , output logic [REG_DATA_W-1: 0] r_mhdma_request_stat_nb_words_received_pc_pc1
     , input  logic [REG_DATA_W-1: 0] r_mhdma_request_stat_nb_words_received_pc_pc1_upd
     , output logic r_mhdma_request_stat_nb_words_received_pc_pc1_rd_en
+  // Register IO: mhdma_request_stat_nb_ce_words_received
+    , output logic [REG_DATA_W-1: 0] r_mhdma_request_stat_nb_ce_words_received
+    , input  logic [REG_DATA_W-1: 0] r_mhdma_request_stat_nb_ce_words_received_upd
+    , output logic r_mhdma_request_stat_nb_ce_words_received_rd_en
   // Register IO: mhdma_request_stat_t_notify_to_ack
     , output logic [REG_DATA_W-1: 0] r_mhdma_request_stat_t_notify_to_ack
     , input  logic [REG_DATA_W-1: 0] r_mhdma_request_stat_t_notify_to_ack_upd
@@ -481,6 +485,9 @@ import hpu_regif_core_eth_2in3_pkg::*;
 //-- Default mhdma_request_stat_nb_words_received_pc_pc1
   logic [REG_DATA_W-1:0]mhdma_request_stat_nb_words_received_pc_pc1_default;
   assign mhdma_request_stat_nb_words_received_pc_pc1_default = 'h0;
+//-- Default mhdma_request_stat_nb_ce_words_received
+  logic [REG_DATA_W-1:0]mhdma_request_stat_nb_ce_words_received_default;
+  assign mhdma_request_stat_nb_ce_words_received_default = 'h0;
 //-- Default mhdma_request_stat_t_notify_to_ack
   logic [REG_DATA_W-1:0]mhdma_request_stat_t_notify_to_ack_default;
   assign mhdma_request_stat_t_notify_to_ack_default = 'h0;
@@ -843,6 +850,11 @@ import hpu_regif_core_eth_2in3_pkg::*;
   assign r_mhdma_request_stat_nb_words_received_pc_pc1D       = r_mhdma_request_stat_nb_words_received_pc_pc1_upd;
   assign r_mhdma_request_stat_nb_words_received_pc_pc1_rd_en = rd_en_ok && (rd_add[AXIL_ADD_RANGE_W-1:0] == MHDMA_REQUEST_STAT_NB_WORDS_RECEIVED_PC_PC1_OFS[AXIL_ADD_RANGE_W-1:0]);
   assign r_mhdma_request_stat_nb_words_received_pc_pc1 = r_mhdma_request_stat_nb_words_received_pc_pc1_upd;
+// Register FF: mhdma_request_stat_nb_ce_words_received
+  logic [REG_DATA_W-1:0] r_mhdma_request_stat_nb_ce_words_receivedD;
+  assign r_mhdma_request_stat_nb_ce_words_receivedD       = r_mhdma_request_stat_nb_ce_words_received_upd;
+  assign r_mhdma_request_stat_nb_ce_words_received_rd_en = rd_en_ok && (rd_add[AXIL_ADD_RANGE_W-1:0] == MHDMA_REQUEST_STAT_NB_CE_WORDS_RECEIVED_OFS[AXIL_ADD_RANGE_W-1:0]);
+  assign r_mhdma_request_stat_nb_ce_words_received = r_mhdma_request_stat_nb_ce_words_received_upd;
 // Register FF: mhdma_request_stat_t_notify_to_ack
   logic [REG_DATA_W-1:0] r_mhdma_request_stat_t_notify_to_ackD;
   assign r_mhdma_request_stat_t_notify_to_ackD       = r_mhdma_request_stat_t_notify_to_ack_upd;
@@ -1291,6 +1303,9 @@ import hpu_regif_core_eth_2in3_pkg::*;
           end
           MHDMA_REQUEST_STAT_NB_WORDS_RECEIVED_PC_PC1_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register mhdma_request_stat_nb_words_received_pc_pc1
             axil_rdataD = r_mhdma_request_stat_nb_words_received_pc_pc1;
+          end
+          MHDMA_REQUEST_STAT_NB_CE_WORDS_RECEIVED_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register mhdma_request_stat_nb_ce_words_received
+            axil_rdataD = r_mhdma_request_stat_nb_ce_words_received;
           end
           MHDMA_REQUEST_STAT_T_NOTIFY_TO_ACK_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register mhdma_request_stat_t_notify_to_ack
             axil_rdataD = r_mhdma_request_stat_t_notify_to_ack;

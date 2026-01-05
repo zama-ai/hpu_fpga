@@ -220,6 +220,12 @@ offset= 0x100
   write_access="None"
   default={Cst=0x0}
   duplicate=["_pc0", "_pc1"]
+[section.mhdma_request.register.stat_nb_ce_words_received]
+  description="number of words received during ciphertext reception"
+  owner="Kernel"
+  read_access="ReadNotify"
+  write_access="None"
+  default={Cst=0x0}
 
 [section.mhdma_request.register.stat_t_notify_to_ack]
   description="time between notify tlast and ack reception in decoder"

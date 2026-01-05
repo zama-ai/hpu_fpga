@@ -6,7 +6,6 @@
 // Debug mode corresponds to the control of one lane through register file
 //
 // TODO:
-// - test interrupts are correctly clear when read and that no read packet is lost
 // - test behavior when saying several HPUs are the current one by mistake
 //
 // ==============================================================================================
@@ -36,8 +35,8 @@ module tb_multi_hpu_dma;
   localparam int BREAK_RDY_VLD = 1;
 
   // ciphertext memories -------------------------------------------------------------------------
-  localparam int MEM_WR_CMD_BUF_DEPTH = 4;  // Should be >= 1
-  localparam int MEM_RD_CMD_BUF_DEPTH = 1;  // Should be >= 1
+  localparam int MEM_WR_CMD_BUF_DEPTH = 4;  // Should be >= 3 the max number of reads today
+  localparam int MEM_RD_CMD_BUF_DEPTH = 4;  // Should be >= 3 the max number of reads today
   // Data latency
   localparam int MEM_WR_DATA_LATENCY = 42;  // Should be >= 1
   localparam int MEM_RD_DATA_LATENCY = 1;   // Should be >= 1
@@ -744,6 +743,7 @@ end
   logic [ETH_PC-1:0][REG_DATA_W-1:0]   stat_nb_words_received_pc;
   logic [ETH_PC-1:0][REG_DATA_W-1:0]   stat_t_rr_wait_words_pc;
   logic [ETH_PC-1:0][2*REG_DATA_W-1:0] stat_rr_phy_addr;
+  logic             [REG_DATA_W-1:0]   stat_nb_ce_words_received;
 
   int arbitrary_notify_nb;
   int arbitrary_read_req_nb;
@@ -839,9 +839,9 @@ end
     for (int k = 0; k < LOOP_NOTIFY; k++) begin
       for (int i = 0; i < arbitrary_notify_nb; i++) begin
         // for now size_b is fixed, all our ciphertext are 16.384kB (size_b=0x4000)
-        iop_id       = i;//$urandom();
-        iop_src_addr = i;//$urandom_range(0, 1<<SRC_ADDR_W);
-        iop_dst_addr = i;//$urandom_range(0, 1<<DST_ADDR_W);
+        iop_id       = $urandom();
+        iop_src_addr = $urandom_range(0, 1<<SRC_ADDR_W);
+        iop_dst_addr = $urandom_range(0, 1<<DST_ADDR_W);
 
         repeat(10) @(posedge clk_control);
         // Sending a NOTIFY from HPU-B to HPU-A -------------------------------------------------------
@@ -878,12 +878,12 @@ end
 
       for (int i = 0; i < arbitrary_notify_nb; i++) begin
         // for now size_b is fixed, all our ciphertext are 16.384kB (size_b=0x4000)
-        iop_id       = i;//$urandom();
-        iop_src_addr = i;//$urandom_range(0, 1<<SRC_ADDR_W);
-        iop_dst_addr = i;//$urandom_range(0, 1<<DST_ADDR_W);
+        iop_id       = $urandom();
+        iop_src_addr = $urandom_range(0, 1<<SRC_ADDR_W);
+        iop_dst_addr = $urandom_range(0, 1<<DST_ADDR_W);
 
         repeat(10) @(posedge clk_control);
-        // Sending a NOTIFY from HPU-B to HPU-A -------------------------------------------------------
+        // Sending a NOTIFY from HPU-A to HPU-B -------------------------------------------------------
         notify_request(random_hpu_a, random_hpu_b, iop_id, iop_src_addr);
 
         // if a Notify is received by HPU A we should be able to confirm it by reading in the regf
@@ -994,6 +994,7 @@ end
     maxil_drv_if_hpu_a.read_trans(MHDMA_REQUEST_STAT_PHYSICAL_ADDR_PC0_MSB_OFS, stat_rr_phy_addr[0][2*REG_DATA_W-1:REG_DATA_W]);
     maxil_drv_if_hpu_a.read_trans(MHDMA_REQUEST_STAT_PHYSICAL_ADDR_PC1_LSB_OFS, stat_rr_phy_addr[1][REG_DATA_W-1:0]);
     maxil_drv_if_hpu_a.read_trans(MHDMA_REQUEST_STAT_PHYSICAL_ADDR_PC1_MSB_OFS, stat_rr_phy_addr[1][2*REG_DATA_W-1:REG_DATA_W]);
+    maxil_drv_if_hpu_a.read_trans(MHDMA_REQUEST_STAT_NB_CE_WORDS_RECEIVED_OFS, stat_nb_ce_words_received);
     $display(" stat_nb_read_to_hbm           : %0d", stat_nb_read_to_hbm);
     $display(" stat_nb_words_received_pc [0] : %0d", stat_nb_words_received_pc[0]);
     $display(" stat_nb_words_received_pc [1] : %0d", stat_nb_words_received_pc[1]);
@@ -1001,6 +1002,7 @@ end
     $display(" stat_t_rr_wait_words_pc   [1] : %0d", stat_t_rr_wait_words_pc[1]);
     $display(" stat_rr_phy_addr          [0] : %0d", stat_rr_phy_addr[0]);
     $display(" stat_rr_phy_addr          [1] : %0d", stat_rr_phy_addr[1]);
+    $display(" stat_nb_ce_words_received     : %0d", stat_nb_ce_words_received);
 
     $display(" ----------------- HPU_B -------------------------------------");
     maxil_drv_if_hpu_b.read_trans(MHDMA_REQUEST_STAT_NOTIFY_OFS,                 stat_notify);
@@ -1034,6 +1036,7 @@ end
     maxil_drv_if_hpu_b.read_trans(MHDMA_REQUEST_STAT_PHYSICAL_ADDR_PC0_MSB_OFS, stat_rr_phy_addr[0][2*REG_DATA_W-1:REG_DATA_W]);
     maxil_drv_if_hpu_b.read_trans(MHDMA_REQUEST_STAT_PHYSICAL_ADDR_PC1_LSB_OFS, stat_rr_phy_addr[1][REG_DATA_W-1:0]);
     maxil_drv_if_hpu_b.read_trans(MHDMA_REQUEST_STAT_PHYSICAL_ADDR_PC1_MSB_OFS, stat_rr_phy_addr[1][2*REG_DATA_W-1:REG_DATA_W]);
+    maxil_drv_if_hpu_b.read_trans(MHDMA_REQUEST_STAT_NB_CE_WORDS_RECEIVED_OFS, stat_nb_ce_words_received);
     $display(" stat_nb_read_to_hbm           : %0d", stat_nb_read_to_hbm);
     $display(" stat_nb_words_received_pc [0] : %0d", stat_nb_words_received_pc[0]);
     $display(" stat_nb_words_received_pc [1] : %0d", stat_nb_words_received_pc[1]);
@@ -1041,6 +1044,7 @@ end
     $display(" stat_t_rr_wait_words_pc   [1] : %0d", stat_t_rr_wait_words_pc[1]);
     $display(" stat_rr_phy_addr          [0] : %0d", stat_rr_phy_addr[0]);
     $display(" stat_rr_phy_addr          [1] : %0d", stat_rr_phy_addr[1]);
+    $display(" stat_nb_ce_words_received     : %0d", stat_nb_ce_words_received);
     $display(" ------------------------------------------------------------- \n");
 
     $display("%t > INFO: End simulation",$time);
