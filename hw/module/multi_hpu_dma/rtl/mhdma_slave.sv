@@ -388,7 +388,7 @@ module mhdma_slave
           axi_read_cnt <= PC_NB_READS[gen_rd];
           axi_read <= 1'b0;
         end else begin
-          if ((axi_read_cnt > 0) && axi4_read_pc[gen_rd] && m_axi4_arready[gen_rd] & ~waiting_for_answer) begin
+          if ((axi_read_cnt > 0) && axi4_read_pc[gen_rd] & ~waiting_for_answer) begin
             axi_read <= 1'b1;
             axi_read_cnt <= axi_read_cnt - 1;
           end else if (axi4_read_last[gen_rd]) begin
