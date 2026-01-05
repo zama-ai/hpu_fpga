@@ -30,7 +30,7 @@ module tb_fifo_ram_rdy_vld_2clk;
   parameter int DEPTH              = 128;
   parameter int OUT_FIFO_DEPTH     = 2;
   parameter int RAM_LATENCY        = 0; // TODO: because no ram latency, we must count up to DEPTH_LOCAL-1
-  parameter int ALMOST_FULL_REMAIN = 1;
+  parameter int ALMOST_FULL_REMAIN = 5; // cannot be lower than 5
 
   localparam int WIDTH             = 8;
 

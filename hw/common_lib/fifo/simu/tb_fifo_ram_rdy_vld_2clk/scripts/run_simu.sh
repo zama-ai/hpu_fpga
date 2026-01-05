@@ -59,20 +59,17 @@ TMP_FILE="${PROJECT_DIR}/hw/output/${RANDOM}${RANDOM}._tmp"
 echo -n "" > $SEED_FILE
 echo -n "" > $TMP_FILE
 
-D_RAMLAT_AFR_L=("D255_RAMLAT1_AFR43" \
-                "D256_RAMLAT1_AFR0" \
-                "D129_RAMLAT2_AFR1" \
-                "D256_RAMLAT3_AFR0")
-for d_ramlat_afr in "${D_RAMLAT_AFR_L[@]}"; do
-  if [[ $d_ramlat_afr =~ D([0-9]+)_RAMLAT([0-9]+)_AFR([0-9]+)$ ]]; then
-    depth=${BASH_REMATCH[1]}
-    ram_latency=${BASH_REMATCH[2]}
-    almost_full_remain=${BASH_REMATCH[3]}
-  fi
+for i in `seq 1 15`; do
+  # TODO: ram latency cannot be modified right now
+  # Depth must be a power of two !
+  depth=$((1 << (RANDOM % 12 + 3)))
+  CLK_HALF_PERIOD_A=$((RANDOM % 9 + 1))
+  CLK_HALF_PERIOD_B=$((RANDOM % 9 + 1))
 
-  cmd="$run_edalize -m ${module} -t $PROJECT_SIMU_TOOL  -P RAM_LATENCY int $ram_latency \
-                                          -P DEPTH int $depth \
-                                          -P ALMOST_FULL_REMAIN int $almost_full_remain $args"
+  cmd="$run_edalize -m ${module} -t $PROJECT_SIMU_TOOL -P DEPTH int $depth \
+  -P CLK_HALF_PERIOD_A int $CLK_HALF_PERIOD_A \
+  -P CLK_HALF_PERIOD_B int $CLK_HALF_PERIOD_B $args"
+
   echo "==========================================================="
   echo "INFO> Running : $cmd"
   echo "==========================================================="
