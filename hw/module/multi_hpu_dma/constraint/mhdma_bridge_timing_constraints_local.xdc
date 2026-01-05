@@ -13,7 +13,7 @@
 # ==============================================================================================
 
 
-set CLK_PERIOD 2.500
+set CLK_PERIOD 2.100
 create_clock -period $CLK_PERIOD -name clk_mrmac  [get_ports clk_mrmac]
 
 # If the clock buffer location is known, define it for more accuracy in timing analysis
