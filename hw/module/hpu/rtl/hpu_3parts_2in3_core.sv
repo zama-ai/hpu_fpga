@@ -57,10 +57,8 @@ module hpu_3parts_2in3_core
   input  logic                               cfg_srst_n, // synchronous reset
 
   input logic                                cfg_eth_clk,     // ethernet configuration slow clock
-  input logic                                cfg_eth_srst_n,  // ethernet configuration slow clock
 
   input logic                                prc_mrmac_clk,    // mrmac clock at axis speed
-  input logic                                prc_mrmac_srst_n, // mrmac clock at axis speed
 
   output interrupt_t                         interrupt,
 
@@ -509,6 +507,33 @@ module hpu_3parts_2in3_core
     end
 // pragma translate_on
   // ==============================================================================================
+
+  // reset for mrmac resyncronized for the two clock frequencies
+  logic cfg_eth_srst_n;   // ethernet configuration slow clock
+  logic prc_mrmac_srst_n; // mrmac clock at axis speed
+
+  xpm_cdc_single_wrapper #(
+    // The frequency of the input signal is extremely low, this should be enough
+    .CDC_SYNC_STAGES ( 2 ) ,
+    .SRC_INPUT_REG   ( 0 )
+  ) sync_cfg_prc_mrmac_slow (
+    .src_clk  ( prc_clk           ) ,
+    .src_in   ( prc_srst_n        ) ,
+    .dest_clk ( mrmac_free_clk    ) ,
+    .dest_out ( cfg_eth_srst_n    )
+  );
+
+  xpm_cdc_single_wrapper #(
+    // The frequency of the input signal is extremely low, this should be enough
+    .CDC_SYNC_STAGES ( 2 ) ,
+    .SRC_INPUT_REG   ( 0 )
+  ) sync_cfg_prc_mrmac_fast (
+    .src_clk  ( prc_clk           ) ,
+    .src_in   ( prc_srst_n        ) ,
+    .dest_clk ( mrmac_free_clk    ) ,
+    .dest_out ( prc_mrmac_clk     )
+  );
+
   multi_hpu_dma #(
   ) multi_hpu_dma (
     // System interface

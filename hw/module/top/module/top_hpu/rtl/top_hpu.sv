@@ -2645,10 +2645,8 @@ module top_hpu #(
     .cfg_srst_n                    (cfg_srst_n),
 
     .cfg_eth_clk                   (eth_cfg_clk),
-    .cfg_eth_srst_n                (eth_cfg_srst_n),
 
     .prc_mrmac_clk                 (clk_axis_mrmac),
-    .prc_mrmac_srst_n              (resetn_axis_mrmac),
 
     /* AXI-LITE
      * Direct connection to the hpu regif

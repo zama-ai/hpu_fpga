@@ -111,9 +111,6 @@ proc create_root_design { parentCell ntt_psi } {
   set resetn_usr_0_ic_0_gated [ create_bd_port -dir I -type rst resetn_usr_0_ic_0_gated ]
   set resetn_usr_1_ic_0 [ create_bd_port -dir O -type rst resetn_usr_1_ic_0 ]
   set pl0_resetn_0 [ create_bd_port -dir O -type rst pl0_resetn_0 ]
-  set resetn_eth_cfg_ic_0 [ create_bd_port -dir O -from 0 -to 0 -type rst resetn_eth_cfg_ic_0 ]
-
-  set resetn_axis_mrmac [ create_bd_port -dir O -type rst resetn_axis_mrmac ]
 
   # gt resets
   set gt_reset_tx_datapath_in [ create_bd_port -dir I -from 3 -to 0 gt_reset_tx_datapath_in ]
@@ -588,7 +585,6 @@ proc create_root_design { parentCell ntt_psi } {
   connect_bd_net -net eth_wrapper_pm_rdy               [get_bd_ports pm_rdy] [get_bd_pins eth_wrapper/pm_rdy]
 
   connect_bd_net [get_bd_ports clk_axis_mrmac]    [get_bd_pins shell_wrapper/clk_eth_mrmac_0] [get_bd_pins eth_wrapper/s_axis_mrmac_aclk] [get_bd_pins noc_wrapper/mrmac_clk]
-  connect_bd_net [get_bd_ports resetn_axis_mrmac] [get_bd_pins shell_wrapper/resetn_eth_mrmac_ic_0]
 
   # == RX Lanes
   # 0
@@ -660,7 +656,6 @@ proc create_root_design { parentCell ntt_psi } {
                                         [get_bd_pins shell_wrapper/resetn_usr_1_ic_0] -boundary_type upper
 
   connect_bd_net [get_bd_pins noc_wrapper/eth_clk]   [get_bd_pins shell_wrapper/clk_eth_cfg_0] [get_bd_ports clk_eth_cfg_0] -boundary_type upper
-  connect_bd_net [get_bd_pins noc_wrapper/eth_rst_n] [get_bd_pins shell_wrapper/resetn_eth_cfg_ic_0] [get_bd_ports resetn_eth_cfg_ic_0] -boundary_type upper
 
   connect_bd_net [get_bd_pins eth_wrapper/apb3clk_quad] [get_bd_pins shell_wrapper/clk_gt_freerun_0]
   connect_bd_net [get_bd_pins eth_wrapper/apb3presetn]  [get_bd_pins shell_wrapper/resetn_gt_freerun_ic_0]
@@ -688,7 +683,6 @@ proc create_root_design { parentCell ntt_psi } {
   # Ethernet
   connect_bd_net      [get_bd_pins eth_wrapper/s_axi_aclk]    [get_bd_pins shell_wrapper/clk_eth_cfg_0]
   connect_bd_net      [get_bd_pins eth_wrapper/s_axi_aresetn] [get_bd_pins shell_wrapper/resetn_eth_cfg_ic_0]
-  connect_bd_net      [get_bd_pins eth_wrapper/s_axis_mrmac_aresetn] [get_bd_pins shell_wrapper/resetn_eth_mrmac_ic_0]
 
   ####################################
   # Address

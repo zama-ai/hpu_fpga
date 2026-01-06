@@ -67,11 +67,9 @@ module hpu_3parts
   input  logic                   cfg_clk,    // config clock
   input  logic                   cfg_srst_n, // synchronous reset
 
-  input logic                  cfg_eth_clk,     // ethernet configuration slow clock
-  input logic                  cfg_eth_srst_n,  // ethernet configuration slow clock
+  input logic                    cfg_eth_clk,     // ethernet configuration slow clock
 
-  input logic                  prc_mrmac_clk,    // mrmac clock at axis speed
-  input logic                  prc_mrmac_srst_n, // mrmac clock at axis speed
+  input logic                    prc_mrmac_clk,    // mrmac clock at axis speed
 
   output logic [INTERRUPT_W-1:0] interrupt,
 
@@ -200,6 +198,7 @@ module hpu_3parts
   logic       hpu_reset;
   logic       hpu_reset_done;
   logic       soft_prc_srst_n;
+  logic       soft_mhdma_srst_n;
   logic       global_rst;
 
   hpu_soft_reset
@@ -544,10 +543,8 @@ module hpu_3parts
     .cfg_srst_n                 (cfg_srst_n),
 
     .cfg_eth_clk                (cfg_eth_clk),
-    .cfg_eth_srst_n             (cfg_eth_srst_n),
 
     .prc_mrmac_clk              (prc_mrmac_clk),
-    .prc_mrmac_srst_n           (prc_mrmac_srst_n),
 
     .interrupt                  (hpu_2in3_interrupt),
 
