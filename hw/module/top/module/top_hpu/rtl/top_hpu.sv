@@ -10,7 +10,7 @@
 
 module top_hpu #(
   parameter int VERSION_MAJOR   = 2,
-  parameter int VERSION_MINOR   = 1,
+  parameter int VERSION_MINOR   = 2,
   parameter int INTER_PART_PIPE = 1
 ) (
   // PCIE Link ----------------------------------------------------------------
