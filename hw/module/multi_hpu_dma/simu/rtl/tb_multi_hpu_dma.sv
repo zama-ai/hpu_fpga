@@ -43,7 +43,7 @@ module tb_multi_hpu_dma;
   // Set random on ready valid, on write path
   localparam bit MEM_USE_WR_RANDOM = 1;
   // Set random on ready valid, on read path
-  localparam bit MEM_USE_RD_RANDOM = 0;     // check path, no need random
+  localparam bit MEM_USE_RD_RANDOM = 1;     // check path, no need random
 
   // simulation sizes to reduce runtime
   localparam int MEM_SIM_SIZE = 18;         // must be < 22

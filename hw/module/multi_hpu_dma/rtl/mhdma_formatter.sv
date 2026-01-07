@@ -7,6 +7,7 @@
 
 module mhdma_formatter
   import mhdma_pkg::*; // multi-hpu-dma
+  import axi_if_eth_axi_pkg::*;       // AXI4
 #() (
   // Ethernet fast clock interface --------------------------------------------
   input  logic                                      clk_mrmac,
@@ -60,6 +61,12 @@ module mhdma_formatter
   // =========================================================================================== //
   // Localparam
   // =========================================================================================== //
+  localparam int LAST_PACKET_BYTE_SIZE = $ceil(real'(LAST_PACKET_BYTE_SIZE_USEFUL) / AXI4_DATA_BYTES)*AXI4_DATA_BYTES;
+
+  // If ever I need to send less words and what is allowed by ethernet, we need to fill with zeros
+  localparam int NB_WORDS_LAST_PACKET_USEFUL = LAST_PACKET_BYTE_SIZE/8;
+  localparam int NB_WORDS_LAST_PACKET = (NB_WORDS_LAST_PACKET_USEFUL < NB_WORDS_SMALL_PACKETS) ? NB_WORDS_SMALL_PACKETS : NB_WORDS_LAST_PACKET_USEFUL;
+
   localparam int NB_WORDS_FULL    = NB_WORDS_CUST_HEADER_SIZE+NB_WORDS_PAYLOAD;
   localparam int NB_WORDS_PARTIAL = NB_WORDS_LAST_PACKET+NB_WORDS_CUST_HEADER_SIZE;
 
@@ -105,6 +112,7 @@ module mhdma_formatter
 
   logic [$clog2(NB_WORDS_MAX)+1:0] tx_cnt;
   logic [        MRMAC_AXIS_W-1:0] tx_header;
+  logic ce_header;
   // ce -------------------------------------------------------------------------------------------
   // During CE we need to increment seq_num for each packet sent
   // For the arbiter we need the information to release the fsm that all have been sent
@@ -137,7 +145,13 @@ module mhdma_formatter
       tx_cnt <= 'h0;
     end else begin
       if (okay_to_send_request & ~end_of_packet & qsfp_tx_tready) begin
-        tx_cnt <= tx_cnt+1;
+        if (ct_emission_allowed) begin
+          if(ce_header | (ce_valid & ce_ready)) begin
+            tx_cnt <= tx_cnt+1;
+          end
+        end else begin
+          tx_cnt <= tx_cnt+1;
+        end
       end else if (end_of_packet) begin
         tx_cnt <= 'h0;
       end
@@ -159,7 +173,7 @@ module mhdma_formatter
   // we have to trigger signal one cycle earlier to have okay_to_send_request on time
   assign stop_sending_small_packet     = qsfp_tx_tready & (tx_cnt == NB_WORDS_MIN)      & small_packet;
   assign stop_sending_ce_full_frame    = qsfp_tx_tready & (tx_cnt == NB_WORDS_FULL)     & ct_emission_allowed;
-  assign stop_sending_ce_partial_frame = qsfp_tx_tready & (tx_cnt == (NB_WORDS_PARTIAL) & ce_last_packet);
+  assign stop_sending_ce_partial_frame = qsfp_tx_tready & (tx_cnt == NB_WORDS_PARTIAL)  & ce_last_packet;
 
   assign end_of_packet = stop_sending_small_packet | stop_sending_ce_full_frame | stop_sending_ce_partial_frame;
 
@@ -399,8 +413,6 @@ module mhdma_formatter
 
   // we need to stall words coming from ciphertext emission to build headers
   logic ce_stalling;             // level: up when we need to send header between packets
-  logic ce_stalling_last_packet; // level: up when we need to fill last packet by zeros
-  logic ce_header;
 
   always_ff @(posedge clk_mrmac) begin
     if (~resetn_mrmac) begin
@@ -444,7 +456,7 @@ module mhdma_formatter
   assign ce_sop_header = ce_stalling & ~ce_stalling_tmp;
 
   // level active when we have headers on ciphertext emission
-  assign ce_header = tx_tvalid_D & (ce_first_header | ce_stalling);
+  assign ce_header = (ce_first_header | ce_stalling);
 
   // backpressure over ciphertext coefficients
   // active
@@ -532,8 +544,8 @@ module mhdma_formatter
   logic                      tx_tlast_reg;
   logic                      tx_tvalid_reg;
 
-  assign tx_tdata_D      = small_packet ? tx_header : (ct_emission_allowed & ce_header) ? tx_header : (ct_emission_allowed & ce_valid & ce_ready) ? ce_payload :'h0;
-  assign tx_tvalid_D     = ~(tx_cnt == 'h0);
+  assign tx_tdata_D      = small_packet ? tx_header : (ct_emission_allowed & ce_header & tx_tvalid_D) ? tx_header : (ct_emission_allowed & ce_valid & ce_ready) ? ce_payload :'h0;
+  assign tx_tvalid_D     = small_packet ? ~(tx_cnt == 'h0) : ~(tx_cnt == 'h0)  & (ce_header | (ce_valid & ce_ready));
   assign tx_tkeep_user_D = {3'b000, tx_byte_enable};
   assign tx_tlast_D      = small_packet ? tx_small_last : ct_emission_allowed ? tx_last_word : 1'b0;
 

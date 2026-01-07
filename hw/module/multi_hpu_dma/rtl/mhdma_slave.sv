@@ -523,6 +523,15 @@ module mhdma_slave
         end
       end
 
+      logic [NB_MRMRAC_WORDS_PER_READ-1:0] temp_rdy_vld;
+      always_ff @(posedge clk_mrmac)
+        temp_rdy_vld[0] <= read_fifo_out_valid & read_fifo_out_ready;
+
+      for (genvar gen_i = 1; gen_i<NB_MRMRAC_WORDS_PER_READ; gen_i++) begin
+        always_ff @(posedge clk_mrmac)
+          temp_rdy_vld[gen_i] <= temp_rdy_vld[gen_i-1];
+      end
+
       logic [$clog2(NB_MRMRAC_WORDS_PER_READ)-1:0] realign_cnt;
       logic                                        start_deserialize;
 
@@ -532,7 +541,7 @@ module mhdma_slave
         end else begin
           if (reading_which_pc[gen_rd] & (read_fifo_out_valid & read_fifo_out_ready)) begin
             start_deserialize <= 1'b1;
-          end else if (temp_finished_flag[NB_MRMRAC_WORDS_PER_READ-2]) begin
+          end else if (temp_rdy_vld[NB_MRMRAC_WORDS_PER_READ-1]) begin
             start_deserialize <= 1'b0;
           end
         end
