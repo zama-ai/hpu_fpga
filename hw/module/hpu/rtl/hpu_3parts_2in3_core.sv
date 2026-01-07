@@ -519,7 +519,7 @@ module hpu_3parts_2in3_core
   ) sync_cfg_prc_mrmac_slow (
     .src_clk  ( prc_clk           ) ,
     .src_in   ( prc_srst_n        ) ,
-    .dest_clk ( mrmac_free_clk    ) ,
+    .dest_clk ( cfg_eth_clk       ) ,
     .dest_out ( cfg_eth_srst_n    )
   );
 
@@ -530,8 +530,8 @@ module hpu_3parts_2in3_core
   ) sync_cfg_prc_mrmac_fast (
     .src_clk  ( prc_clk           ) ,
     .src_in   ( prc_srst_n        ) ,
-    .dest_clk ( mrmac_free_clk    ) ,
-    .dest_out ( prc_mrmac_clk     )
+    .dest_clk ( prc_mrmac_clk     ) ,
+    .dest_out ( prc_mrmac_srst_n  )
   );
 
   multi_hpu_dma #(
