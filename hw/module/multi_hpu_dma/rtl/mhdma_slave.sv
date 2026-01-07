@@ -51,7 +51,7 @@ module mhdma_slave
 
   input  logic                                notify_ack_sent,
 
-  output logic             [   CEH_WIDTH-1:0] ce_header_payload,
+  output header_t                             ce_header,
   output logic             [MRMAC_AXIS_W-1:0] ce_payload,
   output logic                                ce_valid,
   input  logic                                ce_ready,
@@ -159,9 +159,9 @@ module mhdma_slave
 
   // Notify RX regfile interface --------------------------------------------------------
   // === MRMAC domain
-  logic [NRX_REGF_WIDTH-1:0] nrx_regf_in_data;
-  logic                      nrx_regf_in_rdy;
-  logic                      nrx_regf_in_vld;
+  logic [REG_DATA_W-1:0] nrx_regf_in_data;
+  logic                  nrx_regf_in_rdy;
+  logic                  nrx_regf_in_vld;
 
   // re-organization for regif interface
   logic [SRC_ADDR_W-1:0] nrx_ct_src_addr;
@@ -185,9 +185,9 @@ module mhdma_slave
   fifo_ram_rdy_vld_2clk # (
     .CDC_SYNC_STAGES (CDC_SYNC_STAGES),
     // tweak theses parameters in package
-    .WIDTH           (NRX_REGF_WIDTH),
-    .DEPTH           (XPM_MIN_FIFO_DEPTH),
-    .FIFO_MEMORY_TYPE(NRX_REGF_MEMORY_TYPE)
+    .WIDTH           (REG_DATA_W),
+    .DEPTH           (REQ_FIFO_DEPTH),
+    .FIFO_MEMORY_TYPE(REQ_MEMORY_TYPE)
   ) fifo_nrx_regf (
     // Write Domain ports: MRMAC domain
     .in_clk      (clk_mrmac),
@@ -433,10 +433,10 @@ module mhdma_slave
   // Reception FIFOs for both PC ports ------------------------------------------------------------
   // one hot value that selects which PC is selected to be read and sent to QSFP lane
   // always start with PC0
-  logic [ETH_PC-1:0]                reading_which_pc;
-  logic [ETH_PC-1:0]                fifo_ce_pc_in_rdy;
-  logic [ETH_PC-1:0][CE_DATA_W-1:0] fifo_ce_pc_in_data;
-  logic [ETH_PC-1:0]                fifo_ce_pc_in_vld;
+  logic [ETH_PC-1:0]                   reading_which_pc;
+  logic [ETH_PC-1:0]                   fifo_ce_pc_in_rdy;
+  logic [ETH_PC-1:0][MRMAC_AXIS_W-1:0] fifo_ce_pc_in_data;
+  logic [ETH_PC-1:0]                   fifo_ce_pc_in_vld;
 
   generate
     for (genvar gen_rd=0; gen_rd<ETH_PC; gen_rd++) begin : gen_read_fifo
@@ -451,7 +451,7 @@ module mhdma_slave
       assign read_fifo_we = m_axi4_rvalid[gen_rd] & read_fifo_ready & ct_emission_request_in_use;
 
       fifo_ram_rdy_vld # (
-        .WIDTH      (FIFO_PC_DATA_W),
+        .WIDTH      (AXI4_DATA_W),
         .DEPTH      (FIFO_PC_DEPTH),
         .RAM_LATENCY(FIFO_PC_RAM_LATENCY)
       ) fifo_pc_read (
@@ -623,10 +623,10 @@ module mhdma_slave
 
   // Fifo Ciphertext Emission ---------------------------------------------------------------------
   logic [CE_DATA_COUNT_W:0] fifo_ce_cnt;
-  logic [    CE_DATA_W-1:0] fifo_ce_in_data;
+  logic [MRMAC_AXIS_W-1:0]  fifo_ce_in_data;
   logic                     fifo_ce_in_vld;
   logic                     fifo_ce_in_rdy;
-  logic [    CE_DATA_W-1:0] fifo_ce_out_data;
+  logic [MRMAC_AXIS_W-1:0]  fifo_ce_out_data;
   logic                     fifo_ce_out_vld;
 
   // data in input are already in the correct form for sending directly to the lane
@@ -656,9 +656,9 @@ module mhdma_slave
   end
 
   fifo_ram_rdy_vld # (
-    .WIDTH      (CE_DATA_W),
-    .DEPTH      (CE_DEPTH),
-    .RAM_LATENCY(CE_RAM_LATENCY),
+    .WIDTH      (MRMAC_AXIS_W   ),
+    .DEPTH      (CT_NB_COEF     ),
+    .RAM_LATENCY(CE_RAM_LATENCY ),
     .ALMOST_FULL_REMAIN (0)
   ) fifo_ce (
     .clk         (clk_mrmac),
@@ -678,27 +678,16 @@ module mhdma_slave
   assign ce_payload = fifo_ce_out_data;
 
   // header propagation ---------------------------------------------------------------------------
-  // TODO: can be simplified ?
-  logic [MAC_ADDR_W-1:0] src_mac_addr;
-  logic [  HPU_ID_W-1:0] hpu_id;
-  logic [  SIZE_B_W-1:0] size_b;
-  logic [  IOP_ID_W-1:0] iop_id;
-  logic [DST_ADDR_W-1:0] ct_dst_addr;
-  logic [SRC_ADDR_W-1:0] ct_src_addr;
-
   always_ff @(posedge clk_mrmac) begin
     if (decoded_header.valid) begin
-      src_mac_addr <= decoded_header.src_mac_addr;
-      hpu_id       <= decoded_header.hpu_id;
-      size_b       <= decoded_header.size_b;
-      iop_id       <= decoded_header.iop_id;
-      ct_src_addr  <= decoded_header.src_addr;
-      ct_dst_addr  <= decoded_header.dst_addr;
+      ce_header.src_mac_addr <= decoded_header.src_mac_addr;
+      ce_header.hpu_id       <= decoded_header.hpu_id;
+      ce_header.size_b       <= decoded_header.size_b;
+      ce_header.iop_id       <= decoded_header.iop_id;
+      ce_header.src_addr     <= decoded_header.src_addr;
+      ce_header.dst_addr     <= decoded_header.dst_addr;
     end
   end
-
-  // our destination mac address was the source of what we received
-  assign ce_header_payload = {src_mac_addr, iop_id, hpu_id, size_b, ct_dst_addr, ct_src_addr};
 
   // =========================================================================================== //
   // Statistics

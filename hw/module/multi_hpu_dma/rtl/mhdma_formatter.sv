@@ -46,7 +46,7 @@ module mhdma_formatter
   input  logic                 [     NRX_WIDTH-1:0] nrx_cmd_payload,
   input  logic                                      nrx_cmd_valid,
   output logic                                      notify_ack_sent,
-  input  logic                 [     CEH_WIDTH-1:0] ce_header_payload,
+  input  header_t                                   ce_header,
   input  logic                 [  MRMAC_AXIS_W-1:0] ce_payload,
   output logic                                      ce_ready,
   input  logic                                      ce_valid,
@@ -61,12 +61,6 @@ module mhdma_formatter
   // =========================================================================================== //
   // Localparam
   // =========================================================================================== //
-  localparam int LAST_PACKET_BYTE_SIZE = $ceil(real'(LAST_PACKET_BYTE_SIZE_USEFUL) / AXI4_DATA_BYTES)*AXI4_DATA_BYTES;
-
-  // If ever I need to send less words and what is allowed by ethernet, we need to fill with zeros
-  localparam int NB_WORDS_LAST_PACKET_USEFUL = LAST_PACKET_BYTE_SIZE/8;
-  localparam int NB_WORDS_LAST_PACKET = (NB_WORDS_LAST_PACKET_USEFUL < NB_WORDS_SMALL_PACKETS) ? NB_WORDS_SMALL_PACKETS : NB_WORDS_LAST_PACKET_USEFUL;
-
   localparam int NB_WORDS_FULL    = NB_WORDS_CUST_HEADER_SIZE+NB_WORDS_PAYLOAD;
   localparam int NB_WORDS_PARTIAL = NB_WORDS_LAST_PACKET+NB_WORDS_CUST_HEADER_SIZE;
 
@@ -112,7 +106,7 @@ module mhdma_formatter
 
   logic [$clog2(NB_WORDS_MAX)+1:0] tx_cnt;
   logic [        MRMAC_AXIS_W-1:0] tx_header;
-  logic ce_header;
+  logic                            ce_header_vld;
   // ce -------------------------------------------------------------------------------------------
   // During CE we need to increment seq_num for each packet sent
   // For the arbiter we need the information to release the fsm that all have been sent
@@ -146,7 +140,7 @@ module mhdma_formatter
     end else begin
       if (okay_to_send_request & ~end_of_packet & qsfp_tx_tready) begin
         if (ct_emission_allowed) begin
-          if(ce_header | (ce_valid & ce_ready)) begin
+          if(ce_header_vld | (ce_valid & ce_ready)) begin
             tx_cnt <= tx_cnt+1;
           end
         end else begin
@@ -211,7 +205,7 @@ module mhdma_formatter
 
   // decoding header payload --------------------------------------------------
   // header is propagated well before we receive any data on fifo tx
-  logic [ CEH_WIDTH-1:0] ce_header_payload_tmp;
+  header_t         ce_header_payload_tmp;
   logic [DST_ADDR_W-1:0] ce_dst_addr;
   logic [SRC_ADDR_W-1:0] ce_src_addr;
   logic [  SIZE_B_W-1:0] ce_size_b;
@@ -220,14 +214,14 @@ module mhdma_formatter
   logic [MAC_ADDR_W-1:0] ce_dst_mac_addr;
 
   always_ff @(posedge clk_mrmac)
-    ce_header_payload_tmp <= ce_header_payload;
+    ce_header_payload_tmp <= ce_header;
 
-  assign ce_dst_mac_addr = ce_header_payload_tmp[CEH_DST_MAC_ADDR_OFS-1:CEH_IOP_ID_OFS];
-  assign ce_iop_id       = ce_header_payload_tmp[CEH_IOP_ID_OFS-1:CEH_HPU_ID_OFS];
-  assign ce_hpu_id       = ce_header_payload_tmp[CEH_HPU_ID_OFS-1:CEH_SIZE_B_OFS];
-  assign ce_size_b       = ce_header_payload_tmp[CEH_SIZE_B_OFS-1:CEH_DST_ADDR_OFS];
-  assign ce_dst_addr     = ce_header_payload_tmp[CEH_DST_ADDR_OFS-1:CEH_SRC_ADDR_OFS];
-  assign ce_src_addr     = ce_header_payload_tmp[CEH_SRC_ADDR_OFS-1:0];
+  assign ce_dst_mac_addr = ce_header_payload_tmp.src_mac_addr;
+  assign ce_iop_id       = ce_header_payload_tmp.iop_id;
+  assign ce_hpu_id       = ce_header_payload_tmp.hpu_id;
+  assign ce_size_b       = ce_header_payload_tmp.size_b;
+  assign ce_dst_addr     = ce_header_payload_tmp.dst_addr;
+  assign ce_src_addr     = ce_header_payload_tmp.src_addr;
 
   always_ff @(posedge clk_mrmac) begin
     if (~resetn_mrmac) begin
@@ -456,7 +450,7 @@ module mhdma_formatter
   assign ce_sop_header = ce_stalling & ~ce_stalling_tmp;
 
   // level active when we have headers on ciphertext emission
-  assign ce_header = (ce_first_header | ce_stalling);
+  assign ce_header_vld = (ce_first_header | ce_stalling);
 
   // backpressure over ciphertext coefficients
   // active
@@ -544,8 +538,8 @@ module mhdma_formatter
   logic                      tx_tlast_reg;
   logic                      tx_tvalid_reg;
 
-  assign tx_tdata_D      = small_packet ? tx_header : (ct_emission_allowed & ce_header & tx_tvalid_D) ? tx_header : (ct_emission_allowed & ce_valid & ce_ready) ? ce_payload :'h0;
-  assign tx_tvalid_D     = small_packet ? ~(tx_cnt == 'h0) : ~(tx_cnt == 'h0)  & (ce_header | (ce_valid & ce_ready));
+  assign tx_tdata_D      = small_packet ? tx_header : (ct_emission_allowed & ce_header_vld & tx_tvalid_D) ? tx_header : (ct_emission_allowed & ce_valid & ce_ready) ? ce_payload :'h0;
+  assign tx_tvalid_D     = small_packet ? ~(tx_cnt == 'h0) : ~(tx_cnt == 'h0)  & (ce_header_vld | (ce_valid & ce_ready));
   assign tx_tkeep_user_D = {3'b000, tx_byte_enable};
   assign tx_tlast_D      = small_packet ? tx_small_last : ct_emission_allowed ? tx_last_word : 1'b0;
 

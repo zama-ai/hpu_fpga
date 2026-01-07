@@ -253,7 +253,7 @@ module mhdma_bridge
   logic                     nrx_cmd_valid;
 
   logic                     notify_ack_sent;
-  logic [    CEH_WIDTH-1:0] ce_header_payload;
+  header_t                  ce_header;
   logic [ MRMAC_AXIS_W-1:0] ce_payload;
   logic                     ce_ready;
   logic                     ce_valid;
@@ -382,7 +382,7 @@ module mhdma_bridge
     .nrx_cmd_payload                (nrx_cmd_payload                          ),
     .nrx_cmd_valid                  (nrx_cmd_valid                            ),
     .notify_ack_sent                (notify_ack_sent                          ),
-    .ce_header_payload              (ce_header_payload                        ),
+    .ce_header              (ce_header                        ),
     .ce_payload                     (ce_payload                               ),
     .ce_ready                       (ce_ready                                 ),
     .ce_valid                       (ce_valid                                 ),
@@ -488,7 +488,7 @@ module mhdma_bridge
     .nrx_cmd_payload                 (nrx_cmd_payload                         ),
     .nrx_cmd_valid                   (nrx_cmd_valid                           ),
     .notify_ack_sent                 (notify_ack_sent                         ),
-    .ce_header_payload               (ce_header_payload                       ),
+    .ce_header               (ce_header                       ),
     .ce_payload                      (ce_payload                              ),
     .ce_ready                        (ce_ready                                ),
     .ce_valid                        (ce_valid                                ),

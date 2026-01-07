@@ -121,13 +121,13 @@ module mhdma_master
   // =========================================================================================== //
   // Read ReQuest Queue (RRQQ) --------------------------------------------------------------------
   // === CFG domain
-  logic                 rrqq_in_rdy;
-  logic                 rrqq_in_vld;
-  logic [RQQ_WIDTH-1:0] rrqq_in_data;
+  logic                    rrqq_in_rdy;
+  logic                    rrqq_in_vld;
+  logic [2*REG_DATA_W-1:0] rrqq_in_data;
   // tmp
-  logic [RQQ_WIDTH-1:0] rrqq_data_kept;
-  logic                 rrqq_data_kept_avail;
-  logic                 rrqq_data_vld;
+  logic [2*REG_DATA_W-1:0] rrqq_data_kept;
+  logic                    rrqq_data_kept_avail;
+  logic                    rrqq_data_vld;
 
   assign rrqq_in_vld = received_req & (regf_req_id[23:20] == REQ_ID_READ);
   // backpressure
@@ -151,16 +151,16 @@ module mhdma_master
   assign rrqq_in_data = (rrqq_in_vld & rrqq_in_rdy) ? {regf_req_id, regf_req_addr} : rrqq_data_kept;
 
   // === MRMAC domain
-  logic [RQQ_WIDTH-1:0] rrqq_out_data;
-  logic                 rrqq_out_rdy;
-  logic                 rrqq_out_vld;
+  logic [2*REG_DATA_W-1:0] rrqq_out_data;
+  logic                    rrqq_out_rdy;
+  logic                    rrqq_out_vld;
 
   fifo_ram_rdy_vld_2clk # (
     .CDC_SYNC_STAGES (CDC_SYNC_STAGES),
     // tweak theses parameters in package
-    .WIDTH           (RQQ_WIDTH),
-    .DEPTH           (XPM_MIN_FIFO_DEPTH),
-    .FIFO_MEMORY_TYPE(RQQ_MEMORY_TYPE)
+    .WIDTH           (2*REG_DATA_W),
+    .DEPTH           (REQ_FIFO_DEPTH),
+    .FIFO_MEMORY_TYPE(REQ_MEMORY_TYPE)
   ) rrqq_fifo_ram_rdy_vld_2clk (
     // CFG domain
     .in_clk      (clk_cfg),
@@ -212,17 +212,17 @@ module mhdma_master
 
   // Notify ReQuest Queue (NRQQ) ------------------------------------------------------------------
   // === CFG domain
-  logic                  nrqq_in_rdy;
-  logic                  nrqq_in_vld;
-  logic [NRQQ_WIDTH-1:0] nrqq_in_data;
+  logic                    nrqq_in_rdy;
+  logic                    nrqq_in_vld;
+  logic [2*REG_DATA_W-1:0] nrqq_in_data;
   // tmp
-  logic [NRQQ_WIDTH-1:0] nrqq_data_kept;
-  logic                  nrqq_data_kept_avail;
-  logic                  nrqq_data_vld;
+  logic [2*REG_DATA_W-1:0] nrqq_data_kept;
+  logic                    nrqq_data_kept_avail;
+  logic                    nrqq_data_vld;
   // === MRMAC domain
-  logic [NRQQ_WIDTH-1:0] nrqq_out_data;
-  logic                  nrqq_out_rdy;
-  logic                  nrqq_out_vld;
+  logic [2*REG_DATA_W-1:0] nrqq_out_data;
+  logic                    nrqq_out_rdy;
+  logic                    nrqq_out_vld;
 
   // @cfg clock ---------------------------------
   assign nrqq_in_vld = received_req & (regf_req_id[23:20] == REQ_ID_NOTIFY_TX);
@@ -249,9 +249,9 @@ module mhdma_master
   fifo_ram_rdy_vld_2clk # (
     .CDC_SYNC_STAGES (CDC_SYNC_STAGES),
     // tweak theses parameters in package
-    .WIDTH           (NRQQ_WIDTH),
-    .DEPTH           (XPM_MIN_FIFO_DEPTH),
-    .FIFO_MEMORY_TYPE(NRQQ_MEMORY_TYPE)
+    .WIDTH           (2*REG_DATA_W),
+    .DEPTH           (REQ_FIFO_DEPTH),
+    .FIFO_MEMORY_TYPE(REQ_MEMORY_TYPE)
   ) nrqq_fifo_ram_rdy_vld_2clk (
     // CFG domain
     .in_clk      (clk_cfg),
@@ -448,15 +448,15 @@ module mhdma_master
   // err_ce_rx_too_much_data: we received too much data and tried to overflow the fifo
   // =========================================================================================== //
   // ce-rx input interface
-  logic [CE_DATA_W-1:0] fifo_cerx_in_data;
-  logic                 fifo_cerx_in_vld;
-  logic                 fifo_cerx_in_rdy;
+  logic [MRMAC_AXIS_W-1:0]    fifo_cerx_in_data;
+  logic                       fifo_cerx_in_vld;
+  logic                       fifo_cerx_in_rdy;
   // ce-rx output interface
-  logic [CE_DATA_W-1:0] fifo_cerx_out_data;
-  logic                 fifo_cerx_out_vld;
-  logic                 fifo_cerx_out_rdy;
+  logic [MRMAC_AXIS_W-1:0]    fifo_cerx_out_data;
+  logic                       fifo_cerx_out_vld;
+  logic                       fifo_cerx_out_rdy;
   // ce-rx counters
-  logic [CERX_DATA_COUNT_W:0] fifo_cerx_cnt;    // counts the number of words used in fifo
+  logic [CE_DATA_COUNT_W:0] fifo_cerx_cnt;    // counts the number of words used in fifo
   logic                       cnt_cerx_up;
   logic                       cnt_cerx_down;
   logic                       fifo_pc_backpressure;
@@ -501,7 +501,7 @@ module mhdma_master
   fifo_ram_rdy_vld # (
     .WIDTH             (MRMAC_AXIS_W    ),
     .DEPTH             (CT_NB_COEF      ),
-    .RAM_LATENCY       (CERX_RAM_LATENCY)
+    .RAM_LATENCY       (CE_RAM_LATENCY)
   ) fifo_ce_rx (
     .clk         (clk_mrmac   ),
     .s_rst_n     (resetn_mrmac),
@@ -585,8 +585,8 @@ module mhdma_master
 
   logic [ETH_PC-1:0] axi4_write_pc;
   // word distribution to each fifo pc ------------------------------------------------------------
-  logic [CERX_DATA_COUNT_W:0] fifo_cerx_cnt_tx;
-  logic [ETH_PC-1:0]          target_fifo;
+  logic [CE_DATA_COUNT_W:0] fifo_cerx_cnt_tx;
+  logic [ETH_PC-1:0]        target_fifo;
 
   always_ff @(posedge clk_mrmac) begin
     if (~resetn_mrmac) begin
@@ -650,7 +650,7 @@ module mhdma_master
   end
 
   // deserialization of 64bits words (MRMAC) to 256b (AXI4_DATA_W)
-  logic [FIFO_PC_DATA_W-1:0]                    realined_word;
+  logic [AXI4_DATA_W-1:0]                       realined_word;
   logic [$clog2(NB_MRMRAC_WORDS_PER_WRITE)-1:0] realign_cnt;
   logic                                         realined_word_vld;
   logic                                         fifo_cerx_out_rdy_vld;
@@ -680,16 +680,16 @@ module mhdma_master
 
   generate
     for (genvar gen_wr=0; gen_wr<ETH_PC; gen_wr++) begin : gen_ce_write
-      logic                      fifo_pc_wr_in_vld;
-      logic                      fifo_pc_wr_in_rdy;
+      logic                   fifo_pc_wr_in_vld;
+      logic                   fifo_pc_wr_in_rdy;
       // ce-rx output interface
-      logic [FIFO_PC_DATA_W-1:0] fifo_pc_wr_out_data;
-      logic                      fifo_pc_wr_out_vld;
-      logic                      fifo_pc_wr_out_rdy;
+      logic [AXI4_DATA_W-1:0] fifo_pc_wr_out_data;
+      logic                   fifo_pc_wr_out_vld;
+      logic                   fifo_pc_wr_out_rdy;
       // control
 
       fifo_ram_rdy_vld # (
-        .WIDTH(FIFO_PC_DATA_W),
+        .WIDTH(AXI4_DATA_W),
         .DEPTH(FIFO_PC_DEPTH)
       ) fifo_pc_wr (
         .clk         (clk_mrmac         ),
@@ -959,8 +959,8 @@ module mhdma_master
     .CDC_SYNC_STAGES (CDC_SYNC_STAGES),
     // tweak theses parameters in package
     .WIDTH           (REG_DATA_W),
-    .DEPTH           (XPM_MIN_FIFO_DEPTH),
-    .FIFO_MEMORY_TYPE(NRX_REGF_MEMORY_TYPE)
+    .DEPTH           (REQ_FIFO_DEPTH),
+    .FIFO_MEMORY_TYPE(REQ_MEMORY_TYPE)
   ) rr_resp_ram_rdy_vld_2clk (
     // Write Domain ports: MRMAC domain
     .in_clk      (clk_mrmac),
@@ -1121,7 +1121,7 @@ module mhdma_master
         stat_nb_ce_words_received <= 'h0;
       end else begin
         if (packets_received) begin
-          stat_nb_ce_words_received <= { {(REG_DATA_W-CERX_DATA_COUNT_W){1'b0}}, fifo_cerx_cnt_tx};
+          stat_nb_ce_words_received <= { {(REG_DATA_W-CE_DATA_COUNT_W){1'b0}}, fifo_cerx_cnt_tx};
         end
       end
     end
