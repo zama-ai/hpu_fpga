@@ -479,8 +479,10 @@ module mhdma_slave
           slow_pace_count <= 'h0;
         end else begin
           // If we want to read to this PC & the fifo is not empty
-          if (reading_which_pc[gen_rd] & read_fifo_out_valid) begin
-            slow_pace_count <= slow_pace_count + 1;
+          if (reading_which_pc[gen_rd]) begin
+            if (read_fifo_out_valid) begin
+              slow_pace_count <= slow_pace_count + 1;
+            end
           end else begin
             slow_pace_count <= 'h0;
           end
@@ -517,7 +519,7 @@ module mhdma_slave
       logic [NB_MRMRAC_WORDS_PER_READ-1:0][MRMAC_AXIS_W-1:0] ce_data_out;
       for (genvar gen_i=0; gen_i<NB_MRMRAC_WORDS_PER_READ; gen_i++) begin
         always_ff @(posedge clk_mrmac) begin
-          if(read_fifo_out_valid & read_fifo_out_ready) begin
+          if(read_fifo_out_ready & read_fifo_out_valid) begin
             ce_data_out[gen_i] <= read_fifo_out_data[(gen_i+1)*MRMAC_AXIS_W-1:gen_i*MRMAC_AXIS_W];
           end
         end
@@ -525,7 +527,7 @@ module mhdma_slave
 
       logic [NB_MRMRAC_WORDS_PER_READ-1:0] temp_rdy_vld;
       always_ff @(posedge clk_mrmac)
-        temp_rdy_vld[0] <= read_fifo_out_valid & read_fifo_out_ready;
+        temp_rdy_vld[0] <= read_fifo_out_ready & read_fifo_out_valid;
 
       for (genvar gen_i = 1; gen_i<NB_MRMRAC_WORDS_PER_READ; gen_i++) begin
         always_ff @(posedge clk_mrmac)

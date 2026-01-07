@@ -40,10 +40,9 @@ module tb_multi_hpu_dma;
   // Data latency
   localparam int MEM_WR_DATA_LATENCY = 42;  // Should be >= 1
   localparam int MEM_RD_DATA_LATENCY = 1;   // Should be >= 1
-  // Set random on ready valid, on write path
+  // Set random on ready valid, on write and read path
   localparam bit MEM_USE_WR_RANDOM = 1;
-  // Set random on ready valid, on read path
-  localparam bit MEM_USE_RD_RANDOM = 1;     // check path, no need random
+  localparam bit MEM_USE_RD_RANDOM = 1;
 
   // simulation sizes to reduce runtime
   localparam int MEM_SIM_SIZE = 18;         // must be < 22
