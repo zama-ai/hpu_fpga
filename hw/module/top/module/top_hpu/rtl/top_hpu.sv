@@ -170,7 +170,6 @@ module top_hpu #(
 
   // Ethernet configuration clock
   logic eth_cfg_clk;
-  logic eth_cfg_srst_n;
 
   /* AXI4 ---------------------------------------------------------------------
   * in direction to RTL register interface, size is fixed.
@@ -620,7 +619,6 @@ module top_hpu #(
   // Ethernet link: MRMAC, GTM and DMA
   // ======================================================================= //
   // mrmac axi4-stream interface
-  logic resetn_axis_mrmac;
   logic clk_axis_mrmac;
   // ----------------------------------------------------------------------- //
   // coming from regif: dma
@@ -2606,10 +2604,8 @@ module top_hpu #(
     // == Ethernet
     // MRMAC clock - axi4-stream
     .clk_axis_mrmac    (clk_axis_mrmac),
-    .resetn_axis_mrmac (resetn_axis_mrmac),
     // configuration clock - axi4-lite
     .clk_eth_cfg_0      (eth_cfg_clk),
-    .resetn_eth_cfg_ic_0(eth_cfg_srst_n),
 
     // == DDR
     .sys_clk0_0_clk_n(top_sys_clk0_0_clk_n),
