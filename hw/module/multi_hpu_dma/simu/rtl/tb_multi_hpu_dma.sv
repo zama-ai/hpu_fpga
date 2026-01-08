@@ -29,17 +29,17 @@ module tb_multi_hpu_dma;
   localparam int HPU_NB = 2; // in this test we will try to connect two mhdma (or HPUs)
 
   localparam int FIFO_DEPTH = 512;
-  localparam int SIM_MAX_FRAME_CYCLES = 256;
-  localparam int LOOP_NOTIFY = 10;
 
+  localparam int LOOP_NOTIFY = 10;
   localparam int BREAK_RDY_VLD = 1;
 
   // ciphertext memories -------------------------------------------------------------------------
-  localparam int MEM_WR_CMD_BUF_DEPTH = 4;  // Should be >= 3 the max number of reads today
-  localparam int MEM_RD_CMD_BUF_DEPTH = 4;  // Should be >= 3 the max number of reads today
-  // Data latency
-  localparam int MEM_WR_DATA_LATENCY = 42;  // Should be >= 1
-  localparam int MEM_RD_DATA_LATENCY = 1;   // Should be >= 1
+  // We do more than 1 read/write at a time but I want to simulate waits in HBM
+  localparam int MEM_WR_CMD_BUF_DEPTH = 1;
+  localparam int MEM_RD_CMD_BUF_DEPTH = 1;
+  // Data latency, values are arbitrary
+  localparam int MEM_WR_DATA_LATENCY = 142;
+  localparam int MEM_RD_DATA_LATENCY = 100;
   // Set random on ready valid, on write and read path
   localparam bit MEM_USE_WR_RANDOM = 1;
   localparam bit MEM_USE_RD_RANDOM = 1;

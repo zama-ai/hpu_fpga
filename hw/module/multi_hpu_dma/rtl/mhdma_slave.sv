@@ -359,40 +359,24 @@ module mhdma_slave
   //  - arburst would be INCR
   //  - arsize the size of each data transfer, fixed to MHDMA_ARSIZE
   // let's start ciphertext emission when its flag is up and we are not changing command values
-  logic [ETH_PC-1:0] axi4_read_pc;
-  logic [ETH_PC-1:0] axi4_read_last;
+  // We must read each PC one by one
+  logic [ETH_PC-1:0] axi4_read_pc;        // this signal is a one hot selecting PC that we want to use
+  logic [ETH_PC-1:0] axi4_read_last;      // intermediary signal that states when to change from pc to next
   logic [ETH_PC-1:0] finished_reading_pc;
-  // TODO: TOREVIEW :: we probably could read at the same time the two PCs and not one by one
+  logic [ETH_PC-1:0] read_fifo_ready;     // ready from receiving FIFO
   generate
     for (genvar gen_rd=0; gen_rd<ETH_PC; gen_rd++) begin : gen_ce_reads
       logic [$clog2(PC_NB_READS[gen_rd]):0] axi_read_cnt;
-      logic                                 axi_read;
-      logic                                 waiting_for_answer;
-
-      always_ff @(posedge clk_mrmac) begin
-        if (~resetn_mrmac) begin
-          waiting_for_answer <= 1'b0;
-        end else begin
-          if (axi4_read_last[gen_rd]) begin
-            waiting_for_answer <= 1'b1;
-          end else if (finished_reading_pc[gen_rd]) begin
-            waiting_for_answer <= 1'b0;
-          end
-        end
-      end
 
       // Counts the number of clock cycles that must perform reads taking account bursts
       // because we decrement from axi4_read_pc we add one to count all words
       always_ff @(posedge clk_mrmac) begin
         if (~resetn_mrmac) begin
           axi_read_cnt <= PC_NB_READS[gen_rd];
-          axi_read <= 1'b0;
         end else begin
-          if ((axi_read_cnt > 0) && axi4_read_pc[gen_rd] & ~waiting_for_answer) begin
-            axi_read <= 1'b1;
+          if ((axi_read_cnt > 0) && axi4_read_pc[gen_rd] & m_axi4_arready[gen_rd] & m_axi4_arvalid[gen_rd]) begin
             axi_read_cnt <= axi_read_cnt - 1;
-          end else if (axi4_read_last[gen_rd]) begin
-            axi_read <= 1'b0;
+          end else if (ct_emission_finished) begin
             axi_read_cnt <= PC_NB_READS[gen_rd];
           end
         end
@@ -405,28 +389,29 @@ module mhdma_slave
         if (axi_read_cnt == PC_NB_READS[gen_rd]) begin
           mhdma_read_addr <= phy_addr[gen_rd];
         end else begin
-          mhdma_read_addr <= mhdma_read_addr + (AXI4_DATA_BYTES*MAX_BURST_SIZE);
+          // incrementation occurs only if read is consumed
+          if (m_axi4_arready[gen_rd] & m_axi4_arvalid[gen_rd]) begin
+            mhdma_read_addr <= mhdma_read_addr + (AXI4_DATA_BYTES*MAX_BURST_SIZE);
+          end
         end
       end
 
       // m_axi4_arid[gen_rd] not used
-      assign m_axi4_araddr[gen_rd]  = axi_read ? mhdma_read_addr :'h0;
-      assign m_axi4_arsize[gen_rd]  = axi_read ? MHDMA_ARSIZE    :'h0;
-      assign m_axi4_arburst[gen_rd] = axi_read ? 2'b01           :'h0; // incr
-      assign m_axi4_arvalid[gen_rd] = axi_read ? 1'b1            :'h0;
+      assign m_axi4_arvalid[gen_rd] = (axi_read_cnt > 0) & axi4_read_pc[gen_rd];
+      assign m_axi4_araddr[gen_rd]  = m_axi4_arvalid[gen_rd] ? mhdma_read_addr :'h0;
+      assign m_axi4_arsize[gen_rd]  = m_axi4_arvalid[gen_rd] ? MHDMA_ARSIZE    :'h0;
+      assign m_axi4_arburst[gen_rd] = m_axi4_arvalid[gen_rd] ? 2'b01           :'h0; // incr
       // there is not arlast, this is only an intermediate signal
-      assign axi4_read_last[gen_rd] = (axi_read & (axi_read_cnt == 0)) ? 1'b1 : 1'b0;
+      assign axi4_read_last[gen_rd] = m_axi4_arvalid[gen_rd] & m_axi4_arready[gen_rd] & (axi_read_cnt == 1);
 
       always_comb begin
-        if ((PC_REMAINS[gen_rd] !=0) && (axi_read_cnt == 0)) begin
-          m_axi4_arlen[gen_rd] = axi_read? PC_REMAINS[gen_rd]-1 : 'h0;
+        if ((PC_REMAINS[gen_rd] !=0) & axi4_read_last[gen_rd]) begin
+          m_axi4_arlen[gen_rd] = m_axi4_arvalid[gen_rd] ? PC_REMAINS[gen_rd]-1 : 'h0;
         end else begin
-          m_axi4_arlen[gen_rd] = axi_read? MAX_BURST_SIZE-1 : 'h0;
+          m_axi4_arlen[gen_rd] = m_axi4_arvalid[gen_rd] ? MAX_BURST_SIZE-1 : 'h0;
         end
       end
 
-      // we read if and only if we are in ciphertext emission mode
-      assign m_axi4_rready[gen_rd]  = ct_emission_request_in_use;
     end
   endgenerate
 
@@ -442,13 +427,15 @@ module mhdma_slave
     for (genvar gen_rd=0; gen_rd<ETH_PC; gen_rd++) begin : gen_read_fifo
       // input part
       logic                   read_fifo_we;
-      logic                   read_fifo_ready; // ~full
       // output part
       logic [AXI4_DATA_W-1:0] read_fifo_out_data;
       logic                   read_fifo_out_valid;
       logic                   read_fifo_out_ready;
 
-      assign read_fifo_we = m_axi4_rvalid[gen_rd] & read_fifo_ready & ct_emission_request_in_use;
+      // we read if and only if we are in ciphertext emission mode
+      assign m_axi4_rready[gen_rd]  = read_fifo_ready[gen_rd] & ct_emission_request_in_use;
+
+      assign read_fifo_we = m_axi4_rvalid[gen_rd] & m_axi4_rready[gen_rd];
 
       fifo_ram_rdy_vld # (
         .WIDTH      (AXI4_DATA_W),
@@ -460,7 +447,7 @@ module mhdma_slave
 
         .in_data     (m_axi4_rdata[gen_rd]),
         .in_vld      (read_fifo_we),
-        .in_rdy      (read_fifo_ready),
+        .in_rdy      (read_fifo_ready[gen_rd]),
 
         .out_data    (read_fifo_out_data),
         .out_vld     (read_fifo_out_valid),
@@ -600,7 +587,7 @@ module mhdma_slave
     end else begin
       // when read request registers are ready we can trigger the shift register.
       // when the last signal is fired we can trigger the second PC
-      if (rreq_ready_pulse | finished_reading_pc[0]) begin
+      if (rreq_ready_pulse |  axi4_read_last[0]) begin
         axi4_read_pc <= {axi4_read_pc[ETH_PC-2:0], rreq_ready_pulse};
       end else if (finished_reading_pc[1]) begin
         axi4_read_pc <= 'h0;
@@ -703,7 +690,7 @@ module mhdma_slave
       if (rst_nb_read_to_hbm) begin
         nb_read_to_hbm <= 'h0;
       end else begin
-        if ((gen_ce_reads[0].axi_read & m_axi4_arvalid[0]) | (gen_ce_reads[1].axi_read & m_axi4_arvalid[1])) begin
+        if ((m_axi4_arready[0] & m_axi4_arvalid[0]) | (m_axi4_arready[1] & m_axi4_arvalid[1])) begin
           nb_read_to_hbm <= nb_read_to_hbm + 1;
         end
       end

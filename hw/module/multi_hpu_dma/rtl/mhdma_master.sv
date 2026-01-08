@@ -583,7 +583,6 @@ module mhdma_master
 
   // TODO: if seq_num != 0 and  received_dst_addr != previous, raise an error
 
-  logic [ETH_PC-1:0] axi4_write_pc;
   // word distribution to each fifo pc ------------------------------------------------------------
   logic [CE_DATA_COUNT_W:0] fifo_cerx_cnt_tx;
   logic [ETH_PC-1:0]        target_fifo;
@@ -634,6 +633,7 @@ module mhdma_master
     end
   endgenerate
 
+  logic [ETH_PC-1:0] axi4_write_pc;
   // when read request registers are ready we can initialize the shift register
   // when we have done all writes on the first PC (the number of lasts matches to expected) we can shift
   // when all writes on the second pc is done we can reset the signal
@@ -641,8 +641,8 @@ module mhdma_master
     if (~resetn_mrmac) begin
       axi4_write_pc <= 'h0;
     end else begin
-      if (first_pkt_reception | (gen_last_cnt[0].pc_last_cnt == PC_NB_WRITES[0])) begin
-        axi4_write_pc <= {axi4_write_pc[ETH_PC-2:0], first_pkt_reception};
+      if (phy_addr_valid | (gen_last_cnt[0].pc_last_cnt == PC_NB_WRITES[0])) begin
+        axi4_write_pc <= {axi4_write_pc[ETH_PC-2:0], phy_addr_valid};
       end else if (gen_last_cnt[1].pc_last_cnt == PC_NB_WRITES[1]) begin
         axi4_write_pc <= 'h0;
       end
@@ -736,6 +736,7 @@ module mhdma_master
       logic                                                 axi_awrite;
       logic                                                 axi_awrite_tmp;
       logic                                                 aw_valid;
+      logic                                                 axi4_awlast;
 
       always_ff @(posedge clk_mrmac) begin
         if (~resetn_mrmac) begin
@@ -775,20 +776,38 @@ module mhdma_master
 
       // Address channel --------------------------------------------------------------------------
       logic [AXI4_ADD_W-1:0] mhdma_write_addr;
+      logic [AXI4_ID_W-1:0] expected_wid;
+
       // read address takes the physical address computed earlier as soon as the value is ready
       // when starting the reading process we compute the offset accounting burst sequence
       always_ff @(posedge clk_mrmac) begin
         if (phy_addr_valid) begin
           mhdma_write_addr <= phy_addr[gen_wr];
-        end else if (m_axi4_wlast[gen_wr]) begin
-          mhdma_write_addr <= mhdma_write_addr + (AXI4_DATA_BYTES*MAX_BURST_SIZE);
+        end else begin
+          if (m_axi4_wlast[gen_wr] & m_axi4_wready[gen_wr] & m_axi4_wvalid[gen_wr]) begin
+            mhdma_write_addr <= mhdma_write_addr + (AXI4_DATA_BYTES*MAX_BURST_SIZE);
+          end
+        end
+      end
+
+      assign m_axi4_awvalid[gen_wr] = aw_valid & (axi_write_cnt > 0) & axi4_write_pc[gen_wr];
+      assign m_axi4_awid[gen_wr]    = m_axi4_awvalid[gen_wr] ? expected_wid     :'h0;
+      assign m_axi4_awaddr[gen_wr]  = m_axi4_awvalid[gen_wr] ? mhdma_write_addr :'h0;
+      assign m_axi4_awsize[gen_wr]  = m_axi4_awvalid[gen_wr] ? MHDMA_ARSIZE     :'h0;
+      assign m_axi4_awburst[gen_wr] = m_axi4_awvalid[gen_wr] ? 2'b01            :'h0; // incr
+      assign axi4_awlast            = m_axi4_awvalid[gen_wr] & (axi_write_cnt == 1) & m_axi4_awready[gen_wr];
+
+      always_comb begin
+        if ((PC_REMAINS[gen_wr] != 0) && axi4_awlast) begin
+          m_axi4_awlen[gen_wr] = m_axi4_awvalid[gen_wr] ? PC_REMAINS[gen_wr]-1 : 'h0;
+        end else begin
+          m_axi4_awlen[gen_wr] = m_axi4_awvalid[gen_wr] ? MAX_BURST_SIZE-1 : 'h0;
         end
       end
 
       // we use axi4_write_pc front edge detection for computing expected wid
-      logic [AXI4_ID_W-1:0] expected_wid;
-      logic                 axi4_write_pc_tmp;
-      logic                 wid_valid;
+      logic axi4_write_pc_tmp;
+      logic wid_valid;
 
       always_ff @(posedge clk_mrmac)
         axi4_write_pc_tmp <= axi4_write_pc[gen_wr];
@@ -802,20 +821,6 @@ module mhdma_master
           if (wid_valid) begin
             expected_wid <= expected_wid + 1;
           end
-        end
-      end
-
-      assign m_axi4_awid[gen_wr]    = aw_valid ? expected_wid     :'h0;
-      assign m_axi4_awaddr[gen_wr]  = aw_valid ? mhdma_write_addr :'h0;
-      assign m_axi4_awsize[gen_wr]  = aw_valid ? MHDMA_ARSIZE     :'h0;
-      assign m_axi4_awburst[gen_wr] = aw_valid ? 2'b01            :'h0; // incr
-      assign m_axi4_awvalid[gen_wr] = aw_valid ? 1'b1             :'h0;
-
-      always_comb begin
-        if ((PC_REMAINS[gen_wr] != 0) && (axi_write_cnt == 1)) begin
-          m_axi4_awlen[gen_wr] = aw_valid ? PC_REMAINS[gen_wr]-1 : 'h0;
-        end else begin
-          m_axi4_awlen[gen_wr] = aw_valid ? MAX_BURST_SIZE-1 : 'h0;
         end
       end
 
