@@ -69,6 +69,7 @@ module mhdma_bridge
   output logic [REG_DATA_W-1:0]                   stat_cnt_notify_ack,
   output logic [REG_DATA_W-1:0]                   stat_cnt_notify_timeout,
   output logic [REG_DATA_W-1:0]                   stat_cnt_notify_retries,
+  output logic [REG_DATA_W-1:0]                   stat_nb_write_complete_cnt,
 
   output logic [REG_DATA_W-1:0]                   stat_cnt_nack_received,
   output logic [REG_DATA_W-1:0]                   stat_cnt_notify_received,
@@ -311,6 +312,7 @@ module mhdma_bridge
     .stat_cnt_notify_timeout         (stat_cnt_notify_timeout                 ),
     .stat_cnt_notify_retries         (stat_cnt_notify_retries                 ),
     .stat_nb_ce_words_received       (stat_nb_ce_words_received               ),
+    .stat_nb_write_complete_cnt      (stat_nb_write_complete_cnt              ),
     // timing
     .stat_t_notify_to_ack            (stat_t_notify_to_ack                    ),
     .stat_t_rr_to_ce_received        (stat_t_rr_to_ce_received                ),
@@ -382,7 +384,7 @@ module mhdma_bridge
     .nrx_cmd_payload                (nrx_cmd_payload                          ),
     .nrx_cmd_valid                  (nrx_cmd_valid                            ),
     .notify_ack_sent                (notify_ack_sent                          ),
-    .ce_header              (ce_header                        ),
+    .ce_header                      (ce_header                                ),
     .ce_payload                     (ce_payload                               ),
     .ce_ready                       (ce_ready                                 ),
     .ce_valid                       (ce_valid                                 ),

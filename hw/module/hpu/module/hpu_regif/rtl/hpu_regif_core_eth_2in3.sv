@@ -1,7 +1,7 @@
 // ============================================================================================== //
 // Description  : Axi4-lite register bank
 // This file was generated with rust regmap generator:
-//  * Date:  2026-01-05
+//  * Date:  2026-01-09
 //  * Tool_version: bd49564daf1a99d615cb6dbb121b54bfbeef8b22
 // ---------------------------------------------------------------------------------------------- //
 // xR[n]W[na]
@@ -30,8 +30,8 @@
 //      : Value provided by the RTL. The host can read it with notify. The write data is processed by the RTL.
 // ============================================================================================== //
 module hpu_regif_core_eth_2in3
-import axi_if_shell_axil_pkg::*;
 import axi_if_common_param_pkg::*;
+import axi_if_shell_axil_pkg::*;
 import hpu_regif_core_eth_2in3_pkg::*;
 #()(
   input  logic                           clk,
@@ -174,6 +174,9 @@ import hpu_regif_core_eth_2in3_pkg::*;
   // Register IO: mhdma_request_stat_physical_addr_pc1_msb
     , output logic [REG_DATA_W-1: 0] r_mhdma_request_stat_physical_addr_pc1_msb
     , input  logic [REG_DATA_W-1: 0] r_mhdma_request_stat_physical_addr_pc1_msb_upd
+  // Register IO: mhdma_request_stat_cnt_nb_write_complete
+    , output logic [REG_DATA_W-1: 0] r_mhdma_request_stat_cnt_nb_write_complete
+    , input  logic [REG_DATA_W-1: 0] r_mhdma_request_stat_cnt_nb_write_complete_upd
   // Register IO: mhdma_lane_debug
     , output mhdma_lane_debug_t r_mhdma_lane_debug
   // Register IO: mhdma_hbm_axi4_addr_2in3_ct_pc0_lsb
@@ -518,6 +521,9 @@ import hpu_regif_core_eth_2in3_pkg::*;
 //-- Default mhdma_request_stat_physical_addr_pc1_msb
   logic [REG_DATA_W-1:0]mhdma_request_stat_physical_addr_pc1_msb_default;
   assign mhdma_request_stat_physical_addr_pc1_msb_default = 'h0;
+//-- Default mhdma_request_stat_cnt_nb_write_complete
+  logic [REG_DATA_W-1:0]mhdma_request_stat_cnt_nb_write_complete_default;
+  assign mhdma_request_stat_cnt_nb_write_complete_default = 'h0;
 //-- Default mhdma_lane_debug
   mhdma_lane_debug_t mhdma_lane_debug_default;
   always_comb begin
@@ -959,6 +965,17 @@ import hpu_regif_core_eth_2in3_pkg::*;
       r_mhdma_request_stat_physical_addr_pc1_msb       <= r_mhdma_request_stat_physical_addr_pc1_msbD;
     end
   end
+// Register FF: mhdma_request_stat_cnt_nb_write_complete
+  logic [REG_DATA_W-1:0] r_mhdma_request_stat_cnt_nb_write_completeD;
+  assign r_mhdma_request_stat_cnt_nb_write_completeD       = r_mhdma_request_stat_cnt_nb_write_complete_upd;
+  always_ff @(posedge clk) begin
+    if (!s_rst_n) begin
+      r_mhdma_request_stat_cnt_nb_write_complete       <= mhdma_request_stat_cnt_nb_write_complete_default;
+    end
+    else begin
+      r_mhdma_request_stat_cnt_nb_write_complete       <= r_mhdma_request_stat_cnt_nb_write_completeD;
+    end
+  end
 // Register FF: mhdma_lane_debug
   logic [REG_DATA_W-1:0] r_mhdma_lane_debugD;
   assign r_mhdma_lane_debugD = (wr_en_ok && (wr_add[AXIL_ADD_RANGE_W-1:0] == MHDMA_LANE_DEBUG_OFS[AXIL_ADD_RANGE_W-1:0]))? wr_data: r_mhdma_lane_debug;
@@ -1336,6 +1353,9 @@ import hpu_regif_core_eth_2in3_pkg::*;
           end
           MHDMA_REQUEST_STAT_PHYSICAL_ADDR_PC1_MSB_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register mhdma_request_stat_physical_addr_pc1_msb
             axil_rdataD = r_mhdma_request_stat_physical_addr_pc1_msb;
+          end
+          MHDMA_REQUEST_STAT_CNT_NB_WRITE_COMPLETE_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register mhdma_request_stat_cnt_nb_write_complete
+            axil_rdataD = r_mhdma_request_stat_cnt_nb_write_complete;
           end
           MHDMA_LANE_DEBUG_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register mhdma_lane_debug
             axil_rdataD = r_mhdma_lane_debug;

@@ -1,5 +1,5 @@
 # HPU_REGIF_CORE documentation
-**Date**: 2026-01-05
+**Date**: 2026-01-09
 **Tool Version**: bd49564daf1a99d615cb6dbb121b54bfbeef8b22
 
 ## RegisterMap Overview
@@ -17,7 +17,7 @@ HPU ethernet configuration register interface. Will be accessed by RPU to define
 **Offset**: 0x0
 **Range**: 0x60000
 **Word Size (b)**: 32
-**External Packages**: "axi_if_common_param_pkg.sv","axi_if_shell_axil_pkg.sv"
+**External Packages**: "axi_if_shell_axil_pkg.sv","axi_if_common_param_pkg.sv"
 
 
 ---
@@ -47,7 +47,7 @@ Below is a summary of all the registers in the current register map:
 | [mhdma_system](#section-mhdma-system) | 0x50000 | 0x10 | system configuration |
 | [mhdma_reset](#section-mhdma-reset) | 0x50014 | 0x8 | Controllable resets for transceivers |
 | [mhdma_hpu_id](#section-mhdma-hpu-id) | 0x50050 | 0x20 | HPU ID containing all possible targets. For all IDs we have HPU MAC address, software ID and a flag for current hpu |
-| [mhdma_request](#section-mhdma-request) | 0x50100 | 0x64 | Request registers interface |
+| [mhdma_request](#section-mhdma-request) | 0x50100 | 0x68 | Request registers interface |
 | [mhdma_lane](#section-mhdma-lane) | 0x50200 | 0x4 | Line parameter sections |
 | [mhdma_hbm_axi4_addr_2in3](#section-mhdma-hbm-axi4-addr-2in3) | 0x51000 | 0x10 | HBM AXI4 connection address offset |
 | [fifo_write](#section-fifo-write) | 0x5101c | 0x10 | fifo write part |
@@ -4380,6 +4380,7 @@ Below is a summary of all the registers in the current section mhdma_request:
 | [stat_physical_addr_pc0_msb](#register-mhdma-requeststat-physical-addr-pc0-msb) | 0x50158 | R. |  timeout counter on notify |
 | [stat_physical_addr_pc1_lsb](#register-mhdma-requeststat-physical-addr-pc1-lsb) | 0x5015c | R. |  timeout counter on notify |
 | [stat_physical_addr_pc1_msb](#register-mhdma-requeststat-physical-addr-pc1-msb) | 0x50160 | R. |  timeout counter on notify |
+| [stat_cnt_nb_write_complete](#register-mhdma-requeststat-cnt-nb-write-complete) | 0x50164 | R. |  timeout counter on notify |
 
 
 ---
@@ -4792,6 +4793,21 @@ Register read_request contains following Sub-fields:
 - **Read Access**: Read
 - **Write Access**: None
 - **Offset**: 0x50160
+- **Default**: 0
+
+
+
+
+---
+
+
+### Register mhdma-request.stat-cnt-nb-write-complete
+
+- **Description**: timeout counter on notify
+- **Owner**: Kernel
+- **Read Access**: Read
+- **Write Access**: None
+- **Offset**: 0x50164
 - **Default**: 0
 
 

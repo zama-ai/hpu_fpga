@@ -143,6 +143,7 @@ module multi_hpu_dma
   logic             [REG_DATA_W-1:0] cnt_nb_read_to_hbm_eth;
   logic [ETH_PC-1:0][REG_DATA_W-1:0] cnt_nb_words_received_pc_eth;
   logic             [REG_DATA_W-1:0] cnt_nb_ce_words_received_eth;
+  logic             [REG_DATA_W-1:0] cnt_nb_write_complete_eth;
 
   // counters @cfg
   logic             [REG_DATA_W-1:0] cnt_notify_cfg;
@@ -156,6 +157,7 @@ module multi_hpu_dma
   logic             [REG_DATA_W-1:0] cnt_nb_read_to_hbm_cfg;
   logic [ETH_PC-1:0][REG_DATA_W-1:0] cnt_nb_words_received_pc_cfg;
   logic             [REG_DATA_W-1:0] cnt_nb_ce_words_received_cfg;
+  logic             [REG_DATA_W-1:0] cnt_nb_write_complete_cfg;
 
   // reset counters @eth
   logic                 rst_cnt_notify_eth;
@@ -347,6 +349,7 @@ module multi_hpu_dma
     .r_mhdma_request_stat_nb_words_received_pc_pc0_rd_en (rst_nb_words_received_pc_cfg[0]         ),
     .r_mhdma_request_stat_nb_words_received_pc_pc1_upd   (cnt_nb_words_received_pc_cfg[1]         ),
     .r_mhdma_request_stat_nb_words_received_pc_pc1_rd_en (rst_nb_words_received_pc_cfg[1]         ),
+    .r_mhdma_request_stat_cnt_nb_write_complete_upd      (cnt_nb_write_complete_cfg               ),
 
     // timing
     .r_mhdma_request_stat_t_notify_to_ack_upd       (t_notify_to_ack_cfg                          ),
@@ -824,6 +827,20 @@ module multi_hpu_dma
     .dest_out_bin(cnt_nb_ce_words_received_cfg) // REG_DATA_W-bit output: binary value in dest domain
   );//temporary
 
+  xpm_cdc_gray #(
+    .DEST_SYNC_FF(4),                   // Range: 2-10 synchronizer stages
+    .INIT_SYNC_FF(0),                   // 0=disable simulation init values
+    .REG_OUTPUT(0),                     // 0=combinatorial output, 1=registered output
+    .SIM_ASSERT_CHK(0),                 // 0=disable simulation messages
+    .SIM_LOSSLESS_GRAY_CHK(0),          // 0=disable lossless check
+    .WIDTH(REG_DATA_W)                   // REG_DATA_W-bit counter width (range: 2-32)
+  ) xpm_cdc_gray_nb_write_complete (
+    .src_clk(clk_eth_mrmac),            // 1-bit input: source clock
+    .src_in_bin(cnt_nb_write_complete_eth),  // REG_DATA_W-bit input: binary counter to synchronize
+
+    .dest_clk(clk_eth_cfg),             // 1-bit input: destination clock
+    .dest_out_bin(cnt_nb_write_complete_cfg) // REG_DATA_W-bit output: binary value in dest domain
+  );//temporary
   // ==============================================================================================
 
   // ============================================================================================ //
@@ -906,6 +923,7 @@ module multi_hpu_dma
     .stat_nb_words_received_pc      (cnt_nb_words_received_pc_eth                                ),
     .stat_t_rr_wait_words_pc        (t_rr_wait_words_pc_eth                                      ),
     .stat_nb_ce_words_received      (cnt_nb_ce_words_received_eth                                ),
+    .stat_nb_write_complete_cnt     (cnt_nb_write_complete_eth                                   ),
     // timing
     .stat_t_notify_to_ack           (t_notify_to_ack_eth                                         ),
     .stat_t_rr_to_ce_received       (t_rr_to_ce_received_eth                                     ),

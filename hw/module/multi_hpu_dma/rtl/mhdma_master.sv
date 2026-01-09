@@ -69,6 +69,7 @@ module mhdma_master
   output logic [REG_DATA_W-1:0]               stat_cnt_notify_retries,
   output logic [REG_DATA_W-1:0]               stat_cnt_notify_timeout,
   output logic [REG_DATA_W-1:0]               stat_nb_ce_words_received,
+  output logic [REG_DATA_W-1:0]               stat_nb_write_complete_cnt,
   // timing
   output logic [REG_DATA_W-1:0]               stat_t_notify_to_ack,
   output logic [REG_DATA_W-1:0]               stat_t_rr_to_ce_received,
@@ -536,19 +537,6 @@ module mhdma_master
   //  - we have two fifos, one for each PC
   //  - between fifo_ce_rx and fifo_wr_pc we will avoid stalling as much as possible
   //  - we must transmit to regif relevant info and raise interrupt when all words ready in hbm
-
-  // TODO:check use
-  // packet pulses
-  logic new_pkt_reception;
-  logic first_pkt_reception;
-  logic last_pkt_reception;
-
-  assign new_pkt_reception = read_request_allowed & decoded_header.valid & (decoded_header.req_id==REQ_ID_EMISSION);
-
-  // because we count seq_num=0 as first packet, last is NB_PACKETS_FULL
-  assign first_pkt_reception = new_pkt_reception & (decoded_header.seq_num == 0);
-  assign last_pkt_reception  = new_pkt_reception & (decoded_header.seq_num == NB_PACKETS_FULL);
-
   logic [DST_ADDR_W-1:0] received_dst_addr;
   logic [  IOP_ID_W-1:0] received_iop_id;
   logic [  HPU_ID_W-1:0] received_hpu_id;
@@ -863,11 +851,10 @@ module mhdma_master
       // we can start to write to HBM when we have enough words in FIFO and HBM is ready to receive words
       assign fifo_pc_wr_out_rdy = m_axi4_wready[gen_wr] & (enough_words | (axi_write_cnt == 1));
 
-      assign m_axi4_wlast[gen_wr]  = ((axi_write & m_axi4_wready[gen_wr]) & (axi_word_cnt == 1)) ? 1'b1 : 1'b0;
-      assign m_axi4_wstrb[gen_wr]  = (axi_write & m_axi4_wready[gen_wr]) ? 32'hFFFFFFFF : 'h0;
-      assign m_axi4_wvalid[gen_wr] = axi_write & fifo_pc_wr_out_vld & fifo_pc_wr_out_rdy;
-
-      assign m_axi4_wdata[gen_wr]  = m_axi4_wvalid[gen_wr] ? fifo_pc_wr_out_data : 'h0;
+      assign m_axi4_wvalid[gen_wr] = axi_write & fifo_pc_wr_out_vld;
+      assign m_axi4_wlast[gen_wr]  = (( m_axi4_wready[gen_wr] & m_axi4_wvalid[gen_wr]) & (axi_word_cnt == 1)) ? 1'b1 : 1'b0;
+      assign m_axi4_wstrb[gen_wr]  = (  m_axi4_wready[gen_wr] & m_axi4_wvalid[gen_wr]) ? 32'hFFFFFFFF : 'h0;
+      assign m_axi4_wdata[gen_wr]  = fifo_pc_wr_out_data;
 
       // Write response channel -------------------------------------------------------------------
       // let's do simple and be ready for response at all time
@@ -995,6 +982,7 @@ module mhdma_master
   logic [REG_DATA_W-1:0] notify_ack_cnt;
   logic [REG_DATA_W-1:0] t_notify_to_ack;
   logic [REG_DATA_W-1:0] t_rr_to_ce_received;
+  logic [REG_DATA_W-1:0] nb_write_complete_cnt;
 
   always_ff @(posedge clk_mrmac) begin
     if (~resetn_mrmac) begin
@@ -1111,13 +1099,6 @@ module mhdma_master
     end
   end
 
-  //
-  assign stat_cnt_notify_retries = retry_notify_cnt;
-  assign stat_cnt_notify         = notify_cnt;
-  assign stat_cnt_notify_ack     = notify_ack_cnt;
-
-  assign stat_cnt_notify_timeout = to_notify_cnt;    // maybe not useful
-
   always_ff @(posedge clk_mrmac) begin
     if (~resetn_mrmac) begin
       stat_nb_ce_words_received <= 'h0;
@@ -1132,7 +1113,22 @@ module mhdma_master
     end
   end
 
-  assign stat_fsm_notify   = ntx_state;
-  assign stat_fsm_read_req = rreq_state;
+  always_ff @(posedge clk_mrmac) begin
+    if (~resetn_mrmac)begin
+      nb_write_complete_cnt <= 'h0;
+    end else begin
+      if (gen_ce_write[0].write_complete | gen_ce_write[1].write_complete ) begin
+        nb_write_complete_cnt <= nb_write_complete_cnt +1;
+      end
+    end
+  end
+
+  assign stat_fsm_notify            = ntx_state;
+  assign stat_fsm_read_req          = rreq_state;
+  assign stat_cnt_notify_retries    = retry_notify_cnt;
+  assign stat_cnt_notify            = notify_cnt;
+  assign stat_cnt_notify_ack        = notify_ack_cnt;
+  assign stat_cnt_notify_timeout    = to_notify_cnt;    // maybe not useful
+  assign stat_nb_write_complete_cnt = nb_write_complete_cnt;
 
 endmodule

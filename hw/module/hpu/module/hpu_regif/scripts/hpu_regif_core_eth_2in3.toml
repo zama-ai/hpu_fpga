@@ -268,6 +268,13 @@ offset= 0x100
   default={Cst=0x0}
   duplicate=["_pc0_lsb", "_pc0_msb","_pc1_lsb", "_pc1_msb"]
 
+[section.mhdma_request.register.stat_cnt_nb_write_complete]
+  description="timeout counter on notify"
+  owner="Kernel"
+  read_access="Read"
+  write_access="None"
+  default={Cst=0x0}
+
 # =====================================================================================================================
 [section.mhdma_lane]
 offset= 0x200
