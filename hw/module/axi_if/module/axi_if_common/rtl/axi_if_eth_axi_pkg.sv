@@ -15,7 +15,7 @@ package axi_if_eth_axi_pkg;
   // AXI4
   //----------------------
   localparam int AXI4_ADD_W      = 64;
-  localparam int AXI4_ID_W       = 1;
+  localparam int AXI4_ID_W       = 8;
   localparam int AXI4_DATA_W     = axi_if_data_w_definition_pkg::AXI4_DATA_W; // AXI data bus width. Should not exceed 512.
 
   localparam int AXI4_DATA_BYTES = AXI4_DATA_W/8;

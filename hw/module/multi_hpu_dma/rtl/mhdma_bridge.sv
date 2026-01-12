@@ -21,16 +21,16 @@ module mhdma_bridge
   input  logic                                    resetn_mrmac,
   // Axi4 interface for NMU ---------------------------------------------------
   // Read channel
-  output logic [ETH_PC-1:0][   AXI4_ID_W-1:0]     m_axi4_arid,
+  output logic [ETH_PC-1:0][   AXI4_ID_W-1:0]     m_axi4_arid,      // unused
   output logic [ETH_PC-1:0][  AXI4_ADD_W-1:0]     m_axi4_araddr,
   output logic [ETH_PC-1:0][  AXI4_LEN_W-1:0]     m_axi4_arlen,
   output logic [ETH_PC-1:0][ AXI4_SIZE_W-1:0]     m_axi4_arsize,
   output logic [ETH_PC-1:0][AXI4_BURST_W-1:0]     m_axi4_arburst,
   output logic [ETH_PC-1:0]                       m_axi4_arvalid,
   input  logic [ETH_PC-1:0]                       m_axi4_arready,
-  input  logic [ETH_PC-1:0][  AXI4_ID_W-1:0]      m_axi4_rid,
+  input  logic [ETH_PC-1:0][  AXI4_ID_W-1:0]      m_axi4_rid,       // unused
   input  logic [ETH_PC-1:0][AXI4_DATA_W-1:0]      m_axi4_rdata,
-  input  logic [ETH_PC-1:0][AXI4_RESP_W-1:0]      m_axi4_rresp,
+  input  logic [ETH_PC-1:0][AXI4_RESP_W-1:0]      m_axi4_rresp,     // unused
   input  logic [ETH_PC-1:0]                       m_axi4_rlast,
   input  logic [ETH_PC-1:0]                       m_axi4_rvalid,
   output logic [ETH_PC-1:0]                       m_axi4_rready,
@@ -409,7 +409,6 @@ module mhdma_bridge
     .m_axi4_arready                 (m_axi4_arready                           ),
 
     .m_axi4_rdata                   (m_axi4_rdata                             ),
-    .m_axi4_rresp                   (m_axi4_rresp                             ),
     .m_axi4_rlast                   (m_axi4_rlast                             ),
     .m_axi4_rvalid                  (m_axi4_rvalid                            ),
     .m_axi4_rready                  (m_axi4_rready                            ),

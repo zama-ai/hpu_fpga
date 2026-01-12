@@ -76,7 +76,6 @@ module mhdma_slave
   input  logic [ETH_PC-1:0]                   m_axi4_arready,
 
   input  logic [ETH_PC-1:0][AXI4_DATA_W-1:0]  m_axi4_rdata,
-  input  logic [ETH_PC-1:0][AXI4_RESP_W-1:0]  m_axi4_rresp,
   input  logic [ETH_PC-1:0]                   m_axi4_rlast,
   input  logic [ETH_PC-1:0]                   m_axi4_rvalid,
   output logic [ETH_PC-1:0]                   m_axi4_rready,

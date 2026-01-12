@@ -102,6 +102,10 @@ module top_hpu #(
   localparam int AXI4_KSK_DATA_W      = axi_if_ksk_axi_pkg::AXI4_DATA_W;
   localparam int AXI4_KSK_DATA_BYTES  = axi_if_ksk_axi_pkg::AXI4_DATA_BYTES;
   localparam int AXI4_KSK_ID_W        = axi_if_ksk_axi_pkg::AXI4_ID_W;
+  localparam int AXI4_ETH_ADD_W       = axi_if_eth_axi_pkg::AXI4_ADD_W;
+  localparam int AXI4_ETH_ID_W        = axi_if_eth_axi_pkg::AXI4_ID_W;
+  localparam int AXI4_ETH_DATA_W      = axi_if_eth_axi_pkg::AXI4_DATA_W;
+  localparam int AXI4_ETH_DATA_BYTES  = axi_if_eth_axi_pkg::AXI4_DATA_BYTES;
 
   // Ethernet: Do not modify ----------------------------------------------------------------------
   // number of QSFP lines: do not modify
@@ -572,19 +576,19 @@ module top_hpu #(
 
   // HPU_AXI4_ETH_HBM
   /*Write channel*/
-  logic [ETH_PC-1:0][AXI4_KSK_ID_W-1:0]         m_axi4_eth_hbm_awid;
-  logic [ETH_PC-1:0][AXI4_KSK_ADD_W-1:0]        m_axi4_eth_hbm_awaddr;
+  logic [ETH_PC-1:0][AXI4_ETH_ID_W-1:0]         m_axi4_eth_hbm_awid;
+  logic [ETH_PC-1:0][AXI4_ETH_ADD_W-1:0]        m_axi4_eth_hbm_awaddr;
   logic [ETH_PC-1:0][AXI4_LEN_W-1:0]            m_axi4_eth_hbm_awlen;
   logic [ETH_PC-1:0][AXI4_SIZE_W-1:0]           m_axi4_eth_hbm_awsize;
   logic [ETH_PC-1:0][AXI4_BURST_W-1:0]          m_axi4_eth_hbm_awburst;
   logic [ETH_PC-1:0]                            m_axi4_eth_hbm_awvalid;
   logic [ETH_PC-1:0]                            m_axi4_eth_hbm_awready;
-  logic [ETH_PC-1:0][AXI4_KSK_DATA_W-1:0]       m_axi4_eth_hbm_wdata;
-  logic [ETH_PC-1:0][AXI4_KSK_DATA_BYTES-1:0]   m_axi4_eth_hbm_wstrb;
+  logic [ETH_PC-1:0][AXI4_DATA_W-1:0]           m_axi4_eth_hbm_wdata;
+  logic [ETH_PC-1:0][AXI4_ETH_DATA_BYTES-1:0]   m_axi4_eth_hbm_wstrb;   // unused
   logic [ETH_PC-1:0]                            m_axi4_eth_hbm_wlast;
   logic [ETH_PC-1:0]                            m_axi4_eth_hbm_wvalid;
   logic [ETH_PC-1:0]                            m_axi4_eth_hbm_wready;
-  logic [ETH_PC-1:0][AXI4_KSK_ID_W-1:0]         m_axi4_eth_hbm_bid;
+  logic [ETH_PC-1:0][AXI4_ETH_ID_W-1:0]         m_axi4_eth_hbm_bid;
   logic [ETH_PC-1:0][AXI4_RESP_W-1:0]           m_axi4_eth_hbm_bresp;
   logic [ETH_PC-1:0]                            m_axi4_eth_hbm_bvalid;
   logic [ETH_PC-1:0]                            m_axi4_eth_hbm_bready;
@@ -595,15 +599,15 @@ module top_hpu #(
   logic [ETH_PC-1:0][AXI4_AWQOS_W-1:0]          m_axi4_eth_hbm_awqos;
   logic [ETH_PC-1:0][AXI4_AWREGION_W-1:0]       m_axi4_eth_hbm_awregion;
   /*Read channel*/
-  logic [ETH_PC-1:0][AXI4_KSK_ID_W-1:0]         m_axi4_eth_hbm_arid;
-  logic [ETH_PC-1:0][AXI4_KSK_ADD_W-1:0]        m_axi4_eth_hbm_araddr;
+  logic [ETH_PC-1:0][AXI4_ETH_ID_W-1:0]         m_axi4_eth_hbm_arid;
+  logic [ETH_PC-1:0][AXI4_ETH_ADD_W-1:0]        m_axi4_eth_hbm_araddr;
   logic [ETH_PC-1:0][AXI4_LEN_W-1:0]            m_axi4_eth_hbm_arlen;
   logic [ETH_PC-1:0][AXI4_SIZE_W-1:0]           m_axi4_eth_hbm_arsize;
   logic [ETH_PC-1:0][AXI4_BURST_W-1:0]          m_axi4_eth_hbm_arburst;
   logic [ETH_PC-1:0]                            m_axi4_eth_hbm_arvalid;
   logic [ETH_PC-1:0]                            m_axi4_eth_hbm_arready;
-  logic [ETH_PC-1:0][AXI4_KSK_ID_W-1:0]         m_axi4_eth_hbm_rid;
-  logic [ETH_PC-1:0][AXI4_KSK_DATA_W-1:0]       m_axi4_eth_hbm_rdata;
+  logic [ETH_PC-1:0][AXI4_ETH_ID_W-1:0]         m_axi4_eth_hbm_rid;       // unused
+  logic [ETH_PC-1:0][AXI4_DATA_W-1:0]           m_axi4_eth_hbm_rdata;
   logic [ETH_PC-1:0][AXI4_RESP_W-1:0]           m_axi4_eth_hbm_rresp;
   logic [ETH_PC-1:0]                            m_axi4_eth_hbm_rlast;
   logic [ETH_PC-1:0]                            m_axi4_eth_hbm_rvalid;
@@ -2290,7 +2294,7 @@ module top_hpu #(
     .ETH_HBM_AXI_0_awaddr  (m_axi4_eth_hbm_awaddr[0]  ),
     .ETH_HBM_AXI_0_awburst (m_axi4_eth_hbm_awburst[0] ),
     .ETH_HBM_AXI_0_awcache (m_axi4_eth_hbm_awcache[0] ),
-    // .ETH_HBM_AXI_0_awid    (m_axi4_eth_hbm_awid[0]    ),
+    .ETH_HBM_AXI_0_awid    (m_axi4_eth_hbm_awid[0]    ),
     .ETH_HBM_AXI_0_awlen   (m_axi4_eth_hbm_awlen[0]   ),
     .ETH_HBM_AXI_0_awlock  (m_axi4_eth_hbm_awlock[0]  ),
     .ETH_HBM_AXI_0_awprot  (m_axi4_eth_hbm_awprot[0]  ),
@@ -2298,7 +2302,7 @@ module top_hpu #(
     .ETH_HBM_AXI_0_awsize  (m_axi4_eth_hbm_awsize[0]  ),
     // .ETH_HBM_AXI_0_awuser  (m_axi4_eth_hbm_awuser[0]  ),//
     .ETH_HBM_AXI_0_awvalid (m_axi4_eth_hbm_awvalid[0] ),
-    // .ETH_HBM_AXI_0_bid     (m_axi4_eth_hbm_bid[0]     ),
+    .ETH_HBM_AXI_0_bid     (m_axi4_eth_hbm_bid[0]     ),
     .ETH_HBM_AXI_0_bready  (m_axi4_eth_hbm_bready[0]  ),
     .ETH_HBM_AXI_0_bresp   (m_axi4_eth_hbm_bresp[0]   ),
     // .ETH_HBM_AXI_0_buser   (m_axi4_eth_hbm_buser[0]   ),//
@@ -2329,7 +2333,7 @@ module top_hpu #(
     .ETH_HBM_AXI_1_awaddr  (m_axi4_eth_hbm_awaddr[1]  ),
     .ETH_HBM_AXI_1_awburst (m_axi4_eth_hbm_awburst[1] ),
     .ETH_HBM_AXI_1_awcache (m_axi4_eth_hbm_awcache[1] ),
-    // .ETH_HBM_AXI_1_awid    (m_axi4_eth_hbm_awid[1]    ),
+    .ETH_HBM_AXI_1_awid    (m_axi4_eth_hbm_awid[1]    ),
     .ETH_HBM_AXI_1_awlen   (m_axi4_eth_hbm_awlen[1]   ),
     .ETH_HBM_AXI_1_awlock  (m_axi4_eth_hbm_awlock[1]  ),
     .ETH_HBM_AXI_1_awprot  (m_axi4_eth_hbm_awprot[1]  ),
@@ -2337,7 +2341,7 @@ module top_hpu #(
     .ETH_HBM_AXI_1_awsize  (m_axi4_eth_hbm_awsize[1]  ),
     // .ETH_HBM_AXI_1_awuser  (m_axi4_eth_hbm_awuser[1]  ),//
     .ETH_HBM_AXI_1_awvalid (m_axi4_eth_hbm_awvalid[1] ),
-    // .ETH_HBM_AXI_1_bid     (m_axi4_eth_hbm_bid[1]     ),
+    .ETH_HBM_AXI_1_bid     (m_axi4_eth_hbm_bid[1]     ),
     .ETH_HBM_AXI_1_bready  (m_axi4_eth_hbm_bready[1]  ),
     .ETH_HBM_AXI_1_bresp   (m_axi4_eth_hbm_bresp[1]   ),
     // .ETH_HBM_AXI_1_buser   (m_axi4_eth_hbm_buser[1]   ),//

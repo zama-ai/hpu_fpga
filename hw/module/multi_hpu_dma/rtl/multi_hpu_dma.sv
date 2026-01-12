@@ -27,7 +27,7 @@ module multi_hpu_dma
   input  logic                                                   s_axil_dma_awvalid,
   output logic                                                   s_axil_dma_awready,
   input  logic [AXIL_DATA_W-1:0]                                 s_axil_dma_wdata,
-  input  logic [AXIL_DATA_BYTES-1:0]                             s_axil_dma_wstrb, /* UNUSED */
+  input  logic [AXIL_DATA_BYTES-1:0]                             s_axil_dma_wstrb,        // unused
   input  logic                                                   s_axil_dma_wvalid,
   output logic                                                   s_axil_dma_wready,
   output logic [1:0]                                             s_axil_dma_bresp,
@@ -60,19 +60,19 @@ module multi_hpu_dma
   input  logic [ETH_PC-1:0]                                      m_axi4_eth_hbm_bvalid,
   output logic [ETH_PC-1:0]                                      m_axi4_eth_hbm_bready,
   // Read channel
-  output logic [ETH_PC-1:0][axi_if_eth_axi_pkg::AXI4_ID_W-1:0]   m_axi4_eth_hbm_arid,
   output logic [ETH_PC-1:0][axi_if_eth_axi_pkg::AXI4_ADD_W-1:0]  m_axi4_eth_hbm_araddr,
   output logic [ETH_PC-1:0][AXI4_LEN_W-1:0]                      m_axi4_eth_hbm_arlen,
   output logic [ETH_PC-1:0][AXI4_SIZE_W-1:0]                     m_axi4_eth_hbm_arsize,
   output logic [ETH_PC-1:0][AXI4_BURST_W-1:0]                    m_axi4_eth_hbm_arburst,
   output logic [ETH_PC-1:0]                                      m_axi4_eth_hbm_arvalid,
   input  logic [ETH_PC-1:0]                                      m_axi4_eth_hbm_arready,
+  output logic [ETH_PC-1:0][axi_if_eth_axi_pkg::AXI4_ID_W-1:0]   m_axi4_eth_hbm_arid,     // unused
   input  logic [ETH_PC-1:0][axi_if_eth_axi_pkg::AXI4_DATA_W-1:0] m_axi4_eth_hbm_rdata,
   input  logic [ETH_PC-1:0]                                      m_axi4_eth_hbm_rlast,
-  input  logic [ETH_PC-1:0][axi_if_eth_axi_pkg::AXI4_ID_W-1:0]   m_axi4_eth_hbm_rid,
-  input  logic [ETH_PC-1:0][AXI4_RESP_W-1:0]                     m_axi4_eth_hbm_rresp,
   input  logic [ETH_PC-1:0]                                      m_axi4_eth_hbm_rvalid,
   output logic [ETH_PC-1:0]                                      m_axi4_eth_hbm_rready,
+  input  logic [ETH_PC-1:0][axi_if_eth_axi_pkg::AXI4_ID_W-1:0]   m_axi4_eth_hbm_rid,      // unused
+  input  logic [ETH_PC-1:0][AXI4_RESP_W-1:0]                     m_axi4_eth_hbm_rresp,    // unused
   // QSFP system interface ----------------------------------------------------
   // == TX
   output logic [QSFP_LANE_NB-1:0][MRMAC_AXIS_W-1:0  ]            qsfp_tx_tdata,
