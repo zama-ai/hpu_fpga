@@ -334,11 +334,21 @@ module mhdma_slave
 
   // phys_addr = hbm_pc_offset + ctId * ciphertext_size
   logic [ETH_PC-1:0] [AXI4_ADD_W-1:0] phy_addr;
+  logic [ETH_PC-1:0]                  phy_addr_valid;
   generate
-    for (genvar gen_p=0; gen_p<ETH_PC; gen_p=gen_p+1)
+    for (genvar gen_p=0; gen_p<ETH_PC; gen_p=gen_p+1) begin
       always_ff @(posedge clk_mrmac)
-          if (rreq_cmd_out_vld & rreq_cmd_out_rdy)
-            phy_addr[gen_p] <= regf_ct_mem_addr[gen_p] + (rr_ct_src_addr << PC_STRIDE);
+        if (rreq_cmd_out_rdy & rreq_cmd_out_vld)
+          phy_addr[gen_p] <= regf_ct_mem_addr[gen_p] + (rr_ct_src_addr << PC_STRIDE);
+
+      always_ff @(posedge clk_mrmac) begin
+        if (~resetn_mrmac) begin
+          phy_addr_valid[gen_p] <= 'h0;
+        end else begin
+          phy_addr_valid[gen_p] <= rreq_cmd_out_rdy & rreq_cmd_out_vld;
+        end
+      end
+    end
   endgenerate
 
   // Is read request ready ------------------------------------------------------------------------
@@ -385,7 +395,7 @@ module mhdma_slave
       // read address takes the physical address computed earlier as soon as the value is ready
       // when starting the reading process we compute the offset accounting burst sequence
       always_ff @(posedge clk_mrmac) begin
-        if (axi_read_cnt == PC_NB_READS[gen_rd]) begin
+        if (phy_addr_valid[gen_rd]) begin
           mhdma_read_addr <= phy_addr[gen_rd];
         end else begin
           // incrementation occurs only if read is consumed

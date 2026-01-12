@@ -188,36 +188,6 @@ module tb_multi_hpu_dma;
   logic [QSFP_LANE_NB-1:0]                    qsfp_rx_tlast_rdyvld;
   logic [QSFP_LANE_NB-1:0]                    qsfp_rx_tvalid_rdyvld;
 
-  // AXI4 to HBM: HPUA ----------------------------------------------------------------------------
-  // Read channel
-  logic [ETH_PC-1:0][   AXI4_ID_W-1:0]    hpu_a_axi4_arid;
-  logic [ETH_PC-1:0][  AXI4_ADD_W-1:0]    hpu_a_axi4_araddr;
-  logic [ETH_PC-1:0][  AXI4_LEN_W-1:0]    hpu_a_axi4_arlen;
-  logic [ETH_PC-1:0][ AXI4_SIZE_W-1:0]    hpu_a_axi4_arsize;
-  logic [ETH_PC-1:0][AXI4_BURST_W-1:0]    hpu_a_axi4_arburst;
-  logic [ETH_PC-1:0]                      hpu_a_axi4_arvalid;
-  logic [ETH_PC-1:0]                      hpu_a_axi4_arready;
-  logic [ETH_PC-1:0][  AXI4_ID_W-1:0]     hpu_a_axi4_rid;
-  logic [ETH_PC-1:0][AXI4_DATA_W-1:0]     hpu_a_axi4_rdata;
-  logic [ETH_PC-1:0][AXI4_RESP_W-1:0]     hpu_a_axi4_rresp;
-  logic [ETH_PC-1:0]                      hpu_a_axi4_rlast;
-  logic [ETH_PC-1:0]                      hpu_a_axi4_rvalid;
-  logic [ETH_PC-1:0]                      hpu_a_axi4_rready;
-  // Write channel
-  logic [ETH_PC-1:0][   AXI4_ID_W-1:0]    hpu_a_axi4_awid;
-  logic [ETH_PC-1:0][  AXI4_ADD_W-1:0]    hpu_a_axi4_awaddr;
-  logic [ETH_PC-1:0][  AXI4_LEN_W-1:0]    hpu_a_axi4_awlen;
-  logic [ETH_PC-1:0][ AXI4_SIZE_W-1:0]    hpu_a_axi4_awsize;
-  logic [ETH_PC-1:0][AXI4_BURST_W-1:0]    hpu_a_axi4_awburst;
-  logic [ETH_PC-1:0]                      hpu_a_axi4_awvalid;
-  logic [ETH_PC-1:0]                      hpu_a_axi4_awready;
-  logic [ETH_PC-1:0][AXI4_DATA_W-1:0]     hpu_a_axi4_wdata;
-  logic [ETH_PC-1:0][AXI4_STRB_W-1:0]     hpu_a_axi4_wstrb;
-  logic [ETH_PC-1:0]                      hpu_a_axi4_wlast;
-  logic [ETH_PC-1:0]                      hpu_a_axi4_wvalid;
-  logic [ETH_PC-1:0]                      hpu_a_axi4_wready;
-  logic [ETH_PC-1:0][  AXI4_ID_W-1:0]     hpu_a_axi4_bid;
-
   // cnx to memory models -------------------------------------------------------------------------
   logic [ETH_PC-1:0][HPU_NB-1:0][AXI4_ID_W-1:0]       axi4_ct_awid;
   logic [ETH_PC-1:0][HPU_NB-1:0][AXI4_ADD_W-1:0]      axi4_ct_awaddr;
@@ -1157,6 +1127,15 @@ end
 
     // Setting timeout size to both HPUs ----------------------------------------------------------
     // keeping default value
+    maxil_drv_if_hpu_a.write_trans(MHDMA_HBM_AXI4_ADDR_2IN3_CT_PC0_LSB_OFS, 'hF);
+    maxil_drv_if_hpu_a.write_trans(MHDMA_HBM_AXI4_ADDR_2IN3_CT_PC0_MSB_OFS, 'h0);
+    maxil_drv_if_hpu_a.write_trans(MHDMA_HBM_AXI4_ADDR_2IN3_CT_PC1_LSB_OFS, 'hA);
+    maxil_drv_if_hpu_a.write_trans(MHDMA_HBM_AXI4_ADDR_2IN3_CT_PC1_MSB_OFS, 'h0);
+
+    maxil_drv_if_hpu_b.write_trans(MHDMA_HBM_AXI4_ADDR_2IN3_CT_PC0_LSB_OFS, 'hF);
+    maxil_drv_if_hpu_b.write_trans(MHDMA_HBM_AXI4_ADDR_2IN3_CT_PC0_MSB_OFS, 'h0);
+    maxil_drv_if_hpu_b.write_trans(MHDMA_HBM_AXI4_ADDR_2IN3_CT_PC1_LSB_OFS, 'hA);
+    maxil_drv_if_hpu_b.write_trans(MHDMA_HBM_AXI4_ADDR_2IN3_CT_PC1_MSB_OFS, 'h0);
 
     // Setting up credible values -------------------------------------------------------------
     // no loopback, no reset, not in debug & lane0 selected
