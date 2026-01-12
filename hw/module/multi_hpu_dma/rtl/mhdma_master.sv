@@ -269,8 +269,6 @@ module mhdma_master
     .out_vld     (nrqq_out_vld)
   );
 
-  assign new_notify_request_pending = nrqq_out_vld;
-
   // we must consume only one request at a time
   logic notify_request_allowed_reg;
   always_ff @(posedge clk_mrmac)
@@ -351,6 +349,9 @@ module mhdma_master
         ntx_next_state = notify_ack_received ? NTX_WAIT_REQUEST : timeout_reached_notify ? NTX_SEND_NOTIFY : NTX_WAIT_ACK;
     endcase
   end
+
+  // If we have a valid data in Notify command fifo and we are not waiting for an ack, we can send a new notify
+  assign new_notify_request_pending = nrqq_out_vld & (ntx_state != NTX_WAIT_ACK);
 
   // Read request ---------------------------------------------------------------------------------
   typedef enum logic [1:0] {
@@ -527,10 +528,6 @@ module mhdma_master
   // =========================================================================================== //
   // Write into HBM
   // all @mrmac domain
-  // TODO
-  // How much time do we spend between read request and all coefficients arrived & stored ?
-  // How much time between read request and first coefficient ?
-  // How much time is spent between receiving all words and storing theml in hbm ?
   // =========================================================================================== //
 
   // Exactly as for RX we write into each PC one at a time

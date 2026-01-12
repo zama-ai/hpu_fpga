@@ -516,7 +516,7 @@ module mhdma_formatter
       ST_READ_REQ:
         tx_next_state = ce_received ? ST_IDLE : ST_READ_REQ;
       ST_NOTIFY:
-        tx_next_state = nack_received ? ST_IDLE : ST_NOTIFY;
+        tx_next_state = tx_small_last ? ST_IDLE : ST_NOTIFY;
     endcase
   end
 
