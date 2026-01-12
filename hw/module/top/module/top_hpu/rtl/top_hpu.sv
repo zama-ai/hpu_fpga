@@ -583,7 +583,7 @@ module top_hpu #(
   logic [ETH_PC-1:0][AXI4_BURST_W-1:0]          m_axi4_eth_hbm_awburst;
   logic [ETH_PC-1:0]                            m_axi4_eth_hbm_awvalid;
   logic [ETH_PC-1:0]                            m_axi4_eth_hbm_awready;
-  logic [ETH_PC-1:0][AXI4_DATA_W-1:0]           m_axi4_eth_hbm_wdata;
+  logic [ETH_PC-1:0][AXI4_ETH_DATA_W-1:0]       m_axi4_eth_hbm_wdata;
   logic [ETH_PC-1:0][AXI4_ETH_DATA_BYTES-1:0]   m_axi4_eth_hbm_wstrb;   // unused
   logic [ETH_PC-1:0]                            m_axi4_eth_hbm_wlast;
   logic [ETH_PC-1:0]                            m_axi4_eth_hbm_wvalid;
@@ -607,7 +607,7 @@ module top_hpu #(
   logic [ETH_PC-1:0]                            m_axi4_eth_hbm_arvalid;
   logic [ETH_PC-1:0]                            m_axi4_eth_hbm_arready;
   logic [ETH_PC-1:0][AXI4_ETH_ID_W-1:0]         m_axi4_eth_hbm_rid;       // unused
-  logic [ETH_PC-1:0][AXI4_DATA_W-1:0]           m_axi4_eth_hbm_rdata;
+  logic [ETH_PC-1:0][AXI4_ETH_DATA_W-1:0]       m_axi4_eth_hbm_rdata;
   logic [ETH_PC-1:0][AXI4_RESP_W-1:0]           m_axi4_eth_hbm_rresp;
   logic [ETH_PC-1:0]                            m_axi4_eth_hbm_rlast;
   logic [ETH_PC-1:0]                            m_axi4_eth_hbm_rvalid;
