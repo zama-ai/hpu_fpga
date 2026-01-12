@@ -681,9 +681,6 @@ end
   int arbitrary_notify_nb;
   int arbitrary_read_req_nb;
 
-  logic itr_notify_a;
-  logic itr_notify_b;
-
   // scenario -------------------------------------------------------------------------------------
   initial begin
     maxil_drv_if_hpu_a.init();
@@ -713,7 +710,6 @@ end
      *  -------------------------------------------------------------------------------------------
      * > we must not lose Notifies
      * ----------------------------------------------------------------------------------------- */
-
     fork
       begin
         for (int i = 0; i < random_iter; i++) begin
@@ -747,7 +743,6 @@ end
       begin
         for (int i = 0; i < random_iter; i++) begin
           // HPU A
-          // wait (itr_notify_a);
           maxil_drv_if_hpu_a.read_trans(MHDMA_REQUEST_NOTIFY_OFS, notify_payload_rd[0]);
           notify_payload_expected[0] = notify_b_ref_q.pop_front();
 
@@ -760,7 +755,6 @@ end
 
       begin
         for (int i = 0; i < random_iter; i++) begin
-          // wait (itr_notify_b);
           maxil_drv_if_hpu_b.read_trans(MHDMA_REQUEST_NOTIFY_OFS, notify_payload_rd[1]);
           notify_payload_expected[1] = notify_a_ref_q.pop_front();
 
@@ -794,18 +788,6 @@ end
     repeat(20) @(posedge clk_control);
     end_of_test = 1'b1;
   end
-
-  // building pulses on interrupt for the testench to not try to consume too much data
-  logic itr_notify_aQ;
-  logic itr_notify_bQ;
-
-  always_ff @(posedge clk_mrmac)
-    itr_notify_aQ <= hpu_a.interrupt_notify;
-  always_ff @(posedge clk_mrmac)
-    itr_notify_bQ <= hpu_b.interrupt_notify;
-
-  assign itr_notify_a = hpu_a.interrupt_notify & ~itr_notify_aQ;
-  assign itr_notify_b = hpu_a.interrupt_notify & ~itr_notify_bQ;
 
 // ============================================================================================== --
 // Initialize memory
