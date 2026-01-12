@@ -225,6 +225,7 @@ proc create_root_design { parentCell ntt_psi } {
                            $HPU_KSK_HBM_BURST_MAX \
                            $ETH_HBM_BURST_MAX]
   set has_bresp_l [list 0 1 0 0 0 1]
+  set id_w_l [list 0 0 0 0 0 8]
   set read_outstanding_l [list 1 32 32 32 32 32]
   set write_outstanding_l [list 32 32 1 1 1 32]
   set read_write_mode_l [list WRITE_ONLY \
@@ -240,6 +241,7 @@ proc create_root_design { parentCell ntt_psi } {
     set burst_length [lindex $burst_length_l $a]
     set prefix [lindex $hpu_hbm_acs_l $a]
     set has_bresp [lindex $has_bresp_l $a]
+    set id_w [lindex $id_w_l $a]
     set read_outstanding [lindex $read_outstanding_l $a]
     set write_outstanding [lindex $write_outstanding_l $a]
     set read_write_mode [lindex $read_write_mode_l $a]
@@ -261,7 +263,7 @@ proc create_root_design { parentCell ntt_psi } {
        CONFIG.HAS_REGION {1} \
        CONFIG.HAS_RRESP {0} \
        CONFIG.HAS_WSTRB {1} \
-       CONFIG.ID_WIDTH {0} \
+       CONFIG.ID_WIDTH $id_w \
        CONFIG.MAX_BURST_LENGTH $burst_length \
        CONFIG.NUM_READ_OUTSTANDING $read_outstanding \
        CONFIG.NUM_READ_THREADS {1} \
