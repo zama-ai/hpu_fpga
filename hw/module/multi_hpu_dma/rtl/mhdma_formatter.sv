@@ -29,7 +29,6 @@ module mhdma_formatter
 
   input  logic                                      cerx_reception_ready,
 
-  input  logic                                      ce_received,
   input  logic                                      nack_received,
   // slave interface ---------------------------------------------------------
   output  logic                                     packets_emitted,
@@ -181,12 +180,17 @@ module mhdma_formatter
   // Ciphertext Emission (CE)
   // =========================================================================================== //
   assign ce_start_of_header = ce_start_emission | ce_sop_header;
-  // assign ce_last_packet     = qsfp_tx_tready & (ce_seq_num == NB_PACKETS_FULL) & ct_emission_allowed;
+
+  // this signal must be reset, it is linked to FSM changing state
   always_ff @(posedge clk_mrmac) begin
-    if (qsfp_tx_tready & (ce_seq_num == NB_PACKETS_FULL) & ct_emission_allowed & ~tx_tlast_D) begin
-      ce_last_packet <= 1'b1;
-    end else if (tx_tlast_D) begin
+    if (~resetn_mrmac) begin
       ce_last_packet <= 1'b0;
+    end else begin
+      if (qsfp_tx_tready & (ce_seq_num == NB_PACKETS_FULL) & ct_emission_allowed & ~tx_tlast_D) begin
+        ce_last_packet <= 1'b1;
+      end else if (tx_tlast_D) begin
+        ce_last_packet <= 1'b0;
+      end
     end
   end
   assign ce_end_of_packet = ce_last_packet & tx_tlast_D;
@@ -514,7 +518,7 @@ module mhdma_formatter
       ST_NACK:
         tx_next_state = tx_small_last ? ST_IDLE : ST_NACK;
       ST_READ_REQ:
-        tx_next_state = ce_received ? ST_IDLE : ST_READ_REQ;
+        tx_next_state = tx_small_last ? ST_IDLE : ST_READ_REQ;
       ST_NOTIFY:
         tx_next_state = tx_small_last ? ST_IDLE : ST_NOTIFY;
     endcase

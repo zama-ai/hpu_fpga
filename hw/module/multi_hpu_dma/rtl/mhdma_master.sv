@@ -77,7 +77,6 @@ module mhdma_master
   output logic                                format_retry_read_request,
   input  logic                                format_notify_sent,
   input  logic                                format_rreq_sent,
-  output logic                                format_ct_received,
   output logic                                cerx_reception_ready,
   // statistics ---------------------------------------------------------------
   // counters
@@ -150,6 +149,7 @@ module mhdma_master
   logic [2*REG_DATA_W-1:0] rrqq_out_data;
   logic                    rrqq_out_rdy;
   logic                    rrqq_out_vld;
+  logic                    read_request_start;
 
   fifo_ram_rdy_vld_2clk # (
     .CDC_SYNC_STAGES (CDC_SYNC_STAGES),
@@ -174,14 +174,7 @@ module mhdma_master
   );
 
   assign new_read_request_pending = rrqq_out_vld;
-
-  logic read_request_allowed_reg;
-
-  always_ff @(posedge clk_mrmac)
-    read_request_allowed_reg <= read_request_allowed;
-
-  // ready is valid only when we see a rising edge on an allowed read request.
-  assign rrqq_out_rdy = read_request_allowed & ~read_request_allowed_reg;
+  assign rrqq_out_rdy = read_request_start;
 
   // current read request, sampled when valid is toggled
   logic [DST_ADDR_W-1:0] rrqq_dst_addr;
@@ -349,6 +342,8 @@ module mhdma_master
   assign new_notify_request_pending = nrqq_out_vld & (ntx_state != NTX_WAIT_ACK);
 
   // Read request ---------------------------------------------------------------------------------
+  logic ciphertext_received;
+
   typedef enum logic [1:0] {
     RR_XXX          = 'x,
     RR_WAIT_REQUEST = 2'b01,
@@ -368,15 +363,26 @@ module mhdma_master
     rreq_next_state = RR_XXX;
     case (rreq_state)
       RR_WAIT_REQUEST:
-        rreq_next_state = new_read_request_pending ? RR_SEND_REQUEST : RR_WAIT_REQUEST;
+        rreq_next_state = new_read_request_pending & read_request_allowed ? RR_SEND_REQUEST : RR_WAIT_REQUEST;
       RR_SEND_REQUEST:
         rreq_next_state =  format_rreq_sent ? RR_WAIT_PACKETS : RR_SEND_REQUEST;
       RR_WAIT_PACKETS:
         // if error_packet_id_mismatch or timeout => RR_SEND_REQUEST
         // if write into hbm is finished => RR_WAIT_REQUEST
-        rreq_next_state = (error_packet_id_mismatch | timeout_reached_read_request) ? RR_SEND_REQUEST : format_ct_received? RR_WAIT_REQUEST: RR_WAIT_PACKETS;
+        rreq_next_state = (error_packet_id_mismatch | timeout_reached_read_request) ? RR_SEND_REQUEST : ciphertext_received ? RR_WAIT_REQUEST: RR_WAIT_PACKETS;
     endcase
   end
+
+  // build a pulse for starting read request, in practice this is used for consuming request in fifo
+  logic read_req_send;
+  logic read_req_sendD;
+
+  assign read_req_sendD = (rreq_state == RR_SEND_REQUEST);
+
+  always_ff @(posedge clk_mrmac)
+    read_req_send <= read_req_sendD;
+
+  assign read_request_start = read_req_sendD & ~read_req_send;
 
   // =========================================================================================== //
   // Timeouts
@@ -573,7 +579,7 @@ module mhdma_master
     end else begin
       if (fifo_cerx_out_vld & fifo_cerx_out_rdy) begin
         fifo_cerx_cnt_tx <= fifo_cerx_cnt_tx +1;
-      end else if (format_ct_received) begin
+      end else if (ciphertext_received) begin
         fifo_cerx_cnt_tx <= 'h0;
       end
     end
@@ -824,7 +830,7 @@ module mhdma_master
         if (~resetn_mrmac) begin
           axi_word_cnt <= MAX_BURST_SIZE;
         end else begin
-          if (format_ct_received) begin                                            // all transactions done, reset the counter
+          if (ciphertext_received) begin                                            // all transactions done, reset the counter
               axi_word_cnt <= MAX_BURST_SIZE;
           end else begin
             if ((axi_write_cnt != 1) | (PC_REMAINS[gen_wr] == 0)) begin           // (not last trans) or (full bursts trans)
@@ -904,7 +910,6 @@ module mhdma_master
   // interrupt must be raised when we have both write_complete.
   // We already check that we send the correct number of workds into HBM with axi_word_cnt on both PC.
   // by design we cannot have several writes in HBM with different read request
-  logic itr_read_request;
   logic [$clog2(PC_NB_WRITES[0] + PC_NB_WRITES[1]):0] write_complete_cnt;
 
   always_ff @(posedge clk_mrmac) begin
@@ -919,11 +924,11 @@ module mhdma_master
     end
   end
 
-  assign itr_read_request = (write_complete_cnt == (PC_NB_WRITES[0] + PC_NB_WRITES[1])) ? 1'b1 : 1'b0;
+  assign ciphertext_received = (write_complete_cnt == (PC_NB_WRITES[0] + PC_NB_WRITES[1])) ? 1'b1 : 1'b0;
 
   // itr_read_request is a pulse and can be used as a way to determine when to quit ST_READ_REQ
   // TODO: check that we don't need seq_num check or errors here and it's enough
-  assign format_ct_received = itr_read_request;
+  // assign  = (write_complete_cnt == (PC_NB_WRITES[0] + PC_NB_WRITES[1]));
 
   // regf payload information ---------------------------------------------------------------------
   logic [REG_DATA_W-1:0] rr_regf_in_data;
@@ -937,7 +942,7 @@ module mhdma_master
   // rr_regf_in_rdy there is no back pressurew
   assign rr_regf_in_data = {received_dst_addr, 4'b0, received_hpu_id, received_iop_id};
 
-  assign rr_regf_in_vld =itr_read_request;
+  assign rr_regf_in_vld = ciphertext_received;
 
   fifo_ram_rdy_vld_2clk # (
     .CDC_SYNC_STAGES (CDC_SYNC_STAGES),
@@ -1052,7 +1057,7 @@ module mhdma_master
     end else begin
       if (format_rreq_sent) begin
         count_rreq_receive <= 1'b1;
-      end else if (format_ct_received) begin
+      end else if (ciphertext_received) begin
         count_rreq_receive <= 1'b0;
       end
     end
@@ -1085,7 +1090,7 @@ module mhdma_master
     if (~resetn_mrmac) begin
       stat_t_rr_to_ce_received <= 'h0;
     end else begin
-      if (format_ct_received) begin
+      if (ciphertext_received) begin
         stat_t_rr_to_ce_received <= t_rr_to_ce_received;
       end
     end
@@ -1098,7 +1103,7 @@ module mhdma_master
       if (rst_nb_ce_words_received) begin
         stat_nb_ce_words_received <= 'h0;
       end else begin
-        if (format_ct_received) begin
+        if (ciphertext_received) begin
           stat_nb_ce_words_received <= { {(REG_DATA_W-CE_DATA_COUNT_W){1'b0}}, fifo_cerx_cnt_tx};
         end
       end

@@ -236,7 +236,6 @@ module mhdma_bridge
   logic ciphertext_emission_received;
 
   logic format_packets_emitted;
-  logic format_ct_received;
 
   // master -> formatter
   header_t format_header;
@@ -325,7 +324,6 @@ module mhdma_bridge
     .format_retry_notify             (retry_notify                            ),
     .format_retry_read_request       (retry_read_request                      ),
     .format_notify_sent              (notify_sent                             ),
-    .format_ct_received              (format_ct_received                      ),
     .cerx_reception_ready            (cerx_reception_ready                    ),
     // statistics -------------------------------------------------------------
     // counters
@@ -480,7 +478,6 @@ module mhdma_bridge
     .notify_sent                     (notify_sent                             ),
     .rreq_sent                       (rreq_sent                               ),
     .cerx_reception_ready            (cerx_reception_ready                    ),
-    .ce_received                     (format_ct_received                      ),
     // slave interface --------------------------------------------------------
     .nrx_cmd_payload                 (nrx_cmd_payload                         ),
     .nrx_cmd_valid                   (nrx_cmd_valid                           ),
