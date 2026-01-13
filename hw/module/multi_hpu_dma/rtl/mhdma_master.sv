@@ -871,7 +871,7 @@ module mhdma_master
       logic write_error;
 
       // Handle write response
-      always_ff @(clk_mrmac) begin
+      always_ff @(posedge clk_mrmac) begin
         if (~resetn_mrmac) begin
           write_error <= 1'b0;
         end else begin
@@ -889,7 +889,7 @@ module mhdma_master
         end
       end
 
-      always_ff @(clk_mrmac) begin
+      always_ff @(posedge clk_mrmac) begin
         if (~resetn_mrmac) begin
           write_complete <= 1'b0;
         end else begin
