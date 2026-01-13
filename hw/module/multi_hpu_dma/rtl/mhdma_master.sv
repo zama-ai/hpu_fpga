@@ -48,18 +48,17 @@ module mhdma_master
 
   input  logic                                notify_ack_received,
 
-  output logic                                packets_received,
   // formatter interface ------------------------------------------------------
   output header_t                             format_header,
   output logic                                format_retry_notify,
   output logic                                format_retry_read_request,
   input  logic                                format_notify_sent,
   input  logic                                format_rreq_sent,
-  // ciphertext payload -------------------------------------------------------
-  input  logic             [MRMAC_AXIS_W-1:0] rx_tdata,
-  input  logic                                rx_tvalid,
-  input  logic                                rx_tlast,
+  output logic                                format_ct_received,
   output logic                                cerx_reception_ready,
+  // ciphertext payload -------------------------------------------------------
+  input  logic             [MRMAC_AXIS_W-1:0] decoder_rx_tdata,
+  input  logic                                decoder_rx_tvalid,
   // Received header ----------------------------------------------------------
   input  header_t                             decoded_header,
   // statistics ---------------------------------------------------------------
@@ -313,7 +312,7 @@ module mhdma_master
   // ----------------------------------------------------------------------------------------------
   // when we have the data of both request identifier and addresses, we consume the information
   // > this signal is in configuration clock
-  assign request_consumed = (rrqq_data_vld | nrqq_data_vld) ? 1'b1 : 1'b0;
+  assign request_consumed = (rrqq_data_vld | nrqq_data_vld);
 
   // ==============================================================================================
   // FSM
@@ -379,7 +378,7 @@ module mhdma_master
       RR_WAIT_PACKETS:
         // if error_packet_id_mismatch or timeout => RR_SEND_REQUEST
         // if write into hbm is finished => RR_WAIT_REQUEST
-        rreq_next_state = (error_packet_id_mismatch | timeout_reached_read_request) ? RR_SEND_REQUEST : packets_received? RR_WAIT_REQUEST: RR_WAIT_PACKETS;
+        rreq_next_state = (error_packet_id_mismatch | timeout_reached_read_request) ? RR_SEND_REQUEST : format_ct_received? RR_WAIT_REQUEST: RR_WAIT_PACKETS;
     endcase
   end
 
@@ -472,7 +471,7 @@ module mhdma_master
     if (~resetn_mrmac) begin
       ce_valid_cnt <= 'h0;
     end else begin
-      if (read_request_allowed & rx_tvalid) begin
+      if (read_request_allowed & decoder_rx_tvalid) begin
         ce_valid_cnt <= ce_valid_cnt + 1;
       end else if (~read_request_allowed | format_retry_read_request) begin
         ce_valid_cnt <= 'h0;
@@ -497,8 +496,8 @@ module mhdma_master
     end
   end
 
-  assign fifo_cerx_in_vld  = rx_tvalid & ce_valid;
-  assign fifo_cerx_in_data = rx_tdata;
+  assign fifo_cerx_in_vld  = decoder_rx_tvalid & ce_valid;
+  assign fifo_cerx_in_data = decoder_rx_tdata;
 
   fifo_ram_rdy_vld # (
     .WIDTH             (MRMAC_AXIS_W    ),
@@ -578,7 +577,7 @@ module mhdma_master
     end else begin
       if (fifo_cerx_out_vld & fifo_cerx_out_rdy) begin
         fifo_cerx_cnt_tx <= fifo_cerx_cnt_tx +1;
-      end else if (packets_received) begin
+      end else if (format_ct_received) begin
         fifo_cerx_cnt_tx <= 'h0;
       end
     end
@@ -829,7 +828,7 @@ module mhdma_master
         if (~resetn_mrmac) begin
           axi_word_cnt <= MAX_BURST_SIZE;
         end else begin
-          if (packets_received) begin                                            // all transactions done, reset the counter
+          if (format_ct_received) begin                                            // all transactions done, reset the counter
               axi_word_cnt <= MAX_BURST_SIZE;
           end else begin
             if ((axi_write_cnt != 1) | (PC_REMAINS[gen_wr] == 0)) begin           // (not last trans) or (full bursts trans)
@@ -849,8 +848,8 @@ module mhdma_master
       assign fifo_pc_wr_out_rdy = m_axi4_wready[gen_wr] & (enough_words | (axi_write_cnt == 1));
 
       assign m_axi4_wvalid[gen_wr] = axi_write & fifo_pc_wr_out_vld;
-      assign m_axi4_wlast[gen_wr]  = (( m_axi4_wready[gen_wr] & m_axi4_wvalid[gen_wr]) & (axi_word_cnt == 1)) ? 1'b1 : 1'b0;
-      assign m_axi4_wstrb[gen_wr]  = (  m_axi4_wready[gen_wr] & m_axi4_wvalid[gen_wr]) ? 32'hFFFFFFFF : 'h0;
+      assign m_axi4_wlast[gen_wr]  = (m_axi4_wready[gen_wr] & m_axi4_wvalid[gen_wr]) & (axi_word_cnt == 1);
+      assign m_axi4_wstrb[gen_wr]  = (m_axi4_wready[gen_wr] & m_axi4_wvalid[gen_wr]) ? 32'hFFFFFFFF : 'h0;
       assign m_axi4_wdata[gen_wr]  = fifo_pc_wr_out_data;
 
       // Write response channel -------------------------------------------------------------------
@@ -903,7 +902,7 @@ module mhdma_master
     end
   endgenerate
 
-  assign fifo_pc_backpressure = target_fifo ? gen_ce_write[1].fifo_pc_wr_in_rdy :  gen_ce_write[0].fifo_pc_wr_in_rdy;
+  assign fifo_pc_backpressure = target_fifo ? gen_ce_write[1].fifo_pc_wr_in_rdy : gen_ce_write[0].fifo_pc_wr_in_rdy;
 
   // Interrupt generation -------------------------------------------------------------------------
   // interrupt must be raised when we have both write_complete.
@@ -928,7 +927,7 @@ module mhdma_master
 
   // itr_read_request is a pulse and can be used as a way to determine when to quit ST_READ_REQ
   // TODO: check that we don't need seq_num check or errors here and it's enough
-  assign packets_received = itr_read_request;
+  assign format_ct_received = itr_read_request;
 
   // regf payload information ---------------------------------------------------------------------
   logic [REG_DATA_W-1:0] rr_regf_in_data;
@@ -1057,7 +1056,7 @@ module mhdma_master
     end else begin
       if (format_rreq_sent) begin
         count_rreq_receive <= 1'b1;
-      end else if (packets_received) begin
+      end else if (format_ct_received) begin
         count_rreq_receive <= 1'b0;
       end
     end
@@ -1090,7 +1089,7 @@ module mhdma_master
     if (~resetn_mrmac) begin
       stat_t_rr_to_ce_received <= 'h0;
     end else begin
-      if (packets_received) begin
+      if (format_ct_received) begin
         stat_t_rr_to_ce_received <= t_rr_to_ce_received;
       end
     end
@@ -1103,7 +1102,7 @@ module mhdma_master
       if (rst_nb_ce_words_received) begin
         stat_nb_ce_words_received <= 'h0;
       end else begin
-        if (packets_received) begin
+        if (format_ct_received) begin
           stat_nb_ce_words_received <= { {(REG_DATA_W-CE_DATA_COUNT_W){1'b0}}, fifo_cerx_cnt_tx};
         end
       end

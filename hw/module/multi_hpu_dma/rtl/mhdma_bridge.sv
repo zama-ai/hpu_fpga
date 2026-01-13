@@ -240,7 +240,7 @@ module mhdma_bridge
 
   // master -> formatter
   header_t format_header;
-  logic retry_notify;
+  logic master_format_retry_notify;
   logic retry_read_request;
 
   // formatter -> master
@@ -262,7 +262,6 @@ module mhdma_bridge
   // payload for ciphertext reception
   logic [MRMAC_AXIS_W-1:0]  decoder_rx_tdata;
   logic                     decoder_rx_tvalid;
-  logic                     decoder_rx_tlast;
   logic                     cerx_reception_ready;
 
   // Master module does the controls for sending read request and Notifies requests
@@ -275,6 +274,9 @@ module mhdma_bridge
     // Ethernet configuration interface ---------------------------------------
     .clk_cfg                         (clk_cfg                                 ),
     .resetn_cfg                      (resetn_cfg                              ),
+    // Ethernet fast clock interface ------------------------------------------
+    .clk_mrmac                       (clk_mrmac                               ),
+    .resetn_mrmac                    (resetn_mrmac                            ),
     // Axi4 interface ---------------------------------------------------------
     .m_axi4_awid                     (m_axi4_awid                             ),
     .m_axi4_awaddr                   (m_axi4_awaddr                           ),
@@ -292,9 +294,6 @@ module mhdma_bridge
     .m_axi4_bresp                    (m_axi4_bresp                            ),
     .m_axi4_bvalid                   (m_axi4_bvalid                           ),
     .m_axi4_bready                   (m_axi4_bready                           ),
-    // Ethernet fast clock interface ------------------------------------------
-    .clk_mrmac                       (clk_mrmac                               ),
-    .resetn_mrmac                    (resetn_mrmac                            ),
     // regf interface ---------------------------------------------------------
     .regf_ct_mem_addr                (regf_ct_mem_addr                        ),
     .regf_req_id                     (regf_req_id                             ),
@@ -302,9 +301,32 @@ module mhdma_bridge
     .regf_read_payload               (regf_read_payload                       ),
     .regf_timeout_duration_notify    (regf_timeout_duration_notify            ),
     .regf_timeout_duration_read_req  (regf_timeout_duration_read_req          ),
-    // register control -------------------------------------------------------
+    // register control
     .received_req                    (received_req                            ),
     .request_consumed                (request_consumed                        ),
+    // interrupt --------------------------------------------------------------
+    .clear_interrupt_rr              (clear_interrupt_rr                      ),
+    .interrupt_read_request          (interrupt_read_request                  ),
+    // allowed-pending --------------------------------------------------------
+    .new_read_request_pending        (new_read_request_pending                ),
+    .read_request_allowed            (read_request_allowed                    ),
+    .new_notify_request_pending      (new_notify_request_pending              ),
+    .notify_request_allowed          (notify_request_allowed                  ),
+    // decoder interface ------------------------------------------------------
+    .decoded_header                  (decoded_header                          ),
+    .cerx_reception_ready            (cerx_reception_ready                    ),
+    // ciphertext reception
+    .decoder_rx_tdata                (decoder_rx_tdata                        ),
+    .decoder_rx_tvalid               (decoder_rx_tvalid                       ),
+    // for notify fsm
+    .notify_ack_received             (notify_ack_received                     ),
+    // formatter interface ----------------------------------------------------
+    .format_rreq_sent                (rreq_sent                               ),
+    .format_header                   (format_header                    ),
+    .format_retry_notify             (retry_notify                            ),
+    .format_retry_read_request       (retry_read_request                      ),
+    .format_notify_sent              (notify_sent                             ),
+    .format_ct_received              (format_ct_received                      ),
     // statistics -------------------------------------------------------------
     // counters
     .stat_cnt_notify                 (stat_cnt_notify                         ),
@@ -325,29 +347,7 @@ module mhdma_bridge
     // fsms
     .stat_fsm_notify                 (stat_fsm_notify                         ),
     .stat_fsm_read_req               (stat_fsm_read_req                       ),
-    // flags ------------------------------------------------------------------
-    .read_request_allowed            (read_request_allowed                    ),
-    .notify_request_allowed          (notify_request_allowed                  ),
-    .new_read_request_pending        (new_read_request_pending                ),
-    .new_notify_request_pending      (new_notify_request_pending              ),
-    .notify_ack_received             (notify_ack_received                     ),
-    .cerx_reception_ready            (cerx_reception_ready                    ),
-    // payload from decoder ---------------------------------------------------
-    .rx_tdata                        (decoder_rx_tdata                        ),
-    .rx_tvalid                       (decoder_rx_tvalid                       ),
-    .rx_tlast                        (decoder_rx_tlast                        ),
-    // interrupt --------------------------------------------------------------
-    .clear_interrupt_rr              (clear_interrupt_rr                      ),
-    .interrupt_read_request          (interrupt_read_request                  ),
-    // formatter interface ----------------------------------------------------
-    .format_notify_sent              (notify_sent                             ),
-    .format_rreq_sent                (rreq_sent                               ),
-    .format_header                   (format_header                           ),
-    .format_retry_notify             (retry_notify                            ),
-    .format_retry_read_request       (retry_read_request                      ),
-    .packets_received                (format_ct_received                      ),
-    // header interface -------------------------------------------------------
-    .decoded_header                  (decoded_header                          ),
+    // errors -----------------------------------------------------------------
     .error_packet_id_mismatch        (/* UNUSED */                            )
   );
 
@@ -366,24 +366,40 @@ module mhdma_bridge
     // Ethernet fast clock interface ------------------------------------------
     .clk_mrmac                      (clk_mrmac                                ),
     .resetn_mrmac                   (resetn_mrmac                             ),
+    // AXI4-4 full read interface ---------------------------------------------
+    .m_axi4_araddr                  (m_axi4_araddr                            ),
+    .m_axi4_arlen                   (m_axi4_arlen                             ),
+    .m_axi4_arsize                  (m_axi4_arsize                            ),
+    .m_axi4_arburst                 (m_axi4_arburst                           ),
+    .m_axi4_arvalid                 (m_axi4_arvalid                           ),
+    .m_axi4_arready                 (m_axi4_arready                           ),
+
+    .m_axi4_rdata                   (m_axi4_rdata                             ),
+    .m_axi4_rlast                   (m_axi4_rlast                             ),
+    .m_axi4_rvalid                  (m_axi4_rvalid                            ),
+    .m_axi4_rready                  (m_axi4_rready                            ),
     // regf interface ---------------------------------------------------------
     .regf_ct_mem_addr               (regf_ct_mem_addr                         ),
     .regf_notify_payload            (regf_notify_payload                      ),
-    // header interface -------------------------------------------------------
-    .decoded_header                 (decoded_header                           ),
-    // command interface ------------------------------------------------------
-    .notify_request_received        (notify_request_received                  ),
-    .read_request_received          (read_request_received                    ),
-    .new_notify_ack_pending         (new_notify_ack_pending                   ),
-    .new_ct_emission_request_pending(new_ct_emission_request_pending          ),
+    // interrupt interface ----------------------------------------------------
+    .clear_interrupt_notify         (clear_interrupt_notify                   ),
+    .interrupt_notify               (interrupt_notify                         ),
+    // allowed-pending --------------------------------------------------------
     .notify_ack_allowed             (notify_ack_allowed                       ),
     .ct_emission_allowed            (ct_emission_allowed                      ),
-    // formatter ---------------------------------------------------------------
+    .new_notify_ack_pending         (new_notify_ack_pending                   ),
+    .new_ct_emission_request_pending(new_ct_emission_request_pending          ),
+    // decoder interface ------------------------------------------------------
+    .decoded_header                 (decoded_header                           ),
+    .notify_request_received        (notify_request_received                  ),
+    .read_request_received          (read_request_received                    ),
+    // formatter interface ----------------------------------------------------
     .ct_emission_finished           (format_packets_emitted                   ),
-    // notify ack payload -----------------------------------------------------
+    // notify ack
     .nrx_cmd_payload                (nrx_cmd_payload                          ),
     .nrx_cmd_valid                  (nrx_cmd_valid                            ),
     .notify_ack_sent                (notify_ack_sent                          ),
+    // ciphertext emission
     .ce_header                      (ce_header                                ),
     .ce_payload                     (ce_payload                               ),
     .ce_ready                       (ce_ready                                 ),
@@ -399,22 +415,7 @@ module mhdma_bridge
     // register
     .stat_fsm_notify_rx             (stat_fsm_notify_rx                       ),
     .stat_fsm_cem                   (stat_fsm_cem                             ),
-    .stat_rr_phy_addr               (stat_rr_phy_addr                         ),
-    // AXI4-4 full read interface ---------------------------------------------
-    .m_axi4_araddr                  (m_axi4_araddr                            ),
-    .m_axi4_arlen                   (m_axi4_arlen                             ),
-    .m_axi4_arsize                  (m_axi4_arsize                            ),
-    .m_axi4_arburst                 (m_axi4_arburst                           ),
-    .m_axi4_arvalid                 (m_axi4_arvalid                           ),
-    .m_axi4_arready                 (m_axi4_arready                           ),
-
-    .m_axi4_rdata                   (m_axi4_rdata                             ),
-    .m_axi4_rlast                   (m_axi4_rlast                             ),
-    .m_axi4_rvalid                  (m_axi4_rvalid                            ),
-    .m_axi4_rready                  (m_axi4_rready                            ),
-    // interrupt interface ----------------------------------------------------
-    .clear_interrupt_notify         (clear_interrupt_notify                   ),
-    .interrupt_notify               (interrupt_notify                         )
+    .stat_rr_phy_addr               (stat_rr_phy_addr                         )
   );
 
   // The decoder gathers axi-stream RX and decodes the received command
@@ -430,27 +431,27 @@ module mhdma_bridge
     // Header information -----------------------------------------------------
     .current_hpu_mac             (current_hpu_mac                             ),
     .rx_header                   (decoded_header                              ),
-    // statistics -------------------------------------------------------------
-    .stat_t_ce_first_to_last_pkt (stat_t_ce_first_to_last_pkt                 ),
-
-    .stat_cnt_nack_received      (stat_cnt_nack_received                      ),
-    .stat_cnt_notify_received    (stat_cnt_notify_received                    ),
-    .stat_cnt_read_req_received  (stat_cnt_read_req_received                  ),
-    .stat_cnt_ce_received        (stat_cnt_ce_received                        ),
-
-    .rst_cnt_nack_received       (rst_cnt_nack_received                       ),
-    .rst_cnt_notify_received     (rst_cnt_notify_received                     ),
-    .rst_cnt_read_req_received   (rst_cnt_read_req_received                   ),
-    .rst_cnt_ce_received         (rst_cnt_ce_received                         ),
     // RX payload -------------------------------------------------------------
     .rx_tdata_out                (decoder_rx_tdata                            ),
     .rx_tvalid_out               (decoder_rx_tvalid                           ),
-    .rx_tlast_out                (decoder_rx_tlast                            ),
     // QSFP RX interface ------------------------------------------------------
     .qsfp_rx_tdata               (qsfp_rx_tdata                               ),
     .qsfp_rx_tkeep_user          (qsfp_rx_tkeep_user                          ),
     .qsfp_rx_tlast               (qsfp_rx_tlast                               ),
-    .qsfp_rx_tvalid              (qsfp_rx_tvalid                              )
+    .qsfp_rx_tvalid              (qsfp_rx_tvalid                              ),
+    // statistics -------------------------------------------------------------
+    // timing
+    .stat_t_ce_first_to_last_pkt (stat_t_ce_first_to_last_pkt                 ),
+    // counters
+    .stat_cnt_nack_received      (stat_cnt_nack_received                      ),
+    .stat_cnt_notify_received    (stat_cnt_notify_received                    ),
+    .stat_cnt_read_req_received  (stat_cnt_read_req_received                  ),
+    .stat_cnt_ce_received        (stat_cnt_ce_received                        ),
+    // resets
+    .rst_cnt_nack_received       (rst_cnt_nack_received                       ),
+    .rst_cnt_notify_received     (rst_cnt_notify_received                     ),
+    .rst_cnt_read_req_received   (rst_cnt_read_req_received                   ),
+    .rst_cnt_ce_received         (rst_cnt_ce_received                         )
   );
 
   // the formatter gathers commands from master & slave module and sends it to axis
@@ -467,38 +468,39 @@ module mhdma_bridge
     .notify_ack_allowed              (notify_ack_allowed                      ),
     .read_request_allowed            (read_request_allowed                    ),
     .notify_request_allowed          (notify_request_allowed                  ),
+
     .new_ct_emission_request_pending (new_ct_emission_request_pending         ),
     .new_notify_ack_pending          (new_notify_ack_pending                  ),
     .new_read_request_pending        (new_read_request_pending                ),
     .new_notify_request_pending      (new_notify_request_pending              ),
-    .cerx_reception_ready            (cerx_reception_ready                    ),
-    .ce_received                     (format_ct_received                      ),
-    .nack_received                   (notify_ack_received                     ),
-    // statistics -------------------------------------------------------------
-    // registers
-    .stat_fsm_formatter              (stat_fsm_formatter                      ),
-    // slave interface --------------------------------------------------------
-    .packets_emitted                 (format_packets_emitted                  ),
     // master interface -------------------------------------------------------
     .format_header                   (format_header                           ),
     .retry_notify                    (retry_notify                            ),
     .retry_read_request              (retry_read_request                      ),
     .notify_sent                     (notify_sent                             ),
     .rreq_sent                       (rreq_sent                               ),
+    .cerx_reception_ready            (cerx_reception_ready                    ),
+    .ce_received                     (format_ct_received                      ),
     // slave interface --------------------------------------------------------
     .nrx_cmd_payload                 (nrx_cmd_payload                         ),
     .nrx_cmd_valid                   (nrx_cmd_valid                           ),
     .notify_ack_sent                 (notify_ack_sent                         ),
-    .ce_header               (ce_header                       ),
+    .ce_header                       (ce_header                               ),
     .ce_payload                      (ce_payload                              ),
     .ce_ready                        (ce_ready                                ),
     .ce_valid                        (ce_valid                                ),
+    .packets_emitted                 (format_packets_emitted                  ),
+    // decoder interface ------------------------------------------------------
+    .nack_received                   (notify_ack_received                     ),
     // QSFP TX interface ------------------------------------------------------
     .qsfp_tx_tdata                   (qsfp_tx_tdata                           ),
     .qsfp_tx_tkeep_user              (qsfp_tx_tkeep_user                      ),
     .qsfp_tx_tlast                   (qsfp_tx_tlast                           ),
     .qsfp_tx_tvalid                  (qsfp_tx_tvalid                          ),
-    .qsfp_tx_tready                  (qsfp_tx_tready                          )
+    .qsfp_tx_tready                  (qsfp_tx_tready                          ),
+    // statistics -------------------------------------------------------------
+    // registers
+    .stat_fsm_formatter              (stat_fsm_formatter                      )
   );
 
   // ==============================================================================================

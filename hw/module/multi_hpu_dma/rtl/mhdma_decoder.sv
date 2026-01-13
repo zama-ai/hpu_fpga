@@ -23,7 +23,6 @@ module mhdma_decoder
   // RX payload ---------------------------------------------------------------
   output logic [MRMAC_AXIS_W-1:0]  rx_tdata_out,
   output logic                     rx_tvalid_out,
-  output logic                     rx_tlast_out,
   //  Statistics --------------------------------------------------------------
   output logic [REG_DATA_W-1:0]    stat_t_ce_first_to_last_pkt,
   // number of recieved events
@@ -126,7 +125,7 @@ module mhdma_decoder
       end
     end
 
-  assign rx_valid = (current_hpu_mac == dst_mac_addr) ? 1'b1 : 1'b0;
+  assign rx_valid = (current_hpu_mac == dst_mac_addr);
 
   // FRAME 1 ------------------------------------------------------------------
   // src_mac_address and eth len
@@ -179,10 +178,10 @@ module mhdma_decoder
   logic rr_received;
   logic ce_received;
 
-  assign nack_receivedD = (rx_valid & (req_id == REQ_ID_ACK_NOTIFY_TX)) ? 1'b1 : 1'b0;
-  assign nr_receivedD   = (rx_valid & (req_id == REQ_ID_NOTIFY_TX))     ? 1'b1 : 1'b0;
-  assign rr_receivedD   = (rx_valid & (req_id == REQ_ID_READ))          ? 1'b1 : 1'b0;
-  assign ce_receivedD   = (rx_valid & (req_id == REQ_ID_EMISSION))      ? 1'b1 : 1'b0;
+  assign nack_receivedD = rx_valid & (req_id == REQ_ID_ACK_NOTIFY_TX);
+  assign nr_receivedD   = rx_valid & (req_id == REQ_ID_NOTIFY_TX);
+  assign rr_receivedD   = rx_valid & (req_id == REQ_ID_READ);
+  assign ce_receivedD   = rx_valid & (req_id == REQ_ID_EMISSION);
 
   always_ff @(posedge clk_mrmac) begin
     nack_received <= nack_receivedD;
@@ -198,7 +197,7 @@ module mhdma_decoder
 
   // header information
   // tvalid is used if ever we have a drop and rx_counter keeps its value. we need to have a pulse on valid signal
-  assign rx_header.valid        = (qsfp_rx_tvalid & (rx_counter == NB_WORDS_CUST_HEADER_SIZE)) ? 1'b1 : 1'b0;
+  assign rx_header.valid        = qsfp_rx_tvalid & (rx_counter == NB_WORDS_CUST_HEADER_SIZE);
   assign rx_header.src_mac_addr = src_mac_addr;
   assign rx_header.seq_num      = sec_num;
   assign rx_header.hpu_id       = hpu_id;
@@ -220,9 +219,6 @@ module mhdma_decoder
       rx_tvalid_out <= 1'b0;
     end
   end
-
-  always_ff @(posedge clk_mrmac)
-    rx_tlast_out <= ce_received & rx_tvalid_in & rx_tlast_in;
 
   // =========================================================================================== //
   // statistics

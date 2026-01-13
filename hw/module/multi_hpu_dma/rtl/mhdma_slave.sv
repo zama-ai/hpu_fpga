@@ -247,7 +247,7 @@ module mhdma_slave
   assign start_of_ct_emission = ct_emission_allowed & ~ct_emission_allowed_reg;
 
   // in use signal is simply a guardrail for control
-  assign ct_emission_request_in_use = (cem_state == CEM_READ_N_SEND) ? 1'b1: 1'b0;
+  assign ct_emission_request_in_use = (cem_state == CEM_READ_N_SEND);
 
   // sending command to read request command queue ------------------------------------------------
   // when qsfp tlast is ready we are sure that all commands have been correctly received
@@ -308,7 +308,7 @@ module mhdma_slave
       end
     end
   end
-  assign new_ct_emission_request_pending = (rreq_cnt != 0) ? 1'b1 : 1'b0;
+  assign new_ct_emission_request_pending = (rreq_cnt != 0);
 
   logic error_rreq_cmd_full_packet_drop;
   // assign error_rreq_cmd_full_packet_drop = qsfp_rx_tlast & ~rreq_cmd_in_rdy;
