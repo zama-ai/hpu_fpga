@@ -171,7 +171,7 @@ module tb_mhdma_errors;
   logic [QSFP_LANE_NB-1:0]                    qsfp_rx_tlast;
   logic [QSFP_LANE_NB-1:0]                    qsfp_rx_tvalid;
 
-  // TODO: for now always ready
+  // for this test, always ready
   assign sim_qsfp_tx_tready = 4'b1111;
 
   // AXI4 to HBM: HPUA ----------------------------------------------------------------------------
@@ -393,7 +393,6 @@ module tb_mhdma_errors;
     .rx_header                   (rx_header),
     .rx_tdata_out                (/* unused */),
     .rx_tvalid_out               (/* unused */),
-    .rx_tlast_out                (/* unused */),
 
     .qsfp_rx_tdata               (qsfp_tx_tdata[lane]),
     .qsfp_rx_tkeep_user          (qsfp_tx_tkeep_user[lane]),
@@ -631,7 +630,7 @@ module tb_mhdma_errors;
 
     notify_ack(hpu_a_id, hpu_a_mac_addr, hpu_b_id, hpu_b_mac_addr);
 
-    wait(hpu_a.mhdma_bridge.mhdma_formatter.tx_state == 3'b001);
+    wait(hpu_a.mhdma_bridge.mhdma_master.ntx_state == 3'b001);
 
     // Ciphertext emission error ==================================================================
     // HPU_A sends a read request and receives
@@ -821,9 +820,6 @@ module tb_mhdma_errors;
     input logic [MAC_ADDR_W-1:0] source_mac_addr
   );
     begin
-
-      wait(rx_header.valid);
-
       // First clock cycle ----------------------------------------------------
       qsfp_rx_tdata[lane]      = {MAC_OUI, target_mac_addr, MAC_OUI[MAC_OUI_W-1:8]};
       qsfp_rx_tkeep_user[lane] = 'hff;
@@ -969,61 +965,5 @@ module tb_mhdma_errors;
     end
 
   endtask
-
-// ============================================================================================== --
-// Checker
-// ============================================================================================== --
-  // /* Checker
-  // * memory content should be the same between HPU_A and HPU_B for PC_0 and PC_1
-  // * assumption: we chose in this test to do read request from HPU A to B
-  // * anything can be in HPU B memory. on HPU A we have only the copied values of hpu B
-  // */
-  // task automatic check_memories(
-  //   input logic [SRC_ADDR_W-1:0] src_addr,
-  //   input logic [DST_ADDR_W-1:0] dst_addr
-  // );
-  //   int addr_hpu_0;
-  //   int addr_hpu_1;
-  //   logic mismatch_found;
-  //   begin
-  //     mismatch_found = 1'b0;
-
-  //     // PC 0
-  //     addr_hpu_0 = regf_start_addr_ofs + ((dst_addr << PC_STRIDE))/32 ; // where copied word should be
-  //     addr_hpu_1 = regf_start_addr_ofs + ((src_addr << PC_STRIDE))/32 ;
-
-  //     $display("addr_hpu_0 = %x", addr_hpu_0);
-  //     $display("addr_hpu_1 = %x", addr_hpu_1);
-
-  //     // Direct comparison of memory locations
-  //     for (int k = 0; k < gen_localparam[0].PC_NB_WORDS; k++) begin
-
-  //       // I read from 0 to PC_NB_WORDS in HPU_B and
-  //       if (gen_mem_hpu[0].gen_mem_pc[0].axi4_mem_ct.axi4_ram_ct_wr.mem[addr_hpu_0 + k] != gen_mem_hpu[1].gen_mem_pc[0].axi4_mem_ct.axi4_ram_ct_wr.mem[addr_hpu_1 + k]) begin
-  //         $display("Memory mismatch at PC=%0d, offset=%0d: HPU_0[%0d]=%0h != HPU_1[%0d]=%0h", 0, k,
-  //                   addr_hpu_0 + k, gen_mem_hpu[0].gen_mem_pc[0].axi4_mem_ct.axi4_ram_ct_wr.mem[addr_hpu_0 + k],
-  //                   addr_hpu_1 + k, gen_mem_hpu[1].gen_mem_pc[0].axi4_mem_ct.axi4_ram_ct_wr.mem[addr_hpu_1 + k]);
-  //         mismatch_found = 1;
-  //         error_write_mismatch = 1'b1;
-  //       end
-  //     end
-  //     // PC 1
-  //     // Direct comparison of memory locations
-  //     for (int k = 0; k < gen_localparam[1].PC_NB_WORDS; k++) begin
-
-  //       // I read from 0 to PC_NB_WORDS in HPU_B and
-  //       if (gen_mem_hpu[0].gen_mem_pc[1].axi4_mem_ct.axi4_ram_ct_wr.mem[addr_hpu_0 + k] != gen_mem_hpu[1].gen_mem_pc[1].axi4_mem_ct.axi4_ram_ct_wr.mem[addr_hpu_1 + k]) begin
-  //         $display("Memory mismatch at PC=%0d, offset=%0d: HPU_0[%0d]=%0h != HPU_1[%0d]=%0h", 1, k,
-  //                   addr_hpu_0 + k, gen_mem_hpu[0].gen_mem_pc[1].axi4_mem_ct.axi4_ram_ct_wr.mem[addr_hpu_0 + k],
-  //                   addr_hpu_1 + k, gen_mem_hpu[1].gen_mem_pc[1].axi4_mem_ct.axi4_ram_ct_wr.mem[addr_hpu_1 + k]);
-  //         mismatch_found = 1;
-  //         error_write_mismatch = 1'b1;
-  //       end
-  //     end
-
-  //     if (~mismatch_found)
-  //       $display("[INFO]: Memory check PASSED: HPU_A and HPU_B contents match");
-  //   end
-  // endtask
 
 endmodule
