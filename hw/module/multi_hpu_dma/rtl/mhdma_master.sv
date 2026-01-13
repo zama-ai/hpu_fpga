@@ -29,6 +29,25 @@ module mhdma_master
   // Ethernet fast clock interface --------------------------------------------
   input  logic                                clk_mrmac,
   input  logic                                resetn_mrmac,
+  // Axi4 interface for NMU ---------------------------------------------------
+  output logic [ETH_PC-1:0][AXI4_ID_W-1:0]    m_axi4_awid,
+  output logic [ETH_PC-1:0][AXI4_ADD_W-1:0]   m_axi4_awaddr,
+  output logic [ETH_PC-1:0][AXI4_LEN_W-1:0]   m_axi4_awlen,
+  output logic [ETH_PC-1:0][AXI4_SIZE_W-1:0]  m_axi4_awsize,
+  output logic [ETH_PC-1:0][AXI4_BURST_W-1:0] m_axi4_awburst,
+  output logic [ETH_PC-1:0]                   m_axi4_awvalid,
+  input  logic [ETH_PC-1:0]                   m_axi4_awready,
+
+  output logic [ETH_PC-1:0][AXI4_DATA_W-1:0]  m_axi4_wdata,
+  output logic [ETH_PC-1:0][AXI4_STRB_W-1:0]  m_axi4_wstrb,
+  output logic [ETH_PC-1:0]                   m_axi4_wlast,
+  output logic [ETH_PC-1:0]                   m_axi4_wvalid,
+  input  logic [ETH_PC-1:0]                   m_axi4_wready,
+
+  input  logic [ETH_PC-1:0][AXI4_ID_W-1:0]    m_axi4_bid,
+  input  logic [ETH_PC-1:0][AXI4_RESP_W-1:0]  m_axi4_bresp,
+  input  logic [ETH_PC-1:0]                   m_axi4_bvalid,
+  output logic [ETH_PC-1:0]                   m_axi4_bready,
   // regf interface -----------------------------------------------------------
   input  logic [ETH_PC-1:0][2*REG_DATA_W-1:0] regf_ct_mem_addr,
   input  logic               [REG_DATA_W-1:0] regf_req_id,
@@ -36,18 +55,22 @@ module mhdma_master
   output logic               [REG_DATA_W-1:0] regf_read_payload,
   input  logic               [REG_DATA_W-1:0] regf_timeout_duration_notify,
   input  logic               [REG_DATA_W-1:0] regf_timeout_duration_read_req,
-  // register control --------------------------------------------------------
+  // register control
   input  logic                                received_req,
   output logic                                request_consumed,
-  // Flags -------------------------------------------------------------------
+  // interrupt ---------------------------------------------------------------
+  input  logic                                clear_interrupt_rr,
+  output logic                                interrupt_read_request,
+  // allowed-pending --------------------------------------------------------
   input  logic                                read_request_allowed,
   input  logic                                notify_request_allowed,
-
   output logic                                new_read_request_pending,
   output logic                                new_notify_request_pending,
-
+  // decoder interface --------------------------------------------------------
+  input  header_t                             decoded_header,
+  input  logic             [MRMAC_AXIS_W-1:0] decoder_rx_tdata,
+  input  logic                                decoder_rx_tvalid,
   input  logic                                notify_ack_received,
-
   // formatter interface ------------------------------------------------------
   output header_t                             format_header,
   output logic                                format_retry_notify,
@@ -56,11 +79,6 @@ module mhdma_master
   input  logic                                format_rreq_sent,
   output logic                                format_ct_received,
   output logic                                cerx_reception_ready,
-  // ciphertext payload -------------------------------------------------------
-  input  logic             [MRMAC_AXIS_W-1:0] decoder_rx_tdata,
-  input  logic                                decoder_rx_tvalid,
-  // Received header ----------------------------------------------------------
-  input  header_t                             decoded_header,
   // statistics ---------------------------------------------------------------
   // counters
   output logic [REG_DATA_W-1:0]               stat_cnt_notify,
@@ -81,28 +99,6 @@ module mhdma_master
   // register
   output logic [1:0]                          stat_fsm_notify,
   output logic [1:0]                          stat_fsm_read_req,
-  // Axi4 interface for NMU ---------------------------------------------------
-  output logic [ETH_PC-1:0][AXI4_ID_W-1:0]    m_axi4_awid,
-  output logic [ETH_PC-1:0][AXI4_ADD_W-1:0]   m_axi4_awaddr,
-  output logic [ETH_PC-1:0][AXI4_LEN_W-1:0]   m_axi4_awlen,
-  output logic [ETH_PC-1:0][AXI4_SIZE_W-1:0]  m_axi4_awsize,
-  output logic [ETH_PC-1:0][AXI4_BURST_W-1:0] m_axi4_awburst,
-  output logic [ETH_PC-1:0]                   m_axi4_awvalid,
-  input  logic [ETH_PC-1:0]                   m_axi4_awready,
-
-  output logic [ETH_PC-1:0][AXI4_DATA_W-1:0]  m_axi4_wdata,
-  output logic [ETH_PC-1:0][AXI4_STRB_W-1:0]  m_axi4_wstrb,
-  output logic [ETH_PC-1:0]                   m_axi4_wlast,
-  output logic [ETH_PC-1:0]                   m_axi4_wvalid,
-  input  logic [ETH_PC-1:0]                   m_axi4_wready,
-
-  input  logic [ETH_PC-1:0][AXI4_ID_W-1:0]    m_axi4_bid,
-  input  logic [ETH_PC-1:0][AXI4_RESP_W-1:0]  m_axi4_bresp,
-  input  logic [ETH_PC-1:0]                   m_axi4_bvalid,
-  output logic [ETH_PC-1:0]                   m_axi4_bready,
-  // interrupt ---------------------------------------------------------------
-  input  logic                                clear_interrupt_rr,
-  output logic                                interrupt_read_request,
   // error --------------------------------------------------------------------
   output error_packet_id_mismatch
 );

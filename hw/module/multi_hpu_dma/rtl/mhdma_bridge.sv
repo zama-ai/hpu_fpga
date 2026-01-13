@@ -314,7 +314,6 @@ module mhdma_bridge
     .notify_request_allowed          (notify_request_allowed                  ),
     // decoder interface ------------------------------------------------------
     .decoded_header                  (decoded_header                          ),
-    .cerx_reception_ready            (cerx_reception_ready                    ),
     // ciphertext reception
     .decoder_rx_tdata                (decoder_rx_tdata                        ),
     .decoder_rx_tvalid               (decoder_rx_tvalid                       ),
@@ -322,11 +321,12 @@ module mhdma_bridge
     .notify_ack_received             (notify_ack_received                     ),
     // formatter interface ----------------------------------------------------
     .format_rreq_sent                (rreq_sent                               ),
-    .format_header                   (format_header                    ),
+    .format_header                   (format_header                           ),
     .format_retry_notify             (retry_notify                            ),
     .format_retry_read_request       (retry_read_request                      ),
     .format_notify_sent              (notify_sent                             ),
     .format_ct_received              (format_ct_received                      ),
+    .cerx_reception_ready            (cerx_reception_ready                    ),
     // statistics -------------------------------------------------------------
     // counters
     .stat_cnt_notify                 (stat_cnt_notify                         ),

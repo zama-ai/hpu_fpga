@@ -29,26 +29,38 @@ module mhdma_slave
   // Ethernet fast clock interface --------------------------------------------
   input  logic                                clk_mrmac,
   input  logic                                resetn_mrmac,
+  // Axi4 interface for NMU ---------------------------------------------------
+  output logic [ETH_PC-1:0][  AXI4_ADD_W-1:0] m_axi4_araddr,
+  output logic [ETH_PC-1:0][  AXI4_LEN_W-1:0] m_axi4_arlen,
+  output logic [ETH_PC-1:0][ AXI4_SIZE_W-1:0] m_axi4_arsize,
+  output logic [ETH_PC-1:0][AXI4_BURST_W-1:0] m_axi4_arburst,
+  output logic [ETH_PC-1:0]                   m_axi4_arvalid,
+  input  logic [ETH_PC-1:0]                   m_axi4_arready,
+
+  input  logic [ETH_PC-1:0][AXI4_DATA_W-1:0]  m_axi4_rdata,
+  input  logic [ETH_PC-1:0]                   m_axi4_rlast,
+  input  logic [ETH_PC-1:0]                   m_axi4_rvalid,
+  output logic [ETH_PC-1:0]                   m_axi4_rready,
   // regf interface -----------------------------------------------------------
   input  logic [ETH_PC-1:0][2*REG_DATA_W-1:0] regf_ct_mem_addr,
   output logic             [  REG_DATA_W-1:0] regf_notify_payload,
-  // Received header ----------------------------------------------------------
-  input  header_t                             decoded_header,
-  // Command interface --------------------------------------------------------
-  input  logic                                notify_request_received,
-  input  logic                                read_request_received,
-
-  output logic                                new_notify_ack_pending,
-  output logic                                new_ct_emission_request_pending,
-
+  // interrupt ----------------------------------------------------------------
+  input  logic                                clear_interrupt_notify,
+  output logic                                interrupt_notify,
+  // allowed-pending ----------------------------------------------------------
   input  logic                                notify_ack_allowed,
   input  logic                                ct_emission_allowed,
-
-  input  logic                                ct_emission_finished,
+  output logic                                new_notify_ack_pending,
+  output logic                                new_ct_emission_request_pending,
+  // decoder interface --------------------------------------------------------
+  input  header_t                             decoded_header,
+  input  logic                                notify_request_received,
+  input  logic                                read_request_received,
   // format interface ---------------------------------------------------------
   output logic             [   NRX_WIDTH-1:0] nrx_cmd_payload,
   output logic                                nrx_cmd_valid,
 
+  input  logic                                ct_emission_finished,
   input  logic                                notify_ack_sent,
 
   output header_t                             ce_header,
@@ -66,22 +78,7 @@ module mhdma_slave
   // register
   output logic [1:0]                          stat_fsm_notify_rx,
   output logic [1:0]                          stat_fsm_cem,
-  output logic [ETH_PC-1:0][2*REG_DATA_W-1:0] stat_rr_phy_addr,
-  // Axi4 interface for NMU ---------------------------------------------------
-  output logic [ETH_PC-1:0][  AXI4_ADD_W-1:0] m_axi4_araddr,
-  output logic [ETH_PC-1:0][  AXI4_LEN_W-1:0] m_axi4_arlen,
-  output logic [ETH_PC-1:0][ AXI4_SIZE_W-1:0] m_axi4_arsize,
-  output logic [ETH_PC-1:0][AXI4_BURST_W-1:0] m_axi4_arburst,
-  output logic [ETH_PC-1:0]                   m_axi4_arvalid,
-  input  logic [ETH_PC-1:0]                   m_axi4_arready,
-
-  input  logic [ETH_PC-1:0][AXI4_DATA_W-1:0]  m_axi4_rdata,
-  input  logic [ETH_PC-1:0]                   m_axi4_rlast,
-  input  logic [ETH_PC-1:0]                   m_axi4_rvalid,
-  output logic [ETH_PC-1:0]                   m_axi4_rready,
-  // interrupt ----------------------------------------------------------------
-  input  logic                                clear_interrupt_notify,
-  output logic                                interrupt_notify
+  output logic [ETH_PC-1:0][2*REG_DATA_W-1:0] stat_rr_phy_addr
 );
 
   // =========================================================================================== //
