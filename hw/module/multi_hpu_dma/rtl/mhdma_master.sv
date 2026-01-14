@@ -111,6 +111,8 @@ module mhdma_master
   localparam NB_WORDS_TOTAL = PC_NB_WORDS[0] + PC_NB_WORDS[1];
   localparam NB_WORDS_TO_HBM = (NB_WORDS_TOTAL*AXI4_DATA_W)/MRMAC_AXIS_W;
 
+  localparam NB_WRITES_TOTAL = PC_NB_WRITES[0] + PC_NB_WRITES[1];
+
   // =========================================================================================== //
   // CDC from regf to mrmac clock
   // =========================================================================================== //
@@ -672,7 +674,6 @@ module mhdma_master
       logic [AXI4_DATA_W-1:0] fifo_pc_wr_out_data;
       logic                   fifo_pc_wr_out_vld;
       logic                   fifo_pc_wr_out_rdy;
-      // control
 
       fifo_ram_rdy_vld # (
         .WIDTH(AXI4_DATA_W),
@@ -695,9 +696,9 @@ module mhdma_master
       assign fifo_pc_wr_in_vld = target_fifo[gen_wr] & realined_word_vld ;
 
       logic [FIFO_PC_DATA_COUNT_W:0] fifo_pc_wr_cnt;
-      logic                            cnt_fifo_pc_wr_up;
-      logic                            cnt_fifo_pc_wr_down;
-      logic                            enough_words;
+      logic                          cnt_fifo_pc_wr_up;
+      logic                          cnt_fifo_pc_wr_down;
+      logic                          enough_words;
 
       assign cnt_fifo_pc_wr_up   = fifo_pc_wr_in_vld & fifo_pc_wr_in_rdy;
       assign cnt_fifo_pc_wr_down = fifo_pc_wr_out_rdy & fifo_pc_wr_out_vld;
@@ -719,10 +720,7 @@ module mhdma_master
       // ======================================================================================= //
       // We must write PC_NB_WRITES + PC_REMAINS addresses
       logic [$clog2(PC_NB_WRITES[gen_wr]):0] axi_write_cnt;
-      logic                                                 axi_awrite;
-      logic                                                 axi_awrite_tmp;
-      logic                                                 aw_valid;
-      logic                                                 axi4_awlast;
+      logic                                  axi4_awlast;
 
       always_ff @(posedge clk_mrmac) begin
         if (~resetn_mrmac) begin
@@ -738,23 +736,17 @@ module mhdma_master
         end
       end
 
-      always_ff @(posedge clk_mrmac)
-        axi_awrite <= (axi_write_cnt > 0) && axi4_write_pc[gen_wr] & enough_words;
-
-      always_ff @(posedge clk_mrmac)
-        axi_awrite_tmp <= axi_awrite;
 
       // write done is just a front edge detector with a level
-      assign aw_valid = axi_awrite & ~axi_awrite_tmp;
 
       // Counts the number of address writes that is left to do
       always_ff @(posedge clk_mrmac) begin
         if (~resetn_mrmac) begin
           axi_write_cnt <= PC_NB_WRITES[gen_wr];
         end else begin
-          if (m_axi4_wlast[gen_wr] & ~(axi_write_cnt == 1)) begin
+          if ((axi_write_cnt > 0) & axi4_write_pc[gen_wr] & m_axi4_awready[gen_wr] & m_axi4_awvalid[gen_wr]) begin
             axi_write_cnt <= axi_write_cnt - 1;
-          end else if (m_axi4_wlast[gen_wr] & (axi_write_cnt == 1)) begin
+          end else if (ciphertext_received) begin
             axi_write_cnt <= PC_NB_WRITES[gen_wr];
           end
         end
@@ -770,18 +762,18 @@ module mhdma_master
         if (phy_addr_valid) begin
           mhdma_write_addr <= phy_addr[gen_wr];
         end else begin
-          if (m_axi4_wlast[gen_wr] & m_axi4_wready[gen_wr] & m_axi4_wvalid[gen_wr]) begin
+          if (m_axi4_awready[gen_wr] & m_axi4_awvalid[gen_wr]) begin
             mhdma_write_addr <= mhdma_write_addr + (AXI4_DATA_BYTES*MAX_BURST_SIZE);
           end
         end
       end
 
-      assign m_axi4_awvalid[gen_wr] = aw_valid & (axi_write_cnt > 0) & axi4_write_pc[gen_wr];
+      assign m_axi4_awvalid[gen_wr] = (axi_write_cnt > 0) & axi4_write_pc[gen_wr];
       assign m_axi4_awid[gen_wr]    = m_axi4_awvalid[gen_wr] ? expected_wid     :'h0;
       assign m_axi4_awaddr[gen_wr]  = m_axi4_awvalid[gen_wr] ? mhdma_write_addr :'h0;
       assign m_axi4_awsize[gen_wr]  = m_axi4_awvalid[gen_wr] ? MHDMA_ARSIZE     :'h0;
       assign m_axi4_awburst[gen_wr] = m_axi4_awvalid[gen_wr] ? 2'b01            :'h0; // incr
-      assign axi4_awlast            = m_axi4_awvalid[gen_wr] & (axi_write_cnt == 1) & m_axi4_awready[gen_wr];
+      assign axi4_awlast            = m_axi4_awvalid[gen_wr] & m_axi4_awready[gen_wr] & (axi_write_cnt == 1);
 
       always_comb begin
         if ((PC_REMAINS[gen_wr] != 0) && axi4_awlast) begin
@@ -791,71 +783,100 @@ module mhdma_master
         end
       end
 
-      // we use axi4_write_pc front edge detection for computing expected wid
-      logic axi4_write_pc_tmp;
-      logic wid_valid;
-
-      always_ff @(posedge clk_mrmac)
-        axi4_write_pc_tmp <= axi4_write_pc[gen_wr];
-
-      assign wid_valid = axi4_write_pc[gen_wr] & ~axi4_write_pc_tmp;
-
+      // wid is simply a counter of number of requests
       always_ff @(posedge clk_mrmac) begin
         if (~resetn_mrmac) begin
           expected_wid <= 'h0;
         end else begin
-          if (wid_valid) begin
+          if (m_axi4_awvalid[gen_wr] & m_axi4_awready[gen_wr]) begin
             expected_wid <= expected_wid + 1;
           end
         end
       end
 
+      logic fifo_id_in_vld;
+      assign fifo_id_in_vld = m_axi4_awvalid[gen_wr] & m_axi4_awready[gen_wr];
+
+      logic [AXI4_ID_W-1:0] fifo_id_out_data;
+      logic                 fifo_id_out_vld;
+      logic                 fifo_id_out_rdy;
+
+      fifo_ram_rdy_vld # (
+        .WIDTH(AXI4_ID_W),
+        .DEPTH(NB_WRITES_TOTAL)
+      ) fifo_id (
+        .clk         (clk_mrmac       ),
+        .s_rst_n     (resetn_mrmac    ),
+
+        .in_data     (expected_wid    ),
+        .in_vld      (fifo_id_in_vld  ),
+        .in_rdy      (/* UNUSED    */ ),
+
+        .out_data    (fifo_id_out_data),
+        .out_vld     (fifo_id_out_vld ),
+        .out_rdy     (fifo_id_out_rdy ),
+
+        .almost_full (/* UNUSED */)
+      );
+
       // Data channel -----------------------------------------------------------------------------
-      logic axi_write;
-      logic [$clog2(PC_NB_WORDS[gen_wr]):0] axi_word_cnt;
+      // two counter are used :
+      logic [$clog2(PC_NB_WORDS[gen_wr]):0]  axi_word_cnt;  // counting which word we are sending
+      logic [$clog2(PC_NB_WRITES[gen_wr]):0] axi_burst_cnt; // decounting what burst we're in
+
+      logic [AXI4_DATA_W-1:0] pc_wr_data;
+      logic                   pc_wr_vld;
+
+      always_ff @(posedge clk_mrmac) begin
+        pc_wr_data <= fifo_pc_wr_out_data;
+        pc_wr_vld <= fifo_pc_wr_out_vld;
+      end
 
       always_ff @(posedge clk_mrmac) begin
         if (~resetn_mrmac) begin
-          axi_write <= 1'b0;
+          axi_burst_cnt <= PC_NB_WRITES[gen_wr];
         end else begin
-          if (aw_valid) begin
-            axi_write <= 1'b1;
-          end else if (m_axi4_wlast[gen_wr]) begin
-            axi_write <= 1'b0;
+          if (m_axi4_wready[gen_wr] & m_axi4_wvalid[gen_wr] & m_axi4_wlast[gen_wr]) begin
+            axi_burst_cnt <= axi_burst_cnt - 1;
+          end else if (ciphertext_received) begin
+            axi_burst_cnt <= PC_NB_WRITES[gen_wr];
           end
         end
       end
+
+      // axi_word_cnt aims is to find when we are writing the last data when we are doing bursts
+      logic last_bursts;
+      logic last_remains;
 
       always_ff @(posedge clk_mrmac) begin
         if (~resetn_mrmac) begin
           axi_word_cnt <= MAX_BURST_SIZE;
         end else begin
-          if (ciphertext_received) begin                                            // all transactions done, reset the counter
+          if (ciphertext_received | m_axi4_wlast[gen_wr]) begin
               axi_word_cnt <= MAX_BURST_SIZE;
           end else begin
-            if ((axi_write_cnt != 1) | (PC_REMAINS[gen_wr] == 0)) begin           // (not last trans) or (full bursts trans)
-              if (m_axi4_wlast[gen_wr]) begin
-                axi_word_cnt <= MAX_BURST_SIZE;
-              end else if (m_axi4_wvalid[gen_wr] & m_axi4_wready[gen_wr]) begin
-                axi_word_cnt <= axi_word_cnt -1;
-              end
-            end else begin                                                        // last trans & remain param not zero
-              axi_word_cnt <= fifo_pc_wr_cnt;
+            if (m_axi4_wvalid[gen_wr] & m_axi4_wready[gen_wr]) begin
+              axi_word_cnt <= axi_word_cnt -1;
             end
           end
         end
       end
 
-      // we can start to write to HBM when we have enough words in FIFO and HBM is ready to receive words
-      assign fifo_pc_wr_out_rdy = m_axi4_wready[gen_wr] & (enough_words | (axi_write_cnt == 1));
+      assign last_remains = (fifo_pc_wr_cnt == 1) & (m_axi4_wvalid[gen_wr] & m_axi4_wready[gen_wr]);
+      assign last_bursts  = (axi_word_cnt == 1) & (m_axi4_wvalid[gen_wr] & m_axi4_wready[gen_wr]);
 
-      assign m_axi4_wvalid[gen_wr] = axi_write & fifo_pc_wr_out_vld;
-      assign m_axi4_wlast[gen_wr]  = (m_axi4_wready[gen_wr] & m_axi4_wvalid[gen_wr]) & (axi_word_cnt == 1);
+      assign m_axi4_wlast[gen_wr] = ((axi_burst_cnt == 1) & (PC_REMAINS[gen_wr] != 0)) ? last_remains : last_bursts;
+
+      // we can start to write to HBM when we are ready and have enough words in FIFO or when it is the last burst (to empty fifo)
+      assign fifo_pc_wr_out_rdy = m_axi4_wready[gen_wr] & (enough_words | (axi_burst_cnt == 1));
+      assign m_axi4_wvalid[gen_wr] = fifo_pc_wr_out_vld & axi4_write_pc[gen_wr] & (enough_words | (axi_burst_cnt == 1));
       assign m_axi4_wstrb[gen_wr]  = (m_axi4_wready[gen_wr] & m_axi4_wvalid[gen_wr]) ? 32'hFFFFFFFF : 'h0;
       assign m_axi4_wdata[gen_wr]  = fifo_pc_wr_out_data;
 
       // Write response channel -------------------------------------------------------------------
       // let's do simple and be ready for response at all time
+      logic write_complete;
+      logic write_error;
 
       // Assert BREADY when ready to accept responses
       // Can be always high for simple designs, or controlled based on internal state
@@ -864,12 +885,11 @@ module mhdma_master
           m_axi4_bready[gen_wr] <= 1'b0;
         end else begin
           // Assert ready when expecting a response
-          m_axi4_bready[gen_wr] <= 1'b1;
+          m_axi4_bready[gen_wr] <= fifo_id_out_vld;
         end
       end
 
-      logic write_complete;
-      logic write_error;
+      assign fifo_id_out_rdy = m_axi4_bvalid[gen_wr] && m_axi4_bready[gen_wr];
 
       // Handle write response
       always_ff @(posedge clk_mrmac) begin
@@ -877,7 +897,7 @@ module mhdma_master
           write_error <= 1'b0;
         end else begin
           if (m_axi4_bvalid[gen_wr] && m_axi4_bready[gen_wr]) begin
-            if (m_axi4_bid[gen_wr] == expected_wid) begin
+            if (m_axi4_bid[gen_wr] == fifo_id_out_data) begin
               // Check response status
               case (m_axi4_bresp)
                 AXI4_OKAY:   write_error <= 1'b0;  // Success
@@ -896,7 +916,7 @@ module mhdma_master
         end else begin
           write_complete <= 1'b0;
           if (m_axi4_bvalid[gen_wr] && m_axi4_bready[gen_wr])
-            if (m_axi4_bid[gen_wr] == expected_wid)
+            if (m_axi4_bid[gen_wr] == fifo_id_out_data)
               write_complete <= 1'b1;
         end
       end
@@ -924,11 +944,10 @@ module mhdma_master
     end
   end
 
-  assign ciphertext_received = (write_complete_cnt == (PC_NB_WRITES[0] + PC_NB_WRITES[1])) ? 1'b1 : 1'b0;
-
-  // itr_read_request is a pulse and can be used as a way to determine when to quit ST_READ_REQ
+  // ciphertext_received is a pulse and is used as a way to determine when to quit ST_READ_REQ
   // TODO: check that we don't need seq_num check or errors here and it's enough
   // assign  = (write_complete_cnt == (PC_NB_WRITES[0] + PC_NB_WRITES[1]));
+  assign ciphertext_received = (write_complete_cnt == (PC_NB_WRITES[0] + PC_NB_WRITES[1]));
 
   // regf payload information ---------------------------------------------------------------------
   logic [REG_DATA_W-1:0] rr_regf_in_data;
