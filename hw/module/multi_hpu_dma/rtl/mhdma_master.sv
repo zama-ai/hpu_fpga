@@ -866,9 +866,9 @@ module mhdma_master
       assign last_bursts  = (axi_word_cnt == 1) & (m_axi4_wvalid[gen_wr] & m_axi4_wready[gen_wr]);
 
       assign m_axi4_wlast[gen_wr] = ((axi_burst_cnt == 1) & (PC_REMAINS[gen_wr] != 0)) ? last_remains : last_bursts;
-
       // we can start to write to HBM when we are ready and have enough words in FIFO or when it is the last burst (to empty fifo)
       assign fifo_pc_wr_out_rdy = m_axi4_wready[gen_wr] & (enough_words | (axi_burst_cnt == 1));
+
       assign m_axi4_wvalid[gen_wr] = fifo_pc_wr_out_vld & axi4_write_pc[gen_wr] & (enough_words | (axi_burst_cnt == 1));
       assign m_axi4_wstrb[gen_wr]  = (m_axi4_wready[gen_wr] & m_axi4_wvalid[gen_wr]) ? 32'hFFFFFFFF : 'h0;
       assign m_axi4_wdata[gen_wr]  = fifo_pc_wr_out_data;
