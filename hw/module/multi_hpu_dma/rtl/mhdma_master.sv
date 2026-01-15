@@ -985,7 +985,7 @@ module mhdma_master
     .out_vld     (rr_regf_out_vld)
   );
 
-  assign rr_regf_out_rdy = interrupt_read_request & clear_interrupt_rr;
+  assign rr_regf_out_rdy = clear_interrupt_rr;
 
   assign regf_read_payload = rr_regf_out_data;
   assign interrupt_read_request = rr_regf_out_vld;

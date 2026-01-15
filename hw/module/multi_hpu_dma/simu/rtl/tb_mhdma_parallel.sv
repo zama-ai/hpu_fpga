@@ -104,8 +104,9 @@ module tb_mhdma_parallel;
   bit error_register_read;
   bit error_tb_notify;
   bit error_write_mismatch;
+  bit error_assert;
 
-  assign error = error_notify_rx | error_number_received | error_register_read | error_write_mismatch | error_tb_notify;
+  assign error = error_assert | error_notify_rx | error_number_received | error_register_read | error_write_mismatch | error_tb_notify;
 
   always_ff @(posedge clk_control)
     if (error) begin

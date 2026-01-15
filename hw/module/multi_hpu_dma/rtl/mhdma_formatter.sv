@@ -28,8 +28,6 @@ module mhdma_formatter
   input  logic                                      new_notify_request_pending,
 
   input  logic                                      cerx_reception_ready,
-
-  input  logic                                      nack_received,
   // slave interface ---------------------------------------------------------
   output  logic                                     packets_emitted,
   // master interface ---------------------------------------------------------

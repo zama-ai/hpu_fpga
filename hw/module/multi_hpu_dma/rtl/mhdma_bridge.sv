@@ -487,8 +487,6 @@ module mhdma_bridge
     .ce_ready                        (ce_ready                                ),
     .ce_valid                        (ce_valid                                ),
     .packets_emitted                 (format_packets_emitted                  ),
-    // decoder interface ------------------------------------------------------
-    .nack_received                   (notify_ack_received                     ),
     // QSFP TX interface ------------------------------------------------------
     .qsfp_tx_tdata                   (qsfp_tx_tdata                           ),
     .qsfp_tx_tkeep_user              (qsfp_tx_tkeep_user                      ),

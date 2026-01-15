@@ -200,7 +200,7 @@ module mhdma_slave
     .out_vld     (nrx_regf_out_vld)
   );
 
-  assign nrx_regf_out_rdy = interrupt_notify & clear_interrupt_notify;
+  assign nrx_regf_out_rdy = clear_interrupt_notify;
 
   // directly to regif interface
   assign regf_notify_payload = nrx_regf_out_data;
