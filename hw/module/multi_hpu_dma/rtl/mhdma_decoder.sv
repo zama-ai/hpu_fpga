@@ -27,7 +27,7 @@ module mhdma_decoder
   output logic                     rx_tvalid_out,
   //  Statistics --------------------------------------------------------------
   output logic [REG_DATA_W-1:0]    stat_t_ce_first_to_last_pkt,
-  // number of recieved events
+  // number of received events
   output logic [REG_DATA_W-1:0]    stat_cnt_nack_received,
   output logic [REG_DATA_W-1:0]    stat_cnt_notify_received,
   output logic [REG_DATA_W-1:0]    stat_cnt_read_req_received,
@@ -239,7 +239,7 @@ module mhdma_decoder
   // =========================================================================================== //
   // statistics
   // =========================================================================================== //
-  // computing timing bewteen first and last packet received on ciphertext emission
+  // computing timing between first and last packet received on ciphertext emission
   logic [REG_DATA_W-1:0] t_first_last_pkt;
   logic                  count_time_first_to_last;
 
@@ -277,7 +277,7 @@ module mhdma_decoder
     end
   end
 
-  // counters on recieved commands
+  // counters on received commands
   logic [REG_DATA_W-1:0] cnt_notify_received;
   logic [REG_DATA_W-1:0] cnt_read_req_received;
   logic [REG_DATA_W-1:0] cnt_nack_received;

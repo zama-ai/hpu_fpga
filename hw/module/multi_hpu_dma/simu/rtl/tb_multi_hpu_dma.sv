@@ -188,6 +188,9 @@ module tb_multi_hpu_dma;
   logic [QSFP_LANE_NB-1:0]                    qsfp_rx_tlast_rdyvld;
   logic [QSFP_LANE_NB-1:0]                    qsfp_rx_tvalid_rdyvld;
 
+  logic [HPU_NB-1:0]                          interrupt_notify;
+  logic [HPU_NB-1:0]                          interrupt_read_request;
+
   // cnx to memory models -------------------------------------------------------------------------
   logic [ETH_PC-1:0][HPU_NB-1:0][AXI4_ID_W-1:0]       axi4_ct_awid;
   logic [ETH_PC-1:0][HPU_NB-1:0][AXI4_ADD_W-1:0]      axi4_ct_awaddr;
@@ -349,6 +352,9 @@ module tb_multi_hpu_dma;
     .qsfp_rx_tlast     (qsfp_rx_tlast_delayed           ),
     .qsfp_rx_tvalid    (qsfp_rx_tvalid_delayed          ),
 
+    .interrupt_notify        (interrupt_notify[0]),
+    .interrupt_read_request  (interrupt_read_request[0]),
+
     .gt_line_rate        (gt_line_rate[0]        ),
     .gt_loopback         (gt_loopback[0]         ),
     .gt_reset_rx_datapath(gt_reset_rx_datapath[0]),
@@ -475,6 +481,9 @@ module tb_multi_hpu_dma;
     .qsfp_rx_tkeep_user(qsfp_tx_tkeep_user_delayed),
     .qsfp_rx_tlast     (qsfp_tx_tlast_delayed),
     .qsfp_rx_tvalid    (qsfp_tx_tvalid_delayed),
+
+    .interrupt_notify        (interrupt_notify[1]),
+    .interrupt_read_request  (interrupt_read_request[1]),
 
     .gt_line_rate        (gt_line_rate[1]        ),
     .gt_loopback         (gt_loopback[1]         ),

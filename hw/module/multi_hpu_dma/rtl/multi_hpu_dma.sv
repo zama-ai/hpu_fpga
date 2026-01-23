@@ -576,7 +576,7 @@ module multi_hpu_dma
   xpm_cdc_single_wrapper #(
     .CDC_SYNC_STAGES ( 2 ) ,
     .SRC_INPUT_REG   ( 0 )
-  ) cdc_rst_cnt_nnotify_recieved (
+  ) cdc_rst_cnt_nnotify_received (
     .src_clk  ( clk_eth_cfg     ) ,
     .dest_clk ( clk_eth_mrmac ) ,
     .src_in   ( rst_cnt_notify_received_cfg ) ,
@@ -589,7 +589,7 @@ module multi_hpu_dma
     .SIM_ASSERT_CHK(0),                 // 0=disable simulation messages
     .SIM_LOSSLESS_GRAY_CHK(0),          // 0=disable lossless check
     .WIDTH(REG_DATA_W)                  // REG_DATA_W-bit counter width (range: 2-32)
-  ) xpm_cdc_gray_cnt_notify_recieved (
+  ) xpm_cdc_gray_cnt_notify_received (
     .src_clk(clk_eth_mrmac),            // 1-bit input: source clock
     .src_in_bin(cnt_notify_received_eth),  // REG_DATA_W-bit input: binary counter to synchronize
 
