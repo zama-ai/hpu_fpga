@@ -6,8 +6,8 @@
 // ==============================================================================================
 
 module mhdma_formatter
-  import mhdma_pkg::*; // multi-hpu-dma
-  import axi_if_eth_axi_pkg::*;       // AXI4
+  import mhdma_pkg::*;          // multi-hpu-dma
+  import axi_if_eth_axi_pkg::*; // AXI4
 #() (
   // Ethernet fast clock interface --------------------------------------------
   input  logic                                      clk_mrmac,
@@ -16,43 +16,34 @@ module mhdma_formatter
   input  logic [NB_MAX_HPU-1:0][    MAC_ADDR_W-1:0] hpu_mac_table,
   input  logic                 [      HPU_ID_W-1:0] current_hpu_id,
   input  logic                 [    MAC_ADDR_W-1:0] current_hpu_mac,
-  // Command interface --------------------------------------------------------
-  output logic                                      ct_emission_allowed,
-  output logic                                      notify_ack_allowed,
-  output logic                                      read_request_allowed,
-  output logic                                      notify_request_allowed,
-
-  input  logic                                      new_ct_emission_request_pending,
-  input  logic                                      new_notify_ack_pending,
-  input  logic                                      new_read_request_pending,
-  input  logic                                      new_notify_request_pending,
-
-  input  logic                                      cerx_reception_ready,
   // slave interface ---------------------------------------------------------
-  output  logic                                     packets_emitted,
-  // master interface ---------------------------------------------------------
-  input  header_t                                   format_header,
-  input  logic                                      retry_notify,
-  input  logic                                      retry_read_request,
-  output logic                                      notify_sent,
-  output logic                                      rreq_sent,
-  // statistics ---------------------------------------------------------------
-  // register
-  output logic [2:0]                                stat_fsm_formatter,
-  // slave interface ----------------------------------------------------------
-  input  logic                 [     NRX_WIDTH-1:0] nrx_cmd_payload,
-  input  logic                                      nrx_cmd_valid,
-  output logic                                      notify_ack_sent,
-  input  header_t                                   ce_header,
+  input  command_t                                  slave_command,
+  input  logic                                      slave_command_vld,
+  output logic                                      slave_command_rdy,
+
   input  logic                 [  MRMAC_AXIS_W-1:0] ce_payload,
   output logic                                      ce_ready,
   input  logic                                      ce_valid,
+
+  output logic                                      notify_ack_sent,
+  output logic                                      ciphertext_sent,
+  // master interface ---------------------------------------------------------
+  input  command_t                                  master_command,
+  input  logic                                      master_command_vld,
+  output logic                                      master_command_rdy,
+
+  input  logic                                      ce_reception_ready,
+
+  output logic                                      notify_sent,
+  output logic                                      read_request_sent,
   // QSFP TX interface --------------------------------------------------------
   output logic                 [  MRMAC_AXIS_W-1:0] qsfp_tx_tdata,
   output logic                 [ MRMAC_TKEEP_W-1:0] qsfp_tx_tkeep_user,
   output logic                                      qsfp_tx_tlast,
   output logic                                      qsfp_tx_tvalid,
-  input  logic                                      qsfp_tx_tready
+  input  logic                                      qsfp_tx_tready,
+  // statistics ---------------------------------------------------------------
+  output logic [2:0]                                stat_fsm_formatter
 );
 
   // =========================================================================================== //
@@ -70,11 +61,102 @@ module mhdma_formatter
   always_ff @(posedge clk_mrmac)
     hpu_mac_table_tmp <= hpu_mac_table;
 
-  header_t prev_format_header;
+  logic st_ct_emission;
+  logic st_notify_ack;
+  logic st_read_request;
+  logic st_notify_request;
 
-  always_ff @(posedge clk_mrmac)
-    if (format_header.valid)
-      prev_format_header <= format_header;
+  // =========================================================================================== //
+  // FSM
+  // =========================================================================================== //
+  logic ct_emission_pending;
+  logic notify_ack_pending;
+  logic read_request_pending;
+  logic notify_request_pending;
+
+  logic consume_ct_emission;
+  logic consume_notify;
+  logic consume_notify_ack;
+  logic consume_read_request;
+
+  // SINK FSM -------------------------------------------------------------------------------------
+  typedef enum logic [2:0] {
+    ST_XXX         = 'x,
+    ST_IDLE        = 3'b001,
+    ST_CT_EMISSION = 3'b010,
+    ST_NACK        = 3'b011,
+    ST_READ_REQ    = 3'b100,
+    ST_NOTIFY      = 3'b101
+  } st_tx;
+
+  st_tx tx_state;
+  st_tx tx_next_state;
+
+  always_ff @(posedge clk_mrmac) begin
+    if (~resetn_mrmac) tx_state <= ST_IDLE;
+    else tx_state <= tx_next_state;
+  end
+
+  always_comb begin
+    tx_next_state = ST_XXX;
+    case (tx_state)
+      ST_IDLE:
+        begin
+          if (ct_emission_pending) begin
+            tx_next_state = ST_CT_EMISSION;
+          end else if (notify_ack_pending) begin
+            tx_next_state = ST_NACK;
+          end else if (read_request_pending) begin
+            tx_next_state = ST_READ_REQ;
+          end else if (notify_request_pending) begin
+            tx_next_state = ST_NOTIFY;
+          end else begin
+            tx_next_state = ST_IDLE;
+          end
+        end
+      ST_CT_EMISSION:
+        tx_next_state = ciphertext_sent ? ST_IDLE : ST_CT_EMISSION;
+      ST_NACK:
+        tx_next_state = notify_ack_sent ? ST_IDLE : ST_NACK;
+      ST_READ_REQ:
+        tx_next_state = read_request_sent ? ST_IDLE : ST_READ_REQ;
+      ST_NOTIFY:
+        tx_next_state = notify_sent ? ST_IDLE : ST_NOTIFY;
+    endcase
+  end
+
+  assign st_ct_emission    = tx_state == ST_CT_EMISSION;
+  assign st_notify_ack     = tx_state == ST_NACK;
+  assign st_read_request   = tx_state == ST_READ_REQ;
+  assign st_notify_request = tx_state == ST_NOTIFY;
+
+  // ----------------------------------------------------------------------------------------------
+  assign ct_emission_pending    = slave_command_vld  & (slave_command.req_id  == REQ_ID_EMISSION);
+  assign notify_ack_pending     = slave_command_vld  & (slave_command.req_id  == REQ_ID_NOTIFY_ACK);
+  assign read_request_pending   = master_command_vld & (master_command.req_id == REQ_ID_READ) & ce_reception_ready;
+  assign notify_request_pending = master_command_vld & (master_command.req_id == REQ_ID_NOTIFY);
+
+  // ----------------------------------------------------------------------------------------------
+  // Building ready sink from FSM : consume one and only data when we are in a specific state
+  logic st_ct_emissionQ;
+  logic st_notify_ackQ;
+  logic st_read_requestQ;
+  logic st_notify_requestQ;
+
+  always_ff @(posedge clk_mrmac)begin
+    st_ct_emissionQ    <= st_ct_emission;
+    st_notify_ackQ     <= st_notify_ack;
+    st_read_requestQ   <= st_read_request;
+    st_notify_requestQ <= st_notify_request;
+  end
+
+  assign consume_ct_emission  = st_ct_emission & ~st_ct_emissionQ;
+  assign consume_notify_ack   = st_notify_ack & ~st_notify_ackQ;
+  assign consume_read_request = st_read_request & ~st_read_requestQ;
+  assign consume_notify       = st_notify_request & ~st_notify_requestQ;
+
+  assign slave_command_rdy = consume_ct_emission | consume_notify_ack;
+  assign master_command_rdy = consume_notify | consume_read_request;
 
   // =========================================================================================== //
   // Building headers
@@ -84,10 +166,10 @@ module mhdma_formatter
   // deasserting this request when we hit enough words on the counter
   logic header_sop;                    // pulse
   // to simplify notations we define each cases as :
-  logic stop_sending_small_packet;      // notify / notify-ack / read-request
+  logic stop_sending_small_packet;     // notify / notify-ack / read-request
   logic stop_sending_ce_full_frame;    // ciphertext-emission: when we send ETH_NB_BYTES_PAYLOAD
   logic stop_sending_ce_partial_frame; // ciphertext-emission: when we send LAST_PACKET_BYTE_SIZE
-  logic end_of_packet;                 // pulse of all stops
+  logic end_of_packet;                 // pulse of all stop signals
   logic okay_to_send_request;          // level between start of / end of packet
   logic small_packet;                  // level of a small packet (notify & ack + read request)
 
@@ -103,31 +185,25 @@ module mhdma_formatter
 
   logic [$clog2(NB_WORDS_MAX)+1:0] tx_cnt;
   logic [        MRMAC_AXIS_W-1:0] tx_header;
-  logic                            ce_header_vld;
+  logic                            ce_header_valid;
   // ce -------------------------------------------------------------------------------------------
   // During CE we need to increment seq_num for each packet sent
   // For the arbiter we need the information to release the fsm that all have been sent
-  logic [SEQ_NUM_W-1:0] ce_seq_num;
+  logic [SEC_NUM_W-1:0] ce_seq_num;
   // we need to build header and stall ciphertext arrial until we are ready
   logic                 ce_first_header;      // level: up for first packet header (used for tx & backpressure)
   logic                 ce_first_header_sent; // level: up when first packet header has been sent
   logic                 ce_last_packet;       // level: up when last packet is transmitting
-  logic                 ce_end_of_packet;   // pulse: last word of last packet
-  logic                 ce_start_of_header; // pulse: header transmission for all packets
-  logic                 ce_start_emission;  // pulse: start of first header transmission
-  logic                 ce_sop_header;      // pulse: start-of headers between packets
-  // notify ack -----------------------------------------------------------------------------------
-  logic [SRC_ADDR_W-1:0] nack_src_addr;
-  logic [  HPU_ID_W-1:0] nack_hpu_id;
-  logic [  IOP_ID_W-1:0] nack_iop_id;
-  logic                  notify_ack_allowed_reg;
-  logic                  notify_ack_pulse;
+  logic                 ce_end_of_packet;     // pulse: last word of last packet
+  logic                 ce_start_of_header;   // pulse: header transmission for all packets
+  logic                 ce_start_emission;    // pulse: start of first header transmission
+  logic                 ce_sop_header;        // pulse: start-of headers between packets
 
   always_ff @(posedge clk_mrmac) begin
     if (~resetn_mrmac) begin
       small_packet <= 1'b0;
     end else begin
-      small_packet <= read_request_allowed | notify_request_allowed | notify_ack_allowed;
+      small_packet <= st_read_request | st_notify_request | st_notify_ack;
     end
   end
 
@@ -136,8 +212,8 @@ module mhdma_formatter
       tx_cnt <= 'h0;
     end else begin
       if (okay_to_send_request & ~end_of_packet & qsfp_tx_tready) begin
-        if (ct_emission_allowed) begin
-          if(ce_header_vld | (ce_valid & ce_ready)) begin
+        if (st_ct_emission) begin
+          if(ce_header_valid | (ce_valid & ce_ready)) begin
             tx_cnt <= tx_cnt+1;
           end
         end else begin
@@ -162,17 +238,18 @@ module mhdma_formatter
   end
 
   // we have to trigger signal one cycle earlier to have okay_to_send_request on time
-  assign stop_sending_small_packet     = qsfp_tx_tready & (tx_cnt == NB_WORDS_MIN)      & small_packet;
-  assign stop_sending_ce_full_frame    = qsfp_tx_tready & (tx_cnt == NB_WORDS_FULL)     & ct_emission_allowed;
-  assign stop_sending_ce_partial_frame = qsfp_tx_tready & (tx_cnt == NB_WORDS_PARTIAL)  & ce_last_packet;
+  assign stop_sending_small_packet     = qsfp_tx_tready & (tx_cnt == NB_WORDS_MIN)     & small_packet;
+  assign stop_sending_ce_full_frame    = qsfp_tx_tready & (tx_cnt == NB_WORDS_FULL)    & st_ct_emission;
+  assign stop_sending_ce_partial_frame = qsfp_tx_tready & (tx_cnt == NB_WORDS_PARTIAL) & ce_last_packet;
 
   assign end_of_packet = stop_sending_small_packet | stop_sending_ce_full_frame | stop_sending_ce_partial_frame;
 
   assign tx_small_last  = qsfp_tx_tready & (tx_cnt == NB_WORDS_MIN);
   assign tx_header_last = qsfp_tx_tready & (tx_cnt == NB_WORDS_CUST_HEADER_SIZE);
-  assign tx_last_word   = (ct_emission_allowed & ~ce_last_packet) ? qsfp_tx_tready & (tx_cnt == NB_WORDS_FULL) : qsfp_tx_tready & (tx_cnt == NB_WORDS_PARTIAL);
+  assign tx_last_word   = (st_ct_emission & ~ce_last_packet) ? qsfp_tx_tready & (tx_cnt == NB_WORDS_FULL) : qsfp_tx_tready & (tx_cnt == NB_WORDS_PARTIAL);
 
-  assign header_sop = format_header.valid | notify_ack_pulse | ce_start_of_header | retry_notify | retry_read_request;
+  // TOREVIEW
+  assign header_sop = (master_command_rdy & master_command_vld) | (slave_command_rdy & slave_command_vld) | ce_start_of_header;
 
   // =========================================================================================== //
   // Ciphertext Emission (CE)
@@ -184,7 +261,7 @@ module mhdma_formatter
     if (~resetn_mrmac) begin
       ce_last_packet <= 1'b0;
     end else begin
-      if (qsfp_tx_tready & (ce_seq_num == NB_PACKETS_FULL) & ct_emission_allowed & ~tx_tlast_D) begin
+      if (qsfp_tx_tready & st_ct_emission & (ce_seq_num == NB_PACKETS_FULL) & ~tx_tlast_D) begin
         ce_last_packet <= 1'b1;
       end else if (tx_tlast_D) begin
         ce_last_packet <= 1'b0;
@@ -207,7 +284,7 @@ module mhdma_formatter
 
   // decoding header payload --------------------------------------------------
   // header is propagated well before we receive any data on fifo tx
-  header_t         ce_header_payload_tmp;
+  command_t              ce_header_payload_tmp;
   logic [DST_ADDR_W-1:0] ce_dst_addr;
   logic [SRC_ADDR_W-1:0] ce_src_addr;
   logic [  SIZE_B_W-1:0] ce_size_b;
@@ -216,7 +293,8 @@ module mhdma_formatter
   logic [MAC_ADDR_W-1:0] ce_dst_mac_addr;
 
   always_ff @(posedge clk_mrmac)
-    ce_header_payload_tmp <= ce_header;
+    if (slave_command_rdy & slave_command_vld)
+      ce_header_payload_tmp <= slave_command;
 
   assign ce_dst_mac_addr = ce_header_payload_tmp.src_mac_addr;
   assign ce_iop_id       = ce_header_payload_tmp.iop_id;
@@ -252,33 +330,11 @@ module mhdma_formatter
   assign ce_start_emission = qsfp_tx_tready & (ce_seq_num == 0) & (ce_valid & ~ce_ready) & ~ce_first_header_sent;
 
   // =========================================================================================== //
-  // Notify ACK (NACK)
-  // =========================================================================================== //
-  logic new_notify_ack_pending_vld;
-
-  always_ff @(posedge clk_mrmac) begin
-    if (nrx_cmd_valid) begin
-      nack_src_addr <= nrx_cmd_payload[NRX_SRC_ADDR_OFS-1:NRX_HPU_ID_OFS];
-      nack_hpu_id   <= nrx_cmd_payload[NRX_HPU_ID_OFS-1:NRX_IOP_ID_OFS];
-      nack_iop_id   <= nrx_cmd_payload[NRX_IOP_ID_OFS-1:0];
-    end
-  end
-
-  // we need a pulse to latter construct header
-  always_ff @(posedge clk_mrmac)
-    notify_ack_allowed_reg <= notify_ack_allowed;
-
-  assign notify_ack_pulse = notify_ack_allowed & ~notify_ack_allowed_reg;
-
-  // we could have a new notify ack pending request without having a valid decoded value
-  assign new_notify_ack_pending_vld = nrx_cmd_valid &  new_notify_ack_pending;
-
-  // =========================================================================================== //
   // Cycle by cycle construction
   // =========================================================================================== //
   logic [  MAC_ADDR_W-1:0] header_target_hpu_mac_addr;
   logic [ETHERNET_LEN-1:0] header_eth_len;
-  logic [   SEQ_NUM_W-1:0] header_seq_num;
+  logic [   SEC_NUM_W-1:0] header_seq_num;
   logic [  DST_ADDR_W-1:0] header_dst_addr;
   logic [  SRC_ADDR_W-1:0] header_src_addr;
   logic [    SIZE_B_W-1:0] header_size_b;
@@ -287,26 +343,20 @@ module mhdma_formatter
 
   // header assignation depending on request
   always_ff @(posedge clk_mrmac) begin : prc_header_gen
-    if (format_header.valid) begin
-      header_target_hpu_mac_addr <= hpu_mac_table_tmp[format_header.hpu_id];
-      header_req_id              <= format_header.req_id;
-      header_src_addr            <= format_header.src_addr;
-      header_dst_addr            <= format_header.dst_addr;
-      header_iop_id              <= format_header.iop_id;
-    end else if (retry_notify) begin
-      header_target_hpu_mac_addr <=  hpu_mac_table_tmp[prev_format_header.hpu_id];
-      header_req_id              <=  prev_format_header.req_id;
-      header_src_addr            <=  prev_format_header.src_addr;
-      header_dst_addr            <=  prev_format_header.dst_addr;
-      header_iop_id              <=  prev_format_header.iop_id;
-    end else if (notify_ack_pulse) begin
-      header_target_hpu_mac_addr <= hpu_mac_table_tmp[nack_hpu_id];
-      header_req_id              <= REQ_ID_ACK_NOTIFY_TX;
-      header_src_addr            <= nack_src_addr;
+    if (master_command_rdy & master_command_vld) begin
+      header_target_hpu_mac_addr <= hpu_mac_table_tmp[master_command.hpu_id];
+      header_req_id              <= master_command.req_id;
+      header_src_addr            <= master_command.src_addr;
+      header_dst_addr            <= master_command.dst_addr;
+      header_iop_id              <= master_command.iop_id;
+    end else if (slave_command_rdy & slave_command_vld) begin
+      header_target_hpu_mac_addr <= hpu_mac_table_tmp[slave_command.hpu_id];
+      header_req_id              <= slave_command.req_id;
+      header_src_addr            <= slave_command.src_addr;
       header_dst_addr            <= 'h0;
-      header_iop_id              <= nack_iop_id;
+      header_iop_id              <= slave_command.iop_id;
     end else if (ce_valid) begin
-      header_target_hpu_mac_addr <= ce_dst_mac_addr;
+      header_target_hpu_mac_addr <= hpu_mac_table_tmp[ce_hpu_id];
       header_req_id              <= REQ_ID_EMISSION;
       header_src_addr            <= ce_src_addr;
       header_dst_addr            <= ce_dst_addr;
@@ -325,7 +375,7 @@ module mhdma_formatter
   end
 
   always_ff @(posedge clk_mrmac) begin : prc_header_ce
-    if (ct_emission_allowed) begin
+    if (st_ct_emission) begin
       header_seq_num <= ce_seq_num;
       header_size_b  <= ce_size_b;
     end else begin
@@ -427,7 +477,7 @@ module mhdma_formatter
   end
 
   always_ff @(posedge clk_mrmac)
-    ce_word_cnt_reset <= packets_emitted;
+    ce_word_cnt_reset <= ciphertext_sent;
 
   // we should stall the emission of coefficients after we have to correct number of words
   // we should un-stall when header has left
@@ -452,7 +502,7 @@ module mhdma_formatter
   assign ce_sop_header = ce_stalling & ~ce_stalling_tmp;
 
   // level active when we have headers on ciphertext emission
-  assign ce_header_vld = (ce_first_header | ce_stalling);
+  assign ce_header_valid = (ce_first_header | ce_stalling);
 
   // backpressure over ciphertext coefficients
   // active
@@ -460,76 +510,7 @@ module mhdma_formatter
   //    - when the first header is not starting to be propagated &
   //    - qsfp tx is ready &
   //    - we don't need to stall between packets for sending headers
-  assign ce_ready = ct_emission_allowed & ce_first_header_sent & qsfp_tx_tready & ~ce_stalling;
-
-  // For the arbiter we need the information to release the fsm that all have been sent
-  always_ff @(posedge clk_mrmac) begin
-    if (~resetn_mrmac) begin
-      packets_emitted <= 1'b0;
-    end else begin
-      packets_emitted <= stop_sending_ce_partial_frame;
-    end
-  end
-
-  // =========================================================================================== //
-  // Small arbiter
-  // =========================================================================================== //
-  // simple FSM that changes state from IDLE when a new request is pending
-  // desasserts from the state allowed when the packet has been transmitted
-  typedef enum logic [2:0] {
-    ST_XXX         = 'x,
-    ST_IDLE        = 3'b001,
-    ST_CT_EMISSION = 3'b010,
-    ST_NACK        = 3'b011,
-    ST_READ_REQ    = 3'b100,
-    ST_NOTIFY      = 3'b101
-  } st_tx;
-
-  st_tx tx_state;
-  st_tx tx_next_state;
-
-  always_ff @(posedge clk_mrmac) begin
-    if (~resetn_mrmac) tx_state <= ST_IDLE;
-    else tx_state <= tx_next_state;
-  end
-
-  always_comb begin
-    tx_next_state = ST_XXX;
-    case (tx_state)
-      ST_IDLE:
-        begin
-          if (new_ct_emission_request_pending) begin
-            tx_next_state = ST_CT_EMISSION;
-          end else if (new_notify_ack_pending_vld) begin
-            tx_next_state = ST_NACK;
-          end else if (new_read_request_pending & cerx_reception_ready) begin
-            // we must allow launching read-request only if ce-rx is ready and empty
-            tx_next_state = ST_READ_REQ;
-          end else if (new_notify_request_pending | retry_notify) begin
-            tx_next_state = ST_NOTIFY;
-          end else begin
-            tx_next_state = ST_IDLE;
-          end
-        end
-      ST_CT_EMISSION:
-        tx_next_state = packets_emitted ? ST_IDLE : ST_CT_EMISSION;
-      ST_NACK:
-        tx_next_state = tx_small_last ? ST_IDLE : ST_NACK;
-      ST_READ_REQ:
-        tx_next_state = tx_small_last ? ST_IDLE : ST_READ_REQ;
-      ST_NOTIFY:
-        tx_next_state = tx_small_last ? ST_IDLE : ST_NOTIFY;
-    endcase
-  end
-
-  assign ct_emission_allowed    = tx_state == ST_CT_EMISSION;
-  assign notify_ack_allowed     = tx_state == ST_NACK;
-  assign read_request_allowed   = tx_state == ST_READ_REQ;
-  assign notify_request_allowed = tx_state == ST_NOTIFY;
-
-  assign notify_ack_sent  = new_notify_ack_pending & tx_tlast_D;
-  assign notify_sent      = notify_request_allowed & tx_tlast_D;
-  assign rreq_sent        = read_request_allowed   & tx_tlast_D;
+  assign ce_ready = qsfp_tx_tready & st_ct_emission & ce_first_header_sent & ~ce_stalling;
 
   // =========================================================================================== //
   // AXI4-stream
@@ -540,10 +521,10 @@ module mhdma_formatter
   logic                      tx_tlast_reg;
   logic                      tx_tvalid_reg;
 
-  assign tx_tdata_D      = small_packet ? tx_header : (ct_emission_allowed & ce_header_vld & tx_tvalid_D) ? tx_header : (ct_emission_allowed & ce_valid & ce_ready) ? ce_payload :'h0;
-  assign tx_tvalid_D     = small_packet ? ~(tx_cnt == 'h0) : ~(tx_cnt == 'h0)  & (ce_header_vld | (ce_valid & ce_ready));
+  assign tx_tdata_D      = small_packet ? tx_header : (ce_header_valid & tx_tvalid_D) ? tx_header : (ce_ready & ce_valid) ? ce_payload :'h0;
+  assign tx_tvalid_D     = small_packet ? ~(tx_cnt == 'h0) : ~(tx_cnt == 'h0) & (ce_header_valid | (ce_ready & ce_valid));
   assign tx_tkeep_user_D = {3'b000, tx_byte_enable};
-  assign tx_tlast_D      = small_packet ? tx_small_last : ct_emission_allowed ? tx_last_word : 1'b0;
+  assign tx_tlast_D      = small_packet ? tx_small_last : st_ct_emission ? tx_last_word : 1'b0;
 
   always_ff @(posedge clk_mrmac) begin
     if (qsfp_tx_tready) begin
@@ -558,6 +539,14 @@ module mhdma_formatter
   assign qsfp_tx_tvalid     = tx_tvalid_reg;
   assign qsfp_tx_tkeep_user = tx_tkeep_user_reg;
   assign qsfp_tx_tlast      = tx_tlast_reg;
+
+  // =========================================================================================== //
+  // FSM backpressure : confirming that a specific packet has been sent
+  // =========================================================================================== //
+  assign notify_ack_sent   = st_notify_ack     & tx_tlast_D;
+  assign notify_sent       = st_notify_request & tx_tlast_D;
+  assign read_request_sent = st_read_request   & tx_tlast_D;
+  assign ciphertext_sent   = st_ct_emission    & tx_tlast_D & (ce_seq_num == NB_PACKETS_FULL);
 
   // =========================================================================================== //
   // Statistics

@@ -219,49 +219,41 @@ module mhdma_bridge
   // ==============================================================================================
   // Core Instances of mhdma
   // ==============================================================================================
-  // Control interface
-  logic ct_emission_allowed;
-  logic notify_ack_allowed;
-  logic read_request_allowed;
-  logic notify_request_allowed;
+  // Master <-> Formatter
+  command_t master_command;
+  logic     master_command_vld;
+  logic     master_command_rdy;
 
-  logic new_ct_emission_request_pending;
-  logic new_notify_ack_pending;
-  logic new_read_request_pending;
-  logic new_notify_request_pending;
+  logic     ce_reception_ready;
+  logic     notify_sent;
+  logic     read_request_sent;
 
-  logic notify_ack_received;
-  logic notify_request_received;
-  logic read_request_received;
-  logic ciphertext_emission_received;
+  // Slave <-> Formatter
+  command_t                slave_command;
+  logic                    slave_command_vld;
+  logic                    slave_command_rdy;
 
-  logic format_packets_emitted;
+  logic [MRMAC_AXIS_W-1:0] ce_payload;
+  logic                    ce_vld;
+  logic                    ce_rdy;
 
-  // master -> formatter
-  header_t format_header;
-  logic master_format_retry_notify;
-  logic retry_read_request;
+  logic                    ciphertext_sent;
+  logic                    notify_ack_sent;
 
-  // formatter -> master
-  logic notify_sent;
-  logic rreq_sent;
+  // Decoder <-> (Master & Slave)
+  command_t                decoded_command;
+  logic                    decoded_command_rdy;
+  logic                    decoded_command_vld;
+  logic                    decoded_command_rdy_slave;
+  logic                    decoded_command_rdy_master;
 
-  header_t decoded_header;
+  assign decoded_command_rdy = decoded_command_rdy_slave | decoded_command_rdy_master;
 
-  // Slave payload and header for ciphertext emission
-  logic [NRX_WIDTH-1:0]     nrx_cmd_payload;
-  logic                     nrx_cmd_valid;
+  // Decoder <-> Master
+  logic [MRMAC_AXIS_W-1:0] decoder_rx_tdata;
+  logic                    decoder_rx_tvalid;
 
-  logic                     notify_ack_sent;
-  header_t                  ce_header;
-  logic [ MRMAC_AXIS_W-1:0] ce_payload;
-  logic                     ce_ready;
-  logic                     ce_valid;
-
-  // payload for ciphertext reception
-  logic [MRMAC_AXIS_W-1:0]  decoder_rx_tdata;
-  logic                     decoder_rx_tvalid;
-  logic                     cerx_reception_ready;
+  logic                    notify_ack_received;
 
   // Master module does the controls for sending read request and Notifies requests
   mhdma_master #(
@@ -284,11 +276,13 @@ module mhdma_bridge
     .m_axi4_awburst                  (m_axi4_awburst                          ),
     .m_axi4_awvalid                  (m_axi4_awvalid                          ),
     .m_axi4_awready                  (m_axi4_awready                          ),
+
     .m_axi4_wdata                    (m_axi4_wdata                            ),
     .m_axi4_wstrb                    (m_axi4_wstrb                            ),
     .m_axi4_wlast                    (m_axi4_wlast                            ),
     .m_axi4_wvalid                   (m_axi4_wvalid                           ),
     .m_axi4_wready                   (m_axi4_wready                           ),
+
     .m_axi4_bid                      (m_axi4_bid                              ),
     .m_axi4_bresp                    (m_axi4_bresp                            ),
     .m_axi4_bvalid                   (m_axi4_bvalid                           ),
@@ -306,25 +300,22 @@ module mhdma_bridge
     // interrupt --------------------------------------------------------------
     .clear_interrupt_rr              (clear_interrupt_rr                      ),
     .interrupt_read_request          (interrupt_read_request                  ),
-    // allowed-pending --------------------------------------------------------
-    .new_read_request_pending        (new_read_request_pending                ),
-    .read_request_allowed            (read_request_allowed                    ),
-    .new_notify_request_pending      (new_notify_request_pending              ),
-    .notify_request_allowed          (notify_request_allowed                  ),
     // decoder interface ------------------------------------------------------
-    .decoded_header                  (decoded_header                          ),
+    .decoded_command                 (decoded_command                         ),
+    .decoded_command_rdy             (decoded_command_rdy_master              ),
+    .decoded_command_vld             (decoded_command_vld                     ),
     // ciphertext reception
     .decoder_rx_tdata                (decoder_rx_tdata                        ),
     .decoder_rx_tvalid               (decoder_rx_tvalid                       ),
-    // for notify fsm
+    // pulse on ack reception
     .notify_ack_received             (notify_ack_received                     ),
     // formatter interface ----------------------------------------------------
-    .format_rreq_sent                (rreq_sent                               ),
-    .format_header                   (format_header                           ),
-    .format_retry_notify             (retry_notify                            ),
-    .format_retry_read_request       (retry_read_request                      ),
-    .format_notify_sent              (notify_sent                             ),
-    .cerx_reception_ready            (cerx_reception_ready                    ),
+    .master_command                  (master_command                          ),
+    .master_command_vld              (master_command_vld                      ),
+    .master_command_rdy              (master_command_rdy                      ),
+    .ce_reception_ready              (ce_reception_ready                      ),
+    .read_request_sent               (read_request_sent                       ),
+    .notify_sent                     (notify_sent                             ),
     // statistics -------------------------------------------------------------
     // counters
     .stat_cnt_notify                 (stat_cnt_notify                         ),
@@ -382,26 +373,21 @@ module mhdma_bridge
     // interrupt interface ----------------------------------------------------
     .clear_interrupt_notify         (clear_interrupt_notify                   ),
     .interrupt_notify               (interrupt_notify                         ),
-    // allowed-pending --------------------------------------------------------
-    .notify_ack_allowed             (notify_ack_allowed                       ),
-    .ct_emission_allowed            (ct_emission_allowed                      ),
-    .new_notify_ack_pending         (new_notify_ack_pending                   ),
-    .new_ct_emission_request_pending(new_ct_emission_request_pending          ),
     // decoder interface ------------------------------------------------------
-    .decoded_header                 (decoded_header                           ),
-    .notify_request_received        (notify_request_received                  ),
-    .read_request_received          (read_request_received                    ),
+    .decoded_command                (decoded_command                          ),
+    .decoded_command_rdy            (decoded_command_rdy_slave                ),
+    .decoded_command_vld            (decoded_command_vld                      ),
     // formatter interface ----------------------------------------------------
-    .ct_emission_finished           (format_packets_emitted                   ),
-    // notify ack
-    .nrx_cmd_payload                (nrx_cmd_payload                          ),
-    .nrx_cmd_valid                  (nrx_cmd_valid                            ),
-    .notify_ack_sent                (notify_ack_sent                          ),
-    // ciphertext emission
-    .ce_header                      (ce_header                                ),
+    .slave_command                  (slave_command                            ),
+    .slave_command_vld              (slave_command_vld                        ),
+    .slave_command_rdy              (slave_command_rdy                        ),
+    // stream of ciphertext
     .ce_payload                     (ce_payload                               ),
-    .ce_ready                       (ce_ready                                 ),
-    .ce_valid                       (ce_valid                                 ),
+    .ce_rdy                         (ce_ready                                 ),
+    .ce_vld                         (ce_valid                                 ),
+    // sent ack
+    .ciphertext_sent                (ciphertext_sent                          ),
+    .notify_ack_sent                (notify_ack_sent                          ),
     // statistics -------------------------------------------------------------
     // counters
     .stat_nb_read_to_hbm            (stat_nb_read_to_hbm                      ),
@@ -426,9 +412,11 @@ module mhdma_bridge
     .notify_request_received     (notify_request_received                     ),
     .read_request_received       (read_request_received                       ),
     .ciphertext_emission_received(ciphertext_emission_received                ),
-    // Header information -----------------------------------------------------
     .current_hpu_mac             (current_hpu_mac                             ),
-    .rx_header                   (decoded_header                              ),
+    // Header information -----------------------------------------------------
+    .decoded_command             (decoded_command                             ),
+    .decoded_command_rdy         (decoded_command_rdy                         ),
+    .decoded_command_vld         (decoded_command_vld                         ),
     // RX payload -------------------------------------------------------------
     .rx_tdata_out                (decoder_rx_tdata                            ),
     .rx_tvalid_out               (decoder_rx_tvalid                           ),
@@ -461,32 +449,26 @@ module mhdma_bridge
     .hpu_mac_table                   (hpu_mac_table                           ),
     .current_hpu_id                  (current_hpu_id                          ),
     .current_hpu_mac                 (current_hpu_mac                         ),
-    // Command interface ------------------------------------------------------
-    .ct_emission_allowed             (ct_emission_allowed                     ),
-    .notify_ack_allowed              (notify_ack_allowed                      ),
-    .read_request_allowed            (read_request_allowed                    ),
-    .notify_request_allowed          (notify_request_allowed                  ),
-
-    .new_ct_emission_request_pending (new_ct_emission_request_pending         ),
-    .new_notify_ack_pending          (new_notify_ack_pending                  ),
-    .new_read_request_pending        (new_read_request_pending                ),
-    .new_notify_request_pending      (new_notify_request_pending              ),
-    // master interface -------------------------------------------------------
-    .format_header                   (format_header                           ),
-    .retry_notify                    (retry_notify                            ),
-    .retry_read_request              (retry_read_request                      ),
-    .notify_sent                     (notify_sent                             ),
-    .rreq_sent                       (rreq_sent                               ),
-    .cerx_reception_ready            (cerx_reception_ready                    ),
     // slave interface --------------------------------------------------------
-    .nrx_cmd_payload                 (nrx_cmd_payload                         ),
-    .nrx_cmd_valid                   (nrx_cmd_valid                           ),
-    .notify_ack_sent                 (notify_ack_sent                         ),
-    .ce_header                       (ce_header                               ),
+    .slave_command                   (slave_command                           ),
+    .slave_command_vld               (slave_command_vld                       ),
+    .slave_command_rdy               (slave_command_rdy                       ),
+
     .ce_payload                      (ce_payload                              ),
     .ce_ready                        (ce_ready                                ),
     .ce_valid                        (ce_valid                                ),
-    .packets_emitted                 (format_packets_emitted                  ),
+
+    .notify_ack_sent                 (notify_ack_sent                         ),
+    .ciphertext_sent                 (ciphertext_sent                         ),
+    // master interface -------------------------------------------------------
+    .master_command                  (master_command                          ),
+    .master_command_vld              (master_command_vld                      ),
+    .master_command_rdy              (master_command_rdy                      ),
+
+    .ce_reception_ready              (ce_reception_ready                      ),
+
+    .notify_sent                     (notify_sent                             ),
+    .read_request_sent               (read_request_sent                       ),
     // QSFP TX interface ------------------------------------------------------
     .qsfp_tx_tdata                   (qsfp_tx_tdata                           ),
     .qsfp_tx_tkeep_user              (qsfp_tx_tkeep_user                      ),
@@ -494,7 +476,6 @@ module mhdma_bridge
     .qsfp_tx_tvalid                  (qsfp_tx_tvalid                          ),
     .qsfp_tx_tready                  (qsfp_tx_tready                          ),
     // statistics -------------------------------------------------------------
-    // registers
     .stat_fsm_formatter              (stat_fsm_formatter                      )
   );
 
@@ -532,7 +513,7 @@ module mhdma_bridge
   // Error agreggation
   // =========================================================================================== //
   // error_id_def: Definition of HPUs are not correct, several are defined as current
-  // error_packet_id_mismatch: sec_num received is unexpected
+  // error_packet_id_mismatch: seq_num received is unexpected
 
 
 endmodule

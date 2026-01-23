@@ -47,26 +47,21 @@ module mhdma_slave
   // interrupt ----------------------------------------------------------------
   input  logic                                clear_interrupt_notify,
   output logic                                interrupt_notify,
-  // allowed-pending ----------------------------------------------------------
-  input  logic                                notify_ack_allowed,
-  input  logic                                ct_emission_allowed,
-  output logic                                new_notify_ack_pending,
-  output logic                                new_ct_emission_request_pending,
   // decoder interface --------------------------------------------------------
-  input  header_t                             decoded_header,
-  input  logic                                notify_request_received,
-  input  logic                                read_request_received,
+  input  command_t                            decoded_command,
+  input  logic                                decoded_command_vld,
+  output logic                                decoded_command_rdy,
   // format interface ---------------------------------------------------------
-  output logic             [   NRX_WIDTH-1:0] nrx_cmd_payload,
-  output logic                                nrx_cmd_valid,
+  output command_t                            slave_command,
+  output command_t                            slave_command_vld,
+  input  command_t                            slave_command_rdy,
 
-  input  logic                                ct_emission_finished,
-  input  logic                                notify_ack_sent,
-
-  output header_t                             ce_header,
   output logic             [MRMAC_AXIS_W-1:0] ce_payload,
-  output logic                                ce_valid,
-  input  logic                                ce_ready,
+  output logic                                ce_vld,
+  input  logic                                ce_rdy,
+
+  input  logic                                ciphertext_sent,
+  input  logic                                notify_ack_sent,
   // statistics ---------------------------------------------------------------
   // counters
   output logic             [  REG_DATA_W-1:0] stat_nb_read_to_hbm,
@@ -86,91 +81,92 @@ module mhdma_slave
   // =========================================================================================== //
   localparam NB_MRMRAC_WORDS_PER_READ = AXI4_DATA_W/MRMAC_AXIS_W;
 
+  logic error_fifo_nrx_commands_ovf;
+
+  // =========================================================================================== //
+  // localparam
+  // =========================================================================================== //
+  logic received_notify;
+  logic received_read_request;
+
+  assign received_notify       = decoded_command_vld & (decoded_command.req_id == REQ_ID_NOTIFY);
+  assign received_read_request = decoded_command_vld & (decoded_command.req_id == REQ_ID_READ);
+
   // ==============================================================================================
   // Notify RX (NRX)
   // ==============================================================================================
+  logic start_notify_ack;
+  logic st_wait_notify;
+  logic st_transmit_ack;
+
   // => must transmit to regfile IOP_ID, HPU_ID and src_addr
   // => must trigger interrupt signal when registers are ready to be read
   typedef enum logic [1:0] {
     NTW_XXX          = 'x,
-    NTX_WAIT_REQUEST = 2'b01,
-    NTX_TRANSMIT_ACK = 2'b10
+    NRX_WAIT_REQUEST = 2'b01,
+    NRX_TRANSMIT_ACK = 2'b10
   } st_nrx;
 
   st_nrx nrx_state;
   st_nrx nrx_next_state;
 
   always_ff @(posedge clk_mrmac) begin
-    if (~resetn_mrmac) nrx_state <= NTX_WAIT_REQUEST;
+    if (~resetn_mrmac) nrx_state <= NRX_WAIT_REQUEST;
     else nrx_state <= nrx_next_state;
   end
+
+  assign start_notify_ack = decoded_command_rdy & received_notify;
 
   always_comb begin
     nrx_next_state = NTW_XXX;
     case (nrx_state)
-      NTX_WAIT_REQUEST:
-        nrx_next_state = notify_request_received ? NTX_TRANSMIT_ACK : NTX_WAIT_REQUEST;
-      NTX_TRANSMIT_ACK:
-        nrx_next_state = notify_ack_sent ? NTX_WAIT_REQUEST : NTX_TRANSMIT_ACK;
+      NRX_WAIT_REQUEST:
+        nrx_next_state = start_notify_ack ? NRX_TRANSMIT_ACK : NRX_WAIT_REQUEST;
+      NRX_TRANSMIT_ACK:
+        nrx_next_state = notify_ack_sent ? NRX_WAIT_REQUEST : NRX_TRANSMIT_ACK;
     endcase
   end
 
-  assign new_notify_ack_pending = (nrx_state == NTX_TRANSMIT_ACK);
+  assign st_wait_notify = (nrx_state == NRX_WAIT_REQUEST);
+  assign st_transmit_ack = (nrx_state == NRX_TRANSMIT_ACK);
 
   // Notify RX command queue --------------------------------------------------
   logic                 nrx_cmd_in_vld;
   logic                 nrx_cmd_in_rdy;
 
-  assign nrx_cmd_in_vld = (nrx_state == NTX_TRANSMIT_ACK) & decoded_header.valid & nrx_cmd_in_rdy;
+  assign nrx_cmd_in_vld = received_notify & nrx_cmd_in_rdy;
 
   // erreur notify lost
-
-  logic [NRX_WIDTH-1:0] nrx_cmd_out_data;
-  logic                 nrx_cmd_out_vld;
-  logic                 nrx_cmd_out_rdy;
-
-  // nrx_cmd valid and payload are propagated to regif as well as formatter module for sending ack
-  assign nrx_cmd_payload = nrx_cmd_out_data;
-  assign nrx_cmd_valid   = nrx_cmd_out_vld;
+  logic    nrx_cmd_out_vld;
+  logic    nrx_cmd_out_rdy;
+  command_t nrx_cmd_fifo;
 
   // command fifo for notify RX, received from decoder
   fifo_ram_rdy_vld # (
-    .WIDTH      (NRX_WIDTH),
+    .WIDTH      (SRC_ADDR_W+HPU_ID_W+IOP_ID_W+REQ_ID_W),
     .DEPTH      (NRX_DEPTH),
     .RAM_LATENCY(NRX_RAM_LATENCY)
   ) fifo_nrx_commands (
     .clk         (clk_mrmac),
     .s_rst_n     (resetn_mrmac),
 
-    .in_data     ({decoded_header.src_addr, decoded_header.hpu_id, decoded_header.iop_id}),
+    .in_data     ({decoded_command.src_addr, decoded_command.hpu_id, decoded_command.iop_id, REQ_ID_NOTIFY_ACK}),
     .in_vld      (nrx_cmd_in_vld),
     .in_rdy      (nrx_cmd_in_rdy),
 
-    .out_data    (nrx_cmd_out_data),
+    .out_data    ({nrx_cmd_fifo.src_addr, nrx_cmd_fifo.hpu_id, nrx_cmd_fifo.iop_id, nrx_cmd_fifo.req_id}),
     .out_vld     (nrx_cmd_out_vld),
     .out_rdy     (nrx_cmd_out_rdy),
 
     .almost_full (/* UNUSED */)
   );
 
+  assign error_fifo_nrx_commands_ovf = received_notify & ~nrx_cmd_in_rdy;
+
   // Notify RX regfile interface --------------------------------------------------------
-  // === MRMAC domain
-  logic [REG_DATA_W-1:0] nrx_regf_in_data;
-  logic                  nrx_regf_in_rdy;
-  logic                  nrx_regf_in_vld;
+  logic nrx_regf_in_rdy;
 
-  // re-organization for regif interface
-  logic [SRC_ADDR_W-1:0] nrx_ct_src_addr;
-  logic [HPU_ID_W-1:0]   nrx_hpu_id;
-  logic [IOP_ID_W-1:0]   nrx_iop_id;
-
-  assign nrx_ct_src_addr  = nrx_cmd_payload[NRX_SRC_ADDR_OFS-1:NRX_HPU_ID_OFS];
-  assign nrx_hpu_id       = nrx_cmd_payload[NRX_HPU_ID_OFS-1:NRX_IOP_ID_OFS];
-  assign nrx_iop_id       = nrx_cmd_payload[NRX_IOP_ID_OFS-1:0];
-
-  assign nrx_regf_in_data = {nrx_ct_src_addr, 4'b0, nrx_hpu_id, nrx_iop_id};
-  assign nrx_regf_in_vld  = nrx_cmd_out_vld & nrx_cmd_out_rdy;
-  assign nrx_cmd_out_rdy  = nrx_regf_in_rdy & notify_ack_sent;
+  assign nrx_cmd_out_rdy = st_transmit_ack & slave_command_rdy & nrx_regf_in_rdy;
 
   // === CFG domain
   logic [REG_DATA_W-1:0] nrx_regf_out_data;
@@ -188,9 +184,9 @@ module mhdma_slave
     // Write Domain ports: MRMAC domain
     .in_clk      (clk_mrmac),
     .in_rstn     (resetn_mrmac),
-    .in_data     (nrx_regf_in_data),
+    .in_data     ({nrx_cmd_fifo.src_addr, 4'b0, nrx_cmd_fifo.hpu_id, nrx_cmd_fifo.iop_id}),
     .in_rdy      (nrx_regf_in_rdy),
-    .in_vld      (nrx_regf_in_vld),
+    .in_vld      (nrx_cmd_out_vld & nrx_cmd_out_rdy),
     .almost_full (/* UNUSED */),
     // Read Domain ports: CFG domain
     .out_clk     (clk_cfg),
@@ -210,6 +206,10 @@ module mhdma_slave
   // Ciphertext EMission (CEM)
   // ==============================================================================================
   // FSM ------------------------------------------------------------------------------------------
+  logic start_of_ct_emission;
+  logic st_wait_rr;
+  logic st_read_send;
+
   typedef enum logic [1:0] {
     CEM_XXX           = 'x,
     CEM_WAIT_REQUEST  = 2'b01,
@@ -224,68 +224,63 @@ module mhdma_slave
     else cem_state <= cem_next_state;
   end
 
+  assign start_of_ct_emission  = decoded_command_rdy & received_read_request;
+
   always_comb begin
     cem_next_state = CEM_XXX;
     case (cem_state)
       CEM_WAIT_REQUEST:
-        cem_next_state = ct_emission_allowed ? CEM_READ_N_SEND : CEM_WAIT_REQUEST;
+        cem_next_state = start_of_ct_emission ? CEM_READ_N_SEND : CEM_WAIT_REQUEST;
       CEM_READ_N_SEND:
-        cem_next_state = ct_emission_finished ? CEM_WAIT_REQUEST : CEM_READ_N_SEND;
+        cem_next_state = ciphertext_sent ? CEM_WAIT_REQUEST : CEM_READ_N_SEND;
     endcase
   end
 
-  // for consuming data into read-request command queue we need to know when there is a start of ce
-  logic ct_emission_allowed_reg;
-  logic start_of_ct_emission;
-
-  always_ff @(posedge clk_mrmac)
-    ct_emission_allowed_reg <= ct_emission_allowed;
-
-  assign start_of_ct_emission = ct_emission_allowed & ~ct_emission_allowed_reg;
-
-  // in use signal is simply a guardrail for control
-  assign ct_emission_request_in_use = (cem_state == CEM_READ_N_SEND);
+  assign st_read_send = (cem_state == CEM_READ_N_SEND);
+  assign st_wait_rr   = (cem_state == CEM_WAIT_REQUEST);
 
   // sending command to read request command queue ------------------------------------------------
   // when qsfp tlast is ready we are sure that all commands have been correctly received
   // we need to pass along:
-  //    > IOP ID
   //    > HPU ID
+  //    > IOP ID
   //    > DST ADDR
   //    > SRC ADDR
-  // RREQ_CMD_DATA_W is defined in the package
+  //   => REQ ID must be switched from read request to ciphertext emission
 
-  logic [RREQ_CMD_DATA_W-1:0] rreq_cmd_in_data;
-  logic                       rreq_cmd_in_vld;
-  logic                       rreq_cmd_in_rdy; // ~full
+  logic    rreq_cmd_in_vld;
+  logic    rreq_cmd_in_rdy; // ~full
 
-  logic [RREQ_CMD_DATA_W-1:0] rreq_cmd_out_data;
-  logic                       rreq_cmd_out_vld;
-  logic                       rreq_cmd_out_rdy;
+  command_t rreq_cmd_fifo;
+  logic    rreq_cmd_out_vld;
+  logic    rreq_cmd_out_rdy;
 
-  assign rreq_cmd_in_data = {decoded_header.hpu_id, decoded_header.iop_id, decoded_header.dst_addr, decoded_header.src_addr};
-  assign rreq_cmd_in_vld = rreq_cmd_in_rdy & read_request_received; //TODO: add when payload is ready
+  assign rreq_cmd_in_vld = start_of_ct_emission & rreq_cmd_in_rdy;
 
   fifo_ram_rdy_vld # (
-    .WIDTH      (RREQ_CMD_DATA_W),
+    .WIDTH      (HPU_ID_W+IOP_ID_W+DST_ADDR_W+SRC_ADDR_W+REQ_ID_W),
     .DEPTH      (RREQ_CMD_DEPTH),
     .RAM_LATENCY(RREQ_CMD_RAM_LATENCY)
   ) rreq_command_queue (
     .clk         (clk_mrmac),
     .s_rst_n     (resetn_mrmac),
 
-    .in_data     (rreq_cmd_in_data),
+    .in_data     ({decoded_command.hpu_id, decoded_command.iop_id, decoded_command.dst_addr, decoded_command.src_addr, REQ_ID_EMISSION}),
     .in_vld      (rreq_cmd_in_vld),
     .in_rdy      (rreq_cmd_in_rdy),
 
-    .out_data    (rreq_cmd_out_data),
+    .out_data    ({rreq_cmd_fifo.hpu_id, rreq_cmd_fifo.iop_id, rreq_cmd_fifo.dst_addr, rreq_cmd_fifo.src_addr, rreq_cmd_fifo.req_id}),
     .out_vld     (rreq_cmd_out_vld),
     .out_rdy     (rreq_cmd_out_rdy),
 
     .almost_full (/* UNUSED */)
   );
 
-  assign rreq_cmd_out_rdy = start_of_ct_emission;
+  logic error_rreq_command_queue_ovf;
+  assign error_rreq_command_queue_ovf = start_of_ct_emission & ~rreq_cmd_in_rdy;
+
+  always_ff @(posedge clk_mrmac)
+    rreq_cmd_out_rdy <= st_read_send & slave_command_rdy; /// !!! TODO
 
   logic [RQQ_CMD_DATA_COUNT_W-1:0] rreq_cnt;
   logic                            rreq_cnt_down;
@@ -305,29 +300,24 @@ module mhdma_slave
       end
     end
   end
-  assign new_ct_emission_request_pending = (rreq_cnt != 0);
 
   logic error_rreq_cmd_full_packet_drop;
   // assign error_rreq_cmd_full_packet_drop = qsfp_rx_tlast & ~rreq_cmd_in_rdy;
+
+  // ==============================================================================================
+  // Consuming Decoded commands
+  // ==============================================================================================
+  assign decoded_command_rdy =  (st_wait_notify & ~st_read_send & received_notify & nrx_cmd_in_rdy) | (st_wait_rr & ~st_transmit_ack & received_read_request & rreq_cmd_in_rdy);
 
   // =========================================================================================== //
   // Read into HBM
   // all @mrmac domain
   // =========================================================================================== //
-  logic [RREQ_CMD_DATA_W-1:0] read_request_cmd;
-  logic [       HPU_ID_W-1:0] rr_hpu_id;
-  logic [       IOP_ID_W-1:0] rr_iop_id;
-  logic [     SRC_ADDR_W-1:0] rr_ct_src_addr;
-  logic [     DST_ADDR_W-1:0] rr_ct_dst_addr;
+  logic [SRC_ADDR_W-1:0] rr_ct_src_addr;
+  logic [DST_ADDR_W-1:0] rr_ct_dst_addr;
 
-  always_ff @(posedge clk_mrmac)
-    if (rreq_cmd_out_vld & rreq_cmd_out_rdy)
-      read_request_cmd <= rreq_cmd_out_data;
-
-  assign rr_hpu_id      = read_request_cmd[RR_HPU_ID_OFS-1:RR_IOP_ID_OFS];
-  assign rr_iop_id      = read_request_cmd[RR_IOP_ID_OFS-1:RR_DST_ID_OFS];
-  assign rr_ct_dst_addr = read_request_cmd[RR_DST_ID_OFS-1:RR_SRC_ID_OFS];
-  assign rr_ct_src_addr = (rreq_cmd_out_vld & rreq_cmd_out_rdy) ? rreq_cmd_out_data[RR_SRC_ID_OFS-1:0] : 0;
+  assign rr_ct_dst_addr = rreq_cmd_fifo.dst_addr;
+  assign rr_ct_src_addr = rreq_cmd_fifo.src_addr;
 
   // phys_addr = hbm_pc_offset + ctId * ciphertext_size
   logic [ETH_PC-1:0] [AXI4_ADD_W-1:0] phy_addr;
@@ -336,7 +326,7 @@ module mhdma_slave
     for (genvar gen_p=0; gen_p<ETH_PC; gen_p=gen_p+1) begin
       always_ff @(posedge clk_mrmac)
         if (rreq_cmd_out_rdy & rreq_cmd_out_vld)
-          phy_addr[gen_p] <= regf_ct_mem_addr[gen_p] + (rr_ct_src_addr << PC_STRIDE);
+          phy_addr[gen_p] <= regf_ct_mem_addr[gen_p] + (rr_ct_dst_addr << PC_STRIDE);
 
       always_ff @(posedge clk_mrmac) begin
         if (~resetn_mrmac) begin
@@ -382,7 +372,7 @@ module mhdma_slave
         end else begin
           if ((axi_read_cnt > 0) && axi4_read_pc[gen_rd] & m_axi4_arready[gen_rd] & m_axi4_arvalid[gen_rd]) begin
             axi_read_cnt <= axi_read_cnt - 1;
-          end else if (ct_emission_finished) begin
+          end else if (ciphertext_sent) begin
             axi_read_cnt <= PC_NB_READS[gen_rd];
           end
         end
@@ -439,7 +429,7 @@ module mhdma_slave
       logic                   read_fifo_out_ready;
 
       // we read if and only if we are in ciphertext emission mode
-      assign m_axi4_rready[gen_rd]  = read_fifo_ready[gen_rd] & ct_emission_request_in_use;
+      assign m_axi4_rready[gen_rd] = read_fifo_ready[gen_rd] & st_read_send;
 
       assign read_fifo_we = m_axi4_rvalid[gen_rd] & m_axi4_rready[gen_rd];
 
@@ -615,12 +605,9 @@ module mhdma_slave
   end
 
   // Fifo Ciphertext Emission ---------------------------------------------------------------------
-  logic [CE_DATA_COUNT_W:0] fifo_ce_cnt;
   logic [MRMAC_AXIS_W-1:0]  fifo_ce_in_data;
   logic                     fifo_ce_in_vld;
   logic                     fifo_ce_in_rdy;
-  logic [MRMAC_AXIS_W-1:0]  fifo_ce_out_data;
-  logic                     fifo_ce_out_vld;
 
   // data in input are already in the correct form for sending directly to the lane
   assign  fifo_ce_in_vld  = (reading_which_pc[0] == 1) ? fifo_ce_pc_in_vld[0]  : (reading_which_pc[1] == 1) ? fifo_ce_pc_in_vld[1] : 1'b0;
@@ -629,24 +616,6 @@ module mhdma_slave
   // backpressure over ready for each fifo
   assign fifo_ce_pc_in_rdy[0] = (reading_which_pc == 1) ? fifo_ce_in_rdy : 1'b0;
   assign fifo_ce_pc_in_rdy[1] = (reading_which_pc == 2) ? fifo_ce_in_rdy : 1'b0;
-
-  logic cnt_fifo_up;
-  logic cnt_fifo_down;
-
-  assign cnt_fifo_up   = fifo_ce_in_vld & fifo_ce_in_rdy;
-  assign cnt_fifo_down = ce_valid & ce_ready;
-
-  always_ff @(posedge clk_mrmac) begin
-    if (~resetn_mrmac) begin
-      fifo_ce_cnt <= 'h0;
-    end else begin
-      if (cnt_fifo_up & ~cnt_fifo_down) begin
-        fifo_ce_cnt <= fifo_ce_cnt + 1;
-      end else if (cnt_fifo_down & ~cnt_fifo_up) begin
-        fifo_ce_cnt <= fifo_ce_cnt - 1;
-      end
-    end
-  end
 
   fifo_ram_rdy_vld # (
     .WIDTH      (MRMAC_AXIS_W   ),
@@ -661,24 +630,26 @@ module mhdma_slave
     .in_vld      (fifo_ce_in_vld),
     .in_rdy      (fifo_ce_in_rdy),
 
-    .out_data    (fifo_ce_out_data),
-    .out_vld     (fifo_ce_out_vld),
-    .out_rdy     (ce_ready),
+    .out_data    (ce_payload),
+    .out_vld     (ce_vld),
+    .out_rdy     (ce_rdy),
     .almost_full (/* UNUSED */)
   );
 
-  assign ce_valid = fifo_ce_out_vld;
-  assign ce_payload = fifo_ce_out_data;
-
-  // header propagation ---------------------------------------------------------------------------
-  always_ff @(posedge clk_mrmac) begin
-    if (decoded_header.valid) begin
-      ce_header.src_mac_addr <= decoded_header.src_mac_addr;
-      ce_header.hpu_id       <= decoded_header.hpu_id;
-      ce_header.size_b       <= decoded_header.size_b;
-      ce_header.iop_id       <= decoded_header.iop_id;
-      ce_header.src_addr     <= decoded_header.src_addr;
-      ce_header.dst_addr     <= decoded_header.dst_addr;
+  // =========================================================================================== //
+  // Interface to formatter
+  // =========================================================================================== //
+  // acks takes precedence in from of read request
+  always_comb begin
+    if (nrx_cmd_out_vld)  begin
+      slave_command     = nrx_cmd_fifo;
+      slave_command_vld = nrx_cmd_out_vld;
+    end else if (rreq_cmd_out_vld) begin
+      slave_command     = rreq_cmd_fifo;
+      slave_command_vld = rreq_cmd_out_vld;
+    end else begin
+      slave_command     = 'h0;
+      slave_command_vld = 'h0;
     end
   end
 

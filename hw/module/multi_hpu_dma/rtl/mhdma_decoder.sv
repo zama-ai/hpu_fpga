@@ -17,9 +17,11 @@ module mhdma_decoder
   output logic                     notify_request_received,
   output logic                     read_request_received,
   output logic                     ciphertext_emission_received,
-  // Header information -------------------------------------------------------
   input  logic [MAC_ADDR_W-1:0]    current_hpu_mac,
-  output header_t                  rx_header,
+  // Header information -------------------------------------------------------
+  output command_t                 decoded_command,
+  output logic                     decoded_command_vld,
+  input  logic                     decoded_command_rdy,
   // RX payload ---------------------------------------------------------------
   output logic [MRMAC_AXIS_W-1:0]  rx_tdata_out,
   output logic                     rx_tvalid_out,
@@ -71,7 +73,7 @@ module mhdma_decoder
   logic [MAC_ADDR_W-1:0] dst_mac_addr;
   logic [ETHERNET_LEN-1:0] eth_len;
   // Second frame I will know who is the sender, request ID, seq num
-  logic [SEQ_NUM_W-1:0]  sec_num;
+  logic [SEC_NUM_W-1:0]  seq_num;
   logic [HPU_ID_W-1:0]   hpu_id;
   logic [REQ_ID_W-1:0]   req_id;
   logic [MAC_ADDR_W-1:0] src_mac_addr;
@@ -137,11 +139,11 @@ module mhdma_decoder
   end
 
   // FRAME 2 ------------------------------------------------------------------
-  // req_id, hpu_id, sec_num, src_addr, dst_addr and iop_id
+  // req_id, hpu_id, seq_num, src_addr, dst_addr and iop_id
   always_ff @(posedge clk_mrmac) begin
     if ((rx_tvalid_in) & (rx_counter == 2)) begin
       hpu_id      <= qsfp_rx_tdata_bs[H2_HPU_ID_OFS-1:H2_SEQ_NUM_OFS];
-      sec_num     <= qsfp_rx_tdata_bs[H2_SEQ_NUM_OFS-1:H2_CT_SRC_ADDR_OFS];
+      seq_num     <= qsfp_rx_tdata_bs[H2_SEQ_NUM_OFS-1:H2_CT_SRC_ADDR_OFS];
       ct_src_addr <= qsfp_rx_tdata_bs[H2_CT_SRC_ADDR_OFS-1:H2_CT_DST_ADDR_OFS];
       ct_dst_addr <= qsfp_rx_tdata_bs[H2_CT_DST_ADDR_OFS-1:H2_IOP_ID_OFS];
       iop_id      <= qsfp_rx_tdata_bs[H2_IOP_ID_OFS-1:0];
@@ -166,8 +168,6 @@ module mhdma_decoder
   assign size_b = ((rx_counter == 3) & rx_valid) ? qsfp_rx_tdata_bs[H3_SIZE_B_OFS-1:H3_EMPTY_OFS] : 'h0;
 
   // assigning output -----------------------------------------------------------------------------
-
-  // decoding commands
   logic nack_receivedD;
   logic nr_receivedD;
   logic rr_receivedD;
@@ -178,8 +178,8 @@ module mhdma_decoder
   logic rr_received;
   logic ce_received;
 
-  assign nack_receivedD = rx_valid & (req_id == REQ_ID_ACK_NOTIFY_TX);
-  assign nr_receivedD   = rx_valid & (req_id == REQ_ID_NOTIFY_TX);
+  assign nack_receivedD = rx_valid & (req_id == REQ_ID_NOTIFY_ACK);
+  assign nr_receivedD   = rx_valid & (req_id == REQ_ID_NOTIFY);
   assign rr_receivedD   = rx_valid & (req_id == REQ_ID_READ);
   assign ce_receivedD   = rx_valid & (req_id == REQ_ID_EMISSION);
 
@@ -195,17 +195,33 @@ module mhdma_decoder
   assign read_request_received        = rr_receivedD   & ~rr_received;
   assign ciphertext_emission_received = ce_receivedD   & ~ce_received;
 
-  // header information
-  // tvalid is used if ever we have a drop and rx_counter keeps its value. we need to have a pulse on valid signal
-  assign rx_header.valid        = qsfp_rx_tvalid & (rx_counter == NB_WORDS_CUST_HEADER_SIZE);
-  assign rx_header.src_mac_addr = src_mac_addr;
-  assign rx_header.seq_num      = sec_num;
-  assign rx_header.hpu_id       = hpu_id;
-  assign rx_header.size_b       = size_b;
-  assign rx_header.iop_id       = iop_id;
-  assign rx_header.src_addr     = ct_src_addr;
-  assign rx_header.dst_addr     = ct_dst_addr;
-  assign rx_header.req_id       = req_id;
+  logic fifo_rx_cmd_in_vld;
+  logic fifo_rx_cmd_in_rdy;
+
+  assign fifo_rx_cmd_in_vld = notify_ack_received | notify_request_received | read_request_received | ciphertext_emission_received;
+
+  fifo_ram_rdy_vld # (
+    .WIDTH(MAC_ADDR_W + SEC_NUM_W + HPU_ID_W + SIZE_B_W + IOP_ID_W + SRC_ADDR_W + DST_ADDR_W + REQ_ID_W),
+    .DEPTH(RX_FIFO_DEPTH)
+  ) fifo_rx_cmd (
+    .clk         (clk_mrmac          ),
+    .s_rst_n     (resetn_mrmac       ),
+
+    .in_data     ({src_mac_addr, seq_num, hpu_id, size_b, iop_id, ct_src_addr, ct_dst_addr, req_id}),
+    .in_vld      (fifo_rx_cmd_in_vld),
+    .in_rdy      (fifo_rx_cmd_in_rdy),
+
+    .out_data    ({decoded_command.src_mac_addr, decoded_command.seq_num, decoded_command.hpu_id, decoded_command.size_b, decoded_command.iop_id, decoded_command.src_addr, decoded_command.dst_addr, decoded_command.req_id}),
+    .out_vld     (decoded_command_vld),
+    .out_rdy     (decoded_command_rdy),
+
+    .almost_full (/* UNUSED */)
+  );
+
+  // TODO: & check
+  logic error_fifo_rx_ovf;
+
+  assign error_fifo_rx_ovf = fifo_rx_cmd_in_vld & ~fifo_rx_cmd_in_rdy;
 
   // payload interface to master module -----------------------------------------------------------
   always_ff @(posedge clk_mrmac)
@@ -231,9 +247,9 @@ module mhdma_decoder
     if (~resetn_mrmac)begin
       count_time_first_to_last <= 1'b0;
     end else begin
-      if (ce_received & (sec_num == 0) & rx_tlast_in) begin
+      if (ce_received & (seq_num == 0) & rx_tlast_in) begin
         count_time_first_to_last <= 1'b1;
-      end else if (ce_received & (sec_num == NB_PACKETS_FULL) & rx_tlast_in)  begin
+      end else if (ce_received & (seq_num == NB_PACKETS_FULL) & rx_tlast_in)  begin
         count_time_first_to_last <= 1'b0;
       end
     end
@@ -255,7 +271,7 @@ module mhdma_decoder
     if (~resetn_mrmac)begin
       stat_t_ce_first_to_last_pkt <= 'h0;
     end else begin
-      if (ce_received & (sec_num == NB_PACKETS_FULL) & rx_tlast_in) begin
+      if (ce_received & (seq_num == NB_PACKETS_FULL) & rx_tlast_in) begin
         stat_t_ce_first_to_last_pkt <= t_first_last_pkt;
       end
     end

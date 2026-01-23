@@ -67,7 +67,7 @@ package mhdma_pkg;
   localparam int MAC_ADDR_W   = 24;
   localparam int MAC_OUI_W    = 24;
 
-  localparam int SEQ_NUM_W    = 8;
+  localparam int SEC_NUM_W    = 8;
   localparam int HPU_ID_W     = 4;
   localparam int REQ_ID_W     = 4;
   localparam int ETHERNET_LEN = 16;
@@ -95,10 +95,13 @@ package mhdma_pkg;
   localparam int XPM_MIN_FIFO_DEPTH = 16;
 
   // = Commands
-  // read request command: XPM
+  // Request Fifo sizes
   localparam int REQ_MEMORY_TYPE       = "distributed";
   localparam int REQ_FIFO_DEPTH        = XPM_MIN_FIFO_DEPTH;
   localparam int REQ_DATA_COUNT_W      =  $clog2(REQ_FIFO_DEPTH)+1;
+
+  // RX fifo
+  localparam int RX_FIFO_DEPTH = 32;
 
   // Notify RX payload: distributed
   localparam int NRX_WIDTH             = SRC_ADDR_W + HPU_ID_W + IOP_ID_W;
@@ -125,10 +128,10 @@ package mhdma_pkg;
   // =========================================================================================== //
   // identification opcode
   // =========================================================================================== //
-  localparam [REQ_ID_W-1:0] REQ_ID_NOTIFY_TX     = 'h2;
-  localparam [REQ_ID_W-1:0] REQ_ID_ACK_NOTIFY_TX = 'h3;
-  localparam [REQ_ID_W-1:0] REQ_ID_READ          = 'h6;
-  localparam [REQ_ID_W-1:0] REQ_ID_EMISSION      = 'h7;
+  localparam [REQ_ID_W-1:0] REQ_ID_NOTIFY     = 'h2;
+  localparam [REQ_ID_W-1:0] REQ_ID_NOTIFY_ACK = 'h3;
+  localparam [REQ_ID_W-1:0] REQ_ID_READ       = 'h6;
+  localparam [REQ_ID_W-1:0] REQ_ID_EMISSION   = 'h7;
 
   // =========================================================================================== //
   // Offsets
@@ -167,9 +170,9 @@ package mhdma_pkg;
   localparam int H1_SRC_MAC_ADDR_OFS = 16 + ETHERNET_LEN + MAC_ADDR_W;
   localparam int H1_SRC_ETH_LEN_OFS  = 16 + ETHERNET_LEN;
 
-  localparam int H2_REQ_ID_OFS      = IOP_ID_W + DST_ADDR_W + SRC_ADDR_W + SEQ_NUM_W + HPU_ID_W + REQ_ID_W;
-  localparam int H2_HPU_ID_OFS      = IOP_ID_W + DST_ADDR_W + SRC_ADDR_W + SEQ_NUM_W + HPU_ID_W;
-  localparam int H2_SEQ_NUM_OFS     = IOP_ID_W + DST_ADDR_W + SRC_ADDR_W + SEQ_NUM_W;
+  localparam int H2_REQ_ID_OFS      = IOP_ID_W + DST_ADDR_W + SRC_ADDR_W + SEC_NUM_W + HPU_ID_W + REQ_ID_W;
+  localparam int H2_HPU_ID_OFS      = IOP_ID_W + DST_ADDR_W + SRC_ADDR_W + SEC_NUM_W + HPU_ID_W;
+  localparam int H2_SEQ_NUM_OFS     = IOP_ID_W + DST_ADDR_W + SRC_ADDR_W + SEC_NUM_W;
   localparam int H2_CT_SRC_ADDR_OFS = IOP_ID_W + DST_ADDR_W + SRC_ADDR_W;
   localparam int H2_CT_DST_ADDR_OFS = IOP_ID_W + DST_ADDR_W;
   localparam int H2_IOP_ID_OFS      = IOP_ID_W;
@@ -178,16 +181,32 @@ package mhdma_pkg;
   localparam int H3_EMPTY_OFS       = 48;
 
   typedef struct packed {
-    logic                  valid;
     logic [MAC_ADDR_W-1:0] src_mac_addr;
-    logic [ SEQ_NUM_W-1:0] seq_num;
+    logic [ SEC_NUM_W-1:0] seq_num;
     logic [  HPU_ID_W-1:0] hpu_id;
     logic [  SIZE_B_W-1:0] size_b;
     logic [  REQ_ID_W-1:0] req_id;
     logic [  IOP_ID_W-1:0] iop_id;
     logic [SRC_ADDR_W-1:0] src_addr;
     logic [DST_ADDR_W-1:0] dst_addr;
-  } header_t;
+  } command_t;
+
+  typedef struct packed {
+    logic error_fifo_rx_ovf;
+  } format_error_t;
+
+  // typedef struct packed {
+
+  // } decoder_error_t
+
+  typedef struct packed {
+    logic notify_cmd_ovf;
+    logic read_req_cmd_ovf;
+  } slave_error_t;
+
+  typedef struct packed {
+    logic seq_num_mismatch;
+  } master_error_t;
 
   // =========================================================================================== //
   // Functions

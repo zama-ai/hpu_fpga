@@ -1003,7 +1003,7 @@ end
     begin
 
       read_req_addr = {16'b0, src_addr};
-      read_req_id = {iop_id, REQ_ID_NOTIFY_TX, dst_node_id, req_size_b};
+      read_req_id = {iop_id, REQ_ID_NOTIFY, dst_node_id, req_size_b};
 
       if (src_node_id == random_hpu_a) begin
         maxil_drv_if_hpu_a.write_trans(MHDMA_REQUEST_REQ_ADDR_OFS, read_req_addr);

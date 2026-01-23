@@ -7,6 +7,8 @@
 // Receives requests from RPU and address them
 //
 // This module must be able to send Notify and Read Request to formatter
+
+// TODO sec num error resends rr
 // ==============================================================================================
 
 module mhdma_master
@@ -61,23 +63,24 @@ module mhdma_master
   // interrupt ---------------------------------------------------------------
   input  logic                                clear_interrupt_rr,
   output logic                                interrupt_read_request,
-  // allowed-pending --------------------------------------------------------
-  input  logic                                read_request_allowed,
-  input  logic                                notify_request_allowed,
-  output logic                                new_read_request_pending,
-  output logic                                new_notify_request_pending,
   // decoder interface --------------------------------------------------------
-  input  header_t                             decoded_header,
+  input  command_t                            decoded_command,
+  input  logic                                decoded_command_vld,
+  output logic                                decoded_command_rdy,
+
   input  logic             [MRMAC_AXIS_W-1:0] decoder_rx_tdata,
   input  logic                                decoder_rx_tvalid,
+
   input  logic                                notify_ack_received,
   // formatter interface ------------------------------------------------------
-  output header_t                             format_header,
-  output logic                                format_retry_notify,
-  output logic                                format_retry_read_request,
-  input  logic                                format_notify_sent,
-  input  logic                                format_rreq_sent,
-  output logic                                cerx_reception_ready,
+  output command_t                            master_command,
+  output logic                                master_command_vld,
+  input  logic                                master_command_rdy,
+
+  input  logic                                read_request_sent,
+  input  logic                                notify_sent,
+
+  output logic                                ce_reception_ready,
   // statistics ---------------------------------------------------------------
   // counters
   output logic [REG_DATA_W-1:0]               stat_cnt_notify,
@@ -113,6 +116,143 @@ module mhdma_master
 
   localparam NB_WRITES_TOTAL = PC_NB_WRITES[0] + PC_NB_WRITES[1];
 
+  // ==============================================================================================
+  // FSM
+  // ==============================================================================================
+  logic timeout_reached_notify;
+  logic timeout_reached_read_request;
+
+  // Notify TX (NTX) ------------------------------------------------------------------------------
+  typedef enum logic [1:0] {
+    NTX_XXX          = 'x,
+    NTX_WAIT_REQUEST = 2'b01,
+    NTX_WAIT_ACK     = 2'b10,
+    NTX_SEND_NOTIFY  = 2'b11
+  } st_ntx;
+
+  st_ntx ntx_state;
+  st_ntx ntx_next_state;
+  logic  start_notify_request;
+  logic  st_ntx_wait_request;
+
+  always_ff @(posedge clk_mrmac) begin
+    if (~resetn_mrmac) ntx_state <= NTX_WAIT_REQUEST;
+    else ntx_state <= ntx_next_state;
+  end
+
+  assign start_notify_request = master_command_rdy & master_command_vld & (master_command.req_id == REQ_ID_NOTIFY) & (ntx_state == NTX_WAIT_REQUEST);
+
+  always_comb begin
+    ntx_next_state = NTX_XXX;
+    case (ntx_state)
+      NTX_WAIT_REQUEST:
+        ntx_next_state = start_notify_request ? NTX_SEND_NOTIFY : NTX_WAIT_REQUEST;
+      NTX_SEND_NOTIFY:
+        ntx_next_state = notify_sent ? NTX_WAIT_ACK : NTX_SEND_NOTIFY;
+      NTX_WAIT_ACK:
+        // (Assumption) transmission is not instantaneous, notify_ack_received cannot arrive before axis tlast
+        ntx_next_state = notify_ack_received ? NTX_WAIT_REQUEST : timeout_reached_notify ? NTX_SEND_NOTIFY : NTX_WAIT_ACK;
+    endcase
+  end
+
+  assign st_ntx_wait_request = (ntx_state == NTX_WAIT_REQUEST);
+
+  // Read request ---------------------------------------------------------------------------------
+  typedef enum logic [1:0] {
+    RR_XXX          = 'x,
+    RR_WAIT_REQUEST = 2'b01,
+    RR_SEND_REQUEST = 2'b10,
+    RR_WAIT_PACKETS = 2'b11
+  } st_read_req;
+
+  st_read_req rreq_state;
+  st_read_req rreq_next_state;
+
+  logic st_rr_wait_request;
+  logic st_wait_packets;
+
+  logic ciphertext_received;
+  logic start_read_request;
+
+  always_ff @(posedge clk_mrmac) begin
+    if (~resetn_mrmac) rreq_state <= RR_WAIT_REQUEST;
+    else rreq_state <= rreq_next_state;
+  end
+
+  always_ff @(posedge clk_mrmac)begin
+    if (~resetn_mrmac)begin
+      start_read_request <= 1'b0;
+    end else begin
+      start_read_request <= master_command_vld & (master_command.req_id == REQ_ID_READ) & (rreq_state == RR_WAIT_REQUEST);
+    end
+  end
+
+  always_comb begin
+    rreq_next_state = RR_XXX;
+    case (rreq_state)
+      RR_WAIT_REQUEST:
+        rreq_next_state = start_read_request ? RR_SEND_REQUEST : RR_WAIT_REQUEST;
+      RR_SEND_REQUEST:
+        rreq_next_state =  read_request_sent ? RR_WAIT_PACKETS : RR_SEND_REQUEST;
+      RR_WAIT_PACKETS:
+        // if error_packet_id_mismatch or timeout => RR_SEND_REQUEST
+        // if write into hbm is finished => RR_WAIT_REQUEST
+        rreq_next_state = (error_packet_id_mismatch | timeout_reached_read_request) ? RR_SEND_REQUEST : ciphertext_received ? RR_WAIT_REQUEST: RR_WAIT_PACKETS;
+    endcase
+  end
+
+  assign st_rr_wait_request = (rreq_state == RR_WAIT_REQUEST);
+  assign st_wait_packets = (rreq_state == RR_WAIT_PACKETS);
+
+  // =========================================================================================== //
+  // Timeouts
+  // =========================================================================================== //
+  logic [REG_DATA_W-1:0] to_dur_read_req;
+  logic [REG_DATA_W-1:0] to_dur_notify;
+
+  always_ff @(posedge clk_mrmac)
+    to_dur_read_req <= regf_timeout_duration_read_req;
+
+  always_ff @(posedge clk_mrmac)
+    to_dur_notify <= regf_timeout_duration_notify;
+
+  // timeout --------------------------------------------------------------------------------------
+  logic [REG_DATA_W-1:0] to_notify_cnt;
+
+  always_ff @(posedge clk_mrmac) begin : timeout_counter
+    if (~resetn_mrmac) begin
+      to_notify_cnt <= 'h0;
+    end else begin
+      if ((ntx_state == NTX_WAIT_ACK)) begin
+        to_notify_cnt <= to_notify_cnt + 1;
+      end else begin
+        to_notify_cnt <= 'h0;
+      end
+    end
+  end
+
+  assign timeout_reached_notify = (to_notify_cnt == to_dur_notify);
+
+  // timeout read request -------------------------------------------------------------------------
+  logic [REG_DATA_W-1:0] to_read_request_cnt;
+
+  always_ff @(posedge clk_mrmac) begin : timeout_counter_rr
+    if (~resetn_mrmac) begin
+      to_read_request_cnt <= 'h0;
+    end else begin
+      if ((rreq_state == RR_WAIT_PACKETS)) begin
+        to_read_request_cnt <= to_read_request_cnt + 1;
+      end else begin
+        to_read_request_cnt <= 'h0;
+      end
+    end
+  end
+
+  assign timeout_reached_read_request = (to_read_request_cnt == to_dur_read_req);
+
+  // TODO:
+  assign error_packet_id_mismatch = 1'b0;
+
   // =========================================================================================== //
   // CDC from regf to mrmac clock
   // =========================================================================================== //
@@ -125,6 +265,11 @@ module mhdma_master
   logic [2*REG_DATA_W-1:0] rrqq_data_kept;
   logic                    rrqq_data_kept_avail;
   logic                    rrqq_data_vld;
+
+  // === MRMAC domain
+  command_t rrqq_cmd;
+  logic     rrqq_cmd_rdy;
+  logic     rrqq_cmd_vld;
 
   assign rrqq_in_vld = received_req & (regf_req_id[23:20] == REQ_ID_READ);
   // backpressure
@@ -147,12 +292,6 @@ module mhdma_master
   assign rrqq_data_vld = rrqq_in_vld | rrqq_data_kept_avail;
   assign rrqq_in_data = (rrqq_in_vld & rrqq_in_rdy) ? {regf_req_id, regf_req_addr} : rrqq_data_kept;
 
-  // === MRMAC domain
-  logic [2*REG_DATA_W-1:0] rrqq_out_data;
-  logic                    rrqq_out_rdy;
-  logic                    rrqq_out_vld;
-  logic                    read_request_start;
-
   fifo_ram_rdy_vld_2clk # (
     .CDC_SYNC_STAGES (CDC_SYNC_STAGES),
     // tweak theses parameters in package
@@ -170,36 +309,12 @@ module mhdma_master
     // MRMAC domain
     .out_clk     (clk_mrmac),
     .out_rstn    (resetn_mrmac),
-    .out_data    (rrqq_out_data),
-    .out_rdy     (rrqq_out_rdy),
-    .out_vld     (rrqq_out_vld)
+    .out_data    ({rrqq_cmd.iop_id, rrqq_cmd.req_id, rrqq_cmd.hpu_id, rrqq_cmd.size_b, rrqq_cmd.dst_addr, rrqq_cmd.src_addr}),
+    .out_rdy     (rrqq_cmd_rdy),
+    .out_vld     (rrqq_cmd_vld)
   );
 
-  assign new_read_request_pending = rrqq_out_vld;
-  assign rrqq_out_rdy = read_request_start;
-
-  // current read request, sampled when valid is toggled
-  logic [DST_ADDR_W-1:0] rrqq_dst_addr;
-  logic [SRC_ADDR_W-1:0] rrqq_src_addr;
-  logic [  SIZE_B_W-1:0] rrqq_size_b;
-  logic [  REQ_ID_W-1:0] rrqq_req_id;
-  logic [  IOP_ID_W-1:0] rrqq_iop_id;
-  logic [  HPU_ID_W-1:0] rrqq_hpu_id;
-  logic                  rrqq_vld;
-
-  always_ff @(posedge clk_mrmac) begin : read_request_sampling
-    if (rrqq_out_rdy & rrqq_out_vld) begin
-      rrqq_src_addr <= rrqq_out_data[CMD_SRC_ADDR_OFS-1:0];
-      rrqq_dst_addr <= rrqq_out_data[CMD_DST_ADDR_OFS-1:CMD_SRC_ADDR_OFS];
-      rrqq_size_b   <= rrqq_out_data[CMD_SIZE_B_OFS-1:CMD_DST_ADDR_OFS];
-      rrqq_hpu_id   <= rrqq_out_data[CMD_HPU_ID_OFS-1:CMD_SIZE_B_OFS];
-      rrqq_req_id   <= rrqq_out_data[CMD_REQ_ID_OFS-1:CMD_HPU_ID_OFS];
-      rrqq_iop_id   <= rrqq_out_data[CMD_IOP_ID_OFS-1:CMD_REQ_ID_OFS];
-    end
-  end
-
-  always_ff @(posedge clk_mrmac)
-    rrqq_vld <= rrqq_out_rdy & rrqq_out_vld;
+  assign rrqq_cmd_rdy = master_command_rdy & rrqq_cmd_vld & start_read_request;
 
   // Notify ReQuest Queue (NRQQ) ------------------------------------------------------------------
   // === CFG domain
@@ -211,12 +326,13 @@ module mhdma_master
   logic                    nrqq_data_kept_avail;
   logic                    nrqq_data_vld;
   // === MRMAC domain
-  logic [2*REG_DATA_W-1:0] nrqq_out_data;
-  logic                    nrqq_out_rdy;
-  logic                    nrqq_out_vld;
+  command_t nrqq_cmd_data;
+  logic     nrqq_cmd_rdy;
+  logic     nrqq_cmd_vld;
 
   // @cfg clock ---------------------------------
-  assign nrqq_in_vld = received_req & (regf_req_id[23:20] == REQ_ID_NOTIFY_TX);
+  assign nrqq_in_vld = received_req & (regf_req_id[23:20] == REQ_ID_NOTIFY);
+
   // backpressure
   always_ff @(posedge clk_cfg)
     if (nrqq_in_vld & ~nrqq_in_rdy)
@@ -254,203 +370,60 @@ module mhdma_master
     //  MRMAC domain
     .out_clk     (clk_mrmac),
     .out_rstn    (resetn_mrmac),
-    .out_data    (nrqq_out_data),
-    .out_rdy     (nrqq_out_rdy),
-    .out_vld     (nrqq_out_vld)
+    .out_data    ({nrqq_cmd_data.iop_id, nrqq_cmd_data.req_id, nrqq_cmd_data.hpu_id, nrqq_cmd_data.size_b, nrqq_cmd_data.dst_addr, nrqq_cmd_data.src_addr}),
+    .out_rdy     (nrqq_cmd_rdy),
+    .out_vld     (nrqq_cmd_vld)
   );
 
-  // we must consume only one request at a time
-  logic notify_request_allowed_reg;
-  always_ff @(posedge clk_mrmac)
-    notify_request_allowed_reg <= notify_request_allowed;
-
-  assign nrqq_out_rdy = notify_request_allowed & ~notify_request_allowed_reg;
-
-  // current notify request, sampled when valid is toggled
-  logic [SRC_ADDR_W-1:0] nrqq_src_addr;
-  logic [IOP_ID_W-1:0]   nrqq_iop_id;
-  logic [SIZE_B_W-1:0]   nrqq_size_b;
-  logic [REQ_ID_W-1:0]   nrqq_req_id;
-  logic [HPU_ID_W-1:0]   nrqq_hpu_id;
-
-  // none of theses information are in the first word:
-  //  => sampled on the same clock cycle as sending first frame
-  always_ff @(posedge clk_mrmac) begin : notify_request_sampling
-    if (nrqq_out_rdy & nrqq_out_vld) begin
-      nrqq_iop_id    <= nrqq_out_data[CMD_IOP_ID_OFS-1:CMD_REQ_ID_OFS];
-      nrqq_req_id    <= nrqq_out_data[CMD_REQ_ID_OFS-1:CMD_HPU_ID_OFS];
-      nrqq_hpu_id    <= nrqq_out_data[CMD_HPU_ID_OFS-1:CMD_SIZE_B_OFS];
-      nrqq_size_b    <= nrqq_out_data[CMD_SIZE_B_OFS-1:CMD_DST_ADDR_OFS];
-      nrqq_src_addr  <= nrqq_out_data[CMD_SRC_ADDR_OFS-1:0];
-    end
-  end
-
-  logic nrqq_cmd_vld;
-  always_ff @(posedge clk_mrmac)
-    nrqq_cmd_vld <= nrqq_out_rdy & nrqq_out_vld;
-
-  // Header information ---------------------------------------------------------------------------
-  assign format_header.dst_addr = notify_request_allowed ?         'h0   : read_request_allowed ? rrqq_dst_addr : 'h0;
-  assign format_header.src_addr = notify_request_allowed ? nrqq_src_addr : read_request_allowed ? rrqq_src_addr : 'h0;
-  assign format_header.size_b   = notify_request_allowed ? nrqq_size_b   : read_request_allowed ? rrqq_size_b   : 'h0;
-  assign format_header.req_id   = notify_request_allowed ? nrqq_req_id   : read_request_allowed ? rrqq_req_id   : 'h0;
-  assign format_header.iop_id   = notify_request_allowed ? nrqq_iop_id   : read_request_allowed ? rrqq_iop_id   : 'h0;
-  assign format_header.hpu_id   = notify_request_allowed ? nrqq_hpu_id   : read_request_allowed ? rrqq_hpu_id   : 'h0;
-
-  // valid signal for formatting frames
-  assign format_header.valid    = notify_request_allowed ? nrqq_cmd_vld : read_request_allowed ? rrqq_vld : 1'b0;
+  assign nrqq_cmd_rdy = master_command_rdy & nrqq_cmd_vld & start_notify_request;
 
   // ----------------------------------------------------------------------------------------------
   // when we have the data of both request identifier and addresses, we consume the information
   // > this signal is in configuration clock
   assign request_consumed = (rrqq_data_vld | nrqq_data_vld);
 
-  // ==============================================================================================
-  // FSM
-  // ==============================================================================================
-  logic timeout_reached_notify;
-  logic timeout_reached_read_request;
-
-  // Notify TX (NTX) ------------------------------------------------------------------------------
-  typedef enum logic [1:0] {
-    NTX_XXX          = 'x,
-    NTX_WAIT_REQUEST = 2'b01,
-    NTX_WAIT_ACK     = 2'b10,
-    NTX_SEND_NOTIFY  = 2'b11
-  } st_ntx;
-
-  st_ntx ntx_state;
-  st_ntx ntx_next_state;
-
-  always_ff @(posedge clk_mrmac) begin
-    if (~resetn_mrmac) ntx_state <= NTX_WAIT_REQUEST;
-    else ntx_state <= ntx_next_state;
-  end
-
-  always_comb begin
-    ntx_next_state = NTX_XXX;
-    case (ntx_state)
-      NTX_WAIT_REQUEST:
-        ntx_next_state = (new_notify_request_pending & notify_request_allowed) ? NTX_SEND_NOTIFY : NTX_WAIT_REQUEST;
-      NTX_SEND_NOTIFY:
-        ntx_next_state = format_notify_sent ? NTX_WAIT_ACK : NTX_SEND_NOTIFY;
-      NTX_WAIT_ACK:
-        // (Assumption) transmission is not instantaneous, notify_ack_received cannot arrive before axis tlast
-        ntx_next_state = notify_ack_received ? NTX_WAIT_REQUEST : timeout_reached_notify ? NTX_SEND_NOTIFY : NTX_WAIT_ACK;
-    endcase
-  end
-
-  // If we have a valid data in Notify command fifo and we are not waiting for an ack, we can send a new notify
-  assign new_notify_request_pending = nrqq_out_vld & (ntx_state != NTX_WAIT_ACK);
-
-  // Read request ---------------------------------------------------------------------------------
-  logic ciphertext_received;
-
-  typedef enum logic [1:0] {
-    RR_XXX          = 'x,
-    RR_WAIT_REQUEST = 2'b01,
-    RR_SEND_REQUEST = 2'b10,
-    RR_WAIT_PACKETS = 2'b11
-  } st_read_req;
-
-  st_read_req rreq_state;
-  st_read_req rreq_next_state;
-
-  always_ff @(posedge clk_mrmac) begin
-    if (~resetn_mrmac) rreq_state <= RR_WAIT_REQUEST;
-    else rreq_state <= rreq_next_state;
-  end
-
-  always_comb begin
-    rreq_next_state = RR_XXX;
-    case (rreq_state)
-      RR_WAIT_REQUEST:
-        rreq_next_state = new_read_request_pending & read_request_allowed ? RR_SEND_REQUEST : RR_WAIT_REQUEST;
-      RR_SEND_REQUEST:
-        rreq_next_state =  format_rreq_sent ? RR_WAIT_PACKETS : RR_SEND_REQUEST;
-      RR_WAIT_PACKETS:
-        // if error_packet_id_mismatch or timeout => RR_SEND_REQUEST
-        // if write into hbm is finished => RR_WAIT_REQUEST
-        rreq_next_state = (error_packet_id_mismatch | timeout_reached_read_request) ? RR_SEND_REQUEST : ciphertext_received ? RR_WAIT_REQUEST: RR_WAIT_PACKETS;
-    endcase
-  end
-
-  // build a pulse for starting read request, in practice this is used for consuming request in fifo
-  logic read_req_send;
-  logic read_req_sendD;
-
-  assign read_req_sendD = (rreq_state == RR_SEND_REQUEST);
-
-  always_ff @(posedge clk_mrmac)
-    read_req_send <= read_req_sendD;
-
-  assign read_request_start = read_req_sendD & ~read_req_send;
-
   // =========================================================================================== //
-  // Timeouts
+  // Master command allocation
   // =========================================================================================== //
-  logic [REG_DATA_W-1:0] to_dur_read_req;
-  logic [REG_DATA_W-1:0] to_dur_notify;
+  always_comb begin
+    if (nrqq_cmd_vld) begin
+      master_command.hpu_id   = nrqq_cmd_data.hpu_id;
+      master_command.size_b   = nrqq_cmd_data.size_b;
+      master_command.req_id   = nrqq_cmd_data.req_id;
+      master_command.iop_id   = nrqq_cmd_data.iop_id;
+      master_command.src_addr = nrqq_cmd_data.src_addr;
+      master_command.dst_addr = 'h0;
+      master_command.req_id   = REQ_ID_NOTIFY;
 
-  always_ff @(posedge clk_mrmac)
-    to_dur_read_req <= regf_timeout_duration_read_req;
+      master_command_vld      = st_ntx_wait_request & nrqq_cmd_vld;
 
-  always_ff @(posedge clk_mrmac)
-    to_dur_notify <= regf_timeout_duration_notify;
+    end else if (rrqq_cmd_vld) begin
+      master_command.hpu_id   = rrqq_cmd.hpu_id;
+      master_command.size_b   = rrqq_cmd.size_b;
+      master_command.req_id   = rrqq_cmd.req_id;
+      master_command.iop_id   = rrqq_cmd.iop_id;
+      master_command.src_addr = rrqq_cmd.src_addr;
+      master_command.dst_addr = rrqq_cmd.dst_addr;
+      master_command.req_id   = REQ_ID_READ;
 
-  // timeout --------------------------------------------------------------------------------------
-  logic [REG_DATA_W-1:0] to_notify_cnt;
+      master_command_vld      = st_rr_wait_request & rrqq_cmd_vld;
 
-  always_ff @(posedge clk_mrmac) begin : timeout_counter
-    if (~resetn_mrmac) begin
-      to_notify_cnt <= 'h0;
     end else begin
-      if ((ntx_state == NTX_WAIT_ACK)) begin
-        to_notify_cnt <= to_notify_cnt + 1;
-      end else begin
-        to_notify_cnt <= 'h0;
-      end
+      master_command.hpu_id   = 'h0;
+      master_command.size_b   = 'h0;
+      master_command.req_id   = 'h0;
+      master_command.iop_id   = 'h0;
+      master_command.src_addr = 'h0;
+      master_command.dst_addr = 'h0;
+      master_command_vld      = 1'b0;
     end
   end
-
-  assign timeout_reached_notify = (to_notify_cnt == to_dur_notify);
-
-  always_ff @(posedge clk_mrmac)
-    format_retry_notify <= timeout_reached_notify;
-
-  // timeout read request -------------------------------------------------------------------------
-  logic [REG_DATA_W-1:0] to_read_request_cnt;
-
-  always_ff @(posedge clk_mrmac) begin : timeout_counter_rr
-    if (~resetn_mrmac) begin
-      to_read_request_cnt <= 'h0;
-    end else begin
-      if ((rreq_state == RR_WAIT_PACKETS)) begin
-        to_read_request_cnt <= to_read_request_cnt + 1;
-      end else begin
-        to_read_request_cnt <= 'h0;
-      end
-    end
-  end
-
-  assign timeout_reached_read_request = (to_read_request_cnt == to_dur_read_req);
-
-  always_ff @(posedge clk_mrmac)
-    format_retry_read_request <= timeout_reached_read_request;
-
-  // TODO:
-  assign error_packet_id_mismatch = 1'b0;
 
   // =========================================================================================== //
   // Ciphertext reception
   //
   // Assumptions:
   // We had previously guaranteed to launch a Read request only and only if fifo is empty and ready
-  //
-  // Errors:
-  // TODO
-  // err_ce_rx_unexpected_ct: we should see ciphertext over rx link only read_request_allowed
-  // err_ce_rx_too_much_data: we received too much data and tried to overflow the fifo
   // =========================================================================================== //
   // ce-rx input interface
   logic [MRMAC_AXIS_W-1:0]    fifo_cerx_in_data;
@@ -475,9 +448,9 @@ module mhdma_master
     if (~resetn_mrmac) begin
       ce_valid_cnt <= 'h0;
     end else begin
-      if (read_request_allowed & decoder_rx_tvalid) begin
+      if ((master_command.req_id == REQ_ID_EMISSION) & decoder_rx_tvalid) begin
         ce_valid_cnt <= ce_valid_cnt + 1;
-      end else if (~read_request_allowed | format_retry_read_request) begin
+      end else begin
         ce_valid_cnt <= 'h0;
       end
     end
@@ -485,8 +458,8 @@ module mhdma_master
 
   assign ce_valid = (ce_valid_cnt<NB_WORDS_TO_HBM);
 
-  assign cnt_cerx_up   = read_request_allowed & (fifo_cerx_in_vld & fifo_cerx_in_rdy);
-  assign cnt_cerx_down = read_request_allowed & (fifo_cerx_out_rdy & fifo_cerx_out_vld);
+  assign cnt_cerx_up   = fifo_cerx_in_vld & fifo_cerx_in_rdy;
+  assign cnt_cerx_down = fifo_cerx_out_rdy & fifo_cerx_out_vld;
 
   always_ff @(posedge clk_mrmac) begin
     if (~resetn_mrmac) begin
@@ -523,16 +496,28 @@ module mhdma_master
   );
 
   // if fifo is empty and in_rdy then we can move the formatter FSM state to ST_READ_REQ
-  assign cerx_reception_ready = (fifo_cerx_cnt == 0) & fifo_cerx_in_rdy;
+  assign ce_reception_ready = (fifo_cerx_cnt == 0) & fifo_cerx_in_rdy;
 
  // ready signal of sending fifo according to which one we should use
   assign fifo_cerx_out_rdy = fifo_pc_backpressure;
 
   // =========================================================================================== //
+  // Consuming decoded commands
+  // =========================================================================================== //
+  logic nack_rdy;
+  logic rr_packets_rdy;
+
+  always_ff @(posedge clk_mrmac)
+    nack_rdy = decoded_command_vld & (decoded_command.req_id == REQ_ID_NOTIFY_ACK);
+  always_ff @(posedge clk_mrmac)
+    rr_packets_rdy = decoded_command_vld & (decoded_command.req_id == REQ_ID_EMISSION) & st_wait_packets;
+
+  assign decoded_command_rdy = nack_rdy | rr_packets_rdy;
+
+  // =========================================================================================== //
   // Write into HBM
   // all @mrmac domain
   // =========================================================================================== //
-
   // Exactly as for RX we write into each PC one at a time
   //  - we have two fifos, one for each PC
   //  - between fifo_ce_rx and fifo_wr_pc we will avoid stalling as much as possible
@@ -543,21 +528,21 @@ module mhdma_master
   logic                  received_valid;
 
   always_ff @(posedge clk_mrmac) begin
-    if (decoded_header.valid) begin
-      received_dst_addr <= decoded_header.dst_addr;
-      received_iop_id   <= decoded_header.iop_id;
-      received_hpu_id   <= decoded_header.hpu_id;
+    if (decoded_command_rdy & decoded_command_vld) begin
+      received_dst_addr <= decoded_command.dst_addr;
+      received_iop_id   <= decoded_command.iop_id;
+      received_hpu_id   <= decoded_command.hpu_id;
     end
   end
   always_ff @(posedge clk_mrmac)
-    received_valid<=decoded_header.valid;
+    received_valid<=decoded_command_vld;
 
   // phys_addr = hbm_pc_offset + ctId * ciphertext_size
   logic [ETH_PC-1:0] [AXI4_ADD_W-1:0] phy_addr;
   logic dst_addr_valid;
   logic phy_addr_valid;
 
-  assign dst_addr_valid = received_valid & (decoded_header.req_id == REQ_ID_EMISSION) & (decoded_header.seq_num ==0);
+  assign dst_addr_valid = received_valid & (decoded_command.req_id == REQ_ID_EMISSION) & (decoded_command.seq_num ==0);
 
   generate
     for (genvar gen_p=0; gen_p<ETH_PC; gen_p=gen_p+1)
@@ -1007,7 +992,7 @@ module mhdma_master
       if (rst_cnt_notify) begin
         notify_cnt <= 'h0;
       end else begin
-        if (format_notify_sent) begin
+        if (notify_sent) begin
           notify_cnt <= notify_cnt + 1;
         end
       end
@@ -1048,7 +1033,7 @@ module mhdma_master
     if (~resetn_mrmac) begin
       count_notify_ack <= 1'b0;
     end else begin
-      if (format_notify_sent) begin
+      if (read_request_sent) begin
         count_notify_ack <= 1'b1;
       end else if (notify_ack_received) begin
         count_notify_ack <= 1'b0;
@@ -1068,13 +1053,13 @@ module mhdma_master
     end
   end
 
-  // timing counter : counter between read request sent from this HPU and all frames have been received
+  // timing counter : counter between start and end of read request
   logic count_rreq_receive;
   always_ff @(posedge clk_mrmac) begin
     if (~resetn_mrmac) begin
       count_rreq_receive <= 1'b0;
     end else begin
-      if (format_rreq_sent) begin
+      if (start_read_request) begin
         count_rreq_receive <= 1'b1;
       end else if (ciphertext_received) begin
         count_rreq_receive <= 1'b0;

@@ -11,8 +11,8 @@
 //   -> HPU_A send a Notify and doesn't receive an ack, after a timeout request is re-sent
 //
 // Read request:
-// - sec_num is incorrect
-//   -> HPU_A performs a read request to B, B sends an incorrect sec_num. A must resend request
+// - seq_num is incorrect
+//   -> HPU_A performs a read request to B, B sends an incorrect seq_num. A must resend request
 // - timeout is reached
 //   -> HPU_A performs a read request into B and no answer is performed
 //
@@ -803,7 +803,7 @@ module tb_mhdma_errors;
     begin
 
       read_req_addr = {16'b0, src_addr};
-      read_req_id = {iop_id, REQ_ID_NOTIFY_TX, dst_node_id, req_size_b};
+      read_req_id = {iop_id, REQ_ID_NOTIFY, dst_node_id, req_size_b};
 
       maxil_drv_if.write_trans(MHDMA_REQUEST_REQ_ADDR_OFS, read_req_addr);
       maxil_drv_if.write_trans(MHDMA_REQUEST_REQ_ID_OFS, read_req_id);
@@ -835,7 +835,7 @@ module tb_mhdma_errors;
       @(posedge clk_mrmac);
 
       // Third clock cycle ----------------------------------------------------
-      qsfp_rx_tdata[lane]      = {LLC_CTRL, REQ_ID_ACK_NOTIFY_TX, target_node_id, 8'b0, rx_header.src_addr, rx_header.dst_addr, rx_header.iop_id};
+      qsfp_rx_tdata[lane]      = {LLC_CTRL, REQ_ID_NOTIFY_ACK, target_node_id, 8'b0, rx_header.src_addr, rx_header.dst_addr, rx_header.iop_id};
       qsfp_rx_tkeep_user[lane] = 'hff;
       qsfp_rx_tlast[lane]      = 1'b0;
       qsfp_rx_tvalid[lane]     = 1'b1;
@@ -903,7 +903,7 @@ module tb_mhdma_errors;
     input logic                  failure_on_seq_num
   );
     begin
-      logic [SEQ_NUM_W-1:0] seq_num_id;
+      logic [SEC_NUM_W-1:0] seq_num_id;
 
       wait(rx_header.valid);
 
