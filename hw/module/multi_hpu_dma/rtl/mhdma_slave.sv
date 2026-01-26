@@ -165,8 +165,10 @@ module mhdma_slave
 
   // Notify RX regfile interface --------------------------------------------------------
   logic nrx_regf_in_rdy;
+  logic nrx_regf_in_vld;
 
   assign nrx_cmd_out_rdy = st_transmit_ack & slave_command_rdy & nrx_regf_in_rdy;
+  assign nrx_regf_in_vld = nrx_cmd_out_vld & nrx_cmd_out_rdy;
 
   // === CFG domain
   logic [REG_DATA_W-1:0] nrx_regf_out_data;
@@ -186,7 +188,7 @@ module mhdma_slave
     .in_rstn     (resetn_mrmac),
     .in_data     ({nrx_cmd_fifo.src_addr, 4'b0, nrx_cmd_fifo.hpu_id, nrx_cmd_fifo.iop_id}),
     .in_rdy      (nrx_regf_in_rdy),
-    .in_vld      (nrx_cmd_out_vld & nrx_cmd_out_rdy),
+    .in_vld      (nrx_regf_in_vld),
     .almost_full (/* UNUSED */),
     // Read Domain ports: CFG domain
     .out_clk     (clk_cfg),
@@ -640,16 +642,19 @@ module mhdma_slave
   // Interface to formatter
   // =========================================================================================== //
   // acks takes precedence in from of read request
-  always_comb begin
+  always_ff @(posedge clk_mrmac) begin
     if (nrx_cmd_out_vld)  begin
-      slave_command     = nrx_cmd_fifo;
-      slave_command_vld = nrx_cmd_out_vld;
+      slave_command         <= nrx_cmd_fifo;
+      slave_command_vld     <= nrx_cmd_out_vld;
+      slave_command.size_b  <= 'h0;
     end else if (rreq_cmd_out_vld) begin
-      slave_command     = rreq_cmd_fifo;
-      slave_command_vld = rreq_cmd_out_vld;
+      slave_command         <= rreq_cmd_fifo;
+      slave_command.size_b  <= SIZE_B; // Fixed for now
+      slave_command_vld     <= rreq_cmd_out_vld;
     end else begin
-      slave_command     = 'h0;
-      slave_command_vld = 'h0;
+      slave_command         <= 'h0;
+      slave_command.size_b  <= 'h0;
+      slave_command_vld     <= 'h0;
     end
   end
 

@@ -132,15 +132,15 @@ module mhdma_master
 
   st_ntx ntx_state;
   st_ntx ntx_next_state;
-  logic  start_notify_request;
-  logic  st_ntx_wait_request;
+
+  logic start_notify_request;
+  logic st_ntx_wait_request;
+  logic ntx_retry;
 
   always_ff @(posedge clk_mrmac) begin
     if (~resetn_mrmac) ntx_state <= NTX_WAIT_REQUEST;
     else ntx_state <= ntx_next_state;
   end
-
-  assign start_notify_request = master_command_rdy & master_command_vld & (master_command.req_id == REQ_ID_NOTIFY) & (ntx_state == NTX_WAIT_REQUEST);
 
   always_comb begin
     ntx_next_state = NTX_XXX;
@@ -155,7 +155,19 @@ module mhdma_master
     endcase
   end
 
-  assign st_ntx_wait_request = (ntx_state == NTX_WAIT_REQUEST);
+  assign st_ntx_wait_request = (ntx_state==NTX_WAIT_REQUEST);
+
+  always_ff @(posedge clk_mrmac) begin
+      if (~resetn_mrmac) begin
+        ntx_retry <= 1'b0;
+      end else begin
+        if (timeout_reached_notify) begin
+          ntx_retry <= 1'b1;
+        end else if (master_command_rdy & (master_command.req_id == REQ_ID_NOTIFY)) begin
+          ntx_retry <= 1'b0;
+        end
+      end
+  end
 
   // Read request ---------------------------------------------------------------------------------
   typedef enum logic [1:0] {
@@ -168,23 +180,17 @@ module mhdma_master
   st_read_req rreq_state;
   st_read_req rreq_next_state;
 
-  logic st_rr_wait_request;
+  logic st_rr_send_packets;
   logic st_wait_packets;
+  logic st_rr_wait_request;
 
   logic ciphertext_received;
   logic start_read_request;
+  logic rr_retry;
 
   always_ff @(posedge clk_mrmac) begin
     if (~resetn_mrmac) rreq_state <= RR_WAIT_REQUEST;
     else rreq_state <= rreq_next_state;
-  end
-
-  always_ff @(posedge clk_mrmac)begin
-    if (~resetn_mrmac)begin
-      start_read_request <= 1'b0;
-    end else begin
-      start_read_request <= master_command_vld & (master_command.req_id == REQ_ID_READ) & (rreq_state == RR_WAIT_REQUEST);
-    end
   end
 
   always_comb begin
@@ -201,8 +207,21 @@ module mhdma_master
     endcase
   end
 
-  assign st_rr_wait_request = (rreq_state == RR_WAIT_REQUEST);
+  assign st_rr_send_packets = (rreq_state == RR_SEND_REQUEST);
   assign st_wait_packets = (rreq_state == RR_WAIT_PACKETS);
+  assign st_rr_wait_request = (rreq_state == RR_WAIT_REQUEST);
+
+  always_ff @(posedge clk_mrmac) begin
+      if (~resetn_mrmac) begin
+        rr_retry <= 1'b0;
+      end else begin
+        if (timeout_reached_read_request) begin
+          rr_retry <= 1'b1;
+        end else if (master_command_rdy & (master_command.req_id == REQ_ID_READ)) begin
+          rr_retry <= 1'b0;
+        end
+      end
+  end
 
   // =========================================================================================== //
   // Timeouts
@@ -314,7 +333,8 @@ module mhdma_master
     .out_vld     (rrqq_cmd_vld)
   );
 
-  assign rrqq_cmd_rdy = master_command_rdy & rrqq_cmd_vld & start_read_request;
+  assign start_read_request = master_command_rdy & (master_command.req_id == REQ_ID_READ);
+  assign rrqq_cmd_rdy = start_read_request & st_rr_wait_request;
 
   // Notify ReQuest Queue (NRQQ) ------------------------------------------------------------------
   // === CFG domain
@@ -375,7 +395,8 @@ module mhdma_master
     .out_vld     (nrqq_cmd_vld)
   );
 
-  assign nrqq_cmd_rdy = master_command_rdy & nrqq_cmd_vld & start_notify_request;
+  assign nrqq_cmd_rdy = (master_command_rdy & (master_command.req_id == REQ_ID_NOTIFY)) & ~ntx_retry;
+  assign start_notify_request = nrqq_cmd_rdy;
 
   // ----------------------------------------------------------------------------------------------
   // when we have the data of both request identifier and addresses, we consume the information
@@ -385,37 +406,37 @@ module mhdma_master
   // =========================================================================================== //
   // Master command allocation
   // =========================================================================================== //
-  always_comb begin
-    if (nrqq_cmd_vld) begin
-      master_command.hpu_id   = nrqq_cmd_data.hpu_id;
-      master_command.size_b   = nrqq_cmd_data.size_b;
-      master_command.req_id   = nrqq_cmd_data.req_id;
-      master_command.iop_id   = nrqq_cmd_data.iop_id;
-      master_command.src_addr = nrqq_cmd_data.src_addr;
-      master_command.dst_addr = 'h0;
-      master_command.req_id   = REQ_ID_NOTIFY;
+  always_ff @(posedge clk_mrmac) begin
+    if (nrqq_cmd_vld | ntx_retry) begin
+      master_command.hpu_id   <= nrqq_cmd_data.hpu_id;
+      master_command.size_b   <= nrqq_cmd_data.size_b;
+      master_command.req_id   <= nrqq_cmd_data.req_id;
+      master_command.iop_id   <= nrqq_cmd_data.iop_id;
+      master_command.src_addr <= nrqq_cmd_data.src_addr;
+      master_command.dst_addr <= 'h0;
+      master_command.req_id   <= REQ_ID_NOTIFY;
 
-      master_command_vld      = st_ntx_wait_request & nrqq_cmd_vld;
+      master_command_vld      <= (st_ntx_wait_request & nrqq_cmd_vld) | ntx_retry;
 
-    end else if (rrqq_cmd_vld) begin
-      master_command.hpu_id   = rrqq_cmd.hpu_id;
-      master_command.size_b   = rrqq_cmd.size_b;
-      master_command.req_id   = rrqq_cmd.req_id;
-      master_command.iop_id   = rrqq_cmd.iop_id;
-      master_command.src_addr = rrqq_cmd.src_addr;
-      master_command.dst_addr = rrqq_cmd.dst_addr;
-      master_command.req_id   = REQ_ID_READ;
+    end else if (rrqq_cmd_vld | rr_retry) begin
+      master_command.hpu_id   <= rrqq_cmd.hpu_id;
+      master_command.size_b   <= rrqq_cmd.size_b;
+      master_command.req_id   <= rrqq_cmd.req_id;
+      master_command.iop_id   <= rrqq_cmd.iop_id;
+      master_command.src_addr <= rrqq_cmd.src_addr;
+      master_command.dst_addr <= rrqq_cmd.dst_addr;
+      master_command.req_id   <= REQ_ID_READ;
 
-      master_command_vld      = st_rr_wait_request & rrqq_cmd_vld;
+      master_command_vld      <= (st_rr_wait_request & rrqq_cmd_vld) | rr_retry;
 
     end else begin
-      master_command.hpu_id   = 'h0;
-      master_command.size_b   = 'h0;
-      master_command.req_id   = 'h0;
-      master_command.iop_id   = 'h0;
-      master_command.src_addr = 'h0;
-      master_command.dst_addr = 'h0;
-      master_command_vld      = 1'b0;
+      master_command.hpu_id   <= 'h0;
+      master_command.size_b   <= 'h0;
+      master_command.req_id   <= 'h0;
+      master_command.iop_id   <= 'h0;
+      master_command.src_addr <= 'h0;
+      master_command.dst_addr <= 'h0;
+      master_command_vld      <= 1'b0;
     end
   end
 
