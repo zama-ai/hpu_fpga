@@ -86,6 +86,7 @@ module mhdma_master
   output logic [REG_DATA_W-1:0]               stat_cnt_notify,
   output logic [REG_DATA_W-1:0]               stat_cnt_notify_ack,
   output logic [REG_DATA_W-1:0]               stat_cnt_notify_retries,
+  output logic [REG_DATA_W-1:0]               stat_cnt_read_req_retries,
   output logic [REG_DATA_W-1:0]               stat_cnt_notify_timeout,
   output logic [REG_DATA_W-1:0]               stat_nb_ce_words_received,
   output logic [REG_DATA_W-1:0]               stat_nb_write_complete_cnt,
@@ -97,6 +98,7 @@ module mhdma_master
   input  logic                                rst_cnt_notify_ack,
   input  logic                                rst_cnt_timeout, //unused
   input  logic                                rst_cnt_notify_retry,
+  input  logic                                rst_cnt_read_req_retry,
   input  logic                                rst_nb_ce_words_received,
   // register
   output logic [1:0]                          stat_fsm_notify,
@@ -180,7 +182,6 @@ module mhdma_master
   st_read_req rreq_state;
   st_read_req rreq_next_state;
 
-  logic st_rr_send_packets;
   logic st_wait_packets;
   logic st_rr_wait_request;
 
@@ -207,8 +208,7 @@ module mhdma_master
     endcase
   end
 
-  assign st_rr_send_packets = (rreq_state == RR_SEND_REQUEST);
-  assign st_wait_packets = (rreq_state == RR_WAIT_PACKETS);
+  assign st_wait_packets    = (rreq_state == RR_WAIT_PACKETS);
   assign st_rr_wait_request = (rreq_state == RR_WAIT_REQUEST);
 
   always_ff @(posedge clk_mrmac) begin
@@ -1000,6 +1000,7 @@ module mhdma_master
   // Statistics
   // =========================================================================================== //
   logic [REG_DATA_W-1:0] retry_notify_cnt;
+  logic [REG_DATA_W-1:0] retry_read_req_cnt;
   logic [REG_DATA_W-1:0] notify_cnt;
   logic [REG_DATA_W-1:0] notify_ack_cnt;
   logic [REG_DATA_W-1:0] t_notify_to_ack;
@@ -1043,6 +1044,20 @@ module mhdma_master
       end else begin
         if (timeout_reached_notify) begin
           retry_notify_cnt <= retry_notify_cnt + 1;
+        end
+      end
+    end
+  end
+
+  always_ff @(posedge clk_mrmac) begin
+    if(~resetn_mrmac) begin
+      retry_read_req_cnt <= 'h0;
+    end else begin
+      if (rst_cnt_read_req_retry) begin
+        retry_read_req_cnt <= 'h0;
+      end else begin
+        if (timeout_reached_read_request) begin
+          retry_read_req_cnt <= retry_read_req_cnt + 1;
         end
       end
     end
@@ -1148,6 +1163,7 @@ module mhdma_master
   assign stat_fsm_notify            = ntx_state;
   assign stat_fsm_read_req          = rreq_state;
   assign stat_cnt_notify_retries    = retry_notify_cnt;
+  assign stat_cnt_read_req_retries  = retry_read_req_cnt;
   assign stat_cnt_notify            = notify_cnt;
   assign stat_cnt_notify_ack        = notify_ack_cnt;
   assign stat_cnt_notify_timeout    = to_notify_cnt;    // maybe not useful

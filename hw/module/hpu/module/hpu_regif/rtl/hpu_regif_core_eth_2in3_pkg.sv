@@ -1,8 +1,8 @@
 // ============================================================================================== //
 // Description  : register  map address definition package
 // This file was generated with rust regmap generator:
-//  * Date:  2026-01-09
-//  * Tool_version: bd49564daf1a99d615cb6dbb121b54bfbeef8b22
+//  * Date:  2026-01-27
+//  * Tool_version: 27d9e880d531030160fd8749c606142942d5558d
 // ---------------------------------------------------------------------------------------------- //
 //
 // Should only be used in testbench to drive the register interface
@@ -74,25 +74,26 @@ package hpu_regif_core_eth_2in3_pkg;
   localparam int MHDMA_REQUEST_STAT_NOTIFY_OFS = 'h50110;
   localparam int MHDMA_REQUEST_STAT_NOTIFY_ACK_OFS = 'h50114;
   localparam int MHDMA_REQUEST_STAT_NOTIFY_TIMEOUT_RETRY_OFS = 'h50118;
-  localparam int MHDMA_REQUEST_STAT_NB_NACK_RECEIVED_OFS = 'h5011c;
-  localparam int MHDMA_REQUEST_STAT_NB_NOTIFY_RECEIVED_OFS = 'h50120;
-  localparam int MHDMA_REQUEST_STAT_NB_READ_REQ_RECEIVED_OFS = 'h50124;
-  localparam int MHDMA_REQUEST_STAT_NB_CE_RECEIVED_OFS = 'h50128;
-  localparam int MHDMA_REQUEST_STAT_NB_READ_TO_HBM_OFS = 'h5012c;
-  localparam int MHDMA_REQUEST_STAT_NB_WORDS_RECEIVED_PC_PC0_OFS = 'h50130;
-  localparam int MHDMA_REQUEST_STAT_NB_WORDS_RECEIVED_PC_PC1_OFS = 'h50134;
-  localparam int MHDMA_REQUEST_STAT_NB_CE_WORDS_RECEIVED_OFS = 'h50138;
-  localparam int MHDMA_REQUEST_STAT_T_NOTIFY_TO_ACK_OFS = 'h5013c;
-  localparam int MHDMA_REQUEST_STAT_T_RR_TO_CE_RECEIVED_OFS = 'h50140;
-  localparam int MHDMA_REQUEST_STAT_T_CE_FIRST_TO_LAST_PKT_OFS = 'h50144;
-  localparam int MHDMA_REQUEST_STAT_T_RR_WAIT_WORDS_PC_PC0_OFS = 'h50148;
-  localparam int MHDMA_REQUEST_STAT_T_RR_WAIT_WORDS_PC_PC1_OFS = 'h5014c;
-  localparam int MHDMA_REQUEST_STAT_NOTIFY_TIMEOUT_OFS = 'h50150;
-  localparam int MHDMA_REQUEST_STAT_PHYSICAL_ADDR_PC0_LSB_OFS = 'h50154;
-  localparam int MHDMA_REQUEST_STAT_PHYSICAL_ADDR_PC0_MSB_OFS = 'h50158;
-  localparam int MHDMA_REQUEST_STAT_PHYSICAL_ADDR_PC1_LSB_OFS = 'h5015c;
-  localparam int MHDMA_REQUEST_STAT_PHYSICAL_ADDR_PC1_MSB_OFS = 'h50160;
-  localparam int MHDMA_REQUEST_STAT_CNT_NB_WRITE_COMPLETE_OFS = 'h50164;
+  localparam int MHDMA_REQUEST_STAT_READ_REQ_TIMEOUT_RETRY_OFS = 'h5011c;
+  localparam int MHDMA_REQUEST_STAT_NB_NACK_RECEIVED_OFS = 'h50120;
+  localparam int MHDMA_REQUEST_STAT_NB_NOTIFY_RECEIVED_OFS = 'h50124;
+  localparam int MHDMA_REQUEST_STAT_NB_READ_REQ_RECEIVED_OFS = 'h50128;
+  localparam int MHDMA_REQUEST_STAT_NB_CE_RECEIVED_OFS = 'h5012c;
+  localparam int MHDMA_REQUEST_STAT_NB_READ_TO_HBM_OFS = 'h50130;
+  localparam int MHDMA_REQUEST_STAT_NB_WORDS_RECEIVED_PC_PC0_OFS = 'h50134;
+  localparam int MHDMA_REQUEST_STAT_NB_WORDS_RECEIVED_PC_PC1_OFS = 'h50138;
+  localparam int MHDMA_REQUEST_STAT_NB_CE_WORDS_RECEIVED_OFS = 'h5013c;
+  localparam int MHDMA_REQUEST_STAT_T_NOTIFY_TO_ACK_OFS = 'h50140;
+  localparam int MHDMA_REQUEST_STAT_T_RR_TO_CE_RECEIVED_OFS = 'h50144;
+  localparam int MHDMA_REQUEST_STAT_T_CE_FIRST_TO_LAST_PKT_OFS = 'h50148;
+  localparam int MHDMA_REQUEST_STAT_T_RR_WAIT_WORDS_PC_PC0_OFS = 'h5014c;
+  localparam int MHDMA_REQUEST_STAT_T_RR_WAIT_WORDS_PC_PC1_OFS = 'h50150;
+  localparam int MHDMA_REQUEST_STAT_NOTIFY_TIMEOUT_OFS = 'h50154;
+  localparam int MHDMA_REQUEST_STAT_PHYSICAL_ADDR_PC0_LSB_OFS = 'h50158;
+  localparam int MHDMA_REQUEST_STAT_PHYSICAL_ADDR_PC0_MSB_OFS = 'h5015c;
+  localparam int MHDMA_REQUEST_STAT_PHYSICAL_ADDR_PC1_LSB_OFS = 'h50160;
+  localparam int MHDMA_REQUEST_STAT_PHYSICAL_ADDR_PC1_MSB_OFS = 'h50164;
+  localparam int MHDMA_REQUEST_STAT_CNT_NB_WRITE_COMPLETE_OFS = 'h50168;
   typedef struct packed {
     logic [(1-1):0] reset_registers;
     logic [(1-1):0] tx_loop;

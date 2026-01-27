@@ -136,6 +136,7 @@ module multi_hpu_dma
   logic             [REG_DATA_W-1:0] cnt_notify_ack_eth;
   logic             [REG_DATA_W-1:0] cnt_timeout_eth;
   logic             [REG_DATA_W-1:0] cnt_retry_notify_eth;
+  logic             [REG_DATA_W-1:0] cnt_retry_read_req_eth;
   logic             [REG_DATA_W-1:0] cnt_nack_received_eth;
   logic             [REG_DATA_W-1:0] cnt_notify_received_eth;
   logic             [REG_DATA_W-1:0] cnt_read_req_received_eth;
@@ -150,6 +151,7 @@ module multi_hpu_dma
   logic             [REG_DATA_W-1:0] cnt_notify_ack_cfg;
   logic             [REG_DATA_W-1:0] cnt_timeout_cfg;
   logic             [REG_DATA_W-1:0] cnt_retry_notify_cfg;
+  logic             [REG_DATA_W-1:0] cnt_retry_read_req_cfg;
   logic             [REG_DATA_W-1:0] cnt_nack_received_cfg;
   logic             [REG_DATA_W-1:0] cnt_notify_received_cfg;
   logic             [REG_DATA_W-1:0] cnt_read_req_received_cfg;
@@ -164,6 +166,7 @@ module multi_hpu_dma
   logic                 rst_cnt_notify_ack_eth;
   logic                 rst_cnt_timeout_eth;
   logic                 rst_cnt_retry_notify_eth;
+  logic                 rst_cnt_retry_read_req_eth;
   logic                 rst_cnt_nack_received_eth;
   logic                 rst_cnt_notify_received_eth;
   logic                 rst_cnt_read_req_received_eth;
@@ -171,11 +174,13 @@ module multi_hpu_dma
   logic                 rst_nb_read_to_hbm_eth;
   logic [ETH_PC-1:0]    rst_nb_words_received_pc_eth;
   logic                 rst_nb_ce_words_received_eth;
+
   // reset counters @cfg
   logic                 rst_cnt_notify_cfg;
   logic                 rst_cnt_notify_ack_cfg;
   logic                 rst_cnt_timeout_cfg;
   logic                 rst_cnt_retry_notify_cfg;
+  logic                 rst_cnt_retry_read_req_cfg;
   logic                 rst_cnt_nack_received_cfg;
   logic                 rst_cnt_notify_received_cfg;
   logic                 rst_cnt_read_req_received_cfg;
@@ -331,6 +336,8 @@ module multi_hpu_dma
     .r_mhdma_request_stat_notify_timeout_rd_en      (rst_cnt_timeout_cfg                          ),
     .r_mhdma_request_stat_notify_timeout_retry_upd  (cnt_retry_notify_cfg                         ),
     .r_mhdma_request_stat_notify_timeout_retry_rd_en(rst_cnt_retry_notify_cfg                     ),
+    .r_mhdma_request_stat_read_req_timeout_retry_upd  (cnt_retry_read_req_cfg),
+    .r_mhdma_request_stat_read_req_timeout_retry_rd_en(rst_cnt_retry_read_req_cfg),
     .r_mhdma_request_stat_nb_nack_received_upd      (cnt_nack_received_cfg                        ),
     .r_mhdma_request_stat_nb_nack_received_rd_en    (rst_cnt_nack_received_cfg                    ),
     .r_mhdma_request_stat_nb_notify_received_upd    (cnt_notify_received_cfg                      ),
@@ -547,6 +554,29 @@ module multi_hpu_dma
 
     .dest_clk(clk_eth_cfg),             // 1-bit input: destination clock
     .dest_out_bin(cnt_retry_notify_cfg) // REG_DATA_W-bit output: binary value in dest domain
+  );//temporary
+  xpm_cdc_single_wrapper #(
+    .CDC_SYNC_STAGES ( 2 ) ,
+    .SRC_INPUT_REG   ( 0 )
+  ) cdc_rst_cnt_read_req_retry (
+    .src_clk  ( clk_eth_cfg     ) ,
+    .dest_clk ( clk_eth_mrmac ) ,
+    .src_in   ( rst_cnt_retry_read_req_cfg ) ,
+    .dest_out ( rst_cnt_retry_read_req_eth )
+  );//temporary
+  xpm_cdc_gray #(
+    .DEST_SYNC_FF(4),                   // Range: 2-10 synchronizer stages
+    .INIT_SYNC_FF(0),                   // 0=disable simulation init values
+    .REG_OUTPUT(0),                     // 0=combinatorial output, 1=registered output
+    .SIM_ASSERT_CHK(0),                 // 0=disable simulation messages
+    .SIM_LOSSLESS_GRAY_CHK(0),          // 0=disable lossless check
+    .WIDTH(REG_DATA_W)                   // REG_DATA_W-bit counter width (range: 2-32)
+  ) xpm_cdc_gray_cnt_read_req_retry (
+    .src_clk(clk_eth_mrmac),            // 1-bit input: source clock
+    .src_in_bin(cnt_retry_read_req_eth),  // REG_DATA_W-bit input: binary counter to synchronize
+
+    .dest_clk(clk_eth_cfg),             // 1-bit input: destination clock
+    .dest_out_bin(cnt_retry_read_req_cfg) // REG_DATA_W-bit output: binary value in dest domain
   );//temporary
 
   xpm_cdc_single_wrapper #(
@@ -915,9 +945,10 @@ module multi_hpu_dma
     .stat_cnt_notify_ack            (cnt_notify_ack_eth                                          ),
     .stat_cnt_notify_timeout        (cnt_timeout_eth                                             ),
     .stat_cnt_notify_retries        (cnt_retry_notify_eth                                        ),
-    .stat_cnt_nack_received         (cnt_nack_received_eth                                       ),
     .stat_cnt_notify_received       (cnt_notify_received_eth                                     ),
+    .stat_cnt_read_req_retries      (cnt_retry_read_req_eth                                      ),
     .stat_cnt_read_req_received     (cnt_read_req_received_eth                                   ),
+    .stat_cnt_nack_received         (cnt_nack_received_eth                                       ),
     .stat_cnt_ce_received           (cnt_ce_received_eth                                         ),
     .stat_nb_read_to_hbm            (cnt_nb_read_to_hbm_eth                                      ),
     .stat_nb_words_received_pc      (cnt_nb_words_received_pc_eth                                ),
@@ -931,11 +962,12 @@ module multi_hpu_dma
     // resets
     .rst_cnt_notify                 (rst_cnt_notify_eth                                          ),
     .rst_cnt_notify_ack             (rst_cnt_notify_ack_eth                                      ),
-    .rst_cnt_timeout                (rst_cnt_timeout_eth                                         ),
-    .rst_cnt_notify_retry           (rst_cnt_retry_notify_eth                                    ),
-    .rst_cnt_nack_received          (rst_cnt_nack_received_eth                                   ),
     .rst_cnt_notify_received        (rst_cnt_notify_received_eth                                 ),
+    .rst_cnt_notify_retry           (rst_cnt_retry_notify_eth                                    ),
+    .rst_cnt_read_req_retry         (rst_cnt_retry_read_req_eth                                 ),
     .rst_cnt_read_req_received      (rst_cnt_read_req_received_eth                               ),
+    .rst_cnt_nack_received          (rst_cnt_nack_received_eth                                   ),
+    .rst_cnt_timeout                (rst_cnt_timeout_eth                                         ),
     .rst_cnt_ce_received            (rst_cnt_ce_received_eth                                     ),
     .rst_nb_read_to_hbm             (rst_nb_read_to_hbm_eth                                      ),
     .rst_nb_words_received_pc       (rst_nb_words_received_pc_eth                                ),

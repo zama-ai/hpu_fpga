@@ -182,6 +182,12 @@ offset= 0x100
   read_access="ReadNotify"
   write_access="None"
   default={Cst=0x0}
+[section.mhdma_request.register.stat_read_req_timeout_retry]
+  description="Number of retries that have been done"
+  owner="Kernel"
+  read_access="ReadNotify"
+  write_access="None"
+  default={Cst=0x0}
 
 [section.mhdma_request.register.stat_nb_nack_received]
   description="timeout counter on notify"

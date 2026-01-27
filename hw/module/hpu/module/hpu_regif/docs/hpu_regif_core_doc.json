@@ -5,8 +5,8 @@
   "offset": 0,
   "range": 393216,
   "ext_pkg": [
-    "axi_if_shell_axil_pkg",
-    "axi_if_common_param_pkg"
+    "axi_if_common_param_pkg",
+    "axi_if_shell_axil_pkg"
   ],
   "section": [
     {
@@ -4488,7 +4488,7 @@
       "description": "Request registers interface",
       "offset": 327936,
       "bytes_align": 4,
-      "range": 104,
+      "range": 108,
       "register": [
         {
           "name": "req_id",
@@ -4751,8 +4751,8 @@
           "field": null
         },
         {
-          "name": "stat_nb_nack_received",
-          "description": "timeout counter on notify",
+          "name": "stat_read_req_timeout_retry",
+          "description": "Number of retries that have been done",
           "owner": "Kernel",
           "read_access": "ReadNotify",
           "write_access": "None",
@@ -4763,7 +4763,7 @@
           "field": null
         },
         {
-          "name": "stat_nb_notify_received",
+          "name": "stat_nb_nack_received",
           "description": "timeout counter on notify",
           "owner": "Kernel",
           "read_access": "ReadNotify",
@@ -4775,7 +4775,7 @@
           "field": null
         },
         {
-          "name": "stat_nb_read_req_received",
+          "name": "stat_nb_notify_received",
           "description": "timeout counter on notify",
           "owner": "Kernel",
           "read_access": "ReadNotify",
@@ -4787,7 +4787,7 @@
           "field": null
         },
         {
-          "name": "stat_nb_ce_received",
+          "name": "stat_nb_read_req_received",
           "description": "timeout counter on notify",
           "owner": "Kernel",
           "read_access": "ReadNotify",
@@ -4799,12 +4799,24 @@
           "field": null
         },
         {
+          "name": "stat_nb_ce_received",
+          "description": "timeout counter on notify",
+          "owner": "Kernel",
+          "read_access": "ReadNotify",
+          "write_access": "None",
+          "offset": 327980,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
           "name": "stat_nb_read_to_hbm",
           "description": "counter of number of reads to HBM executed",
           "owner": "Kernel",
           "read_access": "ReadNotify",
           "write_access": "None",
-          "offset": 327980,
+          "offset": 327984,
           "default": {
             "Cst": 0
           },
@@ -4816,7 +4828,7 @@
           "owner": "Kernel",
           "read_access": "ReadNotify",
           "write_access": "None",
-          "offset": 327984,
+          "offset": 327988,
           "default": {
             "Cst": 0
           },
@@ -4828,7 +4840,7 @@
           "owner": "Kernel",
           "read_access": "ReadNotify",
           "write_access": "None",
-          "offset": 327988,
+          "offset": 327992,
           "default": {
             "Cst": 0
           },
@@ -4840,7 +4852,7 @@
           "owner": "Kernel",
           "read_access": "ReadNotify",
           "write_access": "None",
-          "offset": 327992,
+          "offset": 327996,
           "default": {
             "Cst": 0
           },
@@ -4852,7 +4864,7 @@
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "None",
-          "offset": 327996,
+          "offset": 328000,
           "default": {
             "Cst": 0
           },
@@ -4864,7 +4876,7 @@
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "None",
-          "offset": 328000,
+          "offset": 328004,
           "default": {
             "Cst": 0
           },
@@ -4876,7 +4888,7 @@
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "None",
-          "offset": 328004,
+          "offset": 328008,
           "default": {
             "Cst": 0
           },
@@ -4888,7 +4900,7 @@
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "None",
-          "offset": 328008,
+          "offset": 328012,
           "default": {
             "Cst": 0
           },
@@ -4900,7 +4912,7 @@
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "None",
-          "offset": 328012,
+          "offset": 328016,
           "default": {
             "Cst": 0
           },
@@ -4912,7 +4924,7 @@
           "owner": "Kernel",
           "read_access": "ReadNotify",
           "write_access": "None",
-          "offset": 328016,
+          "offset": 328020,
           "default": {
             "Cst": 0
           },
@@ -4924,7 +4936,7 @@
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "None",
-          "offset": 328020,
+          "offset": 328024,
           "default": {
             "Cst": 0
           },
@@ -4936,7 +4948,7 @@
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "None",
-          "offset": 328024,
+          "offset": 328028,
           "default": {
             "Cst": 0
           },
@@ -4948,7 +4960,7 @@
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "None",
-          "offset": 328028,
+          "offset": 328032,
           "default": {
             "Cst": 0
           },
@@ -4960,7 +4972,7 @@
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "None",
-          "offset": 328032,
+          "offset": 328036,
           "default": {
             "Cst": 0
           },
@@ -4972,7 +4984,7 @@
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "None",
-          "offset": 328036,
+          "offset": 328040,
           "default": {
             "Cst": 0
           },

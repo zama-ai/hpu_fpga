@@ -120,8 +120,9 @@ module tb_mhdma_pkt_loss;
   bit error_notify_rx;
   bit error_rr_payload;
   bit error_write_mismatch;
+  bit error_retry;
 
-  assign error = error_tb_notify | error_register_read | error_notify_rx | error_rr_payload | error_write_mismatch;
+  assign error = error_retry | error_tb_notify | error_register_read | error_notify_rx | error_rr_payload | error_write_mismatch;
 
   always_ff @(posedge clk_control)
     if (error) begin
@@ -516,6 +517,7 @@ module tb_mhdma_pkt_loss;
   logic [REG_DATA_W-1:0] stat_notify;
   logic [REG_DATA_W-1:0] stat_notify_ack;
   logic [REG_DATA_W-1:0] stat_notify_retry;
+  logic [REG_DATA_W-1:0] stat_read_req_retry;
   logic [REG_DATA_W-1:0] stat_notify_timeout;
   logic [REG_DATA_W-1:0] stat_t_notify_to_ack;
   logic [REG_DATA_W-1:0] stat_t_rr_to_ce_received;
@@ -568,7 +570,7 @@ module tb_mhdma_pkt_loss;
     iop_src_addr = $urandom_range(0, 1<<SRC_ADDR_W);
     notify_request(hpu_a_id, hpu_b_id, iop_id, iop_src_addr);
 
-    repeat(2*TIMEOUT_DUR_NOTIFY[15:0]) @(posedge clk_mrmac);
+    repeat(2*TIMEOUT_DUR_NOTIFY) @(posedge clk_mrmac);
 
     notify_ack(hpu_a_id, hpu_a_mac_addr, hpu_b_id, hpu_b_mac_addr);
 
@@ -595,25 +597,6 @@ module tb_mhdma_pkt_loss;
 
     wait(hpu_a.mhdma_bridge.mhdma_formatter.tx_state == 3'b001);
     $display("%t > [INFO]: formatter FSM has gotten back to IDLE", $time);
-
-    maxil_drv_if.read_trans(MHDMA_REQUEST_STAT_NOTIFY_OFS, read_data);
-    $display("[INFO] MHDMA_REQUEST_STAT_NOTIFY_OFS                 : %0x ", read_data);
-    maxil_drv_if.read_trans(MHDMA_REQUEST_STAT_NOTIFY_ACK_OFS, read_data);
-    $display("[INFO] MHDMA_REQUEST_STAT_NOTIFY_ACK_OFS             : %0x ", read_data);
-    maxil_drv_if.read_trans(MHDMA_REQUEST_STAT_NOTIFY_TIMEOUT_OFS, read_data);
-    $display("[INFO] MHDMA_REQUEST_STAT_NOTIFY_TIMEOUT_OFS         : %0x ", read_data);
-    maxil_drv_if.read_trans(MHDMA_REQUEST_STAT_NOTIFY_TIMEOUT_RETRY_OFS, read_data);
-    $display("[INFO] MHDMA_REQUEST_STAT_NOTIFY_TIMEOUT_RETRY_OFS   : %0x ", read_data);
-
-    $display("[INFO] re-read after reset --------------------------------------------");
-    maxil_drv_if.read_trans(MHDMA_REQUEST_STAT_NOTIFY_OFS, read_data);
-    $display("[INFO] MHDMA_REQUEST_STAT_NOTIFY_OFS                 : %0x ", read_data);
-    maxil_drv_if.read_trans(MHDMA_REQUEST_STAT_NOTIFY_ACK_OFS, read_data);
-    $display("[INFO] MHDMA_REQUEST_STAT_NOTIFY_ACK_OFS             : %0x ", read_data);
-    maxil_drv_if.read_trans(MHDMA_REQUEST_STAT_NOTIFY_TIMEOUT_OFS, read_data);
-    $display("[INFO] MHDMA_REQUEST_STAT_NOTIFY_TIMEOUT_OFS         : %0x ", read_data);
-    maxil_drv_if.read_trans(MHDMA_REQUEST_STAT_NOTIFY_TIMEOUT_RETRY_OFS, read_data);
-    $display("[INFO] MHDMA_REQUEST_STAT_NOTIFY_TIMEOUT_RETRY_OFS   : %0x ", read_data);
 
     $display("D - no ack for a time and a new notify pending"); // --------------------------------
     // timeout is not what we want to test here : we 10x it
@@ -650,8 +633,7 @@ module tb_mhdma_pkt_loss;
 
     $display("F - Read request is emitted by HPU_A and not answered for twice timeout amount"); // -
     read_request(hpu_b_id, iop_id, iop_src_addr, iop_dst_addr);
-
-    repeat(2*TIMEOUT_DUR_READ_REQ[31:16]) @(posedge clk_mrmac);
+    repeat(2*TIMEOUT_DUR_READ_REQ) @(posedge clk_mrmac);
 
     emulate_ciphertext_emission(hpu_a_id, hpu_a_mac_addr, hpu_b_id, hpu_b_mac_addr, 0);
 
@@ -664,6 +646,7 @@ module tb_mhdma_pkt_loss;
     maxil_drv_if.read_trans(MHDMA_REQUEST_STAT_NOTIFY_OFS, stat_notify);
     maxil_drv_if.read_trans(MHDMA_REQUEST_STAT_NOTIFY_ACK_OFS, stat_notify_ack);
     maxil_drv_if.read_trans(MHDMA_REQUEST_STAT_NOTIFY_TIMEOUT_RETRY_OFS, stat_notify_retry);
+    maxil_drv_if.read_trans(MHDMA_REQUEST_STAT_READ_REQ_TIMEOUT_RETRY_OFS, stat_read_req_retry);
     maxil_drv_if.read_trans(MHDMA_REQUEST_STAT_NOTIFY_TIMEOUT_OFS, stat_notify_timeout);
     maxil_drv_if.read_trans(MHDMA_REQUEST_STAT_T_NOTIFY_TO_ACK_OFS, stat_t_notify_to_ack);
     maxil_drv_if.read_trans(MHDMA_REQUEST_STAT_T_RR_TO_CE_RECEIVED_OFS, stat_t_rr_to_ce_received);
@@ -671,11 +654,17 @@ module tb_mhdma_pkt_loss;
     $display(" stat_notify                 : %0d", stat_notify);
     $display(" stat_notify_ack             : %0d", stat_notify_ack);
     $display(" stat_notify_retry           : %0d", stat_notify_retry);
+    $display(" stat_read_req_retry         : %0d", stat_read_req_retry);
     $display(" stat_notify_timeout         : %0d", stat_notify_timeout);
     $display(" stat_t_notify_to_ack        : %0d", stat_t_notify_to_ack);
     $display(" stat_t_rr_to_ce_received    : %0d", stat_t_rr_to_ce_received);
     $display(" stat_t_ce_first_to_last_pkt : %0d", stat_t_ce_first_to_last_pkt);
     $display(" ------------------------------------------------------------- \n");
+
+    assert ((stat_notify_retry == 0) | (stat_read_req_retry == 0)) begin
+      $display("%t > [ERROR] : Did not retry when it was expected! Notify:%0d; Read_Req:%0d",$time, stat_notify_retry, stat_read_req_retry);
+      error_retry = 1'b1;
+    end
 
     $display("%t > INFO: End simulation",$time);
     repeat(20) @(posedge clk_control);

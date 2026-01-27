@@ -1,8 +1,8 @@
 // ============================================================================================== //
 // Description  : Axi4-lite register bank
 // This file was generated with rust regmap generator:
-//  * Date:  2026-01-09
-//  * Tool_version: bd49564daf1a99d615cb6dbb121b54bfbeef8b22
+//  * Date:  2026-01-27
+//  * Tool_version: 27d9e880d531030160fd8749c606142942d5558d
 // ---------------------------------------------------------------------------------------------- //
 // xR[n]W[na]
 // |-> who is in charge of the register update logic : u -> User
@@ -30,8 +30,8 @@
 //      : Value provided by the RTL. The host can read it with notify. The write data is processed by the RTL.
 // ============================================================================================== //
 module hpu_regif_core_eth_2in3
-import axi_if_common_param_pkg::*;
 import axi_if_shell_axil_pkg::*;
+import axi_if_common_param_pkg::*;
 import hpu_regif_core_eth_2in3_pkg::*;
 #()(
   input  logic                           clk,
@@ -111,6 +111,10 @@ import hpu_regif_core_eth_2in3_pkg::*;
     , output logic [REG_DATA_W-1: 0] r_mhdma_request_stat_notify_timeout_retry
     , input  logic [REG_DATA_W-1: 0] r_mhdma_request_stat_notify_timeout_retry_upd
     , output logic r_mhdma_request_stat_notify_timeout_retry_rd_en
+  // Register IO: mhdma_request_stat_read_req_timeout_retry
+    , output logic [REG_DATA_W-1: 0] r_mhdma_request_stat_read_req_timeout_retry
+    , input  logic [REG_DATA_W-1: 0] r_mhdma_request_stat_read_req_timeout_retry_upd
+    , output logic r_mhdma_request_stat_read_req_timeout_retry_rd_en
   // Register IO: mhdma_request_stat_nb_nack_received
     , output logic [REG_DATA_W-1: 0] r_mhdma_request_stat_nb_nack_received
     , input  logic [REG_DATA_W-1: 0] r_mhdma_request_stat_nb_nack_received_upd
@@ -467,6 +471,9 @@ import hpu_regif_core_eth_2in3_pkg::*;
 //-- Default mhdma_request_stat_notify_timeout_retry
   logic [REG_DATA_W-1:0]mhdma_request_stat_notify_timeout_retry_default;
   assign mhdma_request_stat_notify_timeout_retry_default = 'h0;
+//-- Default mhdma_request_stat_read_req_timeout_retry
+  logic [REG_DATA_W-1:0]mhdma_request_stat_read_req_timeout_retry_default;
+  assign mhdma_request_stat_read_req_timeout_retry_default = 'h0;
 //-- Default mhdma_request_stat_nb_nack_received
   logic [REG_DATA_W-1:0]mhdma_request_stat_nb_nack_received_default;
   assign mhdma_request_stat_nb_nack_received_default = 'h0;
@@ -821,6 +828,11 @@ import hpu_regif_core_eth_2in3_pkg::*;
   assign r_mhdma_request_stat_notify_timeout_retryD       = r_mhdma_request_stat_notify_timeout_retry_upd;
   assign r_mhdma_request_stat_notify_timeout_retry_rd_en = rd_en_ok && (rd_add[AXIL_ADD_RANGE_W-1:0] == MHDMA_REQUEST_STAT_NOTIFY_TIMEOUT_RETRY_OFS[AXIL_ADD_RANGE_W-1:0]);
   assign r_mhdma_request_stat_notify_timeout_retry = r_mhdma_request_stat_notify_timeout_retry_upd;
+// Register FF: mhdma_request_stat_read_req_timeout_retry
+  logic [REG_DATA_W-1:0] r_mhdma_request_stat_read_req_timeout_retryD;
+  assign r_mhdma_request_stat_read_req_timeout_retryD       = r_mhdma_request_stat_read_req_timeout_retry_upd;
+  assign r_mhdma_request_stat_read_req_timeout_retry_rd_en = rd_en_ok && (rd_add[AXIL_ADD_RANGE_W-1:0] == MHDMA_REQUEST_STAT_READ_REQ_TIMEOUT_RETRY_OFS[AXIL_ADD_RANGE_W-1:0]);
+  assign r_mhdma_request_stat_read_req_timeout_retry = r_mhdma_request_stat_read_req_timeout_retry_upd;
 // Register FF: mhdma_request_stat_nb_nack_received
   logic [REG_DATA_W-1:0] r_mhdma_request_stat_nb_nack_receivedD;
   assign r_mhdma_request_stat_nb_nack_receivedD       = r_mhdma_request_stat_nb_nack_received_upd;
@@ -1299,6 +1311,9 @@ import hpu_regif_core_eth_2in3_pkg::*;
           end
           MHDMA_REQUEST_STAT_NOTIFY_TIMEOUT_RETRY_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register mhdma_request_stat_notify_timeout_retry
             axil_rdataD = r_mhdma_request_stat_notify_timeout_retry;
+          end
+          MHDMA_REQUEST_STAT_READ_REQ_TIMEOUT_RETRY_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register mhdma_request_stat_read_req_timeout_retry
+            axil_rdataD = r_mhdma_request_stat_read_req_timeout_retry;
           end
           MHDMA_REQUEST_STAT_NB_NACK_RECEIVED_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register mhdma_request_stat_nb_nack_received
             axil_rdataD = r_mhdma_request_stat_nb_nack_received;

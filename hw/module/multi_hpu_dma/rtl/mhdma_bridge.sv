@@ -74,6 +74,7 @@ module mhdma_bridge
   output logic [REG_DATA_W-1:0]                   stat_cnt_nack_received,
   output logic [REG_DATA_W-1:0]                   stat_cnt_notify_received,
   output logic [REG_DATA_W-1:0]                   stat_cnt_read_req_received,
+  output logic [REG_DATA_W-1:0]                   stat_cnt_read_req_retries,
   output logic [REG_DATA_W-1:0]                   stat_cnt_ce_received,
 
   output logic [ETH_PC-1:0][REG_DATA_W-1:0]       stat_nb_words_received_pc,
@@ -90,6 +91,7 @@ module mhdma_bridge
   input  logic                                    rst_cnt_notify,
   input  logic                                    rst_cnt_notify_ack,
   input  logic                                    rst_cnt_notify_retry,
+  input  logic                                    rst_cnt_read_req_retry,
   input  logic                                    rst_cnt_timeout,
   input  logic                                    rst_cnt_nack_received,
   input  logic                                    rst_cnt_notify_received,
@@ -324,6 +326,7 @@ module mhdma_bridge
     .stat_cnt_notify_retries         (stat_cnt_notify_retries                 ),
     .stat_nb_ce_words_received       (stat_nb_ce_words_received               ),
     .stat_nb_write_complete_cnt      (stat_nb_write_complete_cnt              ),
+    .stat_cnt_read_req_retries       (stat_cnt_read_req_retries),
     // timing
     .stat_t_notify_to_ack            (stat_t_notify_to_ack                    ),
     .stat_t_rr_to_ce_received        (stat_t_rr_to_ce_received                ),
@@ -333,6 +336,7 @@ module mhdma_bridge
     .rst_cnt_notify_retry            (rst_cnt_notify_retry                    ),
     .rst_cnt_timeout                 (rst_cnt_timeout                         ),
     .rst_nb_ce_words_received        (rst_nb_ce_words_received                ),
+    .rst_cnt_read_req_retry          (rst_cnt_read_req_retry                  ),
     // fsms
     .stat_fsm_notify                 (stat_fsm_notify                         ),
     .stat_fsm_read_req               (stat_fsm_read_req                       ),
