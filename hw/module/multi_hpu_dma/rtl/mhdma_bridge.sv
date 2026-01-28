@@ -366,6 +366,7 @@ module mhdma_bridge
     .m_axi4_arburst                 (m_axi4_arburst                           ),
     .m_axi4_arvalid                 (m_axi4_arvalid                           ),
     .m_axi4_arready                 (m_axi4_arready                           ),
+    .m_axi4_arid                    (m_axi4_arid                              ),
 
     .m_axi4_rdata                   (m_axi4_rdata                             ),
     .m_axi4_rlast                   (m_axi4_rlast                             ),

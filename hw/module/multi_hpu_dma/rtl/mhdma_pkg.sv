@@ -19,6 +19,8 @@ package mhdma_pkg;
 
   localparam [AXI4_SIZE_W-1:0] MHDMA_ARSIZE = $clog2(AXI4_DATA_BYTES);
 
+  localparam [AXI4_ID_W-1:0] MHDMA_AXI_ARID = '0; // Use the same ID for the read
+
   // =========================================================================================== //
   // Ethernet
   // =========================================================================================== //

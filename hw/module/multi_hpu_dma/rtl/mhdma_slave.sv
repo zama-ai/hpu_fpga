@@ -30,17 +30,18 @@ module mhdma_slave
   input  logic                                clk_mrmac,
   input  logic                                resetn_mrmac,
   // Axi4 interface for NMU ---------------------------------------------------
-  output logic [ETH_PC-1:0][  AXI4_ADD_W-1:0] m_axi4_araddr,
-  output logic [ETH_PC-1:0][  AXI4_LEN_W-1:0] m_axi4_arlen,
-  output logic [ETH_PC-1:0][ AXI4_SIZE_W-1:0] m_axi4_arsize,
-  output logic [ETH_PC-1:0][AXI4_BURST_W-1:0] m_axi4_arburst,
-  output logic [ETH_PC-1:0]                   m_axi4_arvalid,
-  input  logic [ETH_PC-1:0]                   m_axi4_arready,
+  output logic [ETH_PC-1:0][  AXI4_ADD_W-1:0]                  m_axi4_araddr,
+  output logic [ETH_PC-1:0][  AXI4_LEN_W-1:0]                  m_axi4_arlen,
+  output logic [ETH_PC-1:0][ AXI4_SIZE_W-1:0]                  m_axi4_arsize,
+  output logic [ETH_PC-1:0][AXI4_BURST_W-1:0]                  m_axi4_arburst,
+  output logic [ETH_PC-1:0]                                    m_axi4_arvalid,
+  input  logic [ETH_PC-1:0]                                    m_axi4_arready,
+  output logic [ETH_PC-1:0][axi_if_eth_axi_pkg::AXI4_ID_W-1:0] m_axi4_arid,
 
-  input  logic [ETH_PC-1:0][AXI4_DATA_W-1:0]  m_axi4_rdata,
-  input  logic [ETH_PC-1:0]                   m_axi4_rlast,
-  input  logic [ETH_PC-1:0]                   m_axi4_rvalid,
-  output logic [ETH_PC-1:0]                   m_axi4_rready,
+  input  logic [ETH_PC-1:0][AXI4_DATA_W-1:0]                   m_axi4_rdata,
+  input  logic [ETH_PC-1:0]                                    m_axi4_rlast,
+  input  logic [ETH_PC-1:0]                                    m_axi4_rvalid,
+  output logic [ETH_PC-1:0]                                    m_axi4_rready,
   // regf interface -----------------------------------------------------------
   input  logic [ETH_PC-1:0][2*REG_DATA_W-1:0] regf_ct_mem_addr,
   output logic             [  REG_DATA_W-1:0] regf_notify_payload,
@@ -365,6 +366,9 @@ module mhdma_slave
   generate
     for (genvar gen_rd=0; gen_rd<ETH_PC; gen_rd++) begin : gen_ce_reads
       logic [$clog2(PC_NB_READS[gen_rd]):0] axi_read_cnt;
+      axi4_ar_if_t axi_ar;
+      axi4_ar_if_t axi_arvalid;
+      axi4_ar_if_t axi_arready;
 
       // Counts the number of clock cycles that must perform reads taking account bursts
       // because we decrement from axi4_read_pc we add one to count all words
@@ -372,7 +376,7 @@ module mhdma_slave
         if (~resetn_mrmac) begin
           axi_read_cnt <= PC_NB_READS[gen_rd];
         end else begin
-          if ((axi_read_cnt > 0) && axi4_read_pc[gen_rd] & m_axi4_arready[gen_rd] & m_axi4_arvalid[gen_rd]) begin
+          if ( axi_arready & axi_arvalid & (axi_read_cnt > 0) & axi4_read_pc[gen_rd]) begin
             axi_read_cnt <= axi_read_cnt - 1;
           end else if (ciphertext_sent) begin
             axi_read_cnt <= PC_NB_READS[gen_rd];
@@ -388,27 +392,55 @@ module mhdma_slave
           mhdma_read_addr <= phy_addr[gen_rd];
         end else begin
           // incrementation occurs only if read is consumed
-          if (m_axi4_arready[gen_rd] & m_axi4_arvalid[gen_rd]) begin
+          if (axi_arready & axi_arvalid) begin
             mhdma_read_addr <= mhdma_read_addr + (AXI4_DATA_BYTES*MAX_BURST_SIZE);
           end
         end
       end
 
-      // m_axi4_arid[gen_rd] not used
-      assign m_axi4_arvalid[gen_rd] = (axi_read_cnt > 0) & axi4_read_pc[gen_rd];
-      assign m_axi4_araddr[gen_rd]  = m_axi4_arvalid[gen_rd] ? mhdma_read_addr :'h0;
-      assign m_axi4_arsize[gen_rd]  = m_axi4_arvalid[gen_rd] ? MHDMA_ARSIZE    :'h0;
-      assign m_axi4_arburst[gen_rd] = m_axi4_arvalid[gen_rd] ? 2'b01           :'h0; // incr
+      assign axi_arvalid = (axi_read_cnt > 0) & axi4_read_pc[gen_rd];
+
+      assign axi_ar.arid    = MHDMA_AXI_ARID;
+      assign axi_ar.araddr  = axi_arvalid ? mhdma_read_addr :'h0;
+      assign axi_ar.arsize  = axi_arvalid ? MHDMA_ARSIZE    :'h0;
+      assign axi_ar.arburst = axi_arvalid ? 2'b01           :'h0; // incr
       // there is not arlast, this is only an intermediate signal
-      assign axi4_read_last[gen_rd] = m_axi4_arvalid[gen_rd] & m_axi4_arready[gen_rd] & (axi_read_cnt == 1);
+      assign axi4_read_last[gen_rd] = axi_arready & axi_arvalid & (axi_read_cnt == 1);
 
       always_comb begin
         if ((PC_REMAINS[gen_rd] !=0) & axi4_read_last[gen_rd]) begin
-          m_axi4_arlen[gen_rd] = m_axi4_arvalid[gen_rd] ? PC_REMAINS[gen_rd]-1 : 'h0;
+          axi_ar.arlen = axi_arvalid ? PC_REMAINS[gen_rd]-1 : 'h0;
         end else begin
-          m_axi4_arlen[gen_rd] = m_axi4_arvalid[gen_rd] ? MAX_BURST_SIZE-1 : 'h0;
+          axi_ar.arlen = axi_arvalid ? MAX_BURST_SIZE-1 : 'h0;
         end
       end
+
+      axi4_ar_if_t m_axi4_a;
+
+      fifo_element #(
+        .WIDTH          ($bits(axi4_ar_if_t)),
+        .DEPTH          (1),
+        .TYPE_ARRAY     (4'h3),
+        .DO_RESET_DATA  (1'b0),
+        .RESET_DATA_VAL (0)
+      ) fifo_element_address_read (
+        .clk     (clk_mrmac   ),
+        .s_rst_n (resetn_mrmac),
+
+        .in_data (axi_ar),
+        .in_vld  (axi_arvalid),
+        .in_rdy  (axi_arready),
+
+        .out_data(m_axi4_a),
+        .out_vld (m_axi4_arvalid[gen_rd]),
+        .out_rdy (m_axi4_arready[gen_rd])
+      );
+
+      assign m_axi4_arid[gen_rd]    = m_axi4_a.arid;
+      assign m_axi4_araddr[gen_rd]  = m_axi4_a.araddr;
+      assign m_axi4_arlen[gen_rd]   = m_axi4_a.arlen;
+      assign m_axi4_arsize[gen_rd]  = m_axi4_a.arsize;
+      assign m_axi4_arburst[gen_rd] = m_axi4_a.arburst;
 
     end
   endgenerate
