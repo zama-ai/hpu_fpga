@@ -37,6 +37,9 @@ module mhdma_decoder
   input  logic                     rst_cnt_notify_received,
   input  logic                     rst_cnt_read_req_received,
   input  logic                     rst_cnt_ce_received,
+  // Error interface ----------------------------------------------------------
+  output decoder_error_t          decoder_error,
+  input  logic                    rst_errors,
   // QSFP system interface ----------------------------------------------------
   // == RX
   input  logic [MRMAC_AXIS_W-1:0]  qsfp_rx_tdata,
@@ -218,10 +221,21 @@ module mhdma_decoder
     .almost_full (/* UNUSED */)
   );
 
-  // TODO: & check
   logic error_fifo_rx_ovf;
 
-  assign error_fifo_rx_ovf = fifo_rx_cmd_in_vld & ~fifo_rx_cmd_in_rdy;
+  always_ff @(posedge clk_mrmac) begin
+    if (~resetn_mrmac) begin
+      error_fifo_rx_ovf <= 1'b0;
+    end else begin
+      if (rst_errors) begin
+        error_fifo_rx_ovf <= 1'b0;
+      end else begin
+        if (fifo_rx_cmd_in_vld & ~fifo_rx_cmd_in_rdy) begin
+          error_fifo_rx_ovf <= 1'b1;
+        end
+      end
+    end
+  end
 
   // payload interface to master module -----------------------------------------------------------
   always_ff @(posedge clk_mrmac)
@@ -235,6 +249,11 @@ module mhdma_decoder
       rx_tvalid_out <= 1'b0;
     end
   end
+
+  // =========================================================================================== //
+  // Errors
+  // =========================================================================================== //
+  assign decoder_error = error_fifo_rx_ovf;
 
   // =========================================================================================== //
   // statistics

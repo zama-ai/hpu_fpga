@@ -1,5 +1,5 @@
 # HPU_REGIF_CORE documentation
-**Date**: 2026-01-27
+**Date**: 2026-01-28
 **Tool Version**: 27d9e880d531030160fd8749c606142942d5558d
 
 ## RegisterMap Overview
@@ -44,7 +44,7 @@ Below is a summary of all the registers in the current register map:
 | [status_3in3](#section-status-3in3) | 0x30010 | 0x4 | HPU status of parts 2in3 and 3in3 |
 | [bsk_avail](#section-bsk-avail) | 0x31000 | 0x8 | BSK availability configuration |
 | [runtime_3in3](#section-runtime-3in3) | 0x32000 | 0x48 | Runtime information |
-| [mhdma_system](#section-mhdma-system) | 0x50000 | 0x10 | system configuration |
+| [mhdma_system](#section-mhdma-system) | 0x50000 | 0x14 | system configuration |
 | [mhdma_reset](#section-mhdma-reset) | 0x50014 | 0x8 | Controllable resets for transceivers |
 | [mhdma_hpu_id](#section-mhdma-hpu-id) | 0x50050 | 0x20 | HPU ID containing all possible targets. For all IDs we have HPU MAC address, software ID and a flag for current hpu |
 | [mhdma_request](#section-mhdma-request) | 0x50100 | 0x6c | Request registers interface |
@@ -4045,6 +4045,7 @@ Below is a summary of all the registers in the current section mhdma_system:
 | [timeout_notify](#register-mhdma-systemtimeout-notify) | 0x50004 | RW |  Timeout: time before re-launching a request, in clock cycles |
 | [timeout_read_req](#register-mhdma-systemtimeout-read-req) | 0x50008 | RW |  Timeout: time before re-launching a request, in clock cycles |
 | [fsm_value](#register-mhdma-systemfsm-value) | 0x5000c | R. |  fsm status of the module |
+| [errors](#register-mhdma-systemerrors) | 0x50010 | R. |  errors of mhdma |
 
 
 ---
@@ -4129,6 +4130,21 @@ Register timeout_read_req contains following Sub-fields:
 - **Read Access**: Read
 - **Write Access**: None
 - **Offset**: 0x5000c
+- **Default**: 0
+
+
+
+
+---
+
+
+### Register mhdma-system.errors
+
+- **Description**: errors of mhdma
+- **Owner**: Kernel
+- **Read Access**: ReadNotify
+- **Write Access**: None
+- **Offset**: 0x50010
 - **Default**: 0
 
 

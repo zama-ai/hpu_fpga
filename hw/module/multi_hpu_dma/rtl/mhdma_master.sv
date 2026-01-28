@@ -81,6 +81,9 @@ module mhdma_master
   input  logic                                notify_sent,
 
   output logic                                ce_reception_ready,
+  // Error interface ----------------------------------------------------------
+  output master_error_t                       master_error,
+  input  logic                                rst_errors,
   // statistics ---------------------------------------------------------------
   // counters
   output logic [REG_DATA_W-1:0]               stat_cnt_notify,
@@ -102,9 +105,7 @@ module mhdma_master
   input  logic                                rst_nb_ce_words_received,
   // register
   output logic [1:0]                          stat_fsm_notify,
-  output logic [1:0]                          stat_fsm_read_req,
-  // error --------------------------------------------------------------------
-  output error_packet_id_mismatch
+  output logic [1:0]                          stat_fsm_read_req
 );
 
   // =========================================================================================== //
@@ -202,9 +203,9 @@ module mhdma_master
       RR_SEND_REQUEST:
         rreq_next_state =  read_request_sent ? RR_WAIT_PACKETS : RR_SEND_REQUEST;
       RR_WAIT_PACKETS:
-        // if error_packet_id_mismatch or timeout => RR_SEND_REQUEST
+        // if seq_num_mismatch or timeout => RR_SEND_REQUEST
         // if write into hbm is finished => RR_WAIT_REQUEST
-        rreq_next_state = (error_packet_id_mismatch | timeout_reached_read_request) ? RR_SEND_REQUEST : ciphertext_received ? RR_WAIT_REQUEST: RR_WAIT_PACKETS;
+        rreq_next_state = (seq_num_mismatch | timeout_reached_read_request) ? RR_SEND_REQUEST : ciphertext_received ? RR_WAIT_REQUEST: RR_WAIT_PACKETS;
     endcase
   end
 
@@ -270,7 +271,7 @@ module mhdma_master
   assign timeout_reached_read_request = (to_read_request_cnt == to_dur_read_req);
 
   // TODO:
-  assign error_packet_id_mismatch = 1'b0;
+  assign seq_num_mismatch = 1'b0;
 
   // =========================================================================================== //
   // CDC from regf to mrmac clock
@@ -576,8 +577,6 @@ module mhdma_master
             phy_addr[gen_p] <= regf_ct_mem_addr[gen_p] + (received_dst_addr << PC_STRIDE);
   endgenerate
 
-  // TODO: if seq_num != 0 and  received_dst_addr != previous, raise an error
-
   // word distribution to each fifo pc ------------------------------------------------------------
   logic [CE_DATA_COUNT_W:0] fifo_cerx_cnt_tx;
   logic [ETH_PC-1:0]        target_fifo;
@@ -672,6 +671,8 @@ module mhdma_master
       realined_word[realign_cnt*MRMAC_AXIS_W+:MRMAC_AXIS_W] <= fifo_cerx_out_data;
 
   assign realined_word_vld = (realign_cnt == 0) & fifo_cerx_out_rdy_vld_reg;
+
+  logic [ETH_PC-1:0] write_error;
 
   generate
     for (genvar gen_wr=0; gen_wr<ETH_PC; gen_wr++) begin : gen_ce_write
@@ -904,7 +905,6 @@ module mhdma_master
       axi4_b_if_t  m_axi4_b;
 
       logic write_complete;
-      logic write_error;
 
       // wid is simply a counter of number of requests
       always_ff @(posedge clk_mrmac) begin
@@ -955,17 +955,21 @@ module mhdma_master
       // Handle write response
       always_ff @(posedge clk_mrmac) begin
         if (~resetn_mrmac) begin
-          write_error <= 1'b0;
+          write_error[gen_wr] <= 1'b0;
         end else begin
-          if (axi_bready & axi_bvalid) begin
-            if (axi_b.bid == fifo_id_out_data) begin
-              // Check response status
-              case (axi_b.bresp)
-                AXI4_OKAY:   write_error <= 1'b0;  // Success
-                AXI4_EXOKAY: write_error <= 1'b0;  // Exclusive access success
-                AXI4_SLVERR: write_error <= 1'b1;  // Slave error
-                AXI4_DECERR: write_error <= 1'b1;  // Decode error
-              endcase
+          if (rst_errors) begin
+            write_error[gen_wr] <= 1'b0;
+          end else begin
+            if (axi_bready & axi_bvalid) begin
+              if (axi_b.bid == fifo_id_out_data) begin
+                // Check response status
+                case (axi_b.bresp)
+                  AXI4_OKAY:   write_error[gen_wr] <= 1'b0;  // Success
+                  AXI4_EXOKAY: write_error[gen_wr] <= 1'b0;  // Exclusive access success
+                  AXI4_SLVERR: write_error[gen_wr] <= 1'b1;  // Slave error
+                  AXI4_DECERR: write_error[gen_wr] <= 1'b1;  // Decode error
+                endcase
+              end
             end
           end
         end
@@ -1071,6 +1075,11 @@ module mhdma_master
 
   assign regf_read_payload = rr_regf_out_data;
   assign interrupt_read_request = rr_regf_out_vld;
+
+  // =========================================================================================== //
+  // Errors
+  // =========================================================================================== //
+  assign master_error = {write_error[1], write_error[0], seq_num_mismatch};
 
   // =========================================================================================== //
   // Statistics

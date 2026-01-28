@@ -146,6 +146,9 @@ module multi_hpu_dma
   logic             [REG_DATA_W-1:0] cnt_nb_ce_words_received_eth;
   logic             [REG_DATA_W-1:0] cnt_nb_write_complete_eth;
 
+  logic             [REG_DATA_W-1:0] regf_mhdma_errors_eth;
+
+
   // counters @cfg
   logic             [REG_DATA_W-1:0] cnt_notify_cfg;
   logic             [REG_DATA_W-1:0] cnt_notify_ack_cfg;
@@ -161,6 +164,8 @@ module multi_hpu_dma
   logic             [REG_DATA_W-1:0] cnt_nb_ce_words_received_cfg;
   logic             [REG_DATA_W-1:0] cnt_nb_write_complete_cfg;
 
+  logic             [REG_DATA_W-1:0] regf_mhdma_errors_cfg;
+
   // reset counters @eth
   logic                 rst_cnt_notify_eth;
   logic                 rst_cnt_notify_ack_eth;
@@ -174,6 +179,7 @@ module multi_hpu_dma
   logic                 rst_nb_read_to_hbm_eth;
   logic [ETH_PC-1:0]    rst_nb_words_received_pc_eth;
   logic                 rst_nb_ce_words_received_eth;
+  logic                 rst_mhdma_errors_eth;
 
   // reset counters @cfg
   logic                 rst_cnt_notify_cfg;
@@ -188,6 +194,7 @@ module multi_hpu_dma
   logic                 rst_nb_read_to_hbm_cfg;
   logic [ETH_PC-1:0]    rst_nb_words_received_pc_cfg;
   logic                 rst_nb_ce_words_received_cfg;
+  logic                 rst_mhdma_errors_cfg;
   // Statistics Registers -------------------------------------------------------------------------
   //timing @eth
   logic [REG_DATA_W-1:0] t_notify_to_ack_eth;
@@ -371,6 +378,9 @@ module multi_hpu_dma
     .r_mhdma_request_stat_physical_addr_pc0_msb_upd (r_rr_phy_addr_cfg[0][2*REG_DATA_W-1:REG_DATA_W]),
     .r_mhdma_request_stat_physical_addr_pc1_lsb_upd (r_rr_phy_addr_cfg[1][REG_DATA_W-1:0]           ),
     .r_mhdma_request_stat_physical_addr_pc1_msb_upd (r_rr_phy_addr_cfg[1][2*REG_DATA_W-1:REG_DATA_W]),
+
+    .r_mhdma_system_errors_upd             (regf_mhdma_errors_cfg                                 ),
+    .r_mhdma_system_errors_rd_en           (rst_mhdma_errors_cfg                                  ),
 
     // from trace module --------------------------------------------------------------------------
     .r_fifo_write_number_of_words          (r_nb_word                                             ), // to be removed or renamed?
@@ -871,6 +881,31 @@ module multi_hpu_dma
     .dest_clk(clk_eth_cfg),             // 1-bit input: destination clock
     .dest_out_bin(cnt_nb_write_complete_cfg) // REG_DATA_W-bit output: binary value in dest domain
   );//temporary
+
+
+  xpm_cdc_single_wrapper #(
+    .CDC_SYNC_STAGES ( 2 ) ,
+    .SRC_INPUT_REG   ( 0 )
+  ) cdc_rst_errors (
+    .src_clk  ( clk_eth_cfg     ) ,
+    .dest_clk ( clk_eth_mrmac ) ,
+    .src_in   ( rst_mhdma_errors_cfg ) ,
+    .dest_out ( rst_mhdma_errors_eth )
+  );//temporary
+  xpm_cdc_gray #(
+    .DEST_SYNC_FF(4),                   // Range: 2-10 synchronizer stages
+    .INIT_SYNC_FF(0),                   // 0=disable simulation init values
+    .REG_OUTPUT(0),                     // 0=combinatorial output, 1=registered output
+    .SIM_ASSERT_CHK(0),                 // 0=disable simulation messages
+    .SIM_LOSSLESS_GRAY_CHK(0),          // 0=disable lossless check
+    .WIDTH(REG_DATA_W)                   // REG_DATA_W-bit counter width (range: 2-32)
+  ) xpm_cdc_gray_errors (
+    .src_clk(clk_eth_mrmac),            // 1-bit input: source clock
+    .src_in_bin(regf_mhdma_errors_eth),  // REG_DATA_W-bit input: binary counter to synchronize
+
+    .dest_clk(clk_eth_cfg),             // 1-bit input: destination clock
+    .dest_out_bin(regf_mhdma_errors_cfg) // REG_DATA_W-bit output: binary value in dest domain
+  );//temporary
   // ==============================================================================================
 
   // ============================================================================================ //
@@ -975,6 +1010,8 @@ module multi_hpu_dma
     // registers
     .stat_reg_fsm                   (r_fsm_value_eth                                             ),
     .stat_rr_phy_addr               (r_rr_phy_addr_eth                                           ),
+    .stat_mhdma_errors              (regf_mhdma_errors_eth                                       ),
+    .rst_mhdma_errors               (rst_mhdma_errors_eth                                        ),
     // QSFP interface one lane --------------------------------------------------------------------
     // tx
     .qsfp_tx_tdata                  (axis_tx_tdata                                               ),

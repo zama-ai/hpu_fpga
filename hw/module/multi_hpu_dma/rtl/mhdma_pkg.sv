@@ -194,21 +194,30 @@ package mhdma_pkg;
   } command_t;
 
   typedef struct packed {
-    logic error_fifo_rx_ovf;
+    logic formatter_error;
   } format_error_t;
 
-  // typedef struct packed {
-
-  // } decoder_error_t
+  typedef struct packed {
+    logic error_fifo_rx_ovf;
+  } decoder_error_t;
 
   typedef struct packed {
-    logic notify_cmd_ovf;
-    logic read_req_cmd_ovf;
+    logic error_rreq_command_queue_ovf;
+    logic error_fifo_nrx_commands_ovf;
   } slave_error_t;
 
   typedef struct packed {
-    logic seq_num_mismatch;
+    logic              seq_num_mismatch;
+    logic [ETH_PC-1:0] write_error;
   } master_error_t;
+
+  typedef struct packed {
+    format_error_t  format_error;
+    decoder_error_t decoder_error;
+    slave_error_t   slave_error;
+    master_error_t  master_error;
+    logic           error_id;
+  } mhdma_error_t;
 
   // =========================================================================================== //
   // Functions

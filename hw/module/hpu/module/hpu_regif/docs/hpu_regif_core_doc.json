@@ -4138,7 +4138,7 @@
       "description": "system configuration",
       "offset": 327680,
       "bytes_align": 4,
-      "range": 16,
+      "range": 20,
       "register": [
         {
           "name": "lane",
@@ -4276,6 +4276,18 @@
           "read_access": "Read",
           "write_access": "None",
           "offset": 327692,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "errors",
+          "description": "errors of mhdma",
+          "owner": "Kernel",
+          "read_access": "ReadNotify",
+          "write_access": "None",
+          "offset": 327696,
           "default": {
             "Cst": 0
           },

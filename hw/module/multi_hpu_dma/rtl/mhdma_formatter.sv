@@ -36,6 +36,9 @@ module mhdma_formatter
 
   output logic                                      notify_sent,
   output logic                                      read_request_sent,
+  // Error interface ----------------------------------------------------------
+  output format_error_t                             format_error,
+  input  logic                                      rst_errors,
   // QSFP TX interface --------------------------------------------------------
   output logic                 [  MRMAC_AXIS_W-1:0] qsfp_tx_tdata,
   output logic                 [ MRMAC_TKEEP_W-1:0] qsfp_tx_tkeep_user,
@@ -547,6 +550,12 @@ module mhdma_formatter
   assign notify_sent       = st_notify_request & tx_tlast_D;
   assign read_request_sent = st_read_request   & tx_tlast_D;
   assign ciphertext_sent   = st_ct_emission    & tx_tlast_D & (ce_seq_num == NB_PACKETS_FULL);
+
+
+  // =========================================================================================== //
+  // Errors
+  // =========================================================================================== //
+  assign format_error = 1'b0;
 
   // =========================================================================================== //
   // Statistics

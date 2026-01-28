@@ -63,6 +63,9 @@ module mhdma_slave
 
   input  logic                                ciphertext_sent,
   input  logic                                notify_ack_sent,
+  // Error interface ----------------------------------------------------------
+  output slave_error_t                        slave_error,
+  input  logic                                rst_errors,
   // statistics ---------------------------------------------------------------
   // counters
   output logic             [  REG_DATA_W-1:0] stat_nb_read_to_hbm,
@@ -81,8 +84,6 @@ module mhdma_slave
   // localparam
   // =========================================================================================== //
   localparam NB_MRMRAC_WORDS_PER_READ = AXI4_DATA_W/MRMAC_AXIS_W;
-
-  logic error_fifo_nrx_commands_ovf;
 
   // =========================================================================================== //
   // localparam
@@ -162,7 +163,21 @@ module mhdma_slave
     .almost_full (/* UNUSED */)
   );
 
-  assign error_fifo_nrx_commands_ovf = received_notify & ~nrx_cmd_in_rdy;
+  logic error_fifo_nrx_commands_ovf;
+
+  always_ff @(posedge clk_mrmac) begin
+    if (~resetn_mrmac) begin
+      error_fifo_nrx_commands_ovf <= 1'b0;
+    end else begin
+      if (rst_errors) begin
+        error_fifo_nrx_commands_ovf <= 1'b0;
+      end else begin
+        if ( received_notify & ~nrx_cmd_in_rdy) begin
+          error_fifo_nrx_commands_ovf <= 1'b1;
+        end
+      end
+    end
+  end
 
   // Notify RX regfile interface --------------------------------------------------------
   logic nrx_regf_in_rdy;
@@ -280,7 +295,20 @@ module mhdma_slave
   );
 
   logic error_rreq_command_queue_ovf;
-  assign error_rreq_command_queue_ovf = start_of_ct_emission & ~rreq_cmd_in_rdy;
+
+  always_ff @(posedge clk_mrmac) begin
+    if (~resetn_mrmac) begin
+      error_rreq_command_queue_ovf <= 1'b0;
+    end else begin
+      if (rst_errors) begin
+        error_rreq_command_queue_ovf <= 1'b0;
+      end else begin
+        if (start_of_ct_emission & ~rreq_cmd_in_rdy) begin
+          error_rreq_command_queue_ovf <= 1'b1;
+        end
+      end
+    end
+  end
 
   always_ff @(posedge clk_mrmac)
     rreq_cmd_out_rdy <= st_read_send & slave_command_rdy; /// !!! TODO
@@ -303,9 +331,6 @@ module mhdma_slave
       end
     end
   end
-
-  logic error_rreq_cmd_full_packet_drop;
-  // assign error_rreq_cmd_full_packet_drop = qsfp_rx_tlast & ~rreq_cmd_in_rdy;
 
   // ==============================================================================================
   // Consuming Decoded commands
@@ -691,6 +716,11 @@ module mhdma_slave
   end
 
   // =========================================================================================== //
+  // Eroors
+  // =========================================================================================== //
+  assign slave_error = {error_rreq_command_queue_ovf, error_fifo_nrx_commands_ovf};
+
+  // =========================================================================================== //
   // Statistics
   // =========================================================================================== //
   assign stat_fsm_notify_rx  = nrx_state;
@@ -731,7 +761,6 @@ module mhdma_slave
   endgenerate
 
   // time waiting for words per pc
-  // temps entre arvalid et rvalid
   logic [ETH_PC-1:0]                 t_wait_words_en;
   logic [ETH_PC-1:0][REG_DATA_W-1:0] t_rr_wait_words_pc;
   generate

@@ -25,7 +25,7 @@ module tb_mhdma_parallel;
 
   localparam int FIFO_DEPTH = 512;
 
-  localparam int LOOP_NOTIFY = 10;
+  localparam int LOOP_NOTIFY = 25;
   localparam int BREAK_RDY_VLD = 0;
 
   // ciphertext memories -------------------------------------------------------------------------
@@ -711,61 +711,63 @@ end
      *  -------------------------------------------------------------------------------------------
      * > we must not lose Notifies
      * ----------------------------------------------------------------------------------------- */
-    fork
-      begin
-        for (int i = 0; i < random_iter; i++) begin
-          // sending Notfies from A to B
-          iop_id[0]       = $urandom();
-          iop_src_addr[0] = $urandom_range(0, 1<<SRC_ADDR_W);
-          notify_payload[0] = {iop_src_addr[0], 4'b0, random_hpu_a, iop_id[0]};
+    for(int i = 0; i < LOOP_NOTIFY; i++) begin
+      fork
+        begin
+          for (int i = 0; i < random_iter; i++) begin
+            // sending Notfies from A to B
+            iop_id[0]       = $urandom();
+            iop_src_addr[0] = $urandom_range(0, 1<<SRC_ADDR_W);
+            notify_payload[0] = {iop_src_addr[0], 4'b0, random_hpu_a, iop_id[0]};
 
-          notify_request(random_hpu_a, random_hpu_b, iop_id[0], iop_src_addr[0]);
-          notify_a_ref_q.push_back(notify_payload[0]);
-        end
-      end
-
-      begin
-        for (int i = 0; i < random_iter; i++) begin
-          // sending Notfies from B to A
-          iop_id[1]       = $urandom();
-          iop_src_addr[1] = $urandom_range(0, 1<<SRC_ADDR_W);
-          notify_payload[1] = {iop_src_addr[1], 4'b0, random_hpu_b, iop_id[1]};
-
-          notify_request(random_hpu_b, random_hpu_a, iop_id[1], iop_src_addr[1]);
-          notify_b_ref_q.push_back(notify_payload[1]);
-        end
-      end
-    join
-
-    repeat(300) @(posedge clk_control);
-
-    // checking
-    fork
-      begin
-        for (int i = 0; i < random_iter; i++) begin
-          // HPU A
-          maxil_drv_if_hpu_a.read_trans(MHDMA_REQUEST_NOTIFY_OFS, notify_payload_rd[0]);
-          notify_payload_expected[0] = notify_b_ref_q.pop_front();
-
-          assert (notify_payload_rd[0] == notify_payload_expected[0]) else begin
-            $display("%t > [ERROR::%0d]: Payload DATA incorrect HPU A (received %x) =! (exp %x)", $time, i, notify_payload_rd[0], notify_payload_expected[0]);
-            error_notify_rx = 1'b1;
+            notify_request(random_hpu_a, random_hpu_b, iop_id[0], iop_src_addr[0]);
+            notify_a_ref_q.push_back(notify_payload[0]);
           end
         end
-      end
 
-      begin
-        for (int i = 0; i < random_iter; i++) begin
-          maxil_drv_if_hpu_b.read_trans(MHDMA_REQUEST_NOTIFY_OFS, notify_payload_rd[1]);
-          notify_payload_expected[1] = notify_a_ref_q.pop_front();
+        begin
+          for (int i = 0; i < random_iter; i++) begin
+            // sending Notfies from B to A
+            iop_id[1]       = $urandom();
+            iop_src_addr[1] = $urandom_range(0, 1<<SRC_ADDR_W);
+            notify_payload[1] = {iop_src_addr[1], 4'b0, random_hpu_b, iop_id[1]};
 
-          assert (notify_payload_rd[1] == notify_payload_expected[1]) else begin
-            $display("%t > [ERROR::%0d]: Payload DATA incorrect HPU B (received %x) =! (exp %x)", $time, i, notify_payload_rd[1], notify_payload_expected[1]);
-            error_notify_rx = 1'b1;
+            notify_request(random_hpu_b, random_hpu_a, iop_id[1], iop_src_addr[1]);
+            notify_b_ref_q.push_back(notify_payload[1]);
           end
         end
-      end
-    join
+      join
+
+      repeat(300) @(posedge clk_control);
+
+      // checking
+      fork
+        begin
+          for (int i = 0; i < random_iter; i++) begin
+            // HPU A
+            maxil_drv_if_hpu_a.read_trans(MHDMA_REQUEST_NOTIFY_OFS, notify_payload_rd[0]);
+            notify_payload_expected[0] = notify_b_ref_q.pop_front();
+
+            assert (notify_payload_rd[0] == notify_payload_expected[0]) else begin
+              $display("%t > [ERROR::%0d]: Payload DATA incorrect HPU A (received %x) =! (exp %x)", $time, i, notify_payload_rd[0], notify_payload_expected[0]);
+              error_notify_rx = 1'b1;
+            end
+          end
+        end
+
+        begin
+          for (int i = 0; i < random_iter; i++) begin
+            maxil_drv_if_hpu_b.read_trans(MHDMA_REQUEST_NOTIFY_OFS, notify_payload_rd[1]);
+            notify_payload_expected[1] = notify_a_ref_q.pop_front();
+
+            assert (notify_payload_rd[1] == notify_payload_expected[1]) else begin
+              $display("%t > [ERROR::%0d]: Payload DATA incorrect HPU B (received %x) =! (exp %x)", $time, i, notify_payload_rd[1], notify_payload_expected[1]);
+              error_notify_rx = 1'b1;
+            end
+          end
+        end
+      join
+    end
 
     maxil_drv_if_hpu_a.read_trans(MHDMA_REQUEST_STAT_NOTIFY_OFS,     stat_notify[0]);
     maxil_drv_if_hpu_a.read_trans(MHDMA_REQUEST_STAT_NOTIFY_ACK_OFS, stat_notify_ack[0]);
@@ -780,7 +782,7 @@ end
     $display(" stat_notify_ack             : %0d", stat_notify_ack[1]);
     $display(" =============================================================\n");
 
-    assert ((stat_notify[0] == stat_notify[1]) & (stat_notify_ack[0] == stat_notify_ack[1]) & (stat_notify[0] == random_iter)) else begin
+    assert ((stat_notify[0] == stat_notify[1]) & (stat_notify_ack[0] == stat_notify_ack[1]) & (stat_notify[0] == LOOP_NOTIFY*random_iter)) else begin
       $display("%t > [ERROR]: Number of ack and Notify mismatch with expected value %0d", $time, random_iter);
       error_number_received = 1'b1;
     end

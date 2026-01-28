@@ -81,6 +81,9 @@ module mhdma_bridge
   output logic             [REG_DATA_W-1:0]       stat_nb_read_to_hbm,
   output logic             [REG_DATA_W-1:0]       stat_nb_ce_words_received,
 
+  output logic                 [  REG_DATA_W-1:0] stat_mhdma_errors,
+  input  logic                                    rst_mhdma_errors,
+
   // timing
   output logic [REG_DATA_W-1:0]                   stat_t_notify_to_ack,
   output logic [REG_DATA_W-1:0]                   stat_t_rr_to_ce_received,
@@ -185,12 +188,12 @@ module mhdma_bridge
   // if ever two hpu ids are set as "current", raise an error
   // when one_hot_id is all zeros, we cannot conclude if there is an error or not
   // TODO: if half is ones and the rest are zeros, error not raised
-  logic error_id_def;
+  logic error_id;
   always_ff @(posedge clk_mrmac) begin : error_on_hpu_id
     if (~resetn_mrmac) begin
-      error_id_def <= 1'b0;
+      error_id <= 1'b0;
     end else begin
-      error_id_def <= (one_hot_id==0) ? 'b0: ~ (^one_hot_id);
+      error_id <= (one_hot_id==0) ? 'b0: ~ (^one_hot_id);
     end
   end
 
@@ -206,8 +209,8 @@ module mhdma_bridge
               hpu_index = i;
   end
 
-  assign current_hpu_macD = error_id_def | (one_hot_id==0)? 'h0 : hpu_mac_table[hpu_index];
-  assign current_hpu_idD  = error_id_def | (one_hot_id==0)? 'h0 : hpu_id_table[hpu_index];
+  assign current_hpu_macD = error_id | (one_hot_id==0)? 'h0 : hpu_mac_table[hpu_index];
+  assign current_hpu_idD  = error_id | (one_hot_id==0)? 'h0 : hpu_id_table[hpu_index];
 
   // theses two registers are here to ease P&R
   logic [  HPU_ID_W-1:0] current_hpu_id;
@@ -318,6 +321,9 @@ module mhdma_bridge
     .ce_reception_ready              (ce_reception_ready                      ),
     .read_request_sent               (read_request_sent                       ),
     .notify_sent                     (notify_sent                             ),
+    // errors -----------------------------------------------------------------
+    .master_error                    (master_error                            ),
+    .rst_errors                      (rst_mhdma_errors                        ),
     // statistics -------------------------------------------------------------
     // counters
     .stat_cnt_notify                 (stat_cnt_notify                         ),
@@ -339,9 +345,7 @@ module mhdma_bridge
     .rst_cnt_read_req_retry          (rst_cnt_read_req_retry                  ),
     // fsms
     .stat_fsm_notify                 (stat_fsm_notify                         ),
-    .stat_fsm_read_req               (stat_fsm_read_req                       ),
-    // errors -----------------------------------------------------------------
-    .error_packet_id_mismatch        (/* UNUSED */                            )
+    .stat_fsm_read_req               (stat_fsm_read_req                       )
   );
 
   // Slave module does the control for Notify ack and ciphertext emission
@@ -393,6 +397,9 @@ module mhdma_bridge
     // sent ack
     .ciphertext_sent                (ciphertext_sent                          ),
     .notify_ack_sent                (notify_ack_sent                          ),
+    // errors -----------------------------------------------------------------
+    .slave_error                    (slave_error                              ),
+    .rst_errors                     (rst_mhdma_errors                         ),
     // statistics -------------------------------------------------------------
     // counters
     .stat_nb_read_to_hbm            (stat_nb_read_to_hbm                      ),
@@ -430,6 +437,9 @@ module mhdma_bridge
     .qsfp_rx_tkeep_user          (qsfp_rx_tkeep_user                          ),
     .qsfp_rx_tlast               (qsfp_rx_tlast                               ),
     .qsfp_rx_tvalid              (qsfp_rx_tvalid                              ),
+    // errors -----------------------------------------------------------------
+    .decoder_error               (decoder_error                               ),
+    .rst_errors                  (rst_mhdma_errors                            ),
     // statistics -------------------------------------------------------------
     // timing
     .stat_t_ce_first_to_last_pkt (stat_t_ce_first_to_last_pkt                 ),
@@ -480,6 +490,9 @@ module mhdma_bridge
     .qsfp_tx_tlast                   (qsfp_tx_tlast                           ),
     .qsfp_tx_tvalid                  (qsfp_tx_tvalid                          ),
     .qsfp_tx_tready                  (qsfp_tx_tready                          ),
+    // errors -----------------------------------------------------------------
+    .format_error                    (format_error                            ),
+    .rst_errors                      (rst_mhdma_errors                        ),
     // statistics -------------------------------------------------------------
     .stat_fsm_formatter              (stat_fsm_formatter                      )
   );
@@ -487,27 +500,7 @@ module mhdma_bridge
   // ==============================================================================================
   // Errors
   // ==============================================================================================
-  // Errors on RX path ---------------------------------------------------------------------------
-  // logic error_rx_tkeep;
-  // logic error_rx_unexpected_size_b;
-
-  // always_ff @(posedge clk_mrmac) begin
-  //   if (~resetn_mrmac) begin
-  //     error_rx_tkeep <= 1'b0;
-  //   end else begin
-  //     if (qsfp_rx_tvalid & (qsfp_rx_tkeep_user != 'hff))
-  //       error_rx_tkeep <= 1'b1;
-  //   end
-  // end
-
-  // always_ff @(posedge clk_mrmac) begin
-  //   if (~resetn_mrmac) begin
-  //     error_rx_unexpected_size_b <= 1'b0;
-  //   end else begin
-  //     if ((rx_counter == 2) & (rx_size_b != SIZE_B))
-  //       error_rx_unexpected_size_b <= 1'b1;
-  //   end
-  // end
+  assign stat_mhdma_errors = {{(32-$bits(mhdma_error_t)){1'b0}}, decoder_error, slave_error, master_error, error_id, format_error};
 
   // =========================================================================================== //
   // Statistics

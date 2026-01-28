@@ -111,8 +111,9 @@ module tb_multi_hpu_dma;
   bit error_write_mismatch;
   bit error_interrupt_notify;
   bit error_assert;
+  bit error_register;
 
-  assign error = error_tb_notify | error_register_read | error_notify_rx | error_rr_payload | error_write_mismatch | error_interrupt_notify | error_assert;
+  assign error = error_register | error_tb_notify | error_register_read | error_notify_rx | error_rr_payload | error_write_mismatch | error_interrupt_notify | error_assert;
 
   always_ff @(posedge clk_control)
     if (error) begin
@@ -703,6 +704,8 @@ end
   logic [HPU_ID_W-1:0] received_hpu_id;
   logic [IOP_ID_W-1:0] received_iop_id;
 
+  logic [REG_DATA_W-1:0]   stat_errors;
+
   logic [REG_DATA_W-1:0] regf_start_addr_ofs;
 
   logic [REG_DATA_W-1:0] stat_notify;
@@ -941,6 +944,15 @@ end
     /* - Reading debug & timing registers ====================================================== */
     $display("%t > INFO : All %0d read request have been sent  and memory models checked\n",$time, arbitrary_read_req_nb);
 
+    maxil_drv_if_hpu_a.read_trans(MHDMA_SYSTEM_ERRORS_OFS, stat_errors);
+    assert (stat_errors != 0) begin
+      $display("[ERROR]: Error register is not null! %h", stat_errors);
+      error_register = 1'b1;
+    end
+      $display("[ERROR]: Error register is not null! %h", stat_errors);
+
+
+
     $display("\n ----------------- HPU_A -------------------------------------");
     maxil_drv_if_hpu_a.read_trans(MHDMA_REQUEST_STAT_NOTIFY_OFS,                 stat_notify);
     maxil_drv_if_hpu_a.read_trans(MHDMA_REQUEST_STAT_NOTIFY_ACK_OFS,             stat_notify_ack);
@@ -1029,6 +1041,7 @@ end
     $display(" stat_nb_ce_words_received     : %0d", stat_nb_ce_words_received);
     $display(" stat_nb_write_complete        : %0d", stat_nb_write_complete);
     $display(" ------------------------------------------------------------- \n");
+
 
     $display("%t > INFO: End simulation",$time);
     repeat(20) @(posedge clk_control);

@@ -1,7 +1,7 @@
 // ============================================================================================== //
 // Description  : register  map address definition package
 // This file was generated with rust regmap generator:
-//  * Date:  2026-01-27
+//  * Date:  2026-01-28
 //  * Tool_version: 27d9e880d531030160fd8749c606142942d5558d
 // ---------------------------------------------------------------------------------------------- //
 //
@@ -25,6 +25,7 @@ package hpu_regif_core_eth_2in3_pkg;
    } mhdma_system_timeout_read_req_t;
   localparam int MHDMA_SYSTEM_TIMEOUT_READ_REQ_OFS = 'h50008;
   localparam int MHDMA_SYSTEM_FSM_VALUE_OFS = 'h5000c;
+  localparam int MHDMA_SYSTEM_ERRORS_OFS = 'h50010;
   typedef struct packed {
     logic [(20-1):0] padding_12;
     logic [(4-1):0] rx_rst;

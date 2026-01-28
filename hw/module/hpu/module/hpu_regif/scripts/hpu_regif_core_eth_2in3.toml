@@ -41,6 +41,13 @@ offset= 0x0
   write_access="None"
   default={Cst=0x0}
 
+[section.mhdma_system.register.errors]
+  description="errors of mhdma"
+  owner="Kernel"
+  read_access="ReadNotify"
+  write_access="None"
+  default={Cst=0x0}
+
 # =====================================================================================================================
 [section.mhdma_reset]
 offset= 0x14
