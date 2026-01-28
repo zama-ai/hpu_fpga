@@ -879,9 +879,9 @@ module mhdma_master
 
       fifo_element #(
         .WIDTH          (AXI4_W_IF_W),
-        .DEPTH          (2),
-        .TYPE_ARRAY     ({4'h1,4'h2}),
-        .DO_RESET_DATA  (0),
+        .DEPTH          (1),
+        .TYPE_ARRAY     (4'h3),
+        .DO_RESET_DATA  (1'b0),
         .RESET_DATA_VAL (0)
       ) fifo_element_write_temp (
         .clk     (clk_mrmac   ),
@@ -977,7 +977,7 @@ module mhdma_master
         end else begin
           write_complete <= 1'b0;
           if (axi_bready & axi_bvalid)
-            if (m_axi4_b.bid == fifo_id_out_data)
+            if (axi_b.bid == fifo_id_out_data)
               write_complete <= 1'b1;
         end
       end
