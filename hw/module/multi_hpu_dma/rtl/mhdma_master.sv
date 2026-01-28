@@ -189,6 +189,7 @@ module mhdma_master
   logic ciphertext_received;
   logic start_read_request;
   logic rr_retry;
+  logic seq_num_mismatch;
 
   always_ff @(posedge clk_mrmac) begin
     if (~resetn_mrmac) rreq_state <= RR_WAIT_REQUEST;
