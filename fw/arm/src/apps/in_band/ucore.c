@@ -274,3 +274,10 @@ DOpKind_t get_kind(DOpu_t *dop) {
   return ((DOpKind_t) (opcode >> 4));
 }
 
+// Convenience function to extract sub-type of Sync DOp
+DOpSync_t get_sync_opcode(DOpu_t *dop) {
+  uint8_t opcode = dop->raw_field.opcode;
+
+  return ((DOpSync_t) (opcode & 0xF));
+}
+

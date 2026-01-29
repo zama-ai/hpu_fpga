@@ -99,7 +99,10 @@ struct dop_pbs_t {
 } __attribute__((packed));
 
 struct dop_sync_t {
-  uint32_t sid: 26;
+  uint8_t flag: 6;
+  uint8_t hid: 3;
+  uint8_t wait_mode: 1;
+  uint16_t slot: 16;
   uint8_t opcode:6;
 } __attribute__((packed));
 
@@ -123,7 +126,13 @@ typedef enum {
   DOPK_SYNC = 0b01,
   DOPK_MEM = 0b10,
   DOPK_PBS = 0b11,
-}DOpKind_t ;
+} DOpKind_t ;
+
+typedef enum {
+  DOPS_NOTIFY = 0b0000,
+  DOPS_WAIT   = 0b0001,
+  DOPS_LD_B2B = 0b1000,
+} DOpSync_t ;
 
 // Multibit enum to extract some DOp properties
 enum DOpArithFlag {

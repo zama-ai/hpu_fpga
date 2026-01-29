@@ -5,7 +5,7 @@
 // Header and constants used by ucore firmware
 // ==============================================================================================
 
-#include "pll.h"
+//#include "pll.h"
 #include "hpu_dop_fmt.h"
 #include "hpu_iop_fmt.h"
 
@@ -15,7 +15,7 @@
 
 // Constants
 // ============================================================================================= //
-#define UCORE_VERSION_MAJOR              (2)
+#define UCORE_VERSION_MAJOR              (3)
 #define UCORE_VERSION_MINOR              (0)
 
 #define OFFSET_TO_AMI_IOPACKQ_HEAD       (0x200000)
@@ -79,4 +79,5 @@ void patch_dop(DOpu_t *dop,
                OperandBundle_t *src,
                ImmediatBundle_t *imm);
 DOpKind_t get_kind(DOpu_t *dop);
+DOpSync_t get_sync_opcode(DOpu_t *dop);
 
