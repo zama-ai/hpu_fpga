@@ -69,7 +69,7 @@ package mhdma_pkg;
   localparam int MAC_ADDR_W   = 24;
   localparam int MAC_OUI_W    = 24;
 
-  localparam int SEC_NUM_W    = 8;
+  localparam int SEQ_NUM_W    = 8;
   localparam int HPU_ID_W     = 4;
   localparam int REQ_ID_W     = 4;
   localparam int ETHERNET_LEN = 16;
@@ -172,9 +172,9 @@ package mhdma_pkg;
   localparam int H1_SRC_MAC_ADDR_OFS = 16 + ETHERNET_LEN + MAC_ADDR_W;
   localparam int H1_SRC_ETH_LEN_OFS  = 16 + ETHERNET_LEN;
 
-  localparam int H2_REQ_ID_OFS      = IOP_ID_W + DST_ADDR_W + SRC_ADDR_W + SEC_NUM_W + HPU_ID_W + REQ_ID_W;
-  localparam int H2_HPU_ID_OFS      = IOP_ID_W + DST_ADDR_W + SRC_ADDR_W + SEC_NUM_W + HPU_ID_W;
-  localparam int H2_SEQ_NUM_OFS     = IOP_ID_W + DST_ADDR_W + SRC_ADDR_W + SEC_NUM_W;
+  localparam int H2_REQ_ID_OFS      = IOP_ID_W + DST_ADDR_W + SRC_ADDR_W + SEQ_NUM_W + HPU_ID_W + REQ_ID_W;
+  localparam int H2_HPU_ID_OFS      = IOP_ID_W + DST_ADDR_W + SRC_ADDR_W + SEQ_NUM_W + HPU_ID_W;
+  localparam int H2_SEQ_NUM_OFS     = IOP_ID_W + DST_ADDR_W + SRC_ADDR_W + SEQ_NUM_W;
   localparam int H2_CT_SRC_ADDR_OFS = IOP_ID_W + DST_ADDR_W + SRC_ADDR_W;
   localparam int H2_CT_DST_ADDR_OFS = IOP_ID_W + DST_ADDR_W;
   localparam int H2_IOP_ID_OFS      = IOP_ID_W;
@@ -184,7 +184,7 @@ package mhdma_pkg;
 
   typedef struct packed {
     logic [MAC_ADDR_W-1:0] src_mac_addr;
-    logic [ SEC_NUM_W-1:0] seq_num;
+    logic [ SEQ_NUM_W-1:0] seq_num;
     logic [  HPU_ID_W-1:0] hpu_id;
     logic [  SIZE_B_W-1:0] size_b;
     logic [  REQ_ID_W-1:0] req_id;

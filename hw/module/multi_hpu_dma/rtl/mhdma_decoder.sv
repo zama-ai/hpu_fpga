@@ -76,7 +76,7 @@ module mhdma_decoder
   logic [MAC_ADDR_W-1:0] dst_mac_addr;
   logic [ETHERNET_LEN-1:0] eth_len;
   // Second frame I will know who is the sender, request ID, seq num
-  logic [SEC_NUM_W-1:0]  seq_num;
+  logic [SEQ_NUM_W-1:0]  seq_num;
   logic [HPU_ID_W-1:0]   hpu_id;
   logic [REQ_ID_W-1:0]   req_id;
   logic [MAC_ADDR_W-1:0] src_mac_addr;
@@ -204,7 +204,7 @@ module mhdma_decoder
   assign fifo_rx_cmd_in_vld = notify_ack_received | notify_request_received | read_request_received | ciphertext_emission_received;
 
   fifo_ram_rdy_vld # (
-    .WIDTH(MAC_ADDR_W + SEC_NUM_W + HPU_ID_W + SIZE_B_W + IOP_ID_W + SRC_ADDR_W + DST_ADDR_W + REQ_ID_W),
+    .WIDTH(MAC_ADDR_W + SEQ_NUM_W + HPU_ID_W + SIZE_B_W + IOP_ID_W + SRC_ADDR_W + DST_ADDR_W + REQ_ID_W),
     .DEPTH(RX_FIFO_DEPTH)
   ) fifo_rx_cmd (
     .clk         (clk_mrmac          ),

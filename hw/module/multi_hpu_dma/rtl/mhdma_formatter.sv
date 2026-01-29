@@ -192,7 +192,7 @@ module mhdma_formatter
   // ce -------------------------------------------------------------------------------------------
   // During CE we need to increment seq_num for each packet sent
   // For the arbiter we need the information to release the fsm that all have been sent
-  logic [SEC_NUM_W-1:0] ce_seq_num;
+  logic [SEQ_NUM_W-1:0] ce_seq_num;
   // we need to build header and stall ciphertext arrial until we are ready
   logic                 ce_first_header;      // level: up for first packet header (used for tx & backpressure)
   logic                 ce_first_header_sent; // level: up when first packet header has been sent
@@ -337,7 +337,7 @@ module mhdma_formatter
   // =========================================================================================== //
   logic [  MAC_ADDR_W-1:0] header_target_hpu_mac_addr;
   logic [ETHERNET_LEN-1:0] header_eth_len;
-  logic [   SEC_NUM_W-1:0] header_seq_num;
+  logic [   SEQ_NUM_W-1:0] header_seq_num;
   logic [  DST_ADDR_W-1:0] header_dst_addr;
   logic [  SRC_ADDR_W-1:0] header_src_addr;
   logic [    SIZE_B_W-1:0] header_size_b;

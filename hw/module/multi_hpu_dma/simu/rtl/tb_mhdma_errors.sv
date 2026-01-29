@@ -813,7 +813,7 @@ module tb_mhdma_errors;
 
   task automatic send_ce_response_packet(
     input logic [IOP_ID_W-1:0]   iop_id_in,
-    input logic [SEC_NUM_W-1:0]  seq_num_in,
+    input logic [SEQ_NUM_W-1:0]  seq_num_in,
     input logic [SRC_ADDR_W-1:0] src_addr_in,
     input logic [DST_ADDR_W-1:0] dst_addr_in
   );

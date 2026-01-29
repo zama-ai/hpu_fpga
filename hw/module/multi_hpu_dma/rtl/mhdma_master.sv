@@ -7,8 +7,6 @@
 // Receives requests from RPU and address them
 //
 // This module must be able to send Notify and Read Request to formatter
-
-// TODO sec num error resends rr
 // ==============================================================================================
 
 module mhdma_master
@@ -535,23 +533,23 @@ module mhdma_master
   assign decoded_command_rdy = nack_rdy | rr_packets_rdy;
 
 
-  logic sec_num_valid;
-  logic sec_num_valid_D;
+  logic seq_num_valid;
+  logic seq_num_valid_D;
 
   always_ff @(posedge clk_mrmac)
-    sec_num_valid_D <= rr_packets_rdy & decoded_command_rdy;
+    seq_num_valid_D <= rr_packets_rdy & decoded_command_rdy;
 
-  assign sec_num_valid = (rr_packets_rdy & decoded_command_rdy) & ~sec_num_valid_D;
+  assign seq_num_valid = (rr_packets_rdy & decoded_command_rdy) & ~seq_num_valid_D;
 
-  logic [SEC_NUM_W-1:0] expected_seq_num;
+  logic [SEQ_NUM_W-1:0] expected_seq_num;
 
   always_ff @(posedge clk_mrmac) begin
     if (~resetn_mrmac) begin
       expected_seq_num <= 'h0;
     end else begin
-      if (sec_num_valid & (decoded_command.seq_num == NB_PACKETS_FULL)) begin
+      if (seq_num_valid & (decoded_command.seq_num == NB_PACKETS_FULL)) begin
         expected_seq_num <= 'h0;
-      end else if (sec_num_valid & ~ (decoded_command.seq_num == NB_PACKETS_FULL)) begin
+      end else if (seq_num_valid & ~ (decoded_command.seq_num == NB_PACKETS_FULL)) begin
         expected_seq_num <= expected_seq_num + 1;
       end
     end

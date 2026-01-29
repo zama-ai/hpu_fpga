@@ -894,7 +894,7 @@ module tb_mhdma_pkt_loss;
     input logic                  failure_on_seq_num
   );
     begin
-      logic [SEC_NUM_W-1:0] seq_num_id;
+      logic [SEQ_NUM_W-1:0] seq_num_id;
 
       wait(rx_header_vld);
 
