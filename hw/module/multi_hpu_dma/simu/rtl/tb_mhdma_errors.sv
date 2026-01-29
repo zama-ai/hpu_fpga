@@ -477,16 +477,16 @@ module tb_mhdma_errors;
     test_write_error();
 
     $display("\n================================================================");
-    $display("  SCENARIO %0d: Testing FIFO overflow errors", scenario_id);
-    $display("================================================================\n");
-
-    test_fifo_overflow_errors();
-
-    $display("\n================================================================");
     $display("  SCENARIO %0d: Testing a mismatch in sec num during CE", scenario_id);
     $display("================================================================\n");
 
     test_seq_num();
+
+    $display("\n================================================================");
+    $display("  SCENARIO %0d: Testing FIFO overflow errors", scenario_id);
+    $display("================================================================\n");
+
+    test_fifo_overflow_errors();
 
     repeat(100) @(posedge clk_cfg);
     end_of_test = 1'b1;
@@ -633,9 +633,7 @@ module tb_mhdma_errors;
       end
 
       // because the system is now stuck with decoder fifo full we reset and reinit
-      a_rst_n = 1'b0;
-      #ARST_ACTIVATION a_rst_n = 1'b1;
-      init_config();
+      reset_system();
 
       // Send many read requests without processing them (error_rreq_command_queue_ovf)
       for (int i = 0; i < 2*RREQ_CMD_DEPTH; i++) begin
@@ -653,9 +651,7 @@ module tb_mhdma_errors;
       end
 
       // because the system is now stuck with decoder fifo full we reset and reinit
-      a_rst_n = 1'b0;
-      #ARST_ACTIVATION a_rst_n = 1'b1;
-      init_config();
+      reset_system();
 
       // Send many ciphertext emission packets without consuming (error_fifo_rx_ovf)
       for (int i = 0; i < 2*RX_FIFO_DEPTH; i++) begin
@@ -672,6 +668,9 @@ module tb_mhdma_errors;
         $display("%t > [ERROR] error_rreq_command_queue_ovf not triggered", $time);
         error_unexpected = 1'b1;
       end
+
+      // because the system is now stuck
+      reset_system();
 
       scenario_id = scenario_id + 1;
     end
@@ -715,7 +714,18 @@ module tb_mhdma_errors;
         error_unexpected = 1'b1;
       end
 
+      reset_system();
+
       scenario_id = scenario_id + 1;
+    end
+  endtask
+
+  task automatic reset_system();
+    // when triggering errors, system can get stuck
+    begin
+      a_rst_n = 1'b0;
+      #ARST_ACTIVATION a_rst_n = 1'b1;
+      init_config();
     end
   endtask
 
