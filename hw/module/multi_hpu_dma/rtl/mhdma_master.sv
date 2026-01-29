@@ -126,9 +126,9 @@ module mhdma_master
   // Notify TX (NTX) ------------------------------------------------------------------------------
   typedef enum logic [1:0] {
     NTX_XXX          = 'x,
-    NTX_WAIT_REQUEST = 2'b01,
-    NTX_WAIT_ACK     = 2'b10,
-    NTX_SEND_NOTIFY  = 2'b11
+    NTX_WAIT_REQUEST = 2'b00,
+    NTX_WAIT_ACK     = 2'b01,
+    NTX_SEND_NOTIFY  = 2'b10
   } st_ntx;
 
   st_ntx ntx_state;
@@ -173,9 +173,9 @@ module mhdma_master
   // Read request ---------------------------------------------------------------------------------
   typedef enum logic [1:0] {
     RR_XXX          = 'x,
-    RR_WAIT_REQUEST = 2'b01,
-    RR_SEND_REQUEST = 2'b10,
-    RR_WAIT_PACKETS = 2'b11
+    RR_WAIT_REQUEST = 2'b00,
+    RR_SEND_REQUEST = 2'b01,
+    RR_WAIT_PACKETS = 2'b10
   } st_read_req;
 
   st_read_req rreq_state;

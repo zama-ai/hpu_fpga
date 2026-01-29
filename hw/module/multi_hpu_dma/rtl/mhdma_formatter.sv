@@ -85,11 +85,11 @@ module mhdma_formatter
   // SINK FSM -------------------------------------------------------------------------------------
   typedef enum logic [2:0] {
     ST_XXX         = 'x,
-    ST_IDLE        = 3'b001,
-    ST_CT_EMISSION = 3'b010,
-    ST_NACK        = 3'b011,
-    ST_READ_REQ    = 3'b100,
-    ST_NOTIFY      = 3'b101
+    ST_IDLE        = 3'b000,
+    ST_CT_EMISSION = 3'b001,
+    ST_NACK        = 3'b010,
+    ST_READ_REQ    = 3'b011,
+    ST_NOTIFY      = 3'b100
   } st_tx;
 
   st_tx tx_state;
