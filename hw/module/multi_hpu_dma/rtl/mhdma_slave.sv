@@ -54,8 +54,8 @@ module mhdma_slave
   output logic                                decoded_command_rdy,
   // format interface ---------------------------------------------------------
   output command_t                            slave_command,
-  output command_t                            slave_command_vld,
-  input  command_t                            slave_command_rdy,
+  output logic                                slave_command_vld,
+  input  logic                                slave_command_rdy,
 
   output logic             [MRMAC_AXIS_W-1:0] ce_payload,
   output logic                                ce_vld,
@@ -184,10 +184,10 @@ module mhdma_slave
 
   // Notify RX regfile interface --------------------------------------------------------
   logic nrx_regf_in_rdy;
-  logic nrx_regf_in_vld;
+  logic nrx_regf_write_enable;
 
   assign nrx_cmd_out_rdy = st_transmit_ack & slave_command_rdy & nrx_regf_in_rdy;
-  assign nrx_regf_in_vld = nrx_cmd_out_vld & nrx_cmd_out_rdy;
+  assign nrx_regf_write_enable = nrx_cmd_out_vld & nrx_cmd_out_rdy;
 
   // === CFG domain
   logic [REG_DATA_W-1:0] nrx_regf_out_data;
@@ -207,7 +207,7 @@ module mhdma_slave
     .in_rstn     (resetn_mrmac),
     .in_data     ({nrx_cmd_fifo.src_addr, 4'b0, nrx_cmd_fifo.hpu_id, nrx_cmd_fifo.iop_id}),
     .in_rdy      (nrx_regf_in_rdy),
-    .in_vld      (nrx_regf_in_vld),
+    .in_vld      (nrx_regf_write_enable),
     .almost_full (/* UNUSED */),
     // Read Domain ports: CFG domain
     .out_clk     (clk_cfg),

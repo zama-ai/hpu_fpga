@@ -399,8 +399,8 @@ module mhdma_bridge
     .slave_command_rdy              (slave_command_rdy                        ),
     // stream of ciphertext
     .ce_payload                     (ce_payload                               ),
-    .ce_rdy                         (ce_ready                                 ),
-    .ce_vld                         (ce_valid                                 ),
+    .ce_rdy                         (ce_rdy                                 ),
+    .ce_vld                         (ce_vld                                 ),
     // sent ack
     .ciphertext_sent                (ciphertext_sent                          ),
     .notify_ack_sent                (notify_ack_sent                          ),
@@ -477,8 +477,8 @@ module mhdma_bridge
     .slave_command_rdy               (slave_command_rdy                       ),
 
     .ce_payload                      (ce_payload                              ),
-    .ce_ready                        (ce_ready                                ),
-    .ce_valid                        (ce_valid                                ),
+    .ce_rdy                        (ce_rdy                                ),
+    .ce_vld                        (ce_vld                                ),
 
     .notify_ack_sent                 (notify_ack_sent                         ),
     .ciphertext_sent                 (ciphertext_sent                         ),

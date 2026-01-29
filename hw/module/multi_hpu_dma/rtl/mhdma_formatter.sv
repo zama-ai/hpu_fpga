@@ -22,8 +22,8 @@ module mhdma_formatter
   output logic                                      slave_command_rdy,
 
   input  logic                 [  MRMAC_AXIS_W-1:0] ce_payload,
-  output logic                                      ce_ready,
-  input  logic                                      ce_valid,
+  output logic                                      ce_rdy,
+  input  logic                                      ce_vld,
 
   output logic                                      notify_ack_sent,
   output logic                                      ciphertext_sent,
@@ -64,10 +64,28 @@ module mhdma_formatter
   always_ff @(posedge clk_mrmac)
     hpu_mac_table_tmp <= hpu_mac_table;
 
-  logic st_ct_emission;
-  logic st_notify_ack;
-  logic st_read_request;
-  logic st_notify_request;
+  logic                    ce_fifo_rdy;
+  logic                    ce_fifo_vld;
+  logic [MRMAC_AXIS_W-1:0] ce_fifo_payload;
+
+  fifo_element #(
+    .WIDTH          (AXI4_W_IF_W),
+    .DEPTH          (1),
+    .TYPE_ARRAY     (4'h3),
+    .DO_RESET_DATA  (1'b0),
+    .RESET_DATA_VAL (0)
+  ) fifo_element_ce (
+    .clk     (clk_mrmac   ),
+    .s_rst_n (resetn_mrmac),
+
+    .in_data (ce_payload),
+    .in_vld  (ce_vld),
+    .in_rdy  (ce_rdy),
+
+    .out_data(ce_fifo_payload),
+    .out_vld (ce_fifo_vld),
+    .out_rdy (ce_fifo_rdy)
+  );
 
   // =========================================================================================== //
   // FSM
@@ -127,6 +145,12 @@ module mhdma_formatter
         tx_next_state = notify_sent ? ST_IDLE : ST_NOTIFY;
     endcase
   end
+
+
+  logic st_ct_emission;
+  logic st_notify_ack;
+  logic st_read_request;
+  logic st_notify_request;
 
   assign st_ct_emission    = tx_state == ST_CT_EMISSION;
   assign st_notify_ack     = tx_state == ST_NACK;
@@ -216,7 +240,7 @@ module mhdma_formatter
     end else begin
       if (okay_to_send_request & ~end_of_packet & qsfp_tx_tready) begin
         if (st_ct_emission) begin
-          if(ce_header_valid | (ce_valid & ce_ready)) begin
+          if(ce_header_valid | (ce_fifo_rdy & ce_fifo_vld)) begin
             tx_cnt <= tx_cnt+1;
           end
         end else begin
@@ -330,7 +354,7 @@ module mhdma_formatter
     end
   end
 
-  assign ce_start_emission = qsfp_tx_tready & (ce_seq_num == 0) & (ce_valid & ~ce_ready) & ~ce_first_header_sent;
+  assign ce_start_emission = qsfp_tx_tready & (ce_seq_num == 0) & (ce_fifo_vld & ~ce_fifo_rdy) & ~ce_first_header_sent;
 
   // =========================================================================================== //
   // Cycle by cycle construction
@@ -358,7 +382,7 @@ module mhdma_formatter
       header_src_addr            <= slave_command.src_addr;
       header_dst_addr            <= 'h0;
       header_iop_id              <= slave_command.iop_id;
-    end else if (ce_valid) begin
+    end else if (ce_fifo_vld) begin
       header_target_hpu_mac_addr <= hpu_mac_table_tmp[ce_hpu_id];
       header_req_id              <= REQ_ID_EMISSION;
       header_src_addr            <= ce_src_addr;
@@ -467,7 +491,7 @@ module mhdma_formatter
     if (~resetn_mrmac) begin
       ce_word_counter <= 'h0;
     end else begin
-      if (qsfp_tx_tready & (ce_valid & ce_ready)) begin
+      if (qsfp_tx_tready & (ce_fifo_rdy & ce_fifo_vld)) begin
         if (ce_word_counter == NB_WORDS_PAYLOAD-1) begin
           ce_word_counter <= 'h0;
         end else begin
@@ -513,7 +537,7 @@ module mhdma_formatter
   //    - when the first header is not starting to be propagated &
   //    - qsfp tx is ready &
   //    - we don't need to stall between packets for sending headers
-  assign ce_ready = qsfp_tx_tready & st_ct_emission & ce_first_header_sent & ~ce_stalling;
+  assign ce_fifo_rdy = qsfp_tx_tready & st_ct_emission & ce_first_header_sent & ~ce_stalling;
 
   // =========================================================================================== //
   // AXI4-stream
@@ -524,8 +548,8 @@ module mhdma_formatter
   logic                      tx_tlast_reg;
   logic                      tx_tvalid_reg;
 
-  assign tx_tdata_D      = small_packet ? tx_header : (ce_header_valid & tx_tvalid_D) ? tx_header : (ce_ready & ce_valid) ? ce_payload :'h0;
-  assign tx_tvalid_D     = small_packet ? ~(tx_cnt == 'h0) : ~(tx_cnt == 'h0) & (ce_header_valid | (ce_ready & ce_valid));
+  assign tx_tdata_D      = small_packet ? tx_header : (ce_header_valid & tx_tvalid_D) ? tx_header : (ce_fifo_rdy & ce_fifo_vld) ? ce_fifo_payload :'h0;
+  assign tx_tvalid_D     = small_packet ? ~(tx_cnt == 'h0) : ~(tx_cnt == 'h0) & (ce_header_valid | (ce_fifo_rdy & ce_fifo_vld));
   assign tx_tkeep_user_D = {3'b000, tx_byte_enable};
   assign tx_tlast_D      = small_packet ? tx_small_last : st_ct_emission ? tx_last_word : 1'b0;
 
