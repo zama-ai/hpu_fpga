@@ -102,8 +102,8 @@ package mhdma_pkg;
   localparam int REQ_FIFO_DEPTH        = XPM_MIN_FIFO_DEPTH;
   localparam int REQ_DATA_COUNT_W      =  $clog2(REQ_FIFO_DEPTH)+1;
 
-  // RX fifo
-  localparam int RX_FIFO_DEPTH = 32;
+  // RX fifo : decoder reception fifo. Must be greater than Command fifos
+  localparam int RX_FIFO_DEPTH = 64;
 
   // Notify RX payload: distributed
   localparam int NRX_WIDTH             = SRC_ADDR_W + HPU_ID_W + IOP_ID_W;
@@ -202,7 +202,6 @@ package mhdma_pkg;
   } decoder_error_t;
 
   typedef struct packed {
-    logic error_rreq_command_queue_ovf;
     logic error_fifo_nrx_commands_ovf;
   } slave_error_t;
 

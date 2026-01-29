@@ -301,22 +301,6 @@ module mhdma_slave
     .almost_full (/* UNUSED */)
   );
 
-  logic error_rreq_command_queue_ovf;
-
-  always_ff @(posedge clk_mrmac) begin
-    if (~resetn_mrmac) begin
-      error_rreq_command_queue_ovf <= 1'b0;
-    end else begin
-      if (rst_errors) begin
-        error_rreq_command_queue_ovf <= 1'b0;
-      end else begin
-        if (rreq_cmd_in_vld & ~rreq_cmd_in_rdy) begin
-          error_rreq_command_queue_ovf <= 1'b1;
-        end
-      end
-    end
-  end
-
   always_ff @(posedge clk_mrmac)
     rreq_cmd_out_rdy <= st_read_send & slave_command_rdy;
 
@@ -725,7 +709,7 @@ module mhdma_slave
   // =========================================================================================== //
   // Eroors
   // =========================================================================================== //
-  assign slave_error = {error_rreq_command_queue_ovf, error_fifo_nrx_commands_ovf};
+  assign slave_error = {error_fifo_nrx_commands_ovf};
 
   // =========================================================================================== //
   // Statistics

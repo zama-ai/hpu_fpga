@@ -635,24 +635,6 @@ module tb_mhdma_errors;
       // because the system is now stuck with decoder fifo full we reset and reinit
       reset_system();
 
-      // Send many read requests without processing them (error_rreq_command_queue_ovf)
-      for (int i = 0; i < 2*RREQ_CMD_DEPTH; i++) begin
-        send_read_request_packet(i[7:0], $urandom(), $urandom());
-        repeat(5) @(posedge clk_mrmac);
-      end
-
-      maxil_drv.read_trans(MHDMA_SYSTEM_ERRORS_OFS, reg_error);
-      $display("%t > Error register value :  0x%08b", $time, reg_error);
-      errors_t = mhdma_error_t'(reg_error);
-
-      assert (errors_t.slave_error.error_rreq_command_queue_ovf) else begin
-        $display("%t > [ERROR] error_rreq_command_queue_ovf not triggered", $time);
-        error_unexpected = 1'b1;
-      end
-
-      // because the system is now stuck with decoder fifo full we reset and reinit
-      reset_system();
-
       // Send many ciphertext emission packets without consuming (error_fifo_rx_ovf)
       for (int i = 0; i < 2*RX_FIFO_DEPTH; i++) begin
         send_ciphertext_emission_packet();
@@ -665,7 +647,7 @@ module tb_mhdma_errors;
       errors_t = mhdma_error_t'(reg_error);
 
       assert (errors_t.decoder_error.error_fifo_rx_ovf) else begin
-        $display("%t > [ERROR] error_rreq_command_queue_ovf not triggered", $time);
+        $display("%t > [ERROR] error_fifo_rx_ovf not triggered", $time);
         error_unexpected = 1'b1;
       end
 
