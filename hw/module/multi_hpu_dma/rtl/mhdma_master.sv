@@ -271,9 +271,6 @@ module mhdma_master
 
   assign timeout_reached_read_request = (to_read_request_cnt == to_dur_read_req);
 
-  // TODO:
-  assign seq_num_mismatch = 1'b0;
-
   // =========================================================================================== //
   // CDC from regf to mrmac clock
   // =========================================================================================== //
@@ -536,6 +533,41 @@ module mhdma_master
     rr_packets_rdy = decoded_command_vld & (decoded_command.req_id == REQ_ID_EMISSION) & st_wait_packets;
 
   assign decoded_command_rdy = nack_rdy | rr_packets_rdy;
+
+
+  logic sec_num_valid;
+  logic sec_num_valid_D;
+
+  always_ff @(posedge clk_mrmac)
+    sec_num_valid_D <= rr_packets_rdy & decoded_command_rdy;
+
+  assign sec_num_valid = (rr_packets_rdy & decoded_command_rdy) & ~sec_num_valid_D;
+
+  logic [SEC_NUM_W-1:0] expected_seq_num;
+
+  always_ff @(posedge clk_mrmac) begin
+    if (~resetn_mrmac) begin
+      expected_seq_num <= 'h0;
+    end else begin
+      if (sec_num_valid & (decoded_command.seq_num == NB_PACKETS_FULL)) begin
+        expected_seq_num <= 'h0;
+      end else if (sec_num_valid & ~ (decoded_command.seq_num == NB_PACKETS_FULL)) begin
+        expected_seq_num <= expected_seq_num + 1;
+      end
+    end
+  end
+
+  always_ff @(posedge clk_mrmac) begin
+    if (~resetn_mrmac) begin
+      seq_num_mismatch <= 1'b0;
+    end else begin
+      if (rst_errors) begin
+        seq_num_mismatch <= 1'b0;
+      end else if (expected_seq_num != decoded_command.seq_num) begin
+        seq_num_mismatch <= 1'b1;
+      end
+    end
+  end
 
   // =========================================================================================== //
   // Write into HBM
@@ -1080,7 +1112,7 @@ module mhdma_master
   // =========================================================================================== //
   // Errors
   // =========================================================================================== //
-  assign master_error = {write_error[1], write_error[0], seq_num_mismatch};
+  assign master_error = {seq_num_mismatch, write_error[1], write_error[0]};
 
   // =========================================================================================== //
   // Statistics

@@ -136,7 +136,7 @@ module mhdma_slave
   logic                 nrx_cmd_in_vld;
   logic                 nrx_cmd_in_rdy;
 
-  assign nrx_cmd_in_vld = received_notify & nrx_cmd_in_rdy;
+  assign nrx_cmd_in_vld = received_notify;
 
   // erreur notify lost
   logic    nrx_cmd_out_vld;
@@ -172,7 +172,7 @@ module mhdma_slave
       if (rst_errors) begin
         error_fifo_nrx_commands_ovf <= 1'b0;
       end else begin
-        if ( received_notify & ~nrx_cmd_in_rdy) begin
+        if ( nrx_cmd_in_vld & ~nrx_cmd_in_rdy) begin
           error_fifo_nrx_commands_ovf <= 1'b1;
         end
       end
@@ -273,7 +273,7 @@ module mhdma_slave
   logic    rreq_cmd_out_vld;
   logic    rreq_cmd_out_rdy;
 
-  assign rreq_cmd_in_vld = start_of_ct_emission & rreq_cmd_in_rdy;
+  assign rreq_cmd_in_vld = received_read_request;
 
   fifo_ram_rdy_vld # (
     .WIDTH      (HPU_ID_W+IOP_ID_W+DST_ADDR_W+SRC_ADDR_W+REQ_ID_W),
@@ -303,7 +303,7 @@ module mhdma_slave
       if (rst_errors) begin
         error_rreq_command_queue_ovf <= 1'b0;
       end else begin
-        if (start_of_ct_emission & ~rreq_cmd_in_rdy) begin
+        if (rreq_cmd_in_vld & ~rreq_cmd_in_rdy) begin
           error_rreq_command_queue_ovf <= 1'b1;
         end
       end

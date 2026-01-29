@@ -945,8 +945,8 @@ end
     $display("%t > INFO : All %0d read request have been sent  and memory models checked\n",$time, arbitrary_read_req_nb);
 
     maxil_drv_if_hpu_a.read_trans(MHDMA_SYSTEM_ERRORS_OFS, stat_errors);
-    assert (stat_errors != 0) begin
-      $display("[ERROR]: Error register is not null! %h", stat_errors);
+    if (stat_errors!=0) begin
+      $display("[ERROR]: Error register is not null! %b", stat_errors);
       error_register = 1'b1;
     end
 

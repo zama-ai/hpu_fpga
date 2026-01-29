@@ -260,6 +260,13 @@ module mhdma_bridge
 
   logic                    notify_ack_received;
 
+  // Errors
+  mhdma_error_t mhdma_errors;
+  decoder_error_t decoder_error;
+  format_error_t format_error;
+  master_error_t master_error;
+  slave_error_t slave_error;
+
   // Master module does the controls for sending read request and Notifies requests
   mhdma_master #(
     .PC_STRIDE                       (PC_STRIDE                               ),
@@ -500,7 +507,12 @@ module mhdma_bridge
   // ==============================================================================================
   // Errors
   // ==============================================================================================
-  assign stat_mhdma_errors = {{(32-$bits(mhdma_error_t)){1'b0}}, decoder_error, slave_error, master_error, error_id, format_error};
+  assign mhdma_errors.format_error  = format_error;
+  assign mhdma_errors.decoder_error = decoder_error;
+  assign mhdma_errors.slave_error   = slave_error;
+  assign mhdma_errors.master_error  = master_error;
+  assign mhdma_errors.error_id      = error_id;
+  assign stat_mhdma_errors = {{(32-$bits(mhdma_error_t)){1'b0}}, mhdma_errors};
 
   // =========================================================================================== //
   // Statistics
