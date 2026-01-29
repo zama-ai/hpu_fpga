@@ -91,21 +91,24 @@ module mhdma_slave
   logic received_notify;
   logic received_read_request;
 
-  assign received_notify       = decoded_command_vld & (decoded_command.req_id == REQ_ID_NOTIFY);
-  assign received_read_request = decoded_command_vld & (decoded_command.req_id == REQ_ID_READ);
+  assign received_notify       = (decoded_command.req_id == REQ_ID_NOTIFY);
+  assign received_read_request = (decoded_command.req_id == REQ_ID_READ);
 
   // ==============================================================================================
   // Notify RX (NRX)
   // ==============================================================================================
   logic start_notify_ack;
+  logic nrx_cmd_in_rdy;
   logic st_wait_notify;
   logic st_transmit_ack;
+  logic st_nrx_got_request;
 
   // => must transmit to regfile IOP_ID, HPU_ID and src_addr
   // => must trigger interrupt signal when registers are ready to be read
   typedef enum logic [1:0] {
     NTW_XXX          = 'x,
-    NRX_WAIT_REQUEST = 2'b01,
+    NRX_WAIT_REQUEST = 2'b00,
+    NRX_GOT_REQUEST  = 2'b01,
     NRX_TRANSMIT_ACK = 2'b10
   } st_nrx;
 
@@ -117,31 +120,31 @@ module mhdma_slave
     else nrx_state <= nrx_next_state;
   end
 
-  assign start_notify_ack = decoded_command_rdy & received_notify;
+  assign start_notify_ack = decoded_command_vld & received_notify;
 
   always_comb begin
     nrx_next_state = NTW_XXX;
     case (nrx_state)
       NRX_WAIT_REQUEST:
-        nrx_next_state = start_notify_ack ? NRX_TRANSMIT_ACK : NRX_WAIT_REQUEST;
+        nrx_next_state = start_notify_ack ? NRX_GOT_REQUEST : NRX_WAIT_REQUEST;
+      NRX_GOT_REQUEST:
+        nrx_next_state = nrx_cmd_in_rdy ? NRX_TRANSMIT_ACK : NRX_GOT_REQUEST;
       NRX_TRANSMIT_ACK:
         nrx_next_state = notify_ack_sent ? NRX_WAIT_REQUEST : NRX_TRANSMIT_ACK;
     endcase
   end
 
-  assign st_wait_notify = (nrx_state == NRX_WAIT_REQUEST);
-  assign st_transmit_ack = (nrx_state == NRX_TRANSMIT_ACK);
+  assign st_wait_notify     = (nrx_state == NRX_WAIT_REQUEST);
+  assign st_nrx_got_request = (nrx_state == NRX_GOT_REQUEST);
+  assign st_transmit_ack    = (nrx_state == NRX_TRANSMIT_ACK);
 
   // Notify RX command queue --------------------------------------------------
-  logic                 nrx_cmd_in_vld;
-  logic                 nrx_cmd_in_rdy;
-
-  assign nrx_cmd_in_vld = received_notify;
-
-  // erreur notify lost
-  logic    nrx_cmd_out_vld;
-  logic    nrx_cmd_out_rdy;
+  logic     nrx_cmd_in_vld;
+  logic     nrx_cmd_out_vld;
+  logic     nrx_cmd_out_rdy;
   command_t nrx_cmd_fifo;
+
+  assign nrx_cmd_in_vld = st_nrx_got_request;
 
   // command fifo for notify RX, received from decoder
   fifo_ram_rdy_vld # (
@@ -225,12 +228,15 @@ module mhdma_slave
   // ==============================================================================================
   // FSM ------------------------------------------------------------------------------------------
   logic start_of_ct_emission;
+  logic rreq_cmd_in_rdy;
   logic st_wait_rr;
   logic st_read_send;
+  logic st_got_read_req;
 
   typedef enum logic [1:0] {
     CEM_XXX           = 'x,
-    CEM_WAIT_REQUEST  = 2'b01,
+    CEM_WAIT_REQUEST  = 2'b00,
+    CEM_GOT_REQUEST   = 2'b01,
     CEM_READ_N_SEND   = 2'b10
   } st_cem;
 
@@ -242,20 +248,23 @@ module mhdma_slave
     else cem_state <= cem_next_state;
   end
 
-  assign start_of_ct_emission  = decoded_command_rdy & received_read_request;
+  assign start_of_ct_emission  = decoded_command_vld & received_read_request;
 
   always_comb begin
     cem_next_state = CEM_XXX;
     case (cem_state)
       CEM_WAIT_REQUEST:
-        cem_next_state = start_of_ct_emission ? CEM_READ_N_SEND : CEM_WAIT_REQUEST;
+        cem_next_state = start_of_ct_emission ? CEM_GOT_REQUEST : CEM_WAIT_REQUEST;
+      CEM_GOT_REQUEST:
+        cem_next_state = rreq_cmd_in_rdy ? CEM_READ_N_SEND : CEM_GOT_REQUEST;
       CEM_READ_N_SEND:
         cem_next_state = ciphertext_sent ? CEM_WAIT_REQUEST : CEM_READ_N_SEND;
     endcase
   end
 
-  assign st_read_send = (cem_state == CEM_READ_N_SEND);
-  assign st_wait_rr   = (cem_state == CEM_WAIT_REQUEST);
+  assign st_wait_rr      = (cem_state == CEM_WAIT_REQUEST);
+  assign st_got_read_req = (cem_state == CEM_GOT_REQUEST);
+  assign st_read_send    = (cem_state == CEM_READ_N_SEND);
 
   // sending command to read request command queue ------------------------------------------------
   // when qsfp tlast is ready we are sure that all commands have been correctly received
@@ -265,15 +274,13 @@ module mhdma_slave
   //    > DST ADDR
   //    > SRC ADDR
   //   => REQ ID must be switched from read request to ciphertext emission
-
   logic    rreq_cmd_in_vld;
-  logic    rreq_cmd_in_rdy; // ~full
 
   command_t rreq_cmd_fifo;
   logic    rreq_cmd_out_vld;
   logic    rreq_cmd_out_rdy;
 
-  assign rreq_cmd_in_vld = received_read_request;
+  assign rreq_cmd_in_vld = st_got_read_req;
 
   fifo_ram_rdy_vld # (
     .WIDTH      (HPU_ID_W+IOP_ID_W+DST_ADDR_W+SRC_ADDR_W+REQ_ID_W),
@@ -311,7 +318,7 @@ module mhdma_slave
   end
 
   always_ff @(posedge clk_mrmac)
-    rreq_cmd_out_rdy <= st_read_send & slave_command_rdy; /// !!! TODO
+    rreq_cmd_out_rdy <= st_read_send & slave_command_rdy;
 
   logic [RQQ_CMD_DATA_COUNT_W-1:0] rreq_cnt;
   logic                            rreq_cnt_down;
@@ -335,7 +342,7 @@ module mhdma_slave
   // ==============================================================================================
   // Consuming Decoded commands
   // ==============================================================================================
-  assign decoded_command_rdy =  (st_wait_notify & ~st_read_send & received_notify & nrx_cmd_in_rdy) | (st_wait_rr & ~st_transmit_ack & received_read_request & rreq_cmd_in_rdy);
+  assign decoded_command_rdy = (st_nrx_got_request & ~st_read_send) | (st_got_read_req & ~st_transmit_ack);
 
   // =========================================================================================== //
   // Read into HBM
