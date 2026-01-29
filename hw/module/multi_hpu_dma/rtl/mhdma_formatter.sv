@@ -354,7 +354,7 @@ module mhdma_formatter
     end
   end
 
-  assign ce_start_emission = qsfp_tx_tready & (ce_seq_num == 0) & (ce_fifo_vld & ~ce_fifo_rdy) & ~ce_first_header_sent;
+  assign ce_start_emission = qsfp_tx_tready & (ce_seq_num == 0) & ce_fifo_vld & ~ce_first_header_sent;
 
   // =========================================================================================== //
   // Cycle by cycle construction
@@ -548,8 +548,8 @@ module mhdma_formatter
   logic                      tx_tlast_reg;
   logic                      tx_tvalid_reg;
 
-  assign tx_tdata_D      = small_packet ? tx_header : (ce_header_valid & tx_tvalid_D) ? tx_header : (ce_fifo_rdy & ce_fifo_vld) ? ce_fifo_payload :'h0;
-  assign tx_tvalid_D     = small_packet ? ~(tx_cnt == 'h0) : ~(tx_cnt == 'h0) & (ce_header_valid | (ce_fifo_rdy & ce_fifo_vld));
+  assign tx_tdata_D      = small_packet ? tx_header : (ce_header_valid & tx_tvalid_D) ? tx_header : ce_fifo_vld ? ce_fifo_payload :'h0;
+  assign tx_tvalid_D     = small_packet ? ~(tx_cnt == 'h0) : ~(tx_cnt == 'h0) & (ce_header_valid | ce_fifo_vld);
   assign tx_tkeep_user_D = {3'b000, tx_byte_enable};
   assign tx_tlast_D      = small_packet ? tx_small_last : st_ct_emission ? tx_last_word : 1'b0;
 

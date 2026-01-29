@@ -477,8 +477,8 @@ module mhdma_bridge
     .slave_command_rdy               (slave_command_rdy                       ),
 
     .ce_payload                      (ce_payload                              ),
-    .ce_rdy                        (ce_rdy                                ),
-    .ce_vld                        (ce_vld                                ),
+    .ce_rdy                          (ce_rdy                                  ),
+    .ce_vld                          (ce_vld                                  ),
 
     .notify_ack_sent                 (notify_ack_sent                         ),
     .ciphertext_sent                 (ciphertext_sent                         ),

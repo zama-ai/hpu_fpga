@@ -526,12 +526,11 @@ module mhdma_master
   logic rr_packets_rdy;
 
   always_ff @(posedge clk_mrmac)
-    nack_rdy = decoded_command_vld & (decoded_command.req_id == REQ_ID_NOTIFY_ACK);
+    nack_rdy <= decoded_command_vld & (decoded_command.req_id == REQ_ID_NOTIFY_ACK);
   always_ff @(posedge clk_mrmac)
-    rr_packets_rdy = decoded_command_vld & (decoded_command.req_id == REQ_ID_EMISSION) & st_wait_packets;
+    rr_packets_rdy <= decoded_command_vld & (decoded_command.req_id == REQ_ID_EMISSION) & st_wait_packets;
 
   assign decoded_command_rdy = nack_rdy | rr_packets_rdy;
-
 
   logic seq_num_valid;
   logic seq_num_valid_D;
