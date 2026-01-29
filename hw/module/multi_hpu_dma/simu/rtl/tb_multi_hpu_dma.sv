@@ -949,9 +949,6 @@ end
       $display("[ERROR]: Error register is not null! %h", stat_errors);
       error_register = 1'b1;
     end
-      $display("[ERROR]: Error register is not null! %h", stat_errors);
-
-
 
     $display("\n ----------------- HPU_A -------------------------------------");
     maxil_drv_if_hpu_a.read_trans(MHDMA_REQUEST_STAT_NOTIFY_OFS,                 stat_notify);
