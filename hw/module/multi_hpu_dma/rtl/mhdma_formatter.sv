@@ -69,10 +69,10 @@ module mhdma_formatter
   logic [MRMAC_AXIS_W-1:0] ce_fifo_payload;
 
   fifo_element #(
-    .WIDTH          (AXI4_W_IF_W),
-    .DEPTH          (1),
-    .TYPE_ARRAY     (4'h3),
-    .DO_RESET_DATA  (1'b0),
+    .WIDTH          (MRMAC_AXIS_W),
+    .DEPTH          (2),
+    .TYPE_ARRAY     ({4'h1,4'h2}),
+    .DO_RESET_DATA  (0),
     .RESET_DATA_VAL (0)
   ) fifo_element_ce (
     .clk     (clk_mrmac   ),

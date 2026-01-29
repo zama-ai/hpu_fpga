@@ -910,9 +910,9 @@ module mhdma_master
 
       fifo_element #(
         .WIDTH          (AXI4_W_IF_W),
-        .DEPTH          (1),
-        .TYPE_ARRAY     (4'h3),
-        .DO_RESET_DATA  (1'b0),
+        .DEPTH          (2),
+        .TYPE_ARRAY     ({4'h1,4'h2}),
+        .DO_RESET_DATA  (0),
         .RESET_DATA_VAL (0)
       ) fifo_element_write_temp (
         .clk     (clk_mrmac   ),
