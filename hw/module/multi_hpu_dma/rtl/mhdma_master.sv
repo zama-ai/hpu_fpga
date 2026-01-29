@@ -407,7 +407,6 @@ module mhdma_master
     if (nrqq_cmd_vld | ntx_retry) begin
       master_command.hpu_id   <= nrqq_cmd_data.hpu_id;
       master_command.size_b   <= nrqq_cmd_data.size_b;
-      master_command.req_id   <= nrqq_cmd_data.req_id;
       master_command.iop_id   <= nrqq_cmd_data.iop_id;
       master_command.src_addr <= nrqq_cmd_data.src_addr;
       master_command.dst_addr <= 'h0;
@@ -466,6 +465,7 @@ module mhdma_master
     if (~resetn_mrmac) begin
       ce_valid_cnt <= 'h0;
     end else begin
+      // if the master is in Emission mode & data from decocoder are valid
       if ((master_command.req_id == REQ_ID_EMISSION) & decoder_rx_tvalid) begin
         ce_valid_cnt <= ce_valid_cnt + 1;
       end else begin
@@ -560,8 +560,10 @@ module mhdma_master
     end else begin
       if (rst_errors) begin
         seq_num_mismatch <= 1'b0;
-      end else if (expected_seq_num != decoded_command.seq_num) begin
-        seq_num_mismatch <= 1'b1;
+      end else if (seq_num_valid) begin
+        if (expected_seq_num != decoded_command.seq_num) begin
+          seq_num_mismatch <= 1'b1;
+        end
       end
     end
   end
@@ -1040,7 +1042,7 @@ module mhdma_master
     end
   endgenerate
 
-  assign fifo_pc_backpressure = target_fifo ? gen_ce_write[1].fifo_pc_wr_in_rdy : gen_ce_write[0].fifo_pc_wr_in_rdy;
+  assign fifo_pc_backpressure = target_fifo[1] ? gen_ce_write[1].fifo_pc_wr_in_rdy : gen_ce_write[0].fifo_pc_wr_in_rdy;
 
   // Interrupt generation -------------------------------------------------------------------------
   // interrupt must be raised when we have both write_complete.

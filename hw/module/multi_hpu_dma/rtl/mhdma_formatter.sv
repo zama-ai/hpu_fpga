@@ -434,23 +434,23 @@ module mhdma_formatter
   always_comb begin
     case (last_word_bytes)
       'h0 :
-        tx_byte_enable_d <= 8'hFF;
+        tx_byte_enable_d = 8'hFF;
       'h1 :
-        tx_byte_enable_d <= 8'h01;
+        tx_byte_enable_d = 8'h01;
       'h2 :
-        tx_byte_enable_d <= 8'h03;
+        tx_byte_enable_d = 8'h03;
       'h3 :
-        tx_byte_enable_d <= 8'h07;
+        tx_byte_enable_d = 8'h07;
       'h4 :
-        tx_byte_enable_d <= 8'h0F;
+        tx_byte_enable_d = 8'h0F;
       'h5 :
-        tx_byte_enable_d <= 8'h1F;
+        tx_byte_enable_d = 8'h1F;
       'h6 :
-        tx_byte_enable_d <= 8'h3F;
+        tx_byte_enable_d = 8'h3F;
       'h7 :
-        tx_byte_enable_d <= 8'h7F;
+        tx_byte_enable_d = 8'h7F;
       default :
-        tx_byte_enable_d <= 8'h0;
+        tx_byte_enable_d = 8'h0;
     endcase
   end
 
@@ -554,7 +554,12 @@ module mhdma_formatter
   assign tx_tlast_D      = small_packet ? tx_small_last : st_ct_emission ? tx_last_word : 1'b0;
 
   always_ff @(posedge clk_mrmac) begin
-    if (qsfp_tx_tready) begin
+    if (~resetn_mrmac) begin
+      tx_tdata_reg <= 'h0;
+      tx_tvalid_reg <= 'h0;
+      tx_tkeep_user_reg <= 'h0;
+      tx_tlast_reg <= 'h0;
+    end else if (qsfp_tx_tready) begin
       tx_tdata_reg      <= mhdma_pkg::byte_swap(tx_tdata_D);
       tx_tvalid_reg     <= tx_tvalid_D;
       tx_tkeep_user_reg <= tx_tkeep_user_D;
