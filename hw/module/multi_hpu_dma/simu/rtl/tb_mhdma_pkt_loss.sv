@@ -562,7 +562,7 @@ module tb_mhdma_pkt_loss;
     notify_request(hpu_a_id, hpu_b_id, iop_id, iop_src_addr);
     notify_ack(hpu_a_id, hpu_a_mac_addr, hpu_b_id, hpu_b_mac_addr);
 
-    wait(hpu_a.mhdma_bridge.mhdma_formatter.tx_state == 3'b001);
+    wait(hpu_a.mhdma_bridge.mhdma_formatter.tx_state == 3'b000);
     $display("%t > [INFO]: formatter FSM has gotten back to IDLE", $time);
 
     $display("B - no ack is sent to hpu_a: timeout must be hit and request resent"); // -----------
@@ -574,7 +574,7 @@ module tb_mhdma_pkt_loss;
 
     notify_ack(hpu_a_id, hpu_a_mac_addr, hpu_b_id, hpu_b_mac_addr);
 
-    wait(hpu_a.mhdma_bridge.mhdma_formatter.tx_state == 3'b001);
+    wait(hpu_a.mhdma_bridge.mhdma_formatter.tx_state == 3'b000);
     $display("%t > [INFO]: formatter FSM has gotten back to IDLE", $time);
 
     $display("C - an incorrect ack is sent to hpu"); // -------------------------------------------
@@ -586,7 +586,7 @@ module tb_mhdma_pkt_loss;
 
     repeat(20) @(posedge clk_mrmac);
 
-    if (hpu_a.mhdma_bridge.mhdma_master.ntx_state == 2'b10) begin
+    if (hpu_a.mhdma_bridge.mhdma_master.ntx_state == 2'b01) begin
       $display("%t > [INFO]: When sending incorrect ack, state is still waiting", $time);
     end else begin
       $display("%t > [ERROR]: When sending incorrect ack state is not waiting", $time);
@@ -595,7 +595,7 @@ module tb_mhdma_pkt_loss;
 
     notify_ack(hpu_a_id, hpu_a_mac_addr, hpu_b_id, hpu_b_mac_addr);
 
-    wait(hpu_a.mhdma_bridge.mhdma_formatter.tx_state == 3'b001);
+    wait(hpu_a.mhdma_bridge.mhdma_formatter.tx_state == 3'b000);
     $display("%t > [INFO]: formatter FSM has gotten back to IDLE", $time);
 
     $display("D - no ack for a time and a new notify pending"); // --------------------------------
@@ -613,7 +613,7 @@ module tb_mhdma_pkt_loss;
 
     notify_ack(hpu_a_id, hpu_a_mac_addr, hpu_b_id, hpu_b_mac_addr);
 
-    wait(hpu_a.mhdma_bridge.mhdma_master.ntx_state == 3'b001);
+    wait(hpu_a.mhdma_bridge.mhdma_master.ntx_state == 3'b000);
 
     // Ciphertext emission error ==================================================================
     // HPU_A sends a read request and receives
@@ -628,7 +628,7 @@ module tb_mhdma_pkt_loss;
 
     emulate_ciphertext_emission(hpu_a_id, hpu_a_mac_addr, hpu_b_id, hpu_b_mac_addr, 0);
 
-    wait(hpu_a.mhdma_bridge.mhdma_formatter.tx_state == 3'b001);
+    wait(hpu_a.mhdma_bridge.mhdma_formatter.tx_state == 3'b000);
     $display("%t > [INFO-E]: formatter FSM has gotten back to IDLE", $time);
 
     $display("F - Read request is emitted by HPU_A and not answered for twice timeout amount"); // -
@@ -637,7 +637,7 @@ module tb_mhdma_pkt_loss;
 
     emulate_ciphertext_emission(hpu_a_id, hpu_a_mac_addr, hpu_b_id, hpu_b_mac_addr, 0);
 
-    wait(hpu_a.mhdma_bridge.mhdma_formatter.tx_state == 3'b001);
+    wait(hpu_a.mhdma_bridge.mhdma_formatter.tx_state == 3'b000);
     $display("%t > [INFO-F]: formatter FSM has gotten back to IDLE", $time);
 
     // TODO: missing wrong seq_num
@@ -661,7 +661,7 @@ module tb_mhdma_pkt_loss;
     $display(" stat_t_ce_first_to_last_pkt : %0d", stat_t_ce_first_to_last_pkt);
     $display(" ------------------------------------------------------------- \n");
 
-    assert ((stat_notify_retry == 0) | (stat_read_req_retry == 0)) begin
+    assert ((stat_notify_retry != 0) | (stat_read_req_retry != 0)) else begin
       $display("%t > [ERROR] : Did not retry when it was expected! Notify:%0d; Read_Req:%0d",$time, stat_notify_retry, stat_read_req_retry);
       error_retry = 1'b1;
     end
