@@ -186,8 +186,9 @@ module mhdma_master
 
   logic ciphertext_received;
   logic start_read_request;
-  logic rr_retry;
   logic seq_num_mismatch;
+  logic retry_seq_num;
+  logic rr_retry;
 
   always_ff @(posedge clk_mrmac) begin
     if (~resetn_mrmac) rreq_state <= RR_WAIT_REQUEST;
@@ -204,7 +205,7 @@ module mhdma_master
       RR_WAIT_PACKETS:
         // if seq_num_mismatch or timeout => RR_SEND_REQUEST
         // if write into hbm is finished => RR_WAIT_REQUEST
-        rreq_next_state = (seq_num_mismatch | timeout_reached_read_request) ? RR_SEND_REQUEST : ciphertext_received ? RR_WAIT_REQUEST: RR_WAIT_PACKETS;
+        rreq_next_state = rr_retry ? RR_SEND_REQUEST : ciphertext_received ? RR_WAIT_REQUEST: RR_WAIT_PACKETS;
     endcase
   end
 
@@ -215,13 +216,35 @@ module mhdma_master
       if (~resetn_mrmac) begin
         rr_retry <= 1'b0;
       end else begin
-        if (timeout_reached_read_request) begin
+        if (timeout_reached_read_request | retry_seq_num) begin
           rr_retry <= 1'b1;
         end else if (master_command_rdy & (master_command.req_id == REQ_ID_READ)) begin
           rr_retry <= 1'b0;
         end
       end
   end
+
+  logic last_read_req_had_mismatch;
+  logic seq_num_mismatch_Q;
+  logic front_edge_seq_num_mismatch;
+
+  always_ff @(posedge clk_mrmac)
+    seq_num_mismatch_Q <= seq_num_mismatch;
+
+  always_ff @(posedge clk_mrmac) begin
+    if(~resetn_mrmac) begin
+      last_read_req_had_mismatch <= 1'b0;
+    end else begin
+      if (front_edge_seq_num_mismatch) begin
+        last_read_req_had_mismatch <= 1'b1;
+      end else if (ciphertext_received) begin
+        last_read_req_had_mismatch <= 1'b0;
+      end
+    end
+  end
+
+  assign front_edge_seq_num_mismatch = seq_num_mismatch & ~seq_num_mismatch_Q;
+  assign retry_seq_num = last_read_req_had_mismatch & ciphertext_received;
 
   // =========================================================================================== //
   // Timeouts
@@ -392,8 +415,34 @@ module mhdma_master
     .out_vld     (nrqq_cmd_vld)
   );
 
-  assign nrqq_cmd_rdy = (master_command_rdy & (master_command.req_id == REQ_ID_NOTIFY)) & ~ntx_retry;
+  logic     nrqq_retry_in_rdy;
+  command_t nrqq_retry_data;
+  logic     nrqq_retry_rdy;
+  logic     nrqq_retry_vld;
+
+  assign nrqq_cmd_rdy = (master_command_rdy & (master_command.req_id == REQ_ID_NOTIFY)) & ~ntx_retry & nrqq_retry_in_rdy;
   assign start_notify_request = nrqq_cmd_rdy;
+
+  fifo_ram_rdy_vld # (
+    .WIDTH             (IOP_ID_W + HPU_ID_W + SIZE_B_W +DST_ADDR_W + SRC_ADDR_W),
+    .DEPTH             (REQ_FIFO_DEPTH),
+    .RAM_LATENCY       (CE_RAM_LATENCY)
+  ) nrqq_fifo_retries (
+    .clk         (clk_mrmac   ),
+    .s_rst_n     (resetn_mrmac),
+
+    .in_data     ({nrqq_cmd_data.iop_id, nrqq_cmd_data.hpu_id, nrqq_cmd_data.size_b, nrqq_cmd_data.dst_addr, nrqq_cmd_data.src_addr}),
+    .in_vld      (start_notify_request),
+    .in_rdy      (nrqq_retry_in_rdy   ),
+
+    .out_data    ({nrqq_retry_data.iop_id, nrqq_retry_data.hpu_id, nrqq_retry_data.size_b, nrqq_retry_data.dst_addr, nrqq_retry_data.src_addr}),
+    .out_vld     (nrqq_retry_vld),
+    .out_rdy     (nrqq_retry_rdy),
+
+    .almost_full (/* UNUSED */)
+  );
+
+  assign nrqq_retry_rdy = notify_ack_received & (ntx_state == NTX_WAIT_ACK);;
 
   // ----------------------------------------------------------------------------------------------
   // when we have the data of both request identifier and addresses, we consume the information
@@ -405,14 +454,14 @@ module mhdma_master
   // =========================================================================================== //
   always_ff @(posedge clk_mrmac) begin
     if (nrqq_cmd_vld | ntx_retry) begin
-      master_command.hpu_id   <= nrqq_cmd_data.hpu_id;
-      master_command.size_b   <= nrqq_cmd_data.size_b;
-      master_command.iop_id   <= nrqq_cmd_data.iop_id;
-      master_command.src_addr <= nrqq_cmd_data.src_addr;
+      master_command.hpu_id   <= ntx_retry ? nrqq_retry_data.hpu_id : nrqq_cmd_data.hpu_id;
+      master_command.size_b   <= ntx_retry ? nrqq_retry_data.size_b : nrqq_cmd_data.size_b;
+      master_command.iop_id   <= ntx_retry ? nrqq_retry_data.iop_id : nrqq_cmd_data.iop_id;
+      master_command.src_addr <= ntx_retry ? nrqq_retry_data.src_addr : nrqq_cmd_data.src_addr;
       master_command.dst_addr <= 'h0;
       master_command.req_id   <= REQ_ID_NOTIFY;
 
-      master_command_vld      <= (st_ntx_wait_request & nrqq_cmd_vld) | ntx_retry;
+      master_command_vld      <= (st_ntx_wait_request & nrqq_cmd_vld) | (nrqq_retry_vld & ntx_retry);
 
     end else if (rrqq_cmd_vld | rr_retry) begin
       master_command.hpu_id   <= rrqq_cmd.hpu_id;
