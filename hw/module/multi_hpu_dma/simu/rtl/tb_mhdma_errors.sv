@@ -26,6 +26,8 @@ module tb_mhdma_errors;
   import hpu_regif_core_eth_2in3_pkg::*; // ethernet regif
   import axi_if_eth_axi_pkg::*;          // AXI ethernet
 
+  `include "tb_mhdma_tasks.sv"
+
 // ============================================================================================== --
 // localparam
 // ============================================================================================== --
@@ -165,8 +167,31 @@ module tb_mhdma_errors;
   logic [2:0]              gt_loopback;
 
   // Test control signals
-  logic inject_axi_write_error;
-  logic [1:0] axi_error_type;  // SLVERR or DECERR
+  logic       inject_axi_write_error;
+  logic [1:0] axi_error_type;
+
+// ============================================================================================== --
+// QSFP interface
+// ============================================================================================== --
+  qsfp_if qsfp_rx_vif[QSFP_LANE_NB] (clk_mrmac);
+
+  generate
+    for (genvar gen_i=0; gen_i<QSFP_LANE_NB; gen_i=gen_i+1) begin
+      assign qsfp_rx_tdata[gen_i]      = qsfp_rx_vif[gen_i].tdata;
+      assign qsfp_rx_tkeep_user[gen_i] = qsfp_rx_vif[gen_i].tkeep_user;
+      assign qsfp_rx_tlast[gen_i]      = qsfp_rx_vif[gen_i].tlast;
+      assign qsfp_rx_tvalid[gen_i]     = qsfp_rx_vif[gen_i].tvalid;
+
+      initial begin
+        qsfp_rx_vif[gen_i].tdata      = 'h0;
+        qsfp_rx_vif[gen_i].tkeep_user = 'h0;
+        qsfp_rx_vif[gen_i].tlast      = 1'b0;
+        qsfp_rx_vif[gen_i].tvalid     = 1'b0;
+        qsfp_rx_vif[gen_i].tready     = 1'b1; // Always ready (no backpressure in this tb)
+        qsfp_tx_tready[gen_i]         = 1'b1;
+      end
+    end
+  endgenerate
 
 // ============================================================================================== --
 // DUT instantiation
@@ -400,20 +425,6 @@ module tb_mhdma_errors;
     end
   endgenerate
 
-// ============================================================================================== --
-// QSFP interface - simple loopback with delay and packet generation
-// ============================================================================================== --
-  // Default: accept all TX, no RX
-  initial begin
-    for (int i = 0; i < QSFP_LANE_NB; i++) begin
-      qsfp_tx_tready[i] = 1'b1;
-      qsfp_rx_tdata[i]  = '0;
-      qsfp_rx_tkeep_user[i] = '0;
-      qsfp_rx_tlast[i]  = 1'b0;
-      qsfp_rx_tvalid[i] = 1'b0;
-    end
-  end
-
   // GT signals
   initial begin
     gt_rx_reset_done = '1;
@@ -427,11 +438,14 @@ module tb_mhdma_errors;
   logic [REG_DATA_W-1:0] stat_errors;
   mhdma_error_t          errors_struct;
 
-  logic [HPU_ID_W-1:0]   random_hpu_id;
+  logic [SIZE_B_W-1:0]   req_size_b;
+  logic [MAC_ADDR_W-1:0] dst_mac_addr;
+  logic [MAC_ADDR_W-1:0] src_mac_addr;
+  logic [HPU_ID_W-1:0]   dst_hpu_id;
+  logic [HPU_ID_W-1:0]   src_hpu_id;
   logic [IOP_ID_W-1:0]   iop_id;
   logic [SRC_ADDR_W-1:0] src_addr;
   logic [DST_ADDR_W-1:0] dst_addr;
-  logic [SIZE_B_W-1:0]   req_size_b;
 
   assign req_size_b = 'h4000;
 
@@ -448,15 +462,15 @@ module tb_mhdma_errors;
 
     repeat(30) @(posedge clk_cfg);
 
-    $display("\n================================================================");
+    $display("\n==================================================================================================");
     $display("  Initialization");
-    $display("================================================================");
+    $display("==================================================================================================");
 
     init_config();
 
     // Read initial error register - should be 0
     maxil_drv.read_trans(MHDMA_SYSTEM_ERRORS_OFS, stat_errors);
-    $display("%t > Initial error register: 0x%08x", $time, stat_errors);
+    display_errors(stat_errors);
     assert (stat_errors == 0) else begin
       $display("%t > [ERROR] Error register not zero at startup", $time);
       error_unexpected = 1'b1;
@@ -464,27 +478,27 @@ module tb_mhdma_errors;
 
     repeat(50) @(posedge clk_cfg);
 
-    $display("\n================================================================");
+    $display("\n==================================================================================================");
     $display("  SCENARIO %0d: Testing error_id (multiple HPUs as current)", scenario_id);
-    $display("================================================================");
+    $display("==================================================================================================");
 
     test_error_id();
 
-    $display("\n================================================================");
+    $display("\n==================================================================================================");
     $display("  SCENARIO %0d: Testing write_error (AXI SLVERR/DECERR)", scenario_id);
-    $display("================================================================");
+    $display("==================================================================================================");
 
     test_write_error();
 
-    $display("\n================================================================");
+    $display("\n==================================================================================================");
     $display("  SCENARIO %0d: Testing a mismatch in sec num during CE", scenario_id);
-    $display("================================================================\n");
+    $display("==================================================================================================\n");
 
     test_seq_num();
 
-    $display("\n================================================================");
+    $display("\n==================================================================================================");
     $display("  SCENARIO %0d: Testing FIFO overflow errors", scenario_id);
-    $display("================================================================\n");
+    $display("==================================================================================================\n");
 
     test_fifo_overflow_errors();
 
@@ -520,6 +534,12 @@ module tb_mhdma_errors;
       maxil_drv.write_trans(MHDMA_HPU_ID_SEVEN_OFS, {1'b0, 3'b0, 4'h7, 24'hABCDE7});  // HPU 7
 
       repeat(20) @(posedge clk_cfg);
+
+      dst_mac_addr = 24'hABCDE0;
+      src_mac_addr = 24'hABCDE1;
+      dst_hpu_id   = 4'h0;
+      src_hpu_id   = 4'h1;
+
     end
   endtask
 
@@ -581,7 +601,10 @@ module tb_mhdma_errors;
 
       // Step 2: Send ciphertext emission packets as if we're the remote HPU responding
       for (int pkt = 0; pkt < NB_PACKETS_FULL + 1; pkt++) begin
-        send_ce_response_packet(8'h42, pkt[7:0], 16'h1234, 16'h5678);
+        iop_id = $urandom();
+        src_addr = $urandom();
+        dst_addr = $urandom();
+        send_ciphertext_emission_packet(qsfp_rx_vif[0], dst_mac_addr, src_mac_addr, dst_hpu_id, iop_id, src_addr, dst_addr, pkt[7:0]);
         repeat(10) @(posedge clk_mrmac);
       end
 
@@ -619,7 +642,7 @@ module tb_mhdma_errors;
       // error_fifo_rx_ovf Will overflow with this command
       // Send many notify packets without consuming them (error_fifo_nrx_commands_ovf)
       for (int i = 0; i < 2*RX_FIFO_DEPTH; i++) begin
-        send_notify_packet(i[7:0], $urandom());
+        send_notify_packet(qsfp_rx_vif[0], 24'hABCDE0, 24'hABCDE1, 4'b0, i[7:0], $urandom());
         repeat(5) @(posedge clk_mrmac);
       end
 
@@ -637,7 +660,10 @@ module tb_mhdma_errors;
 
       // Send many ciphertext emission packets without consuming (error_fifo_rx_ovf)
       for (int i = 0; i < 2*RX_FIFO_DEPTH; i++) begin
-        send_ciphertext_emission_packet();
+        iop_id = $urandom();
+        src_addr = $urandom();
+        dst_addr = $urandom();
+        send_ciphertext_emission_packet(qsfp_rx_vif[0], dst_mac_addr, src_mac_addr, dst_hpu_id, iop_id, src_addr, dst_addr, i[7:0]);
         repeat(5) @(posedge clk_mrmac);
       end
 
@@ -679,10 +705,13 @@ module tb_mhdma_errors;
       // Step 2: Send ciphertext emission packets as if we're the remote HPU responding
       // sec num value missmatch : istead of 6 we get 5
       for (int pkt = 0; pkt < NB_PACKETS_FULL + 1; pkt++) begin
+        iop_id = $urandom();
+        src_addr = $urandom();
+        dst_addr = $urandom();
         if (pkt == 6) begin
-          send_ce_response_packet(8'h42, 5, 16'h1234, 16'h5678);
+          send_ciphertext_emission_packet(qsfp_rx_vif[0], dst_mac_addr, src_mac_addr, dst_hpu_id, iop_id, src_addr, dst_addr, 5);
         end else begin
-          send_ce_response_packet(8'h42, pkt[7:0], 16'h1234, 16'h5678);
+          send_ciphertext_emission_packet(qsfp_rx_vif[0], dst_mac_addr, src_mac_addr, dst_hpu_id, iop_id, src_addr, dst_addr, pkt[7:0]);
         end
         repeat(10) @(posedge clk_mrmac);
       end
@@ -711,144 +740,6 @@ module tb_mhdma_errors;
     end
   endtask
 
-  task automatic send_notify_packet(
-    input logic [IOP_ID_W-1:0]   iop_id_in,
-    input logic [SRC_ADDR_W-1:0] src_addr_in
-  );
-    logic [MRMAC_AXIS_W-1:0] pkt_data [8];
-    begin
-      // Build notify packet header
-      pkt_data[0] = {MAC_OUI, 24'hABCDE0, MAC_OUI[MAC_OUI_W-1:8]};
-      pkt_data[1] = {MAC_OUI[7:0], 24'hABCDE1, ETH_LEN_MIN, LLC_DSAP, LLC_SSAP};
-      pkt_data[2] = {LLC_CTRL, REQ_ID_NOTIFY, 4'h1, 8'h00, src_addr_in, 16'h0000, iop_id_in};
-      pkt_data[3] = {16'h4000, 48'h0};
-      for (int i = 4; i < 8; i++) pkt_data[i] = 64'h0; // Word 4-7: Padding
-
-      // Send packet on lane 0
-      for (int i = 0; i < 8; i++) begin
-        @(posedge clk_mrmac);
-        qsfp_rx_tdata[0]      <= byte_swap(pkt_data[i]);
-        qsfp_rx_tkeep_user[0] <= (i < 7) ? 11'h0FF : 11'h00F;
-        qsfp_rx_tlast[0]      <= (i == 7);
-        qsfp_rx_tvalid[0]     <= 1'b1;
-      end
-
-      @(posedge clk_mrmac);
-      qsfp_rx_tvalid[0]     <= 1'b0;
-      qsfp_rx_tlast[0]      <= 1'b0;
-      qsfp_rx_tkeep_user[0] <= 'h0;
-    end
-  endtask
-
-  task automatic send_read_request_packet(
-    input logic [IOP_ID_W-1:0] iop_id_in,
-    input logic [SRC_ADDR_W-1:0] src_addr_in,
-    input logic [DST_ADDR_W-1:0] dst_addr_in
-  );
-    logic [MRMAC_AXIS_W-1:0] pkt_data [8];
-    begin
-      // Build read request packet header
-      pkt_data[0] = {MAC_OUI, 24'hABCDE0, MAC_OUI[MAC_OUI_W-1:8]};
-      pkt_data[1] = {MAC_OUI[7:0], 24'hABCDE1, ETH_LEN_MIN, LLC_DSAP, LLC_SSAP};
-      pkt_data[2] = {LLC_CTRL, REQ_ID_READ, 4'h1, 8'h00, src_addr_in, dst_addr_in, iop_id_in};
-      pkt_data[3] = {16'h4000, 48'h0};
-      for (int i = 4; i < 8; i++) pkt_data[i] = 64'h0;
-
-      // Send packet on lane 0
-      for (int i = 0; i < 8; i++) begin
-        @(posedge clk_mrmac);
-        qsfp_rx_tdata[0]      <= byte_swap(pkt_data[i]);
-        qsfp_rx_tkeep_user[0] <= (i < 7) ? 11'h0FF : 11'h00F;
-        qsfp_rx_tlast[0]      <= (i == 7);
-        qsfp_rx_tvalid[0]     <= 1'b1;
-      end
-
-      @(posedge clk_mrmac);
-      qsfp_rx_tvalid[0]     <= 1'b0;
-      qsfp_rx_tlast[0]      <= 1'b0;
-      qsfp_rx_tkeep_user[0] <= 'h0;
-    end
-  endtask
-
-  task automatic send_ciphertext_emission_packet();
-    logic [MRMAC_AXIS_W-1:0] pkt_data [200];  // Large packet for CT data
-    int num_words;
-    begin
-      num_words = NB_WORDS_MAX;
-
-      // Build ciphertext emission packet header
-      pkt_data[0] = {MAC_OUI, 24'hABCDE0, MAC_OUI[MAC_OUI_W-1:8]};
-      pkt_data[1] = {MAC_OUI[7:0], 24'hABCDE1, ETH_LEN_MIN, LLC_DSAP, LLC_SSAP};
-      pkt_data[2] = {LLC_CTRL, REQ_ID_EMISSION, 4'h1, 8'h00, 16'h1234, 16'h5678, 8'h0};
-      pkt_data[3] = {16'h4000, 48'h0};
-
-      // Fill payload with data
-      for (int i = 4; i < num_words; i++) begin
-        pkt_data[i] = {$urandom(), $urandom()};
-      end
-
-      // Send packet on lane 0
-      for (int i = 0; i < num_words; i++) begin
-        @(posedge clk_mrmac);
-        qsfp_rx_tdata[0]      <= byte_swap(pkt_data[i]);
-        qsfp_rx_tkeep_user[0] <= (i < num_words-1) ? 11'h0FF : 11'h00F;
-        qsfp_rx_tlast[0]      <= (i == num_words-1);
-        qsfp_rx_tvalid[0]     <= 1'b1;
-      end
-
-      @(posedge clk_mrmac);
-      qsfp_rx_tvalid[0] <= 1'b0;
-      qsfp_rx_tlast[0]  <= 1'b0;
-      qsfp_rx_tkeep_user[0] <= 'h0;
-    end
-  endtask
-
-  task automatic send_ce_response_packet(
-    input logic [IOP_ID_W-1:0]   iop_id_in,
-    input logic [SEQ_NUM_W-1:0]  seq_num_in,
-    input logic [SRC_ADDR_W-1:0] src_addr_in,
-    input logic [DST_ADDR_W-1:0] dst_addr_in
-  );
-    logic [MRMAC_AXIS_W-1:0] pkt_data [200];
-    int num_words;
-    int payload_bytes;
-    begin
-      // Determine packet size based on sequence number
-      if (seq_num_in < NB_PACKETS_FULL) begin
-        num_words = NB_WORDS_MAX;
-        payload_bytes = ETH_NB_BYTES_PAYLOAD;
-      end else begin
-        num_words = NB_WORDS_LAST_PACKET + NB_WORDS_CUST_HEADER_SIZE;
-        payload_bytes = LAST_PACKET_BYTE_SIZE;
-      end
-
-      // Build CE packet header
-      pkt_data[0] = {MAC_OUI, 24'hABCDE0, MAC_OUI[MAC_OUI_W-1:8]};
-      pkt_data[1] = {MAC_OUI[7:0], 24'hABCDE1, payload_bytes[15:0], LLC_DSAP, LLC_SSAP};
-      pkt_data[2] = {LLC_CTRL, REQ_ID_EMISSION, 4'h1, seq_num_in, src_addr_in, dst_addr_in, iop_id_in};
-      pkt_data[3] = {16'h4000, 48'h0};
-
-      // Fill payload with random data
-      for (int i = 4; i < num_words; i++) begin
-        pkt_data[i] = {$urandom(), $urandom()};
-      end
-
-      // Send packet on lane 0
-      for (int i = 0; i < num_words; i++) begin
-        @(posedge clk_mrmac);
-        qsfp_rx_tdata[0]      <= byte_swap(pkt_data[i]);
-        qsfp_rx_tkeep_user[0] <= (i < num_words-1) ? 11'h0FF : 11'h00F;
-        qsfp_rx_tlast[0]      <= (i == num_words-1);
-        qsfp_rx_tvalid[0]     <= 1'b1;
-      end
-
-      @(posedge clk_mrmac);
-      qsfp_rx_tvalid[0] <= 1'b0;
-      qsfp_rx_tlast[0]  <= 1'b0;
-      qsfp_rx_tkeep_user[0] <= 'h0;
-    end
-  endtask
-
   /* Performs a Read request from HPU A to HPU B
     - Since HPU A and HPU B are the same no need to be able to be able to send from both
     - There is two registers to write to send a read request */
@@ -868,4 +759,5 @@ module tb_mhdma_errors;
       maxil_drv.write_trans(MHDMA_REQUEST_REQ_ID_OFS, read_req_id);
     end
   endtask
+
 endmodule

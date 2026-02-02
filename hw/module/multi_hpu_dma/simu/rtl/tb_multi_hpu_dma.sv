@@ -5,9 +5,6 @@
 // Description  : This testbench only tests debug mode
 // Debug mode corresponds to the control of one lane through register file
 //
-// TODO:
-// - test behavior when saying several HPUs are the current one by mistake
-//
 // ==============================================================================================
 
 `resetall
@@ -18,6 +15,8 @@ module tb_multi_hpu_dma;
   import axi_if_common_param_pkg::*;      // general axi4
   import hpu_regif_core_eth_2in3_pkg::*;  // ethernet regif
   import axi_if_eth_axi_pkg::*;           // AXI ethernet
+
+  `include "tb_mhdma_tasks.sv"
 
 // ============================================================================================== --
 // localparam
@@ -174,7 +173,7 @@ module tb_multi_hpu_dma;
   logic [QSFP_LANE_NB-1:0][MRMAC_TKEEP_W-1:0] qsfp_tx_tkeep_user_rdyvld;
   logic [QSFP_LANE_NB-1:0]                    qsfp_tx_tlast_rdyvld;
   logic [QSFP_LANE_NB-1:0]                    qsfp_tx_tvalid_rdyvld;
-  // == RX
+  // == RX (from qsfp_rx_vif interface for injection to hpu_a)
   logic [QSFP_LANE_NB-1:0][MRMAC_AXIS_W-1:0 ] qsfp_rx_tdata;
   logic [QSFP_LANE_NB-1:0][MRMAC_TKEEP_W-1:0] qsfp_rx_tkeep_user;
   logic [QSFP_LANE_NB-1:0]                    qsfp_rx_tlast;
@@ -188,6 +187,20 @@ module tb_multi_hpu_dma;
   logic [QSFP_LANE_NB-1:0][MRMAC_TKEEP_W-1:0] qsfp_rx_tkeep_user_rdyvld;
   logic [QSFP_LANE_NB-1:0]                    qsfp_rx_tlast_rdyvld;
   logic [QSFP_LANE_NB-1:0]                    qsfp_rx_tvalid_rdyvld;
+
+  // == hpu_b TX output (muxed with qsfp_rx_vif for injection to hpu_a)
+  logic [QSFP_LANE_NB-1:0][MRMAC_AXIS_W-1:0 ] hpu_b_tx_tdata;
+  logic [QSFP_LANE_NB-1:0][MRMAC_TKEEP_W-1:0] hpu_b_tx_tkeep_user;
+  logic [QSFP_LANE_NB-1:0]                    hpu_b_tx_tlast;
+  logic [QSFP_LANE_NB-1:0]                    hpu_b_tx_tvalid;
+  logic [QSFP_LANE_NB-1:0]                    hpu_b_tx_tready;
+
+  // == hpu_a TX output (muxed with qsfp_tx_vif for injection to hpu_b)
+  logic [QSFP_LANE_NB-1:0][MRMAC_AXIS_W-1:0 ] hpu_a_tx_tdata;
+  logic [QSFP_LANE_NB-1:0][MRMAC_TKEEP_W-1:0] hpu_a_tx_tkeep_user;
+  logic [QSFP_LANE_NB-1:0]                    hpu_a_tx_tlast;
+  logic [QSFP_LANE_NB-1:0]                    hpu_a_tx_tvalid;
+  logic [QSFP_LANE_NB-1:0]                    hpu_a_tx_tready;
 
   logic [HPU_NB-1:0]                          interrupt_notify;
   logic [HPU_NB-1:0]                          interrupt_read_request;
@@ -285,6 +298,7 @@ module tb_multi_hpu_dma;
   logic [QSFP_LANE_NB-1:0]                     has_data_b;
   logic [QSFP_LANE_NB-1:0]                     random_valid_en_b;
   logic [QSFP_LANE_NB-1:0]                     sim_qsfp_tx_tready_b;
+
   multi_hpu_dma #(
     .FIFO_DEPTH(FIFO_DEPTH)
   ) hpu_a (
@@ -352,9 +366,6 @@ module tb_multi_hpu_dma;
     .qsfp_rx_tkeep_user(qsfp_rx_tkeep_user_delayed      ),
     .qsfp_rx_tlast     (qsfp_rx_tlast_delayed           ),
     .qsfp_rx_tvalid    (qsfp_rx_tvalid_delayed          ),
-
-    .interrupt_notify        (interrupt_notify[0]),
-    .interrupt_read_request  (interrupt_read_request[0]),
 
     .gt_line_rate        (gt_line_rate[0]        ),
     .gt_loopback         (gt_loopback[0]         ),
@@ -482,9 +493,6 @@ module tb_multi_hpu_dma;
     .qsfp_rx_tkeep_user(qsfp_tx_tkeep_user_delayed),
     .qsfp_rx_tlast     (qsfp_tx_tlast_delayed),
     .qsfp_rx_tvalid    (qsfp_tx_tvalid_delayed),
-
-    .interrupt_notify        (interrupt_notify[1]),
-    .interrupt_read_request  (interrupt_read_request[1]),
 
     .gt_line_rate        (gt_line_rate[1]        ),
     .gt_loopback         (gt_loopback[1]         ),
@@ -731,6 +739,7 @@ end
   int arbitrary_read_req_nb;
 
   // scenario -------------------------------------------------------------------------------------
+  int scenario_id;
   initial begin
     maxil_drv_if_hpu_a.init();
     maxil_drv_if_hpu_b.init();
@@ -747,22 +756,19 @@ end
 
     $display("\n\n"); // sperating from xpm fifo information
 
-    // Initialization =============================================================================
-    $display("A - Initial register check and definition");
-    init_registers();
+    $display("\n==================================================================================================");
+    $display("  Initial register check and definition");
+    $display("==================================================================================================");
+    init_config();
 
     // Defining MAC addresses for both instances of HPU -------------------------------------------
     write_mac_addresses();
 
-    // TODO: add checker
-
-    /* -  Classical use-case ======================================================================
-     *                > X Notifies to Y that a ciphertext is ready
-     *                > Y then reads this ciphertext
-     *  -------------------------------------------------------------------------------------------
-     * > we must see that the ciphertext moved from memory X to Y
-     * ----------------------------------------------------------------------------------------- */
-    $display("\nB - Notification & read request from one HPU to another, done %0d times", random_iter);
+    $display("\n==================================================================================================");
+    $display("  SCENARIO %0d: Default behavior, repeated for %0d times", scenario_id, random_iter);
+    $display("  > B Notifies to A that a ciphertext is ready");
+    $display("  > A then reads this ciphertext and send it to B");
+    $display("==================================================================================================");
 
     for (int i = 0; i < random_iter; i++) begin
       // for now size_b is fixed, all our ciphertext are 16.384kB (size_b=0x4000)
@@ -771,7 +777,6 @@ end
       iop_dst_addr = $urandom_range(0, 1<<DST_ADDR_W);
 
       repeat(100) @(posedge clk_control);
-      // Sending a NOTIFY from HPU-B to HPU-A -------------------------------------------------------
       notify_request(random_hpu_b, random_hpu_a, iop_id, iop_src_addr);
 
       // if a Notify is received by HPU A we should be able to confirm it by reading in the regf
@@ -792,6 +797,7 @@ end
       end
 
       repeat(100) @(posedge clk_control);
+
       // Sending a read request from HPU-A to HPU-B -------------------------------------------------
       read_request(random_hpu_b, iop_id, iop_src_addr, iop_dst_addr);
 
@@ -813,11 +819,11 @@ end
       check_memories(iop_src_addr, iop_dst_addr);
     end
 
-    /* - Piling notify requests ===================================================================
-     *                > X Notifies to Y that several ciphertexts are ready
-     * ----------------------------------------------------------------------------------------- */
-    $display("\nC - Notification that a ciphertext is ready from one HPU to another, x %0d", arbitrary_notify_nb);
+    scenario_id = scenario_id + 1;
 
+    $display("\n==================================================================================================");
+    $display("  SCENARIO %0d: Sending a Pile of %0d Notifies, done %0d times from A to B and inversely", scenario_id, arbitrary_notify_nb, LOOP_NOTIFY);
+    $display("==================================================================================================");
     for (int k = 0; k < LOOP_NOTIFY; k++) begin
       for (int i = 0; i < arbitrary_notify_nb; i++) begin
         // for now size_b is fixed, all our ciphertext are 16.384kB (size_b=0x4000)
@@ -834,7 +840,7 @@ end
         notify_payload_ref_q.push_front(notify_payload);
       end
 
-      $display("%t > INFO : All %0d Notify have been sent from B to A \n", $time, arbitrary_notify_nb);
+      $display("%t > INFO : All %0d Notify have been sent from B to A", $time, arbitrary_notify_nb);
 
       for (int i = 0; i < arbitrary_notify_nb; i++) begin
 
@@ -873,7 +879,7 @@ end
         notify_payload_ref_q.push_front(notify_payload);
       end
 
-      $display("%t > INFO : All %0d Notify have been sent from A to B \n", $time, arbitrary_notify_nb);
+      $display("%t > INFO : All %0d Notify have been sent from A to B", $time, arbitrary_notify_nb);
 
       for (int i = 0; i < arbitrary_notify_nb; i++) begin
 
@@ -898,12 +904,11 @@ end
       error_interrupt_notify = 1'b1;
     end
 
-    /* - Piling read requests ===================================================================
-     *                > X sends read requests to Y
-     *  -------------------------------------------------------------------------------------------
-     * > we must see that the ciphertext moved from memory X to Y for each of the read requests
-     * ----------------------------------------------------------------------------------------- */
-    $display("\nD - read request from one HPU to another, x %0d times", arbitrary_read_req_nb);
+    scenario_id = scenario_id + 1;
+
+    $display("\n==================================================================================================");
+    $display("  SCENARIO %0d: Sending a Pile of %0d read requests, done %0d times from A to B", scenario_id, arbitrary_read_req_nb, LOOP_NOTIFY);
+    $display("==================================================================================================");
 
     for (int i = 0; i < arbitrary_read_req_nb; i ++) begin
       iop_id       = $urandom();
@@ -941,10 +946,16 @@ end
       check_memories(iop_src_addr, iop_dst_addr);
     end
 
-    /* - Reading debug & timing registers ====================================================== */
     $display("%t > INFO : All %0d read request have been sent  and memory models checked\n",$time, arbitrary_read_req_nb);
 
+    $display("\n==================================================================================================");
+    $display("  Reading registers");
+    $display("==================================================================================================");
+
     maxil_drv_if_hpu_a.read_trans(MHDMA_SYSTEM_ERRORS_OFS, stat_errors);
+
+    display_errors(stat_errors);
+
     if (stat_errors!=0) begin
       $display("[ERROR]: Error register is not null! %b", stat_errors);
       error_register = 1'b1;
@@ -1039,7 +1050,6 @@ end
     $display(" stat_nb_write_complete        : %0d", stat_nb_write_complete);
     $display(" ------------------------------------------------------------- \n");
 
-
     $display("%t > INFO: End simulation",$time);
     repeat(20) @(posedge clk_control);
     end_of_test = 1'b1;
@@ -1077,7 +1087,7 @@ end
 // ============================================================================================== --
   logic [REG_DATA_W-1:00] rdata;
 
-  task automatic init_registers;
+  task automatic init_config;
     begin
     // Reading system REGISTERS -------------------------------------------------------------------
       maxil_drv_if_hpu_a.read_trans(MHDMA_SYSTEM_LANE_OFS, rdata);
@@ -1342,29 +1352,29 @@ end
     // After TLAST, not TVALID
     property no_valid_after_last(int lane);
       @(posedge clk_mrmac) disable iff (~s_rstn_mrmac)
-      (qsfp_tx_tvalid[lane] && sim_qsfp_tx_tready_a[lane] && qsfp_tx_tlast[lane]) |=> ~qsfp_tx_tvalid[lane];
+      (hpu_a_tx_tvalid[lane] && hpu_a_tx_tready[lane] && hpu_a_tx_tlast[lane]) |=> ~hpu_a_tx_tvalid[lane];
     endproperty
 
     // TLAST requires TVALID
     property mrmac_tlast_valid(int lane);
       @(posedge clk_mrmac) disable iff (~s_rstn_mrmac)
-      qsfp_tx_tlast[lane] |-> qsfp_tx_tvalid[lane];
+      hpu_a_tx_tlast[lane] |-> hpu_a_tx_tvalid[lane];
     endproperty
 
     // TX/RX AXIS valid must stay stable until ready
     property axis_stable(int lane);
       @(posedge clk_mrmac) disable iff (!s_rstn_mrmac)
-      (qsfp_tx_tvalid[lane] && ~sim_qsfp_tx_tready_a[lane]) |=> $stable(qsfp_tx_tvalid[lane]) && $stable(qsfp_tx_tdata[lane]) && $stable(qsfp_tx_tkeep_user[lane]);
+      (hpu_a_tx_tvalid[lane] && ~hpu_a_tx_tready[lane]) |=> $stable(hpu_a_tx_tvalid[lane]) && $stable(hpu_a_tx_tdata[lane]) && $stable(hpu_a_tx_tkeep_user[lane]);
     endproperty
 
     // Minimum Ethernet frame size (64 bytes) on valid frames - MRMAC inserts 4 bytes so we check for 60
     property mrmac_min_frame_size(int lane);
       int byte_count;
       @(posedge clk_mrmac) disable iff (~s_rstn_mrmac)
-      (!$past(qsfp_tx_tvalid[lane]) && qsfp_tx_tvalid[lane], byte_count=0) |->
+      (!$past(hpu_a_tx_tvalid[lane]) && hpu_a_tx_tvalid[lane], byte_count=0) |->
         first_match(
-          (qsfp_tx_tvalid[lane], byte_count += (sim_qsfp_tx_tready_a[lane] ? $countones(qsfp_tx_tkeep_user[lane]) : 0))[*1:$] ##0
-          (qsfp_tx_tlast[lane] && sim_qsfp_tx_tready_a[lane])
+          (hpu_a_tx_tvalid[lane], byte_count += (hpu_a_tx_tready[lane] ? $countones(hpu_a_tx_tkeep_user[lane]) : 0))[*1:$] ##0
+          (hpu_a_tx_tlast[lane] && hpu_a_tx_tready[lane])
         ) ##0 (byte_count >= 60);
     endproperty
 

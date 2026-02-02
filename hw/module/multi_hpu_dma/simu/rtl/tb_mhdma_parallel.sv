@@ -699,18 +699,15 @@ end
 
     $display("\n\n"); // sperating from xpm fifo information
 
-    // Initialization =============================================================================
-    $display("A - Initial register check and definition");
-    init_registers();
+    $display("\n==================================================================================================");
+    $display("  Initial register check and definition");
+    $display("==================================================================================================");
+    init_config();
 
-    // Defining MAC addresses for both instances of HPU -------------------------------------------
-    write_mac_addresses();
+    $display("\n==================================================================================================");
+    $display("  SCENARIO : trying concurrent Notifies %0d * %0d times", LOOP_NOTIFY, random_iter);
+    $display("==================================================================================================");
 
-    /* -  Concurrent Notifies =====================================================================
-     *                > X and Y Notifies eachother in parallel
-     *  -------------------------------------------------------------------------------------------
-     * > we must not lose Notifies
-     * ----------------------------------------------------------------------------------------- */
     for(int i = 0; i < LOOP_NOTIFY; i++) begin
       fork
         begin
@@ -780,7 +777,6 @@ end
     $display(" ----------------- HPU_B -------------------------------------");
     $display(" stat_notify                 : %0d", stat_notify[1]);
     $display(" stat_notify_ack             : %0d", stat_notify_ack[1]);
-    $display(" =============================================================\n");
 
     assert ((stat_notify[0] == stat_notify[1]) & (stat_notify_ack[0] == stat_notify_ack[1]) & (stat_notify[0] == LOOP_NOTIFY*random_iter)) else begin
       $display("%t > [ERROR]: Number of ack and Notify mismatch with expected value %0d", $time, random_iter);
@@ -788,6 +784,7 @@ end
     end
 
     $display("%t > INFO: End simulation",$time);
+    $display(" =============================================================\n");
     repeat(20) @(posedge clk_control);
     end_of_test = 1'b1;
   end
@@ -824,7 +821,7 @@ end
 // ============================================================================================== --
   logic [REG_DATA_W-1:00] rdata;
 
-  task automatic init_registers;
+  task automatic init_config;
     begin
     // Reading system REGISTERS -------------------------------------------------------------------
       maxil_drv_if_hpu_a.read_trans(MHDMA_SYSTEM_LANE_OFS, rdata);
@@ -914,6 +911,7 @@ end
     rst_all         = 4'b0000;
     @(posedge clk_control);
 
+    write_mac_addresses();
     $display("%t > INFO: Configuration successful\n",$time);
     end
   endtask
