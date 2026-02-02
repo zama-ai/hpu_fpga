@@ -12,29 +12,7 @@ import axi_if_common_param_pkg::*;      // general axi4
 import hpu_regif_core_eth_2in3_pkg::*;  // ethernet regif
 import axi_if_eth_axi_pkg::*;           // AXI ethernet
 
-// ==============================================================================================
-// QSFP RX Interface Definition
-// This is mandatory to stimulate correctly theses signals from this file
-// ==============================================================================================
-interface qsfp_if (input bit clk);
-  logic [MRMAC_AXIS_W-1:0]  tdata;
-  logic [MRMAC_TKEEP_W-1:0] tkeep_user;
-  logic                     tlast;
-  logic                     tvalid;
-  logic                     tready;
-
-  modport master (
-    input  clk,
-    output tdata, tkeep_user, tlast, tvalid,
-    input  tready
-  );
-
-  modport slave (
-    input  clk,
-    input  tdata, tkeep_user, tlast, tvalid,
-    output tready
-  );
-endinterface
+// Note: qsfp_if interface is defined in qsfp_if.sv (compiled separately)
 
 // ==============================================================================================
 // Error Display Function
