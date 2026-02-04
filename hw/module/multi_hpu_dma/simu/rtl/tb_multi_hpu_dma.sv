@@ -50,6 +50,8 @@ module tb_multi_hpu_dma;
   localparam [3:0] PC_STRIDE          = 'hB;
   localparam int PC_CT_BYTES [ETH_PC] = '{'h2000, 'h2020};
 
+  localparam int MEM_MAX_VALUE = (1 << MEM_SIM_SIZE) >> PC_STRIDE;
+
   localparam int MAX_BURST_SIZE = PAGE_BYTES/AXI4_DATA_BYTES;
 
   localparam int PC_NB_WORDS [ETH_PC] = compute_nb_words(PC_CT_BYTES);
@@ -773,8 +775,8 @@ end
     for (int i = 0; i < random_iter; i++) begin
       // for now size_b is fixed, all our ciphertext are 16.384kB (size_b=0x4000)
       iop_id       = $urandom();
-      iop_src_addr = $urandom_range(0, 1<<SRC_ADDR_W);
-      iop_dst_addr = $urandom_range(0, 1<<DST_ADDR_W);
+      iop_src_addr = $urandom_range(0, MEM_MAX_VALUE-1);
+      iop_dst_addr = $urandom_range(0, MEM_MAX_VALUE-1);
 
       repeat(100) @(posedge clk_control);
       notify_request(random_hpu_b, random_hpu_a, iop_id, iop_src_addr);
@@ -828,8 +830,8 @@ end
       for (int i = 0; i < arbitrary_notify_nb; i++) begin
         // for now size_b is fixed, all our ciphertext are 16.384kB (size_b=0x4000)
         iop_id       = $urandom();
-        iop_src_addr = $urandom_range(0, 1<<SRC_ADDR_W);
-        iop_dst_addr = $urandom_range(0, 1<<DST_ADDR_W);
+        iop_src_addr = $urandom_range(0, MEM_MAX_VALUE-1);
+        iop_dst_addr = $urandom_range(0, MEM_MAX_VALUE-1);
 
         repeat(10) @(posedge clk_control);
         // Sending a NOTIFY from HPU-B to HPU-A -------------------------------------------------------
@@ -867,8 +869,8 @@ end
       for (int i = 0; i < arbitrary_notify_nb; i++) begin
         // for now size_b is fixed, all our ciphertext are 16.384kB (size_b=0x4000)
         iop_id       = $urandom();
-        iop_src_addr = $urandom_range(0, 1<<SRC_ADDR_W);
-        iop_dst_addr = $urandom_range(0, 1<<DST_ADDR_W);
+        iop_src_addr = $urandom_range(0, MEM_MAX_VALUE-1);
+        iop_dst_addr = $urandom_range(0, MEM_MAX_VALUE-1);
 
         repeat(10) @(posedge clk_control);
         // Sending a NOTIFY from HPU-A to HPU-B -------------------------------------------------------
@@ -912,8 +914,8 @@ end
 
     for (int i = 0; i < arbitrary_read_req_nb; i ++) begin
       iop_id       = $urandom();
-      iop_src_addr = $urandom_range(0, 1<<SRC_ADDR_W);
-      iop_dst_addr = $urandom_range(0, 1<<DST_ADDR_W);
+      iop_src_addr = $urandom_range(0, MEM_MAX_VALUE-1);
+      iop_dst_addr = $urandom_range(0, MEM_MAX_VALUE-1);
       read_request(random_hpu_b, iop_id, iop_src_addr, iop_dst_addr);
 
       rr_payload = {iop_dst_addr, 4'b0, random_hpu_b, iop_id};
@@ -925,8 +927,8 @@ end
 
     for (int i = 0; i < arbitrary_read_req_nb; i++) begin
       iop_id       = $urandom();
-      iop_src_addr = $urandom_range(0, 1<<SRC_ADDR_W);
-      iop_dst_addr = $urandom_range(0, 1<<DST_ADDR_W);
+      iop_src_addr = $urandom_range(0, MEM_MAX_VALUE-1);
+      iop_dst_addr = $urandom_range(0, MEM_MAX_VALUE-1);
       // we must wait for interrupt to be raised before reading
       wait (hpu_a.interrupt_read_request == 1'b1);
       maxil_drv_if_hpu_a.read_trans(MHDMA_REQUEST_READ_REQUEST_OFS, read_data);
@@ -943,7 +945,7 @@ end
       exp_src_addr = rr_src_addr_ref_q.pop_back();
       exp_dst_addr = rr_dst_addr_ref_q.pop_back();
 
-      check_memories(iop_src_addr, iop_dst_addr);
+      check_memories(exp_src_addr, exp_dst_addr);
     end
 
     $display("%t > INFO : All %0d read request have been sent  and memory models checked\n",$time, arbitrary_read_req_nb);
@@ -1302,16 +1304,16 @@ end
     begin
       mismatch_found = 1'b0;
 
-      // PC 0
-      addr_hpu_0 = regf_start_addr_ofs + ((dst_addr << PC_STRIDE))/32 ; // where copied word should be
-      addr_hpu_1 = regf_start_addr_ofs + ((src_addr << PC_STRIDE))/32 ;
+      // we divide by 32 in order to change tot byte address
+      addr_hpu_0 = (regf_start_addr_ofs + ((dst_addr << PC_STRIDE)))/32; // where copied word should be
+      addr_hpu_1 = (regf_start_addr_ofs + ((src_addr << PC_STRIDE)))/32;
 
       $display("addr_hpu_0 = %x", addr_hpu_0);
       $display("addr_hpu_1 = %x", addr_hpu_1);
 
+      // PC 0
       // Direct comparison of memory locations
       for (int k = 0; k < PC_NB_WORDS[0]; k++) begin
-
         // I read from 0 to PC_NB_WORDS in HPU_B and
         if (gen_mem_hpu[0].gen_mem_pc[0].axi4_mem_ct.axi4_ram_ct_wr.mem[addr_hpu_0 + k] != gen_mem_hpu[1].gen_mem_pc[0].axi4_mem_ct.axi4_ram_ct_wr.mem[addr_hpu_1 + k]) begin
           $display("Memory mismatch at PC=%0d, offset=%0d: HPU_0[%0d]=%0h != HPU_1[%0d]=%0h", 0, k,

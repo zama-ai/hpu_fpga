@@ -345,7 +345,7 @@ module mhdma_slave
     for (genvar gen_p=0; gen_p<ETH_PC; gen_p=gen_p+1) begin
       always_ff @(posedge clk_mrmac)
         if (rreq_cmd_out_rdy & rreq_cmd_out_vld)
-          phy_addr[gen_p] <= regf_ct_mem_addr[gen_p] + (rr_ct_dst_addr << PC_STRIDE);
+          phy_addr[gen_p] <= regf_ct_mem_addr[gen_p] + (rr_ct_src_addr << PC_STRIDE);
 
       always_ff @(posedge clk_mrmac) begin
         if (~resetn_mrmac) begin
