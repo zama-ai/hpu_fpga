@@ -13,6 +13,9 @@
 // ============================================================================================= //
 #include <stdint.h>
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpacked-bitfield-compat"
+
 // Type
 // NB: Gcc packed struct are defined from LSB field to MSB one.
 // ============================================================================================= //
@@ -35,19 +38,51 @@ typedef union {
   struct iop_header_t header;
 } IOpHeader_t;
 
+struct iop_mapping_t  {
+  uint8_t used_0: 1;
+  uint8_t virt_0: 3;
+  uint8_t used_1: 1;
+  uint8_t virt_1: 3;
+  uint8_t used_2: 1;
+  uint8_t virt_2: 3;
+  uint8_t used_3: 1;
+  uint8_t virt_3: 3;
+  uint8_t used_4: 1;
+  uint8_t virt_4: 3;
+  uint8_t used_5: 1;
+  uint8_t virt_5: 3;
+  uint8_t used_6: 1;
+  uint8_t virt_6: 3;
+  uint8_t used_7: 1;
+  uint8_t virt_7: 3;
+} __attribute__((packed));
+
+// Union for casting between raw and inner type
+typedef union {
+  uint32_t raw;
+  struct iop_mapping_t mapping;
+} IOpMapping_t;
+
 struct iop_operand_t {
-  uint16_t base_cid: 16;
+  uint16_t _pad: 5;
   uint8_t block: 8;
   uint8_t vec_size: 5;
+  uint8_t iid: 8;
+  uint8_t pos: 3;
   uint8_t is_last: 1;
   uint8_t kind: 2;
 } __attribute__((packed));
 
+struct iop_opaddr_t {
+  uint16_t base_cid: 16;
+  uint16_t _pad: 16;
+} __attribute__((packed));
 
 // Union for casting between raw and inner type
 typedef union {
   uint32_t raw;
   struct iop_operand_t operand;
+  struct iop_opaddr_t opaddr;
 } IOpOperand_t;
 
 // Constant used to decode kind
@@ -84,6 +119,8 @@ typedef union {
 #define IOP_MAX_BYTES (IOP_MAX_WORDS * sizeof(uint32_t))
 // Operand are depict as vector starting from cid_ofst
 typedef struct {
+  uint8_t iid;
+  uint8_t pos;
   uint8_t len;
   uint16_t cid_ofst;
 } Operand_t;
@@ -107,4 +144,5 @@ typedef struct {
   Immediate_t cst[IMMEDIAT_BUNDLE_MAX_SLOT];
 } ImmediatBundle_t;
 
+#pragma GCC diagnostic pop
 #endif //__HPU_IOP_FMT_H__

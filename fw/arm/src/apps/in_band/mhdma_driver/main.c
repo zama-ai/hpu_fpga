@@ -70,76 +70,126 @@ void interrupt_read_complete_handler(void) {
 }
 
 // Utilities function to patch DOp
-void patch_dop(DOpu_t *dop,
-               uint8_t iop_id, // should be read in dst
-               OperandBundle_t *dst,
-               OperandBundle_t *src,
-               ImmediatBundle_t *imm) {
-  DOpKind_t kind = get_kind(dop);
+//void patch_dop(DOpu_t *dop,
+//               uint8_t iop_id, // should be read in dst
+//               OperandBundle_t *dst,
+//               OperandBundle_t *src,
+//               ImmediatBundle_t *imm) {
+//  DOpKind_t kind = get_kind(dop);
+//
+//  switch (kind) {
+//    case DOPK_MEM: {
+//      patch_mem_dop(dop, dst, src);
+//      break;
+//    }
+//    case DOPK_ARITH: {
+//      // Check if its a scalar arith operation
+//      if ((dop->raw_field.opcode & IMM_FLAG) == IMM_FLAG) {
+//        patch_imm_dop(dop, imm);
+//      }
+//      break;
+//    }
+//    case DOPK_SYNC: {
+//      DOpSync_t sync_opcode = get_sync_opcode(dop);
+//      switch (sync_opcode) {
+//        case DOPS_NOTIFY: {
+//          uint8_t flag = dop->sync.flag;
+//
+//          //insert SYNC and wait on ACK
+//          break;
+//        }
+//        case DOPS_WAIT: {
+//          uint8_t flag = dop->sync.flag;
+//          uint8_t is_hard_wait = dop->sync.wait_mode;
+//          uint8_t current_elt_state = mhdma_table[iop_id][flag].state;
+//
+//          while ( (is_hard_wait == 1 && current_elt_state < MHDMA_STATE_RESOLVED)
+//               || (is_hard_wait == 0 && current_elt_state < MHDMA_STATE_RECEIVED)) {
+//            // wait until notify or read ct is received
+//            //iOSAL_Task_SleepTicks(1);
+//            printf("wait on iop_id %d flag %d\n", iop_id, flag);
+//            sleep(1);
+//          }
+//          break;
+//        }
+//        case DOPS_LD_B2B: {
+//          uint8_t flag = dop->sync.flag;
+//          mhdma_element_t *current_elt = &mhdma_table[iop_id][flag];
+//          switch (current_elt->state) {
+//            case MHDMA_STATE_RESOLVED: break; // nothing to do
+//            case MHDMA_STATE_RECEIVED: { // must read asap
+//              current_elt->state = MHDMA_STATE_READING;
+//              generate_read_req(iop_id, flag);
+//              break;
+//            } 
+//            default: { // must wait for notify
+//              current_elt->state = MHDMA_STATE_WAITING;
+//              break;
+//            }
+//          }
+//          break;
+//        }
+//      }
+//      break;
+//    }
+//    case DOPK_PBS: { // Nothing to do
+//      break;
+//    }
+//  }
+//}
 
-  switch (kind) {
-    case DOPK_MEM: {
-      patch_mem_dop(dop, dst, src);
-      break;
-    }
-    case DOPK_ARITH: {
-      // Check if its a scalar arith operation
-      if ((dop->raw_field.opcode & IMM_FLAG) == IMM_FLAG) {
-        patch_imm_dop(dop, imm);
-      }
-      break;
-    }
-    case DOPK_SYNC: {
-      DOpSync_t sync_opcode = get_sync_opcode(dop);
-      switch (sync_opcode) {
-        case DOPS_NOTIFY: {
-          uint8_t flag = dop->sync.flag;
-
-          //insert SYNC and wait on ACK
-          break;
-        }
-        case DOPS_WAIT: {
-          uint8_t flag = dop->sync.flag;
-          uint8_t is_hard_wait = dop->sync.wait_mode;
-          uint8_t current_elt_state = mhdma_table[iop_id][flag].state;
-
-          while ( (is_hard_wait == 1 && current_elt_state < MHDMA_STATE_RESOLVED)
-               || (is_hard_wait == 0 && current_elt_state < MHDMA_STATE_RECEIVED)) {
-            // wait until notify or read ct is received
-            //iOSAL_Task_SleepTicks(1);
-            printf("wait on iop_id %d flag %d\n", iop_id, flag);
-            sleep(1);
-          }
-          break;
-        }
-        case DOPS_LD_B2B: {
-          uint8_t flag = dop->sync.flag;
-          mhdma_element_t *current_elt = &mhdma_table[iop_id][flag];
-          switch (current_elt->state) {
-            case MHDMA_STATE_RESOLVED: break; // nothing to do
-            case MHDMA_STATE_RECEIVED: { // must read asap
-              current_elt->state = MHDMA_STATE_READING;
-              generate_read_req(iop_id, flag);
-              break;
-            } 
-            default: { // must wait for notify
-              current_elt->state = MHDMA_STATE_WAITING;
-              break;
-            }
-          }
-          break;
-        }
-      }
-      break;
-    }
-    case DOPK_PBS: { // Nothing to do
-      break;
-    }
-  }
-}
+#define MAX_VALUES 100
 
 int main(void) {
   printf("MHDMA firmware prototype\n");
+  FILE *fp;
+  char *filename = "iop0.hex";
+  uint32_t data[MAX_VALUES];
+  int count = 0;
+
+  // 1. Open the file
+  fp = fopen(filename, "r");
+  if (fp == NULL) {
+      perror("Error opening iop file");
+      return 1;
+  }
+
+  // 2. Read values loop
+  // %x automatically handles "0x" prefix and whitespace/newlines
+  // We check if count < MAX_VALUES to prevent buffer overflow
+  while (count < MAX_VALUES && fscanf(fp, "%x", &data[count]) == 1) {
+      count++;
+  }
+
+  // 3. Close the file
+  fclose(fp);
+
+  // 4. Verify output (Print the first few read values)
+  printf("Successfully read %d values:\n", count);
+  for (int i = 0; i < count; i++) {
+      // %08X prints 8 digits of hex, padding with zeros
+      printf("[%d]: 0x%08X\n", i, data[i]);
+  }
+
+  if (count == MAX_VALUES) {
+      printf("Warning: Buffer full. There might be more data in the file.\n");
+  }
+
+  IOpHeader_t header;
+  IOpMapping_t mapping;
+  IOpOperand_t operand;
+  IOpOperand_t opaddr;
+  IOpImmHeader_t imm_header;
+  OperandBundle_t dst_bundle;
+  OperandBundle_t src_bundle;
+  ImmediatBundle_t imm_bundle;
+
+  uint32_t iop_complete_len = parse_iop(data, 40, &header, &mapping, &operand, &opaddr, &imm_header, &dst_bundle, &src_bundle, &imm_bundle);
+
+  uint8_t current_iid = dst_bundle.operand[0].iid;
+  printf("IOp id %d [0x%x] [dst %d] [src %d] [imm %d] [stream_len %d]\n", current_iid, header.header.opcode, dst_bundle.len, src_bundle.len, imm_bundle.len, iop_complete_len);
+
+
   return 0;
 }
 

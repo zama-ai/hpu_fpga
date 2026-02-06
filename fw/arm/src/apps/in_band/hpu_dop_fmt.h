@@ -13,8 +13,6 @@
 // Headers
 // ============================================================================================= //
 #include <stdint.h>
-// Retrived Hpu IOp fmt header for use of Operands/Immediats
-#include "hpu_iop_fmt.h"
 
 // Constants
 // ============================================================================================= //
@@ -43,6 +41,8 @@
 #define CT_MEM_SLOT 32768
 #define HEAP_START_SLOT ((CT_MEM_SLOT) -1)
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpacked-bitfield-compat"
 // Type
 // NB: Gcc packed struct are defined from LSB field to MSB one.
 // ============================================================================================= //
@@ -142,5 +142,5 @@ enum DOpArithFlag {
   ADD_FLAG = 0b0001,
 };
 
-
+#pragma GCC diagnostic pop
 #endif //__HPU_DOP_FMT_H__
