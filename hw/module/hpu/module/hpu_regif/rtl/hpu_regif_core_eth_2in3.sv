@@ -1,7 +1,7 @@
 // ============================================================================================== //
 // Description  : Axi4-lite register bank
 // This file was generated with rust regmap generator:
-//  * Date:  2026-01-28
+//  * Date:  2026-02-04
 //  * Tool_version: 27d9e880d531030160fd8749c606142942d5558d
 // ---------------------------------------------------------------------------------------------- //
 // xR[n]W[na]
@@ -30,8 +30,8 @@
 //      : Value provided by the RTL. The host can read it with notify. The write data is processed by the RTL.
 // ============================================================================================== //
 module hpu_regif_core_eth_2in3
-import axi_if_shell_axil_pkg::*;
 import axi_if_common_param_pkg::*;
+import axi_if_shell_axil_pkg::*;
 import hpu_regif_core_eth_2in3_pkg::*;
 #()(
   input  logic                           clk,
@@ -195,54 +195,6 @@ import hpu_regif_core_eth_2in3_pkg::*;
     , output logic [REG_DATA_W-1: 0] r_mhdma_hbm_axi4_addr_2in3_ct_pc1_lsb
   // Register IO: mhdma_hbm_axi4_addr_2in3_ct_pc1_msb
     , output logic [REG_DATA_W-1: 0] r_mhdma_hbm_axi4_addr_2in3_ct_pc1_msb
-  // Register IO: fifo_write_number_of_words
-    , output logic [REG_DATA_W-1: 0] r_fifo_write_number_of_words
-  // Register IO: fifo_write_words_to_write_a
-    , output logic [REG_DATA_W-1: 0] r_fifo_write_words_to_write_a
-  // Register IO: fifo_write_words_to_write_b
-    , output logic [REG_DATA_W-1: 0] r_fifo_write_words_to_write_b
-  // Register IO: fifo_write_fifo_write_data_count
-    , output logic [REG_DATA_W-1: 0] r_fifo_write_fifo_write_data_count
-    , input  logic [REG_DATA_W-1: 0] r_fifo_write_fifo_write_data_count_upd
-  // Register IO: fifo_read_words_to_read_a
-    , output logic [REG_DATA_W-1: 0] r_fifo_read_words_to_read_a
-    , input  logic [REG_DATA_W-1: 0] r_fifo_read_words_to_read_a_upd
-  // Register IO: fifo_read_words_to_read_b
-    , output logic [REG_DATA_W-1: 0] r_fifo_read_words_to_read_b
-    , input  logic [REG_DATA_W-1: 0] r_fifo_read_words_to_read_b_upd
-  // Register IO: fifo_read_fifo_read_data_count
-    , output logic [REG_DATA_W-1: 0] r_fifo_read_fifo_read_data_count
-    , input  logic [REG_DATA_W-1: 0] r_fifo_read_fifo_read_data_count_upd
-  // Register IO: cnt_trig_rd
-    , output logic [REG_DATA_W-1: 0] r_cnt_trig_rd
-    , input  logic [REG_DATA_W-1: 0] r_cnt_trig_rd_upd
-  // Register IO: cnt_tx_wr
-    , output logic [REG_DATA_W-1: 0] r_cnt_tx_wr
-    , input  logic [REG_DATA_W-1: 0] r_cnt_tx_wr_upd
-  // Register IO: cnt_words
-    , output logic [REG_DATA_W-1: 0] r_cnt_words
-    , input  logic [REG_DATA_W-1: 0] r_cnt_words_upd
-  // Register IO: mhdma_stat_status
-    , output logic [REG_DATA_W-1: 0] r_mhdma_stat_status
-    , input  logic [REG_DATA_W-1: 0] r_mhdma_stat_status_upd
-  // Register IO: mhdma_stat_clk_a
-    , output logic [REG_DATA_W-1: 0] r_mhdma_stat_clk_a
-    , input  logic [REG_DATA_W-1: 0] r_mhdma_stat_clk_a_upd
-  // Register IO: mhdma_stat_clk_b
-    , output logic [REG_DATA_W-1: 0] r_mhdma_stat_clk_b
-    , input  logic [REG_DATA_W-1: 0] r_mhdma_stat_clk_b_upd
-  // Register IO: mhdma_stat_valid_words_a
-    , output logic [REG_DATA_W-1: 0] r_mhdma_stat_valid_words_a
-    , input  logic [REG_DATA_W-1: 0] r_mhdma_stat_valid_words_a_upd
-  // Register IO: mhdma_stat_valid_words_b
-    , output logic [REG_DATA_W-1: 0] r_mhdma_stat_valid_words_b
-    , input  logic [REG_DATA_W-1: 0] r_mhdma_stat_valid_words_b_upd
-  // Register IO: mhdma_stat_sop_cnt_a
-    , output logic [REG_DATA_W-1: 0] r_mhdma_stat_sop_cnt_a
-    , input  logic [REG_DATA_W-1: 0] r_mhdma_stat_sop_cnt_a_upd
-  // Register IO: mhdma_stat_sop_cnt_b
-    , output logic [REG_DATA_W-1: 0] r_mhdma_stat_sop_cnt_b
-    , input  logic [REG_DATA_W-1: 0] r_mhdma_stat_sop_cnt_b_upd
 );
 // ============================================================================================== --
 // localparam
@@ -558,57 +510,6 @@ import hpu_regif_core_eth_2in3_pkg::*;
 //-- Default mhdma_hbm_axi4_addr_2in3_ct_pc1_msb
   logic [REG_DATA_W-1:0]mhdma_hbm_axi4_addr_2in3_ct_pc1_msb_default;
   assign mhdma_hbm_axi4_addr_2in3_ct_pc1_msb_default = 'h0;
-//-- Default fifo_write_number_of_words
-  logic [REG_DATA_W-1:0]fifo_write_number_of_words_default;
-  assign fifo_write_number_of_words_default = 'h0;
-//-- Default fifo_write_words_to_write_a
-  logic [REG_DATA_W-1:0]fifo_write_words_to_write_a_default;
-  assign fifo_write_words_to_write_a_default = 'h0;
-//-- Default fifo_write_words_to_write_b
-  logic [REG_DATA_W-1:0]fifo_write_words_to_write_b_default;
-  assign fifo_write_words_to_write_b_default = 'h0;
-//-- Default fifo_write_fifo_write_data_count
-  logic [REG_DATA_W-1:0]fifo_write_fifo_write_data_count_default;
-  assign fifo_write_fifo_write_data_count_default = 'h0;
-//-- Default fifo_read_words_to_read_a
-  logic [REG_DATA_W-1:0]fifo_read_words_to_read_a_default;
-  assign fifo_read_words_to_read_a_default = 'h0;
-//-- Default fifo_read_words_to_read_b
-  logic [REG_DATA_W-1:0]fifo_read_words_to_read_b_default;
-  assign fifo_read_words_to_read_b_default = 'h0;
-//-- Default fifo_read_fifo_read_data_count
-  logic [REG_DATA_W-1:0]fifo_read_fifo_read_data_count_default;
-  assign fifo_read_fifo_read_data_count_default = 'h0;
-//-- Default cnt_trig_rd
-  logic [REG_DATA_W-1:0]cnt_trig_rd_default;
-  assign cnt_trig_rd_default = 'h0;
-//-- Default cnt_tx_wr
-  logic [REG_DATA_W-1:0]cnt_tx_wr_default;
-  assign cnt_tx_wr_default = 'h0;
-//-- Default cnt_words
-  logic [REG_DATA_W-1:0]cnt_words_default;
-  assign cnt_words_default = 'h0;
-//-- Default mhdma_stat_status
-  logic [REG_DATA_W-1:0]mhdma_stat_status_default;
-  assign mhdma_stat_status_default = 'h0;
-//-- Default mhdma_stat_clk_a
-  logic [REG_DATA_W-1:0]mhdma_stat_clk_a_default;
-  assign mhdma_stat_clk_a_default = 'h0;
-//-- Default mhdma_stat_clk_b
-  logic [REG_DATA_W-1:0]mhdma_stat_clk_b_default;
-  assign mhdma_stat_clk_b_default = 'h0;
-//-- Default mhdma_stat_valid_words_a
-  logic [REG_DATA_W-1:0]mhdma_stat_valid_words_a_default;
-  assign mhdma_stat_valid_words_a_default = 'h0;
-//-- Default mhdma_stat_valid_words_b
-  logic [REG_DATA_W-1:0]mhdma_stat_valid_words_b_default;
-  assign mhdma_stat_valid_words_b_default = 'h0;
-//-- Default mhdma_stat_sop_cnt_a
-  logic [REG_DATA_W-1:0]mhdma_stat_sop_cnt_a_default;
-  assign mhdma_stat_sop_cnt_a_default = 'h0;
-//-- Default mhdma_stat_sop_cnt_b
-  logic [REG_DATA_W-1:0]mhdma_stat_sop_cnt_b_default;
-  assign mhdma_stat_sop_cnt_b_default = 'h0;
 // ============================================================================================== --
 // Write reg
 // ============================================================================================== --
@@ -1055,193 +956,6 @@ import hpu_regif_core_eth_2in3_pkg::*;
       r_mhdma_hbm_axi4_addr_2in3_ct_pc1_msb       <= r_mhdma_hbm_axi4_addr_2in3_ct_pc1_msbD;
     end
   end
-// Register FF: fifo_write_number_of_words
-  logic [REG_DATA_W-1:0] r_fifo_write_number_of_wordsD;
-  assign r_fifo_write_number_of_wordsD = (wr_en_ok && (wr_add[AXIL_ADD_RANGE_W-1:0] == FIFO_WRITE_NUMBER_OF_WORDS_OFS[AXIL_ADD_RANGE_W-1:0]))? wr_data: r_fifo_write_number_of_words;
-  always_ff @(posedge clk) begin
-    if (!s_rst_n) begin
-      r_fifo_write_number_of_words       <= fifo_write_number_of_words_default;
-    end
-    else begin
-      r_fifo_write_number_of_words       <= r_fifo_write_number_of_wordsD;
-    end
-  end
-// Register FF: fifo_write_words_to_write_a
-  logic [REG_DATA_W-1:0] r_fifo_write_words_to_write_aD;
-  assign r_fifo_write_words_to_write_aD = (wr_en_ok && (wr_add[AXIL_ADD_RANGE_W-1:0] == FIFO_WRITE_WORDS_TO_WRITE_A_OFS[AXIL_ADD_RANGE_W-1:0]))? wr_data: r_fifo_write_words_to_write_a;
-  always_ff @(posedge clk) begin
-    if (!s_rst_n) begin
-      r_fifo_write_words_to_write_a       <= fifo_write_words_to_write_a_default;
-    end
-    else begin
-      r_fifo_write_words_to_write_a       <= r_fifo_write_words_to_write_aD;
-    end
-  end
-// Register FF: fifo_write_words_to_write_b
-  logic [REG_DATA_W-1:0] r_fifo_write_words_to_write_bD;
-  assign r_fifo_write_words_to_write_bD = (wr_en_ok && (wr_add[AXIL_ADD_RANGE_W-1:0] == FIFO_WRITE_WORDS_TO_WRITE_B_OFS[AXIL_ADD_RANGE_W-1:0]))? wr_data: r_fifo_write_words_to_write_b;
-  always_ff @(posedge clk) begin
-    if (!s_rst_n) begin
-      r_fifo_write_words_to_write_b       <= fifo_write_words_to_write_b_default;
-    end
-    else begin
-      r_fifo_write_words_to_write_b       <= r_fifo_write_words_to_write_bD;
-    end
-  end
-// Register FF: fifo_write_fifo_write_data_count
-  logic [REG_DATA_W-1:0] r_fifo_write_fifo_write_data_countD;
-  assign r_fifo_write_fifo_write_data_countD       = r_fifo_write_fifo_write_data_count_upd;
-  always_ff @(posedge clk) begin
-    if (!s_rst_n) begin
-      r_fifo_write_fifo_write_data_count       <= fifo_write_fifo_write_data_count_default;
-    end
-    else begin
-      r_fifo_write_fifo_write_data_count       <= r_fifo_write_fifo_write_data_countD;
-    end
-  end
-// Register FF: fifo_read_words_to_read_a
-  logic [REG_DATA_W-1:0] r_fifo_read_words_to_read_aD;
-  assign r_fifo_read_words_to_read_aD       = r_fifo_read_words_to_read_a_upd;
-  always_ff @(posedge clk) begin
-    if (!s_rst_n) begin
-      r_fifo_read_words_to_read_a       <= fifo_read_words_to_read_a_default;
-    end
-    else begin
-      r_fifo_read_words_to_read_a       <= r_fifo_read_words_to_read_aD;
-    end
-  end
-// Register FF: fifo_read_words_to_read_b
-  logic [REG_DATA_W-1:0] r_fifo_read_words_to_read_bD;
-  assign r_fifo_read_words_to_read_bD       = r_fifo_read_words_to_read_b_upd;
-  always_ff @(posedge clk) begin
-    if (!s_rst_n) begin
-      r_fifo_read_words_to_read_b       <= fifo_read_words_to_read_b_default;
-    end
-    else begin
-      r_fifo_read_words_to_read_b       <= r_fifo_read_words_to_read_bD;
-    end
-  end
-// Register FF: fifo_read_fifo_read_data_count
-  logic [REG_DATA_W-1:0] r_fifo_read_fifo_read_data_countD;
-  assign r_fifo_read_fifo_read_data_countD       = r_fifo_read_fifo_read_data_count_upd;
-  always_ff @(posedge clk) begin
-    if (!s_rst_n) begin
-      r_fifo_read_fifo_read_data_count       <= fifo_read_fifo_read_data_count_default;
-    end
-    else begin
-      r_fifo_read_fifo_read_data_count       <= r_fifo_read_fifo_read_data_countD;
-    end
-  end
-// Register FF: cnt_trig_rd
-  logic [REG_DATA_W-1:0] r_cnt_trig_rdD;
-  assign r_cnt_trig_rdD       = r_cnt_trig_rd_upd;
-  always_ff @(posedge clk) begin
-    if (!s_rst_n) begin
-      r_cnt_trig_rd       <= cnt_trig_rd_default;
-    end
-    else begin
-      r_cnt_trig_rd       <= r_cnt_trig_rdD;
-    end
-  end
-// Register FF: cnt_tx_wr
-  logic [REG_DATA_W-1:0] r_cnt_tx_wrD;
-  assign r_cnt_tx_wrD       = r_cnt_tx_wr_upd;
-  always_ff @(posedge clk) begin
-    if (!s_rst_n) begin
-      r_cnt_tx_wr       <= cnt_tx_wr_default;
-    end
-    else begin
-      r_cnt_tx_wr       <= r_cnt_tx_wrD;
-    end
-  end
-// Register FF: cnt_words
-  logic [REG_DATA_W-1:0] r_cnt_wordsD;
-  assign r_cnt_wordsD       = r_cnt_words_upd;
-  always_ff @(posedge clk) begin
-    if (!s_rst_n) begin
-      r_cnt_words       <= cnt_words_default;
-    end
-    else begin
-      r_cnt_words       <= r_cnt_wordsD;
-    end
-  end
-// Register FF: mhdma_stat_status
-  logic [REG_DATA_W-1:0] r_mhdma_stat_statusD;
-  assign r_mhdma_stat_statusD       = r_mhdma_stat_status_upd;
-  always_ff @(posedge clk) begin
-    if (!s_rst_n) begin
-      r_mhdma_stat_status       <= mhdma_stat_status_default;
-    end
-    else begin
-      r_mhdma_stat_status       <= r_mhdma_stat_statusD;
-    end
-  end
-// Register FF: mhdma_stat_clk_a
-  logic [REG_DATA_W-1:0] r_mhdma_stat_clk_aD;
-  assign r_mhdma_stat_clk_aD       = r_mhdma_stat_clk_a_upd;
-  always_ff @(posedge clk) begin
-    if (!s_rst_n) begin
-      r_mhdma_stat_clk_a       <= mhdma_stat_clk_a_default;
-    end
-    else begin
-      r_mhdma_stat_clk_a       <= r_mhdma_stat_clk_aD;
-    end
-  end
-// Register FF: mhdma_stat_clk_b
-  logic [REG_DATA_W-1:0] r_mhdma_stat_clk_bD;
-  assign r_mhdma_stat_clk_bD       = r_mhdma_stat_clk_b_upd;
-  always_ff @(posedge clk) begin
-    if (!s_rst_n) begin
-      r_mhdma_stat_clk_b       <= mhdma_stat_clk_b_default;
-    end
-    else begin
-      r_mhdma_stat_clk_b       <= r_mhdma_stat_clk_bD;
-    end
-  end
-// Register FF: mhdma_stat_valid_words_a
-  logic [REG_DATA_W-1:0] r_mhdma_stat_valid_words_aD;
-  assign r_mhdma_stat_valid_words_aD       = r_mhdma_stat_valid_words_a_upd;
-  always_ff @(posedge clk) begin
-    if (!s_rst_n) begin
-      r_mhdma_stat_valid_words_a       <= mhdma_stat_valid_words_a_default;
-    end
-    else begin
-      r_mhdma_stat_valid_words_a       <= r_mhdma_stat_valid_words_aD;
-    end
-  end
-// Register FF: mhdma_stat_valid_words_b
-  logic [REG_DATA_W-1:0] r_mhdma_stat_valid_words_bD;
-  assign r_mhdma_stat_valid_words_bD       = r_mhdma_stat_valid_words_b_upd;
-  always_ff @(posedge clk) begin
-    if (!s_rst_n) begin
-      r_mhdma_stat_valid_words_b       <= mhdma_stat_valid_words_b_default;
-    end
-    else begin
-      r_mhdma_stat_valid_words_b       <= r_mhdma_stat_valid_words_bD;
-    end
-  end
-// Register FF: mhdma_stat_sop_cnt_a
-  logic [REG_DATA_W-1:0] r_mhdma_stat_sop_cnt_aD;
-  assign r_mhdma_stat_sop_cnt_aD       = r_mhdma_stat_sop_cnt_a_upd;
-  always_ff @(posedge clk) begin
-    if (!s_rst_n) begin
-      r_mhdma_stat_sop_cnt_a       <= mhdma_stat_sop_cnt_a_default;
-    end
-    else begin
-      r_mhdma_stat_sop_cnt_a       <= r_mhdma_stat_sop_cnt_aD;
-    end
-  end
-// Register FF: mhdma_stat_sop_cnt_b
-  logic [REG_DATA_W-1:0] r_mhdma_stat_sop_cnt_bD;
-  assign r_mhdma_stat_sop_cnt_bD       = r_mhdma_stat_sop_cnt_b_upd;
-  always_ff @(posedge clk) begin
-    if (!s_rst_n) begin
-      r_mhdma_stat_sop_cnt_b       <= mhdma_stat_sop_cnt_b_default;
-    end
-    else begin
-      r_mhdma_stat_sop_cnt_b       <= r_mhdma_stat_sop_cnt_bD;
-    end
-  end
 // ============================================================================================== --
 // Read reg
 // ============================================================================================== --
@@ -1401,57 +1115,6 @@ import hpu_regif_core_eth_2in3_pkg::*;
           end
           MHDMA_HBM_AXI4_ADDR_2IN3_CT_PC1_MSB_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register mhdma_hbm_axi4_addr_2in3_ct_pc1_msb
             axil_rdataD = r_mhdma_hbm_axi4_addr_2in3_ct_pc1_msb;
-          end
-          FIFO_WRITE_NUMBER_OF_WORDS_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register fifo_write_number_of_words
-            axil_rdataD = r_fifo_write_number_of_words;
-          end
-          FIFO_WRITE_WORDS_TO_WRITE_A_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register fifo_write_words_to_write_a
-            axil_rdataD = r_fifo_write_words_to_write_a;
-          end
-          FIFO_WRITE_WORDS_TO_WRITE_B_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register fifo_write_words_to_write_b
-            axil_rdataD = r_fifo_write_words_to_write_b;
-          end
-          FIFO_WRITE_FIFO_WRITE_DATA_COUNT_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register fifo_write_fifo_write_data_count
-            axil_rdataD = r_fifo_write_fifo_write_data_count;
-          end
-          FIFO_READ_WORDS_TO_READ_A_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register fifo_read_words_to_read_a
-            axil_rdataD = r_fifo_read_words_to_read_a;
-          end
-          FIFO_READ_WORDS_TO_READ_B_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register fifo_read_words_to_read_b
-            axil_rdataD = r_fifo_read_words_to_read_b;
-          end
-          FIFO_READ_FIFO_READ_DATA_COUNT_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register fifo_read_fifo_read_data_count
-            axil_rdataD = r_fifo_read_fifo_read_data_count;
-          end
-          CNT_TRIG_RD_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register cnt_trig_rd
-            axil_rdataD = r_cnt_trig_rd;
-          end
-          CNT_TX_WR_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register cnt_tx_wr
-            axil_rdataD = r_cnt_tx_wr;
-          end
-          CNT_WORDS_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register cnt_words
-            axil_rdataD = r_cnt_words;
-          end
-          MHDMA_STAT_STATUS_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register mhdma_stat_status
-            axil_rdataD = r_mhdma_stat_status;
-          end
-          MHDMA_STAT_CLK_A_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register mhdma_stat_clk_a
-            axil_rdataD = r_mhdma_stat_clk_a;
-          end
-          MHDMA_STAT_CLK_B_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register mhdma_stat_clk_b
-            axil_rdataD = r_mhdma_stat_clk_b;
-          end
-          MHDMA_STAT_VALID_WORDS_A_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register mhdma_stat_valid_words_a
-            axil_rdataD = r_mhdma_stat_valid_words_a;
-          end
-          MHDMA_STAT_VALID_WORDS_B_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register mhdma_stat_valid_words_b
-            axil_rdataD = r_mhdma_stat_valid_words_b;
-          end
-          MHDMA_STAT_SOP_CNT_A_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register mhdma_stat_sop_cnt_a
-            axil_rdataD = r_mhdma_stat_sop_cnt_a;
-          end
-          MHDMA_STAT_SOP_CNT_B_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register mhdma_stat_sop_cnt_b
-            axil_rdataD = r_mhdma_stat_sop_cnt_b;
           end
           default:
             axil_rdataD = REG_DATA_W'('h0BAD_ADD1); // Default value

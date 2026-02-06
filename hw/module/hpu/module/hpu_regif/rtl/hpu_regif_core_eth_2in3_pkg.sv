@@ -1,7 +1,7 @@
 // ============================================================================================== //
 // Description  : register  map address definition package
 // This file was generated with rust regmap generator:
-//  * Date:  2026-01-28
+//  * Date:  2026-02-04
 //  * Tool_version: 27d9e880d531030160fd8749c606142942d5558d
 // ---------------------------------------------------------------------------------------------- //
 //
@@ -106,21 +106,4 @@ package hpu_regif_core_eth_2in3_pkg;
   localparam int MHDMA_HBM_AXI4_ADDR_2IN3_CT_PC0_MSB_OFS = 'h51004;
   localparam int MHDMA_HBM_AXI4_ADDR_2IN3_CT_PC1_LSB_OFS = 'h51008;
   localparam int MHDMA_HBM_AXI4_ADDR_2IN3_CT_PC1_MSB_OFS = 'h5100c;
-  localparam int FIFO_WRITE_NUMBER_OF_WORDS_OFS = 'h5101c;
-  localparam int FIFO_WRITE_WORDS_TO_WRITE_A_OFS = 'h51020;
-  localparam int FIFO_WRITE_WORDS_TO_WRITE_B_OFS = 'h51024;
-  localparam int FIFO_WRITE_FIFO_WRITE_DATA_COUNT_OFS = 'h51028;
-  localparam int FIFO_READ_WORDS_TO_READ_A_OFS = 'h5102c;
-  localparam int FIFO_READ_WORDS_TO_READ_B_OFS = 'h51030;
-  localparam int FIFO_READ_FIFO_READ_DATA_COUNT_OFS = 'h51034;
-  localparam int CNT_TRIG_RD_OFS = 'h5103c;
-  localparam int CNT_TX_WR_OFS = 'h51040;
-  localparam int CNT_WORDS_OFS = 'h51044;
-  localparam int MHDMA_STAT_STATUS_OFS = 'h5104c;
-  localparam int MHDMA_STAT_CLK_A_OFS = 'h51050;
-  localparam int MHDMA_STAT_CLK_B_OFS = 'h51054;
-  localparam int MHDMA_STAT_VALID_WORDS_A_OFS = 'h51058;
-  localparam int MHDMA_STAT_VALID_WORDS_B_OFS = 'h5105c;
-  localparam int MHDMA_STAT_SOP_CNT_A_OFS = 'h51060;
-  localparam int MHDMA_STAT_SOP_CNT_B_OFS = 'h51064;
 endpackage

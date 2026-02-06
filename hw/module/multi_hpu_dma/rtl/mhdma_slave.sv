@@ -383,8 +383,8 @@ module mhdma_slave
     for (genvar gen_rd=0; gen_rd<ETH_PC; gen_rd++) begin : gen_ce_reads
       logic [$clog2(PC_NB_READS[gen_rd]):0] axi_read_cnt;
       axi4_ar_if_t axi_ar;
-      axi4_ar_if_t axi_arvalid;
-      axi4_ar_if_t axi_arready;
+      logic        axi_arvalid;
+      logic        axi_arready;
 
       // Counts the number of clock cycles that must perform reads taking account bursts
       // because we decrement from axi4_read_pc we add one to count all words

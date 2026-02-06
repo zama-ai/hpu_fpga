@@ -12,10 +12,7 @@ module multi_hpu_dma
   import axi_if_shell_axil_pkg::*;        // axi4-lite + REG_DATA_W
   import axi_if_common_param_pkg::*;      // general axi4
   import hpu_regif_core_eth_2in3_pkg::*;  // ethernet regif
-#(
-  parameter int FIFO_DEPTH = 512,
-  parameter int NB_WORD_W = $clog2(FIFO_DEPTH)+1
-) (
+(
   // Ethernet configuration interface -----------------------------------------
   input logic                                                    clk_eth_cfg,
   input logic                                                    resetn_eth_cfg,
@@ -85,10 +82,10 @@ module multi_hpu_dma
   input  logic [QSFP_LANE_NB-1:0][MRMAC_TKEEP_W-1:0 ]            qsfp_rx_tkeep_user,
   input  logic [QSFP_LANE_NB-1:0]                                qsfp_rx_tlast,
   input  logic [QSFP_LANE_NB-1:0]                                qsfp_rx_tvalid,
-  // interrupt interface ------------------------------------------------------------
+  // interrupt interface ------------------------------------------------------
   output logic                                                   interrupt_notify,
   output logic                                                   interrupt_read_request,
-  // Giga traceivers interface ------------------------------------------------
+  // Giga transceivers interface ----------------------------------------------
   output logic [QSFP_LANE_NB-1:0]                                gt_reset_rx_datapath,
   output logic [QSFP_LANE_NB-1:0]                                gt_reset_tx_datapath,
   output logic [QSFP_LANE_NB-1:0]                                gt_reset_all,
@@ -104,7 +101,62 @@ module multi_hpu_dma
 );
 
   // ============================================================================================ --
-  // Signal
+  // Localparams
+  // ============================================================================================ --
+  localparam int CDC_SYNC_STAGES = 4;
+
+  // ============================================================================================ --
+  // CDC Structs
+  // ============================================================================================ --
+  // The purpose of theses structs are only to ease writing of for-generate of CDC modules
+
+  // Reset signals (single-bit, CFG -> ETH)
+  typedef struct packed {
+    logic [ETH_PC-1:0] nb_words_received_pc;
+    logic              mhdma_errors;
+    logic              nb_ce_words_received;
+    logic              nb_read_to_hbm;
+    logic              ce_received;
+    logic              read_req_received;
+    logic              notify_received;
+    logic              nack_received;
+    logic              retry_read_req;
+    logic              retry_notify;
+    logic              timeout;
+    logic              notify_ack;
+    logic              notify;
+  } mhdma_rst_cnt_t;
+
+  // Counter values (REG_DATA_W bits, ETH -> CFG)
+  typedef struct packed {
+    logic [ETH_PC-1:0][REG_DATA_W-1:0] nb_words_received_pc;
+    logic             [REG_DATA_W-1:0] mhdma_errors;
+    logic             [REG_DATA_W-1:0] nb_write_complete;
+    logic             [REG_DATA_W-1:0] nb_ce_words_received;
+    logic             [REG_DATA_W-1:0] nb_read_to_hbm;
+    logic             [REG_DATA_W-1:0] ce_received;
+    logic             [REG_DATA_W-1:0] read_req_received;
+    logic             [REG_DATA_W-1:0] notify_received;
+    logic             [REG_DATA_W-1:0] nack_received;
+    logic             [REG_DATA_W-1:0] retry_read_req;
+    logic             [REG_DATA_W-1:0] retry_notify;
+    logic             [REG_DATA_W-1:0] timeout;
+    logic             [REG_DATA_W-1:0] notify_ack;
+    logic             [REG_DATA_W-1:0] notify;
+  } mhdma_cnt_t;
+
+  // Timing and register values (REG_DATA_W bits, ETH -> CFG)
+  typedef struct packed {
+    logic [ETH_PC-1:0][2*REG_DATA_W-1:0] rr_phy_addr;
+    logic [ETH_PC-1:0][REG_DATA_W-1:0]   t_rr_wait_words_pc;
+    logic             [REG_DATA_W-1:0]   t_ce_first_to_last_pkt;
+    logic             [REG_DATA_W-1:0]   t_rr_to_ce_received;
+    logic             [REG_DATA_W-1:0]   t_notify_to_ack;
+    logic             [REG_DATA_W-1:0]   fsm_value;
+  } mhdma_stat_reg_t;
+
+  // ============================================================================================ --
+  // Signals
   // ============================================================================================ --
   logic [$clog2(QSFP_LANE_NB)-1:0] line_sel;
   logic                            clear_interrupt_notify;
@@ -113,7 +165,6 @@ module multi_hpu_dma
   // ============================================================================================ //
   // Register file
   // ============================================================================================ //
-  // bridge
   logic [NB_MAX_HPU-1:0][REG_DATA_W-1:0]   r_regf_hpu_ids;
   logic                 [REG_DATA_W-1:0]   r_request_notify;
   logic                 [REG_DATA_W-1:0]   r_request_read;
@@ -122,152 +173,36 @@ module multi_hpu_dma
   logic                 [REG_DATA_W-1:0]   r_system_timeout_notify;
   logic                 [REG_DATA_W-1:0]   r_system_timeout_read_req;
   logic [    ETH_PC-1:0][2*REG_DATA_W-1:0] r_ct_mem_addr;
-  // lane control & debug
+  // lane control
   logic                 [REG_DATA_W-1:0]   r_system_line;
   logic                 [REG_DATA_W-1:0]   r_reset_datapath;
   logic                 [REG_DATA_W-1:0]   r_reset_monitor;
-  logic                 [REG_DATA_W-1:0]   r_line_debug;
-  logic                 [REG_DATA_W-1:0]   r_status_debug;
 
+  // Statistics using CDC structs ------------------------------------------------------------------
+  mhdma_rst_cnt_t  rst_cnt_eth;
+  mhdma_rst_cnt_t  rst_cnt_cfg;
 
-  // Statistics Counters --------------------------------------------------------------------------
-  // counters @eth
-  logic             [REG_DATA_W-1:0] cnt_notify_eth;
-  logic             [REG_DATA_W-1:0] cnt_notify_ack_eth;
-  logic             [REG_DATA_W-1:0] cnt_timeout_eth;
-  logic             [REG_DATA_W-1:0] cnt_retry_notify_eth;
-  logic             [REG_DATA_W-1:0] cnt_retry_read_req_eth;
-  logic             [REG_DATA_W-1:0] cnt_nack_received_eth;
-  logic             [REG_DATA_W-1:0] cnt_notify_received_eth;
-  logic             [REG_DATA_W-1:0] cnt_read_req_received_eth;
-  logic             [REG_DATA_W-1:0] cnt_ce_received_eth;
-  logic             [REG_DATA_W-1:0] cnt_nb_read_to_hbm_eth;
-  logic [ETH_PC-1:0][REG_DATA_W-1:0] cnt_nb_words_received_pc_eth;
-  logic             [REG_DATA_W-1:0] cnt_nb_ce_words_received_eth;
-  logic             [REG_DATA_W-1:0] cnt_nb_write_complete_eth;
+  mhdma_cnt_t      cnt_eth;
+  mhdma_cnt_t      cnt_cfg;
 
-  logic             [REG_DATA_W-1:0] regf_mhdma_errors_eth;
+  mhdma_stat_reg_t stat_reg_eth;
+  mhdma_stat_reg_t stat_reg_cfg;
 
-
-  // counters @cfg
-  logic             [REG_DATA_W-1:0] cnt_notify_cfg;
-  logic             [REG_DATA_W-1:0] cnt_notify_ack_cfg;
-  logic             [REG_DATA_W-1:0] cnt_timeout_cfg;
-  logic             [REG_DATA_W-1:0] cnt_retry_notify_cfg;
-  logic             [REG_DATA_W-1:0] cnt_retry_read_req_cfg;
-  logic             [REG_DATA_W-1:0] cnt_nack_received_cfg;
-  logic             [REG_DATA_W-1:0] cnt_notify_received_cfg;
-  logic             [REG_DATA_W-1:0] cnt_read_req_received_cfg;
-  logic             [REG_DATA_W-1:0] cnt_ce_received_cfg;
-  logic             [REG_DATA_W-1:0] cnt_nb_read_to_hbm_cfg;
-  logic [ETH_PC-1:0][REG_DATA_W-1:0] cnt_nb_words_received_pc_cfg;
-  logic             [REG_DATA_W-1:0] cnt_nb_ce_words_received_cfg;
-  logic             [REG_DATA_W-1:0] cnt_nb_write_complete_cfg;
-
-  logic             [REG_DATA_W-1:0] regf_mhdma_errors_cfg;
-
-  // reset counters @eth
-  logic                 rst_cnt_notify_eth;
-  logic                 rst_cnt_notify_ack_eth;
-  logic                 rst_cnt_timeout_eth;
-  logic                 rst_cnt_retry_notify_eth;
-  logic                 rst_cnt_retry_read_req_eth;
-  logic                 rst_cnt_nack_received_eth;
-  logic                 rst_cnt_notify_received_eth;
-  logic                 rst_cnt_read_req_received_eth;
-  logic                 rst_cnt_ce_received_eth;
-  logic                 rst_nb_read_to_hbm_eth;
-  logic [ETH_PC-1:0]    rst_nb_words_received_pc_eth;
-  logic                 rst_nb_ce_words_received_eth;
-  logic                 rst_mhdma_errors_eth;
-
-  // reset counters @cfg
-  logic                 rst_cnt_notify_cfg;
-  logic                 rst_cnt_notify_ack_cfg;
-  logic                 rst_cnt_timeout_cfg;
-  logic                 rst_cnt_retry_notify_cfg;
-  logic                 rst_cnt_retry_read_req_cfg;
-  logic                 rst_cnt_nack_received_cfg;
-  logic                 rst_cnt_notify_received_cfg;
-  logic                 rst_cnt_read_req_received_cfg;
-  logic                 rst_cnt_ce_received_cfg;
-  logic                 rst_nb_read_to_hbm_cfg;
-  logic [ETH_PC-1:0]    rst_nb_words_received_pc_cfg;
-  logic                 rst_nb_ce_words_received_cfg;
-  logic                 rst_mhdma_errors_cfg;
-  // Statistics Registers -------------------------------------------------------------------------
-  //timing @eth
-  logic [REG_DATA_W-1:0] t_notify_to_ack_eth;
-  logic [REG_DATA_W-1:0] t_rr_to_ce_received_eth;
-  logic [REG_DATA_W-1:0] t_ce_first_to_last_pkt_eth;
-  logic [ETH_PC-1:0][REG_DATA_W-1:0] t_rr_wait_words_pc_eth;
-  //timing @cfg
-  logic [REG_DATA_W-1:0] t_notify_to_ack_cfg;
-  logic [REG_DATA_W-1:0] t_rr_to_ce_received_cfg;
-  logic [REG_DATA_W-1:0] t_ce_first_to_last_pkt_cfg;
-  logic [ETH_PC-1:0][REG_DATA_W-1:0] t_rr_wait_words_pc_cfg;
-
-  // registers
-  logic [REG_DATA_W-1:0] r_fsm_value_eth;
-  logic [REG_DATA_W-1:0] r_fsm_value_cfg;
-
-  logic [ETH_PC-1:0][2*REG_DATA_W-1:0] r_rr_phy_addr_eth;
-  logic [ETH_PC-1:0][2*REG_DATA_W-1:0] r_rr_phy_addr_cfg;
-
-  // signals derived from registers
-  logic                 tx_loop;
-  logic                 rx_to_tx;
-  logic                 reset_registers;
-  logic                 debug;
-
-  logic                 stat_tx_empty;
-  logic                 stat_tx_rd_rst_busy;
-  logic                 stat_tx_data_valid;
-  logic [NB_WORD_W-1:0] stat_rd_data_count;
-  logic                 stat_tx_full;
-  logic                 stat_tx_wr_rst_busy;
-  logic                 stat_qsfp_tx_tready;
-
-  assign line_sel      = r_system_line[1:0];
-  assign gt_loopback   = r_system_line[4:2];
-  assign gt_line_rate  = r_system_line[13:5];
-  assign debug         = r_system_line[31];
+  // Transceivers ---------------------------------------------------------------------------------
+  assign line_sel             = r_system_line[1:0];
+  assign gt_loopback          = r_system_line[4:2];
+  assign gt_line_rate         = r_system_line[13:5];
 
   assign gt_reset_all         = r_reset_datapath[3:0];
   assign gt_reset_tx_datapath = r_reset_datapath[7:4];
   assign gt_reset_rx_datapath = r_reset_datapath[11:8];
 
-  assign r_reset_monitor[3:0] = gt_tx_reset_done;
-  assign r_reset_monitor[7:4] = gt_rx_reset_done;
-  assign r_reset_monitor[31:8] = 'h0;
-
-  assign rx_to_tx        = r_line_debug[29];
-  assign tx_loop         = r_line_debug[30];
-  assign reset_registers = r_line_debug[31];
-
-  assign r_status_debug = {stat_tx_empty, stat_tx_rd_rst_busy, stat_tx_data_valid,
-                          stat_tx_full, stat_tx_wr_rst_busy, stat_qsfp_tx_tready,
-                          {(AXIL_DATA_W-NB_WORD_W-6){1'b0}},
-                          stat_rd_data_count};
-
-
-  // status directly from fifo
-  logic [NB_WORD_W-1:0]    r_nb_word;
-  logic [MRMAC_AXIS_W-1:0] r_wr_word;
-  logic [AXIL_DATA_W-1:0]  r_wr_word_a;
-  logic [AXIL_DATA_W-1:0]  r_wr_word_b;
-  logic [NB_WORD_W-1:0]    r_wr_data_count;
-  logic [NB_WORD_W-1:0]    r_rd_data_count;
-  logic [MRMAC_AXIS_W-1:0] r_rd_word;
-
-  logic [63:0]             clk_cnt_out;
-  logic [63:0]             valid_words_out;
-  logic [63:0]             sop_cnt_out;
-  logic [31:0]             trigger_rd_cnt_out;
-  logic [31:0]             tx_wr_en_cnt;
+  assign r_reset_monitor[3:0]  = gt_tx_reset_done;
+  assign r_reset_monitor[7:4]  = gt_rx_reset_done;
+  assign r_reset_monitor[31:8] = '0;
 
   // updated registers ----------------------------------------------------------------------------
-  // This registers are needed to ease timing
+  // These registers are needed to ease timing
   logic [REG_DATA_W-1:0] request_read_tmp;
   logic [REG_DATA_W-1:0] request_notify_tmp;
   logic [REG_DATA_W-1:0] reset_monitor_tmp;
@@ -278,643 +213,166 @@ module multi_hpu_dma
     reset_monitor_tmp  <= r_reset_monitor;
   end
 
-  // this module is the regif controlling and accessing registers of MHMDA
-  hpu_regif_core_eth_2in3  hpu_regif_core_eth_2in3 (
-    // configuration interface --------------------------------------------------------------------
-    .clk                                   (clk_eth_cfg                                           ),
-    .s_rst_n                               (resetn_eth_cfg                                        ),
-    // axi4-lite ----------------------------------------------------------------------------------
-    .s_axil_awaddr                         (s_axil_dma_awaddr                                     ),
-    .s_axil_awvalid                        (s_axil_dma_awvalid                                    ),
-    .s_axil_awready                        (s_axil_dma_awready                                    ),
-    .s_axil_wdata                          (s_axil_dma_wdata                                      ),
-    .s_axil_wvalid                         (s_axil_dma_wvalid                                     ),
-    .s_axil_wready                         (s_axil_dma_wready                                     ),
-    .s_axil_bresp                          (s_axil_dma_bresp                                      ),
-    .s_axil_bvalid                         (s_axil_dma_bvalid                                     ),
-    .s_axil_bready                         (s_axil_dma_bready                                     ),
-    .s_axil_araddr                         (s_axil_dma_araddr                                     ),
-    .s_axil_arvalid                        (s_axil_dma_arvalid                                    ),
-    .s_axil_arready                        (s_axil_dma_arready                                    ),
-    .s_axil_rdata                          (s_axil_dma_rdata                                      ),
-    .s_axil_rresp                          (s_axil_dma_rresp                                      ),
-    .s_axil_rvalid                         (s_axil_dma_rvalid                                     ),
-    .s_axil_rready                         (s_axil_dma_rready                                     ),
-    .r_axil_wdata                          (/* UNUSED */                                          ),
-    // HPU ids ------------------------------------------------------------------------------------
-    .r_mhdma_hpu_id_zero                   (r_regf_hpu_ids[0]                                     ),
-    .r_mhdma_hpu_id_one                    (r_regf_hpu_ids[1]                                     ),
-    .r_mhdma_hpu_id_two                    (r_regf_hpu_ids[2]                                     ),
-    .r_mhdma_hpu_id_three                  (r_regf_hpu_ids[3]                                     ),
-    .r_mhdma_hpu_id_four                   (r_regf_hpu_ids[4]                                     ),
-    .r_mhdma_hpu_id_five                   (r_regf_hpu_ids[5]                                     ),
-    .r_mhdma_hpu_id_six                    (r_regf_hpu_ids[6]                                     ),
-    .r_mhdma_hpu_id_seven                  (r_regf_hpu_ids[7]                                     ),
-    // HBM ----------------------------------------------------------------------------------------
-    .r_mhdma_hbm_axi4_addr_2in3_ct_pc0_lsb (r_ct_mem_addr[0][0*REG_DATA_W+:REG_DATA_W]            ),
-    .r_mhdma_hbm_axi4_addr_2in3_ct_pc0_msb (r_ct_mem_addr[0][1*REG_DATA_W+:REG_DATA_W]            ),
-    .r_mhdma_hbm_axi4_addr_2in3_ct_pc1_lsb (r_ct_mem_addr[1][0*REG_DATA_W+:REG_DATA_W]            ),
-    .r_mhdma_hbm_axi4_addr_2in3_ct_pc1_msb (r_ct_mem_addr[1][1*REG_DATA_W+:REG_DATA_W]            ),
-    // RPU requests -------------------------------------------------------------------------------
-    .r_mhdma_request_req_id_wr_en          (r_request_req_id_wr_en                                ),
-    .r_mhdma_request_req_id                (r_request_req_id                                      ),
-
-    .r_mhdma_request_req_addr_wr_en        (r_request_req_addr_wr_en                              ),
-    .r_mhdma_request_req_addr              (r_request_req_addr                                    ),
-    // Updated from RTL only ----------------------------------------------------------------------
-    .r_mhdma_request_read_request_upd      (request_read_tmp                                      ),
-    .r_mhdma_request_read_request_rd_en    (clear_interrupt_rr                                    ),
-
-    .r_mhdma_request_notify_upd            (request_notify_tmp                                    ),
-    .r_mhdma_request_notify_rd_en          (clear_interrupt_notify                                ),
-    // control ------------------------------------------------------------------------------------
-    .r_mhdma_system_lane                   (r_system_line                                         ),
-    .r_mhdma_reset_datapath                (r_reset_datapath                                      ),
-    .r_mhdma_reset_monitor_upd             (reset_monitor_tmp                                     ),
-    .r_mhdma_lane_debug                    (r_line_debug                                          ),
-    .r_mhdma_system_timeout_notify         (r_system_timeout_notify                               ),
-    .r_mhdma_system_timeout_read_req       (r_system_timeout_read_req                             ),
-    // stats --------------------------------------------------------------------------------------
-    .r_mhdma_request_stat_notify_upd                (cnt_notify_cfg                               ),
-    .r_mhdma_request_stat_notify_rd_en              (rst_cnt_notify_cfg                           ),
-    .r_mhdma_request_stat_notify_ack_upd            (cnt_notify_ack_cfg                           ),
-    .r_mhdma_request_stat_notify_ack_rd_en          (rst_cnt_notify_ack_cfg                       ),
-    .r_mhdma_request_stat_notify_timeout_upd        (cnt_timeout_cfg                              ),
-    .r_mhdma_request_stat_notify_timeout_rd_en      (rst_cnt_timeout_cfg                          ),
-    .r_mhdma_request_stat_notify_timeout_retry_upd  (cnt_retry_notify_cfg                         ),
-    .r_mhdma_request_stat_notify_timeout_retry_rd_en(rst_cnt_retry_notify_cfg                     ),
-    .r_mhdma_request_stat_read_req_timeout_retry_upd  (cnt_retry_read_req_cfg),
-    .r_mhdma_request_stat_read_req_timeout_retry_rd_en(rst_cnt_retry_read_req_cfg),
-    .r_mhdma_request_stat_nb_nack_received_upd      (cnt_nack_received_cfg                        ),
-    .r_mhdma_request_stat_nb_nack_received_rd_en    (rst_cnt_nack_received_cfg                    ),
-    .r_mhdma_request_stat_nb_notify_received_upd    (cnt_notify_received_cfg                      ),
-    .r_mhdma_request_stat_nb_notify_received_rd_en  (rst_cnt_notify_received_cfg                  ),
-    .r_mhdma_request_stat_nb_read_req_received_upd  (cnt_read_req_received_cfg                    ),
-    .r_mhdma_request_stat_nb_read_req_received_rd_en(rst_cnt_read_req_received_cfg                ),
-    .r_mhdma_request_stat_nb_ce_received_upd        (cnt_ce_received_cfg                          ),
-    .r_mhdma_request_stat_nb_ce_received_rd_en      (rst_cnt_ce_received_cfg                      ),
-    .r_mhdma_request_stat_nb_ce_words_received_upd  (cnt_nb_ce_words_received_cfg                 ),
-    .r_mhdma_request_stat_nb_ce_words_received_rd_en(rst_nb_ce_words_received_cfg                 ),
-
-    .r_mhdma_request_stat_nb_read_to_hbm_upd             (cnt_nb_read_to_hbm_cfg                  ),
-    .r_mhdma_request_stat_nb_read_to_hbm_rd_en           (rst_nb_read_to_hbm_cfg                  ),
-
-    .r_mhdma_request_stat_nb_words_received_pc_pc0_upd   (cnt_nb_words_received_pc_cfg[0]         ),
-    .r_mhdma_request_stat_nb_words_received_pc_pc0_rd_en (rst_nb_words_received_pc_cfg[0]         ),
-    .r_mhdma_request_stat_nb_words_received_pc_pc1_upd   (cnt_nb_words_received_pc_cfg[1]         ),
-    .r_mhdma_request_stat_nb_words_received_pc_pc1_rd_en (rst_nb_words_received_pc_cfg[1]         ),
-    .r_mhdma_request_stat_cnt_nb_write_complete_upd      (cnt_nb_write_complete_cfg               ),
-
+  // ============================================================================================ //
+  // Register file
+  // ============================================================================================ //
+  hpu_regif_core_eth_2in3 hpu_regif_core_eth_2in3 (
+    // configuration interface -----------------------------------------------------------------------------------
+    .clk                                                  (clk_eth_cfg                                           ),
+    .s_rst_n                                              (resetn_eth_cfg                                        ),
+    // axi4-lite -------------------------------------------------------------------------------------------------
+    .s_axil_awaddr                                        (s_axil_dma_awaddr                                     ),
+    .s_axil_awvalid                                       (s_axil_dma_awvalid                                    ),
+    .s_axil_awready                                       (s_axil_dma_awready                                    ),
+    .s_axil_wdata                                         (s_axil_dma_wdata                                      ),
+    .s_axil_wvalid                                        (s_axil_dma_wvalid                                     ),
+    .s_axil_wready                                        (s_axil_dma_wready                                     ),
+    .s_axil_bresp                                         (s_axil_dma_bresp                                      ),
+    .s_axil_bvalid                                        (s_axil_dma_bvalid                                     ),
+    .s_axil_bready                                        (s_axil_dma_bready                                     ),
+    .s_axil_araddr                                        (s_axil_dma_araddr                                     ),
+    .s_axil_arvalid                                       (s_axil_dma_arvalid                                    ),
+    .s_axil_arready                                       (s_axil_dma_arready                                    ),
+    .s_axil_rdata                                         (s_axil_dma_rdata                                      ),
+    .s_axil_rresp                                         (s_axil_dma_rresp                                      ),
+    .s_axil_rvalid                                        (s_axil_dma_rvalid                                     ),
+    .s_axil_rready                                        (s_axil_dma_rready                                     ),
+    .r_axil_wdata                                         (/* UNUSED */                                          ),
+    // HPU ids ---------------------------------------------------------------------------------------------------
+    .r_mhdma_hpu_id_zero                                  (r_regf_hpu_ids[0]                                     ),
+    .r_mhdma_hpu_id_one                                   (r_regf_hpu_ids[1]                                     ),
+    .r_mhdma_hpu_id_two                                   (r_regf_hpu_ids[2]                                     ),
+    .r_mhdma_hpu_id_three                                 (r_regf_hpu_ids[3]                                     ),
+    .r_mhdma_hpu_id_four                                  (r_regf_hpu_ids[4]                                     ),
+    .r_mhdma_hpu_id_five                                  (r_regf_hpu_ids[5]                                     ),
+    .r_mhdma_hpu_id_six                                   (r_regf_hpu_ids[6]                                     ),
+    .r_mhdma_hpu_id_seven                                 (r_regf_hpu_ids[7]                                     ),
+    // HBM -------------------------------------------------------------------------------------------------------
+    .r_mhdma_hbm_axi4_addr_2in3_ct_pc0_lsb                (r_ct_mem_addr[0][0*REG_DATA_W+:REG_DATA_W]            ),
+    .r_mhdma_hbm_axi4_addr_2in3_ct_pc0_msb                (r_ct_mem_addr[0][1*REG_DATA_W+:REG_DATA_W]            ),
+    .r_mhdma_hbm_axi4_addr_2in3_ct_pc1_lsb                (r_ct_mem_addr[1][0*REG_DATA_W+:REG_DATA_W]            ),
+    .r_mhdma_hbm_axi4_addr_2in3_ct_pc1_msb                (r_ct_mem_addr[1][1*REG_DATA_W+:REG_DATA_W]            ),
+    // RPU requests ----------------------------------------------------------------------------------------------
+    .r_mhdma_request_req_id_wr_en                         (r_request_req_id_wr_en                                ),
+    .r_mhdma_request_req_id                               (r_request_req_id                                      ),
+    .r_mhdma_request_req_addr_wr_en                       (r_request_req_addr_wr_en                              ),
+    .r_mhdma_request_req_addr                             (r_request_req_addr                                    ),
+    // Updated from RTL only -------------------------------------------------------------------------------------
+    .r_mhdma_request_read_request_upd                     (request_read_tmp                                      ),
+    .r_mhdma_request_read_request_rd_en                   (clear_interrupt_rr                                    ),
+    .r_mhdma_request_notify_upd                           (request_notify_tmp                                    ),
+    .r_mhdma_request_notify_rd_en                         (clear_interrupt_notify                                ),
+    // control ---------------------------------------------------------------------------------------------------
+    .r_mhdma_system_lane                                  (r_system_line                                         ),
+    .r_mhdma_reset_datapath                               (r_reset_datapath                                      ),
+    .r_mhdma_reset_monitor_upd                            (reset_monitor_tmp                                     ),
+    .r_mhdma_lane_debug                                   (/* UNUSED */                                          ),
+    .r_mhdma_system_timeout_notify                        (r_system_timeout_notify                               ),
+    .r_mhdma_system_timeout_read_req                      (r_system_timeout_read_req                             ),
+    // stats -----------------------------------------------------------------------------------------------------
+    .r_mhdma_request_stat_notify_upd                      (cnt_cfg.notify                                        ),
+    .r_mhdma_request_stat_notify_rd_en                    (rst_cnt_cfg.notify                                    ),
+    .r_mhdma_request_stat_notify_ack_upd                  (cnt_cfg.notify_ack                                    ),
+    .r_mhdma_request_stat_notify_ack_rd_en                (rst_cnt_cfg.notify_ack                                ),
+    .r_mhdma_request_stat_notify_timeout_upd              (cnt_cfg.timeout                                       ),
+    .r_mhdma_request_stat_notify_timeout_rd_en            (rst_cnt_cfg.timeout                                   ),
+    .r_mhdma_request_stat_notify_timeout_retry_upd        (cnt_cfg.retry_notify                                  ),
+    .r_mhdma_request_stat_notify_timeout_retry_rd_en      (rst_cnt_cfg.retry_notify                              ),
+    .r_mhdma_request_stat_read_req_timeout_retry_upd      (cnt_cfg.retry_read_req                                ),
+    .r_mhdma_request_stat_read_req_timeout_retry_rd_en    (rst_cnt_cfg.retry_read_req                            ),
+    .r_mhdma_request_stat_nb_nack_received_upd            (cnt_cfg.nack_received                                 ),
+    .r_mhdma_request_stat_nb_nack_received_rd_en          (rst_cnt_cfg.nack_received                             ),
+    .r_mhdma_request_stat_nb_notify_received_upd          (cnt_cfg.notify_received                               ),
+    .r_mhdma_request_stat_nb_notify_received_rd_en        (rst_cnt_cfg.notify_received                           ),
+    .r_mhdma_request_stat_nb_read_req_received_upd        (cnt_cfg.read_req_received                             ),
+    .r_mhdma_request_stat_nb_read_req_received_rd_en      (rst_cnt_cfg.read_req_received                         ),
+    .r_mhdma_request_stat_nb_ce_received_upd              (cnt_cfg.ce_received                                   ),
+    .r_mhdma_request_stat_nb_ce_received_rd_en            (rst_cnt_cfg.ce_received                               ),
+    .r_mhdma_request_stat_nb_ce_words_received_upd        (cnt_cfg.nb_ce_words_received                          ),
+    .r_mhdma_request_stat_nb_ce_words_received_rd_en      (rst_cnt_cfg.nb_ce_words_received                      ),
+    .r_mhdma_request_stat_nb_read_to_hbm_upd              (cnt_cfg.nb_read_to_hbm                                ),
+    .r_mhdma_request_stat_nb_read_to_hbm_rd_en            (rst_cnt_cfg.nb_read_to_hbm                            ),
+    .r_mhdma_request_stat_nb_words_received_pc_pc0_upd    (cnt_cfg.nb_words_received_pc[0]                       ),
+    .r_mhdma_request_stat_nb_words_received_pc_pc0_rd_en  (rst_cnt_cfg.nb_words_received_pc[0]                   ),
+    .r_mhdma_request_stat_nb_words_received_pc_pc1_upd    (cnt_cfg.nb_words_received_pc[1]                       ),
+    .r_mhdma_request_stat_nb_words_received_pc_pc1_rd_en  (rst_cnt_cfg.nb_words_received_pc[1]                   ),
+    .r_mhdma_request_stat_cnt_nb_write_complete_upd       (cnt_cfg.nb_write_complete                             ),
     // timing
-    .r_mhdma_request_stat_t_notify_to_ack_upd       (t_notify_to_ack_cfg                          ),
-    .r_mhdma_request_stat_t_rr_to_ce_received_upd   (t_rr_to_ce_received_cfg                      ),
-    .r_mhdma_request_stat_t_ce_first_to_last_pkt_upd(t_ce_first_to_last_pkt_cfg                   ),
-    .r_mhdma_request_stat_t_rr_wait_words_pc_pc0_upd(t_rr_wait_words_pc_cfg[0]                    ),
-    .r_mhdma_request_stat_t_rr_wait_words_pc_pc1_upd(t_rr_wait_words_pc_cfg[1]                    ),
-
+    .r_mhdma_request_stat_t_notify_to_ack_upd             (stat_reg_cfg.t_notify_to_ack                          ),
+    .r_mhdma_request_stat_t_rr_to_ce_received_upd         (stat_reg_cfg.t_rr_to_ce_received                      ),
+    .r_mhdma_request_stat_t_ce_first_to_last_pkt_upd      (stat_reg_cfg.t_ce_first_to_last_pkt                   ),
+    .r_mhdma_request_stat_t_rr_wait_words_pc_pc0_upd      (stat_reg_cfg.t_rr_wait_words_pc[0]                    ),
+    .r_mhdma_request_stat_t_rr_wait_words_pc_pc1_upd      (stat_reg_cfg.t_rr_wait_words_pc[1]                    ),
     // registers
-    .r_mhdma_system_fsm_value_upd                   (r_fsm_value_cfg                              ),
-    .r_mhdma_request_stat_physical_addr_pc0_lsb_upd (r_rr_phy_addr_cfg[0][REG_DATA_W-1:0]           ),
-    .r_mhdma_request_stat_physical_addr_pc0_msb_upd (r_rr_phy_addr_cfg[0][2*REG_DATA_W-1:REG_DATA_W]),
-    .r_mhdma_request_stat_physical_addr_pc1_lsb_upd (r_rr_phy_addr_cfg[1][REG_DATA_W-1:0]           ),
-    .r_mhdma_request_stat_physical_addr_pc1_msb_upd (r_rr_phy_addr_cfg[1][2*REG_DATA_W-1:REG_DATA_W]),
-
-    .r_mhdma_system_errors_upd             (regf_mhdma_errors_cfg                                 ),
-    .r_mhdma_system_errors_rd_en           (rst_mhdma_errors_cfg                                  ),
-
-    // from trace module --------------------------------------------------------------------------
-    .r_fifo_write_number_of_words          (r_nb_word                                             ), // to be removed or renamed?
-    .r_fifo_write_words_to_write_a         (r_wr_word_a                                           ), // to be removed or renamed?
-    .r_fifo_write_words_to_write_b         (r_wr_word_b                                           ), // to be removed or renamed?
-    .r_fifo_write_fifo_write_data_count_upd({ {(AXIL_DATA_W-NB_WORD_W){1'b0}}, r_wr_data_count}   ), // to be removed or renamed?
-    .r_fifo_read_words_to_read_a_upd       (r_rd_word[AXIL_DATA_W-1:0]                            ), // to be removed or renamed?
-    .r_fifo_read_words_to_read_b_upd       (r_rd_word[2*AXIL_DATA_W-1:AXIL_DATA_W]                ), // to be removed or renamed?
-    .r_fifo_read_fifo_read_data_count_upd  ({ {(AXIL_DATA_W-NB_WORD_W){1'b0}}, r_rd_data_count}   ), // to be removed or renamed?
-    .r_cnt_trig_rd_upd                     (trigger_rd_cnt_out                                    ), // to be removed or renamed?
-    .r_cnt_tx_wr_upd                       (tx_wr_en_cnt                                          ), // to be removed or renamed?
-    .r_mhdma_stat_clk_a_upd                (clk_cnt_out[31:0]                                     ),
-    .r_mhdma_stat_clk_b_upd                (clk_cnt_out[63:32]                                    ),
-    .r_mhdma_stat_valid_words_a_upd        (valid_words_out[31:0]                                 ),
-    .r_mhdma_stat_valid_words_b_upd        (valid_words_out[63:32]                                ),
-    .r_mhdma_stat_sop_cnt_a_upd            (sop_cnt_out[31:0]                                     ),
-    .r_mhdma_stat_sop_cnt_b_upd            (sop_cnt_out[63:32]                                    ),
-    .r_mhdma_stat_status_upd               (r_status_debug                                        )
+    .r_mhdma_system_fsm_value_upd                         (stat_reg_cfg.fsm_value                                ),
+    .r_mhdma_request_stat_physical_addr_pc0_lsb_upd       (stat_reg_cfg.rr_phy_addr[0][REG_DATA_W-1:0]           ),
+    .r_mhdma_request_stat_physical_addr_pc0_msb_upd       (stat_reg_cfg.rr_phy_addr[0][2*REG_DATA_W-1:REG_DATA_W]),
+    .r_mhdma_request_stat_physical_addr_pc1_lsb_upd       (stat_reg_cfg.rr_phy_addr[1][REG_DATA_W-1:0]           ),
+    .r_mhdma_request_stat_physical_addr_pc1_msb_upd       (stat_reg_cfg.rr_phy_addr[1][2*REG_DATA_W-1:REG_DATA_W]),
+    .r_mhdma_system_errors_upd                            (cnt_cfg.mhdma_errors                                  ),
+    .r_mhdma_system_errors_rd_en                          (rst_cnt_cfg.mhdma_errors                              )
   );
 
-  // Logic around regfile -------------------------------------------------------------------------
-  // building requests flags for sampling and properly create the request cmd queue in the bridge
+  // ============================================================================================ //
+  // Request handling logic
+  // ============================================================================================ //
   logic [1:0] received_req;
-  logic request_consumed;
+  logic       request_consumed;
 
-  always_ff @(posedge clk_eth_cfg) begin : received_req_id
-    if (~resetn_eth_cfg) begin
-      received_req[0]   <= 1'b0;
-    end else begin
-      if (r_request_req_id_wr_en)  begin
-        received_req[0] <= 1'b1;
-      end else if (request_consumed) begin
-        received_req[0] <= 1'b0;
-      end
-    end
-  end
-
-  always_ff @(posedge clk_eth_cfg) begin : received_req_addr
-    if (~resetn_eth_cfg) begin
-      received_req[1] <= 1'b0;
-    end else begin
-      if (r_request_req_addr_wr_en)  begin
-        received_req[1] <= 1'b1;
-      end else if (request_consumed) begin
-        received_req[1] <= 1'b0;
-      end
-    end
-  end
-
-  // for the trace module --
-  // read_ack is a pulse that partly controls the rx_fifo read, must be in configuration clock freq
-  // because axi4-lite is limited in word number, the ack is triggered only when the second word is read
-  logic read_ack;
-
+  // received_req singals lower module that
   always_ff @(posedge clk_eth_cfg) begin
     if (~resetn_eth_cfg) begin
-      read_ack <= 1'b0;
+      received_req <= '0;
     end else begin
-      if ((s_axil_dma_araddr == FIFO_READ_WORDS_TO_READ_B_OFS) && s_axil_dma_arready) begin
-        read_ack <= 1'b1;
-      end else begin
-        read_ack <= 1'b0;
-      end
+      if (r_request_req_id_wr_en)   received_req[0] <= 1'b1;
+      if (r_request_req_addr_wr_en) received_req[1] <= 1'b1;
+      if (request_consumed)         received_req    <= '0;
     end
   end
 
-  // write ack: same fashion as read_ack, a pulse is generated
-  logic write_ack;
-  always_ff @(posedge clk_eth_cfg) begin
-    if (~resetn_eth_cfg) begin
-      write_ack <= 1'b0;
-    end else begin
-      if ((s_axil_dma_awaddr == FIFO_WRITE_WORDS_TO_WRITE_B_OFS) && s_axil_dma_awready) begin
-        write_ack <= 1'b1;
-      end else begin
-        write_ack <= 1'b0;
-      end
-    end
-  end
-
-  // merging half words into a single one
-  assign r_wr_word = write_ack ? {r_wr_word_a, r_wr_word_b} :0;
-
   // ============================================================================================ //
-  // CDC for regfile
-  // TODO: this is temporary
+  // CDC - wrapper handles WIDTH > 32 internally by splitting into chunks
   // ============================================================================================ //
+  // CDC: Reset signals (CFG -> ETH)
+  xpm_cdc_gray_wrapper #(
+    .WIDTH           ($bits(mhdma_rst_cnt_t)),
+    .CDC_SYNC_STAGES (CDC_SYNC_STAGES       )
+  ) cdc_rst_cnt (
+    .src_clk  (clk_eth_cfg  ),
+    .dest_clk (clk_eth_mrmac),
+    .src_in   (rst_cnt_cfg  ),
+    .dest_out (rst_cnt_eth  )
+  );
 
-  // Counters ===================================================================================
-  xpm_cdc_single_wrapper #(
-    .CDC_SYNC_STAGES ( 2 ) ,
-    .SRC_INPUT_REG   ( 0 )
-  ) cdc_rst_cnt_notify (
-    .src_clk  ( clk_eth_cfg     ) ,
-    .dest_clk ( clk_eth_mrmac ) ,
-    .src_in   ( rst_cnt_notify_cfg ) ,
-    .dest_out ( rst_cnt_notify_eth )
-  ); //temporary
-  xpm_cdc_gray #(
-    .DEST_SYNC_FF(4),                   // Range: 2-10 synchronizer stages
-    .INIT_SYNC_FF(0),                   // 0=disable simulation init values
-    .REG_OUTPUT(0),                     // 0=combinatorial output, 1=registered output
-    .SIM_ASSERT_CHK(0),                 // 0=disable simulation messages
-    .SIM_LOSSLESS_GRAY_CHK(0),          // 0=disable lossless check
-    .WIDTH(REG_DATA_W)                   // REG_DATA_W-bit counter width (range: 2-32)
-  ) xpm_cdc_gray_cnt_notify (
-    .src_clk(clk_eth_mrmac),            // 1-bit input: source clock
-    .src_in_bin(cnt_notify_eth),        // REG_DATA_W-bit input: binary counter to synchronize
+  // CDC: Counter values (ETH -> CFG)
+  xpm_cdc_gray_wrapper #(
+    .WIDTH           ($bits(mhdma_cnt_t)),
+    .CDC_SYNC_STAGES (CDC_SYNC_STAGES   )
+  ) cdc_cnt (
+    .src_clk  (clk_eth_mrmac),
+    .dest_clk (clk_eth_cfg  ),
+    .src_in   (cnt_eth      ),
+    .dest_out (cnt_cfg      )
+  );
 
-    .dest_clk(clk_eth_cfg),             // 1-bit input: destination clock
-    .dest_out_bin(cnt_notify_cfg)       // REG_DATA_W-bit output: binary value in dest domain
-  );//temporary
-
-  xpm_cdc_single_wrapper #(
-    .CDC_SYNC_STAGES ( 2 ) ,
-    .SRC_INPUT_REG   ( 0 )
-  ) cdc_rst_cnt_notify_ack (
-    .src_clk  ( clk_eth_cfg     ) ,
-    .dest_clk ( clk_eth_mrmac ) ,
-    .src_in   ( rst_cnt_notify_ack_cfg ) ,
-    .dest_out ( rst_cnt_notify_ack_eth )
-  );//temporary
-  xpm_cdc_gray #(
-    .DEST_SYNC_FF(4),                   // Range: 2-10 synchronizer stages
-    .INIT_SYNC_FF(0),                   // 0=disable simulation init values
-    .REG_OUTPUT(0),                     // 0=combinatorial output, 1=registered output
-    .SIM_ASSERT_CHK(0),                 // 0=disable simulation messages
-    .SIM_LOSSLESS_GRAY_CHK(0),          // 0=disable lossless check
-    .WIDTH(REG_DATA_W)                   // REG_DATA_W-bit counter width (range: 2-32)
-  ) xpm_cdc_gray_cnt_notify_ack (
-    .src_clk(clk_eth_mrmac),            // 1-bit input: source clock
-    .src_in_bin(cnt_notify_ack_eth),    // REG_DATA_W-bit input: binary counter to synchronize
-
-    .dest_clk(clk_eth_cfg),             // 1-bit input: destination clock
-    .dest_out_bin(cnt_notify_ack_cfg)   // REG_DATA_W-bit output: binary value in dest domain
-  );//temporary
-
-  xpm_cdc_single_wrapper #(
-    .CDC_SYNC_STAGES ( 2 ) ,
-    .SRC_INPUT_REG   ( 0 )
-  ) cdc_rst_cnt_timeout (
-    .src_clk  ( clk_eth_cfg     ) ,
-    .dest_clk ( clk_eth_mrmac ) ,
-    .src_in   ( rst_cnt_timeout_cfg ) ,
-    .dest_out ( rst_cnt_timeout_eth )
-  );//temporary
-  xpm_cdc_gray #(
-    .DEST_SYNC_FF(4),                   // Range: 2-10 synchronizer stages
-    .INIT_SYNC_FF(0),                   // 0=disable simulation init values
-    .REG_OUTPUT(0),                     // 0=combinatorial output, 1=registered output
-    .SIM_ASSERT_CHK(0),                 // 0=disable simulation messages
-    .SIM_LOSSLESS_GRAY_CHK(0),          // 0=disable lossless check
-    .WIDTH(REG_DATA_W)                   // REG_DATA_W-bit counter width (range: 2-32)
-  ) xpm_cdc_gray_cnt_notify_to (
-    .src_clk(clk_eth_mrmac),            // 1-bit input: source clock
-    .src_in_bin(cnt_timeout_eth),       // REG_DATA_W-bit input: binary counter to synchronize
-
-    .dest_clk(clk_eth_cfg),             // 1-bit input: destination clock
-    .dest_out_bin(cnt_timeout_cfg)      // REG_DATA_W-bit output: binary value in dest domain
-  );//temporary
-
-  xpm_cdc_single_wrapper #(
-    .CDC_SYNC_STAGES ( 2 ) ,
-    .SRC_INPUT_REG   ( 0 )
-  ) cdc_rst_cnt_notify_retry (
-    .src_clk  ( clk_eth_cfg     ) ,
-    .dest_clk ( clk_eth_mrmac ) ,
-    .src_in   ( rst_cnt_retry_notify_cfg ) ,
-    .dest_out ( rst_cnt_retry_notify_eth )
-  );//temporary
-  xpm_cdc_gray #(
-    .DEST_SYNC_FF(4),                   // Range: 2-10 synchronizer stages
-    .INIT_SYNC_FF(0),                   // 0=disable simulation init values
-    .REG_OUTPUT(0),                     // 0=combinatorial output, 1=registered output
-    .SIM_ASSERT_CHK(0),                 // 0=disable simulation messages
-    .SIM_LOSSLESS_GRAY_CHK(0),          // 0=disable lossless check
-    .WIDTH(REG_DATA_W)                   // REG_DATA_W-bit counter width (range: 2-32)
-  ) xpm_cdc_gray_cnt_notify_retry (
-    .src_clk(clk_eth_mrmac),            // 1-bit input: source clock
-    .src_in_bin(cnt_retry_notify_eth),  // REG_DATA_W-bit input: binary counter to synchronize
-
-    .dest_clk(clk_eth_cfg),             // 1-bit input: destination clock
-    .dest_out_bin(cnt_retry_notify_cfg) // REG_DATA_W-bit output: binary value in dest domain
-  );//temporary
-  xpm_cdc_single_wrapper #(
-    .CDC_SYNC_STAGES ( 2 ) ,
-    .SRC_INPUT_REG   ( 0 )
-  ) cdc_rst_cnt_read_req_retry (
-    .src_clk  ( clk_eth_cfg     ) ,
-    .dest_clk ( clk_eth_mrmac ) ,
-    .src_in   ( rst_cnt_retry_read_req_cfg ) ,
-    .dest_out ( rst_cnt_retry_read_req_eth )
-  );//temporary
-  xpm_cdc_gray #(
-    .DEST_SYNC_FF(4),                   // Range: 2-10 synchronizer stages
-    .INIT_SYNC_FF(0),                   // 0=disable simulation init values
-    .REG_OUTPUT(0),                     // 0=combinatorial output, 1=registered output
-    .SIM_ASSERT_CHK(0),                 // 0=disable simulation messages
-    .SIM_LOSSLESS_GRAY_CHK(0),          // 0=disable lossless check
-    .WIDTH(REG_DATA_W)                   // REG_DATA_W-bit counter width (range: 2-32)
-  ) xpm_cdc_gray_cnt_read_req_retry (
-    .src_clk(clk_eth_mrmac),            // 1-bit input: source clock
-    .src_in_bin(cnt_retry_read_req_eth),  // REG_DATA_W-bit input: binary counter to synchronize
-
-    .dest_clk(clk_eth_cfg),             // 1-bit input: destination clock
-    .dest_out_bin(cnt_retry_read_req_cfg) // REG_DATA_W-bit output: binary value in dest domain
-  );//temporary
-
-  xpm_cdc_single_wrapper #(
-    .CDC_SYNC_STAGES ( 2 ) ,
-    .SRC_INPUT_REG   ( 0 )
-  ) cdc_rst_cnt_nack_received (
-    .src_clk  ( clk_eth_cfg     ) ,
-    .dest_clk ( clk_eth_mrmac ) ,
-    .src_in   ( rst_cnt_nack_received_cfg ) ,
-    .dest_out ( rst_cnt_nack_received_eth )
-  );//temporary
-  xpm_cdc_gray #(
-    .DEST_SYNC_FF(4),                   // Range: 2-10 synchronizer stages
-    .INIT_SYNC_FF(0),                   // 0=disable simulation init values
-    .REG_OUTPUT(0),                     // 0=combinatorial output, 1=registered output
-    .SIM_ASSERT_CHK(0),                 // 0=disable simulation messages
-    .SIM_LOSSLESS_GRAY_CHK(0),          // 0=disable lossless check
-    .WIDTH(REG_DATA_W)                  // REG_DATA_W-bit counter width (range: 2-32)
-  ) xpm_cdc_gray_cnt_nack_received (
-    .src_clk(clk_eth_mrmac),            // 1-bit input: source clock
-    .src_in_bin(cnt_nack_received_eth),  // REG_DATA_W-bit input: binary counter to synchronize
-
-    .dest_clk(clk_eth_cfg),             // 1-bit input: destination clock
-    .dest_out_bin(cnt_nack_received_cfg) // REG_DATA_W-bit output: binary value in dest domain
-  );//temporary
-
-  xpm_cdc_single_wrapper #(
-    .CDC_SYNC_STAGES ( 2 ) ,
-    .SRC_INPUT_REG   ( 0 )
-  ) cdc_rst_cnt_nnotify_received (
-    .src_clk  ( clk_eth_cfg     ) ,
-    .dest_clk ( clk_eth_mrmac ) ,
-    .src_in   ( rst_cnt_notify_received_cfg ) ,
-    .dest_out ( rst_cnt_notify_received_eth )
-  );//temporary
-  xpm_cdc_gray #(
-    .DEST_SYNC_FF(4),                   // Range: 2-10 synchronizer stages
-    .INIT_SYNC_FF(0),                   // 0=disable simulation init values
-    .REG_OUTPUT(0),                     // 0=combinatorial output, 1=registered output
-    .SIM_ASSERT_CHK(0),                 // 0=disable simulation messages
-    .SIM_LOSSLESS_GRAY_CHK(0),          // 0=disable lossless check
-    .WIDTH(REG_DATA_W)                  // REG_DATA_W-bit counter width (range: 2-32)
-  ) xpm_cdc_gray_cnt_notify_received (
-    .src_clk(clk_eth_mrmac),            // 1-bit input: source clock
-    .src_in_bin(cnt_notify_received_eth),  // REG_DATA_W-bit input: binary counter to synchronize
-
-    .dest_clk(clk_eth_cfg),                // 1-bit input: destination clock
-    .dest_out_bin(cnt_notify_received_cfg) // REG_DATA_W-bit output: binary value in dest domain
-  );//temporary
-
-  xpm_cdc_single_wrapper #(
-    .CDC_SYNC_STAGES ( 2 ) ,
-    .SRC_INPUT_REG   ( 0 )
-  ) cdc_rst_cnt_read_req_received (
-    .src_clk  ( clk_eth_cfg     ) ,
-    .dest_clk ( clk_eth_mrmac ) ,
-    .src_in   ( rst_cnt_read_req_received_cfg ) ,
-    .dest_out ( rst_cnt_read_req_received_eth )
-  );//temporary
-  xpm_cdc_gray #(
-    .DEST_SYNC_FF(4),                   // Range: 2-10 synchronizer stages
-    .INIT_SYNC_FF(0),                   // 0=disable simulation init values
-    .REG_OUTPUT(0),                     // 0=combinatorial output, 1=registered output
-    .SIM_ASSERT_CHK(0),                 // 0=disable simulation messages
-    .SIM_LOSSLESS_GRAY_CHK(0),          // 0=disable lossless check
-    .WIDTH(REG_DATA_W)                   // REG_DATA_W-bit counter width (range: 2-32)
-  ) xpm_cdc_gray_cnt_read_req_received (
-    .src_clk(clk_eth_mrmac),            // 1-bit input: source clock
-    .src_in_bin(cnt_read_req_received_eth),  // REG_DATA_W-bit input: binary counter to synchronize
-
-    .dest_clk(clk_eth_cfg),             // 1-bit input: destination clock
-    .dest_out_bin(cnt_read_req_received_cfg) // REG_DATA_W-bit output: binary value in dest domain
-  );//temporary
-
-  xpm_cdc_single_wrapper #(
-    .CDC_SYNC_STAGES ( 2 ) ,
-    .SRC_INPUT_REG   ( 0 )
-  ) cdc_rst_cnt_ce_received (
-    .src_clk  ( clk_eth_cfg     ) ,
-    .dest_clk ( clk_eth_mrmac ) ,
-    .src_in   ( rst_cnt_ce_received_cfg ) ,
-    .dest_out ( rst_cnt_ce_received_eth )
-  );//temporary
-  xpm_cdc_gray #(
-    .DEST_SYNC_FF(4),                   // Range: 2-10 synchronizer stages
-    .INIT_SYNC_FF(0),                   // 0=disable simulation init values
-    .REG_OUTPUT(0),                     // 0=combinatorial output, 1=registered output
-    .SIM_ASSERT_CHK(0),                 // 0=disable simulation messages
-    .SIM_LOSSLESS_GRAY_CHK(0),          // 0=disable lossless check
-    .WIDTH(REG_DATA_W)                   // REG_DATA_W-bit counter width (range: 2-32)
-  ) xpm_cdc_gray_cnt_ce_received (
-    .src_clk(clk_eth_mrmac),            // 1-bit input: source clock
-    .src_in_bin(cnt_ce_received_eth),  // REG_DATA_W-bit input: binary counter to synchronize
-
-    .dest_clk(clk_eth_cfg),             // 1-bit input: destination clock
-    .dest_out_bin(cnt_ce_received_cfg) // REG_DATA_W-bit output: binary value in dest domain
-  );//temporary
-
-  xpm_cdc_single_wrapper #(
-    .CDC_SYNC_STAGES ( 2 ) ,
-    .SRC_INPUT_REG   ( 0 )
-  ) cdc_rst_cnt_nb_read_to_hbm (
-    .src_clk  ( clk_eth_cfg     ) ,
-    .dest_clk ( clk_eth_mrmac ) ,
-    .src_in   ( rst_nb_read_to_hbm_cfg ) ,
-    .dest_out ( rst_nb_read_to_hbm_eth )
-  );//temporary
-  xpm_cdc_gray #(
-    .DEST_SYNC_FF(4),                   // Range: 2-10 synchronizer stages
-    .INIT_SYNC_FF(0),                   // 0=disable simulation init values
-    .REG_OUTPUT(0),                     // 0=combinatorial output, 1=registered output
-    .SIM_ASSERT_CHK(0),                 // 0=disable simulation messages
-    .SIM_LOSSLESS_GRAY_CHK(0),          // 0=disable lossless check
-    .WIDTH(REG_DATA_W)                   // REG_DATA_W-bit counter width (range: 2-32)
-  ) xpm_cdc_gray_cnt_nb_read_to_hbm (
-    .src_clk(clk_eth_mrmac),            // 1-bit input: source clock
-    .src_in_bin(cnt_nb_read_to_hbm_eth),  // REG_DATA_W-bit input: binary counter to synchronize
-
-    .dest_clk(clk_eth_cfg),             // 1-bit input: destination clock
-    .dest_out_bin(cnt_nb_read_to_hbm_cfg) // REG_DATA_W-bit output: binary value in dest domain
-  );//temporary
-
-  generate
-    for (genvar gen_i=0; gen_i<ETH_PC; gen_i++) begin : gen_i_nb_words_received
-      xpm_cdc_single_wrapper #(
-        .CDC_SYNC_STAGES ( 2 ) ,
-        .SRC_INPUT_REG   ( 0 )
-      ) cdc_rst_cnt_nb_words_received_pc (
-        .src_clk  ( clk_eth_cfg     ) ,
-        .dest_clk ( clk_eth_mrmac ) ,
-        .src_in   ( rst_nb_words_received_pc_cfg[gen_i] ) ,
-        .dest_out ( rst_nb_words_received_pc_eth[gen_i] )
-      );//temporary
-      xpm_cdc_gray #(
-        .DEST_SYNC_FF(4),                   // Range: 2-10 synchronizer stages
-        .INIT_SYNC_FF(0),                   // 0=disable simulation init values
-        .REG_OUTPUT(0),                     // 0=combinatorial output, 1=registered output
-        .SIM_ASSERT_CHK(0),                 // 0=disable simulation messages
-        .SIM_LOSSLESS_GRAY_CHK(0),          // 0=disable lossless check
-        .WIDTH(REG_DATA_W)                   // REG_DATA_W-bit counter width (range: 2-32)
-      ) xpm_cdc_gray_cnt_nb_words_received_pc (
-        .src_clk(clk_eth_mrmac),                           // 1-bit input: source clock
-        .src_in_bin(cnt_nb_words_received_pc_eth[gen_i]),  // REG_DATA_W-bit input: binary counter to synchronize
-
-        .dest_clk(clk_eth_cfg),                            // 1-bit input: destination clock
-        .dest_out_bin(cnt_nb_words_received_pc_cfg[gen_i]) // REG_DATA_W-bit output: binary value in dest domain
-      );//temporary
-    end
-  endgenerate
-
-  // Registers ETH -> CFG =========================================================================
-  xpm_cdc_gray #(
-    .DEST_SYNC_FF(4),                   // Range: 2-10 synchronizer stages
-    .INIT_SYNC_FF(0),                   // 0=disable simulation init values
-    .REG_OUTPUT(0),                     // 0=combinatorial output, 1=registered output
-    .SIM_ASSERT_CHK(0),                 // 0=disable simulation messages
-    .SIM_LOSSLESS_GRAY_CHK(0),          // 0=disable lossless check
-    .WIDTH(REG_DATA_W)                  // REG_DATA_W-bit counter width (range: 2-32)
-  ) xpm_cdc_gray_reg_fsm (
-    .src_clk(clk_eth_mrmac),            // 1-bit input: source clock
-    .src_in_bin(r_fsm_value_eth),       // REG_DATA_W-bit input: binary counter to synchronize
-
-    .dest_clk(clk_eth_cfg),             // 1-bit input: destination clock
-    .dest_out_bin(r_fsm_value_cfg)      // REG_DATA_W-bit output: binary value in dest domain
-  );//temporary
-  xpm_cdc_gray #(
-    .DEST_SYNC_FF(4),                   // Range: 2-10 synchronizer stages
-    .INIT_SYNC_FF(0),                   // 0=disable simulation init values
-    .REG_OUTPUT(0),                     // 0=combinatorial output, 1=registered output
-    .SIM_ASSERT_CHK(0),                 // 0=disable simulation messages
-    .SIM_LOSSLESS_GRAY_CHK(0),          // 0=disable lossless check
-    .WIDTH(REG_DATA_W)                  // REG_DATA_W-bit counter width (range: 2-32)
-  ) xpm_cdc_gray_t_notify_ack (
-    .src_clk(clk_eth_mrmac),            // 1-bit input: source clock
-    .src_in_bin(t_notify_to_ack_eth),       // REG_DATA_W-bit input: binary counter to synchronize
-
-    .dest_clk(clk_eth_cfg),             // 1-bit input: destination clock
-    .dest_out_bin(t_notify_to_ack_cfg)      // REG_DATA_W-bit output: binary value in dest domain
-  );//temporary
-  xpm_cdc_gray #(
-    .DEST_SYNC_FF(4),                   // Range: 2-10 synchronizer stages
-    .INIT_SYNC_FF(0),                   // 0=disable simulation init values
-    .REG_OUTPUT(0),                     // 0=combinatorial output, 1=registered output
-    .SIM_ASSERT_CHK(0),                 // 0=disable simulation messages
-    .SIM_LOSSLESS_GRAY_CHK(0),          // 0=disable lossless check
-    .WIDTH(REG_DATA_W)                  // REG_DATA_W-bit counter width (range: 2-32)
-  ) xpm_cdc_gray_t_rr_ce (
-    .src_clk(clk_eth_mrmac),                // 1-bit input: source clock
-    .src_in_bin(t_rr_to_ce_received_eth),   // REG_DATA_W-bit input: binary counter to synchronize
-
-    .dest_clk(clk_eth_cfg),                 // 1-bit input: destination clock
-    .dest_out_bin(t_rr_to_ce_received_cfg)  // REG_DATA_W-bit output: binary value in dest domain
-  );//temporary
-  xpm_cdc_gray #(
-    .DEST_SYNC_FF(4),                   // Range: 2-10 synchronizer stages
-    .INIT_SYNC_FF(0),                   // 0=disable simulation init values
-    .REG_OUTPUT(0),                     // 0=combinatorial output, 1=registered output
-    .SIM_ASSERT_CHK(0),                 // 0=disable simulation messages
-    .SIM_LOSSLESS_GRAY_CHK(0),          // 0=disable lossless check
-    .WIDTH(REG_DATA_W)                  // REG_DATA_W-bit counter width (range: 2-32)
-  ) xpm_cdc_gray_t_ce_first_last_pkt (
-    .src_clk(clk_eth_mrmac),                // 1-bit input: source clock
-    .src_in_bin(t_ce_first_to_last_pkt_eth),   // REG_DATA_W-bit input: binary counter to synchronize
-
-    .dest_clk(clk_eth_cfg),                 // 1-bit input: destination clock
-    .dest_out_bin(t_ce_first_to_last_pkt_cfg)  // REG_DATA_W-bit output: binary value in dest domain
-  );//temporary
-
-  generate
-    for (genvar gen_i=0; gen_i<ETH_PC; gen_i++) begin
-      xpm_cdc_gray #(
-        .DEST_SYNC_FF(4),                   // Range: 2-10 synchronizer stages
-        .INIT_SYNC_FF(0),                   // 0=disable simulation init values
-        .REG_OUTPUT(0),                     // 0=combinatorial output, 1=registered output
-        .SIM_ASSERT_CHK(0),                 // 0=disable simulation messages
-        .SIM_LOSSLESS_GRAY_CHK(0),          // 0=disable lossless check
-        .WIDTH(REG_DATA_W)                    // REG_DATA_W-bit counter width (range: 2-32)
-      ) xpm_cdc_gray_rr_phy_addr_lsb (
-        .src_clk(clk_eth_mrmac),                // 1-bit input: source clock
-        .src_in_bin(r_rr_phy_addr_eth[gen_i][REG_DATA_W-1:0]),  // REG_DATA_W-bit input: binary counter to synchronize
-
-        .dest_clk(clk_eth_cfg),                 // 1-bit input: destination clock
-        .dest_out_bin(r_rr_phy_addr_cfg[gen_i][REG_DATA_W-1:0]) // REG_DATA_W-bit output: binary value in dest domain
-      );//temporary
-      xpm_cdc_gray #(
-        .DEST_SYNC_FF(4),                   // Range: 2-10 synchronizer stages
-        .INIT_SYNC_FF(0),                   // 0=disable simulation init values
-        .REG_OUTPUT(0),                     // 0=combinatorial output, 1=registered output
-        .SIM_ASSERT_CHK(0),                 // 0=disable simulation messages
-        .SIM_LOSSLESS_GRAY_CHK(0),          // 0=disable lossless check
-        .WIDTH(REG_DATA_W)                    // REG_DATA_W-bit counter width (range: 2-32)
-      ) xpm_cdc_gray_rr_phy_addr_msb (
-        .src_clk(clk_eth_mrmac),                // 1-bit input: source clock
-        .src_in_bin(r_rr_phy_addr_eth[gen_i][2*REG_DATA_W-1:REG_DATA_W]),  // REG_DATA_W-bit input: binary counter to synchronize
-
-        .dest_clk(clk_eth_cfg),                 // 1-bit input: destination clock
-        .dest_out_bin(r_rr_phy_addr_cfg[gen_i][2*REG_DATA_W-1:REG_DATA_W]) // REG_DATA_W-bit output: binary value in dest domain
-      );//temporary
-
-    xpm_cdc_gray #(
-      .DEST_SYNC_FF(4),                   // Range: 2-10 synchronizer stages
-      .INIT_SYNC_FF(0),                   // 0=disable simulation init values
-      .REG_OUTPUT(0),                     // 0=combinatorial output, 1=registered output
-      .SIM_ASSERT_CHK(0),                 // 0=disable simulation messages
-      .SIM_LOSSLESS_GRAY_CHK(0),          // 0=disable lossless check
-      .WIDTH(REG_DATA_W)                  // REG_DATA_W-bit counter width (range: 2-32)
-    ) xpm_cdc_gray_t_rr_wait_words_pc (
-      .src_clk(clk_eth_mrmac),                     // 1-bit input: source clock
-      .src_in_bin(t_rr_wait_words_pc_eth[gen_i]),  // REG_DATA_W-bit input: binary counter to synchronize
-
-      .dest_clk(clk_eth_cfg),                      // 1-bit input: destination clock
-      .dest_out_bin(t_rr_wait_words_pc_cfg[gen_i]) // REG_DATA_W-bit output: binary value in dest domain
-    );//temporary
-    end
-  endgenerate
-
-  xpm_cdc_single_wrapper #(
-    .CDC_SYNC_STAGES ( 2 ) ,
-    .SRC_INPUT_REG   ( 0 )
-  ) cdc_rst_nb_ce_words_received (
-    .src_clk  ( clk_eth_cfg     ) ,
-    .dest_clk ( clk_eth_mrmac ) ,
-    .src_in   ( rst_nb_ce_words_received_cfg ) ,
-    .dest_out ( rst_nb_ce_words_received_eth )
-  );//temporary
-  xpm_cdc_gray #(
-    .DEST_SYNC_FF(4),                   // Range: 2-10 synchronizer stages
-    .INIT_SYNC_FF(0),                   // 0=disable simulation init values
-    .REG_OUTPUT(0),                     // 0=combinatorial output, 1=registered output
-    .SIM_ASSERT_CHK(0),                 // 0=disable simulation messages
-    .SIM_LOSSLESS_GRAY_CHK(0),          // 0=disable lossless check
-    .WIDTH(REG_DATA_W)                   // REG_DATA_W-bit counter width (range: 2-32)
-  ) xpm_cdc_gray_cnt_nb_ce_words_received (
-    .src_clk(clk_eth_mrmac),            // 1-bit input: source clock
-    .src_in_bin(cnt_nb_ce_words_received_eth),  // REG_DATA_W-bit input: binary counter to synchronize
-
-    .dest_clk(clk_eth_cfg),             // 1-bit input: destination clock
-    .dest_out_bin(cnt_nb_ce_words_received_cfg) // REG_DATA_W-bit output: binary value in dest domain
-  );//temporary
-
-  xpm_cdc_gray #(
-    .DEST_SYNC_FF(4),                   // Range: 2-10 synchronizer stages
-    .INIT_SYNC_FF(0),                   // 0=disable simulation init values
-    .REG_OUTPUT(0),                     // 0=combinatorial output, 1=registered output
-    .SIM_ASSERT_CHK(0),                 // 0=disable simulation messages
-    .SIM_LOSSLESS_GRAY_CHK(0),          // 0=disable lossless check
-    .WIDTH(REG_DATA_W)                   // REG_DATA_W-bit counter width (range: 2-32)
-  ) xpm_cdc_gray_nb_write_complete (
-    .src_clk(clk_eth_mrmac),            // 1-bit input: source clock
-    .src_in_bin(cnt_nb_write_complete_eth),  // REG_DATA_W-bit input: binary counter to synchronize
-
-    .dest_clk(clk_eth_cfg),             // 1-bit input: destination clock
-    .dest_out_bin(cnt_nb_write_complete_cfg) // REG_DATA_W-bit output: binary value in dest domain
-  );//temporary
-
-
-  xpm_cdc_single_wrapper #(
-    .CDC_SYNC_STAGES ( 2 ) ,
-    .SRC_INPUT_REG   ( 0 )
-  ) cdc_rst_errors (
-    .src_clk  ( clk_eth_cfg     ) ,
-    .dest_clk ( clk_eth_mrmac ) ,
-    .src_in   ( rst_mhdma_errors_cfg ) ,
-    .dest_out ( rst_mhdma_errors_eth )
-  );//temporary
-  xpm_cdc_gray #(
-    .DEST_SYNC_FF(4),                   // Range: 2-10 synchronizer stages
-    .INIT_SYNC_FF(0),                   // 0=disable simulation init values
-    .REG_OUTPUT(0),                     // 0=combinatorial output, 1=registered output
-    .SIM_ASSERT_CHK(0),                 // 0=disable simulation messages
-    .SIM_LOSSLESS_GRAY_CHK(0),          // 0=disable lossless check
-    .WIDTH(REG_DATA_W)                   // REG_DATA_W-bit counter width (range: 2-32)
-  ) xpm_cdc_gray_errors (
-    .src_clk(clk_eth_mrmac),            // 1-bit input: source clock
-    .src_in_bin(regf_mhdma_errors_eth),  // REG_DATA_W-bit input: binary counter to synchronize
-
-    .dest_clk(clk_eth_cfg),             // 1-bit input: destination clock
-    .dest_out_bin(regf_mhdma_errors_cfg) // REG_DATA_W-bit output: binary value in dest domain
-  );//temporary
-  // ==============================================================================================
+  // CDC: Register values (ETH -> CFG)
+  xpm_cdc_gray_wrapper #(
+    .WIDTH           ($bits(mhdma_stat_reg_t)),
+    .CDC_SYNC_STAGES (CDC_SYNC_STAGES        )
+  ) cdc_stat_reg (
+    .src_clk  (clk_eth_mrmac),
+    .dest_clk (clk_eth_cfg  ),
+    .src_in   (stat_reg_eth ),
+    .dest_out (stat_reg_cfg )
+  );
 
   // ============================================================================================ //
   // Multi-HPU-DMA bridge
   // ============================================================================================ //
-  logic [MRMAC_AXIS_W-1:0  ] axis_rx_tdata;
-  logic [MRMAC_TKEEP_W-1:0 ] axis_rx_tkeep_user;
-  logic                      axis_rx_tlast;
-  logic                      axis_rx_tvalid;
+  logic [MRMAC_AXIS_W-1:0 ] axis_rx_tdata;
+  logic [MRMAC_TKEEP_W-1:0] axis_rx_tkeep_user;
+  logic                     axis_rx_tlast;
+  logic                     axis_rx_tvalid;
 
   logic [MRMAC_AXIS_W-1:0 ] axis_tx_tdata;
   logic [MRMAC_TKEEP_W-1:0] axis_tx_tkeep_user;
@@ -922,165 +380,111 @@ module multi_hpu_dma
   logic                     axis_tx_tvalid;
   logic                     axis_tx_tready;
 
-  // this module is the core of the multi hpu dma: it's the bridge between HBM and MRMAC IP
   mhdma_bridge mhdma_bridge (
-    .clk_cfg                        (clk_eth_cfg                                                 ),
-    .resetn_cfg                     (resetn_eth_cfg                                              ),
-    .clk_mrmac                      (clk_eth_mrmac                                               ),
-    .resetn_mrmac                   (resetn_eth_mrmac                                            ),
+    .clk_cfg                        (clk_eth_cfg                                                  ),
+    .resetn_cfg                     (resetn_eth_cfg                                               ),
+    .clk_mrmac                      (clk_eth_mrmac                                                ),
+    .resetn_mrmac                   (resetn_eth_mrmac                                             ),
     // axi4-full for each ETH_PC ------------------------------------------------------------------
-    .m_axi4_arid                    (m_axi4_eth_hbm_arid                                         ),
-    .m_axi4_araddr                  (m_axi4_eth_hbm_araddr                                       ),
-    .m_axi4_arlen                   (m_axi4_eth_hbm_arlen                                        ),
-    .m_axi4_arsize                  (m_axi4_eth_hbm_arsize                                       ),
-    .m_axi4_arburst                 (m_axi4_eth_hbm_arburst                                      ),
-    .m_axi4_arvalid                 (m_axi4_eth_hbm_arvalid                                      ),
-    .m_axi4_arready                 (m_axi4_eth_hbm_arready                                      ),
-    .m_axi4_rid                     (m_axi4_eth_hbm_rid                                          ),
-    .m_axi4_rdata                   (m_axi4_eth_hbm_rdata                                        ),
-    .m_axi4_rresp                   (m_axi4_eth_hbm_rresp                                        ),
-    .m_axi4_rlast                   (m_axi4_eth_hbm_rlast                                        ),
-    .m_axi4_rvalid                  (m_axi4_eth_hbm_rvalid                                       ),
-    .m_axi4_rready                  (m_axi4_eth_hbm_rready                                       ),
-    .m_axi4_awid                    (m_axi4_eth_hbm_awid                                         ),
-    .m_axi4_awaddr                  (m_axi4_eth_hbm_awaddr                                       ),
-    .m_axi4_awlen                   (m_axi4_eth_hbm_awlen                                        ),
-    .m_axi4_awsize                  (m_axi4_eth_hbm_awsize                                       ),
-    .m_axi4_awburst                 (m_axi4_eth_hbm_awburst                                      ),
-    .m_axi4_awvalid                 (m_axi4_eth_hbm_awvalid                                      ),
-    .m_axi4_awready                 (m_axi4_eth_hbm_awready                                      ),
-    .m_axi4_wdata                   (m_axi4_eth_hbm_wdata                                        ),
-    .m_axi4_wstrb                   (m_axi4_eth_hbm_wstrb                                        ),
-    .m_axi4_wlast                   (m_axi4_eth_hbm_wlast                                        ),
-    .m_axi4_wvalid                  (m_axi4_eth_hbm_wvalid                                       ),
-    .m_axi4_wready                  (m_axi4_eth_hbm_wready                                       ),
-    .m_axi4_bid                     (m_axi4_eth_hbm_bid                                          ),
-    .m_axi4_bresp                   (m_axi4_eth_hbm_bresp                                        ),
-    .m_axi4_bvalid                  (m_axi4_eth_hbm_bvalid                                       ),
-    .m_axi4_bready                  (m_axi4_eth_hbm_bready                                       ),
+    .m_axi4_arid                    (m_axi4_eth_hbm_arid                                          ),
+    .m_axi4_araddr                  (m_axi4_eth_hbm_araddr                                        ),
+    .m_axi4_arlen                   (m_axi4_eth_hbm_arlen                                         ),
+    .m_axi4_arsize                  (m_axi4_eth_hbm_arsize                                        ),
+    .m_axi4_arburst                 (m_axi4_eth_hbm_arburst                                       ),
+    .m_axi4_arvalid                 (m_axi4_eth_hbm_arvalid                                       ),
+    .m_axi4_arready                 (m_axi4_eth_hbm_arready                                       ),
+    .m_axi4_rid                     (m_axi4_eth_hbm_rid                                           ),
+    .m_axi4_rdata                   (m_axi4_eth_hbm_rdata                                         ),
+    .m_axi4_rresp                   (m_axi4_eth_hbm_rresp                                         ),
+    .m_axi4_rlast                   (m_axi4_eth_hbm_rlast                                         ),
+    .m_axi4_rvalid                  (m_axi4_eth_hbm_rvalid                                        ),
+    .m_axi4_rready                  (m_axi4_eth_hbm_rready                                        ),
+    .m_axi4_awid                    (m_axi4_eth_hbm_awid                                          ),
+    .m_axi4_awaddr                  (m_axi4_eth_hbm_awaddr                                        ),
+    .m_axi4_awlen                   (m_axi4_eth_hbm_awlen                                         ),
+    .m_axi4_awsize                  (m_axi4_eth_hbm_awsize                                        ),
+    .m_axi4_awburst                 (m_axi4_eth_hbm_awburst                                       ),
+    .m_axi4_awvalid                 (m_axi4_eth_hbm_awvalid                                       ),
+    .m_axi4_awready                 (m_axi4_eth_hbm_awready                                       ),
+    .m_axi4_wdata                   (m_axi4_eth_hbm_wdata                                         ),
+    .m_axi4_wstrb                   (m_axi4_eth_hbm_wstrb                                         ),
+    .m_axi4_wlast                   (m_axi4_eth_hbm_wlast                                         ),
+    .m_axi4_wvalid                  (m_axi4_eth_hbm_wvalid                                        ),
+    .m_axi4_wready                  (m_axi4_eth_hbm_wready                                        ),
+    .m_axi4_bid                     (m_axi4_eth_hbm_bid                                           ),
+    .m_axi4_bresp                   (m_axi4_eth_hbm_bresp                                         ),
+    .m_axi4_bvalid                  (m_axi4_eth_hbm_bvalid                                        ),
+    .m_axi4_bready                  (m_axi4_eth_hbm_bready                                        ),
     // Register interface -------------------------------------------------------------------------
-    .regf_hpu_ids                   (r_regf_hpu_ids                                              ),
-    .regf_ct_mem_addr               (r_ct_mem_addr                                               ),
-    .regf_req_id                    (r_request_req_id                                            ),
-    .regf_req_addr                  (r_request_req_addr                                          ),
-    .regf_notify_payload            (r_request_notify                                            ),
-    .regf_read_payload              (r_request_read                                              ),
-    .regf_timeout_duration_notify   (r_system_timeout_notify                                     ),
-    .regf_timeout_duration_read_req (r_system_timeout_read_req                                   ),
+    .regf_hpu_ids                   (r_regf_hpu_ids                                               ),
+    .regf_ct_mem_addr               (r_ct_mem_addr                                                ),
+    .regf_req_id                    (r_request_req_id                                             ),
+    .regf_req_addr                  (r_request_req_addr                                           ),
+    .regf_notify_payload            (r_request_notify                                             ),
+    .regf_read_payload              (r_request_read                                               ),
+    .regf_timeout_duration_notify   (r_system_timeout_notify                                      ),
+    .regf_timeout_duration_read_req (r_system_timeout_read_req                                    ),
     // interruptions and control ------------------------------------------------------------------
-    .received_req                   (&received_req                                               ),
-    .request_consumed               (request_consumed                                            ),
-    .clear_interrupt_notify         (clear_interrupt_notify                                      ),
-    .clear_interrupt_rr             (clear_interrupt_rr                                          ),
-    .interrupt_notify               (interrupt_notify                                            ),
-    .interrupt_read_request         (interrupt_read_request                                      ),
+    .received_req                   (&received_req                                                ),
+    .request_consumed               (request_consumed                                             ),
+    .clear_interrupt_notify         (clear_interrupt_notify                                       ),
+    .clear_interrupt_rr             (clear_interrupt_rr                                           ),
+    .interrupt_notify               (interrupt_notify                                             ),
+    .interrupt_read_request         (interrupt_read_request                                       ),
     // statistics ---------------------------------------------------------------------------------
     // counters
-    .stat_cnt_notify                (cnt_notify_eth                                              ),
-    .stat_cnt_notify_ack            (cnt_notify_ack_eth                                          ),
-    .stat_cnt_notify_timeout        (cnt_timeout_eth                                             ),
-    .stat_cnt_notify_retries        (cnt_retry_notify_eth                                        ),
-    .stat_cnt_notify_received       (cnt_notify_received_eth                                     ),
-    .stat_cnt_read_req_retries      (cnt_retry_read_req_eth                                      ),
-    .stat_cnt_read_req_received     (cnt_read_req_received_eth                                   ),
-    .stat_cnt_nack_received         (cnt_nack_received_eth                                       ),
-    .stat_cnt_ce_received           (cnt_ce_received_eth                                         ),
-    .stat_nb_read_to_hbm            (cnt_nb_read_to_hbm_eth                                      ),
-    .stat_nb_words_received_pc      (cnt_nb_words_received_pc_eth                                ),
-    .stat_t_rr_wait_words_pc        (t_rr_wait_words_pc_eth                                      ),
-    .stat_nb_ce_words_received      (cnt_nb_ce_words_received_eth                                ),
-    .stat_nb_write_complete_cnt     (cnt_nb_write_complete_eth                                   ),
+    .stat_cnt_notify                (cnt_eth.notify                                               ),
+    .stat_cnt_notify_ack            (cnt_eth.notify_ack                                           ),
+    .stat_cnt_notify_timeout        (cnt_eth.timeout                                              ),
+    .stat_cnt_notify_retries        (cnt_eth.retry_notify                                         ),
+    .stat_cnt_notify_received       (cnt_eth.notify_received                                      ),
+    .stat_cnt_read_req_retries      (cnt_eth.retry_read_req                                       ),
+    .stat_cnt_read_req_received     (cnt_eth.read_req_received                                    ),
+    .stat_cnt_nack_received         (cnt_eth.nack_received                                        ),
+    .stat_cnt_ce_received           (cnt_eth.ce_received                                          ),
+    .stat_nb_read_to_hbm            (cnt_eth.nb_read_to_hbm                                       ),
+    .stat_nb_words_received_pc      (cnt_eth.nb_words_received_pc                                 ),
+    .stat_t_rr_wait_words_pc        (stat_reg_eth.t_rr_wait_words_pc                              ),
+    .stat_nb_ce_words_received      (cnt_eth.nb_ce_words_received                                 ),
+    .stat_nb_write_complete_cnt     (cnt_eth.nb_write_complete                                    ),
     // timing
-    .stat_t_notify_to_ack           (t_notify_to_ack_eth                                         ),
-    .stat_t_rr_to_ce_received       (t_rr_to_ce_received_eth                                     ),
-    .stat_t_ce_first_to_last_pkt    (t_ce_first_to_last_pkt_eth                                  ),
+    .stat_t_notify_to_ack           (stat_reg_eth.t_notify_to_ack                                 ),
+    .stat_t_rr_to_ce_received       (stat_reg_eth.t_rr_to_ce_received                             ),
+    .stat_t_ce_first_to_last_pkt    (stat_reg_eth.t_ce_first_to_last_pkt                          ),
     // resets
-    .rst_cnt_notify                 (rst_cnt_notify_eth                                          ),
-    .rst_cnt_notify_ack             (rst_cnt_notify_ack_eth                                      ),
-    .rst_cnt_notify_received        (rst_cnt_notify_received_eth                                 ),
-    .rst_cnt_notify_retry           (rst_cnt_retry_notify_eth                                    ),
-    .rst_cnt_read_req_retry         (rst_cnt_retry_read_req_eth                                 ),
-    .rst_cnt_read_req_received      (rst_cnt_read_req_received_eth                               ),
-    .rst_cnt_nack_received          (rst_cnt_nack_received_eth                                   ),
-    .rst_cnt_timeout                (rst_cnt_timeout_eth                                         ),
-    .rst_cnt_ce_received            (rst_cnt_ce_received_eth                                     ),
-    .rst_nb_read_to_hbm             (rst_nb_read_to_hbm_eth                                      ),
-    .rst_nb_words_received_pc       (rst_nb_words_received_pc_eth                                ),
-    .rst_nb_ce_words_received       (rst_nb_ce_words_received_eth                                ),
+    .rst_cnt_notify                 (rst_cnt_eth.notify                                           ),
+    .rst_cnt_notify_ack             (rst_cnt_eth.notify_ack                                       ),
+    .rst_cnt_notify_received        (rst_cnt_eth.notify_received                                  ),
+    .rst_cnt_notify_retry           (rst_cnt_eth.retry_notify                                     ),
+    .rst_cnt_read_req_retry         (rst_cnt_eth.retry_read_req                                   ),
+    .rst_cnt_read_req_received      (rst_cnt_eth.read_req_received                                ),
+    .rst_cnt_nack_received          (rst_cnt_eth.nack_received                                    ),
+    .rst_cnt_timeout                (rst_cnt_eth.timeout                                          ),
+    .rst_cnt_ce_received            (rst_cnt_eth.ce_received                                      ),
+    .rst_nb_read_to_hbm             (rst_cnt_eth.nb_read_to_hbm                                   ),
+    .rst_nb_words_received_pc       (rst_cnt_eth.nb_words_received_pc                             ),
+    .rst_nb_ce_words_received       (rst_cnt_eth.nb_ce_words_received                             ),
     // registers
-    .stat_reg_fsm                   (r_fsm_value_eth                                             ),
-    .stat_rr_phy_addr               (r_rr_phy_addr_eth                                           ),
-    .stat_mhdma_errors              (regf_mhdma_errors_eth                                       ),
-    .rst_mhdma_errors               (rst_mhdma_errors_eth                                        ),
+    .stat_reg_fsm                   (stat_reg_eth.fsm_value                                       ),
+    .stat_rr_phy_addr               (stat_reg_eth.rr_phy_addr                                     ),
+    .stat_mhdma_errors              (cnt_eth.mhdma_errors                                         ),
+    .rst_mhdma_errors               (rst_cnt_eth.mhdma_errors                                     ),
     // QSFP interface one lane --------------------------------------------------------------------
     // tx
-    .qsfp_tx_tdata                  (axis_tx_tdata                                               ),
-    .qsfp_tx_tkeep_user             (axis_tx_tkeep_user                                          ),
-    .qsfp_tx_tlast                  (axis_tx_tlast                                               ),
-    .qsfp_tx_tvalid                 (axis_tx_tvalid                                              ),
-    .qsfp_tx_tready                 (axis_tx_tready                                              ),
+    .qsfp_tx_tdata                  (axis_tx_tdata                                                ),
+    .qsfp_tx_tkeep_user             (axis_tx_tkeep_user                                           ),
+    .qsfp_tx_tlast                  (axis_tx_tlast                                                ),
+    .qsfp_tx_tvalid                 (axis_tx_tvalid                                               ),
+    .qsfp_tx_tready                 (axis_tx_tready                                               ),
     // rx
-    .qsfp_rx_tdata                  (axis_rx_tdata                                               ),
-    .qsfp_rx_tkeep_user             (axis_rx_tkeep_user                                          ),
-    .qsfp_rx_tlast                  (axis_rx_tlast                                               ),
-    .qsfp_rx_tvalid                 (axis_rx_tvalid                                              )
+    .qsfp_rx_tdata                  (axis_rx_tdata                                                ),
+    .qsfp_rx_tkeep_user             (axis_rx_tkeep_user                                           ),
+    .qsfp_rx_tlast                  (axis_rx_tlast                                                ),
+    .qsfp_rx_tvalid                 (axis_rx_tvalid                                               )
   );
 
   // ============================================================================================ //
-  // Trace module
-  // TODO:
-  // must be able to read last frame and write a new packet into ethernet
-  // ============================================================================================ //
-  mhdma_trace # (
-    .FIFO_DEPTH(FIFO_DEPTH),
-    .SIM_ASSERT_CHK(0)
-  ) mhdma_trace (
-    // system interface
-    .clk_control        (clk_eth_cfg),
-    .s_rstn_control     (resetn_eth_cfg),
-    .clk_mrmac          (clk_eth_mrmac),
-    .s_rstn_mrmac       (resetn_eth_mrmac),
-    // MRMAC RX interface
-    .qsfp_rx_tdata      (axis_rx_tdata),
-    .qsfp_rx_tkeep_user (axis_rx_tkeep_user),
-    .qsfp_rx_tlast      (axis_rx_tlast),
-    .qsfp_rx_tvalid     (axis_rx_tvalid),
-    // MRMAC TX interface
-    // .qsfp_tx_tdata      (axis_tx_tdata),
-    // .qsfp_tx_tkeep_user (axis_tx_tkeep_user),
-    // .qsfp_tx_tlast      (axis_tx_tlast),
-    // .qsfp_tx_tvalid     (axis_tx_tvalid),
-    // .qsfp_tx_tready     (axis_tx_tready),
-    // register interface
-    .r_nb_word          (r_nb_word),
-    .r_wr_word          (r_wr_word),
-    .r_wr_data_count    (r_wr_data_count),
-    .r_rd_data_count    (r_rd_data_count),
-    .r_rd_word          (r_rd_word),
-    .read_ack           (read_ack),
-    .write_ack          (write_ack),
-    .tx_loop            (tx_loop),
-    .rx_to_tx           (rx_to_tx),
-    .reset_registers    (reset_registers),
-    // debug interface
-    .clk_cnt_out         (clk_cnt_out),
-    .valid_words_out     (valid_words_out),
-    .sop_cnt_out         (sop_cnt_out),
-    .trigger_rd_cnt_out  (trigger_rd_cnt_out),
-    .tx_wr_en_cnt        (tx_wr_en_cnt),
-    .stat_tx_empty       (stat_tx_empty),
-    .stat_tx_rd_rst_busy (stat_tx_rd_rst_busy),
-    .stat_tx_data_valid  (stat_tx_data_valid),
-    .stat_tx_full        (stat_tx_full),
-    .stat_tx_wr_rst_busy (stat_tx_wr_rst_busy),
-    .stat_qsfp_tx_tready (stat_qsfp_tx_tready),
-    .stat_rd_data_count  (stat_rd_data_count)
-  );
-
-  // ============================================================================================ //
-  // AXI4-stream switch
-  // ==================
-  // depending on line_sel signal, selects and outputs the correct line
+  // AXI4-stream lane switch
   // ============================================================================================ //
   // Rx Link
   assign axis_rx_tdata      = qsfp_rx_tdata[line_sel];
@@ -1092,11 +496,11 @@ module multi_hpu_dma
   assign axis_tx_tready = qsfp_tx_tready[line_sel];
 
   generate
-    for (genvar i = 0; i < QSFP_LANE_NB; i++) begin
-      assign qsfp_tx_tdata[i]       = (line_sel == i) ? axis_tx_tdata      : 'h0;
-      assign qsfp_tx_tkeep_user[i]  = (line_sel == i) ? axis_tx_tkeep_user : 'h0;
-      assign qsfp_tx_tlast[i]       = (line_sel == i) ? axis_tx_tlast      : 'h0;
-      assign qsfp_tx_tvalid[i]      = (line_sel == i) ? axis_tx_tvalid     : 'h0;
+    for (genvar i = 0; i < QSFP_LANE_NB; i++) begin : gen_tx_lane_switch
+      assign qsfp_tx_tdata[i]      = (line_sel == i) ? axis_tx_tdata      : '0;
+      assign qsfp_tx_tkeep_user[i] = (line_sel == i) ? axis_tx_tkeep_user : '0;
+      assign qsfp_tx_tlast[i]      = (line_sel == i) ? axis_tx_tlast      : '0;
+      assign qsfp_tx_tvalid[i]     = (line_sel == i) ? axis_tx_tvalid     : '0;
     end
   endgenerate
 
