@@ -4,15 +4,10 @@
 // ----------------------------------------------------------------------------------------------
 // Description  : Shared tasks and functions for multi_hpu_dma testbenches
 //
-// ==============================================================================================
-
-import mhdma_pkg::*;                    // multi-hpu-dma
-import axi_if_shell_axil_pkg::*;        // axi4-lite + REG_DATA_W
-import axi_if_common_param_pkg::*;      // general axi4
-import hpu_regif_core_eth_2in3_pkg::*;  // ethernet regif
-import axi_if_eth_axi_pkg::*;           // AXI ethernet
-
+// This file is to be included into testbenches
 // Note: qsfp_if interface is defined in qsfp_if.sv (compiled separately)
+//
+// ==============================================================================================
 
 // ==============================================================================================
 // Error Display Function

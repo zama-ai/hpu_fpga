@@ -14,14 +14,9 @@ module mhdma_master
   import axi_if_eth_axi_pkg::*;      // AXI4
   import axi_if_shell_axil_pkg::*;   // REG_DATA_W
   import axi_if_common_param_pkg::*; // HBM page
+  import pem_common_param_pkg::*;    // CT_MEM_BYTES, AXI4_WORD_PER_PC_L*
 #(
-  parameter int   CDC_SYNC_STAGES = 2,
-  parameter int   MAX_BURST_SIZE  = PAGE_BYTES/AXI4_DATA_BYTES,
-  parameter [3:0] PC_STRIDE       = 'hB,
-  // must not add default values to theses parameters, coming from bridge module
-  parameter int   PC_NB_WORDS  [ETH_PC],
-  parameter int   PC_REMAINS   [ETH_PC],
-  parameter int   PC_NB_WRITES [ETH_PC]
+  parameter int CDC_SYNC_STAGES = 2
 ) (
   // Ethernet configuration interface -----------------------------------------
   input  logic                                clk_cfg,
@@ -109,13 +104,15 @@ module mhdma_master
   // =========================================================================================== //
   // localparam
   // =========================================================================================== //
-  localparam NB_MRMRAC_WORDS_PER_WRITE = AXI4_DATA_W/MRMAC_AXIS_W;
+  localparam int NB_MRMRAC_WORDS_PER_WRITE = AXI4_DATA_W/MRMAC_AXIS_W;
 
-  // TODO only two PC toreview
-  localparam NB_WORDS_TOTAL = PC_NB_WORDS[0] + PC_NB_WORDS[1];
-  localparam NB_WORDS_TO_HBM = (NB_WORDS_TOTAL*AXI4_DATA_W)/MRMAC_AXIS_W;
+  localparam int NB_WORDS_TOTAL  = AXI4_WORD_PER_PC0 + AXI4_WORD_PER_PC;
+  localparam int NB_WORDS_TO_HBM = (NB_WORDS_TOTAL*AXI4_DATA_W)/MRMAC_AXIS_W;
 
-  localparam NB_WRITES_TOTAL = PC_NB_WRITES[0] + PC_NB_WRITES[1];
+  // Max burst count per PC for page boundary crossings
+  localparam int AXI_BURST_NB_MAX    = ((AXI4_WORD_PER_PC0 + PAGE_AXI4_DATA-1) / PAGE_AXI4_DATA) + 1; // +1 in case of address non alignment
+  localparam int AXI_BURST_NB_MAX_W  = $clog2(AXI_BURST_NB_MAX) == 0 ? 1 : $clog2(AXI_BURST_NB_MAX);
+  localparam int AXI_BURST_NB_MAX_WW = $clog2(AXI_BURST_NB_MAX+1) == 0 ? 1 : $clog2(AXI_BURST_NB_MAX+1);
 
   // ==============================================================================================
   // FSM
@@ -442,7 +439,7 @@ module mhdma_master
     .almost_full (/* UNUSED */)
   );
 
-  assign nrqq_retry_rdy = notify_ack_received & (ntx_state == NTX_WAIT_ACK);;
+  assign nrqq_retry_rdy = notify_ack_received & (ntx_state == NTX_WAIT_ACK);
 
   // ----------------------------------------------------------------------------------------------
   // when we have the data of both request identifier and addresses, we consume the information
@@ -466,7 +463,6 @@ module mhdma_master
     end else if (rrqq_cmd_vld | rr_retry) begin
       master_command.hpu_id   <= rrqq_cmd.hpu_id;
       master_command.size_b   <= rrqq_cmd.size_b;
-      master_command.req_id   <= rrqq_cmd.req_id;
       master_command.iop_id   <= rrqq_cmd.iop_id;
       master_command.src_addr <= rrqq_cmd.src_addr;
       master_command.dst_addr <= rrqq_cmd.dst_addr;
@@ -640,13 +636,13 @@ module mhdma_master
 
   assign received_valid = decoded_command_rdy & decoded_command_vld;
 
-  // phys_addr = hbm_pc_offset + ctId * ciphertext_size
-  logic [ETH_PC-1:0] [AXI4_ADD_W-1:0] phy_addr;
-  logic dst_addr_valid;
-  logic phy_addr_valid;
+  // phys_addr = hbm_pc_offset + ctId * CT_MEM_BYTES
+  logic [ETH_PC-1:0][AXI4_ADD_W-1:0] phy_addr;
+  logic                              dst_addr_valid;
+  logic                              phy_addr_valid;
 
   always_ff @(posedge clk_mrmac)
-    dst_addr_valid <= received_valid & (decoded_command.req_id == REQ_ID_EMISSION) & (decoded_command.seq_num ==0);
+    dst_addr_valid <= received_valid & (decoded_command.req_id == REQ_ID_EMISSION) & (decoded_command.seq_num == 0);
 
   always_ff @(posedge clk_mrmac)
     phy_addr_valid <= dst_addr_valid;
@@ -654,13 +650,17 @@ module mhdma_master
   generate
     for (genvar gen_p=0; gen_p<ETH_PC; gen_p=gen_p+1)
       always_ff @(posedge clk_mrmac)
-          if (dst_addr_valid)
-            phy_addr[gen_p] <= regf_ct_mem_addr[gen_p] + (received_dst_addr << PC_STRIDE);
+        if (dst_addr_valid)
+          phy_addr[gen_p] <= regf_ct_mem_addr[gen_p] + received_dst_addr * CT_MEM_BYTES;
   endgenerate
 
   // word distribution to each fifo pc ------------------------------------------------------------
-  logic [CE_DATA_COUNT_W:0] fifo_cerx_cnt_tx;
+  logic [ETH_PC-1:0]        pc_transfer_done;
+  logic [ETH_PC-1:0]        axi4_write_pc;
   logic [ETH_PC-1:0]        target_fifo;
+  logic [ETH_PC-1:0]        write_error;
+  logic [ETH_PC-1:0]        bid_mismatch;
+  logic [CE_DATA_COUNT_W:0] fifo_cerx_cnt_tx;  // Counter for 64-bit words (only for debugging)
 
   always_ff @(posedge clk_mrmac) begin
     if (~resetn_mrmac) begin
@@ -674,64 +674,60 @@ module mhdma_master
     end
   end
 
-  // which fifo must be filled ?
-  always_ff @(posedge clk_mrmac) begin
-    if (~resetn_mrmac) begin
-      target_fifo <= 2'b00;
-    end else begin
-      // we target first fifo when we have less than PC_NB_WORDS*NB_MRMRAC_WORDS_PER_WRITE
-      // we reset (to fifo 0) when we have the double, note that we could receive more words but they could be invalid
-      // this is in case axi data width in not divisible by mrmac data size
-      if (fifo_cerx_cnt_tx < NB_MRMRAC_WORDS_PER_WRITE*PC_NB_WORDS[0]) begin
-        target_fifo <= 2'b01;
-      end else if (fifo_cerx_cnt_tx == NB_MRMRAC_WORDS_PER_WRITE*PC_NB_WORDS[0]) begin
-        target_fifo <= 2'b10;
-      end
-    end
-  end
-
-  // launch reads over the two PCs independently one at a time
-  generate
-    for (genvar gen_i=0; gen_i<ETH_PC; gen_i++) begin : gen_last_cnt
-      logic [$clog2(PC_NB_WRITES[gen_i]):0] pc_last_cnt;
-      always_ff @(posedge clk_mrmac) begin
-        if (~resetn_mrmac)begin
-          pc_last_cnt <= 'h0;
-        end else begin
-          if(m_axi4_wready[gen_i] & m_axi4_wvalid[gen_i] & m_axi4_wlast[gen_i]) begin
-            pc_last_cnt <= pc_last_cnt+1;
-          end else if (pc_last_cnt == PC_NB_WRITES[gen_i]) begin
-            pc_last_cnt <= 'h0;
-          end
-        end
-      end
-    end
-  endgenerate
-
-  logic [ETH_PC-1:0] axi4_write_pc;
-  // when read request registers are ready we can initialize the shift register
-  // when we have done all writes on the first PC (the number of lasts matches to expected) we can shift
+  // when phy_addr is computed from data received by decoder and valid or when we have done all
+  // neeed writes on the first PC we can shift to the next
   // when all writes on the second pc is done we can reset the signal
   always_ff @(posedge clk_mrmac) begin : prc_write_pc_one_at_a_time
     if (~resetn_mrmac) begin
       axi4_write_pc <= 'h0;
     end else begin
-      if (phy_addr_valid | (gen_last_cnt[0].pc_last_cnt == PC_NB_WRITES[0])) begin
+      if (phy_addr_valid | pc_transfer_done[0]) begin
         axi4_write_pc <= {axi4_write_pc[ETH_PC-2:0], phy_addr_valid};
-      end else if (gen_last_cnt[1].pc_last_cnt == PC_NB_WRITES[1]) begin
+      end else if (pc_transfer_done[1]) begin
         axi4_write_pc <= 'h0;
       end
     end
   end
 
-  // deserialization of 64bits words (MRMAC) to 256b (AXI4_DATA_W)
+  // Deserialization of 64bits words (MRMAC) to 256b (AXI4_DATA_W)
   logic [AXI4_DATA_W-1:0]                       realined_word;
   logic [$clog2(NB_MRMRAC_WORDS_PER_WRITE)-1:0] realign_cnt;
   logic                                         realined_word_vld;
   logic                                         fifo_cerx_out_rdy_vld;
   logic                                         fifo_cerx_out_rdy_vld_reg;
 
+  // Counter for realigned (256-bit) words - used for target_fifo selection
+  // This ensures target_fifo switches AFTER the realignment pipeline, not before
+  logic [AXI4_WORD_PER_PC0_WW:0] realined_word_cnt;
+
+  // which fifo must be filled ? Based on realigned word count (not raw 64-bit count)
+  always_ff @(posedge clk_mrmac) begin
+    if (~resetn_mrmac) begin
+      target_fifo <= 2'b01;  // Start targeting PC0
+    end else begin
+      if (ciphertext_received) begin
+        target_fifo <= 2'b01;  // Reset to PC0 for next ciphertext
+      end else if (realined_word_vld && realined_word_cnt == (AXI4_WORD_PER_PC0 - 1)) begin
+        // Switch to PC1 when sending last PC0 word, so next word goes to PC1
+        target_fifo <= 2'b10;
+      end
+    end
+  end
+
+  always_ff @(posedge clk_mrmac) begin
+    if (~resetn_mrmac) begin
+      realined_word_cnt <= 'h0;
+    end else begin
+      if (realined_word_vld) begin
+        realined_word_cnt <= realined_word_cnt + 1;
+      end else if (ciphertext_received) begin
+        realined_word_cnt <= 'h0;
+      end
+    end
+  end
+
   assign fifo_cerx_out_rdy_vld = fifo_cerx_out_rdy & fifo_cerx_out_vld;
+
   always_ff @(posedge clk_mrmac)
     fifo_cerx_out_rdy_vld_reg <= fifo_cerx_out_rdy_vld;
 
@@ -752,8 +748,6 @@ module mhdma_master
       realined_word[realign_cnt*MRMAC_AXIS_W+:MRMAC_AXIS_W] <= fifo_cerx_out_data;
 
   assign realined_word_vld = (realign_cnt == 0) & fifo_cerx_out_rdy_vld_reg;
-
-  logic [ETH_PC-1:0] write_error;
 
   generate
     for (genvar gen_wr=0; gen_wr<ETH_PC; gen_wr++) begin : gen_ce_write
@@ -787,7 +781,6 @@ module mhdma_master
       logic [FIFO_PC_DATA_COUNT_W:0] fifo_pc_wr_cnt;
       logic                          cnt_fifo_pc_wr_up;
       logic                          cnt_fifo_pc_wr_down;
-      logic                          enough_words;
 
       assign cnt_fifo_pc_wr_up   = fifo_pc_wr_in_vld & fifo_pc_wr_in_rdy;
       assign cnt_fifo_pc_wr_down = fifo_pc_wr_out_rdy & fifo_pc_wr_out_vld;
@@ -805,61 +798,93 @@ module mhdma_master
       end
 
       // ======================================================================================= //
-      // Address
+      // Address channel
       // ======================================================================================= //
-      axi4_aw_if_t axi_a;
-      logic        axi_a_awvalid;
-      logic        axi_a_awready;
+      // PC-specific word count
+      localparam int AXI4_WORD_PER_PC_L    = (gen_wr == 0) ? AXI4_WORD_PER_PC0 : AXI4_WORD_PER_PC;
+      localparam int AXI4_WORD_PER_PC_W_L  = (gen_wr == 0) ? AXI4_WORD_PER_PC0_W : AXI4_WORD_PER_PC_W;
+      localparam int AXI4_WORD_PER_PC_WW_L = (gen_wr == 0) ? AXI4_WORD_PER_PC0_WW : AXI4_WORD_PER_PC_WW;
 
-      axi4_aw_if_t m_axi4_aw;
+      // axi structs
+      axi4_aw_if_t                      axi_a;
+      logic                             axi_a_awvalid;
+      logic                             axi_a_awready;
+      axi4_aw_if_t                      m_axi4_aw;
 
-      // We must write PC_NB_WRITES + PC_REMAINS addresses
-      logic [$clog2(PC_NB_WRITES[gen_wr]):0] axi_write_cnt;
-      logic                                  axi4_awlast;
+      // Remaining words counter
+      logic [AXI4_WORD_PER_PC_WW_L-1:0] req_axi_word_remain;
+      logic [AXI4_WORD_PER_PC_WW_L-1:0] req_axi_word_remainD;
+      logic                             req_last_axi_word_remain;
+      logic                             req_pbs_first_burst;
+      logic                             req_pbs_first_burstD;
+      logic                             req_send_axi_cmd;
 
-      // Counts the number of address writes that is left to do
+      // Burst counter for brsp_fifo
+      logic [AXI_BURST_NB_MAX_W-1:0]    req_burst_cnt_m1;
+      logic [AXI_BURST_NB_MAX_W-1:0]    req_burst_cnt_m1D;
+
+      // Page boundary and burst length calculation
+      logic [AXI4_ADD_W-1:0]            req_add;
+      logic [AXI4_ADD_W-1:0]            req_addD;
+      logic [AXI4_ADD_W-1:0]            req_add_start;
+      logic [PAGE_BYTES_WW-1:0]         req_page_word_remain;
+      logic [AXI4_LEN_W:0]              req_axi_word_nb;
+      logic [AXI4_ID_W-1:0]             expected_wid;
+
+      // FIFO ready signals
+      logic rcp_fifo_in_rdy;
+      logic brsp_fifo_in_rdy;
+
+      assign req_send_axi_cmd = axi_a_awvalid & axi_a_awready;
+
+      assign req_axi_word_remainD     = req_send_axi_cmd ? req_last_axi_word_remain ? AXI4_WORD_PER_PC_L : req_axi_word_remain - req_axi_word_nb : req_axi_word_remain;
+      assign req_last_axi_word_remain = req_axi_word_remain == req_axi_word_nb;
+      assign req_pbs_first_burstD     = req_send_axi_cmd ? req_last_axi_word_remain ? 1'b1 : 1'b0 : req_pbs_first_burst;
+      assign req_burst_cnt_m1D        = req_send_axi_cmd ? req_last_axi_word_remain ? '0 : req_burst_cnt_m1 + 1 : req_burst_cnt_m1;
+
+      always_ff @(posedge clk_mrmac)
+        if (~resetn_mrmac) begin
+          req_axi_word_remain <= AXI4_WORD_PER_PC_L;
+          req_pbs_first_burst <= 1'b1;
+          req_burst_cnt_m1    <= '0;
+        end
+        else begin
+          req_axi_word_remain <= req_axi_word_remainD;
+          req_pbs_first_burst <= req_pbs_first_burstD;
+          req_burst_cnt_m1    <= req_burst_cnt_m1D;
+        end
+
+      // Address computation
+      assign req_add_start        = req_pbs_first_burst ? phy_addr[gen_wr] : req_add;
+      assign req_addD             = req_send_axi_cmd ? req_add_start + req_axi_word_nb * AXI4_DATA_BYTES : req_add;
+      assign req_page_word_remain = PAGE_AXI4_DATA - req_add_start[PAGE_BYTES_W-1:AXI4_DATA_BYTES_W];
+      assign req_axi_word_nb      = req_page_word_remain < req_axi_word_remain ? req_page_word_remain : req_axi_word_remain;
+
+      always_ff @(posedge clk_mrmac)
+        if (~resetn_mrmac) req_add <= '0;
+        else               req_add <= req_addD;
+
+      // Track when all address commands for this PC have been sent
+      logic addr_cmds_done;
+
       always_ff @(posedge clk_mrmac) begin
         if (~resetn_mrmac) begin
-          axi_write_cnt <= PC_NB_WRITES[gen_wr];
-        end else begin
-          if (axi_a_awready & axi_a_awvalid & (axi_write_cnt > 0) & axi4_write_pc[gen_wr]) begin
-            axi_write_cnt <= axi_write_cnt - 1;
-          end else if (ciphertext_received) begin
-            axi_write_cnt <= PC_NB_WRITES[gen_wr];
-          end
+          addr_cmds_done <= 1'b0;
+        end else if (req_send_axi_cmd & req_last_axi_word_remain) begin
+          addr_cmds_done <= 1'b1;
+        end else if (~axi4_write_pc[gen_wr]) begin
+          addr_cmds_done <= 1'b0;
         end
       end
 
-      // Address channel --------------------------------------------------------------------------
-      logic [AXI4_ADD_W-1:0] mhdma_write_addr;
-      logic [AXI4_ID_W-1:0] expected_wid;
-
-      // read address takes the physical address computed earlier as soon as the value is ready
-      // when starting the reading process we compute the offset accounting burst sequence
-      always_ff @(posedge clk_mrmac) begin
-        if (phy_addr_valid) begin
-          mhdma_write_addr <= phy_addr[gen_wr];
-        end else begin
-          if (axi_a_awready & axi_a_awvalid) begin
-            mhdma_write_addr <= mhdma_write_addr + (AXI4_DATA_BYTES*MAX_BURST_SIZE);
-          end
-        end
-      end
-
-      assign axi_a_awvalid = (axi_write_cnt > 0) & axi4_write_pc[gen_wr];
-      assign axi_a.awid    = axi_a_awvalid ? expected_wid     :'h0;
-      assign axi_a.awaddr  = axi_a_awvalid ? mhdma_write_addr :'h0;
-      assign axi_a.awsize  = axi_a_awvalid ? MHDMA_ARSIZE     :'h0;
-      assign axi_a.awburst = axi_a_awvalid ? 2'b01            :'h0; // incr
-      assign axi4_awlast    = axi_a_awvalid & axi_a_awready & (axi_write_cnt == 1);
-
-      always_comb begin
-        if ((PC_REMAINS[gen_wr] != 0) && axi4_awlast) begin
-          axi_a.awlen = axi_a_awvalid ? PC_REMAINS[gen_wr]-1 : 'h0;
-        end else begin
-          axi_a.awlen = axi_a_awvalid ? MAX_BURST_SIZE-1 : 'h0;
-        end
-      end
+      // Address valid
+      assign axi_a_awvalid  = axi4_write_pc[gen_wr] & ~addr_cmds_done &
+                              (~req_pbs_first_burst | rcp_fifo_in_rdy) & (~req_last_axi_word_remain | brsp_fifo_in_rdy);
+      assign axi_a.awid     = expected_wid;
+      assign axi_a.awaddr   = req_add_start;
+      assign axi_a.awsize   = MHDMA_ARSIZE;
+      assign axi_a.awburst  = AXI4B_INCR;
+      assign axi_a.awlen    = req_axi_word_nb - 1;
 
       assign m_axi4_awid[gen_wr]    = m_axi4_aw.awid;
       assign m_axi4_awaddr[gen_wr]  = m_axi4_aw.awaddr;
@@ -886,74 +911,109 @@ module mhdma_master
         .out_rdy (m_axi4_awready[gen_wr])
       );
 
-      // Data channel -----------------------------------------------------------------------------
+      // ======================================================================================= //
+      // rcp_fifo: Store FIRST burst length only
+      // ======================================================================================= //
+      logic                 rcp_fifo_in_vld;
+      logic [AXI4_LEN_W:0]  rcp_fifo_out_len;
+      logic                 rcp_fifo_out_vld;
+      logic                 rcp_fifo_out_rdy;
+
+      // Push only on first burst
+      assign rcp_fifo_in_vld = req_send_axi_cmd & req_pbs_first_burst;
+
+      fifo_reg #(
+        .WIDTH       (AXI4_LEN_W+1),
+        .DEPTH       (2),
+        .LAT_PIPE_MH ({1'b1, 1'b1})
+      ) rcp_fifo (
+        .clk      (clk_mrmac),
+        .s_rst_n  (resetn_mrmac),
+
+        .in_data  (req_axi_word_nb),
+        .in_vld   (rcp_fifo_in_vld),
+        .in_rdy   (rcp_fifo_in_rdy),
+
+        .out_data (rcp_fifo_out_len),
+        .out_vld  (rcp_fifo_out_vld),
+        .out_rdy  (rcp_fifo_out_rdy)
+      );
+
+      // ======================================================================================= //
+      // brsp_fifo: Store burst count for B response tracking
+      // ======================================================================================= //
+      logic                          brsp_fifo_in_vld;
+      logic [AXI_BURST_NB_MAX_W-1:0] brsp_fifo_out_burst_cnt_m1;
+      logic                          brsp_fifo_out_vld;
+      logic                          brsp_fifo_out_rdy;
+
+      // Push only on last burst
+      assign brsp_fifo_in_vld = req_send_axi_cmd & req_last_axi_word_remain;
+
+      fifo_reg #(
+        .WIDTH       (AXI_BURST_NB_MAX_W),
+        .DEPTH       (2),
+        .LAT_PIPE_MH ({1'b1, 1'b1})
+      ) brsp_fifo (
+        .clk      (clk_mrmac),
+        .s_rst_n  (resetn_mrmac),
+
+        .in_data  (req_burst_cnt_m1),
+        .in_vld   (brsp_fifo_in_vld),
+        .in_rdy   (brsp_fifo_in_rdy),
+
+        .out_data (brsp_fifo_out_burst_cnt_m1),
+        .out_vld  (brsp_fifo_out_vld),
+        .out_rdy  (brsp_fifo_out_rdy)
+      );
+
+      // ======================================================================================= //
+      // Data channel
+      // ======================================================================================= //
       axi4_w_if_t  axi_w;
       logic        axi_wvalid;
       logic        axi_wready;
-
       axi4_w_if_t  m_axi4_w;
-      // two counter are used :
-      logic [$clog2(PC_NB_WORDS[gen_wr]):0]  axi_word_cnt;  // counting which word we are sending
-      logic [$clog2(PC_NB_WRITES[gen_wr]):0] axi_burst_cnt; // decounting what burst we're in
+
+      // Word counters
+      logic [AXI4_WORD_PER_PC_W_L-1:0] w_word_cnt;       // Total words sent
+      logic [AXI4_LEN_W-1:0]           w_burst_word_cnt; // Words within current burst
+      logic                            w_first_burst;
+      logic [AXI4_LEN_W-1:0]           w_burst_word_max;
+      logic                            w_last_word;
+      logic                            w_last_burst_word;
+      logic                            w_send_data;
+
+      assign w_send_data       = axi_wvalid & axi_wready;
+      assign w_last_word       = (w_word_cnt == AXI4_WORD_PER_PC_L - 1);
+      assign w_burst_word_max  = w_first_burst ? rcp_fifo_out_len - 1 : AXI4_LEN_MAX;
+      assign w_last_burst_word = w_last_word | (w_burst_word_cnt == w_burst_word_max);
 
       always_ff @(posedge clk_mrmac) begin
         if (~resetn_mrmac) begin
-          enough_words <= 1'b0;
-        end else begin
-          if(axi_w.wlast)begin
-            enough_words <= 1'b0;
-          end else if ((PC_REMAINS[gen_wr] != 0) & (axi_write_cnt == 1)) begin
-            enough_words <= fifo_pc_wr_out_vld;
-          end else if (fifo_pc_wr_cnt >= MAX_BURST_SIZE) begin
-            enough_words <= 1'b1;
-          end
+          w_word_cnt       <= '0;
+          w_burst_word_cnt <= '0;
+          w_first_burst    <= 1'b1;
+        end
+        else if (w_send_data) begin
+          w_word_cnt       <= w_last_word ? '0 : w_word_cnt + 1;
+          w_burst_word_cnt <= w_last_burst_word ? '0 : w_burst_word_cnt + 1;
+          w_first_burst    <= w_last_burst_word ? w_last_word : 1'b0;
         end
       end
 
-      always_ff @(posedge clk_mrmac) begin
-        if (~resetn_mrmac) begin
-          axi_burst_cnt <= PC_NB_WRITES[gen_wr];
-        end else begin
-          if (axi_wready & axi_wvalid & axi_w.wlast) begin
-            axi_burst_cnt <= axi_burst_cnt - 1;
-          end else if (ciphertext_received) begin
-            axi_burst_cnt <= PC_NB_WRITES[gen_wr];
-          end
-        end
-      end
+      // Pop rcp_fifo only when last word of entire transfer is sent
+      assign rcp_fifo_out_rdy = w_send_data & w_last_word;
 
-      // axi_word_cnt aims is to find when we are writing the last data when we are doing bursts
-      logic last_bursts;
-      logic last_remains;
-      logic write_last_frame;
+      // pc_transfer_done when all data words sent
+      assign pc_transfer_done[gen_wr] = w_send_data & w_last_word;
 
-      always_ff @(posedge clk_mrmac) begin
-        if (~resetn_mrmac) begin
-          axi_word_cnt <= MAX_BURST_SIZE;
-        end else begin
-          if (ciphertext_received | axi_w.wlast) begin
-              axi_word_cnt <= MAX_BURST_SIZE;
-          end else begin
-            if (axi_wready & axi_wvalid) begin
-              axi_word_cnt <= axi_word_cnt -1;
-            end
-          end
-        end
-      end
+      assign fifo_pc_wr_out_rdy = axi_wready & rcp_fifo_out_vld;
+      assign axi_wvalid         = fifo_pc_wr_out_vld & axi4_write_pc[gen_wr] & rcp_fifo_out_vld;
 
-      assign write_last_frame = (axi_burst_cnt == 1) & (PC_REMAINS[gen_wr] != 0);
-
-      assign last_remains = (axi_wready & axi_wvalid) & (fifo_pc_wr_cnt == 1);
-      assign last_bursts  = (axi_wready & axi_wvalid) & (axi_word_cnt == 1);
-
-      // we can start to write to HBM when we are ready and have enough words in FIFO or when it is the last burst (to empty fifo)
-      assign fifo_pc_wr_out_rdy = axi_wready & (enough_words | write_last_frame);
-
-      assign axi_w.wlast = write_last_frame ? last_remains : last_bursts;
-      assign axi_w.wstrb = (axi_wready & axi_wvalid) ? 32'hFFFFFFFF : 'h0;
+      assign axi_w.wlast = w_last_burst_word;
+      assign axi_w.wstrb = {AXI4_STRB_W{1'b1}};
       assign axi_w.wdata = fifo_pc_wr_out_data;
-
-      assign axi_wvalid  = fifo_pc_wr_out_vld & axi4_write_pc[gen_wr] & (enough_words | write_last_frame);
 
       assign m_axi4_wdata[gen_wr] = m_axi4_w.wdata;
       assign m_axi4_wstrb[gen_wr] = m_axi4_w.wstrb;
@@ -978,16 +1038,17 @@ module mhdma_master
         .out_rdy (m_axi4_wready[gen_wr])
       );
 
-      // Write response channel -------------------------------------------------------------------
+      // ======================================================================================= //
+      // Write response channel
+      // ======================================================================================= //
+      localparam int BRSP_CNT_W = AXI_BURST_NB_MAX_WW + 2;
+
       axi4_b_if_t  axi_b;
       logic        axi_bvalid;
       logic        axi_bready;
-
       axi4_b_if_t  m_axi4_b;
 
-      logic write_complete;
-
-      // wid is simply a counter of number of requests
+      // wid counter for address commands
       always_ff @(posedge clk_mrmac) begin
         if (~resetn_mrmac) begin
           expected_wid <= 'h0;
@@ -998,72 +1059,80 @@ module mhdma_master
         end
       end
 
-      logic [AXI4_ID_W-1:0] fifo_id_out_data;
-      logic                 fifo_id_out_vld;
-      logic                 fifo_id_out_rdy;
+      // bid counter for response tracking
+      logic [AXI4_ID_W-1:0] expected_bid;
+      logic                 bid_match;
 
-      fifo_ram_rdy_vld # (
-        .WIDTH(AXI4_ID_W),
-        .DEPTH(NB_WRITES_TOTAL)
-      ) fifo_id (
-        .clk         (clk_mrmac                     ),
-        .s_rst_n     (resetn_mrmac                  ),
+      assign bid_match = (axi_b.bid == expected_bid);
 
-        .in_data     (expected_wid                  ),
-        .in_vld      (axi_a_awready & axi_a_awvalid ),
-        .in_rdy      (/* UNUSED    */ ),
-
-        .out_data    (fifo_id_out_data              ),
-        .out_vld     (fifo_id_out_vld               ),
-        .out_rdy     (fifo_id_out_rdy               ),
-
-        .almost_full (/* UNUSED */)
-      );
-
-      // Assert BREADY when ready to accept responses
-      // Can be always high for simple designs, or controlled based on internal state
       always_ff @(posedge clk_mrmac) begin
         if (~resetn_mrmac) begin
-          axi_bready <= 1'b0;
+          expected_bid <= 'h0;
         end else begin
-          // Assert ready when expecting a response
-          axi_bready <= fifo_id_out_vld;
+          if (axi_bready & axi_bvalid & bid_match) begin
+            expected_bid <= expected_bid + 1;
+          end
         end
       end
 
-      assign fifo_id_out_rdy = axi_bready & axi_bvalid;
+      logic [BRSP_CNT_W-1:0]          brsp_bresp_cnt;
+      logic [BRSP_CNT_W-1:0]          brsp_bresp_cntD;
+      logic                           brsp_bresp_cnt_inc;
+      logic                           brsp_bresp_cnt_dec;
+      logic [AXI_BURST_NB_MAX_WW-1:0] brsp_bresp_cnt_dec_val;
+      logic [AXI_BURST_NB_MAX_WW-1:0] brsp_bresp_cnt_dec_val_m1;
+      logic                           brsp_bresp_cnt_full;
+      logic                           brsp_all_bresp_received;
+      logic                           brsp_ack;
 
-      // Handle write response
+      assign brsp_bresp_cnt_full  = brsp_bresp_cnt == {BRSP_CNT_W{1'b1}};
+      assign axi_bready           = ~brsp_bresp_cnt_full;
+      assign brsp_bresp_cnt_inc   = axi_bready & axi_bvalid & bid_match;
+      assign brsp_bresp_cntD      = brsp_bresp_cnt_inc  && !brsp_bresp_cnt_dec ? brsp_bresp_cnt + 1 :
+                                    !brsp_bresp_cnt_inc && brsp_bresp_cnt_dec  ? brsp_bresp_cnt - brsp_bresp_cnt_dec_val :
+                                    brsp_bresp_cnt_inc  && brsp_bresp_cnt_dec  ? brsp_bresp_cnt - brsp_bresp_cnt_dec_val_m1 :
+                                    brsp_bresp_cnt;
+
+      always_ff @(posedge clk_mrmac)
+        if (~resetn_mrmac) brsp_bresp_cnt <= '0;
+        else               brsp_bresp_cnt <= brsp_bresp_cntD;
+
+      assign brsp_all_bresp_received   = (brsp_bresp_cnt > brsp_fifo_out_burst_cnt_m1);
+      assign brsp_bresp_cnt_dec        = brsp_fifo_out_vld & brsp_all_bresp_received;
+      assign brsp_bresp_cnt_dec_val_m1 = brsp_fifo_out_burst_cnt_m1;
+      assign brsp_bresp_cnt_dec_val    = brsp_fifo_out_burst_cnt_m1 + 1;
+
+      assign brsp_ack          = brsp_fifo_out_vld & brsp_all_bresp_received;
+      assign brsp_fifo_out_rdy = brsp_all_bresp_received;
+
+      // Handle write errors
       always_ff @(posedge clk_mrmac) begin
         if (~resetn_mrmac) begin
           write_error[gen_wr] <= 1'b0;
         end else begin
           if (rst_errors) begin
             write_error[gen_wr] <= 1'b0;
-          end else begin
-            if (axi_bready & axi_bvalid) begin
-              if (axi_b.bid == fifo_id_out_data) begin
-                // Check response status
-                case (axi_b.bresp)
-                  AXI4_OKAY:   write_error[gen_wr] <= 1'b0;  // Success
-                  AXI4_EXOKAY: write_error[gen_wr] <= 1'b0;  // Exclusive access success
-                  AXI4_SLVERR: write_error[gen_wr] <= 1'b1;  // Slave error
-                  AXI4_DECERR: write_error[gen_wr] <= 1'b1;  // Decode error
-                endcase
-              end
-            end
+          end else if (axi_bready & axi_bvalid & bid_match) begin
+            case (axi_b.bresp)
+              AXI4_OKAY:   write_error[gen_wr] <= 1'b0;
+              AXI4_EXOKAY: write_error[gen_wr] <= 1'b0;
+              AXI4_SLVERR: write_error[gen_wr] <= 1'b1;
+              AXI4_DECERR: write_error[gen_wr] <= 1'b1;
+            endcase
           end
         end
       end
 
+      // Handle BID mismatch errors
       always_ff @(posedge clk_mrmac) begin
         if (~resetn_mrmac) begin
-          write_complete <= 1'b0;
+          bid_mismatch[gen_wr] <= 1'b0;
         end else begin
-          write_complete <= 1'b0;
-          if (axi_bready & axi_bvalid)
-            if (axi_b.bid == fifo_id_out_data)
-              write_complete <= 1'b1;
+          if (rst_errors) begin
+            bid_mismatch[gen_wr] <= 1'b0;
+          end else if (axi_bready & axi_bvalid & ~bid_match) begin
+            bid_mismatch[gen_wr] <= 1'b1;
+          end
         end
       end
 
@@ -1094,27 +1163,32 @@ module mhdma_master
   assign fifo_pc_backpressure = target_fifo[1] ? gen_ce_write[1].fifo_pc_wr_in_rdy : gen_ce_write[0].fifo_pc_wr_in_rdy;
 
   // Interrupt generation -------------------------------------------------------------------------
-  // interrupt must be raised when we have both write_complete.
-  // We already check that we send the correct number of workds into HBM with axi_word_cnt on both PC.
-  // by design we cannot have several writes in HBM with different read request
-  logic [$clog2(PC_NB_WRITES[0] + PC_NB_WRITES[1]):0] write_complete_cnt;
+  // Ciphertext received when both PCs have completed their transfers (= all B responses received)
+  // Use brsp_ack from each PC which fires when all B responses are received
+  logic [ETH_PC-1:0] pc_brsp_ack;
+  logic [ETH_PC-1:0] pc_brsp_ack_seen;
 
-  always_ff @(posedge clk_mrmac) begin
-    if (~resetn_mrmac) begin
-      write_complete_cnt <= 'h0;
-    end else begin
-      if (gen_ce_write[0].write_complete | gen_ce_write[1].write_complete ) begin
-        write_complete_cnt <= write_complete_cnt +1;
-      end else if(write_complete_cnt == (PC_NB_WRITES[0] + PC_NB_WRITES[1])) begin
-        write_complete_cnt <= 'h0;
+  generate
+    for (genvar gen_i=0; gen_i<ETH_PC; gen_i++) begin : gen_brsp_ack
+      assign pc_brsp_ack[gen_i] = gen_ce_write[gen_i].brsp_ack;
+
+      // Track if brsp_ack was seen (sticky until ciphertext_received)
+      always_ff @(posedge clk_mrmac) begin
+        if (~resetn_mrmac) begin
+          pc_brsp_ack_seen[gen_i] <= 1'b0;
+        end else begin
+          if (ciphertext_received) begin
+            pc_brsp_ack_seen[gen_i] <= 1'b0;
+          end else if (pc_brsp_ack[gen_i]) begin
+            pc_brsp_ack_seen[gen_i] <= 1'b1;
+          end
+        end
       end
     end
-  end
+  endgenerate
 
-  // ciphertext_received is a pulse and is used as a way to determine when to quit ST_READ_REQ
-  // TODO: check that we don't need seq_num check or errors here and it's enough
-  // assign  = (write_complete_cnt == (PC_NB_WRITES[0] + PC_NB_WRITES[1]));
-  assign ciphertext_received = (write_complete_cnt == (PC_NB_WRITES[0] + PC_NB_WRITES[1]));
+  // ciphertext_received is a pulse when both PCs have received all B responses
+  assign ciphertext_received = &(pc_brsp_ack | pc_brsp_ack_seen);
 
   // regf payload information ---------------------------------------------------------------------
   logic [REG_DATA_W-1:0] rr_regf_in_data;
@@ -1160,7 +1234,7 @@ module mhdma_master
   // =========================================================================================== //
   // Errors
   // =========================================================================================== //
-  assign master_error = {seq_num_mismatch, write_error[1], write_error[0]};
+  assign master_error = {seq_num_mismatch, bid_mismatch, write_error};
 
   // =========================================================================================== //
   // Statistics
@@ -1235,7 +1309,7 @@ module mhdma_master
     if (~resetn_mrmac) begin
       count_notify_ack <= 1'b0;
     end else begin
-      if (read_request_sent) begin
+      if (notify_sent) begin
         count_notify_ack <= 1'b1;
       end else if (notify_ack_received) begin
         count_notify_ack <= 1'b0;
@@ -1320,7 +1394,8 @@ module mhdma_master
     if (~resetn_mrmac)begin
       nb_write_complete_cnt <= 'h0;
     end else begin
-      if (gen_ce_write[0].write_complete | gen_ce_write[1].write_complete ) begin
+      // Count completed transfers (all B responses received)
+      if (pc_brsp_ack[0] | pc_brsp_ack[1]) begin
         nb_write_complete_cnt <= nb_write_complete_cnt +1;
       end
     end

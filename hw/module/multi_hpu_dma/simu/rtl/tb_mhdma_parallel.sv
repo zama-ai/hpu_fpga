@@ -13,6 +13,7 @@ module tb_mhdma_parallel;
   import axi_if_common_param_pkg::*;      // general axi4
   import hpu_regif_core_eth_2in3_pkg::*;  // ethernet regif
   import axi_if_eth_axi_pkg::*;           // AXI ethernet
+  import pem_common_param_pkg::*;         // CT_MEM_BYTES, AXI4_WORD_PER_PC*
 
 // ============================================================================================== --
 // localparam
@@ -43,12 +44,13 @@ module tb_mhdma_parallel;
   localparam int MEM_SIM_SIZE = 18;         // must be < 22
   localparam int SIZE_B_SIM   = 'h40;
 
-  localparam [3:0] PC_STRIDE          = 'hB;
-  localparam int PC_CT_BYTES [ETH_PC] = '{'h2000, 'h2020};
+  // Use CT_MEM_BYTES from pem_common_param_pkg for address calculation
+  localparam int PC_CT_BYTES [ETH_PC] = '{CT_MEM_BYTES, CT_MEM_BYTES};
 
   localparam int MAX_BURST_SIZE = PAGE_BYTES/AXI4_DATA_BYTES;
 
-  localparam int PC_NB_WORDS [ETH_PC] = compute_nb_words(PC_CT_BYTES);
+  // Word counts from pem_common_param_pkg
+  localparam int PC_NB_WORDS [ETH_PC] = '{AXI4_WORD_PER_PC0, AXI4_WORD_PER_PC};
 
 // ============================================================================================== --
 // clock, reset
@@ -617,9 +619,11 @@ end
           .s_axi4_awlen  (axi4_ct_awlen[gen_hpu][gen_pc]    ),
           .s_axi4_awsize (axi4_ct_awsize[gen_hpu][gen_pc]   ),
           .s_axi4_awburst(axi4_ct_awburst[gen_hpu][gen_pc]  ),
-          .s_axi4_awlock ('0), // disable
-          .s_axi4_awcache('0), // disable
-          .s_axi4_awprot ('0), // disable
+          .s_axi4_awlock  (/* UNUSED */),
+          .s_axi4_awcache (/* UNUSED */),
+          .s_axi4_awprot  (/* UNUSED */),
+          .s_axi4_awqos   (/* UNUSED */),
+          .s_axi4_awregion(/* UNUSED */),
           .s_axi4_awvalid(axi4_ct_awvalid[gen_hpu][gen_pc]  ),
           .s_axi4_awready(axi4_ct_awready[gen_hpu][gen_pc]  ),
           .s_axi4_wdata  (axi4_ct_wdata[gen_hpu][gen_pc]    ),
@@ -636,9 +640,11 @@ end
           .s_axi4_arlen  (axi4_ct_arlen[gen_hpu][gen_pc]    ),
           .s_axi4_arsize (axi4_ct_arsize[gen_hpu][gen_pc]   ),
           .s_axi4_arburst(axi4_ct_arburst[gen_hpu][gen_pc]  ),
-          .s_axi4_arlock ('0), // disable
-          .s_axi4_arcache('0), // disable
-          .s_axi4_arprot ('0), // disable
+          .s_axi4_arlock  (/* UNUSED */),
+          .s_axi4_arcache (/* UNUSED */),
+          .s_axi4_arprot  (/* UNUSED */),
+          .s_axi4_arqos   (/* UNUSED */),
+          .s_axi4_arregion(/* UNUSED */),
           .s_axi4_arvalid(axi4_ct_arvalid[gen_hpu][gen_pc]  ),
           .s_axi4_arready(axi4_ct_arready[gen_hpu][gen_pc]  ),
           .s_axi4_rid    (axi4_ct_rid[gen_hpu][gen_pc]      ),
@@ -1031,49 +1037,57 @@ end
     input logic [SRC_ADDR_W-1:0] src_addr,
     input logic [DST_ADDR_W-1:0] dst_addr
   );
-    int addr_hpu_0;
-    int addr_hpu_1;
+    int addr_hpu_0, addr_hpu_1;
     logic mismatch_found;
-    begin
-      mismatch_found = 1'b0;
+    logic [AXI4_DATA_W-1:0] val_hpu0, val_hpu1;
+    int nb_words;
 
-      // PC 0
-      addr_hpu_0 = regf_start_addr_ofs + ((dst_addr << PC_STRIDE))/32 ; // where copied word should be
-      addr_hpu_1 = regf_start_addr_ofs + ((src_addr << PC_STRIDE))/32 ;
+    mismatch_found = 1'b0;
 
-      $display("addr_hpu_0 = %x", addr_hpu_0);
-      $display("addr_hpu_1 = %x", addr_hpu_1);
+    // Use CT_MEM_BYTES for address calculation (cid * CT_MEM_BYTES), divide by 32 for word address
+    addr_hpu_0 = (regf_start_addr_ofs + (dst_addr * CT_MEM_BYTES)) / 32;
+    addr_hpu_1 = (regf_start_addr_ofs + (src_addr * CT_MEM_BYTES)) / 32;
 
-      // Direct comparison of memory locations
-      for (int k = 0; k < PC_NB_WORDS[0]; k++) begin
+    $display("addr_hpu_0 = %x, addr_hpu_1 = %x", addr_hpu_0, addr_hpu_1);
 
-        // I read from 0 to PC_NB_WORDS in HPU_B and
-        if (gen_mem_hpu[0].gen_mem_pc[0].axi4_mem_ct.axi4_ram_ct_wr.mem[addr_hpu_0 + k] != gen_mem_hpu[1].gen_mem_pc[0].axi4_mem_ct.axi4_ram_ct_wr.mem[addr_hpu_1 + k]) begin
-          $display("Memory mismatch at PC=%0d, offset=%0d: HPU_0[%0d]=%0h != HPU_1[%0d]=%0h", 0, k,
-                    addr_hpu_0 + k, gen_mem_hpu[0].gen_mem_pc[0].axi4_mem_ct.axi4_ram_ct_wr.mem[addr_hpu_0 + k],
-                    addr_hpu_1 + k, gen_mem_hpu[1].gen_mem_pc[0].axi4_mem_ct.axi4_ram_ct_wr.mem[addr_hpu_1 + k]);
+    // Check both PCs
+    for (int pc = 0; pc < ETH_PC; pc++) begin
+      nb_words = PC_NB_WORDS[pc];
+
+      for (int k = 0; k < nb_words; k++) begin
+        // Get values based on PC index (cannot dynamically index generate blocks)
+        if (pc == 0) begin
+          val_hpu0 = gen_mem_hpu[0].gen_mem_pc[0].axi4_mem_ct.axi4_ram_ct_wr.mem[addr_hpu_0 + k];
+          val_hpu1 = gen_mem_hpu[1].gen_mem_pc[0].axi4_mem_ct.axi4_ram_ct_wr.mem[addr_hpu_1 + k];
+        end else begin
+          val_hpu0 = gen_mem_hpu[0].gen_mem_pc[1].axi4_mem_ct.axi4_ram_ct_wr.mem[addr_hpu_0 + k];
+          val_hpu1 = gen_mem_hpu[1].gen_mem_pc[1].axi4_mem_ct.axi4_ram_ct_wr.mem[addr_hpu_1 + k];
+        end
+
+        // Check for X/Z in HPU_0
+        if ($isunknown(val_hpu0)) begin
+          $display("ERROR: X/Z in HPU_0 at PC=%0d, offset=%0d, addr=%0d, val=%h", pc, k, addr_hpu_0 + k, val_hpu0);
+          mismatch_found = 1;
+          error_write_mismatch = 1'b1;
+        end
+        // Check for X/Z in HPU_1
+        else if ($isunknown(val_hpu1)) begin
+          $display("ERROR: X/Z in HPU_1 at PC=%0d, offset=%0d, addr=%0d, val=%h", pc, k, addr_hpu_1 + k, val_hpu1);
+          mismatch_found = 1;
+          error_write_mismatch = 1'b1;
+        end
+        // Check for mismatch
+        else if (val_hpu0 !== val_hpu1) begin
+          $display("ERROR: Mismatch at PC=%0d, offset=%0d: HPU_0[%0d]=%h != HPU_1[%0d]=%h",
+                   pc, k, addr_hpu_0 + k, val_hpu0, addr_hpu_1 + k, val_hpu1);
           mismatch_found = 1;
           error_write_mismatch = 1'b1;
         end
       end
-
-      // PC 1
-      // Direct comparison of memory locations
-      for (int k = 0; k < PC_NB_WORDS[1]; k++) begin
-
-        // I read from 0 to PC_NB_WORDS in HPU_B and
-        if (gen_mem_hpu[0].gen_mem_pc[1].axi4_mem_ct.axi4_ram_ct_wr.mem[addr_hpu_0 + k] != gen_mem_hpu[1].gen_mem_pc[1].axi4_mem_ct.axi4_ram_ct_wr.mem[addr_hpu_1 + k]) begin
-          $display("Memory mismatch at PC=%0d, offset=%0d: HPU_0[%0d]=%0h != HPU_1[%0d]=%0h", 1, k,
-                    addr_hpu_0 + k, gen_mem_hpu[0].gen_mem_pc[1].axi4_mem_ct.axi4_ram_ct_wr.mem[addr_hpu_0 + k],
-                    addr_hpu_1 + k, gen_mem_hpu[1].gen_mem_pc[1].axi4_mem_ct.axi4_ram_ct_wr.mem[addr_hpu_1 + k]);
-          mismatch_found = 1;
-          error_write_mismatch = 1'b1;
-        end
-      end
-
-      if (~mismatch_found)
-        $display("[INFO]: Memory check PASSED: HPU_A and HPU_B contents match");
     end
+
+    if (~mismatch_found)
+      $display("[INFO]: Memory check PASSED: HPU_A and HPU_B contents match");
   endtask
 
 

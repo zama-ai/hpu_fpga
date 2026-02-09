@@ -130,17 +130,6 @@ module mhdma_bridge
   // =========================================================================================== //
   localparam int CDC_SYNC_STAGES = 2;
 
-  //TODO: review theses two values, if not divisible by 32 it will be wrong
-  localparam [3:0] PC_STRIDE          = 'hB;
-  localparam int PC_CT_BYTES [ETH_PC] = '{'h2000, 'h2020};
-
-  localparam int MAX_BURST_SIZE = PAGE_BYTES/AXI4_DATA_BYTES;
-
-  localparam int PC_NB_WORDS [ETH_PC] = compute_nb_words(PC_CT_BYTES);
-  localparam int PC_NB_BURST [ETH_PC] = compute_nb_bursts(PC_NB_WORDS, MAX_BURST_SIZE);
-  localparam int PC_REMAINS  [ETH_PC] = compute_remaining_words(PC_NB_WORDS, MAX_BURST_SIZE);
-  localparam int PC_NB_TRANS [ETH_PC] = compute_nb_transactions(PC_REMAINS,PC_NB_BURST);
-
   // statistics/debug that needs to be propagated to regif
   logic [2:0] stat_fsm_formatter;
   logic [1:0] stat_fsm_notify_rx;
@@ -268,12 +257,7 @@ module mhdma_bridge
   slave_error_t slave_error;
 
   // Master module does the controls for sending read request and Notifies requests
-  mhdma_master #(
-    .PC_STRIDE                       (PC_STRIDE                               ),
-    .PC_NB_WORDS                     (PC_NB_WORDS                             ),
-    .PC_REMAINS                      (PC_REMAINS                              ),
-    .PC_NB_WRITES                    (PC_NB_TRANS                             )
-  ) mhdma_master (
+  mhdma_master mhdma_master (
     // Ethernet configuration interface ---------------------------------------
     .clk_cfg                         (clk_cfg                                 ),
     .resetn_cfg                      (resetn_cfg                              ),
@@ -357,12 +341,7 @@ module mhdma_bridge
 
   // Slave module does the control for Notify ack and ciphertext emission
   mhdma_slave # (
-    .CDC_SYNC_STAGES                (CDC_SYNC_STAGES                          ),
-    .MAX_BURST_SIZE                 (MAX_BURST_SIZE                           ),
-    .PC_STRIDE                      (PC_STRIDE                                ),
-    .PC_NB_WORDS                    (PC_NB_WORDS                              ),
-    .PC_REMAINS                     (PC_REMAINS                               ),
-    .PC_NB_READS                    (PC_NB_TRANS                              )
+    .CDC_SYNC_STAGES                (CDC_SYNC_STAGES                          )
   ) mhdma_slave (
     // Ethernet configuration interface ---------------------------------------
     .clk_cfg                        (clk_cfg                                  ),
@@ -399,8 +378,8 @@ module mhdma_bridge
     .slave_command_rdy              (slave_command_rdy                        ),
     // stream of ciphertext
     .ce_payload                     (ce_payload                               ),
-    .ce_rdy                         (ce_rdy                                 ),
-    .ce_vld                         (ce_vld                                 ),
+    .ce_rdy                         (ce_rdy                                   ),
+    .ce_vld                         (ce_vld                                   ),
     // sent ack
     .ciphertext_sent                (ciphertext_sent                          ),
     .notify_ack_sent                (notify_ack_sent                          ),
@@ -428,9 +407,6 @@ module mhdma_bridge
     .resetn_mrmac                (resetn_mrmac                                ),
     // Command interface ------------------------------------------------------
     .notify_ack_received         (notify_ack_received                         ),
-    .notify_request_received     (notify_request_received                     ),
-    .read_request_received       (read_request_received                       ),
-    .ciphertext_emission_received(ciphertext_emission_received                ),
     .current_hpu_mac             (current_hpu_mac                             ),
     // Header information -----------------------------------------------------
     .decoded_command             (decoded_command                             ),

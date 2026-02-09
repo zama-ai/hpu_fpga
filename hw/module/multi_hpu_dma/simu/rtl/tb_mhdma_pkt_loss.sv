@@ -27,6 +27,7 @@ module tb_mhdma_pkt_loss;
   import axi_if_common_param_pkg::*;      // general axi4
   import hpu_regif_core_eth_2in3_pkg::*;  // ethernet regif
   import axi_if_eth_axi_pkg::*;           // AXI ethernet
+  import pem_common_param_pkg::*;         // CT_MEM_BYTES, AXI4_WORD_PER_PC*
 
   `include "tb_mhdma_tasks.sv"
 
@@ -60,13 +61,11 @@ module tb_mhdma_pkt_loss;
 
   localparam int MAX_BURST_SIZE  = PAGE_BYTES/AXI4_DATA_BYTES;
 
-  localparam [3:0] PC_STRIDE          = 'hB;
-  localparam int PC_CT_BYTES [ETH_PC] = '{'h2000, 'h2020};
+  // Use CT_MEM_BYTES from pem_common_param_pkg for address calculation
+  localparam int PC_CT_BYTES [ETH_PC] = '{CT_MEM_BYTES, CT_MEM_BYTES};
 
-  localparam int PC_NB_WORDS [ETH_PC] = compute_nb_words(PC_CT_BYTES);
-  localparam int PC_NB_BURST [ETH_PC] = compute_nb_bursts(PC_NB_WORDS, MAX_BURST_SIZE);
-  localparam int PC_REMAINS  [ETH_PC] = compute_remaining_words(PC_NB_WORDS, MAX_BURST_SIZE);
-  localparam int PC_NB_TRANS [ETH_PC] = compute_nb_transactions(PC_REMAINS,PC_NB_BURST);
+  // Word counts from pem_common_param_pkg
+  localparam int PC_NB_WORDS [ETH_PC] = '{AXI4_WORD_PER_PC0, AXI4_WORD_PER_PC};
 
   localparam int TOTAL_NB_PACKETS = $ceil(CT_NB_COEF / NB_WORDS_PAYLOAD) + 1;
 // ============================================================================================== --
@@ -471,9 +470,11 @@ logic [DST_ADDR_W-1:0] dst_addr;
         .s_axi4_awlen  (axi4_ct_awlen[gen_pc]    ),
         .s_axi4_awsize (axi4_ct_awsize[gen_pc]   ),
         .s_axi4_awburst(axi4_ct_awburst[gen_pc]  ),
-        .s_axi4_awlock ('0), // disable
-        .s_axi4_awcache('0), // disable
-        .s_axi4_awprot ('0), // disable
+        .s_axi4_awlock  (/* UNUSED */),
+        .s_axi4_awcache (/* UNUSED */),
+        .s_axi4_awprot  (/* UNUSED */),
+        .s_axi4_awqos   (/* UNUSED */),
+        .s_axi4_awregion(/* UNUSED */),
         .s_axi4_awvalid(axi4_ct_awvalid[gen_pc]  ),
         .s_axi4_awready(axi4_ct_awready[gen_pc]  ),
         .s_axi4_wdata  (axi4_ct_wdata[gen_pc]    ),
@@ -490,9 +491,11 @@ logic [DST_ADDR_W-1:0] dst_addr;
         .s_axi4_arlen  (axi4_ct_arlen[gen_pc]    ),
         .s_axi4_arsize (axi4_ct_arsize[gen_pc]   ),
         .s_axi4_arburst(axi4_ct_arburst[gen_pc]  ),
-        .s_axi4_arlock ('0), // disable
-        .s_axi4_arcache('0), // disable
-        .s_axi4_arprot ('0), // disable
+        .s_axi4_arlock  (/* UNUSED */),
+        .s_axi4_arcache (/* UNUSED */),
+        .s_axi4_arprot  (/* UNUSED */),
+        .s_axi4_arqos   (/* UNUSED */),
+        .s_axi4_arregion(/* UNUSED */),
         .s_axi4_arvalid(axi4_ct_arvalid[gen_pc]  ),
         .s_axi4_arready(axi4_ct_arready[gen_pc]  ),
         .s_axi4_rid    (axi4_ct_rid[gen_pc]      ),

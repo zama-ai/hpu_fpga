@@ -8,15 +8,12 @@
 module mhdma_decoder
   import mhdma_pkg::*;             // multi-hpu-dma
   import axi_if_shell_axil_pkg::*; // REG_DATA_W
-#() (
+(
   // Ethernet fast clock interface --------------------------------------------
   input  logic                     clk_mrmac,
   input  logic                     resetn_mrmac,
   // Command interface --------------------------------------------------------
   output logic                     notify_ack_received,
-  output logic                     notify_request_received,
-  output logic                     read_request_received,
-  output logic                     ciphertext_emission_received,
   input  logic [MAC_ADDR_W-1:0]    current_hpu_mac,
   // Header information -------------------------------------------------------
   output command_t                 decoded_command,
@@ -193,6 +190,11 @@ module mhdma_decoder
     ce_received   <= ce_receivedD;
   end
 
+  logic notify_request_received;
+  logic read_request_received;
+  logic ciphertext_emission_received;
+  // notify_ack_received is an output
+
   assign notify_ack_received          = nack_receivedD & ~nack_received;
   assign notify_request_received      = nr_receivedD   & ~nr_received;
   assign read_request_received        = rr_receivedD   & ~rr_received;
@@ -262,8 +264,8 @@ module mhdma_decoder
   logic [REG_DATA_W-1:0] t_first_last_pkt;
   logic                  count_time_first_to_last;
 
-  always_ff @(posedge clk_mrmac)begin
-    if (~resetn_mrmac)begin
+  always_ff @(posedge clk_mrmac) begin
+    if (~resetn_mrmac) begin
       count_time_first_to_last <= 1'b0;
     end else begin
       if (ce_received & (seq_num == 0) & rx_tlast_in) begin
@@ -286,8 +288,8 @@ module mhdma_decoder
     end
   end
 
-  always_ff@(posedge clk_mrmac) begin
-    if (~resetn_mrmac)begin
+  always_ff @(posedge clk_mrmac) begin
+    if (~resetn_mrmac) begin
       stat_t_ce_first_to_last_pkt <= 'h0;
     end else begin
       if (ce_received & (seq_num == NB_PACKETS_FULL) & rx_tlast_in) begin
@@ -333,7 +335,7 @@ module mhdma_decoder
       cnt_nack_received <= 'h0;
     end else begin
       if (rst_cnt_nack_received) begin
-      cnt_nack_received <= 'h0;
+        cnt_nack_received <= 'h0;
       end else begin
         if (notify_ack_received) begin
           cnt_nack_received <= cnt_nack_received + 1;

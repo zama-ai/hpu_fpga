@@ -14,14 +14,9 @@ module mhdma_slave
   import axi_if_eth_axi_pkg::*;      // AXI4
   import axi_if_shell_axil_pkg::*;   // REG_DATA_W
   import axi_if_common_param_pkg::*; // HBM page
+  import pem_common_param_pkg::*;    // CT_MEM_BYTES, AXI4_WORD_PER_PC*
 #(
-  parameter int   CDC_SYNC_STAGES = 2,
-  parameter int   MAX_BURST_SIZE  = PAGE_BYTES/AXI4_DATA_BYTES,
-  parameter [3:0] PC_STRIDE       = 'hB,
-  // must not add default values to theses parameters, coming from bridge module
-  parameter int   PC_NB_WORDS    [ETH_PC],
-  parameter int   PC_REMAINS     [ETH_PC],
-  parameter int   PC_NB_READS    [ETH_PC]
+  parameter int   CDC_SYNC_STAGES = 2
 ) (
   // Ethernet configuration interface -----------------------------------------
   input  logic                                clk_cfg,
@@ -83,10 +78,10 @@ module mhdma_slave
   // =========================================================================================== //
   // localparam
   // =========================================================================================== //
-  localparam NB_MRMRAC_WORDS_PER_READ = AXI4_DATA_W/MRMAC_AXIS_W;
+  localparam int NB_MRMRAC_WORDS_PER_READ = AXI4_DATA_W/MRMAC_AXIS_W;
 
   // =========================================================================================== //
-  // localparam
+  // Received
   // =========================================================================================== //
   logic received_notify;
   logic received_read_request;
@@ -106,7 +101,7 @@ module mhdma_slave
   // => must transmit to regfile IOP_ID, HPU_ID and src_addr
   // => must trigger interrupt signal when registers are ready to be read
   typedef enum logic [1:0] {
-    NTW_XXX          = 'x,
+    NRX_XXX          = 'x,
     NRX_WAIT_REQUEST = 2'b00,
     NRX_GOT_REQUEST  = 2'b01,
     NRX_TRANSMIT_ACK = 2'b10
@@ -123,7 +118,7 @@ module mhdma_slave
   assign start_notify_ack = decoded_command_vld & received_notify;
 
   always_comb begin
-    nrx_next_state = NTW_XXX;
+    nrx_next_state = NRX_XXX;
     case (nrx_state)
       NRX_WAIT_REQUEST:
         nrx_next_state = start_notify_ack ? NRX_GOT_REQUEST : NRX_WAIT_REQUEST;
@@ -338,14 +333,14 @@ module mhdma_slave
   assign rr_ct_dst_addr = rreq_cmd_fifo.dst_addr;
   assign rr_ct_src_addr = rreq_cmd_fifo.src_addr;
 
-  // phys_addr = hbm_pc_offset + ctId * ciphertext_size
+  // phys_addr = hbm_pc_offset + ctId * CT_MEM_BYTES
   logic [ETH_PC-1:0] [AXI4_ADD_W-1:0] phy_addr;
   logic [ETH_PC-1:0]                  phy_addr_valid;
   generate
-    for (genvar gen_p=0; gen_p<ETH_PC; gen_p=gen_p+1) begin
+    for (genvar gen_p=0; gen_p<ETH_PC; gen_p=gen_p+1) begin : gen_phy_addr
       always_ff @(posedge clk_mrmac)
         if (rreq_cmd_out_rdy & rreq_cmd_out_vld)
-          phy_addr[gen_p] <= regf_ct_mem_addr[gen_p] + (rr_ct_src_addr << PC_STRIDE);
+          phy_addr[gen_p] <= regf_ct_mem_addr[gen_p] + (rr_ct_src_addr * CT_MEM_BYTES);
 
       always_ff @(posedge clk_mrmac) begin
         if (~resetn_mrmac) begin
@@ -370,66 +365,81 @@ module mhdma_slave
   assign rreq_ready_pulse = rreq_ready & ~rreq_ready_tmp;
 
   // process an axi4-read on each PC --------------------------------------------------------------
-  //  - arlen the burst size is dictated from parameter MAX_BURST_SIZE
-  //  - arburst would be INCR
-  //  - arsize the size of each data transfer, fixed to MHDMA_ARSIZE
-  // let's start ciphertext emission when its flag is up and we are not changing command values
   // We must read each PC one by one
   logic [ETH_PC-1:0] axi4_read_pc;        // this signal is a one hot selecting PC that we want to use
-  logic [ETH_PC-1:0] axi4_read_last;      // intermediary signal that states when to change from pc to next
-  logic [ETH_PC-1:0] finished_reading_pc;
+  logic [ETH_PC-1:0] pc_transfer_done;    // signal when PC transfer is complete
   logic [ETH_PC-1:0] read_fifo_ready;     // ready from receiving FIFO
+
   generate
     for (genvar gen_rd=0; gen_rd<ETH_PC; gen_rd++) begin : gen_ce_reads
-      logic [$clog2(PC_NB_READS[gen_rd]):0] axi_read_cnt;
-      axi4_ar_if_t axi_ar;
-      logic        axi_arvalid;
-      logic        axi_arready;
+      // Per-PC parameters
+      localparam int AXI4_WORD_PER_PATH    = (gen_rd == 0) ? AXI4_WORD_PER_PC0 : AXI4_WORD_PER_PC;
+      localparam int AXI4_WORD_PER_PATH_W  = $clog2(AXI4_WORD_PER_PATH) == 0 ? 1 : $clog2(AXI4_WORD_PER_PATH);
+      localparam int AXI4_WORD_PER_PATH_WW = $clog2(AXI4_WORD_PER_PATH+1) == 0 ? 1 : $clog2(AXI4_WORD_PER_PATH+1);
 
-      // Counts the number of clock cycles that must perform reads taking account bursts
-      // because we decrement from axi4_read_pc we add one to count all words
-      always_ff @(posedge clk_mrmac) begin
+      // AXI interface
+      axi4_ar_if_t                       axi_ar;
+      logic                              axi_arvalid;
+      logic                              axi_arready;
+      logic [AXI4_LEN_W:0]               req_axi_word_nb; // = axi_len + 1
+
+      // Counters for dynamic burst sizing
+      logic [AXI4_WORD_PER_PATH_WW-1:0]  req_axi_word_remain;
+      logic [AXI4_WORD_PER_PATH_WW-1:0]  req_axi_word_remainD;
+      logic                              req_last_axi_word_remain;
+      logic [AXI4_WORD_PER_PATH_WW-1:0]  req_axi_word_remain_init;
+
+      logic                              req_pbs_first_burst;
+      logic                              req_pbs_first_burstD;
+
+      logic                              req_send_axi_cmd;
+
+      assign req_axi_word_remainD     = req_send_axi_cmd ?
+                                            req_last_axi_word_remain ? req_axi_word_remain_init : req_axi_word_remain - req_axi_word_nb :
+                                            req_axi_word_remain;
+      assign req_last_axi_word_remain = req_axi_word_remain == req_axi_word_nb;
+      assign req_axi_word_remain_init = AXI4_WORD_PER_PATH;
+      assign req_pbs_first_burstD     = req_send_axi_cmd ? req_last_axi_word_remain ? 1'b1 : 1'b0 : req_pbs_first_burst;
+
+      always_ff @(posedge clk_mrmac)
         if (~resetn_mrmac) begin
-          axi_read_cnt <= PC_NB_READS[gen_rd];
-        end else begin
-          if ( axi_arready & axi_arvalid & (axi_read_cnt > 0) & axi4_read_pc[gen_rd]) begin
-            axi_read_cnt <= axi_read_cnt - 1;
-          end else if (ciphertext_sent) begin
-            axi_read_cnt <= PC_NB_READS[gen_rd];
-          end
+          req_axi_word_remain <= AXI4_WORD_PER_PATH;
+          req_pbs_first_burst <= 1'b1;
         end
-      end
-
-      logic [AXI4_ADD_W-1:0] mhdma_read_addr;
-      // read address takes the physical address computed earlier as soon as the value is ready
-      // when starting the reading process we compute the offset accounting burst sequence
-      always_ff @(posedge clk_mrmac) begin
-        if (phy_addr_valid[gen_rd]) begin
-          mhdma_read_addr <= phy_addr[gen_rd];
-        end else begin
-          // incrementation occurs only if read is consumed
-          if (axi_arready & axi_arvalid) begin
-            mhdma_read_addr <= mhdma_read_addr + (AXI4_DATA_BYTES*MAX_BURST_SIZE);
-          end
+        else begin
+          req_axi_word_remain <= req_axi_word_remainD;
+          req_pbs_first_burst <= req_pbs_first_burstD;
         end
-      end
 
-      assign axi_arvalid = (axi_read_cnt > 0) & axi4_read_pc[gen_rd];
+      // Address calculation
+      logic [AXI4_ADD_W-1:0]    req_add;
+      logic [AXI4_ADD_W-1:0]    req_addD;
+      logic [AXI4_ADD_W-1:0]    req_add_start;
+      logic [PAGE_BYTES_WW-1:0] req_page_word_remain;
 
+      assign req_add_start = req_pbs_first_burst ? phy_addr[gen_rd] : req_add;
+      assign req_addD      = req_send_axi_cmd ? req_add_start + req_axi_word_nb*AXI4_DATA_BYTES : req_add;
+
+      always_ff @(posedge clk_mrmac)
+        if (~resetn_mrmac) req_add <= '0;
+        else               req_add <= req_addD;
+
+      // Page boundary aware burst sizing
+      assign req_page_word_remain = PAGE_AXI4_DATA - req_add_start[PAGE_BYTES_W-1:AXI4_DATA_BYTES_W];
+      assign req_axi_word_nb      = req_page_word_remain < req_axi_word_remain ? req_page_word_remain : req_axi_word_remain;
+
+      // AXI AR channel
       assign axi_ar.arid    = MHDMA_AXI_ARID;
-      assign axi_ar.araddr  = axi_arvalid ? mhdma_read_addr :'h0;
-      assign axi_ar.arsize  = axi_arvalid ? MHDMA_ARSIZE    :'h0;
-      assign axi_ar.arburst = axi_arvalid ? 2'b01           :'h0; // incr
-      // there is not arlast, this is only an intermediate signal
-      assign axi4_read_last[gen_rd] = axi_arready & axi_arvalid & (axi_read_cnt == 1);
+      assign axi_ar.arsize  = AXI4_DATA_BYTES_W;
+      assign axi_ar.arburst = AXI4B_INCR;
+      assign axi_ar.araddr  = req_add_start;
+      assign axi_ar.arlen   = req_axi_word_nb - 1;
 
-      always_comb begin
-        if ((PC_REMAINS[gen_rd] !=0) & axi4_read_last[gen_rd]) begin
-          axi_ar.arlen = axi_arvalid ? PC_REMAINS[gen_rd]-1 : 'h0;
-        end else begin
-          axi_ar.arlen = axi_arvalid ? MAX_BURST_SIZE-1 : 'h0;
-        end
-      end
+      assign axi_arvalid    = axi4_read_pc[gen_rd] & (req_axi_word_remain > 0);
+      assign req_send_axi_cmd = axi_arvalid & axi_arready;
+
+      // PC transfer done when last address command sent
+      assign pc_transfer_done[gen_rd] = req_send_axi_cmd & req_last_axi_word_remain;
 
       axi4_ar_if_t m_axi4_a;
 
@@ -471,6 +481,11 @@ module mhdma_slave
 
   generate
     for (genvar gen_rd=0; gen_rd<ETH_PC; gen_rd++) begin : gen_read_fifo
+      // Since PEM_PC | AXI4_WORD_PER_BLWE, the body is processed by PC0
+      localparam int AXI4_WORD_PER_PATH    = (gen_rd == 0) ? AXI4_WORD_PER_PC0 : AXI4_WORD_PER_PC;
+      localparam int AXI4_WORD_PER_PATH_W  = (gen_rd == 0) ? AXI4_WORD_PER_PC0_W : AXI4_WORD_PER_PC_W;
+      localparam int AXI4_WORD_PER_PATH_WW = (gen_rd == 0) ? AXI4_WORD_PER_PC0_WW : AXI4_WORD_PER_PC_WW;
+
       // input part
       logic                   read_fifo_we;
       // output part
@@ -504,7 +519,7 @@ module mhdma_slave
 
       // we are going to read 4 times slower the fifo than we are feeding it
       logic [$clog2(NB_MRMRAC_WORDS_PER_READ)-1:0] slow_pace_count;
-      logic [$clog2(PC_NB_WORDS[gen_rd]):0]        read_fifo_out_cnt;
+      logic [AXI4_WORD_PER_PATH_WW-1:0]            read_fifo_out_cnt;
       logic                                        pc_read_finished;
 
       always_ff @(posedge clk_mrmac) begin
@@ -528,7 +543,7 @@ module mhdma_slave
         end else begin
           if (read_fifo_out_ready & read_fifo_out_valid) begin
             read_fifo_out_cnt <= read_fifo_out_cnt + 1;
-          end else if (read_fifo_out_cnt == PC_NB_WORDS[gen_rd]) begin
+          end else if (read_fifo_out_cnt == AXI4_WORD_PER_PATH) begin
             read_fifo_out_cnt <= 'h0;
           end
         end
@@ -537,7 +552,7 @@ module mhdma_slave
       // because in one read we have NB_MRMRAC_WORDS_PER_READ, we must delay the signal pc_read_finished
       logic [NB_MRMRAC_WORDS_PER_READ-1:0] temp_finished_flag;
       always_ff @(posedge clk_mrmac)
-        temp_finished_flag[0] <= (read_fifo_out_cnt == PC_NB_WORDS[gen_rd]);
+        temp_finished_flag[0] <= (read_fifo_out_cnt == AXI4_WORD_PER_PATH);
 
       for (genvar gen_i = 1; gen_i<NB_MRMRAC_WORDS_PER_READ; gen_i++) begin
         always_ff @(posedge clk_mrmac)
@@ -605,24 +620,30 @@ module mhdma_slave
   endgenerate
 
   // which PC must be read ------------------------------------------------------------------------
-  // those two processes are defined for two PCS only.
+  // Track data reception per PC (count rlast signals to know when all data received)
+  logic [ETH_PC-1:0] finished_reading_pc;
   generate
     for (genvar gen_rd=0; gen_rd<ETH_PC; gen_rd++) begin : gen_control_pc
-      logic [$clog2(PC_NB_READS[gen_rd]):0] nb_read;
-      // when do I finished reading ?
+      // Since PEM_PC | AXI4_WORD_PER_BLWE, the body is processed by PC0
+      localparam int AXI4_WORD_PER_PATH    = (gen_rd == 0) ? AXI4_WORD_PER_PC0 : AXI4_WORD_PER_PC;
+      localparam int AXI4_WORD_PER_PATH_WW = $clog2(AXI4_WORD_PER_PATH+1) == 0 ? 1 : $clog2(AXI4_WORD_PER_PATH+1);
+
+      logic [AXI4_WORD_PER_PATH_WW-1:0] r_word_cnt;
+      // Track how many words have been received
       always_ff @(posedge clk_mrmac) begin
-        if (~resetn_mrmac)begin
-          nb_read <= 'h0;
+        if (~resetn_mrmac) begin
+          r_word_cnt <= 'h0;
         end else begin
-          if (m_axi4_rlast[gen_rd] & m_axi4_rvalid[gen_rd]) begin
-            nb_read <= nb_read + 1;
-          end else if (nb_read == PC_NB_READS[gen_rd]) begin
-            nb_read <= 'h0;
+          if (m_axi4_rvalid[gen_rd] & m_axi4_rready[gen_rd]) begin
+            if (r_word_cnt == AXI4_WORD_PER_PATH - 1)
+              r_word_cnt <= 'h0;
+            else
+              r_word_cnt <= r_word_cnt + 1;
           end
         end
       end
 
-      assign finished_reading_pc[gen_rd] = (nb_read == PC_NB_READS[gen_rd]);
+      assign finished_reading_pc[gen_rd] = m_axi4_rvalid[gen_rd] & m_axi4_rready[gen_rd] & (r_word_cnt == AXI4_WORD_PER_PATH - 1);
     end
   endgenerate
 
@@ -632,10 +653,10 @@ module mhdma_slave
       axi4_read_pc <= 'h0;
     end else begin
       // when read request registers are ready we can trigger the shift register.
-      // when the last signal is fired we can trigger the second PC
-      if (rreq_ready_pulse |  axi4_read_last[0]) begin
+      // when current PC transfer is done, shift to next PC
+      if (rreq_ready_pulse | pc_transfer_done[0]) begin
         axi4_read_pc <= {axi4_read_pc[ETH_PC-2:0], rreq_ready_pulse};
-      end else if (finished_reading_pc[1]) begin
+      end else if (pc_transfer_done[1]) begin
         axi4_read_pc <= 'h0;
       end
     end
@@ -707,7 +728,7 @@ module mhdma_slave
   end
 
   // =========================================================================================== //
-  // Eroors
+  // Errors
   // =========================================================================================== //
   assign slave_error = {error_fifo_nrx_commands_ovf};
 
@@ -790,8 +811,7 @@ module mhdma_slave
     end
   endgenerate
 
-  assign stat_rr_phy_addr[0]          = rr_phy_addr[0];
-  assign stat_rr_phy_addr[1]          = rr_phy_addr[1];
+  assign stat_rr_phy_addr             = rr_phy_addr;
   assign stat_nb_read_to_hbm          = nb_read_to_hbm;
   assign stat_nb_words_received_pc[0] = nb_words_received_pc[0];
   assign stat_nb_words_received_pc[1] = nb_words_received_pc[1];

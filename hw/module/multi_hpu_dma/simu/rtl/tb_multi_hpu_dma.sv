@@ -15,6 +15,7 @@ module tb_multi_hpu_dma;
   import axi_if_common_param_pkg::*;      // general axi4
   import hpu_regif_core_eth_2in3_pkg::*;  // ethernet regif
   import axi_if_eth_axi_pkg::*;           // AXI ethernet
+  import pem_common_param_pkg::*;         // CT_MEM_BYTES, AXI4_WORD_PER_PC*
 
   `include "tb_mhdma_tasks.sv"
 
@@ -45,14 +46,16 @@ module tb_multi_hpu_dma;
   localparam int MEM_SIM_SIZE = 18; // must be < 22 in order to not slow down sim too much!
   localparam int SIZE_B_SIM   = 'h40;
 
-  localparam [3:0] PC_STRIDE          = 'hB;
-  localparam int PC_CT_BYTES [ETH_PC] = '{'h2000, 'h2020};
+  // Use CT_MEM_BYTES from pem_common_param_pkg for address calculation
+  localparam int PC_CT_BYTES [ETH_PC] = '{CT_MEM_BYTES, CT_MEM_BYTES};
 
-  localparam int MEM_MAX_VALUE = (1 << MEM_SIM_SIZE) >> PC_STRIDE;
+  // Max ciphertext ID based on memory simulation size
+  localparam int MEM_MAX_VALUE = (1 << MEM_SIM_SIZE) / CT_MEM_BYTES;
 
   localparam int MAX_BURST_SIZE = PAGE_BYTES/AXI4_DATA_BYTES;
 
-  localparam int PC_NB_WORDS [ETH_PC] = compute_nb_words(PC_CT_BYTES);
+  // Word counts from pem_common_param_pkg
+  localparam int PC_NB_WORDS [ETH_PC] = '{AXI4_WORD_PER_PC0, AXI4_WORD_PER_PC};
 
 // ============================================================================================== --
 // clock, reset
@@ -529,6 +532,22 @@ module tb_multi_hpu_dma;
           .s_axi4_rvalid (axi4_ct_rvalid[gen_hpu][gen_pc]   ),
           .s_axi4_rready (axi4_ct_rready[gen_hpu][gen_pc]   )
         );
+
+        // Each generated instance initializes its own memory
+        initial begin
+          for (int k = 0; k < 2**MEM_SIM_SIZE; k++) begin
+            logic [255:0] value;
+            value = '0;
+            for (int j = 0; j < 4; j++) begin
+              logic [63:0] w;
+              w[63:32] = $urandom();
+              w[31:0]  = $urandom();
+              value |= (w << (j*64));
+            end
+            axi4_mem_ct.axi4_ram_ct_wr.mem[k] = value;
+          end
+        end
+
       end
     end
   endgenerate
@@ -608,7 +627,7 @@ module tb_multi_hpu_dma;
     regf_start_addr_ofs = 'h0;
     repeat(20) @(posedge clk_control);
 
-    random_iter           = $urandom_range(32, 2);
+    random_iter           = 1000;//$urandom_range(32, 2);
     arbitrary_notify_nb   = XPM_MIN_FIFO_DEPTH; // if we have a full fifo on fifo_nrx_regf, we will lose notifies
     arbitrary_read_req_nb = XPM_MIN_FIFO_DEPTH;
 
@@ -914,33 +933,6 @@ module tb_multi_hpu_dma;
   end
 
 // ============================================================================================== --
-// Initialize memory
-// ============================================================================================== --
-  logic [59:0] val_id = 0;
-
-  initial begin
-    // for (int gen_hpu = 0; gen_hpu < HPU_NB; ++gen_hpu) begin
-      for (int gen_pc = 0; gen_pc < ETH_PC; ++gen_pc) begin
-        for (int k = 0; k < 2**MEM_SIM_SIZE; ++k) begin
-          automatic logic [255:0] value = '0;
-          for (int j = 0; j < 4; ++j) begin
-            logic [63:0] w;
-            w[63:32] = $urandom();
-            w[31:0]  = $urandom();
-            value |= (w << (j*64));
-            val_id++;
-          end
-          // TODO / TOREVIEW: Limitation on dynamical definitions :/
-          gen_mem_hpu[1].gen_mem_pc[0].axi4_mem_ct.axi4_ram_ct_wr.mem[k] = value;
-          gen_mem_hpu[1].gen_mem_pc[1].axi4_mem_ct.axi4_ram_ct_wr.mem[k] = value;
-          gen_mem_hpu[0].gen_mem_pc[0].axi4_mem_ct.axi4_ram_ct_wr.mem[k] = !value;
-          gen_mem_hpu[0].gen_mem_pc[1].axi4_mem_ct.axi4_ram_ct_wr.mem[k] = !value;
-        end
-      end
-    // end
-  end
-
-// ============================================================================================== --
 // Tasks
 // ============================================================================================== --
   logic [REG_DATA_W-1:00] rdata;
@@ -1154,49 +1146,57 @@ module tb_multi_hpu_dma;
     input logic [SRC_ADDR_W-1:0] src_addr,
     input logic [DST_ADDR_W-1:0] dst_addr
   );
-    int addr_hpu_0;
-    int addr_hpu_1;
+    int addr_hpu_0, addr_hpu_1;
     logic mismatch_found;
-    begin
-      mismatch_found = 1'b0;
+    logic [AXI4_DATA_W-1:0] val_hpu0, val_hpu1;
+    int nb_words;
 
-      // we divide by 32 in order to change tot byte address
-      addr_hpu_0 = (regf_start_addr_ofs + ((dst_addr << PC_STRIDE)))/32; // where copied word should be
-      addr_hpu_1 = (regf_start_addr_ofs + ((src_addr << PC_STRIDE)))/32;
+    mismatch_found = 1'b0;
 
-      $display("addr_hpu_0 = %x", addr_hpu_0);
-      $display("addr_hpu_1 = %x", addr_hpu_1);
+    // Use CT_MEM_BYTES for address calculation (cid * CT_MEM_BYTES), divide by 32 for word address
+    addr_hpu_0 = (regf_start_addr_ofs + (dst_addr * CT_MEM_BYTES)) / 32;
+    addr_hpu_1 = (regf_start_addr_ofs + (src_addr * CT_MEM_BYTES)) / 32;
 
-      // PC 0
-      // Direct comparison of memory locations
-      for (int k = 0; k < PC_NB_WORDS[0]; k++) begin
-        // I read from 0 to PC_NB_WORDS in HPU_B and
-        if (gen_mem_hpu[0].gen_mem_pc[0].axi4_mem_ct.axi4_ram_ct_wr.mem[addr_hpu_0 + k] != gen_mem_hpu[1].gen_mem_pc[0].axi4_mem_ct.axi4_ram_ct_wr.mem[addr_hpu_1 + k]) begin
-          $display("Memory mismatch at PC=%0d, offset=%0d: HPU_0[%0d]=%0h != HPU_1[%0d]=%0h", 0, k,
-                    addr_hpu_0 + k, gen_mem_hpu[0].gen_mem_pc[0].axi4_mem_ct.axi4_ram_ct_wr.mem[addr_hpu_0 + k],
-                    addr_hpu_1 + k, gen_mem_hpu[1].gen_mem_pc[0].axi4_mem_ct.axi4_ram_ct_wr.mem[addr_hpu_1 + k]);
+    $display("addr_hpu_0 = %x, addr_hpu_1 = %x", addr_hpu_0, addr_hpu_1);
+
+    // Check both PCs
+    for (int pc = 0; pc < ETH_PC; pc++) begin
+      nb_words = PC_NB_WORDS[pc];
+
+      for (int k = 0; k < nb_words; k++) begin
+        // Get values based on PC index (cannot dynamically index generate blocks)
+        if (pc == 0) begin
+          val_hpu0 = gen_mem_hpu[0].gen_mem_pc[0].axi4_mem_ct.axi4_ram_ct_wr.mem[addr_hpu_0 + k];
+          val_hpu1 = gen_mem_hpu[1].gen_mem_pc[0].axi4_mem_ct.axi4_ram_ct_wr.mem[addr_hpu_1 + k];
+        end else begin
+          val_hpu0 = gen_mem_hpu[0].gen_mem_pc[1].axi4_mem_ct.axi4_ram_ct_wr.mem[addr_hpu_0 + k];
+          val_hpu1 = gen_mem_hpu[1].gen_mem_pc[1].axi4_mem_ct.axi4_ram_ct_wr.mem[addr_hpu_1 + k];
+        end
+
+        // Check for X/Z in HPU_0
+        if ($isunknown(val_hpu0)) begin
+          $display("ERROR: X/Z in HPU_0 at PC=%0d, offset=%0d, addr=%0d, val=%h", pc, k, addr_hpu_0 + k, val_hpu0);
+          mismatch_found = 1;
+          error_write_mismatch = 1'b1;
+        end
+        // Check for X/Z in HPU_1
+        else if ($isunknown(val_hpu1)) begin
+          $display("ERROR: X/Z in HPU_1 at PC=%0d, offset=%0d, addr=%0d, val=%h", pc, k, addr_hpu_1 + k, val_hpu1);
+          mismatch_found = 1;
+          error_write_mismatch = 1'b1;
+        end
+        // Check for mismatch
+        else if (val_hpu0 !== val_hpu1) begin
+          $display("ERROR: Mismatch at PC=%0d, offset=%0d: HPU_0[%0d]=%h != HPU_1[%0d]=%h",
+                   pc, k, addr_hpu_0 + k, val_hpu0, addr_hpu_1 + k, val_hpu1);
           mismatch_found = 1;
           error_write_mismatch = 1'b1;
         end
       end
-
-      // PC 1
-      // Direct comparison of memory locations
-      for (int k = 0; k < PC_NB_WORDS[1]; k++) begin
-
-        // I read from 0 to PC_NB_WORDS in HPU_B and
-        if (gen_mem_hpu[0].gen_mem_pc[1].axi4_mem_ct.axi4_ram_ct_wr.mem[addr_hpu_0 + k] != gen_mem_hpu[1].gen_mem_pc[1].axi4_mem_ct.axi4_ram_ct_wr.mem[addr_hpu_1 + k]) begin
-          $display("Memory mismatch at PC=%0d, offset=%0d: HPU_0[%0d]=%0h != HPU_1[%0d]=%0h", 1, k,
-                    addr_hpu_0 + k, gen_mem_hpu[0].gen_mem_pc[1].axi4_mem_ct.axi4_ram_ct_wr.mem[addr_hpu_0 + k],
-                    addr_hpu_1 + k, gen_mem_hpu[1].gen_mem_pc[1].axi4_mem_ct.axi4_ram_ct_wr.mem[addr_hpu_1 + k]);
-          mismatch_found = 1;
-          error_write_mismatch = 1'b1;
-        end
-      end
-
-      if (~mismatch_found)
-        $display("[INFO]: Memory check PASSED: HPU_A and HPU_B contents match");
     end
+
+    if (~mismatch_found)
+      $display("[INFO]: Memory check PASSED: HPU_A and HPU_B contents match");
   endtask
 
 

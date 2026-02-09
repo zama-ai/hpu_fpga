@@ -8,7 +8,7 @@
 module mhdma_formatter
   import mhdma_pkg::*;          // multi-hpu-dma
   import axi_if_eth_axi_pkg::*; // AXI4
-#() (
+(
   // Ethernet fast clock interface --------------------------------------------
   input  logic                                      clk_mrmac,
   input  logic                                      resetn_mrmac,
@@ -217,7 +217,7 @@ module mhdma_formatter
   // During CE we need to increment seq_num for each packet sent
   // For the arbiter we need the information to release the fsm that all have been sent
   logic [SEQ_NUM_W-1:0] ce_seq_num;
-  // we need to build header and stall ciphertext arrial until we are ready
+  // we need to build header and stall ciphertext arrival until we are ready
   logic                 ce_first_header;      // level: up for first packet header (used for tx & backpressure)
   logic                 ce_first_header_sent; // level: up when first packet header has been sent
   logic                 ce_last_packet;       // level: up when last packet is transmitting
@@ -317,13 +317,11 @@ module mhdma_formatter
   logic [  SIZE_B_W-1:0] ce_size_b;
   logic [  HPU_ID_W-1:0] ce_hpu_id;
   logic [  IOP_ID_W-1:0] ce_iop_id;
-  logic [MAC_ADDR_W-1:0] ce_dst_mac_addr;
 
   always_ff @(posedge clk_mrmac)
     if (slave_command_rdy & slave_command_vld)
       ce_header_payload_tmp <= slave_command;
 
-  assign ce_dst_mac_addr = ce_header_payload_tmp.src_mac_addr;
   assign ce_iop_id       = ce_header_payload_tmp.iop_id;
   assign ce_hpu_id       = ce_header_payload_tmp.hpu_id;
   assign ce_size_b       = ce_header_payload_tmp.size_b;
@@ -549,7 +547,7 @@ module mhdma_formatter
   logic                      tx_tvalid_reg;
 
   assign tx_tdata_D      = small_packet ? tx_header : (ce_header_valid & tx_tvalid_D) ? tx_header : ce_fifo_vld ? ce_fifo_payload :'h0;
-  assign tx_tvalid_D     = small_packet ? ~(tx_cnt == 'h0) : ~(tx_cnt == 'h0) & (ce_header_valid | ce_fifo_vld);
+  assign tx_tvalid_D     = small_packet ? |tx_cnt : |tx_cnt & (ce_header_valid | ce_fifo_vld);
   assign tx_tkeep_user_D = {3'b000, tx_byte_enable};
   assign tx_tlast_D      = small_packet ? tx_small_last : st_ct_emission ? tx_last_word : 1'b0;
 

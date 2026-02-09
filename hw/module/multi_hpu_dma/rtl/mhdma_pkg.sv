@@ -9,6 +9,9 @@ package mhdma_pkg;
   import axi_if_eth_axi_pkg::*;       // AXI4
   import axi_if_shell_axil_pkg::*;    // REG_DATA_W
 
+  import top_common_param_pkg::*;    // PEM_PC
+  import pem_common_param_pkg::*;    // CT_MEM_BYTES, AXI4_WORD_PER_PC_L*
+
   // =========================================================================================== //
   // Parameters
   // =========================================================================================== //
@@ -27,7 +30,7 @@ package mhdma_pkg;
   // beware of block design if modifying this values
   localparam int MRMAC_AXIS_W   = 64;
   localparam int MRMAC_TKEEP_W  = 11;
-  localparam int ETH_PC         = 2;
+  localparam int ETH_PC         = PEM_PC; // MHDMA is tied to PEM module: mandatory same number of PC
   // beware of regfile if modifying this value
   localparam int NB_MAX_HPU   = 8;
   localparam int NB_MAX_HPU_W = $clog2(NB_MAX_HPU);
@@ -207,6 +210,7 @@ package mhdma_pkg;
 
   typedef struct packed {
     logic              seq_num_mismatch;
+    logic [ETH_PC-1:0] bid_mismatch;
     logic [ETH_PC-1:0] write_error;
   } master_error_t;
 
@@ -221,61 +225,14 @@ package mhdma_pkg;
   // =========================================================================================== //
   // Functions
   // =========================================================================================== //
-  function automatic logic [MRMAC_AXIS_W-1:0] byte_swap (input logic [MRMAC_AXIS_W-1:0] data_in);
+  function automatic logic [MRMAC_AXIS_W-1:0] byte_swap(
+    input logic [MRMAC_AXIS_W-1:0] data_in
+  );
     logic [MRMAC_AXIS_W-1:0] data_out;
     for (int i = 0; i < 8; i++) begin
       data_out[(MRMAC_AXIS_W - ((i + 1) * 8)) +: 8] = data_in[(i*8) +: 8];
     end
     return data_out;
   endfunction
-
-
-  // parameter generation
-  // to be reviewed
-  typedef int unpacked_array_t [ETH_PC];
-
-  function automatic unpacked_array_t compute_nb_words (
-    input int pc_ct_bytes [ETH_PC]
-  );
-    int pc_nb_words [ETH_PC];
-    for (int i = 0; i < ETH_PC; i++) begin
-      pc_nb_words[i] = pc_ct_bytes[i] / AXI4_DATA_BYTES;
-    end
-    return pc_nb_words;
-  endfunction
-
-  function automatic unpacked_array_t compute_nb_bursts(
-    input int pc_nb_words[ETH_PC],
-    input int                      max_burst_size
-  );
-    int pc_nb_bursts[ETH_PC];
-    for (int i = 0; i < ETH_PC; i++) begin
-      pc_nb_bursts[i] = pc_nb_words[i] / max_burst_size;
-    end
-    return pc_nb_bursts;
-  endfunction
-
-  function automatic unpacked_array_t compute_remaining_words(
-    input int pc_nb_words[ETH_PC],
-    input int                      max_burst_size
-  );
-    int pc_nb_remaining[ETH_PC];
-    for (int i = 0; i < ETH_PC; i++) begin
-      pc_nb_remaining[i] = pc_nb_words[i] % max_burst_size;
-    end
-    return pc_nb_remaining;
-  endfunction
-
-  function automatic unpacked_array_t compute_nb_transactions(
-    input int pc_nb_remain[ETH_PC],
-    input int pc_nb_bursts[ETH_PC]
-  );
-    int pc_nb_trans [ETH_PC];
-    for (int i = 0; i < ETH_PC; i++) begin
-      pc_nb_trans[i] = (pc_nb_remain[i] != 0) ? pc_nb_bursts[i] + pc_nb_remain[i] : pc_nb_bursts[i];
-    end
-    return pc_nb_trans;
-  endfunction
-
 
 endpackage

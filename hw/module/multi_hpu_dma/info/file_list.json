@@ -65,6 +65,7 @@
     "hw/module/multi_hpu_dma/constraint/multi_hpu_dma_timing_constraints_hier.xdc"
   ],
   "dependency_dir": [
+    "hw/module/pe_mem/module/pem_common",
     "hw/common_lib/cdc/module/xpm_cdc_gray_wrapper",
     "hw/common_lib/cdc/module/xpm_fifo_async_wrapper",
     "hw/common_lib/cdc/module/xpm_cdc_single_wrapper",

@@ -8,7 +8,6 @@
 // ==============================================================================================
 
 import mhdma_pkg::*;
-import axi_if_eth_axi_pkg::*;
 
 interface qsfp_if (input bit clk);
   logic [MRMAC_AXIS_W-1:0]  tdata;
