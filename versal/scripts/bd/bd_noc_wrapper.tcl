@@ -518,7 +518,7 @@ proc create_hier_cell_noc_wrapper { parentCell nameHier ntt_psi } {
   # BSK : Use 8 10 12 14 24 26 28 30 40 42 44 46 56 58 60 62
   set bsk_hbm_ports_l [list 8 10 12 14 24 26 28 30 40 42 44 46 56 58 60 62]
   # TODO: GLWE : Use HBM_PORT
-  set eth_hbm_ports_l [list 53 54]
+  set eth_hbm_ports_l [list 52 53]
 
   # Check NOC config
   if {[llength $ksk_hbm_ports_l] < $KSK_AXI_NB} {
