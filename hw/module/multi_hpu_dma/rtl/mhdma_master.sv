@@ -1059,7 +1059,9 @@ module mhdma_master
         if (~resetn_mrmac) begin
           expected_wid <= 'h0;
         end else begin
-          if (axi_a_awready & axi_a_awvalid) begin
+          if (phy_addr_valid) begin
+            expected_wid <= 'h0;
+          end else if (axi_a_awready & axi_a_awvalid) begin
             expected_wid <= expected_wid + 1;
           end
         end
@@ -1075,7 +1077,9 @@ module mhdma_master
         if (~resetn_mrmac) begin
           expected_bid <= 'h0;
         end else begin
-          if (axi_bready & axi_bvalid & bid_match) begin
+          if (phy_addr_valid) begin
+            expected_bid <= 'h0;
+          end else if (axi_bready & axi_bvalid & bid_match) begin
             expected_bid <= expected_bid + 1;
           end
         end
