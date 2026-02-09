@@ -43,7 +43,7 @@ HBM_PC_RANGE=0x40000000                                   # HBM_PC_RANGE = 0x400
 HBM_PC_RANGE_BYTE=$((HBM_PC_RANGE / 8))
 PC_STRIDE=11                                              # PC_STRIDE = 0xB (11 bits)
 CT_SPACING=$((PC0_DATA_SIZE >> PC_STRIDE))
-MAX_ADDR=$(( (HBM_PC_RANGE >> PC_STRIDE) / CT_SPACING ))
+HW_HW_MAX_ADDR=0xFFFF                                        # Hardware limit: SRC_ADDR_W = DST_ADDR_W = 16 bits
 
 NODE_SOURCE=24
 NODE_REQUEST=01
@@ -65,7 +65,7 @@ show_help() {
     echo ""
     echo "Options:"
     echo "  -n, --num-loops     Number of read request loops (default: $NUM_LOOPS)"
-    echo "  -m, --max-addr      Maximum logical address (default: $MAX_ADDR = 0x$(printf '%x' $MAX_ADDR))"
+    echo "  -m, --max-addr      Maximum logical address (default: $HW_MAX_ADDR = 0x$(printf '%x' $HW_MAX_ADDR))"
     echo "  -s, --node-source   Source node ID (default: $NODE_SOURCE)"
     echo "  -r, --node-request  Request node ID (default: $NODE_REQUEST)"
     echo "  -h, --help          Show this help message"
@@ -73,7 +73,7 @@ show_help() {
     echo "Address space info:"
     echo "  - HBM_PC_RANGE = 0x40000000 (1GB per PC)"
     echo "  - PC_STRIDE = 11 bits"
-    echo "  - Logical addresses: 0 to 0x200000 (max = HBM_PC_RANGE >> PC_STRIDE)"
+    echo "  - Hardware limit: SRC_ADDR_W = DST_ADDR_W = 16 bits (max 0xFFFF)"
     echo "  - Physical address = base + (logical_addr << PC_STRIDE)"
     echo "  - PC0 data size: 0x2020 bytes (8224)"
     echo "  - PC1 data size: 0x2000 bytes (8192)"
@@ -92,7 +92,7 @@ while [[ $# -gt 0 ]]; do
             shift 2
             ;;
         -m|--max-addr)
-            MAX_ADDR="$2"
+            HW_MAX_ADDR="$2"
             shift 2
             ;;
         -s|--node-source)
@@ -214,7 +214,7 @@ echo "  MHDMA Read Request Test"
 echo "=================================================================================================="
 echo "  Configuration:"
 echo "    - Number of loops:  $NUM_LOOPS"
-echo "    - Max address:      $MAX_ADDR (0x$(printf '%x' $MAX_ADDR))"
+echo "    - Max address:      $HW_MAX_ADDR (0x$(printf '%x' $HW_MAX_ADDR)) [HW limit: 0x$(printf '%x' $HW_HW_MAX_ADDR)]"
 echo "    - HBM PC range:     0x$(printf '%x' $HBM_PC_RANGE)"
 echo "    - PC stride:        $PC_STRIDE bits"
 echo "    - Node source:      $NODE_SOURCE"
@@ -242,8 +242,8 @@ echo "==========================================================================
 
 for ((i=1; i<=NUM_LOOPS; i++)); do
     # Generate random addresses within valid range (4KB aligned)
-    src_addr=$(generate_random_addr $MAX_ADDR)
-    dst_addr=$(generate_random_addr $MAX_ADDR)
+    src_addr=$(generate_random_addr $HW_MAX_ADDR)
+    dst_addr=$(generate_random_addr $HW_MAX_ADDR)
 
     if perform_read_request $i $src_addr $dst_addr; then
         PASS_COUNT=$((PASS_COUNT + 1))
