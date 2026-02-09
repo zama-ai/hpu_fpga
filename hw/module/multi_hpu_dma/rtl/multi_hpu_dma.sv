@@ -331,39 +331,42 @@ module multi_hpu_dma
   end
 
   // ============================================================================================ //
-  // CDC - wrapper handles WIDTH > 32 internally by splitting into chunks
+  // CDC
   // ============================================================================================ //
   // CDC: Reset signals (CFG -> ETH)
-  xpm_cdc_gray_wrapper #(
+  xpm_cdc_handshake_wrapper #(
     .WIDTH           ($bits(mhdma_rst_cnt_t)),
     .CDC_SYNC_STAGES (CDC_SYNC_STAGES       )
   ) cdc_rst_cnt (
-    .src_clk  (clk_eth_cfg  ),
-    .dest_clk (clk_eth_mrmac),
-    .src_in   (rst_cnt_cfg  ),
-    .dest_out (rst_cnt_eth  )
+    .src_clk   (clk_eth_cfg    ),
+    .src_rst_n (resetn_eth_cfg ),
+    .dest_clk  (clk_eth_mrmac  ),
+    .src_in    (rst_cnt_cfg    ),
+    .dest_out  (rst_cnt_eth    )
   );
 
   // CDC: Counter values (ETH -> CFG)
-  xpm_cdc_gray_wrapper #(
+  xpm_cdc_handshake_wrapper #(
     .WIDTH           ($bits(mhdma_cnt_t)),
     .CDC_SYNC_STAGES (CDC_SYNC_STAGES   )
   ) cdc_cnt (
-    .src_clk  (clk_eth_mrmac),
-    .dest_clk (clk_eth_cfg  ),
-    .src_in   (cnt_eth      ),
-    .dest_out (cnt_cfg      )
+    .src_clk   (clk_eth_mrmac  ),
+    .src_rst_n (resetn_eth_mrmac),
+    .dest_clk  (clk_eth_cfg    ),
+    .src_in    (cnt_eth        ),
+    .dest_out  (cnt_cfg        )
   );
 
   // CDC: Register values (ETH -> CFG)
-  xpm_cdc_gray_wrapper #(
+  xpm_cdc_handshake_wrapper #(
     .WIDTH           ($bits(mhdma_stat_reg_t)),
     .CDC_SYNC_STAGES (CDC_SYNC_STAGES        )
   ) cdc_stat_reg (
-    .src_clk  (clk_eth_mrmac),
-    .dest_clk (clk_eth_cfg  ),
-    .src_in   (stat_reg_eth ),
-    .dest_out (stat_reg_cfg )
+    .src_clk   (clk_eth_mrmac  ),
+    .src_rst_n (resetn_eth_mrmac),
+    .dest_clk  (clk_eth_cfg    ),
+    .src_in    (stat_reg_eth   ),
+    .dest_out  (stat_reg_cfg   )
   );
 
   // ============================================================================================ //

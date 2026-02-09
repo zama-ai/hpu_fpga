@@ -4,7 +4,7 @@
     "is_include_dir" : false,
     "rtl_files": [
         {
-            "name": "hw/common_lib/cdc/module/xpm_cdc_gray_wrapper/rtl/xpm_cdc_gray_wrapper.sv",
+            "name": "hw/common_lib/cdc/module/xpm_cdc_handshake_wrapper/rtl/xpm_cdc_handshake_wrapper.sv",
             "library": "work",
             "env": ["all"],
             "target": ["all"],
