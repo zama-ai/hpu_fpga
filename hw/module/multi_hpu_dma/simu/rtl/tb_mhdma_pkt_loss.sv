@@ -896,8 +896,8 @@ logic [DST_ADDR_W-1:0] dst_addr;
     input logic [MAC_ADDR_W-1:0] dst_mac_addr
   );
     begin
-      maxil_drv_if.write_trans(MHDMA_HPU_ID_ZERO_OFS,  {1'b1, 3'b0, 4'h0, src_mac_addr});
-      maxil_drv_if.write_trans(MHDMA_HPU_ID_ONE_OFS,   {1'b0, 3'b0, 4'h1, dst_mac_addr});
+      maxil_drv_if.write_trans(MHDMA_SYSTEM_HPU_ID_0_OFS,  {1'b1, 3'b0, 4'h0, src_mac_addr});
+      maxil_drv_if.write_trans(MHDMA_SYSTEM_HPU_ID_1_OFS,   {1'b0, 3'b0, 4'h1, dst_mac_addr});
 
       repeat(50) @(posedge clk_mrmac);
 

@@ -5,8 +5,8 @@
   "offset": 0,
   "range": 393216,
   "ext_pkg": [
-    "axi_if_shell_axil_pkg",
-    "axi_if_common_param_pkg"
+    "axi_if_common_param_pkg",
+    "axi_if_shell_axil_pkg"
   ],
   "section": [
     {
@@ -4138,7 +4138,7 @@
       "description": "system configuration",
       "offset": 327680,
       "bytes_align": 4,
-      "range": 20,
+      "range": 52,
       "register": [
         {
           "name": "lane",
@@ -4292,13 +4292,109 @@
             "Cst": 0
           },
           "field": null
+        },
+        {
+          "name": "hpu_id_0",
+          "description": "HPU ID, MSB is identifier 24b lsb is MAC address",
+          "owner": "User",
+          "read_access": "Read",
+          "write_access": "Write",
+          "offset": 327700,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "hpu_id_1",
+          "description": "HPU ID, MSB is identifier 24b lsb is MAC address",
+          "owner": "User",
+          "read_access": "Read",
+          "write_access": "Write",
+          "offset": 327704,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "hpu_id_2",
+          "description": "HPU ID, MSB is identifier 24b lsb is MAC address",
+          "owner": "User",
+          "read_access": "Read",
+          "write_access": "Write",
+          "offset": 327708,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "hpu_id_3",
+          "description": "HPU ID, MSB is identifier 24b lsb is MAC address",
+          "owner": "User",
+          "read_access": "Read",
+          "write_access": "Write",
+          "offset": 327712,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "hpu_id_4",
+          "description": "HPU ID, MSB is identifier 24b lsb is MAC address",
+          "owner": "User",
+          "read_access": "Read",
+          "write_access": "Write",
+          "offset": 327716,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "hpu_id_5",
+          "description": "HPU ID, MSB is identifier 24b lsb is MAC address",
+          "owner": "User",
+          "read_access": "Read",
+          "write_access": "Write",
+          "offset": 327720,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "hpu_id_6",
+          "description": "HPU ID, MSB is identifier 24b lsb is MAC address",
+          "owner": "User",
+          "read_access": "Read",
+          "write_access": "Write",
+          "offset": 327724,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "hpu_id_7",
+          "description": "HPU ID, MSB is identifier 24b lsb is MAC address",
+          "owner": "User",
+          "read_access": "Read",
+          "write_access": "Write",
+          "offset": 327728,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
         }
       ]
     },
     {
       "name": "mhdma_reset",
       "description": "Controllable resets for transceivers",
-      "offset": 327700,
+      "offset": 327824,
       "bytes_align": 4,
       "range": 8,
       "register": [
@@ -4308,7 +4404,7 @@
           "owner": "User",
           "read_access": "Read",
           "write_access": "Write",
-          "offset": 327700,
+          "offset": 327824,
           "default": {
             "ParamsField": {
               "params": [],
@@ -4364,7 +4460,7 @@
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "None",
-          "offset": 327704,
+          "offset": 327828,
           "default": {
             "ParamsField": {
               "params": [],
@@ -4387,111 +4483,6 @@
               }
             }
           ]
-        }
-      ]
-    },
-    {
-      "name": "mhdma_hpu_id",
-      "description": "HPU ID containing all possible targets. For all IDs we have HPU MAC address, software ID and a flag for current hpu",
-      "offset": 327760,
-      "bytes_align": 4,
-      "range": 32,
-      "register": [
-        {
-          "name": "zero",
-          "description": "HPU ID zero",
-          "owner": "User",
-          "read_access": "Read",
-          "write_access": "Write",
-          "offset": 327760,
-          "default": {
-            "Cst": 0
-          },
-          "field": null
-        },
-        {
-          "name": "one",
-          "description": "HPU ID one",
-          "owner": "User",
-          "read_access": "Read",
-          "write_access": "Write",
-          "offset": 327764,
-          "default": {
-            "Cst": 0
-          },
-          "field": null
-        },
-        {
-          "name": "two",
-          "description": "HPU ID two",
-          "owner": "User",
-          "read_access": "Read",
-          "write_access": "Write",
-          "offset": 327768,
-          "default": {
-            "Cst": 0
-          },
-          "field": null
-        },
-        {
-          "name": "three",
-          "description": "HPU ID three",
-          "owner": "User",
-          "read_access": "Read",
-          "write_access": "Write",
-          "offset": 327772,
-          "default": {
-            "Cst": 0
-          },
-          "field": null
-        },
-        {
-          "name": "four",
-          "description": "HPU ID four",
-          "owner": "User",
-          "read_access": "Read",
-          "write_access": "Write",
-          "offset": 327776,
-          "default": {
-            "Cst": 0
-          },
-          "field": null
-        },
-        {
-          "name": "five",
-          "description": "HPU ID five",
-          "owner": "User",
-          "read_access": "Read",
-          "write_access": "Write",
-          "offset": 327780,
-          "default": {
-            "Cst": 0
-          },
-          "field": null
-        },
-        {
-          "name": "six",
-          "description": "HPU ID six",
-          "owner": "User",
-          "read_access": "Read",
-          "write_access": "Write",
-          "offset": 327784,
-          "default": {
-            "Cst": 0
-          },
-          "field": null
-        },
-        {
-          "name": "seven",
-          "description": "HPU ID seven",
-          "owner": "User",
-          "read_access": "Read",
-          "write_access": "Write",
-          "offset": 327788,
-          "default": {
-            "Cst": 0
-          },
-          "field": null
         }
       ]
     },

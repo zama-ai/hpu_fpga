@@ -1,7 +1,7 @@
 // ============================================================================================== //
 // Description  : register  map address definition package
 // This file was generated with rust regmap generator:
-//  * Date:  2026-02-04
+//  * Date:  2026-02-09
 //  * Tool_version: 27d9e880d531030160fd8749c606142942d5558d
 // ---------------------------------------------------------------------------------------------- //
 //
@@ -26,26 +26,26 @@ package hpu_regif_core_eth_2in3_pkg;
   localparam int MHDMA_SYSTEM_TIMEOUT_READ_REQ_OFS = 'h50008;
   localparam int MHDMA_SYSTEM_FSM_VALUE_OFS = 'h5000c;
   localparam int MHDMA_SYSTEM_ERRORS_OFS = 'h50010;
+  localparam int MHDMA_SYSTEM_HPU_ID_0_OFS = 'h50014;
+  localparam int MHDMA_SYSTEM_HPU_ID_1_OFS = 'h50018;
+  localparam int MHDMA_SYSTEM_HPU_ID_2_OFS = 'h5001c;
+  localparam int MHDMA_SYSTEM_HPU_ID_3_OFS = 'h50020;
+  localparam int MHDMA_SYSTEM_HPU_ID_4_OFS = 'h50024;
+  localparam int MHDMA_SYSTEM_HPU_ID_5_OFS = 'h50028;
+  localparam int MHDMA_SYSTEM_HPU_ID_6_OFS = 'h5002c;
+  localparam int MHDMA_SYSTEM_HPU_ID_7_OFS = 'h50030;
   typedef struct packed {
     logic [(20-1):0] padding_12;
     logic [(4-1):0] rx_rst;
     logic [(4-1):0] tx_rst;
     logic [(4-1):0] gt_all;
    } mhdma_reset_datapath_t;
-  localparam int MHDMA_RESET_DATAPATH_OFS = 'h50014;
+  localparam int MHDMA_RESET_DATAPATH_OFS = 'h50090;
   typedef struct packed {
     logic [(24-1):0] padding_8;
     logic [(8-1):0] rst_done;
    } mhdma_reset_monitor_t;
-  localparam int MHDMA_RESET_MONITOR_OFS = 'h50018;
-  localparam int MHDMA_HPU_ID_ZERO_OFS = 'h50050;
-  localparam int MHDMA_HPU_ID_ONE_OFS = 'h50054;
-  localparam int MHDMA_HPU_ID_TWO_OFS = 'h50058;
-  localparam int MHDMA_HPU_ID_THREE_OFS = 'h5005c;
-  localparam int MHDMA_HPU_ID_FOUR_OFS = 'h50060;
-  localparam int MHDMA_HPU_ID_FIVE_OFS = 'h50064;
-  localparam int MHDMA_HPU_ID_SIX_OFS = 'h50068;
-  localparam int MHDMA_HPU_ID_SEVEN_OFS = 'h5006c;
+  localparam int MHDMA_RESET_MONITOR_OFS = 'h50094;
   typedef struct packed {
     logic [(8-1):0] iop_id;
     logic [(4-1):0] req_id;

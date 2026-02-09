@@ -158,7 +158,6 @@ module mhdma_bridge
   // ==============================================================================================
   // hpu identification
   // ==============================================================================================
-  logic [NB_MAX_HPU-1:0][HPU_ID_W-1:0]   hpu_id_table;
   logic [NB_MAX_HPU-1:0][MAC_ADDR_W-1:0] hpu_mac_table;
   logic [NB_MAX_HPU-1:0]                 one_hot_id;
 
@@ -167,7 +166,6 @@ module mhdma_bridge
   generate
     for (genvar i=0; i<NB_MAX_HPU; i++) begin
       always_ff @(posedge clk_mrmac) begin : hpu_id_table_creation
-        hpu_id_table[i]  <= hpu_ids[i][HPU_ID_W+MAC_ADDR_W-1:MAC_ADDR_W];
         hpu_mac_table[i] <= hpu_ids[i][MAC_ADDR_W-1:0];
         one_hot_id[i]    <= hpu_ids[i][31];
       end
@@ -198,8 +196,8 @@ module mhdma_bridge
               hpu_index = i;
   end
 
-  assign current_hpu_macD = error_id | (one_hot_id==0)? 'h0 : hpu_mac_table[hpu_index];
-  assign current_hpu_idD  = error_id | (one_hot_id==0)? 'h0 : hpu_id_table[hpu_index];
+  assign current_hpu_macD = (one_hot_id==0) ? 'h0 : hpu_mac_table[hpu_index];
+  assign current_hpu_idD  = (one_hot_id==0) ? 'h0 : HPU_ID_W'(hpu_index);
 
   // theses two registers are here to ease P&R
   logic [  HPU_ID_W-1:0] current_hpu_id;

@@ -952,8 +952,8 @@ end
         end
 
         $display("| HPU_ID=%0d :: MAC=%6x |", i, mac_addr);
-        maxil_drv_if_hpu_a.write_trans(MHDMA_HPU_ID_ZERO_OFS+(4*i), register_mac_addr_a);
-        maxil_drv_if_hpu_b.write_trans(MHDMA_HPU_ID_ZERO_OFS+(4*i), register_mac_addr_b);
+        maxil_drv_if_hpu_a.write_trans(MHDMA_SYSTEM_HPU_ID_0_OFS+(4*i), register_mac_addr_a);
+        maxil_drv_if_hpu_b.write_trans(MHDMA_SYSTEM_HPU_ID_0_OFS+(4*i), register_mac_addr_b);
       end
       $display("└------------------------┘");
 

@@ -1,7 +1,7 @@
 // ============================================================================================== //
 // Description  : Axi4-lite register bank
 // This file was generated with rust regmap generator:
-//  * Date:  2026-02-04
+//  * Date:  2026-02-09
 //  * Tool_version: 27d9e880d531030160fd8749c606142942d5558d
 // ---------------------------------------------------------------------------------------------- //
 // xR[n]W[na]
@@ -30,8 +30,8 @@
 //      : Value provided by the RTL. The host can read it with notify. The write data is processed by the RTL.
 // ============================================================================================== //
 module hpu_regif_core_eth_2in3
-import axi_if_common_param_pkg::*;
 import axi_if_shell_axil_pkg::*;
+import axi_if_common_param_pkg::*;
 import hpu_regif_core_eth_2in3_pkg::*;
 #()(
   input  logic                           clk,
@@ -68,27 +68,27 @@ import hpu_regif_core_eth_2in3_pkg::*;
     , output logic [REG_DATA_W-1: 0] r_mhdma_system_errors
     , input  logic [REG_DATA_W-1: 0] r_mhdma_system_errors_upd
     , output logic r_mhdma_system_errors_rd_en
+  // Register IO: mhdma_system_hpu_id_0
+    , output logic [REG_DATA_W-1: 0] r_mhdma_system_hpu_id_0
+  // Register IO: mhdma_system_hpu_id_1
+    , output logic [REG_DATA_W-1: 0] r_mhdma_system_hpu_id_1
+  // Register IO: mhdma_system_hpu_id_2
+    , output logic [REG_DATA_W-1: 0] r_mhdma_system_hpu_id_2
+  // Register IO: mhdma_system_hpu_id_3
+    , output logic [REG_DATA_W-1: 0] r_mhdma_system_hpu_id_3
+  // Register IO: mhdma_system_hpu_id_4
+    , output logic [REG_DATA_W-1: 0] r_mhdma_system_hpu_id_4
+  // Register IO: mhdma_system_hpu_id_5
+    , output logic [REG_DATA_W-1: 0] r_mhdma_system_hpu_id_5
+  // Register IO: mhdma_system_hpu_id_6
+    , output logic [REG_DATA_W-1: 0] r_mhdma_system_hpu_id_6
+  // Register IO: mhdma_system_hpu_id_7
+    , output logic [REG_DATA_W-1: 0] r_mhdma_system_hpu_id_7
   // Register IO: mhdma_reset_datapath
     , output mhdma_reset_datapath_t r_mhdma_reset_datapath
   // Register IO: mhdma_reset_monitor
     , output mhdma_reset_monitor_t r_mhdma_reset_monitor
     , input  mhdma_reset_monitor_t r_mhdma_reset_monitor_upd
-  // Register IO: mhdma_hpu_id_zero
-    , output logic [REG_DATA_W-1: 0] r_mhdma_hpu_id_zero
-  // Register IO: mhdma_hpu_id_one
-    , output logic [REG_DATA_W-1: 0] r_mhdma_hpu_id_one
-  // Register IO: mhdma_hpu_id_two
-    , output logic [REG_DATA_W-1: 0] r_mhdma_hpu_id_two
-  // Register IO: mhdma_hpu_id_three
-    , output logic [REG_DATA_W-1: 0] r_mhdma_hpu_id_three
-  // Register IO: mhdma_hpu_id_four
-    , output logic [REG_DATA_W-1: 0] r_mhdma_hpu_id_four
-  // Register IO: mhdma_hpu_id_five
-    , output logic [REG_DATA_W-1: 0] r_mhdma_hpu_id_five
-  // Register IO: mhdma_hpu_id_six
-    , output logic [REG_DATA_W-1: 0] r_mhdma_hpu_id_six
-  // Register IO: mhdma_hpu_id_seven
-    , output logic [REG_DATA_W-1: 0] r_mhdma_hpu_id_seven
   // Register IO: mhdma_request_req_id
     , output mhdma_request_req_id_t r_mhdma_request_req_id
     , output logic r_mhdma_request_req_id_wr_en
@@ -351,6 +351,30 @@ import hpu_regif_core_eth_2in3_pkg::*;
 //-- Default mhdma_system_errors
   logic [REG_DATA_W-1:0]mhdma_system_errors_default;
   assign mhdma_system_errors_default = 'h0;
+//-- Default mhdma_system_hpu_id_0
+  logic [REG_DATA_W-1:0]mhdma_system_hpu_id_0_default;
+  assign mhdma_system_hpu_id_0_default = 'h0;
+//-- Default mhdma_system_hpu_id_1
+  logic [REG_DATA_W-1:0]mhdma_system_hpu_id_1_default;
+  assign mhdma_system_hpu_id_1_default = 'h0;
+//-- Default mhdma_system_hpu_id_2
+  logic [REG_DATA_W-1:0]mhdma_system_hpu_id_2_default;
+  assign mhdma_system_hpu_id_2_default = 'h0;
+//-- Default mhdma_system_hpu_id_3
+  logic [REG_DATA_W-1:0]mhdma_system_hpu_id_3_default;
+  assign mhdma_system_hpu_id_3_default = 'h0;
+//-- Default mhdma_system_hpu_id_4
+  logic [REG_DATA_W-1:0]mhdma_system_hpu_id_4_default;
+  assign mhdma_system_hpu_id_4_default = 'h0;
+//-- Default mhdma_system_hpu_id_5
+  logic [REG_DATA_W-1:0]mhdma_system_hpu_id_5_default;
+  assign mhdma_system_hpu_id_5_default = 'h0;
+//-- Default mhdma_system_hpu_id_6
+  logic [REG_DATA_W-1:0]mhdma_system_hpu_id_6_default;
+  assign mhdma_system_hpu_id_6_default = 'h0;
+//-- Default mhdma_system_hpu_id_7
+  logic [REG_DATA_W-1:0]mhdma_system_hpu_id_7_default;
+  assign mhdma_system_hpu_id_7_default = 'h0;
 //-- Default mhdma_reset_datapath
   mhdma_reset_datapath_t mhdma_reset_datapath_default;
   always_comb begin
@@ -365,30 +389,6 @@ import hpu_regif_core_eth_2in3_pkg::*;
     mhdma_reset_monitor_default = 'h0;
     mhdma_reset_monitor_default.rst_done = 'h0;
   end
-//-- Default mhdma_hpu_id_zero
-  logic [REG_DATA_W-1:0]mhdma_hpu_id_zero_default;
-  assign mhdma_hpu_id_zero_default = 'h0;
-//-- Default mhdma_hpu_id_one
-  logic [REG_DATA_W-1:0]mhdma_hpu_id_one_default;
-  assign mhdma_hpu_id_one_default = 'h0;
-//-- Default mhdma_hpu_id_two
-  logic [REG_DATA_W-1:0]mhdma_hpu_id_two_default;
-  assign mhdma_hpu_id_two_default = 'h0;
-//-- Default mhdma_hpu_id_three
-  logic [REG_DATA_W-1:0]mhdma_hpu_id_three_default;
-  assign mhdma_hpu_id_three_default = 'h0;
-//-- Default mhdma_hpu_id_four
-  logic [REG_DATA_W-1:0]mhdma_hpu_id_four_default;
-  assign mhdma_hpu_id_four_default = 'h0;
-//-- Default mhdma_hpu_id_five
-  logic [REG_DATA_W-1:0]mhdma_hpu_id_five_default;
-  assign mhdma_hpu_id_five_default = 'h0;
-//-- Default mhdma_hpu_id_six
-  logic [REG_DATA_W-1:0]mhdma_hpu_id_six_default;
-  assign mhdma_hpu_id_six_default = 'h0;
-//-- Default mhdma_hpu_id_seven
-  logic [REG_DATA_W-1:0]mhdma_hpu_id_seven_default;
-  assign mhdma_hpu_id_seven_default = 'h0;
 //-- Default mhdma_request_req_id
   mhdma_request_req_id_t mhdma_request_req_id_default;
   always_comb begin
@@ -564,6 +564,94 @@ import hpu_regif_core_eth_2in3_pkg::*;
   assign r_mhdma_system_errorsD       = r_mhdma_system_errors_upd;
   assign r_mhdma_system_errors_rd_en = rd_en_ok && (rd_add[AXIL_ADD_RANGE_W-1:0] == MHDMA_SYSTEM_ERRORS_OFS[AXIL_ADD_RANGE_W-1:0]);
   assign r_mhdma_system_errors = r_mhdma_system_errors_upd;
+// Register FF: mhdma_system_hpu_id_0
+  logic [REG_DATA_W-1:0] r_mhdma_system_hpu_id_0D;
+  assign r_mhdma_system_hpu_id_0D = (wr_en_ok && (wr_add[AXIL_ADD_RANGE_W-1:0] == MHDMA_SYSTEM_HPU_ID_0_OFS[AXIL_ADD_RANGE_W-1:0]))? wr_data: r_mhdma_system_hpu_id_0;
+  always_ff @(posedge clk) begin
+    if (!s_rst_n) begin
+      r_mhdma_system_hpu_id_0       <= mhdma_system_hpu_id_0_default;
+    end
+    else begin
+      r_mhdma_system_hpu_id_0       <= r_mhdma_system_hpu_id_0D;
+    end
+  end
+// Register FF: mhdma_system_hpu_id_1
+  logic [REG_DATA_W-1:0] r_mhdma_system_hpu_id_1D;
+  assign r_mhdma_system_hpu_id_1D = (wr_en_ok && (wr_add[AXIL_ADD_RANGE_W-1:0] == MHDMA_SYSTEM_HPU_ID_1_OFS[AXIL_ADD_RANGE_W-1:0]))? wr_data: r_mhdma_system_hpu_id_1;
+  always_ff @(posedge clk) begin
+    if (!s_rst_n) begin
+      r_mhdma_system_hpu_id_1       <= mhdma_system_hpu_id_1_default;
+    end
+    else begin
+      r_mhdma_system_hpu_id_1       <= r_mhdma_system_hpu_id_1D;
+    end
+  end
+// Register FF: mhdma_system_hpu_id_2
+  logic [REG_DATA_W-1:0] r_mhdma_system_hpu_id_2D;
+  assign r_mhdma_system_hpu_id_2D = (wr_en_ok && (wr_add[AXIL_ADD_RANGE_W-1:0] == MHDMA_SYSTEM_HPU_ID_2_OFS[AXIL_ADD_RANGE_W-1:0]))? wr_data: r_mhdma_system_hpu_id_2;
+  always_ff @(posedge clk) begin
+    if (!s_rst_n) begin
+      r_mhdma_system_hpu_id_2       <= mhdma_system_hpu_id_2_default;
+    end
+    else begin
+      r_mhdma_system_hpu_id_2       <= r_mhdma_system_hpu_id_2D;
+    end
+  end
+// Register FF: mhdma_system_hpu_id_3
+  logic [REG_DATA_W-1:0] r_mhdma_system_hpu_id_3D;
+  assign r_mhdma_system_hpu_id_3D = (wr_en_ok && (wr_add[AXIL_ADD_RANGE_W-1:0] == MHDMA_SYSTEM_HPU_ID_3_OFS[AXIL_ADD_RANGE_W-1:0]))? wr_data: r_mhdma_system_hpu_id_3;
+  always_ff @(posedge clk) begin
+    if (!s_rst_n) begin
+      r_mhdma_system_hpu_id_3       <= mhdma_system_hpu_id_3_default;
+    end
+    else begin
+      r_mhdma_system_hpu_id_3       <= r_mhdma_system_hpu_id_3D;
+    end
+  end
+// Register FF: mhdma_system_hpu_id_4
+  logic [REG_DATA_W-1:0] r_mhdma_system_hpu_id_4D;
+  assign r_mhdma_system_hpu_id_4D = (wr_en_ok && (wr_add[AXIL_ADD_RANGE_W-1:0] == MHDMA_SYSTEM_HPU_ID_4_OFS[AXIL_ADD_RANGE_W-1:0]))? wr_data: r_mhdma_system_hpu_id_4;
+  always_ff @(posedge clk) begin
+    if (!s_rst_n) begin
+      r_mhdma_system_hpu_id_4       <= mhdma_system_hpu_id_4_default;
+    end
+    else begin
+      r_mhdma_system_hpu_id_4       <= r_mhdma_system_hpu_id_4D;
+    end
+  end
+// Register FF: mhdma_system_hpu_id_5
+  logic [REG_DATA_W-1:0] r_mhdma_system_hpu_id_5D;
+  assign r_mhdma_system_hpu_id_5D = (wr_en_ok && (wr_add[AXIL_ADD_RANGE_W-1:0] == MHDMA_SYSTEM_HPU_ID_5_OFS[AXIL_ADD_RANGE_W-1:0]))? wr_data: r_mhdma_system_hpu_id_5;
+  always_ff @(posedge clk) begin
+    if (!s_rst_n) begin
+      r_mhdma_system_hpu_id_5       <= mhdma_system_hpu_id_5_default;
+    end
+    else begin
+      r_mhdma_system_hpu_id_5       <= r_mhdma_system_hpu_id_5D;
+    end
+  end
+// Register FF: mhdma_system_hpu_id_6
+  logic [REG_DATA_W-1:0] r_mhdma_system_hpu_id_6D;
+  assign r_mhdma_system_hpu_id_6D = (wr_en_ok && (wr_add[AXIL_ADD_RANGE_W-1:0] == MHDMA_SYSTEM_HPU_ID_6_OFS[AXIL_ADD_RANGE_W-1:0]))? wr_data: r_mhdma_system_hpu_id_6;
+  always_ff @(posedge clk) begin
+    if (!s_rst_n) begin
+      r_mhdma_system_hpu_id_6       <= mhdma_system_hpu_id_6_default;
+    end
+    else begin
+      r_mhdma_system_hpu_id_6       <= r_mhdma_system_hpu_id_6D;
+    end
+  end
+// Register FF: mhdma_system_hpu_id_7
+  logic [REG_DATA_W-1:0] r_mhdma_system_hpu_id_7D;
+  assign r_mhdma_system_hpu_id_7D = (wr_en_ok && (wr_add[AXIL_ADD_RANGE_W-1:0] == MHDMA_SYSTEM_HPU_ID_7_OFS[AXIL_ADD_RANGE_W-1:0]))? wr_data: r_mhdma_system_hpu_id_7;
+  always_ff @(posedge clk) begin
+    if (!s_rst_n) begin
+      r_mhdma_system_hpu_id_7       <= mhdma_system_hpu_id_7_default;
+    end
+    else begin
+      r_mhdma_system_hpu_id_7       <= r_mhdma_system_hpu_id_7D;
+    end
+  end
 // Register FF: mhdma_reset_datapath
   logic [REG_DATA_W-1:0] r_mhdma_reset_datapathD;
   assign r_mhdma_reset_datapathD = (wr_en_ok && (wr_add[AXIL_ADD_RANGE_W-1:0] == MHDMA_RESET_DATAPATH_OFS[AXIL_ADD_RANGE_W-1:0]))? wr_data: r_mhdma_reset_datapath;
@@ -584,94 +672,6 @@ import hpu_regif_core_eth_2in3_pkg::*;
     end
     else begin
       r_mhdma_reset_monitor       <= r_mhdma_reset_monitorD;
-    end
-  end
-// Register FF: mhdma_hpu_id_zero
-  logic [REG_DATA_W-1:0] r_mhdma_hpu_id_zeroD;
-  assign r_mhdma_hpu_id_zeroD = (wr_en_ok && (wr_add[AXIL_ADD_RANGE_W-1:0] == MHDMA_HPU_ID_ZERO_OFS[AXIL_ADD_RANGE_W-1:0]))? wr_data: r_mhdma_hpu_id_zero;
-  always_ff @(posedge clk) begin
-    if (!s_rst_n) begin
-      r_mhdma_hpu_id_zero       <= mhdma_hpu_id_zero_default;
-    end
-    else begin
-      r_mhdma_hpu_id_zero       <= r_mhdma_hpu_id_zeroD;
-    end
-  end
-// Register FF: mhdma_hpu_id_one
-  logic [REG_DATA_W-1:0] r_mhdma_hpu_id_oneD;
-  assign r_mhdma_hpu_id_oneD = (wr_en_ok && (wr_add[AXIL_ADD_RANGE_W-1:0] == MHDMA_HPU_ID_ONE_OFS[AXIL_ADD_RANGE_W-1:0]))? wr_data: r_mhdma_hpu_id_one;
-  always_ff @(posedge clk) begin
-    if (!s_rst_n) begin
-      r_mhdma_hpu_id_one       <= mhdma_hpu_id_one_default;
-    end
-    else begin
-      r_mhdma_hpu_id_one       <= r_mhdma_hpu_id_oneD;
-    end
-  end
-// Register FF: mhdma_hpu_id_two
-  logic [REG_DATA_W-1:0] r_mhdma_hpu_id_twoD;
-  assign r_mhdma_hpu_id_twoD = (wr_en_ok && (wr_add[AXIL_ADD_RANGE_W-1:0] == MHDMA_HPU_ID_TWO_OFS[AXIL_ADD_RANGE_W-1:0]))? wr_data: r_mhdma_hpu_id_two;
-  always_ff @(posedge clk) begin
-    if (!s_rst_n) begin
-      r_mhdma_hpu_id_two       <= mhdma_hpu_id_two_default;
-    end
-    else begin
-      r_mhdma_hpu_id_two       <= r_mhdma_hpu_id_twoD;
-    end
-  end
-// Register FF: mhdma_hpu_id_three
-  logic [REG_DATA_W-1:0] r_mhdma_hpu_id_threeD;
-  assign r_mhdma_hpu_id_threeD = (wr_en_ok && (wr_add[AXIL_ADD_RANGE_W-1:0] == MHDMA_HPU_ID_THREE_OFS[AXIL_ADD_RANGE_W-1:0]))? wr_data: r_mhdma_hpu_id_three;
-  always_ff @(posedge clk) begin
-    if (!s_rst_n) begin
-      r_mhdma_hpu_id_three       <= mhdma_hpu_id_three_default;
-    end
-    else begin
-      r_mhdma_hpu_id_three       <= r_mhdma_hpu_id_threeD;
-    end
-  end
-// Register FF: mhdma_hpu_id_four
-  logic [REG_DATA_W-1:0] r_mhdma_hpu_id_fourD;
-  assign r_mhdma_hpu_id_fourD = (wr_en_ok && (wr_add[AXIL_ADD_RANGE_W-1:0] == MHDMA_HPU_ID_FOUR_OFS[AXIL_ADD_RANGE_W-1:0]))? wr_data: r_mhdma_hpu_id_four;
-  always_ff @(posedge clk) begin
-    if (!s_rst_n) begin
-      r_mhdma_hpu_id_four       <= mhdma_hpu_id_four_default;
-    end
-    else begin
-      r_mhdma_hpu_id_four       <= r_mhdma_hpu_id_fourD;
-    end
-  end
-// Register FF: mhdma_hpu_id_five
-  logic [REG_DATA_W-1:0] r_mhdma_hpu_id_fiveD;
-  assign r_mhdma_hpu_id_fiveD = (wr_en_ok && (wr_add[AXIL_ADD_RANGE_W-1:0] == MHDMA_HPU_ID_FIVE_OFS[AXIL_ADD_RANGE_W-1:0]))? wr_data: r_mhdma_hpu_id_five;
-  always_ff @(posedge clk) begin
-    if (!s_rst_n) begin
-      r_mhdma_hpu_id_five       <= mhdma_hpu_id_five_default;
-    end
-    else begin
-      r_mhdma_hpu_id_five       <= r_mhdma_hpu_id_fiveD;
-    end
-  end
-// Register FF: mhdma_hpu_id_six
-  logic [REG_DATA_W-1:0] r_mhdma_hpu_id_sixD;
-  assign r_mhdma_hpu_id_sixD = (wr_en_ok && (wr_add[AXIL_ADD_RANGE_W-1:0] == MHDMA_HPU_ID_SIX_OFS[AXIL_ADD_RANGE_W-1:0]))? wr_data: r_mhdma_hpu_id_six;
-  always_ff @(posedge clk) begin
-    if (!s_rst_n) begin
-      r_mhdma_hpu_id_six       <= mhdma_hpu_id_six_default;
-    end
-    else begin
-      r_mhdma_hpu_id_six       <= r_mhdma_hpu_id_sixD;
-    end
-  end
-// Register FF: mhdma_hpu_id_seven
-  logic [REG_DATA_W-1:0] r_mhdma_hpu_id_sevenD;
-  assign r_mhdma_hpu_id_sevenD = (wr_en_ok && (wr_add[AXIL_ADD_RANGE_W-1:0] == MHDMA_HPU_ID_SEVEN_OFS[AXIL_ADD_RANGE_W-1:0]))? wr_data: r_mhdma_hpu_id_seven;
-  always_ff @(posedge clk) begin
-    if (!s_rst_n) begin
-      r_mhdma_hpu_id_seven       <= mhdma_hpu_id_seven_default;
-    end
-    else begin
-      r_mhdma_hpu_id_seven       <= r_mhdma_hpu_id_sevenD;
     end
   end
 // Register FF: mhdma_request_req_id
@@ -990,35 +990,35 @@ import hpu_regif_core_eth_2in3_pkg::*;
           MHDMA_SYSTEM_ERRORS_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register mhdma_system_errors
             axil_rdataD = r_mhdma_system_errors;
           end
+          MHDMA_SYSTEM_HPU_ID_0_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register mhdma_system_hpu_id_0
+            axil_rdataD = r_mhdma_system_hpu_id_0;
+          end
+          MHDMA_SYSTEM_HPU_ID_1_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register mhdma_system_hpu_id_1
+            axil_rdataD = r_mhdma_system_hpu_id_1;
+          end
+          MHDMA_SYSTEM_HPU_ID_2_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register mhdma_system_hpu_id_2
+            axil_rdataD = r_mhdma_system_hpu_id_2;
+          end
+          MHDMA_SYSTEM_HPU_ID_3_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register mhdma_system_hpu_id_3
+            axil_rdataD = r_mhdma_system_hpu_id_3;
+          end
+          MHDMA_SYSTEM_HPU_ID_4_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register mhdma_system_hpu_id_4
+            axil_rdataD = r_mhdma_system_hpu_id_4;
+          end
+          MHDMA_SYSTEM_HPU_ID_5_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register mhdma_system_hpu_id_5
+            axil_rdataD = r_mhdma_system_hpu_id_5;
+          end
+          MHDMA_SYSTEM_HPU_ID_6_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register mhdma_system_hpu_id_6
+            axil_rdataD = r_mhdma_system_hpu_id_6;
+          end
+          MHDMA_SYSTEM_HPU_ID_7_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register mhdma_system_hpu_id_7
+            axil_rdataD = r_mhdma_system_hpu_id_7;
+          end
           MHDMA_RESET_DATAPATH_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register mhdma_reset_datapath
             axil_rdataD = r_mhdma_reset_datapath;
           end
           MHDMA_RESET_MONITOR_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register mhdma_reset_monitor
             axil_rdataD = r_mhdma_reset_monitor;
-          end
-          MHDMA_HPU_ID_ZERO_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register mhdma_hpu_id_zero
-            axil_rdataD = r_mhdma_hpu_id_zero;
-          end
-          MHDMA_HPU_ID_ONE_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register mhdma_hpu_id_one
-            axil_rdataD = r_mhdma_hpu_id_one;
-          end
-          MHDMA_HPU_ID_TWO_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register mhdma_hpu_id_two
-            axil_rdataD = r_mhdma_hpu_id_two;
-          end
-          MHDMA_HPU_ID_THREE_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register mhdma_hpu_id_three
-            axil_rdataD = r_mhdma_hpu_id_three;
-          end
-          MHDMA_HPU_ID_FOUR_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register mhdma_hpu_id_four
-            axil_rdataD = r_mhdma_hpu_id_four;
-          end
-          MHDMA_HPU_ID_FIVE_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register mhdma_hpu_id_five
-            axil_rdataD = r_mhdma_hpu_id_five;
-          end
-          MHDMA_HPU_ID_SIX_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register mhdma_hpu_id_six
-            axil_rdataD = r_mhdma_hpu_id_six;
-          end
-          MHDMA_HPU_ID_SEVEN_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register mhdma_hpu_id_seven
-            axil_rdataD = r_mhdma_hpu_id_seven;
           end
           MHDMA_REQUEST_REQ_ID_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register mhdma_request_req_id
             axil_rdataD = r_mhdma_request_req_id;

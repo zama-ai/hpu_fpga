@@ -1,5 +1,5 @@
 # HPU_REGIF_CORE documentation
-**Date**: 2026-02-04
+**Date**: 2026-02-09
 **Tool Version**: 27d9e880d531030160fd8749c606142942d5558d
 
 ## RegisterMap Overview
@@ -17,7 +17,7 @@ HPU ethernet configuration register interface. Will be accessed by RPU to define
 **Offset**: 0x0
 **Range**: 0x60000
 **Word Size (b)**: 32
-**External Packages**: "axi_if_shell_axil_pkg.sv","axi_if_common_param_pkg.sv"
+**External Packages**: "axi_if_common_param_pkg.sv","axi_if_shell_axil_pkg.sv"
 
 
 ---
@@ -44,9 +44,8 @@ Below is a summary of all the registers in the current register map:
 | [status_3in3](#section-status-3in3) | 0x30010 | 0x4 | HPU status of parts 2in3 and 3in3 |
 | [bsk_avail](#section-bsk-avail) | 0x31000 | 0x8 | BSK availability configuration |
 | [runtime_3in3](#section-runtime-3in3) | 0x32000 | 0x48 | Runtime information |
-| [mhdma_system](#section-mhdma-system) | 0x50000 | 0x14 | system configuration |
-| [mhdma_reset](#section-mhdma-reset) | 0x50014 | 0x8 | Controllable resets for transceivers |
-| [mhdma_hpu_id](#section-mhdma-hpu-id) | 0x50050 | 0x20 | HPU ID containing all possible targets. For all IDs we have HPU MAC address, software ID and a flag for current hpu |
+| [mhdma_system](#section-mhdma-system) | 0x50000 | 0x34 | system configuration |
+| [mhdma_reset](#section-mhdma-reset) | 0x50090 | 0x8 | Controllable resets for transceivers |
 | [mhdma_request](#section-mhdma-request) | 0x50100 | 0x6c | Request registers interface |
 | [mhdma_lane](#section-mhdma-lane) | 0x50200 | 0x4 | Line parameter sections |
 | [mhdma_hbm_axi4_addr_2in3](#section-mhdma-hbm-axi4-addr-2in3) | 0x51000 | 0x10 | HBM AXI4 connection address offset |
@@ -4042,6 +4041,14 @@ Below is a summary of all the registers in the current section mhdma_system:
 | [timeout_read_req](#register-mhdma-systemtimeout-read-req) | 0x50008 | RW |  Timeout: time before re-launching a request, in clock cycles |
 | [fsm_value](#register-mhdma-systemfsm-value) | 0x5000c | R. |  fsm status of the module |
 | [errors](#register-mhdma-systemerrors) | 0x50010 | R. |  errors of mhdma |
+| [hpu_id_0](#register-mhdma-systemhpu-id-0) | 0x50014 | RW |  HPU ID, MSB is identifier 24b lsb is MAC address |
+| [hpu_id_1](#register-mhdma-systemhpu-id-1) | 0x50018 | RW |  HPU ID, MSB is identifier 24b lsb is MAC address |
+| [hpu_id_2](#register-mhdma-systemhpu-id-2) | 0x5001c | RW |  HPU ID, MSB is identifier 24b lsb is MAC address |
+| [hpu_id_3](#register-mhdma-systemhpu-id-3) | 0x50020 | RW |  HPU ID, MSB is identifier 24b lsb is MAC address |
+| [hpu_id_4](#register-mhdma-systemhpu-id-4) | 0x50024 | RW |  HPU ID, MSB is identifier 24b lsb is MAC address |
+| [hpu_id_5](#register-mhdma-systemhpu-id-5) | 0x50028 | RW |  HPU ID, MSB is identifier 24b lsb is MAC address |
+| [hpu_id_6](#register-mhdma-systemhpu-id-6) | 0x5002c | RW |  HPU ID, MSB is identifier 24b lsb is MAC address |
+| [hpu_id_7](#register-mhdma-systemhpu-id-7) | 0x50030 | RW |  HPU ID, MSB is identifier 24b lsb is MAC address |
 
 
 ---
@@ -4149,6 +4156,126 @@ Register timeout_read_req contains following Sub-fields:
 ---
 
 
+### Register mhdma-system.hpu-id-0
+
+- **Description**: HPU ID, MSB is identifier 24b lsb is MAC address
+- **Owner**: User
+- **Read Access**: Read
+- **Write Access**: Write
+- **Offset**: 0x50014
+- **Default**: 0
+
+
+
+
+---
+
+
+### Register mhdma-system.hpu-id-1
+
+- **Description**: HPU ID, MSB is identifier 24b lsb is MAC address
+- **Owner**: User
+- **Read Access**: Read
+- **Write Access**: Write
+- **Offset**: 0x50018
+- **Default**: 0
+
+
+
+
+---
+
+
+### Register mhdma-system.hpu-id-2
+
+- **Description**: HPU ID, MSB is identifier 24b lsb is MAC address
+- **Owner**: User
+- **Read Access**: Read
+- **Write Access**: Write
+- **Offset**: 0x5001c
+- **Default**: 0
+
+
+
+
+---
+
+
+### Register mhdma-system.hpu-id-3
+
+- **Description**: HPU ID, MSB is identifier 24b lsb is MAC address
+- **Owner**: User
+- **Read Access**: Read
+- **Write Access**: Write
+- **Offset**: 0x50020
+- **Default**: 0
+
+
+
+
+---
+
+
+### Register mhdma-system.hpu-id-4
+
+- **Description**: HPU ID, MSB is identifier 24b lsb is MAC address
+- **Owner**: User
+- **Read Access**: Read
+- **Write Access**: Write
+- **Offset**: 0x50024
+- **Default**: 0
+
+
+
+
+---
+
+
+### Register mhdma-system.hpu-id-5
+
+- **Description**: HPU ID, MSB is identifier 24b lsb is MAC address
+- **Owner**: User
+- **Read Access**: Read
+- **Write Access**: Write
+- **Offset**: 0x50028
+- **Default**: 0
+
+
+
+
+---
+
+
+### Register mhdma-system.hpu-id-6
+
+- **Description**: HPU ID, MSB is identifier 24b lsb is MAC address
+- **Owner**: User
+- **Read Access**: Read
+- **Write Access**: Write
+- **Offset**: 0x5002c
+- **Default**: 0
+
+
+
+
+---
+
+
+### Register mhdma-system.hpu-id-7
+
+- **Description**: HPU ID, MSB is identifier 24b lsb is MAC address
+- **Owner**: User
+- **Read Access**: Read
+- **Write Access**: Write
+- **Offset**: 0x50030
+- **Default**: 0
+
+
+
+
+---
+
+
 
 
 ## Section mhdma-reset
@@ -4159,8 +4286,8 @@ Below is a summary of all the registers in the current section mhdma_reset:
 
 | Name             | Offset | Access | Description |
 |-----------------:|:------:|:------:|:------------|
-| [datapath](#register-mhdma-resetdatapath) | 0x50014 | RW |  GTM datapath resets |
-| [monitor](#register-mhdma-resetmonitor) | 0x50018 | R. |  Reset done flag for monitoring |
+| [datapath](#register-mhdma-resetdatapath) | 0x50090 | RW |  GTM datapath resets |
+| [monitor](#register-mhdma-resetmonitor) | 0x50094 | R. |  Reset done flag for monitoring |
 
 
 ---
@@ -4172,7 +4299,7 @@ Below is a summary of all the registers in the current section mhdma_reset:
 - **Owner**: User
 - **Read Access**: Read
 - **Write Access**: Write
-- **Offset**: 0x50014
+- **Offset**: 0x50090
 - **Default**: C.f. fields
 
 
@@ -4197,7 +4324,7 @@ Register datapath contains following Sub-fields:
 - **Owner**: Kernel
 - **Read Access**: Read
 - **Write Access**: None
-- **Offset**: 0x50018
+- **Offset**: 0x50094
 - **Default**: C.f. fields
 
 
@@ -4208,149 +4335,6 @@ Register monitor contains following Sub-fields:
 | Field Name | Offset_b | Size_b | Default      | Description   |
 |-----------:|:--------:|:------:|:------------:|:--------------|
 | rst_done      | 0 | 8 |0| rst done monitoring |
-
-
-
----
-
-
-
-
-## Section mhdma-hpu-id
-
-### Register Overview
-
-Below is a summary of all the registers in the current section mhdma_hpu_id:
-
-| Name             | Offset | Access | Description |
-|-----------------:|:------:|:------:|:------------|
-| [zero](#register-mhdma-hpu-idzero) | 0x50050 | RW |  HPU ID zero |
-| [one](#register-mhdma-hpu-idone) | 0x50054 | RW |  HPU ID one |
-| [two](#register-mhdma-hpu-idtwo) | 0x50058 | RW |  HPU ID two |
-| [three](#register-mhdma-hpu-idthree) | 0x5005c | RW |  HPU ID three |
-| [four](#register-mhdma-hpu-idfour) | 0x50060 | RW |  HPU ID four |
-| [five](#register-mhdma-hpu-idfive) | 0x50064 | RW |  HPU ID five |
-| [six](#register-mhdma-hpu-idsix) | 0x50068 | RW |  HPU ID six |
-| [seven](#register-mhdma-hpu-idseven) | 0x5006c | RW |  HPU ID seven |
-
-
----
-
-
-### Register mhdma-hpu-id.zero
-
-- **Description**: HPU ID zero
-- **Owner**: User
-- **Read Access**: Read
-- **Write Access**: Write
-- **Offset**: 0x50050
-- **Default**: 0
-
-
-
-
----
-
-
-### Register mhdma-hpu-id.one
-
-- **Description**: HPU ID one
-- **Owner**: User
-- **Read Access**: Read
-- **Write Access**: Write
-- **Offset**: 0x50054
-- **Default**: 0
-
-
-
-
----
-
-
-### Register mhdma-hpu-id.two
-
-- **Description**: HPU ID two
-- **Owner**: User
-- **Read Access**: Read
-- **Write Access**: Write
-- **Offset**: 0x50058
-- **Default**: 0
-
-
-
-
----
-
-
-### Register mhdma-hpu-id.three
-
-- **Description**: HPU ID three
-- **Owner**: User
-- **Read Access**: Read
-- **Write Access**: Write
-- **Offset**: 0x5005c
-- **Default**: 0
-
-
-
-
----
-
-
-### Register mhdma-hpu-id.four
-
-- **Description**: HPU ID four
-- **Owner**: User
-- **Read Access**: Read
-- **Write Access**: Write
-- **Offset**: 0x50060
-- **Default**: 0
-
-
-
-
----
-
-
-### Register mhdma-hpu-id.five
-
-- **Description**: HPU ID five
-- **Owner**: User
-- **Read Access**: Read
-- **Write Access**: Write
-- **Offset**: 0x50064
-- **Default**: 0
-
-
-
-
----
-
-
-### Register mhdma-hpu-id.six
-
-- **Description**: HPU ID six
-- **Owner**: User
-- **Read Access**: Read
-- **Write Access**: Write
-- **Offset**: 0x50068
-- **Default**: 0
-
-
-
-
----
-
-
-### Register mhdma-hpu-id.seven
-
-- **Description**: HPU ID seven
-- **Owner**: User
-- **Read Access**: Read
-- **Write Access**: Write
-- **Offset**: 0x5006c
-- **Default**: 0
-
 
 
 

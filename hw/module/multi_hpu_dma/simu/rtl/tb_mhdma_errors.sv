@@ -524,14 +524,14 @@ module tb_mhdma_errors;
 
       // Configure ONE HPU as current (correct configuration)
       // HPU 0 is current, others are not
-      maxil_drv.write_trans(MHDMA_HPU_ID_ZERO_OFS,  {1'b1, 3'b0, 4'h0, 24'hABCDE0});  // HPU 0 - current
-      maxil_drv.write_trans(MHDMA_HPU_ID_ONE_OFS,   {1'b0, 3'b0, 4'h1, 24'hABCDE1});  // HPU 1
-      maxil_drv.write_trans(MHDMA_HPU_ID_TWO_OFS,   {1'b0, 3'b0, 4'h2, 24'hABCDE2});  // HPU 2
-      maxil_drv.write_trans(MHDMA_HPU_ID_THREE_OFS, {1'b0, 3'b0, 4'h3, 24'hABCDE3});  // HPU 3
-      maxil_drv.write_trans(MHDMA_HPU_ID_FOUR_OFS,  {1'b0, 3'b0, 4'h4, 24'hABCDE4});  // HPU 4
-      maxil_drv.write_trans(MHDMA_HPU_ID_FIVE_OFS,  {1'b0, 3'b0, 4'h5, 24'hABCDE5});  // HPU 5
-      maxil_drv.write_trans(MHDMA_HPU_ID_SIX_OFS,   {1'b0, 3'b0, 4'h6, 24'hABCDE6});  // HPU 6
-      maxil_drv.write_trans(MHDMA_HPU_ID_SEVEN_OFS, {1'b0, 3'b0, 4'h7, 24'hABCDE7});  // HPU 7
+      maxil_drv.write_trans(MHDMA_SYSTEM_HPU_ID_0_OFS,  {1'b1, 3'b0, 4'h0, 24'hABCDE0});  // HPU 0 - current
+      maxil_drv.write_trans(MHDMA_SYSTEM_HPU_ID_1_OFS,   {1'b0, 3'b0, 4'h1, 24'hABCDE1});  // HPU 1
+      maxil_drv.write_trans(MHDMA_SYSTEM_HPU_ID_2_OFS,   {1'b0, 3'b0, 4'h2, 24'hABCDE2});  // HPU 2
+      maxil_drv.write_trans(MHDMA_SYSTEM_HPU_ID_3_OFS, {1'b0, 3'b0, 4'h3, 24'hABCDE3});  // HPU 3
+      maxil_drv.write_trans(MHDMA_SYSTEM_HPU_ID_4_OFS,  {1'b0, 3'b0, 4'h4, 24'hABCDE4});  // HPU 4
+      maxil_drv.write_trans(MHDMA_SYSTEM_HPU_ID_5_OFS,  {1'b0, 3'b0, 4'h5, 24'hABCDE5});  // HPU 5
+      maxil_drv.write_trans(MHDMA_SYSTEM_HPU_ID_6_OFS,   {1'b0, 3'b0, 4'h6, 24'hABCDE6});  // HPU 6
+      maxil_drv.write_trans(MHDMA_SYSTEM_HPU_ID_7_OFS, {1'b0, 3'b0, 4'h7, 24'hABCDE7});  // HPU 7
 
       repeat(20) @(posedge clk_cfg);
 
@@ -550,8 +550,8 @@ module tb_mhdma_errors;
     begin
 
       // Configure TWO HPUs as current (invalid - not one-hot)
-      maxil_drv.write_trans(MHDMA_HPU_ID_ZERO_OFS, {1'b1, 3'b0, 4'h0, 24'hABCDE0});
-      maxil_drv.write_trans(MHDMA_HPU_ID_ONE_OFS,  {1'b1, 3'b0, 4'h1, 24'hABCDE1});
+      maxil_drv.write_trans(MHDMA_SYSTEM_HPU_ID_0_OFS, {1'b1, 3'b0, 4'h0, 24'hABCDE0});
+      maxil_drv.write_trans(MHDMA_SYSTEM_HPU_ID_1_OFS,  {1'b1, 3'b0, 4'h1, 24'hABCDE1});
 
       // Wait for error to propagate through CDC
       repeat(50) @(posedge clk_cfg);
@@ -568,7 +568,7 @@ module tb_mhdma_errors;
       end
 
       // Restore correct configuration (only one HPU as current)
-      maxil_drv.write_trans(MHDMA_HPU_ID_ONE_OFS, {1'b0, 3'b0, 4'h1, 24'hABCDE1});  // HPU 1 - not current
+      maxil_drv.write_trans(MHDMA_SYSTEM_HPU_ID_0_OFS, {1'b0, 3'b0, 4'h1, 24'hABCDE1});  // HPU 1 - not current
 
       repeat(20) @(posedge clk_cfg);
       scenario_id = scenario_id + 1;
