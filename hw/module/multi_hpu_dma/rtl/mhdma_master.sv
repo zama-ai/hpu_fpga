@@ -1097,7 +1097,7 @@ module mhdma_master
 
       assign brsp_bresp_cnt_full  = brsp_bresp_cnt == {BRSP_CNT_W{1'b1}};
       assign axi_bready           = ~brsp_bresp_cnt_full;
-      assign brsp_bresp_cnt_inc   = axi_bready & axi_bvalid & bid_match;
+      assign brsp_bresp_cnt_inc   = axi_bready & axi_bvalid;
       assign brsp_bresp_cntD      = brsp_bresp_cnt_inc  && !brsp_bresp_cnt_dec ? brsp_bresp_cnt + 1 :
                                     !brsp_bresp_cnt_inc && brsp_bresp_cnt_dec  ? brsp_bresp_cnt - brsp_bresp_cnt_dec_val :
                                     brsp_bresp_cnt_inc  && brsp_bresp_cnt_dec  ? brsp_bresp_cnt - brsp_bresp_cnt_dec_val_m1 :
