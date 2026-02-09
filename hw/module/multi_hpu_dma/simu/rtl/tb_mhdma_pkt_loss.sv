@@ -40,6 +40,8 @@ module tb_mhdma_pkt_loss;
 
   localparam int FIFO_DEPTH = 512;
 
+  localparam int HPU_NB = 1; // in this test we will try to connect two mhdma (or HPUs)
+
   localparam int NB_HPU = 8;
   localparam [31:0] TIMEOUT_DUR_NOTIFY = 'd180;
   localparam [31:0] TIMEOUT_DUR_READ_REQ = 'd4000;
@@ -151,42 +153,13 @@ module tb_mhdma_pkt_loss;
   logic                       s_axil_dma_rvalid;
   logic                       s_axil_dma_rready;
 
+  // Interrupt interface
+  logic                       interrupt_notify;
+  logic                       interrupt_read_request;
   // HPUs
   logic [NB_HPU-1:0][MAC_ADDR_W-1:0] mac_addr_l;
 
   // AXI4 to HBM: HPUA ----------------------------------------------------------------------------
-  // Read channel
-  logic [ETH_PC-1:0][   AXI4_ID_W-1:0]    axi4_arid;
-  logic [ETH_PC-1:0][  AXI4_ADD_W-1:0]    axi4_araddr;
-  logic [ETH_PC-1:0][  AXI4_LEN_W-1:0]    axi4_arlen;
-  logic [ETH_PC-1:0][ AXI4_SIZE_W-1:0]    axi4_arsize;
-  logic [ETH_PC-1:0][AXI4_BURST_W-1:0]    axi4_arburst;
-  logic [ETH_PC-1:0]                      axi4_arvalid;
-  logic [ETH_PC-1:0]                      axi4_arready;
-  logic [ETH_PC-1:0][  AXI4_ID_W-1:0]     axi4_rid;
-  logic [ETH_PC-1:0][AXI4_DATA_W-1:0]     axi4_rdata;
-  logic [ETH_PC-1:0][AXI4_RESP_W-1:0]     axi4_rresp;
-  logic [ETH_PC-1:0]                      axi4_rlast;
-  logic [ETH_PC-1:0]                      axi4_rvalid;
-  logic [ETH_PC-1:0]                      axi4_rready;
-  // Write channel
-  logic [ETH_PC-1:0][   AXI4_ID_W-1:0]    axi4_awid;
-  logic [ETH_PC-1:0][  AXI4_ADD_W-1:0]    axi4_awaddr;
-  logic [ETH_PC-1:0][  AXI4_LEN_W-1:0]    axi4_awlen;
-  logic [ETH_PC-1:0][ AXI4_SIZE_W-1:0]    axi4_awsize;
-  logic [ETH_PC-1:0][AXI4_BURST_W-1:0]    axi4_awburst;
-  logic [ETH_PC-1:0]                      axi4_awvalid;
-  logic [ETH_PC-1:0]                      axi4_awready;
-  logic [ETH_PC-1:0][AXI4_DATA_W-1:0]     axi4_wdata;
-  logic [ETH_PC-1:0][AXI4_STRB_W-1:0]     axi4_wstrb;
-  logic [ETH_PC-1:0]                      axi4_wlast;
-  logic [ETH_PC-1:0]                      axi4_wvalid;
-  logic [ETH_PC-1:0]                      axi4_wready;
-  logic [ETH_PC-1:0][  AXI4_ID_W-1:0]     axi4_bid;
-  logic [ETH_PC-1:0][AXI4_RESP_W-1:0]     axi4_bresp;
-  logic [ETH_PC-1:0]                      axi4_bvalid;
-  logic [ETH_PC-1:0]                      axi4_bready;
-  // cnx to memory models -------------------------------------------------------------------------
   logic [ETH_PC-1:0][AXI4_ID_W-1:0]       axi4_ct_awid;
   logic [ETH_PC-1:0][AXI4_ADD_W-1:0]      axi4_ct_awaddr;
   logic [ETH_PC-1:0][7:0]                 axi4_ct_awlen;
@@ -312,9 +285,7 @@ module tb_mhdma_pkt_loss;
   // ============================================================================================== --
   // DUT
   // ============================================================================================== --
-  multi_hpu_dma #(
-    .FIFO_DEPTH(FIFO_DEPTH)
-  ) hpu_a (
+  multi_hpu_dma hpu_a (
     .clk_eth_cfg            (clk_control    ),
     .resetn_eth_cfg         (s_rstn_control ),
 
@@ -379,6 +350,9 @@ module tb_mhdma_pkt_loss;
     .qsfp_rx_tkeep_user     (qsfp_rx_tkeep_user_delayed ),
     .qsfp_rx_tlast          (qsfp_rx_tlast_delayed      ),
     .qsfp_rx_tvalid         (qsfp_rx_tvalid_delayed     ),
+
+    .interrupt_notify       (interrupt_notify       ),
+    .interrupt_read_request (interrupt_read_request ),
 
     .gt_line_rate           (gt_line_rate            ),
     .gt_loopback            (gt_loopback            ),
@@ -450,61 +424,77 @@ logic [DST_ADDR_W-1:0] dst_addr;
   assign maxil_drv_if.rvalid  = s_axil_dma_rvalid;
 
   generate
-    for (genvar gen_pc=0; gen_pc<ETH_PC; gen_pc=gen_pc+1) begin : gen_mem_pc
-      axi4_mem #(
-        .DATA_WIDTH      (AXI4_DATA_W                     ),
-        .ADDR_WIDTH      (MEM_SIM_SIZE                    ), //64?!
-        .ID_WIDTH        (AXI4_ID_W                       ),
-        .WR_CMD_BUF_DEPTH(MEM_WR_CMD_BUF_DEPTH            ),
-        .RD_CMD_BUF_DEPTH(MEM_RD_CMD_BUF_DEPTH            ),
-        .WR_DATA_LATENCY (MEM_WR_DATA_LATENCY+ gen_pc * 50),
-        .RD_DATA_LATENCY (MEM_RD_DATA_LATENCY             ),
-        .USE_WR_RANDOM   (MEM_USE_WR_RANDOM               ),
-        .USE_RD_RANDOM   (MEM_USE_RD_RANDOM               )
-      ) axi4_mem_ct (
-        .clk           (clk_mrmac                         ),
-        .rst           (~s_rstn_mrmac                     ),
-        .s_axi4_awid   (axi4_ct_awid[gen_pc]     ),
-        .s_axi4_awaddr (axi4_ct_awaddr[gen_pc]   ),
-        .s_axi4_awlen  (axi4_ct_awlen[gen_pc]    ),
-        .s_axi4_awsize (axi4_ct_awsize[gen_pc]   ),
-        .s_axi4_awburst(axi4_ct_awburst[gen_pc]  ),
-        .s_axi4_awlock  (/* UNUSED */),
-        .s_axi4_awcache (/* UNUSED */),
-        .s_axi4_awprot  (/* UNUSED */),
-        .s_axi4_awqos   (/* UNUSED */),
-        .s_axi4_awregion(/* UNUSED */),
-        .s_axi4_awvalid(axi4_ct_awvalid[gen_pc]  ),
-        .s_axi4_awready(axi4_ct_awready[gen_pc]  ),
-        .s_axi4_wdata  (axi4_ct_wdata[gen_pc]    ),
-        .s_axi4_wstrb  (axi4_ct_wstrb[gen_pc]    ),
-        .s_axi4_wlast  (axi4_ct_wlast[gen_pc]    ),
-        .s_axi4_wvalid (axi4_ct_wvalid[gen_pc]   ),
-        .s_axi4_wready (axi4_ct_wready[gen_pc]   ),
-        .s_axi4_bid    (axi4_ct_bid[gen_pc]      ),
-        .s_axi4_bresp  (axi4_ct_bresp[gen_pc]    ),
-        .s_axi4_bvalid (axi4_ct_bvalid[gen_pc]   ),
-        .s_axi4_bready (axi4_ct_bready[gen_pc]   ),
-        .s_axi4_arid   (axi4_ct_arid[gen_pc]     ),
-        .s_axi4_araddr (axi4_ct_araddr[gen_pc]   ),
-        .s_axi4_arlen  (axi4_ct_arlen[gen_pc]    ),
-        .s_axi4_arsize (axi4_ct_arsize[gen_pc]   ),
-        .s_axi4_arburst(axi4_ct_arburst[gen_pc]  ),
-        .s_axi4_arlock  (/* UNUSED */),
-        .s_axi4_arcache (/* UNUSED */),
-        .s_axi4_arprot  (/* UNUSED */),
-        .s_axi4_arqos   (/* UNUSED */),
-        .s_axi4_arregion(/* UNUSED */),
-        .s_axi4_arvalid(axi4_ct_arvalid[gen_pc]  ),
-        .s_axi4_arready(axi4_ct_arready[gen_pc]  ),
-        .s_axi4_rid    (axi4_ct_rid[gen_pc]      ),
-        .s_axi4_rdata  (axi4_ct_rdata[gen_pc]    ),
-        .s_axi4_rresp  (axi4_ct_rresp[gen_pc]    ),
-        .s_axi4_rlast  (axi4_ct_rlast[gen_pc]    ),
-        .s_axi4_rvalid (axi4_ct_rvalid[gen_pc]   ),
-        .s_axi4_rready (axi4_ct_rready[gen_pc]   )
-      );
-    end
+      for (genvar gen_pc=0; gen_pc<ETH_PC; gen_pc=gen_pc+1) begin : gen_mem_pc
+        axi4_mem #(
+          .DATA_WIDTH      (AXI4_DATA_W                     ),
+          .ADDR_WIDTH      (MEM_SIM_SIZE                    ),
+          .ID_WIDTH        (AXI4_ID_W                       ),
+          .WR_CMD_BUF_DEPTH(MEM_WR_CMD_BUF_DEPTH            ),
+          .RD_CMD_BUF_DEPTH(MEM_RD_CMD_BUF_DEPTH            ),
+          .WR_DATA_LATENCY (MEM_WR_DATA_LATENCY+ gen_pc * 50),
+          .RD_DATA_LATENCY (MEM_RD_DATA_LATENCY             ),
+          .USE_WR_RANDOM   (MEM_USE_WR_RANDOM               ),
+          .USE_RD_RANDOM   (MEM_USE_RD_RANDOM               )
+        ) axi4_mem_ct (
+          .clk           (clk_mrmac                         ),
+          .rst           (~s_rstn_mrmac                     ),
+          .s_axi4_awid   (axi4_ct_awid[gen_pc]     ),
+          .s_axi4_awaddr (axi4_ct_awaddr[gen_pc][MEM_SIM_SIZE-1:0]),
+          .s_axi4_awlen  (axi4_ct_awlen[gen_pc]    ),
+          .s_axi4_awsize (axi4_ct_awsize[gen_pc]   ),
+          .s_axi4_awburst(axi4_ct_awburst[gen_pc]  ),
+          .s_axi4_awlock  (/* UNUSED */),
+          .s_axi4_awcache (/* UNUSED */),
+          .s_axi4_awprot  (/* UNUSED */),
+          .s_axi4_awqos   (/* UNUSED */),
+          .s_axi4_awregion(/* UNUSED */),
+          .s_axi4_awvalid(axi4_ct_awvalid[gen_pc]  ),
+          .s_axi4_awready(axi4_ct_awready[gen_pc]  ),
+          .s_axi4_wdata  (axi4_ct_wdata[gen_pc]    ),
+          .s_axi4_wstrb  (axi4_ct_wstrb[gen_pc]    ),
+          .s_axi4_wlast  (axi4_ct_wlast[gen_pc]    ),
+          .s_axi4_wvalid (axi4_ct_wvalid[gen_pc]   ),
+          .s_axi4_wready (axi4_ct_wready[gen_pc]   ),
+          .s_axi4_bid    (axi4_ct_bid[gen_pc]      ),
+          .s_axi4_bresp  (axi4_ct_bresp[gen_pc]    ),
+          .s_axi4_bvalid (axi4_ct_bvalid[gen_pc]   ),
+          .s_axi4_bready (axi4_ct_bready[gen_pc]   ),
+          .s_axi4_arid   (axi4_ct_arid[gen_pc]     ),
+          .s_axi4_araddr (axi4_ct_araddr[gen_pc][MEM_SIM_SIZE-1:0]),
+          .s_axi4_arlen  (axi4_ct_arlen[gen_pc]    ),
+          .s_axi4_arsize (axi4_ct_arsize[gen_pc]   ),
+          .s_axi4_arburst(axi4_ct_arburst[gen_pc]  ),
+          .s_axi4_arlock  (/* UNUSED */),
+          .s_axi4_arcache (/* UNUSED */),
+          .s_axi4_arprot  (/* UNUSED */),
+          .s_axi4_arqos   (/* UNUSED */),
+          .s_axi4_arregion(/* UNUSED */),
+          .s_axi4_arvalid(axi4_ct_arvalid[gen_pc]  ),
+          .s_axi4_arready(axi4_ct_arready[gen_pc]  ),
+          .s_axi4_rid    (axi4_ct_rid[gen_pc]      ),
+          .s_axi4_rdata  (axi4_ct_rdata[gen_pc]    ),
+          .s_axi4_rresp  (axi4_ct_rresp[gen_pc]    ),
+          .s_axi4_rlast  (axi4_ct_rlast[gen_pc]    ),
+          .s_axi4_rvalid (axi4_ct_rvalid[gen_pc]   ),
+          .s_axi4_rready (axi4_ct_rready[gen_pc]   )
+        );
+
+        // Each generated instance initializes its own memory
+        initial begin
+          for (int k = 0; k < 2**MEM_SIM_SIZE; k++) begin
+            logic [255:0] value;
+            value = '0;
+            for (int j = 0; j < 4; j++) begin
+              logic [63:0] w;
+              w[63:32] = $urandom();
+              w[31:0]  = $urandom();
+              value |= (w << (j*64));
+            end
+            axi4_mem_ct.axi4_ram_ct_wr.mem[k] = value;
+          end
+        end
+
+      end
   endgenerate
 
   // Decoder --------------------------------------------------------------------------------------
@@ -518,9 +508,6 @@ logic [DST_ADDR_W-1:0] dst_addr;
     .resetn_mrmac                (s_rstn_mrmac),
 
     .notify_ack_received         (/* unused */),
-    .notify_request_received     (/* unused */),
-    .read_request_received       (/* unused */),
-    .ciphertext_emission_received(/* unused */),
 
     .current_hpu_mac             (src_mac_addr),
 
@@ -686,7 +673,7 @@ logic [DST_ADDR_W-1:0] dst_addr;
 
     // Send ciphertext emission packets as if we're the remote HPU responding
     for (int pkt = 0; pkt < NB_PACKETS_FULL+1; pkt++) begin
-      send_ciphertext_emission_packet(qsfp_rx_vif[0], dst_mac_addr, src_mac_addr, dst_hpu_id, iop_id, src_addr, dst_addr, pkt[7:0]);
+      send_ciphertext_emission_packet(qsfp_rx_vif[0], dst_mac_addr, src_mac_addr, dst_hpu_id, iop_id, iop_src_addr, iop_dst_addr, pkt[7:0]);
       repeat(10) @(posedge clk_mrmac);
     end
 
@@ -722,7 +709,7 @@ logic [DST_ADDR_W-1:0] dst_addr;
 
   // Send ciphertext emission packets as if we're the remote HPU responding
     for (int pkt = 0; pkt < NB_PACKETS_FULL+1; pkt++) begin
-      send_ciphertext_emission_packet(qsfp_rx_vif[0], dst_mac_addr, src_mac_addr, dst_hpu_id, iop_id, src_addr, dst_addr, pkt[7:0]);
+      send_ciphertext_emission_packet(qsfp_rx_vif[0], dst_mac_addr, src_mac_addr, dst_hpu_id, iop_id, iop_src_addr, iop_dst_addr, pkt[7:0]);
       repeat(10) @(posedge clk_mrmac);
     end
 
@@ -760,7 +747,7 @@ logic [DST_ADDR_W-1:0] dst_addr;
         // for 8th packet we send a wrong arbitrary seq_num
         send_ciphertext_emission_packet(qsfp_rx_vif[0], dst_mac_addr, src_mac_addr, dst_hpu_id, iop_id, src_addr, dst_addr, 3);
       end else begin
-        send_ciphertext_emission_packet(qsfp_rx_vif[0], dst_mac_addr, src_mac_addr, dst_hpu_id, iop_id, src_addr, dst_addr, pkt[7:0]);
+        send_ciphertext_emission_packet(qsfp_rx_vif[0], dst_mac_addr, src_mac_addr, dst_hpu_id, iop_id, iop_src_addr, iop_dst_addr, pkt[7:0]);
       end
       repeat(10) @(posedge clk_mrmac);
     end
@@ -779,7 +766,7 @@ logic [DST_ADDR_W-1:0] dst_addr;
 
     // Send ciphertext emission packets as if we're the remote HPU responding
     for (int pkt = 0; pkt < NB_PACKETS_FULL+1; pkt++) begin
-      send_ciphertext_emission_packet(qsfp_rx_vif[0], dst_mac_addr, src_mac_addr, dst_hpu_id, iop_id, src_addr, dst_addr, pkt[7:0]);
+      send_ciphertext_emission_packet(qsfp_rx_vif[0], dst_mac_addr, src_mac_addr, dst_hpu_id, iop_src_addr, src_addr, iop_dst_addr, pkt[7:0]);
       repeat(10) @(posedge clk_mrmac);
     end
 
@@ -811,37 +798,6 @@ logic [DST_ADDR_W-1:0] dst_addr;
     $display("%t > INFO: End simulation",$time);
     repeat(20) @(posedge clk_control);
     end_of_test = 1'b1;
-  end
-
-// ============================================================================================== --
-// Initialize memory
-// ============================================================================================== --
-  logic [59:0] val_id = 0;
-
-  initial begin
-    for (int gen_pc = 0; gen_pc < ETH_PC; ++gen_pc) begin
-      for (int k = 0; k < 2**MEM_SIM_SIZE; ++k) begin
-        automatic logic [255:0] value = '0;
-        for (int j = 0; j < 4; ++j) begin
-          logic [63:0] w;
-          w[63:62] = 0;
-          w[61:60] = 0;//gen_pc;
-          w[59:46] = 'h0;
-          w[47:40] = 0;//k;
-          w[39:32] = 'h0;
-          w[31:0] = val_id;
-          value |= (w << (j*64));
-          val_id++;
-        end
-
-        gen_mem_pc[gen_pc].axi4_mem_ct.axi4_ram_ct_wr.mem[k] = value;
-      end
-    end
-    for (int gen_pc = 0; gen_pc < ETH_PC; ++gen_pc) begin
-      for (int k = 0; k < 2**MEM_SIM_SIZE; ++k) begin
-        gen_mem_pc[gen_pc].axi4_mem_ct.axi4_ram_ct_wr.mem[k] = 'h0;
-    end
-    end
   end
 
 // ============================================================================================== --

@@ -111,102 +111,72 @@ module tb_mhdma_parallel;
 // ============================================================================================== --
 // input / output signals
 // ============================================================================================== --
-  logic [AXIL_ADD_W-1:0]      s_axil_dma_awaddr_hpu_a;
-  logic                       s_axil_dma_awvalid_hpu_a;
-  logic                       s_axil_dma_awready_hpu_a;
-  logic [AXIL_DATA_W-1:0]     s_axil_dma_wdata_hpu_a;
-  logic [AXIL_DATA_BYTES-1:0] s_axil_dma_wstrb_hpu_a; /* UNUSED */
-  logic                       s_axil_dma_wvalid_hpu_a;
-  logic                       s_axil_dma_wready_hpu_a;
-  logic [1:0]                 s_axil_dma_bresp_hpu_a;
-  logic                       s_axil_dma_bvalid_hpu_a;
-  logic                       s_axil_dma_bready_hpu_a;
-  logic [AXIL_ADD_W-1:0]      s_axil_dma_araddr_hpu_a;
-  logic                       s_axil_dma_arvalid_hpu_a;
-  logic                       s_axil_dma_arready_hpu_a;
-  logic [AXIL_DATA_W-1:0]     s_axil_dma_rdata_hpu_a;
-  logic [1:0]                 s_axil_dma_rresp_hpu_a;
-  logic                       s_axil_dma_rvalid_hpu_a;
-  logic                       s_axil_dma_rready_hpu_a;
+// AXI4-Lite slave interface
+logic [HPU_NB-1:0][AXIL_ADD_W-1:0]      s_axil_dma_awaddr;
+logic [HPU_NB-1:0]                      s_axil_dma_awvalid;
+logic [HPU_NB-1:0]                      s_axil_dma_awready;
+logic [HPU_NB-1:0][AXIL_DATA_W-1:0]     s_axil_dma_wdata;
+logic [HPU_NB-1:0][AXIL_DATA_BYTES-1:0] s_axil_dma_wstrb; /* UNUSED */
+logic [HPU_NB-1:0]                      s_axil_dma_wvalid;
+logic [HPU_NB-1:0]                      s_axil_dma_wready;
+logic [HPU_NB-1:0][1:0]                 s_axil_dma_bresp;
+logic [HPU_NB-1:0]                      s_axil_dma_bvalid;
+logic [HPU_NB-1:0]                      s_axil_dma_bready;
+logic [HPU_NB-1:0][AXIL_ADD_W-1:0]      s_axil_dma_araddr;
+logic [HPU_NB-1:0]                      s_axil_dma_arvalid;
+logic [HPU_NB-1:0]                      s_axil_dma_arready;
+logic [HPU_NB-1:0][AXIL_DATA_W-1:0]     s_axil_dma_rdata;
+logic [HPU_NB-1:0][1:0]                 s_axil_dma_rresp;
+logic [HPU_NB-1:0]                      s_axil_dma_rvalid;
+logic [HPU_NB-1:0]                      s_axil_dma_rready;
+// QSFP system interface
+// == TX
+logic [HPU_NB-1:0][QSFP_LANE_NB-1:0][MRMAC_AXIS_W-1:0 ] qsfp_tx_tdata;
+logic [HPU_NB-1:0][QSFP_LANE_NB-1:0][MRMAC_TKEEP_W-1:0] qsfp_tx_tkeep_user;
+logic [HPU_NB-1:0][QSFP_LANE_NB-1:0]                    qsfp_tx_tlast;
+logic [HPU_NB-1:0][QSFP_LANE_NB-1:0]                    qsfp_tx_tvalid;
+logic [HPU_NB-1:0][QSFP_LANE_NB-1:0]                    qsfp_tx_tready;
 
-  logic [AXIL_ADD_W-1:0]      s_axil_dma_awaddr_hpu_b;
-  logic                       s_axil_dma_awvalid_hpu_b;
-  logic                       s_axil_dma_awready_hpu_b;
-  logic [AXIL_DATA_W-1:0]     s_axil_dma_wdata_hpu_b;
-  logic [AXIL_DATA_BYTES-1:0] s_axil_dma_wstrb_hpu_b; /* UNUSED */
-  logic                       s_axil_dma_wvalid_hpu_b;
-  logic                       s_axil_dma_wready_hpu_b;
-  logic [1:0]                 s_axil_dma_bresp_hpu_b;
-  logic                       s_axil_dma_bvalid_hpu_b;
-  logic                       s_axil_dma_bready_hpu_b;
-  logic [AXIL_ADD_W-1:0]      s_axil_dma_araddr_hpu_b;
-  logic                       s_axil_dma_arvalid_hpu_b;
-  logic                       s_axil_dma_arready_hpu_b;
-  logic [AXIL_DATA_W-1:0]     s_axil_dma_rdata_hpu_b;
-  logic [1:0]                 s_axil_dma_rresp_hpu_b;
-  logic                       s_axil_dma_rvalid_hpu_b;
-  logic                       s_axil_dma_rready_hpu_b;
-  // QSFP system interface ----------------------------------------------------
-  // == TX
-  logic [QSFP_LANE_NB-1:0][MRMAC_AXIS_W-1:0 ] qsfp_tx_tdata;
-  logic [QSFP_LANE_NB-1:0][MRMAC_TKEEP_W-1:0] qsfp_tx_tkeep_user;
-  logic [QSFP_LANE_NB-1:0]                    qsfp_tx_tlast;
-  logic [QSFP_LANE_NB-1:0]                    qsfp_tx_tvalid;
+logic [HPU_NB-1:0][QSFP_LANE_NB-1:0][MRMAC_AXIS_W-1:0 ] qsfp_rx_tdata_delayed;
+logic [HPU_NB-1:0][QSFP_LANE_NB-1:0][MRMAC_TKEEP_W-1:0] qsfp_rx_tkeep_user_delayed;
+logic [HPU_NB-1:0][QSFP_LANE_NB-1:0]                    qsfp_rx_tlast_delayed;
+logic [HPU_NB-1:0][QSFP_LANE_NB-1:0]                    qsfp_rx_tvalid_delayed;
 
-  logic [QSFP_LANE_NB-1:0][MRMAC_AXIS_W-1:0 ] qsfp_tx_tdata_delayed;
-  logic [QSFP_LANE_NB-1:0][MRMAC_TKEEP_W-1:0] qsfp_tx_tkeep_user_delayed;
-  logic [QSFP_LANE_NB-1:0]                    qsfp_tx_tlast_delayed;
-  logic [QSFP_LANE_NB-1:0]                    qsfp_tx_tvalid_delayed;
-  logic [QSFP_LANE_NB-1:0][MRMAC_AXIS_W-1:0 ] qsfp_tx_tdata_rdyvld;
-  logic [QSFP_LANE_NB-1:0][MRMAC_TKEEP_W-1:0] qsfp_tx_tkeep_user_rdyvld;
-  logic [QSFP_LANE_NB-1:0]                    qsfp_tx_tlast_rdyvld;
-  logic [QSFP_LANE_NB-1:0]                    qsfp_tx_tvalid_rdyvld;
-  // == RX
-  logic [QSFP_LANE_NB-1:0][MRMAC_AXIS_W-1:0 ] qsfp_rx_tdata;
-  logic [QSFP_LANE_NB-1:0][MRMAC_TKEEP_W-1:0] qsfp_rx_tkeep_user;
-  logic [QSFP_LANE_NB-1:0]                    qsfp_rx_tlast;
-  logic [QSFP_LANE_NB-1:0]                    qsfp_rx_tvalid;
+// Interrupt interface
+logic [HPU_NB-1:0]                                      interrupt_notify;
+logic [HPU_NB-1:0]                                      interrupt_read_request;
 
-  logic [QSFP_LANE_NB-1:0][MRMAC_AXIS_W-1:0 ] qsfp_rx_tdata_delayed;
-  logic [QSFP_LANE_NB-1:0][MRMAC_TKEEP_W-1:0] qsfp_rx_tkeep_user_delayed;
-  logic [QSFP_LANE_NB-1:0]                    qsfp_rx_tlast_delayed;
-  logic [QSFP_LANE_NB-1:0]                    qsfp_rx_tvalid_delayed;
-  logic [QSFP_LANE_NB-1:0][MRMAC_AXIS_W-1:0 ] qsfp_rx_tdata_rdyvld;
-  logic [QSFP_LANE_NB-1:0][MRMAC_TKEEP_W-1:0] qsfp_rx_tkeep_user_rdyvld;
-  logic [QSFP_LANE_NB-1:0]                    qsfp_rx_tlast_rdyvld;
-  logic [QSFP_LANE_NB-1:0]                    qsfp_rx_tvalid_rdyvld;
+// cnx to memory models - vectorized [HPU_NB][ETH_PC]
+logic [HPU_NB-1:0][ETH_PC-1:0][AXI4_ID_W-1:0]           axi4_ct_awid;
+logic [HPU_NB-1:0][ETH_PC-1:0][AXI4_ADD_W-1:0]          axi4_ct_awaddr;
+logic [HPU_NB-1:0][ETH_PC-1:0][7:0]                     axi4_ct_awlen;
+logic [HPU_NB-1:0][ETH_PC-1:0][2:0]                     axi4_ct_awsize;
+logic [HPU_NB-1:0][ETH_PC-1:0][1:0]                     axi4_ct_awburst;
+logic [HPU_NB-1:0][ETH_PC-1:0]                          axi4_ct_awvalid;
+logic [HPU_NB-1:0][ETH_PC-1:0]                          axi4_ct_awready;
+logic [HPU_NB-1:0][ETH_PC-1:0][AXI4_DATA_W-1:0]         axi4_ct_wdata;
+logic [HPU_NB-1:0][ETH_PC-1:0][(AXI4_DATA_W/8)-1:0]     axi4_ct_wstrb;
+logic [HPU_NB-1:0][ETH_PC-1:0]                          axi4_ct_wlast;
+logic [HPU_NB-1:0][ETH_PC-1:0]                          axi4_ct_wvalid;
+logic [HPU_NB-1:0][ETH_PC-1:0]                          axi4_ct_wready;
+logic [HPU_NB-1:0][ETH_PC-1:0][AXI4_ID_W-1:0]           axi4_ct_bid;
+logic [HPU_NB-1:0][ETH_PC-1:0][1:0]                     axi4_ct_bresp;
+logic [HPU_NB-1:0][ETH_PC-1:0]                          axi4_ct_bvalid;
+logic [HPU_NB-1:0][ETH_PC-1:0]                          axi4_ct_bready;
 
-  // cnx to memory models -------------------------------------------------------------------------
-  logic [ETH_PC-1:0][HPU_NB-1:0][AXI4_ID_W-1:0]       axi4_ct_awid;
-  logic [ETH_PC-1:0][HPU_NB-1:0][AXI4_ADD_W-1:0]      axi4_ct_awaddr;
-  logic [ETH_PC-1:0][HPU_NB-1:0][7:0]                 axi4_ct_awlen;
-  logic [ETH_PC-1:0][HPU_NB-1:0][2:0]                 axi4_ct_awsize;
-  logic [ETH_PC-1:0][HPU_NB-1:0][1:0]                 axi4_ct_awburst;
-  logic [ETH_PC-1:0][HPU_NB-1:0]                      axi4_ct_awvalid;
-  logic [ETH_PC-1:0][HPU_NB-1:0]                      axi4_ct_awready;
-  logic [ETH_PC-1:0][HPU_NB-1:0][AXI4_DATA_W-1:0]     axi4_ct_wdata;
-  logic [ETH_PC-1:0][HPU_NB-1:0][(AXI4_DATA_W/8)-1:0] axi4_ct_wstrb;
-  logic [ETH_PC-1:0][HPU_NB-1:0]                      axi4_ct_wlast;
-  logic [ETH_PC-1:0][HPU_NB-1:0]                      axi4_ct_wvalid;
-  logic [ETH_PC-1:0][HPU_NB-1:0]                      axi4_ct_wready;
-  logic [ETH_PC-1:0][HPU_NB-1:0][AXI4_ID_W-1:0]       axi4_ct_bid;
-  logic [ETH_PC-1:0][HPU_NB-1:0][1:0]                 axi4_ct_bresp;
-  logic [ETH_PC-1:0][HPU_NB-1:0]                      axi4_ct_bvalid;
-  logic [ETH_PC-1:0][HPU_NB-1:0]                      axi4_ct_bready;
-
-  logic [ETH_PC-1:0][HPU_NB-1:0][AXI4_ID_W-1:0]       axi4_ct_arid;
-  logic [ETH_PC-1:0][HPU_NB-1:0][AXI4_ADD_W-1:0]      axi4_ct_araddr;
-  logic [ETH_PC-1:0][HPU_NB-1:0][7:0]                 axi4_ct_arlen;
-  logic [ETH_PC-1:0][HPU_NB-1:0][2:0]                 axi4_ct_arsize;
-  logic [ETH_PC-1:0][HPU_NB-1:0][1:0]                 axi4_ct_arburst;
-  logic [ETH_PC-1:0][HPU_NB-1:0]                      axi4_ct_arvalid;
-  logic [ETH_PC-1:0][HPU_NB-1:0]                      axi4_ct_arready;
-  logic [ETH_PC-1:0][HPU_NB-1:0][AXI4_ID_W-1:0]       axi4_ct_rid;
-  logic [ETH_PC-1:0][HPU_NB-1:0][AXI4_DATA_W-1:0]     axi4_ct_rdata;
-  logic [ETH_PC-1:0][HPU_NB-1:0][1:0]                 axi4_ct_rresp;
-  logic [ETH_PC-1:0][HPU_NB-1:0]                      axi4_ct_rlast;
-  logic [ETH_PC-1:0][HPU_NB-1:0]                      axi4_ct_rvalid;
-  logic [ETH_PC-1:0][HPU_NB-1:0]                      axi4_ct_rready;
+logic [HPU_NB-1:0][ETH_PC-1:0][AXI4_ID_W-1:0]           axi4_ct_arid;
+logic [HPU_NB-1:0][ETH_PC-1:0][AXI4_ADD_W-1:0]          axi4_ct_araddr;
+logic [HPU_NB-1:0][ETH_PC-1:0][7:0]                     axi4_ct_arlen;
+logic [HPU_NB-1:0][ETH_PC-1:0][2:0]                     axi4_ct_arsize;
+logic [HPU_NB-1:0][ETH_PC-1:0][1:0]                     axi4_ct_arburst;
+logic [HPU_NB-1:0][ETH_PC-1:0]                          axi4_ct_arvalid;
+logic [HPU_NB-1:0][ETH_PC-1:0]                          axi4_ct_arready;
+logic [HPU_NB-1:0][ETH_PC-1:0][AXI4_ID_W-1:0]           axi4_ct_rid;
+logic [HPU_NB-1:0][ETH_PC-1:0][AXI4_DATA_W-1:0]         axi4_ct_rdata;
+logic [HPU_NB-1:0][ETH_PC-1:0][1:0]                     axi4_ct_rresp;
+logic [HPU_NB-1:0][ETH_PC-1:0]                          axi4_ct_rlast;
+logic [HPU_NB-1:0][ETH_PC-1:0]                          axi4_ct_rvalid;
+logic [HPU_NB-1:0][ETH_PC-1:0]                          axi4_ct_rready;
 
   // ============================================================================================== --
   // Design under test instance
@@ -255,282 +225,112 @@ module tb_mhdma_parallel;
   // monitoring of reset done
   logic [HPU_NB-1:0][REG_DATA_W-1:00] reset_monitor;
 
-  // HPU A ----------------------------------------------------------------------------------------
-  logic [QSFP_LANE_NB-1:0] [MRMAC_AXIS_W-1:0]  data_buf_a;
-  logic [QSFP_LANE_NB-1:0] [MRMAC_TKEEP_W-1:0] tkeep_buf_a;
-  logic [QSFP_LANE_NB-1:0]                     last_buf_a;
-  logic [QSFP_LANE_NB-1:0]                     has_data_a;
-  logic [QSFP_LANE_NB-1:0]                     random_valid_en_a;
-  logic [QSFP_LANE_NB-1:0]                     sim_qsfp_tx_tready_a;
-
-  logic [QSFP_LANE_NB-1:0] [MRMAC_AXIS_W-1:0]  data_buf_b;
-  logic [QSFP_LANE_NB-1:0] [MRMAC_TKEEP_W-1:0] tkeep_buf_b;
-  logic [QSFP_LANE_NB-1:0]                     last_buf_b;
-  logic [QSFP_LANE_NB-1:0]                     has_data_b;
-  logic [QSFP_LANE_NB-1:0]                     random_valid_en_b;
-  logic [QSFP_LANE_NB-1:0]                     sim_qsfp_tx_tready_b;
-
-  multi_hpu_dma #(
-    .FIFO_DEPTH(FIFO_DEPTH)
-  ) hpu_a (
-    .clk_eth_cfg   (clk_control    ),
-    .resetn_eth_cfg(s_rstn_control ),
-
-    .clk_eth_mrmac   (clk_mrmac    ),
-    .resetn_eth_mrmac(s_rstn_mrmac ),
-
-    .s_axil_dma_awaddr (s_axil_dma_awaddr_hpu_a ),
-    .s_axil_dma_awvalid(s_axil_dma_awvalid_hpu_a),
-    .s_axil_dma_awready(s_axil_dma_awready_hpu_a),
-    .s_axil_dma_wdata  (s_axil_dma_wdata_hpu_a  ),
-    .s_axil_dma_wstrb  (s_axil_dma_wstrb_hpu_a  ),
-    .s_axil_dma_wvalid (s_axil_dma_wvalid_hpu_a ),
-    .s_axil_dma_wready (s_axil_dma_wready_hpu_a ),
-    .s_axil_dma_bresp  (s_axil_dma_bresp_hpu_a  ),
-    .s_axil_dma_bvalid (s_axil_dma_bvalid_hpu_a ),
-    .s_axil_dma_bready (s_axil_dma_bready_hpu_a ),
-    .s_axil_dma_araddr (s_axil_dma_araddr_hpu_a ),
-    .s_axil_dma_arvalid(s_axil_dma_arvalid_hpu_a),
-    .s_axil_dma_arready(s_axil_dma_arready_hpu_a),
-    .s_axil_dma_rdata  (s_axil_dma_rdata_hpu_a  ),
-    .s_axil_dma_rresp  (s_axil_dma_rresp_hpu_a  ),
-    .s_axil_dma_rvalid (s_axil_dma_rvalid_hpu_a ),
-    .s_axil_dma_rready (s_axil_dma_rready_hpu_a ),
-
-    .m_axi4_eth_hbm_arid       (axi4_ct_arid[0]         ),
-    .m_axi4_eth_hbm_araddr     (axi4_ct_araddr[0]       ),
-    .m_axi4_eth_hbm_arlen      (axi4_ct_arlen[0]        ),
-    .m_axi4_eth_hbm_arsize     (axi4_ct_arsize[0]       ),
-    .m_axi4_eth_hbm_arburst    (axi4_ct_arburst[0]      ),
-    .m_axi4_eth_hbm_arvalid    (axi4_ct_arvalid[0]      ),
-    .m_axi4_eth_hbm_arready    (axi4_ct_arready[0]      ),
-    .m_axi4_eth_hbm_rid        (axi4_ct_rid[0]          ),
-    .m_axi4_eth_hbm_rdata      (axi4_ct_rdata[0]        ),
-    .m_axi4_eth_hbm_rresp      (axi4_ct_rresp[0]        ),
-    .m_axi4_eth_hbm_rlast      (axi4_ct_rlast[0]        ),
-    .m_axi4_eth_hbm_rvalid     (axi4_ct_rvalid[0]       ),
-    .m_axi4_eth_hbm_rready     (axi4_ct_rready[0]       ),
-    .m_axi4_eth_hbm_awid       (axi4_ct_awid[0]         ),
-    .m_axi4_eth_hbm_awaddr     (axi4_ct_awaddr[0]       ),
-    .m_axi4_eth_hbm_awlen      (axi4_ct_awlen[0]        ),
-    .m_axi4_eth_hbm_awsize     (axi4_ct_awsize[0]       ),
-    .m_axi4_eth_hbm_awburst    (axi4_ct_awburst[0]      ),
-    .m_axi4_eth_hbm_awvalid    (axi4_ct_awvalid[0]      ),
-    .m_axi4_eth_hbm_awready    (axi4_ct_awready[0]      ),
-    .m_axi4_eth_hbm_wdata      (axi4_ct_wdata[0]        ),
-    .m_axi4_eth_hbm_wstrb      (axi4_ct_wstrb[0]        ),
-    .m_axi4_eth_hbm_wlast      (axi4_ct_wlast[0]        ),
-    .m_axi4_eth_hbm_wvalid     (axi4_ct_wvalid[0]       ),
-    .m_axi4_eth_hbm_wready     (axi4_ct_wready[0]       ),
-    .m_axi4_eth_hbm_bid        (axi4_ct_bid[0]          ),
-    .m_axi4_eth_hbm_bresp      (axi4_ct_bresp[0]        ),
-    .m_axi4_eth_hbm_bvalid     (axi4_ct_bvalid[0]       ),
-    .m_axi4_eth_hbm_bready     (axi4_ct_bready[0]       ),
-
-    .qsfp_tx_tdata     (qsfp_tx_tdata           ),
-    .qsfp_tx_tkeep_user(qsfp_tx_tkeep_user      ),
-    .qsfp_tx_tlast     (qsfp_tx_tlast           ),
-    .qsfp_tx_tvalid    (qsfp_tx_tvalid          ),
-    .qsfp_tx_tready    (sim_qsfp_tx_tready_a    ),
-
-    .qsfp_rx_tdata     (qsfp_rx_tdata_delayed           ),
-    .qsfp_rx_tkeep_user(qsfp_rx_tkeep_user_delayed      ),
-    .qsfp_rx_tlast     (qsfp_rx_tlast_delayed           ),
-    .qsfp_rx_tvalid    (qsfp_rx_tvalid_delayed          ),
-
-    .gt_line_rate        (gt_line_rate[0]        ),
-    .gt_loopback         (gt_loopback[0]         ),
-    .gt_reset_rx_datapath(gt_reset_rx_datapath[0]),
-    .gt_reset_tx_datapath(gt_reset_tx_datapath[0]),
-    .gt_reset_all        (gt_reset_all[0]        ),
-    .gt_rx_reset_done    (gt_rx_reset_done[0]    ),
-    .gt_tx_reset_done    (gt_tx_reset_done[0]    )
-);
-
+  // ============================================================================================== --
+  // Multi-HPU DMA instances
+  // ============================================================================================== --
   generate
-  // Random valid control (adjust probability as needed)
-    for (genvar gen_i=0; gen_i<QSFP_LANE_NB; gen_i=gen_i+1) begin
-      always_ff @(posedge clk_mrmac) begin
-        if (~s_rstn_mrmac) begin
-          data_buf_a[gen_i]        <= 'h0;
-          tkeep_buf_a[gen_i]       <= 'h0;
-          last_buf_a[gen_i]        <= 'h0;
-          has_data_a[gen_i]        <= 'h0;
-          random_valid_en_a[gen_i] <= 'h0;
-        end else begin
-          // Generate random valid enable (50% probability)
-          random_valid_en_a[gen_i] <= ($urandom() % 100 < 50);
+    for (genvar gen_hpu = 0; gen_hpu < HPU_NB; gen_hpu++) begin : gen_multi_hpu_dma
+      multi_hpu_dma multi_hpu_dma (
+        .clk_eth_cfg            (clk_control                        ),
+        .resetn_eth_cfg         (s_rstn_control                     ),
 
-          // Accept new data from slave when we don't have data buffered
-          if (~has_data_a[gen_i] && qsfp_tx_tvalid[gen_i]) begin
-            data_buf_a[gen_i]  <= qsfp_tx_tdata[gen_i];
-            tkeep_buf_a[gen_i] <= qsfp_tx_tkeep_user[gen_i];
-            last_buf_a[gen_i]  <= qsfp_tx_tlast[gen_i];
-            has_data_a[gen_i]  <= 1'b1;
-          end
+        .clk_eth_mrmac          (clk_mrmac                          ),
+        .resetn_eth_mrmac       (s_rstn_mrmac                       ),
 
-          // Send data when random_valid is high (no ready on master)
-          if (has_data_a[gen_i] && random_valid_en_a[gen_i]) begin
-            has_data_a[gen_i] <= 1'b0;
-          end
-        end
-      end
+        .s_axil_dma_awaddr      (s_axil_dma_awaddr         [gen_hpu]),
+        .s_axil_dma_awvalid     (s_axil_dma_awvalid        [gen_hpu]),
+        .s_axil_dma_awready     (s_axil_dma_awready        [gen_hpu]),
+        .s_axil_dma_wdata       (s_axil_dma_wdata          [gen_hpu]),
+        .s_axil_dma_wstrb       (s_axil_dma_wstrb          [gen_hpu]),
+        .s_axil_dma_wvalid      (s_axil_dma_wvalid         [gen_hpu]),
+        .s_axil_dma_wready      (s_axil_dma_wready         [gen_hpu]),
+        .s_axil_dma_bresp       (s_axil_dma_bresp          [gen_hpu]),
+        .s_axil_dma_bvalid      (s_axil_dma_bvalid         [gen_hpu]),
+        .s_axil_dma_bready      (s_axil_dma_bready         [gen_hpu]),
+        .s_axil_dma_araddr      (s_axil_dma_araddr         [gen_hpu]),
+        .s_axil_dma_arvalid     (s_axil_dma_arvalid        [gen_hpu]),
+        .s_axil_dma_arready     (s_axil_dma_arready        [gen_hpu]),
+        .s_axil_dma_rdata       (s_axil_dma_rdata          [gen_hpu]),
+        .s_axil_dma_rresp       (s_axil_dma_rresp          [gen_hpu]),
+        .s_axil_dma_rvalid      (s_axil_dma_rvalid         [gen_hpu]),
+        .s_axil_dma_rready      (s_axil_dma_rready         [gen_hpu]),
 
-      if (BREAK_RDY_VLD == 1) begin
-        // backpressure
-        assign sim_qsfp_tx_tready_a[gen_i] = ~has_data_a[gen_i];
-        // reception
-        assign qsfp_tx_tdata_rdyvld[gen_i]      = data_buf_a[gen_i];
-        assign qsfp_tx_tkeep_user_rdyvld[gen_i] = tkeep_buf_a[gen_i];
-        assign qsfp_tx_tlast_rdyvld[gen_i]      = last_buf_a[gen_i];
-        assign qsfp_tx_tvalid_rdyvld[gen_i]     = has_data_a[gen_i] && random_valid_en_a[gen_i];
-      end else begin
-        // backpressure
-        assign sim_qsfp_tx_tready_a[gen_i] = 1'b1;
-        // reception
-        assign qsfp_tx_tdata_rdyvld[gen_i]      = qsfp_tx_tdata[gen_i];
-        assign qsfp_tx_tkeep_user_rdyvld[gen_i] = qsfp_tx_tkeep_user[gen_i];
-        assign qsfp_tx_tlast_rdyvld[gen_i]      = qsfp_tx_tlast[gen_i];
-        assign qsfp_tx_tvalid_rdyvld[gen_i]     = qsfp_tx_tvalid[gen_i];
-      end
+        .m_axi4_eth_hbm_arid    (axi4_ct_arid              [gen_hpu]),
+        .m_axi4_eth_hbm_araddr  (axi4_ct_araddr            [gen_hpu]),
+        .m_axi4_eth_hbm_arlen   (axi4_ct_arlen             [gen_hpu]),
+        .m_axi4_eth_hbm_arsize  (axi4_ct_arsize            [gen_hpu]),
+        .m_axi4_eth_hbm_arburst (axi4_ct_arburst           [gen_hpu]),
+        .m_axi4_eth_hbm_arvalid (axi4_ct_arvalid           [gen_hpu]),
+        .m_axi4_eth_hbm_arready (axi4_ct_arready           [gen_hpu]),
+        .m_axi4_eth_hbm_rid     (axi4_ct_rid               [gen_hpu]),
+        .m_axi4_eth_hbm_rdata   (axi4_ct_rdata             [gen_hpu]),
+        .m_axi4_eth_hbm_rresp   (axi4_ct_rresp             [gen_hpu]),
+        .m_axi4_eth_hbm_rlast   (axi4_ct_rlast             [gen_hpu]),
+        .m_axi4_eth_hbm_rvalid  (axi4_ct_rvalid            [gen_hpu]),
+        .m_axi4_eth_hbm_rready  (axi4_ct_rready            [gen_hpu]),
+        .m_axi4_eth_hbm_awid    (axi4_ct_awid              [gen_hpu]),
+        .m_axi4_eth_hbm_awaddr  (axi4_ct_awaddr            [gen_hpu]),
+        .m_axi4_eth_hbm_awlen   (axi4_ct_awlen             [gen_hpu]),
+        .m_axi4_eth_hbm_awsize  (axi4_ct_awsize            [gen_hpu]),
+        .m_axi4_eth_hbm_awburst (axi4_ct_awburst           [gen_hpu]),
+        .m_axi4_eth_hbm_awvalid (axi4_ct_awvalid           [gen_hpu]),
+        .m_axi4_eth_hbm_awready (axi4_ct_awready           [gen_hpu]),
+        .m_axi4_eth_hbm_wdata   (axi4_ct_wdata             [gen_hpu]),
+        .m_axi4_eth_hbm_wstrb   (axi4_ct_wstrb             [gen_hpu]),
+        .m_axi4_eth_hbm_wlast   (axi4_ct_wlast             [gen_hpu]),
+        .m_axi4_eth_hbm_wvalid  (axi4_ct_wvalid            [gen_hpu]),
+        .m_axi4_eth_hbm_wready  (axi4_ct_wready            [gen_hpu]),
+        .m_axi4_eth_hbm_bid     (axi4_ct_bid               [gen_hpu]),
+        .m_axi4_eth_hbm_bresp   (axi4_ct_bresp             [gen_hpu]),
+        .m_axi4_eth_hbm_bvalid  (axi4_ct_bvalid            [gen_hpu]),
+        .m_axi4_eth_hbm_bready  (axi4_ct_bready            [gen_hpu]),
+
+        .qsfp_tx_tdata          (qsfp_tx_tdata             [gen_hpu]),
+        .qsfp_tx_tkeep_user     (qsfp_tx_tkeep_user        [gen_hpu]),
+        .qsfp_tx_tlast          (qsfp_tx_tlast             [gen_hpu]),
+        .qsfp_tx_tvalid         (qsfp_tx_tvalid            [gen_hpu]),
+        .qsfp_tx_tready         (qsfp_tx_tready            [gen_hpu]),
+
+        .qsfp_rx_tdata          (qsfp_rx_tdata_delayed     [gen_hpu]),
+        .qsfp_rx_tkeep_user     (qsfp_rx_tkeep_user_delayed[gen_hpu]),
+        .qsfp_rx_tlast          (qsfp_rx_tlast_delayed     [gen_hpu]),
+        .qsfp_rx_tvalid         (qsfp_rx_tvalid_delayed    [gen_hpu]),
+
+        .interrupt_notify       (interrupt_notify          [gen_hpu]),
+        .interrupt_read_request (interrupt_read_request    [gen_hpu]),
+
+        .gt_line_rate           (gt_line_rate              [gen_hpu]),
+        .gt_loopback            (gt_loopback               [gen_hpu]),
+        .gt_reset_rx_datapath   (gt_reset_rx_datapath      [gen_hpu]),
+        .gt_reset_tx_datapath   (gt_reset_tx_datapath      [gen_hpu]),
+        .gt_reset_all           (gt_reset_all              [gen_hpu]),
+        .gt_rx_reset_done       (gt_rx_reset_done          [gen_hpu]),
+        .gt_tx_reset_done       (gt_tx_reset_done          [gen_hpu])
+      );
     end
   endgenerate
 
-  // HPU B ----------------------------------------------------------------------------------------
-  multi_hpu_dma #(
-    .FIFO_DEPTH(FIFO_DEPTH)
-  ) hpu_b (
-    .clk_eth_cfg   (clk_control    ),
-    .resetn_eth_cfg(s_rstn_control ),
-
-    .clk_eth_mrmac   (clk_mrmac    ),
-    .resetn_eth_mrmac(s_rstn_mrmac ),
-
-    .s_axil_dma_awaddr (s_axil_dma_awaddr_hpu_b ),
-    .s_axil_dma_awvalid(s_axil_dma_awvalid_hpu_b),
-    .s_axil_dma_awready(s_axil_dma_awready_hpu_b),
-    .s_axil_dma_wdata  (s_axil_dma_wdata_hpu_b  ),
-    .s_axil_dma_wstrb  (s_axil_dma_wstrb_hpu_b  ),
-    .s_axil_dma_wvalid (s_axil_dma_wvalid_hpu_b ),
-    .s_axil_dma_wready (s_axil_dma_wready_hpu_b ),
-    .s_axil_dma_bresp  (s_axil_dma_bresp_hpu_b  ),
-    .s_axil_dma_bvalid (s_axil_dma_bvalid_hpu_b ),
-    .s_axil_dma_bready (s_axil_dma_bready_hpu_b ),
-    .s_axil_dma_araddr (s_axil_dma_araddr_hpu_b ),
-    .s_axil_dma_arvalid(s_axil_dma_arvalid_hpu_b),
-    .s_axil_dma_arready(s_axil_dma_arready_hpu_b),
-    .s_axil_dma_rdata  (s_axil_dma_rdata_hpu_b  ),
-    .s_axil_dma_rresp  (s_axil_dma_rresp_hpu_b  ),
-    .s_axil_dma_rvalid (s_axil_dma_rvalid_hpu_b ),
-    .s_axil_dma_rready (s_axil_dma_rready_hpu_b ),
-
-    .m_axi4_eth_hbm_arid       (axi4_ct_arid[1]       ),
-    .m_axi4_eth_hbm_araddr     (axi4_ct_araddr[1]     ),
-    .m_axi4_eth_hbm_arlen      (axi4_ct_arlen[1]      ),
-    .m_axi4_eth_hbm_arsize     (axi4_ct_arsize[1]     ),
-    .m_axi4_eth_hbm_arburst    (axi4_ct_arburst[1]    ),
-    .m_axi4_eth_hbm_arvalid    (axi4_ct_arvalid[1]    ),
-    .m_axi4_eth_hbm_arready    (axi4_ct_arready[1]    ),
-    .m_axi4_eth_hbm_rid        (axi4_ct_rid[1]        ),
-    .m_axi4_eth_hbm_rdata      (axi4_ct_rdata[1]      ),
-    .m_axi4_eth_hbm_rresp      (axi4_ct_rresp[1]      ),
-    .m_axi4_eth_hbm_rlast      (axi4_ct_rlast[1]      ),
-    .m_axi4_eth_hbm_rvalid     (axi4_ct_rvalid[1]     ),
-    .m_axi4_eth_hbm_rready     (axi4_ct_rready[1]     ),
-    .m_axi4_eth_hbm_awid       (axi4_ct_awid[1]       ),
-    .m_axi4_eth_hbm_awaddr     (axi4_ct_awaddr[1]     ),
-    .m_axi4_eth_hbm_awlen      (axi4_ct_awlen[1]      ),
-    .m_axi4_eth_hbm_awsize     (axi4_ct_awsize[1]     ),
-    .m_axi4_eth_hbm_awburst    (axi4_ct_awburst[1]    ),
-    .m_axi4_eth_hbm_awvalid    (axi4_ct_awvalid[1]    ),
-    .m_axi4_eth_hbm_awready    (axi4_ct_awready[1]    ),
-    .m_axi4_eth_hbm_wdata      (axi4_ct_wdata[1]      ),
-    .m_axi4_eth_hbm_wstrb      (axi4_ct_wstrb[1]      ),
-    .m_axi4_eth_hbm_wlast      (axi4_ct_wlast[1]      ),
-    .m_axi4_eth_hbm_wvalid     (axi4_ct_wvalid[1]     ),
-    .m_axi4_eth_hbm_wready     (axi4_ct_wready[1]     ),
-    .m_axi4_eth_hbm_bid        (axi4_ct_bid[1]        ),
-    .m_axi4_eth_hbm_bresp      (axi4_ct_bresp[1]      ),
-    .m_axi4_eth_hbm_bvalid     (axi4_ct_bvalid[1]     ),
-    .m_axi4_eth_hbm_bready     (axi4_ct_bready[1]     ),
-
-    .qsfp_tx_tdata     (qsfp_rx_tdata),
-    .qsfp_tx_tkeep_user(qsfp_rx_tkeep_user),
-    .qsfp_tx_tlast     (qsfp_rx_tlast),
-    .qsfp_tx_tvalid    (qsfp_rx_tvalid),
-    .qsfp_tx_tready    (sim_qsfp_tx_tready_b),
-
-    .qsfp_rx_tdata     (qsfp_tx_tdata_delayed),
-    .qsfp_rx_tkeep_user(qsfp_tx_tkeep_user_delayed),
-    .qsfp_rx_tlast     (qsfp_tx_tlast_delayed),
-    .qsfp_rx_tvalid    (qsfp_tx_tvalid_delayed),
-
-    .gt_line_rate        (gt_line_rate[1]        ),
-    .gt_loopback         (gt_loopback[1]         ),
-    .gt_reset_rx_datapath(gt_reset_rx_datapath[1]),
-    .gt_reset_tx_datapath(gt_reset_tx_datapath[1]),
-    .gt_reset_all        (gt_reset_all[1]        ),
-    .gt_rx_reset_done    (gt_rx_reset_done[1]    ),
-    .gt_tx_reset_done    (gt_tx_reset_done[1]    )
-);
-
-always @(*) begin
-  qsfp_tx_tdata_delayed      <= #100ns qsfp_tx_tdata_rdyvld;
-  qsfp_tx_tkeep_user_delayed <= #100ns qsfp_tx_tkeep_user_rdyvld;
-  qsfp_tx_tlast_delayed      <= #100ns qsfp_tx_tlast_rdyvld;
-  qsfp_tx_tvalid_delayed     <= #100ns qsfp_tx_tvalid_rdyvld;
-
-  qsfp_rx_tdata_delayed      <= #100ns qsfp_rx_tdata_rdyvld;
-  qsfp_rx_tkeep_user_delayed <= #100ns qsfp_rx_tkeep_user_rdyvld;
-  qsfp_rx_tlast_delayed      <= #100ns qsfp_rx_tlast_rdyvld;
-  qsfp_rx_tvalid_delayed     <= #100ns qsfp_rx_tvalid_rdyvld;
-end
-
+  // ============================================================================================== --
+  // Ready/valid control logic
+  // ============================================================================================== --
   generate
-  // Random valid control (adjust probability as needed)
-    for (genvar gen_i=0; gen_i<QSFP_LANE_NB; gen_i=gen_i+1) begin
-      always_ff @(posedge clk_mrmac) begin
-        if (~s_rstn_mrmac) begin
-          data_buf_b[gen_i]        <= 'h0;
-          tkeep_buf_b[gen_i]       <= 'h0;
-          last_buf_b[gen_i]        <= 'h0;
-          has_data_b[gen_i]        <= 'h0;
-          random_valid_en_b[gen_i] <= 'h0;
-        end else begin
-          // Generate random valid enable (50% probability)
-          random_valid_en_b[gen_i] <= ($urandom() % 100 < 50);
+    for (genvar gen_hpu = 0; gen_hpu < HPU_NB; gen_hpu++) begin : gen_rdyvld_ctrl
+      for (genvar gen_i = 0; gen_i < QSFP_LANE_NB; gen_i++) begin : gen_lane
+        tb_model_backpressure #(.ENABLE(BREAK_RDY_VLD)) bp_tx (
+          .clk         (clk_mrmac),
+          .rstn        (s_rstn_mrmac),
 
-          // Accept new data from slave when we don't have data buffered
-          if (~has_data_b[gen_i] && qsfp_rx_tvalid[gen_i]) begin
-            data_buf_b[gen_i]  <= qsfp_rx_tdata[gen_i];
-            tkeep_buf_b[gen_i] <= qsfp_rx_tkeep_user[gen_i];
-            last_buf_b[gen_i]  <= qsfp_rx_tlast[gen_i];
-            has_data_b[gen_i]  <= 1'b1;
-          end
+          .s_tdata     (qsfp_tx_tdata            [gen_hpu][gen_i]),
+          .s_tkeep_user(qsfp_tx_tkeep_user       [gen_hpu][gen_i]),
+          .s_tlast     (qsfp_tx_tlast            [gen_hpu][gen_i]),
+          .s_tvalid    (qsfp_tx_tvalid           [gen_hpu][gen_i]),
+          .s_tready    (qsfp_tx_tready           [gen_hpu][gen_i]),
 
-          // Send data when random_valid is high (no ready on master)
-          if (has_data_b[gen_i] && random_valid_en_b[gen_i]) begin
-            has_data_b[gen_i] <= 1'b0;
-          end
-        end
-      end
-
-      if (BREAK_RDY_VLD == 1) begin
-        // backpressure
-        assign sim_qsfp_tx_tready_b[gen_i] = ~has_data_b[gen_i];
-        // reception
-        assign qsfp_rx_tdata_rdyvld[gen_i]      = data_buf_b[gen_i];
-        assign qsfp_rx_tkeep_user_rdyvld[gen_i] = tkeep_buf_b[gen_i];
-        assign qsfp_rx_tlast_rdyvld[gen_i]      = last_buf_b[gen_i];
-        assign qsfp_rx_tvalid_rdyvld[gen_i]     = has_data_b[gen_i] && random_valid_en_b[gen_i];
-      end else begin
-        // backpressure
-        assign sim_qsfp_tx_tready_b[gen_i] = 1'b1;
-        // reception
-        assign qsfp_rx_tdata_rdyvld[gen_i]      = qsfp_rx_tdata[gen_i];
-        assign qsfp_rx_tkeep_user_rdyvld[gen_i] = qsfp_rx_tkeep_user[gen_i];
-        assign qsfp_rx_tlast_rdyvld[gen_i]      = qsfp_rx_tlast[gen_i];
-        assign qsfp_rx_tvalid_rdyvld[gen_i]     = qsfp_rx_tvalid[gen_i];
+          .m_tdata     (qsfp_rx_tdata_delayed     [1-gen_hpu][gen_i]),
+          .m_tkeep_user(qsfp_rx_tkeep_user_delayed[1-gen_hpu][gen_i]),
+          .m_tlast     (qsfp_rx_tlast_delayed     [1-gen_hpu][gen_i]),
+          .m_tvalid    (qsfp_rx_tvalid_delayed    [1-gen_hpu][gen_i])
+        );
       end
     end
   endgenerate
@@ -540,62 +340,40 @@ end
 // ============================================================================================== --
 
   // AXI4-LITE drivers ----------------------------------------------------------------------------
-  maxil_if #(
-  .AXIL_DATA_W(AXIL_DATA_W),
-  .AXIL_ADD_W  (AXIL_ADD_W)
-  ) maxil_drv_if_hpu_a ( .clk(clk_control), .rst_n(s_rstn_control));
+  generate
+    for (genvar gen_hpu = 0; gen_hpu < HPU_NB; gen_hpu++) begin : gen_maxil_if
+      maxil_if #(
+        .AXIL_DATA_W(AXIL_DATA_W),
+        .AXIL_ADD_W (AXIL_ADD_W)
+      ) maxil_if ( .clk(clk_control), .rst_n(s_rstn_control));
 
-  // Connect interface on testbench signals
-  assign s_axil_dma_awaddr_hpu_a  = maxil_drv_if_hpu_a.awaddr;
-  assign s_axil_dma_awvalid_hpu_a = maxil_drv_if_hpu_a.awvalid;
-  assign s_axil_dma_wdata_hpu_a   = maxil_drv_if_hpu_a.wdata;
-  assign s_axil_dma_wstrb_hpu_a   = maxil_drv_if_hpu_a.wstrb;
-  assign s_axil_dma_wvalid_hpu_a  = maxil_drv_if_hpu_a.wvalid;
-  assign s_axil_dma_bready_hpu_a  = maxil_drv_if_hpu_a.bready;
-  assign s_axil_dma_araddr_hpu_a  = maxil_drv_if_hpu_a.araddr;
-  assign s_axil_dma_arvalid_hpu_a = maxil_drv_if_hpu_a.arvalid;
-  assign s_axil_dma_rready_hpu_a  = maxil_drv_if_hpu_a.rready;
+      assign s_axil_dma_awaddr [gen_hpu] = maxil_if.awaddr;
+      assign s_axil_dma_awvalid[gen_hpu] = maxil_if.awvalid;
+      assign s_axil_dma_wdata  [gen_hpu] = maxil_if.wdata;
+      assign s_axil_dma_wstrb  [gen_hpu] = maxil_if.wstrb;
+      assign s_axil_dma_wvalid [gen_hpu] = maxil_if.wvalid;
+      assign s_axil_dma_bready [gen_hpu] = maxil_if.bready;
+      assign s_axil_dma_araddr [gen_hpu] = maxil_if.araddr;
+      assign s_axil_dma_arvalid[gen_hpu] = maxil_if.arvalid;
+      assign s_axil_dma_rready [gen_hpu] = maxil_if.rready;
 
-  assign maxil_drv_if_hpu_a.awready = s_axil_dma_awready_hpu_a;
-  assign maxil_drv_if_hpu_a.wready  = s_axil_dma_wready_hpu_a;
-  assign maxil_drv_if_hpu_a.bresp   = s_axil_dma_bresp_hpu_a;
-  assign maxil_drv_if_hpu_a.bvalid  = s_axil_dma_bvalid_hpu_a;
-  assign maxil_drv_if_hpu_a.arready = s_axil_dma_arready_hpu_a;
-  assign maxil_drv_if_hpu_a.rdata   = s_axil_dma_rdata_hpu_a;
-  assign maxil_drv_if_hpu_a.rresp   = s_axil_dma_rresp_hpu_a;
-  assign maxil_drv_if_hpu_a.rvalid  = s_axil_dma_rvalid_hpu_a;
-
-  maxil_if #(
-  .AXIL_DATA_W(AXIL_DATA_W),
-  .AXIL_ADD_W  (AXIL_ADD_W)
-  ) maxil_drv_if_hpu_b ( .clk(clk_control), .rst_n(s_rstn_control));
-
-  // Connect interface on testbench signals
-  assign s_axil_dma_awaddr_hpu_b  = maxil_drv_if_hpu_b.awaddr;
-  assign s_axil_dma_awvalid_hpu_b = maxil_drv_if_hpu_b.awvalid;
-  assign s_axil_dma_wdata_hpu_b   = maxil_drv_if_hpu_b.wdata;
-  assign s_axil_dma_wstrb_hpu_b   = maxil_drv_if_hpu_b.wstrb;
-  assign s_axil_dma_wvalid_hpu_b  = maxil_drv_if_hpu_b.wvalid;
-  assign s_axil_dma_bready_hpu_b  = maxil_drv_if_hpu_b.bready;
-  assign s_axil_dma_araddr_hpu_b  = maxil_drv_if_hpu_b.araddr;
-  assign s_axil_dma_arvalid_hpu_b = maxil_drv_if_hpu_b.arvalid;
-  assign s_axil_dma_rready_hpu_b  = maxil_drv_if_hpu_b.rready;
-
-  assign maxil_drv_if_hpu_b.awready = s_axil_dma_awready_hpu_b;
-  assign maxil_drv_if_hpu_b.wready  = s_axil_dma_wready_hpu_b;
-  assign maxil_drv_if_hpu_b.bresp   = s_axil_dma_bresp_hpu_b;
-  assign maxil_drv_if_hpu_b.bvalid  = s_axil_dma_bvalid_hpu_b;
-  assign maxil_drv_if_hpu_b.arready = s_axil_dma_arready_hpu_b;
-  assign maxil_drv_if_hpu_b.rdata   = s_axil_dma_rdata_hpu_b;
-  assign maxil_drv_if_hpu_b.rresp   = s_axil_dma_rresp_hpu_b;
-  assign maxil_drv_if_hpu_b.rvalid  = s_axil_dma_rvalid_hpu_b;
+      assign maxil_if.awready = s_axil_dma_awready[gen_hpu];
+      assign maxil_if.wready  = s_axil_dma_wready [gen_hpu];
+      assign maxil_if.bresp   = s_axil_dma_bresp  [gen_hpu];
+      assign maxil_if.bvalid  = s_axil_dma_bvalid [gen_hpu];
+      assign maxil_if.arready = s_axil_dma_arready[gen_hpu];
+      assign maxil_if.rdata   = s_axil_dma_rdata  [gen_hpu];
+      assign maxil_if.rresp   = s_axil_dma_rresp  [gen_hpu];
+      assign maxil_if.rvalid  = s_axil_dma_rvalid [gen_hpu];
+    end
+  endgenerate
 
   generate
     for (genvar gen_hpu=0; gen_hpu<HPU_NB; gen_hpu=gen_hpu+1) begin : gen_mem_hpu
       for (genvar gen_pc=0; gen_pc<ETH_PC; gen_pc=gen_pc+1) begin : gen_mem_pc
         axi4_mem #(
           .DATA_WIDTH      (AXI4_DATA_W                     ),
-          .ADDR_WIDTH      (MEM_SIM_SIZE                    ), //64?!
+          .ADDR_WIDTH      (MEM_SIM_SIZE                    ),
           .ID_WIDTH        (AXI4_ID_W                       ),
           .WR_CMD_BUF_DEPTH(MEM_WR_CMD_BUF_DEPTH            ),
           .RD_CMD_BUF_DEPTH(MEM_RD_CMD_BUF_DEPTH            ),
@@ -646,11 +424,26 @@ end
           .s_axi4_rvalid (axi4_ct_rvalid[gen_hpu][gen_pc]   ),
           .s_axi4_rready (axi4_ct_rready[gen_hpu][gen_pc]   )
         );
+
+        // Each generated instance initializes its own memory
+        initial begin
+          for (int k = 0; k < 2**MEM_SIM_SIZE; k++) begin
+            logic [255:0] value;
+            value = '0;
+            for (int j = 0; j < 4; j++) begin
+              logic [63:0] w;
+              w[63:32] = $urandom();
+              w[31:0]  = $urandom();
+              value |= (w << (j*64));
+            end
+            axi4_mem_ct.axi4_ram_ct_wr.mem[k] = value;
+          end
+        end
+
       end
     end
   endgenerate
 
-  int random_iter;
   // Signals --------------------------------------------------------------------------------------
   logic [REG_DATA_W-1:0] read_data;
   logic [REG_DATA_W-1:0] regf_start_addr_ofs;
@@ -679,11 +472,12 @@ end
 
   int arbitrary_notify_nb;
   int arbitrary_read_req_nb;
+  int random_iter;
 
   // scenario -------------------------------------------------------------------------------------
   initial begin
-    maxil_drv_if_hpu_a.init();
-    maxil_drv_if_hpu_b.init();
+    gen_maxil_if[0].maxil_if.init();
+    gen_maxil_if[1].maxil_if.init();
 
     reset_registers = 'h0;
     tx_loop         = 'h0;
@@ -740,7 +534,7 @@ end
         begin
           for (int i = 0; i < random_iter; i++) begin
             // HPU A
-            maxil_drv_if_hpu_a.read_trans(MHDMA_REQUEST_NOTIFY_OFS, notify_payload_rd[0]);
+            gen_maxil_if[0].maxil_if.read_trans(MHDMA_REQUEST_NOTIFY_OFS, notify_payload_rd[0]);
             notify_payload_expected[0] = notify_b_ref_q.pop_front();
 
             assert (notify_payload_rd[0] == notify_payload_expected[0]) else begin
@@ -752,7 +546,7 @@ end
 
         begin
           for (int i = 0; i < random_iter; i++) begin
-            maxil_drv_if_hpu_b.read_trans(MHDMA_REQUEST_NOTIFY_OFS, notify_payload_rd[1]);
+            gen_maxil_if[1].maxil_if.read_trans(MHDMA_REQUEST_NOTIFY_OFS, notify_payload_rd[1]);
             notify_payload_expected[1] = notify_a_ref_q.pop_front();
 
             assert (notify_payload_rd[1] == notify_payload_expected[1]) else begin
@@ -764,10 +558,10 @@ end
       join
     end
 
-    maxil_drv_if_hpu_a.read_trans(MHDMA_REQUEST_STAT_NOTIFY_OFS,     stat_notify[0]);
-    maxil_drv_if_hpu_a.read_trans(MHDMA_REQUEST_STAT_NOTIFY_ACK_OFS, stat_notify_ack[0]);
-    maxil_drv_if_hpu_b.read_trans(MHDMA_REQUEST_STAT_NOTIFY_OFS,     stat_notify[1]);
-    maxil_drv_if_hpu_b.read_trans(MHDMA_REQUEST_STAT_NOTIFY_ACK_OFS, stat_notify_ack[1]);
+    gen_maxil_if[0].maxil_if.read_trans(MHDMA_REQUEST_STAT_NOTIFY_OFS,     stat_notify[0]);
+    gen_maxil_if[0].maxil_if.read_trans(MHDMA_REQUEST_STAT_NOTIFY_ACK_OFS, stat_notify_ack[0]);
+    gen_maxil_if[1].maxil_if.read_trans(MHDMA_REQUEST_STAT_NOTIFY_OFS,     stat_notify[1]);
+    gen_maxil_if[1].maxil_if.read_trans(MHDMA_REQUEST_STAT_NOTIFY_ACK_OFS, stat_notify_ack[1]);
 
     $display("\n ----------------- HPU_A -------------------------------------");
     $display(" stat_notify                 : %0d", stat_notify[0]);
@@ -788,30 +582,6 @@ end
   end
 
 // ============================================================================================== --
-// Initialize memory
-// ============================================================================================== --
-  logic [59:0] val_id = 0;
-
-  initial begin
-    // for (int gen_hpu = 0; gen_hpu < HPU_NB; ++gen_hpu) begin
-      for (int gen_pc = 0; gen_pc < ETH_PC; ++gen_pc) begin
-        for (int k = 0; k < 2**MEM_SIM_SIZE; ++k) begin
-          automatic logic [255:0] value = '0;
-          for (int j = 0; j < 4; ++j) begin
-            logic [63:0] w;
-            w[63:32] = $urandom();
-            w[31:0]  = $urandom();
-            value |= (w << (j*64));
-            val_id++;
-          end
-          gen_mem_hpu[1].gen_mem_pc[gen_pc].axi4_mem_ct.axi4_ram_ct_wr.mem[k] = value;
-          gen_mem_hpu[0].gen_mem_pc[gen_pc].axi4_mem_ct.axi4_ram_ct_wr.mem[k] = !value;
-        end
-      end
-    // end
-  end
-
-// ============================================================================================== --
 // Tasks
 // ============================================================================================== --
   logic [REG_DATA_W-1:00] rdata;
@@ -819,7 +589,7 @@ end
   task automatic init_config;
     begin
     // Reading system REGISTERS -------------------------------------------------------------------
-      maxil_drv_if_hpu_a.read_trans(MHDMA_SYSTEM_LANE_OFS, rdata);
+      gen_maxil_if[0].maxil_if.read_trans(MHDMA_SYSTEM_LANE_OFS, rdata);
       assert (rdata == 'h0) else begin
         $display("%t > ERROR:register SYSTEM_LINE_OFS not correctly read %h",$time, rdata);
         error_register_read = 1'b1;
@@ -832,16 +602,16 @@ end
     debug_flag    = 1'b0;
     @(posedge clk_control);
 
-    maxil_drv_if_hpu_a.write_trans(MHDMA_SYSTEM_LANE_OFS, line_parameter);
-    maxil_drv_if_hpu_b.write_trans(MHDMA_SYSTEM_LANE_OFS, line_parameter);
+    gen_maxil_if[0].maxil_if.write_trans(MHDMA_SYSTEM_LANE_OFS, line_parameter);
+    gen_maxil_if[1].maxil_if.write_trans(MHDMA_SYSTEM_LANE_OFS, line_parameter);
 
     rst_rx_datapath = 4'b0100;
     rst_tx_datapath = 4'b1011;
     rst_all         = 4'b0101;
     @(posedge clk_control);
 
-    maxil_drv_if_hpu_a.write_trans(MHDMA_RESET_DATAPATH_OFS, reset_parameter);
-    maxil_drv_if_hpu_b.write_trans(MHDMA_RESET_DATAPATH_OFS, reset_parameter);
+    gen_maxil_if[0].maxil_if.write_trans(MHDMA_RESET_DATAPATH_OFS, reset_parameter);
+    gen_maxil_if[1].maxil_if.write_trans(MHDMA_RESET_DATAPATH_OFS, reset_parameter);
 
     assert ((gt_line_rate[0] == line_rate) && (gt_line_rate[1] == line_rate)) else begin
       $display("[ERROR] line_rate has unexpected value %x %x %x",gt_line_rate[0], gt_line_rate[1], line_rate);
@@ -851,7 +621,7 @@ end
       $display("[ERROR] gt_loopback has unexpected value");
       error_register_read = 1;
     end
-    assert ((hpu_a.line_sel == line_select) &&  (hpu_b.line_sel == line_select)) else begin
+    assert ((gen_multi_hpu_dma[0].multi_hpu_dma.line_sel == line_select) &&  (gen_multi_hpu_dma[1].multi_hpu_dma.line_sel == line_select)) else begin
       $display("[ERROR] line_sel has unexpected value");
       error_register_read = 1;
     end
@@ -871,8 +641,8 @@ end
     end
     @(posedge clk_control);
 
-    maxil_drv_if_hpu_a.read_trans(MHDMA_RESET_MONITOR_OFS, reset_monitor[0]);
-    maxil_drv_if_hpu_b.read_trans(MHDMA_RESET_MONITOR_OFS, reset_monitor[1]);
+    gen_maxil_if[0].maxil_if.read_trans(MHDMA_RESET_MONITOR_OFS, reset_monitor[0]);
+    gen_maxil_if[1].maxil_if.read_trans(MHDMA_RESET_MONITOR_OFS, reset_monitor[1]);
 
     assert ((reset_monitor[0][3:0] != gt_tx_reset_done) | (reset_monitor[0][7:4] != gt_rx_reset_done)) else begin
       $display("[ERROR] reset monitor has not been read correctly in HPU A");
@@ -885,15 +655,15 @@ end
 
     // Setting timeout size to both HPUs ----------------------------------------------------------
     // keeping default value
-    maxil_drv_if_hpu_a.write_trans(MHDMA_HBM_AXI4_ADDR_2IN3_CT_PC0_LSB_OFS, 'hF);
-    maxil_drv_if_hpu_a.write_trans(MHDMA_HBM_AXI4_ADDR_2IN3_CT_PC0_MSB_OFS, 'h0);
-    maxil_drv_if_hpu_a.write_trans(MHDMA_HBM_AXI4_ADDR_2IN3_CT_PC1_LSB_OFS, 'hA);
-    maxil_drv_if_hpu_a.write_trans(MHDMA_HBM_AXI4_ADDR_2IN3_CT_PC1_MSB_OFS, 'h0);
+    gen_maxil_if[0].maxil_if.write_trans(MHDMA_HBM_AXI4_ADDR_2IN3_CT_PC0_LSB_OFS, 'hF);
+    gen_maxil_if[0].maxil_if.write_trans(MHDMA_HBM_AXI4_ADDR_2IN3_CT_PC0_MSB_OFS, 'h0);
+    gen_maxil_if[0].maxil_if.write_trans(MHDMA_HBM_AXI4_ADDR_2IN3_CT_PC1_LSB_OFS, 'hA);
+    gen_maxil_if[0].maxil_if.write_trans(MHDMA_HBM_AXI4_ADDR_2IN3_CT_PC1_MSB_OFS, 'h0);
 
-    maxil_drv_if_hpu_b.write_trans(MHDMA_HBM_AXI4_ADDR_2IN3_CT_PC0_LSB_OFS, 'hF);
-    maxil_drv_if_hpu_b.write_trans(MHDMA_HBM_AXI4_ADDR_2IN3_CT_PC0_MSB_OFS, 'h0);
-    maxil_drv_if_hpu_b.write_trans(MHDMA_HBM_AXI4_ADDR_2IN3_CT_PC1_LSB_OFS, 'hA);
-    maxil_drv_if_hpu_b.write_trans(MHDMA_HBM_AXI4_ADDR_2IN3_CT_PC1_MSB_OFS, 'h0);
+    gen_maxil_if[1].maxil_if.write_trans(MHDMA_HBM_AXI4_ADDR_2IN3_CT_PC0_LSB_OFS, 'hF);
+    gen_maxil_if[1].maxil_if.write_trans(MHDMA_HBM_AXI4_ADDR_2IN3_CT_PC0_MSB_OFS, 'h0);
+    gen_maxil_if[1].maxil_if.write_trans(MHDMA_HBM_AXI4_ADDR_2IN3_CT_PC1_LSB_OFS, 'hA);
+    gen_maxil_if[1].maxil_if.write_trans(MHDMA_HBM_AXI4_ADDR_2IN3_CT_PC1_MSB_OFS, 'h0);
 
     // Setting up credible values -------------------------------------------------------------
     // no loopback, no reset, not in debug & lane0 selected
@@ -952,8 +722,8 @@ end
         end
 
         $display("| HPU_ID=%0d :: MAC=%6x |", i, mac_addr);
-        maxil_drv_if_hpu_a.write_trans(MHDMA_SYSTEM_HPU_ID_0_OFS+(4*i), register_mac_addr_a);
-        maxil_drv_if_hpu_b.write_trans(MHDMA_SYSTEM_HPU_ID_0_OFS+(4*i), register_mac_addr_b);
+        gen_maxil_if[0].maxil_if.write_trans(MHDMA_SYSTEM_HPU_ID_0_OFS+(4*i), register_mac_addr_a);
+        gen_maxil_if[1].maxil_if.write_trans(MHDMA_SYSTEM_HPU_ID_0_OFS+(4*i), register_mac_addr_b);
       end
       $display("└------------------------┘");
 
@@ -976,8 +746,8 @@ end
       read_req_addr = {dest_addr, src_addr};
       read_req_id = {iop_id, REQ_ID_READ, node_id, req_size_b};
 
-      maxil_drv_if_hpu_a.write_trans(MHDMA_REQUEST_REQ_ADDR_OFS, read_req_addr);
-      maxil_drv_if_hpu_a.write_trans(MHDMA_REQUEST_REQ_ID_OFS, read_req_id);
+      gen_maxil_if[0].maxil_if.write_trans(MHDMA_REQUEST_REQ_ADDR_OFS, read_req_addr);
+      gen_maxil_if[0].maxil_if.write_trans(MHDMA_REQUEST_REQ_ID_OFS, read_req_id);
       // there is as well the hbm pc offsets to write from RPU pov but in simulation we let it set to 0
     end
   endtask
@@ -1001,11 +771,11 @@ end
       read_req_id = {iop_id, REQ_ID_NOTIFY, dst_node_id, req_size_b};
 
       if (src_node_id == random_hpu_a) begin
-        maxil_drv_if_hpu_a.write_trans(MHDMA_REQUEST_REQ_ADDR_OFS, read_req_addr);
-        maxil_drv_if_hpu_a.write_trans(MHDMA_REQUEST_REQ_ID_OFS, read_req_id);
+        gen_maxil_if[0].maxil_if.write_trans(MHDMA_REQUEST_REQ_ADDR_OFS, read_req_addr);
+        gen_maxil_if[0].maxil_if.write_trans(MHDMA_REQUEST_REQ_ID_OFS, read_req_id);
       end else if (src_node_id == random_hpu_b) begin
-        maxil_drv_if_hpu_b.write_trans(MHDMA_REQUEST_REQ_ADDR_OFS, read_req_addr);
-        maxil_drv_if_hpu_b.write_trans(MHDMA_REQUEST_REQ_ID_OFS, read_req_id);
+        gen_maxil_if[1].maxil_if.write_trans(MHDMA_REQUEST_REQ_ADDR_OFS, read_req_addr);
+        gen_maxil_if[1].maxil_if.write_trans(MHDMA_REQUEST_REQ_ID_OFS, read_req_id);
       end else begin
         $display("[ERROR] you are trying to send a Notify request from an HPU non instantiated");
         error_tb_notify = 1'b1;

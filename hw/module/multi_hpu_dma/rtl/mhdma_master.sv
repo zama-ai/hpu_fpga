@@ -1216,7 +1216,7 @@ module mhdma_master
   // rr_regf_in_rdy there is no back pressurew
   assign rr_regf_in_data = {received_dst_addr, 4'b0, received_hpu_id, received_iop_id};
 
-  assign rr_regf_in_vld = ciphertext_received;
+  assign rr_regf_in_vld = ciphertext_received; //& ~last_read_req_had_mismatch
 
   fifo_ram_rdy_vld_2clk # (
     .CDC_SYNC_STAGES (CDC_SYNC_STAGES),

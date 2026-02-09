@@ -144,28 +144,10 @@ module tb_multi_hpu_dma;
   logic [HPU_NB-1:0][QSFP_LANE_NB-1:0]                    qsfp_tx_tvalid;
   logic [HPU_NB-1:0][QSFP_LANE_NB-1:0]                    qsfp_tx_tready;
 
-  logic [HPU_NB-1:0][QSFP_LANE_NB-1:0][MRMAC_AXIS_W-1:0 ] qsfp_tx_tdata_delayed;
-  logic [HPU_NB-1:0][QSFP_LANE_NB-1:0][MRMAC_TKEEP_W-1:0] qsfp_tx_tkeep_user_delayed;
-  logic [HPU_NB-1:0][QSFP_LANE_NB-1:0]                    qsfp_tx_tlast_delayed;
-  logic [HPU_NB-1:0][QSFP_LANE_NB-1:0]                    qsfp_tx_tvalid_delayed;
-  logic [HPU_NB-1:0][QSFP_LANE_NB-1:0][MRMAC_AXIS_W-1:0 ] qsfp_tx_tdata_rdyvld;
-  logic [HPU_NB-1:0][QSFP_LANE_NB-1:0][MRMAC_TKEEP_W-1:0] qsfp_tx_tkeep_user_rdyvld;
-  logic [HPU_NB-1:0][QSFP_LANE_NB-1:0]                    qsfp_tx_tlast_rdyvld;
-  logic [HPU_NB-1:0][QSFP_LANE_NB-1:0]                    qsfp_tx_tvalid_rdyvld;
-  // == RX
-  logic [HPU_NB-1:0][QSFP_LANE_NB-1:0][MRMAC_AXIS_W-1:0 ] qsfp_rx_tdata;
-  logic [HPU_NB-1:0][QSFP_LANE_NB-1:0][MRMAC_TKEEP_W-1:0] qsfp_rx_tkeep_user;
-  logic [HPU_NB-1:0][QSFP_LANE_NB-1:0]                    qsfp_rx_tlast;
-  logic [HPU_NB-1:0][QSFP_LANE_NB-1:0]                    qsfp_rx_tvalid;
-
   logic [HPU_NB-1:0][QSFP_LANE_NB-1:0][MRMAC_AXIS_W-1:0 ] qsfp_rx_tdata_delayed;
   logic [HPU_NB-1:0][QSFP_LANE_NB-1:0][MRMAC_TKEEP_W-1:0] qsfp_rx_tkeep_user_delayed;
   logic [HPU_NB-1:0][QSFP_LANE_NB-1:0]                    qsfp_rx_tlast_delayed;
   logic [HPU_NB-1:0][QSFP_LANE_NB-1:0]                    qsfp_rx_tvalid_delayed;
-  logic [HPU_NB-1:0][QSFP_LANE_NB-1:0][MRMAC_AXIS_W-1:0 ] qsfp_rx_tdata_rdyvld;
-  logic [HPU_NB-1:0][QSFP_LANE_NB-1:0][MRMAC_TKEEP_W-1:0] qsfp_rx_tkeep_user_rdyvld;
-  logic [HPU_NB-1:0][QSFP_LANE_NB-1:0]                    qsfp_rx_tlast_rdyvld;
-  logic [HPU_NB-1:0][QSFP_LANE_NB-1:0]                    qsfp_rx_tvalid_rdyvld;
 
   // Interrupt interface
   logic [HPU_NB-1:0]                                      interrupt_notify;
@@ -249,13 +231,6 @@ module tb_multi_hpu_dma;
 
   // monitoring of reset done
   logic [HPU_NB-1:0][REG_DATA_W-1:00] reset_monitor;
-
-  // Ready/valid control buffers
-  logic [HPU_NB-1:0][QSFP_LANE_NB-1:0][MRMAC_AXIS_W-1:0]  data_buf;
-  logic [HPU_NB-1:0][QSFP_LANE_NB-1:0][MRMAC_TKEEP_W-1:0] tkeep_buf;
-  logic [HPU_NB-1:0][QSFP_LANE_NB-1:0]                    last_buf;
-  logic [HPU_NB-1:0][QSFP_LANE_NB-1:0]                    has_data;
-  logic [HPU_NB-1:0][QSFP_LANE_NB-1:0]                    random_valid_en;
 
   // ============================================================================================== --
   // Multi-HPU DMA instances
@@ -348,125 +323,57 @@ module tb_multi_hpu_dma;
   generate
     for (genvar gen_hpu = 0; gen_hpu < HPU_NB; gen_hpu++) begin : gen_rdyvld_ctrl
       for (genvar gen_i = 0; gen_i < QSFP_LANE_NB; gen_i++) begin : gen_lane
-        always_ff @(posedge clk_mrmac) begin
-          if (~s_rstn_mrmac) begin
-            data_buf       [gen_hpu][gen_i] <= 'h0;
-            tkeep_buf      [gen_hpu][gen_i] <= 'h0;
-            last_buf       [gen_hpu][gen_i] <= 'h0;
-            has_data       [gen_hpu][gen_i] <= 'h0;
-            random_valid_en[gen_hpu][gen_i] <= 'h0;
-          end else begin
-            // Generate random valid enable (50% probability)
-            random_valid_en[gen_hpu][gen_i] <= ($urandom() % 100 < 50);
+        tb_model_backpressure #(.ENABLE(BREAK_RDY_VLD)) bp_tx (
+          .clk         (clk_mrmac),
+          .rstn        (s_rstn_mrmac),
 
-            // Accept new data from slave when we don't have data buffered
-            if (~has_data[gen_hpu][gen_i] && qsfp_tx_tvalid[gen_hpu][gen_i]) begin
-              data_buf [gen_hpu][gen_i] <= qsfp_tx_tdata     [gen_hpu][gen_i];
-              tkeep_buf[gen_hpu][gen_i] <= qsfp_tx_tkeep_user[gen_hpu][gen_i];
-              last_buf [gen_hpu][gen_i] <= qsfp_tx_tlast     [gen_hpu][gen_i];
-              has_data [gen_hpu][gen_i] <= 1'b1;
-            end
+          .s_tdata     (qsfp_tx_tdata            [gen_hpu][gen_i]),
+          .s_tkeep_user(qsfp_tx_tkeep_user       [gen_hpu][gen_i]),
+          .s_tlast     (qsfp_tx_tlast            [gen_hpu][gen_i]),
+          .s_tvalid    (qsfp_tx_tvalid           [gen_hpu][gen_i]),
+          .s_tready    (qsfp_tx_tready           [gen_hpu][gen_i]),
 
-            // Send data when random_valid is high (no ready on master)
-            if (has_data[gen_hpu][gen_i] && random_valid_en[gen_hpu][gen_i]) begin
-              has_data[gen_hpu][gen_i] <= 1'b0;
-            end
-          end
-        end
-
-        if (BREAK_RDY_VLD == 1) begin : gen_break_rdyvld
-          // backpressure
-          assign qsfp_tx_tready[gen_hpu][gen_i] = ~has_data[gen_hpu][gen_i];
-          // transmission with random valid
-          assign qsfp_tx_tdata_rdyvld[gen_hpu][gen_i] = data_buf [gen_hpu][gen_i];
-          assign qsfp_tx_tkeep_user_rdyvld[gen_hpu][gen_i] = tkeep_buf[gen_hpu][gen_i];
-          assign qsfp_tx_tlast_rdyvld[gen_hpu][gen_i] = last_buf[gen_hpu][gen_i];
-          assign qsfp_tx_tvalid_rdyvld[gen_hpu][gen_i] = has_data[gen_hpu][gen_i] && random_valid_en[gen_hpu][gen_i];
-        end else begin : gen_no_break_rdyvld
-          // backpressure
-          assign qsfp_tx_tready[gen_hpu][gen_i] = 1'b1;
-          // direct transmission
-          assign qsfp_tx_tdata_rdyvld[gen_hpu][gen_i] = qsfp_tx_tdata[gen_hpu][gen_i];
-          assign qsfp_tx_tkeep_user_rdyvld[gen_hpu][gen_i] = qsfp_tx_tkeep_user[gen_hpu][gen_i];
-          assign qsfp_tx_tlast_rdyvld[gen_hpu][gen_i] = qsfp_tx_tlast[gen_hpu][gen_i];
-          assign qsfp_tx_tvalid_rdyvld[gen_hpu][gen_i] = qsfp_tx_tvalid[gen_hpu][gen_i];
-        end
+          .m_tdata     (qsfp_rx_tdata_delayed     [1-gen_hpu][gen_i]),
+          .m_tkeep_user(qsfp_rx_tkeep_user_delayed[1-gen_hpu][gen_i]),
+          .m_tlast     (qsfp_rx_tlast_delayed     [1-gen_hpu][gen_i]),
+          .m_tvalid    (qsfp_rx_tvalid_delayed    [1-gen_hpu][gen_i])
+        );
       end
     end
   endgenerate
-
-  // ============================================================================================== --
-  // QSFP cross-connection with delay (HPU[0] TX -> HPU[1] RX and vice versa)
-  // ============================================================================================== --
-  always @(*) begin
-    // HPU[0] TX -> HPU[1] RX (with delay)
-    qsfp_rx_tdata_delayed     [1] <= #100ns qsfp_tx_tdata_rdyvld     [0];
-    qsfp_rx_tkeep_user_delayed[1] <= #100ns qsfp_tx_tkeep_user_rdyvld[0];
-    qsfp_rx_tlast_delayed     [1] <= #100ns qsfp_tx_tlast_rdyvld     [0];
-    qsfp_rx_tvalid_delayed    [1] <= #100ns qsfp_tx_tvalid_rdyvld    [0];
-
-    // HPU[1] TX -> HPU[0] RX (with delay)
-    qsfp_rx_tdata_delayed     [0] <= #100ns qsfp_tx_tdata_rdyvld     [1];
-    qsfp_rx_tkeep_user_delayed[0] <= #100ns qsfp_tx_tkeep_user_rdyvld[1];
-    qsfp_rx_tlast_delayed     [0] <= #100ns qsfp_tx_tlast_rdyvld     [1];
-    qsfp_rx_tvalid_delayed    [0] <= #100ns qsfp_tx_tvalid_rdyvld    [1];
-  end
 
 // ============================================================================================== --
 // Scenario
 // ============================================================================================== --
 
   // AXI4-LITE drivers ----------------------------------------------------------------------------
-  // AXI4-LITE driver interfaces - keeping named interfaces for test scenario compatibility
-  maxil_if #(
-    .AXIL_DATA_W(AXIL_DATA_W),
-    .AXIL_ADD_W (AXIL_ADD_W)
-  ) maxil_drv_if_hpu_a ( .clk(clk_control), .rst_n(s_rstn_control));
+  generate
+    for (genvar gen_hpu = 0; gen_hpu < HPU_NB; gen_hpu++) begin : gen_maxil_if
+      maxil_if #(
+        .AXIL_DATA_W(AXIL_DATA_W),
+        .AXIL_ADD_W (AXIL_ADD_W)
+      ) maxil_if ( .clk(clk_control), .rst_n(s_rstn_control));
 
-  // Connect interface to vectorized signals - HPU[0]
-  assign s_axil_dma_awaddr [0] = maxil_drv_if_hpu_a.awaddr;
-  assign s_axil_dma_awvalid[0] = maxil_drv_if_hpu_a.awvalid;
-  assign s_axil_dma_wdata  [0] = maxil_drv_if_hpu_a.wdata;
-  assign s_axil_dma_wstrb  [0] = maxil_drv_if_hpu_a.wstrb;
-  assign s_axil_dma_wvalid [0] = maxil_drv_if_hpu_a.wvalid;
-  assign s_axil_dma_bready [0] = maxil_drv_if_hpu_a.bready;
-  assign s_axil_dma_araddr [0] = maxil_drv_if_hpu_a.araddr;
-  assign s_axil_dma_arvalid[0] = maxil_drv_if_hpu_a.arvalid;
-  assign s_axil_dma_rready [0] = maxil_drv_if_hpu_a.rready;
+      assign s_axil_dma_awaddr [gen_hpu] = maxil_if.awaddr;
+      assign s_axil_dma_awvalid[gen_hpu] = maxil_if.awvalid;
+      assign s_axil_dma_wdata  [gen_hpu] = maxil_if.wdata;
+      assign s_axil_dma_wstrb  [gen_hpu] = maxil_if.wstrb;
+      assign s_axil_dma_wvalid [gen_hpu] = maxil_if.wvalid;
+      assign s_axil_dma_bready [gen_hpu] = maxil_if.bready;
+      assign s_axil_dma_araddr [gen_hpu] = maxil_if.araddr;
+      assign s_axil_dma_arvalid[gen_hpu] = maxil_if.arvalid;
+      assign s_axil_dma_rready [gen_hpu] = maxil_if.rready;
 
-  assign maxil_drv_if_hpu_a.awready = s_axil_dma_awready[0];
-  assign maxil_drv_if_hpu_a.wready  = s_axil_dma_wready [0];
-  assign maxil_drv_if_hpu_a.bresp   = s_axil_dma_bresp  [0];
-  assign maxil_drv_if_hpu_a.bvalid  = s_axil_dma_bvalid [0];
-  assign maxil_drv_if_hpu_a.arready = s_axil_dma_arready[0];
-  assign maxil_drv_if_hpu_a.rdata   = s_axil_dma_rdata  [0];
-  assign maxil_drv_if_hpu_a.rresp   = s_axil_dma_rresp  [0];
-  assign maxil_drv_if_hpu_a.rvalid  = s_axil_dma_rvalid [0];
-
-  maxil_if #(
-    .AXIL_DATA_W(AXIL_DATA_W),
-    .AXIL_ADD_W (AXIL_ADD_W)
-  ) maxil_drv_if_hpu_b ( .clk(clk_control), .rst_n(s_rstn_control));
-
-  // Connect interface to vectorized signals - HPU[1]
-  assign s_axil_dma_awaddr [1] = maxil_drv_if_hpu_b.awaddr;
-  assign s_axil_dma_awvalid[1] = maxil_drv_if_hpu_b.awvalid;
-  assign s_axil_dma_wdata  [1] = maxil_drv_if_hpu_b.wdata;
-  assign s_axil_dma_wstrb  [1] = maxil_drv_if_hpu_b.wstrb;
-  assign s_axil_dma_wvalid [1] = maxil_drv_if_hpu_b.wvalid;
-  assign s_axil_dma_bready [1] = maxil_drv_if_hpu_b.bready;
-  assign s_axil_dma_araddr [1] = maxil_drv_if_hpu_b.araddr;
-  assign s_axil_dma_arvalid[1] = maxil_drv_if_hpu_b.arvalid;
-  assign s_axil_dma_rready [1] = maxil_drv_if_hpu_b.rready;
-
-  assign maxil_drv_if_hpu_b.awready = s_axil_dma_awready[1];
-  assign maxil_drv_if_hpu_b.wready  = s_axil_dma_wready [1];
-  assign maxil_drv_if_hpu_b.bresp   = s_axil_dma_bresp  [1];
-  assign maxil_drv_if_hpu_b.bvalid  = s_axil_dma_bvalid [1];
-  assign maxil_drv_if_hpu_b.arready = s_axil_dma_arready[1];
-  assign maxil_drv_if_hpu_b.rdata   = s_axil_dma_rdata  [1];
-  assign maxil_drv_if_hpu_b.rresp   = s_axil_dma_rresp  [1];
-  assign maxil_drv_if_hpu_b.rvalid  = s_axil_dma_rvalid [1];
+      assign maxil_if.awready = s_axil_dma_awready[gen_hpu];
+      assign maxil_if.wready  = s_axil_dma_wready [gen_hpu];
+      assign maxil_if.bresp   = s_axil_dma_bresp  [gen_hpu];
+      assign maxil_if.bvalid  = s_axil_dma_bvalid [gen_hpu];
+      assign maxil_if.arready = s_axil_dma_arready[gen_hpu];
+      assign maxil_if.rdata   = s_axil_dma_rdata  [gen_hpu];
+      assign maxil_if.rresp   = s_axil_dma_rresp  [gen_hpu];
+      assign maxil_if.rvalid  = s_axil_dma_rvalid [gen_hpu];
+    end
+  endgenerate
 
   generate
     for (genvar gen_hpu=0; gen_hpu<HPU_NB; gen_hpu=gen_hpu+1) begin : gen_mem_hpu
@@ -610,8 +517,8 @@ module tb_multi_hpu_dma;
   // scenario -------------------------------------------------------------------------------------
   int scenario_id;
   initial begin
-    maxil_drv_if_hpu_a.init();
-    maxil_drv_if_hpu_b.init();
+    gen_maxil_if[0].maxil_if.init();
+    gen_maxil_if[1].maxil_if.init();
 
     reset_registers = 'h0;
     tx_loop         = 'h0;
@@ -654,7 +561,7 @@ module tb_multi_hpu_dma;
       wait (interrupt_notify[0] == 1'b1);
 
       // Interrupt detected, checking Notify payload
-      maxil_drv_if_hpu_a.read_trans(MHDMA_REQUEST_NOTIFY_OFS, read_data);
+      gen_maxil_if[0].maxil_if.read_trans(MHDMA_REQUEST_NOTIFY_OFS, read_data);
 
       assert (read_data == notify_payload) else begin
         $display("%t > [ERROR]: Payload DATA incorrect %x %x", $time, read_data, notify_payload);
@@ -671,7 +578,7 @@ module tb_multi_hpu_dma;
       read_request(random_hpu_b, iop_id, iop_src_addr, iop_dst_addr);
 
       wait (interrupt_read_request[0] == 1'b1);
-      maxil_drv_if_hpu_a.read_trans(MHDMA_REQUEST_READ_REQUEST_OFS, read_data);
+      gen_maxil_if[0].maxil_if.read_trans(MHDMA_REQUEST_READ_REQUEST_OFS, read_data);
 
       received_address = read_data[31:16];
       received_hpu_id  = read_data[11:8];
@@ -715,7 +622,7 @@ module tb_multi_hpu_dma;
 
         // we must wait for interrupt to be raised before reading
         wait (interrupt_notify[0] == 1'b1);
-        maxil_drv_if_hpu_a.read_trans(MHDMA_REQUEST_NOTIFY_OFS, read_data);
+        gen_maxil_if[0].maxil_if.read_trans(MHDMA_REQUEST_NOTIFY_OFS, read_data);
         expected_notify_payload = notify_payload_ref_q.pop_back();
 
         assert (read_data == expected_notify_payload) else begin
@@ -754,7 +661,7 @@ module tb_multi_hpu_dma;
 
         // we must wait for interrupt to be raised before reading
         wait (interrupt_notify[1] == 1'b1);
-        maxil_drv_if_hpu_b.read_trans(MHDMA_REQUEST_NOTIFY_OFS, read_data);
+        gen_maxil_if[1].maxil_if.read_trans(MHDMA_REQUEST_NOTIFY_OFS, read_data);
         expected_notify_payload = notify_payload_ref_q.pop_back();
 
         assert (read_data == expected_notify_payload) else begin
@@ -798,7 +705,7 @@ module tb_multi_hpu_dma;
       iop_dst_addr = $urandom_range(0, MEM_MAX_VALUE-1);
       // we must wait for interrupt to be raised before reading
       wait (interrupt_read_request[0] == 1'b1);
-      maxil_drv_if_hpu_a.read_trans(MHDMA_REQUEST_READ_REQUEST_OFS, read_data);
+      gen_maxil_if[0].maxil_if.read_trans(MHDMA_REQUEST_READ_REQUEST_OFS, read_data);
       rr_payload_expected = rr_payload_ref_q.pop_back();
 
       assert (read_data == rr_payload_expected) else begin
@@ -821,7 +728,7 @@ module tb_multi_hpu_dma;
     $display("  Reading registers");
     $display("==================================================================================================");
 
-    maxil_drv_if_hpu_a.read_trans(MHDMA_SYSTEM_ERRORS_OFS, stat_errors);
+    gen_maxil_if[0].maxil_if.read_trans(MHDMA_SYSTEM_ERRORS_OFS, stat_errors);
 
     display_errors(stat_errors);
 
@@ -831,17 +738,17 @@ module tb_multi_hpu_dma;
     end
 
     $display("\n ----------------- HPU_A -------------------------------------");
-    maxil_drv_if_hpu_a.read_trans(MHDMA_REQUEST_STAT_NOTIFY_OFS,                 stat_notify);
-    maxil_drv_if_hpu_a.read_trans(MHDMA_REQUEST_STAT_NOTIFY_ACK_OFS,             stat_notify_ack);
-    maxil_drv_if_hpu_a.read_trans(MHDMA_REQUEST_STAT_NOTIFY_TIMEOUT_RETRY_OFS,   stat_notify_retry);
-    maxil_drv_if_hpu_a.read_trans(MHDMA_REQUEST_STAT_NOTIFY_TIMEOUT_OFS,         stat_notify_timeout);
-    maxil_drv_if_hpu_a.read_trans(MHDMA_REQUEST_STAT_T_NOTIFY_TO_ACK_OFS,        stat_t_notify_to_ack);
-    maxil_drv_if_hpu_a.read_trans(MHDMA_REQUEST_STAT_T_RR_TO_CE_RECEIVED_OFS,    stat_t_rr_to_ce_received);
-    maxil_drv_if_hpu_a.read_trans(MHDMA_REQUEST_STAT_T_CE_FIRST_TO_LAST_PKT_OFS, stat_t_ce_first_to_last_pkt);
-    maxil_drv_if_hpu_a.read_trans(MHDMA_REQUEST_STAT_NB_NACK_RECEIVED_OFS,       stat_cnt_nack_received);
-    maxil_drv_if_hpu_a.read_trans(MHDMA_REQUEST_STAT_NB_NOTIFY_RECEIVED_OFS,     stat_cnt_notify_received);
-    maxil_drv_if_hpu_a.read_trans(MHDMA_REQUEST_STAT_NB_READ_REQ_RECEIVED_OFS,   stat_cnt_read_req_received);
-    maxil_drv_if_hpu_a.read_trans(MHDMA_REQUEST_STAT_NB_CE_RECEIVED_OFS,         stat_cnt_ce_received);
+    gen_maxil_if[0].maxil_if.read_trans(MHDMA_REQUEST_STAT_NOTIFY_OFS,                 stat_notify);
+    gen_maxil_if[0].maxil_if.read_trans(MHDMA_REQUEST_STAT_NOTIFY_ACK_OFS,             stat_notify_ack);
+    gen_maxil_if[0].maxil_if.read_trans(MHDMA_REQUEST_STAT_NOTIFY_TIMEOUT_RETRY_OFS,   stat_notify_retry);
+    gen_maxil_if[0].maxil_if.read_trans(MHDMA_REQUEST_STAT_NOTIFY_TIMEOUT_OFS,         stat_notify_timeout);
+    gen_maxil_if[0].maxil_if.read_trans(MHDMA_REQUEST_STAT_T_NOTIFY_TO_ACK_OFS,        stat_t_notify_to_ack);
+    gen_maxil_if[0].maxil_if.read_trans(MHDMA_REQUEST_STAT_T_RR_TO_CE_RECEIVED_OFS,    stat_t_rr_to_ce_received);
+    gen_maxil_if[0].maxil_if.read_trans(MHDMA_REQUEST_STAT_T_CE_FIRST_TO_LAST_PKT_OFS, stat_t_ce_first_to_last_pkt);
+    gen_maxil_if[0].maxil_if.read_trans(MHDMA_REQUEST_STAT_NB_NACK_RECEIVED_OFS,       stat_cnt_nack_received);
+    gen_maxil_if[0].maxil_if.read_trans(MHDMA_REQUEST_STAT_NB_NOTIFY_RECEIVED_OFS,     stat_cnt_notify_received);
+    gen_maxil_if[0].maxil_if.read_trans(MHDMA_REQUEST_STAT_NB_READ_REQ_RECEIVED_OFS,   stat_cnt_read_req_received);
+    gen_maxil_if[0].maxil_if.read_trans(MHDMA_REQUEST_STAT_NB_CE_RECEIVED_OFS,         stat_cnt_ce_received);
     $display(" stat_notify                 : %0d", stat_notify);
     $display(" stat_notify_ack             : %0d", stat_notify_ack);
     $display(" stat_notify_retry           : %0d", stat_notify_retry);
@@ -853,17 +760,17 @@ module tb_multi_hpu_dma;
     $display(" stat_cnt_notify_received    : %0d", stat_cnt_notify_received);
     $display(" stat_cnt_read_req_received  : %0d", stat_cnt_read_req_received);
     $display(" stat_cnt_ce_received        : %0d", stat_cnt_ce_received);
-    maxil_drv_if_hpu_a.read_trans(MHDMA_REQUEST_STAT_NB_READ_TO_HBM_OFS, stat_nb_read_to_hbm);
-    maxil_drv_if_hpu_a.read_trans(MHDMA_REQUEST_STAT_NB_WORDS_RECEIVED_PC_PC0_OFS, stat_nb_words_received_pc[0]);
-    maxil_drv_if_hpu_a.read_trans(MHDMA_REQUEST_STAT_NB_WORDS_RECEIVED_PC_PC1_OFS, stat_nb_words_received_pc[1]);
-    maxil_drv_if_hpu_a.read_trans(MHDMA_REQUEST_STAT_T_RR_WAIT_WORDS_PC_PC0_OFS, stat_t_rr_wait_words_pc[0]);
-    maxil_drv_if_hpu_a.read_trans(MHDMA_REQUEST_STAT_T_RR_WAIT_WORDS_PC_PC1_OFS, stat_t_rr_wait_words_pc[1]);
-    maxil_drv_if_hpu_a.read_trans(MHDMA_REQUEST_STAT_PHYSICAL_ADDR_PC0_LSB_OFS, stat_rr_phy_addr[0][REG_DATA_W-1:0]);
-    maxil_drv_if_hpu_a.read_trans(MHDMA_REQUEST_STAT_PHYSICAL_ADDR_PC0_MSB_OFS, stat_rr_phy_addr[0][2*REG_DATA_W-1:REG_DATA_W]);
-    maxil_drv_if_hpu_a.read_trans(MHDMA_REQUEST_STAT_PHYSICAL_ADDR_PC1_LSB_OFS, stat_rr_phy_addr[1][REG_DATA_W-1:0]);
-    maxil_drv_if_hpu_a.read_trans(MHDMA_REQUEST_STAT_PHYSICAL_ADDR_PC1_MSB_OFS, stat_rr_phy_addr[1][2*REG_DATA_W-1:REG_DATA_W]);
-    maxil_drv_if_hpu_a.read_trans(MHDMA_REQUEST_STAT_NB_CE_WORDS_RECEIVED_OFS, stat_nb_ce_words_received);
-    maxil_drv_if_hpu_a.read_trans(MHDMA_REQUEST_STAT_CNT_NB_WRITE_COMPLETE_OFS, stat_nb_write_complete);
+    gen_maxil_if[0].maxil_if.read_trans(MHDMA_REQUEST_STAT_NB_READ_TO_HBM_OFS, stat_nb_read_to_hbm);
+    gen_maxil_if[0].maxil_if.read_trans(MHDMA_REQUEST_STAT_NB_WORDS_RECEIVED_PC_PC0_OFS, stat_nb_words_received_pc[0]);
+    gen_maxil_if[0].maxil_if.read_trans(MHDMA_REQUEST_STAT_NB_WORDS_RECEIVED_PC_PC1_OFS, stat_nb_words_received_pc[1]);
+    gen_maxil_if[0].maxil_if.read_trans(MHDMA_REQUEST_STAT_T_RR_WAIT_WORDS_PC_PC0_OFS, stat_t_rr_wait_words_pc[0]);
+    gen_maxil_if[0].maxil_if.read_trans(MHDMA_REQUEST_STAT_T_RR_WAIT_WORDS_PC_PC1_OFS, stat_t_rr_wait_words_pc[1]);
+    gen_maxil_if[0].maxil_if.read_trans(MHDMA_REQUEST_STAT_PHYSICAL_ADDR_PC0_LSB_OFS, stat_rr_phy_addr[0][REG_DATA_W-1:0]);
+    gen_maxil_if[0].maxil_if.read_trans(MHDMA_REQUEST_STAT_PHYSICAL_ADDR_PC0_MSB_OFS, stat_rr_phy_addr[0][2*REG_DATA_W-1:REG_DATA_W]);
+    gen_maxil_if[0].maxil_if.read_trans(MHDMA_REQUEST_STAT_PHYSICAL_ADDR_PC1_LSB_OFS, stat_rr_phy_addr[1][REG_DATA_W-1:0]);
+    gen_maxil_if[0].maxil_if.read_trans(MHDMA_REQUEST_STAT_PHYSICAL_ADDR_PC1_MSB_OFS, stat_rr_phy_addr[1][2*REG_DATA_W-1:REG_DATA_W]);
+    gen_maxil_if[0].maxil_if.read_trans(MHDMA_REQUEST_STAT_NB_CE_WORDS_RECEIVED_OFS, stat_nb_ce_words_received);
+    gen_maxil_if[0].maxil_if.read_trans(MHDMA_REQUEST_STAT_CNT_NB_WRITE_COMPLETE_OFS, stat_nb_write_complete);
     $display(" stat_nb_read_to_hbm           : %0d", stat_nb_read_to_hbm);
     $display(" stat_nb_words_received_pc [0] : %0d", stat_nb_words_received_pc[0]);
     $display(" stat_nb_words_received_pc [1] : %0d", stat_nb_words_received_pc[1]);
@@ -875,17 +782,17 @@ module tb_multi_hpu_dma;
     $display(" stat_nb_write_complete        : %0d", stat_nb_write_complete);
 
     $display(" ----------------- HPU_B -------------------------------------");
-    maxil_drv_if_hpu_b.read_trans(MHDMA_REQUEST_STAT_NOTIFY_OFS,                 stat_notify);
-    maxil_drv_if_hpu_b.read_trans(MHDMA_REQUEST_STAT_NOTIFY_ACK_OFS,             stat_notify_ack);
-    maxil_drv_if_hpu_b.read_trans(MHDMA_REQUEST_STAT_NOTIFY_TIMEOUT_RETRY_OFS,   stat_notify_retry);
-    maxil_drv_if_hpu_b.read_trans(MHDMA_REQUEST_STAT_NOTIFY_TIMEOUT_OFS,         stat_notify_timeout);
-    maxil_drv_if_hpu_b.read_trans(MHDMA_REQUEST_STAT_T_NOTIFY_TO_ACK_OFS,        stat_t_notify_to_ack);
-    maxil_drv_if_hpu_b.read_trans(MHDMA_REQUEST_STAT_T_RR_TO_CE_RECEIVED_OFS,    stat_t_rr_to_ce_received);
-    maxil_drv_if_hpu_b.read_trans(MHDMA_REQUEST_STAT_T_CE_FIRST_TO_LAST_PKT_OFS, stat_t_ce_first_to_last_pkt);
-    maxil_drv_if_hpu_b.read_trans(MHDMA_REQUEST_STAT_NB_NACK_RECEIVED_OFS,       stat_cnt_nack_received);
-    maxil_drv_if_hpu_b.read_trans(MHDMA_REQUEST_STAT_NB_NOTIFY_RECEIVED_OFS,     stat_cnt_notify_received);
-    maxil_drv_if_hpu_b.read_trans(MHDMA_REQUEST_STAT_NB_READ_REQ_RECEIVED_OFS,   stat_cnt_read_req_received);
-    maxil_drv_if_hpu_b.read_trans(MHDMA_REQUEST_STAT_NB_CE_RECEIVED_OFS,         stat_cnt_ce_received);
+    gen_maxil_if[1].maxil_if.read_trans(MHDMA_REQUEST_STAT_NOTIFY_OFS,                 stat_notify);
+    gen_maxil_if[1].maxil_if.read_trans(MHDMA_REQUEST_STAT_NOTIFY_ACK_OFS,             stat_notify_ack);
+    gen_maxil_if[1].maxil_if.read_trans(MHDMA_REQUEST_STAT_NOTIFY_TIMEOUT_RETRY_OFS,   stat_notify_retry);
+    gen_maxil_if[1].maxil_if.read_trans(MHDMA_REQUEST_STAT_NOTIFY_TIMEOUT_OFS,         stat_notify_timeout);
+    gen_maxil_if[1].maxil_if.read_trans(MHDMA_REQUEST_STAT_T_NOTIFY_TO_ACK_OFS,        stat_t_notify_to_ack);
+    gen_maxil_if[1].maxil_if.read_trans(MHDMA_REQUEST_STAT_T_RR_TO_CE_RECEIVED_OFS,    stat_t_rr_to_ce_received);
+    gen_maxil_if[1].maxil_if.read_trans(MHDMA_REQUEST_STAT_T_CE_FIRST_TO_LAST_PKT_OFS, stat_t_ce_first_to_last_pkt);
+    gen_maxil_if[1].maxil_if.read_trans(MHDMA_REQUEST_STAT_NB_NACK_RECEIVED_OFS,       stat_cnt_nack_received);
+    gen_maxil_if[1].maxil_if.read_trans(MHDMA_REQUEST_STAT_NB_NOTIFY_RECEIVED_OFS,     stat_cnt_notify_received);
+    gen_maxil_if[1].maxil_if.read_trans(MHDMA_REQUEST_STAT_NB_READ_REQ_RECEIVED_OFS,   stat_cnt_read_req_received);
+    gen_maxil_if[1].maxil_if.read_trans(MHDMA_REQUEST_STAT_NB_CE_RECEIVED_OFS,         stat_cnt_ce_received);
     $display(" stat_notify                 : %0d", stat_notify);
     $display(" stat_notify_ack             : %0d", stat_notify_ack);
     $display(" stat_notify_retry           : %0d", stat_notify_retry);
@@ -897,17 +804,17 @@ module tb_multi_hpu_dma;
     $display(" stat_cnt_notify_received    : %0d", stat_cnt_notify_received);
     $display(" stat_cnt_read_req_received  : %0d", stat_cnt_read_req_received);
     $display(" stat_cnt_ce_received        : %0d", stat_cnt_ce_received);
-    maxil_drv_if_hpu_b.read_trans(MHDMA_REQUEST_STAT_NB_READ_TO_HBM_OFS, stat_nb_read_to_hbm);
-    maxil_drv_if_hpu_b.read_trans(MHDMA_REQUEST_STAT_NB_WORDS_RECEIVED_PC_PC0_OFS, stat_nb_words_received_pc[0]);
-    maxil_drv_if_hpu_b.read_trans(MHDMA_REQUEST_STAT_NB_WORDS_RECEIVED_PC_PC1_OFS, stat_nb_words_received_pc[1]);
-    maxil_drv_if_hpu_b.read_trans(MHDMA_REQUEST_STAT_T_RR_WAIT_WORDS_PC_PC0_OFS, stat_t_rr_wait_words_pc[0]);
-    maxil_drv_if_hpu_b.read_trans(MHDMA_REQUEST_STAT_T_RR_WAIT_WORDS_PC_PC1_OFS, stat_t_rr_wait_words_pc[1]);
-    maxil_drv_if_hpu_b.read_trans(MHDMA_REQUEST_STAT_PHYSICAL_ADDR_PC0_LSB_OFS, stat_rr_phy_addr[0][REG_DATA_W-1:0]);
-    maxil_drv_if_hpu_b.read_trans(MHDMA_REQUEST_STAT_PHYSICAL_ADDR_PC0_MSB_OFS, stat_rr_phy_addr[0][2*REG_DATA_W-1:REG_DATA_W]);
-    maxil_drv_if_hpu_b.read_trans(MHDMA_REQUEST_STAT_PHYSICAL_ADDR_PC1_LSB_OFS, stat_rr_phy_addr[1][REG_DATA_W-1:0]);
-    maxil_drv_if_hpu_b.read_trans(MHDMA_REQUEST_STAT_PHYSICAL_ADDR_PC1_MSB_OFS, stat_rr_phy_addr[1][2*REG_DATA_W-1:REG_DATA_W]);
-    maxil_drv_if_hpu_b.read_trans(MHDMA_REQUEST_STAT_NB_CE_WORDS_RECEIVED_OFS, stat_nb_ce_words_received);
-    maxil_drv_if_hpu_b.read_trans(MHDMA_REQUEST_STAT_CNT_NB_WRITE_COMPLETE_OFS, stat_nb_write_complete);
+    gen_maxil_if[1].maxil_if.read_trans(MHDMA_REQUEST_STAT_NB_READ_TO_HBM_OFS, stat_nb_read_to_hbm);
+    gen_maxil_if[1].maxil_if.read_trans(MHDMA_REQUEST_STAT_NB_WORDS_RECEIVED_PC_PC0_OFS, stat_nb_words_received_pc[0]);
+    gen_maxil_if[1].maxil_if.read_trans(MHDMA_REQUEST_STAT_NB_WORDS_RECEIVED_PC_PC1_OFS, stat_nb_words_received_pc[1]);
+    gen_maxil_if[1].maxil_if.read_trans(MHDMA_REQUEST_STAT_T_RR_WAIT_WORDS_PC_PC0_OFS, stat_t_rr_wait_words_pc[0]);
+    gen_maxil_if[1].maxil_if.read_trans(MHDMA_REQUEST_STAT_T_RR_WAIT_WORDS_PC_PC1_OFS, stat_t_rr_wait_words_pc[1]);
+    gen_maxil_if[1].maxil_if.read_trans(MHDMA_REQUEST_STAT_PHYSICAL_ADDR_PC0_LSB_OFS, stat_rr_phy_addr[0][REG_DATA_W-1:0]);
+    gen_maxil_if[1].maxil_if.read_trans(MHDMA_REQUEST_STAT_PHYSICAL_ADDR_PC0_MSB_OFS, stat_rr_phy_addr[0][2*REG_DATA_W-1:REG_DATA_W]);
+    gen_maxil_if[1].maxil_if.read_trans(MHDMA_REQUEST_STAT_PHYSICAL_ADDR_PC1_LSB_OFS, stat_rr_phy_addr[1][REG_DATA_W-1:0]);
+    gen_maxil_if[1].maxil_if.read_trans(MHDMA_REQUEST_STAT_PHYSICAL_ADDR_PC1_MSB_OFS, stat_rr_phy_addr[1][2*REG_DATA_W-1:REG_DATA_W]);
+    gen_maxil_if[1].maxil_if.read_trans(MHDMA_REQUEST_STAT_NB_CE_WORDS_RECEIVED_OFS, stat_nb_ce_words_received);
+    gen_maxil_if[1].maxil_if.read_trans(MHDMA_REQUEST_STAT_CNT_NB_WRITE_COMPLETE_OFS, stat_nb_write_complete);
     $display(" stat_nb_read_to_hbm           : %0d", stat_nb_read_to_hbm);
     $display(" stat_nb_words_received_pc [0] : %0d", stat_nb_words_received_pc[0]);
     $display(" stat_nb_words_received_pc [1] : %0d", stat_nb_words_received_pc[1]);
@@ -932,7 +839,7 @@ module tb_multi_hpu_dma;
   task automatic init_config;
     begin
     // Reading system REGISTERS -------------------------------------------------------------------
-      maxil_drv_if_hpu_a.read_trans(MHDMA_SYSTEM_LANE_OFS, rdata);
+      gen_maxil_if[0].maxil_if.read_trans(MHDMA_SYSTEM_LANE_OFS, rdata);
       assert (rdata == 'h0) else begin
         $display("%t > ERROR:register SYSTEM_LINE_OFS not correctly read %h",$time, rdata);
         error_register_read = 1'b1;
@@ -945,16 +852,16 @@ module tb_multi_hpu_dma;
     debug_flag    = 1'b0;
     @(posedge clk_control);
 
-    maxil_drv_if_hpu_a.write_trans(MHDMA_SYSTEM_LANE_OFS, line_parameter);
-    maxil_drv_if_hpu_b.write_trans(MHDMA_SYSTEM_LANE_OFS, line_parameter);
+    gen_maxil_if[0].maxil_if.write_trans(MHDMA_SYSTEM_LANE_OFS, line_parameter);
+    gen_maxil_if[1].maxil_if.write_trans(MHDMA_SYSTEM_LANE_OFS, line_parameter);
 
     rst_rx_datapath = 4'b0100;
     rst_tx_datapath = 4'b1011;
     rst_all         = 4'b0101;
     @(posedge clk_control);
 
-    maxil_drv_if_hpu_a.write_trans(MHDMA_RESET_DATAPATH_OFS, reset_parameter);
-    maxil_drv_if_hpu_b.write_trans(MHDMA_RESET_DATAPATH_OFS, reset_parameter);
+    gen_maxil_if[0].maxil_if.write_trans(MHDMA_RESET_DATAPATH_OFS, reset_parameter);
+    gen_maxil_if[1].maxil_if.write_trans(MHDMA_RESET_DATAPATH_OFS, reset_parameter);
 
     assert ((gt_line_rate[0] == line_rate) && (gt_line_rate[1] == line_rate)) else begin
       $display("[ERROR] line_rate has unexpected value %x %x %x",gt_line_rate[0], gt_line_rate[1], line_rate);
@@ -984,8 +891,8 @@ module tb_multi_hpu_dma;
     end
     @(posedge clk_control);
 
-    maxil_drv_if_hpu_a.read_trans(MHDMA_RESET_MONITOR_OFS, reset_monitor[0]);
-    maxil_drv_if_hpu_b.read_trans(MHDMA_RESET_MONITOR_OFS, reset_monitor[1]);
+    gen_maxil_if[0].maxil_if.read_trans(MHDMA_RESET_MONITOR_OFS, reset_monitor[0]);
+    gen_maxil_if[1].maxil_if.read_trans(MHDMA_RESET_MONITOR_OFS, reset_monitor[1]);
 
     assert ((reset_monitor[0][3:0] != gt_tx_reset_done) | (reset_monitor[0][7:4] != gt_rx_reset_done)) else begin
       $display("[ERROR] reset monitor has not been read correctly in HPU A");
@@ -998,15 +905,15 @@ module tb_multi_hpu_dma;
 
     // Setting timeout size to both HPUs ----------------------------------------------------------
     // keeping default value
-    maxil_drv_if_hpu_a.write_trans(MHDMA_HBM_AXI4_ADDR_2IN3_CT_PC0_LSB_OFS, 'hF);
-    maxil_drv_if_hpu_a.write_trans(MHDMA_HBM_AXI4_ADDR_2IN3_CT_PC0_MSB_OFS, 'h0);
-    maxil_drv_if_hpu_a.write_trans(MHDMA_HBM_AXI4_ADDR_2IN3_CT_PC1_LSB_OFS, 'hA);
-    maxil_drv_if_hpu_a.write_trans(MHDMA_HBM_AXI4_ADDR_2IN3_CT_PC1_MSB_OFS, 'h0);
+    gen_maxil_if[0].maxil_if.write_trans(MHDMA_HBM_AXI4_ADDR_2IN3_CT_PC0_LSB_OFS, 'hF);
+    gen_maxil_if[0].maxil_if.write_trans(MHDMA_HBM_AXI4_ADDR_2IN3_CT_PC0_MSB_OFS, 'h0);
+    gen_maxil_if[0].maxil_if.write_trans(MHDMA_HBM_AXI4_ADDR_2IN3_CT_PC1_LSB_OFS, 'hA);
+    gen_maxil_if[0].maxil_if.write_trans(MHDMA_HBM_AXI4_ADDR_2IN3_CT_PC1_MSB_OFS, 'h0);
 
-    maxil_drv_if_hpu_b.write_trans(MHDMA_HBM_AXI4_ADDR_2IN3_CT_PC0_LSB_OFS, 'hF);
-    maxil_drv_if_hpu_b.write_trans(MHDMA_HBM_AXI4_ADDR_2IN3_CT_PC0_MSB_OFS, 'h0);
-    maxil_drv_if_hpu_b.write_trans(MHDMA_HBM_AXI4_ADDR_2IN3_CT_PC1_LSB_OFS, 'hA);
-    maxil_drv_if_hpu_b.write_trans(MHDMA_HBM_AXI4_ADDR_2IN3_CT_PC1_MSB_OFS, 'h0);
+    gen_maxil_if[1].maxil_if.write_trans(MHDMA_HBM_AXI4_ADDR_2IN3_CT_PC0_LSB_OFS, 'hF);
+    gen_maxil_if[1].maxil_if.write_trans(MHDMA_HBM_AXI4_ADDR_2IN3_CT_PC0_MSB_OFS, 'h0);
+    gen_maxil_if[1].maxil_if.write_trans(MHDMA_HBM_AXI4_ADDR_2IN3_CT_PC1_LSB_OFS, 'hA);
+    gen_maxil_if[1].maxil_if.write_trans(MHDMA_HBM_AXI4_ADDR_2IN3_CT_PC1_MSB_OFS, 'h0);
 
     // Setting up credible values -------------------------------------------------------------
     // no loopback, no reset, not in debug & lane0 selected
@@ -1064,8 +971,8 @@ module tb_multi_hpu_dma;
         end
 
         $display("| HPU_ID=%0d :: MAC=%6x |", i, mac_addr);
-        maxil_drv_if_hpu_a.write_trans(MHDMA_SYSTEM_HPU_ID_0_OFS+(4*i), register_mac_addr_a);
-        maxil_drv_if_hpu_b.write_trans(MHDMA_SYSTEM_HPU_ID_0_OFS+(4*i), register_mac_addr_b);
+        gen_maxil_if[0].maxil_if.write_trans(MHDMA_SYSTEM_HPU_ID_0_OFS+(4*i), register_mac_addr_a);
+        gen_maxil_if[1].maxil_if.write_trans(MHDMA_SYSTEM_HPU_ID_0_OFS+(4*i), register_mac_addr_b);
       end
       $display("└------------------------┘");
 
@@ -1088,8 +995,8 @@ module tb_multi_hpu_dma;
       read_req_addr = {dest_addr, src_addr};
       read_req_id = {iop_id, REQ_ID_READ, node_id, req_size_b};
 
-      maxil_drv_if_hpu_a.write_trans(MHDMA_REQUEST_REQ_ADDR_OFS, read_req_addr);
-      maxil_drv_if_hpu_a.write_trans(MHDMA_REQUEST_REQ_ID_OFS, read_req_id);
+      gen_maxil_if[0].maxil_if.write_trans(MHDMA_REQUEST_REQ_ADDR_OFS, read_req_addr);
+      gen_maxil_if[0].maxil_if.write_trans(MHDMA_REQUEST_REQ_ID_OFS, read_req_id);
       // there is as well the hbm pc offsets to write from RPU pov but in simulation we let it set to 0
     end
   endtask
@@ -1113,11 +1020,11 @@ module tb_multi_hpu_dma;
       read_req_id = {iop_id, REQ_ID_NOTIFY, dst_node_id, req_size_b};
 
       if (src_node_id == random_hpu_a) begin
-        maxil_drv_if_hpu_a.write_trans(MHDMA_REQUEST_REQ_ADDR_OFS, read_req_addr);
-        maxil_drv_if_hpu_a.write_trans(MHDMA_REQUEST_REQ_ID_OFS, read_req_id);
+        gen_maxil_if[0].maxil_if.write_trans(MHDMA_REQUEST_REQ_ADDR_OFS, read_req_addr);
+        gen_maxil_if[0].maxil_if.write_trans(MHDMA_REQUEST_REQ_ID_OFS, read_req_id);
       end else if (src_node_id == random_hpu_b) begin
-        maxil_drv_if_hpu_b.write_trans(MHDMA_REQUEST_REQ_ADDR_OFS, read_req_addr);
-        maxil_drv_if_hpu_b.write_trans(MHDMA_REQUEST_REQ_ID_OFS, read_req_id);
+        gen_maxil_if[1].maxil_if.write_trans(MHDMA_REQUEST_REQ_ADDR_OFS, read_req_addr);
+        gen_maxil_if[1].maxil_if.write_trans(MHDMA_REQUEST_REQ_ID_OFS, read_req_id);
       end else begin
         $display("[ERROR] you are trying to send a Notify request from an HPU non instantiated");
         error_tb_notify = 1'b1;

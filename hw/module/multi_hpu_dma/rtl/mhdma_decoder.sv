@@ -35,8 +35,8 @@ module mhdma_decoder
   input  logic                     rst_cnt_read_req_received,
   input  logic                     rst_cnt_ce_received,
   // Error interface ----------------------------------------------------------
-  output decoder_error_t          decoder_error,
-  input  logic                    rst_errors,
+  output decoder_error_t           decoder_error,
+  input  logic                     rst_errors,
   // QSFP system interface ----------------------------------------------------
   // == RX
   input  logic [MRMAC_AXIS_W-1:0]  qsfp_rx_tdata,

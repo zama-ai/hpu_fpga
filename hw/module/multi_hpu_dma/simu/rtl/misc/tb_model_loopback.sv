@@ -9,7 +9,7 @@
 //
 // ==============================================================================================
 
-module model_loopback
+module tb_model_loopback
   import mhdma_pkg::*;
 #() (
   // Ethernet fast clock interface --------------------------------------------
