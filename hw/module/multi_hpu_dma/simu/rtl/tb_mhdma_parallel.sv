@@ -44,14 +44,6 @@ module tb_mhdma_parallel;
   localparam int MEM_SIM_SIZE = 18;         // must be < 22
   localparam int SIZE_B_SIM   = 'h40;
 
-  // Use CT_MEM_BYTES from pem_common_param_pkg for address calculation
-  localparam int PC_CT_BYTES [ETH_PC] = '{CT_MEM_BYTES, CT_MEM_BYTES};
-
-  localparam int MAX_BURST_SIZE = PAGE_BYTES/AXI4_DATA_BYTES;
-
-  // Word counts from pem_common_param_pkg
-  localparam int PC_NB_WORDS [ETH_PC] = '{AXI4_WORD_PER_PC0, AXI4_WORD_PER_PC};
-
 // ============================================================================================== --
 // clock, reset
 // ============================================================================================== --
@@ -812,11 +804,8 @@ end
             value |= (w << (j*64));
             val_id++;
           end
-          // TODO / TOREVIEW: Limitation on dynamical definitions :/
-          gen_mem_hpu[1].gen_mem_pc[0].axi4_mem_ct.axi4_ram_ct_wr.mem[k] = value;
-          gen_mem_hpu[1].gen_mem_pc[1].axi4_mem_ct.axi4_ram_ct_wr.mem[k] = value;
-          gen_mem_hpu[0].gen_mem_pc[0].axi4_mem_ct.axi4_ram_ct_wr.mem[k] = !value;
-          gen_mem_hpu[0].gen_mem_pc[1].axi4_mem_ct.axi4_ram_ct_wr.mem[k] = !value;
+          gen_mem_hpu[1].gen_mem_pc[gen_pc].axi4_mem_ct.axi4_ram_ct_wr.mem[k] = value;
+          gen_mem_hpu[0].gen_mem_pc[gen_pc].axi4_mem_ct.axi4_ram_ct_wr.mem[k] = !value;
         end
       end
     // end
@@ -1052,7 +1041,7 @@ end
 
     // Check both PCs
     for (int pc = 0; pc < ETH_PC; pc++) begin
-      nb_words = PC_NB_WORDS[pc];
+      nb_words = (pc == 0) ? AXI4_WORD_PER_PC0 : AXI4_WORD_PER_PC;
 
       for (int k = 0; k < nb_words; k++) begin
         // Get values based on PC index (cannot dynamically index generate blocks)

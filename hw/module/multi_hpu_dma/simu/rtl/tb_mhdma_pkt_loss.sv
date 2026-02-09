@@ -62,10 +62,9 @@ module tb_mhdma_pkt_loss;
   localparam int MAX_BURST_SIZE  = PAGE_BYTES/AXI4_DATA_BYTES;
 
   // Use CT_MEM_BYTES from pem_common_param_pkg for address calculation
-  localparam int PC_CT_BYTES [ETH_PC] = '{CT_MEM_BYTES, CT_MEM_BYTES};
+  localparam int PC_CT_BYTES [ETH_PC] = '{default: CT_MEM_BYTES};
 
-  // Word counts from pem_common_param_pkg
-  localparam int PC_NB_WORDS [ETH_PC] = '{AXI4_WORD_PER_PC0, AXI4_WORD_PER_PC};
+  // PC0 has one extra word (body word), remaining PCs use AXI4_WORD_PER_PC
 
   localparam int TOTAL_NB_PACKETS = $ceil(CT_NB_COEF / NB_WORDS_PAYLOAD) + 1;
 // ============================================================================================== --
@@ -835,14 +834,12 @@ logic [DST_ADDR_W-1:0] dst_addr;
           val_id++;
         end
 
-        gen_mem_pc[0].axi4_mem_ct.axi4_ram_ct_wr.mem[k] = value;
-        gen_mem_pc[1].axi4_mem_ct.axi4_ram_ct_wr.mem[k] = value;
+        gen_mem_pc[gen_pc].axi4_mem_ct.axi4_ram_ct_wr.mem[k] = value;
       end
     end
     for (int gen_pc = 0; gen_pc < ETH_PC; ++gen_pc) begin
       for (int k = 0; k < 2**MEM_SIM_SIZE; ++k) begin
-        gen_mem_pc[0].axi4_mem_ct.axi4_ram_ct_wr.mem[k] = 'h0;
-        gen_mem_pc[1].axi4_mem_ct.axi4_ram_ct_wr.mem[k] = 'h0;
+        gen_mem_pc[gen_pc].axi4_mem_ct.axi4_ram_ct_wr.mem[k] = 'h0;
     end
     end
   end

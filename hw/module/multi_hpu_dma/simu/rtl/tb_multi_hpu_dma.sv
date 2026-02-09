@@ -46,16 +46,8 @@ module tb_multi_hpu_dma;
   localparam int MEM_SIM_SIZE = 18; // must be < 22 in order to not slow down sim too much!
   localparam int SIZE_B_SIM   = 'h40;
 
-  // Use CT_MEM_BYTES from pem_common_param_pkg for address calculation
-  localparam int PC_CT_BYTES [ETH_PC] = '{CT_MEM_BYTES, CT_MEM_BYTES};
-
   // Max ciphertext ID based on memory simulation size
   localparam int MEM_MAX_VALUE = (1 << MEM_SIM_SIZE) / CT_MEM_BYTES;
-
-  localparam int MAX_BURST_SIZE = PAGE_BYTES/AXI4_DATA_BYTES;
-
-  // Word counts from pem_common_param_pkg
-  localparam int PC_NB_WORDS [ETH_PC] = '{AXI4_WORD_PER_PC0, AXI4_WORD_PER_PC};
 
 // ============================================================================================== --
 // clock, reset
@@ -627,7 +619,7 @@ module tb_multi_hpu_dma;
     regf_start_addr_ofs = 'h0;
     repeat(20) @(posedge clk_control);
 
-    random_iter           = 1000;//$urandom_range(32, 2);
+    random_iter           = $urandom_range(32, 2);
     arbitrary_notify_nb   = XPM_MIN_FIFO_DEPTH; // if we have a full fifo on fifo_nrx_regf, we will lose notifies
     arbitrary_read_req_nb = XPM_MIN_FIFO_DEPTH;
 
@@ -1137,6 +1129,9 @@ module tb_multi_hpu_dma;
 // ============================================================================================== --
 // Checker
 // ============================================================================================== --
+// TODO: VCS cannot dynamically index generate arrays in cross-module references.
+// This does not work for ETH_PC != 2
+
   /* Checker
   * memory content should be the same between HPU_A and HPU_B for PC_0 and PC_1
   * assumption: we chose in this test to do read request from HPU A to B
@@ -1161,7 +1156,7 @@ module tb_multi_hpu_dma;
 
     // Check both PCs
     for (int pc = 0; pc < ETH_PC; pc++) begin
-      nb_words = PC_NB_WORDS[pc];
+      nb_words = (pc == 0) ? AXI4_WORD_PER_PC0 : AXI4_WORD_PER_PC;
 
       for (int k = 0; k < nb_words; k++) begin
         // Get values based on PC index (cannot dynamically index generate blocks)

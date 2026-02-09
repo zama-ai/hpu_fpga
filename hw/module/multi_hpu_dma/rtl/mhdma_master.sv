@@ -106,7 +106,7 @@ module mhdma_master
   // =========================================================================================== //
   localparam int NB_MRMRAC_WORDS_PER_WRITE = AXI4_DATA_W/MRMAC_AXIS_W;
 
-  localparam int NB_WORDS_TOTAL  = AXI4_WORD_PER_PC0 + AXI4_WORD_PER_PC;
+  localparam int NB_WORDS_TOTAL  = AXI4_WORD_PER_PC0 + (ETH_PC-1) * AXI4_WORD_PER_PC;
   localparam int NB_WORDS_TO_HBM = (NB_WORDS_TOTAL*AXI4_DATA_W)/MRMAC_AXIS_W;
 
   // Max burst count per PC for page boundary crossings
@@ -681,10 +681,12 @@ module mhdma_master
     if (~resetn_mrmac) begin
       axi4_write_pc <= 'h0;
     end else begin
-      if (phy_addr_valid | pc_transfer_done[0]) begin
-        axi4_write_pc <= {axi4_write_pc[ETH_PC-2:0], phy_addr_valid};
-      end else if (pc_transfer_done[1]) begin
+      if (phy_addr_valid) begin
+        axi4_write_pc <= {{(ETH_PC-1){1'b0}}, 1'b1};
+      end else if (pc_transfer_done[ETH_PC-1]) begin
         axi4_write_pc <= 'h0;
+      end else if (|pc_transfer_done) begin
+        axi4_write_pc <= axi4_write_pc << 1;
       end
     end
   end
@@ -696,32 +698,36 @@ module mhdma_master
   logic                                         fifo_cerx_out_rdy_vld;
   logic                                         fifo_cerx_out_rdy_vld_reg;
 
-  // Counter for realigned (256-bit) words - used for target_fifo selection
-  // This ensures target_fifo switches AFTER the realignment pipeline, not before
-  logic [AXI4_WORD_PER_PC0_WW:0] realined_word_cnt;
+  // Per-target-PC word counter and one-hot target_fifo selection
+  logic [AXI4_WORD_PER_PC0_WW-1:0] target_pc_word_cnt;
+  logic                            target_pc_last_word;
 
-  // which fifo must be filled ? Based on realigned word count (not raw 64-bit count)
+  assign target_pc_last_word = target_fifo[0] ? (target_pc_word_cnt == AXI4_WORD_PER_PC0 - 1) : (target_pc_word_cnt == AXI4_WORD_PER_PC - 1);
+
   always_ff @(posedge clk_mrmac) begin
     if (~resetn_mrmac) begin
-      target_fifo <= 2'b01;  // Start targeting PC0
+      target_pc_word_cnt <= 'h0;
     end else begin
-      if (ciphertext_received) begin
-        target_fifo <= 2'b01;  // Reset to PC0 for next ciphertext
-      end else if (realined_word_vld && realined_word_cnt == (AXI4_WORD_PER_PC0 - 1)) begin
-        // Switch to PC1 when sending last PC0 word, so next word goes to PC1
-        target_fifo <= 2'b10;
+      if (realined_word_vld) begin
+        if (ciphertext_received | target_pc_last_word) begin
+          target_pc_word_cnt <= 'h0;
+        end else begin
+          target_pc_word_cnt <= target_pc_word_cnt + 1;
+        end
       end
     end
   end
 
   always_ff @(posedge clk_mrmac) begin
     if (~resetn_mrmac) begin
-      realined_word_cnt <= 'h0;
+      target_fifo <= {{(ETH_PC-1){1'b0}}, 1'b1};
     end else begin
-      if (realined_word_vld) begin
-        realined_word_cnt <= realined_word_cnt + 1;
-      end else if (ciphertext_received) begin
-        realined_word_cnt <= 'h0;
+      if (ciphertext_received) begin
+        target_fifo <= {{(ETH_PC-1){1'b0}}, 1'b1};
+      end else if (realined_word_vld) begin
+        if (target_pc_last_word) begin
+          target_fifo <= target_fifo << 1;
+        end
       end
     end
   end
@@ -1160,7 +1166,15 @@ module mhdma_master
     end
   endgenerate
 
-  assign fifo_pc_backpressure = target_fifo[1] ? gen_ce_write[1].fifo_pc_wr_in_rdy : gen_ce_write[0].fifo_pc_wr_in_rdy;
+  logic [ETH_PC-1:0] fifo_pc_wr_rdy;
+
+  generate
+    for (genvar gen_i = 0; gen_i < ETH_PC; gen_i++) begin : gen_pc_wr_rdy
+      assign fifo_pc_wr_rdy[gen_i] = gen_ce_write[gen_i].fifo_pc_wr_in_rdy;
+    end
+  endgenerate
+
+  assign fifo_pc_backpressure = |(target_fifo & fifo_pc_wr_rdy);
 
   // Interrupt generation -------------------------------------------------------------------------
   // Ciphertext received when both PCs have completed their transfers (= all B responses received)
@@ -1395,7 +1409,7 @@ module mhdma_master
       nb_write_complete_cnt <= 'h0;
     end else begin
       // Count completed transfers (all B responses received)
-      if (pc_brsp_ack[0] | pc_brsp_ack[1]) begin
+      if (|pc_brsp_ack) begin
         nb_write_complete_cnt <= nb_write_complete_cnt +1;
       end
     end

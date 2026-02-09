@@ -139,52 +139,9 @@ package mhdma_pkg;
   localparam [REQ_ID_W-1:0] REQ_ID_EMISSION   = 'h7;
 
   // =========================================================================================== //
-  // Offsets
+  // Packed structures
   // =========================================================================================== //
-  // Read ReQuest Queue
-  localparam int CMD_IOP_ID_OFS   = SRC_ADDR_W + DST_ADDR_W + SIZE_B_W + HPU_ID_W + REQ_ID_W + IOP_ID_W;
-  localparam int CMD_REQ_ID_OFS   = SRC_ADDR_W + DST_ADDR_W + SIZE_B_W + HPU_ID_W + REQ_ID_W;
-  localparam int CMD_HPU_ID_OFS   = SRC_ADDR_W + DST_ADDR_W + SIZE_B_W + HPU_ID_W;
-  localparam int CMD_SIZE_B_OFS   = SRC_ADDR_W + DST_ADDR_W + SIZE_B_W;
-  localparam int CMD_DST_ADDR_OFS = SRC_ADDR_W + DST_ADDR_W;
-  localparam int CMD_SRC_ADDR_OFS = SRC_ADDR_W;
-
-  // Slave offset: notify request
-  localparam int NRX_SRC_ADDR_OFS = IOP_ID_W + HPU_ID_W + SRC_ADDR_W;
-  localparam int NRX_HPU_ID_OFS   = IOP_ID_W + HPU_ID_W;
-  localparam int NRX_IOP_ID_OFS   = IOP_ID_W;
-
-  // Slave offset: ciphertext emission offset
-  localparam int CEH_DST_MAC_ADDR_OFS = SRC_ADDR_W + DST_ADDR_W + SIZE_B_W + HPU_ID_W + IOP_ID_W + MAC_ADDR_W;
-  localparam int CEH_IOP_ID_OFS       = SRC_ADDR_W + DST_ADDR_W + SIZE_B_W + HPU_ID_W + IOP_ID_W;
-  localparam int CEH_HPU_ID_OFS       = SRC_ADDR_W + DST_ADDR_W + SIZE_B_W + HPU_ID_W;
-  localparam int CEH_SIZE_B_OFS       = SRC_ADDR_W + DST_ADDR_W + SIZE_B_W;
-  localparam int CEH_DST_ADDR_OFS     = SRC_ADDR_W + DST_ADDR_W;
-  localparam int CEH_SRC_ADDR_OFS     = SRC_ADDR_W;
-
-  // Read-Request
-  localparam int RR_HPU_ID_OFS = SRC_ADDR_W + DST_ADDR_W + IOP_ID_W + HPU_ID_W;
-  localparam int RR_IOP_ID_OFS = SRC_ADDR_W + DST_ADDR_W + IOP_ID_W;
-  localparam int RR_DST_ID_OFS = SRC_ADDR_W + DST_ADDR_W;
-  localparam int RR_SRC_ID_OFS = SRC_ADDR_W;
-
-  // Headers (0,1,2,3) for the clock cycle
-  localparam int H0_DST_MAC_ADDR_OFS = 16 + MAC_ADDR_W;
-  localparam int H0_SRC_OUI_OFS = 16;
-
-  localparam int H1_SRC_MAC_ADDR_OFS = 16 + ETHERNET_LEN + MAC_ADDR_W;
-  localparam int H1_SRC_ETH_LEN_OFS  = 16 + ETHERNET_LEN;
-
-  localparam int H2_REQ_ID_OFS      = IOP_ID_W + DST_ADDR_W + SRC_ADDR_W + SEQ_NUM_W + HPU_ID_W + REQ_ID_W;
-  localparam int H2_HPU_ID_OFS      = IOP_ID_W + DST_ADDR_W + SRC_ADDR_W + SEQ_NUM_W + HPU_ID_W;
-  localparam int H2_SEQ_NUM_OFS     = IOP_ID_W + DST_ADDR_W + SRC_ADDR_W + SEQ_NUM_W;
-  localparam int H2_CT_SRC_ADDR_OFS = IOP_ID_W + DST_ADDR_W + SRC_ADDR_W;
-  localparam int H2_CT_DST_ADDR_OFS = IOP_ID_W + DST_ADDR_W;
-  localparam int H2_IOP_ID_OFS      = IOP_ID_W;
-
-  localparam int H3_SIZE_B_OFS      = 48 + SIZE_B_W;
-  localparam int H3_EMPTY_OFS       = 48;
-
+  // Command structure for MHDMA module -----------------------------------------------------------
   typedef struct packed {
     logic [MAC_ADDR_W-1:0] src_mac_addr;
     logic [ SEQ_NUM_W-1:0] seq_num;
@@ -196,6 +153,36 @@ package mhdma_pkg;
     logic [DST_ADDR_W-1:0] dst_addr;
   } command_t;
 
+  //  Ethernet frames, one by one -----------------------------------------------------------------
+  typedef struct packed {
+    logic [MAC_OUI_W-1:0]  dst_mac_oui;
+    logic [MAC_ADDR_W-1:0] dst_mac_addr;
+    logic [15:0]           src_oui;
+  } h0_frame_t;
+
+  typedef struct packed {
+    logic [7:0]              src_mac_oui;
+    logic [MAC_ADDR_W-1:0]   src_mac_addr;
+    logic [ETHERNET_LEN-1:0] eth_len;
+    logic [2*LLC_W-1:0]      llc; // DSAP + SSAP
+  } h1_frame_t;
+
+  typedef struct packed {
+    logic [LLC_W-1:0]      llc_ctrl;
+    logic [REQ_ID_W-1:0]   req_id;
+    logic [HPU_ID_W-1:0]   hpu_id;
+    logic [SEQ_NUM_W-1:0]  seq_num;
+    logic [SRC_ADDR_W-1:0] ct_src_addr;
+    logic [DST_ADDR_W-1:0] ct_dst_addr;
+    logic [IOP_ID_W-1:0]   iop_id;
+  } h2_frame_t;
+
+  typedef struct packed {
+    logic [SIZE_B_W-1:0] size_b;
+    logic        [47:0]  rsvd;
+  } h3_frame_t;
+
+  // Errors ---------------------------------------------------------------------------------------
   typedef struct packed {
     logic formatter_error;
   } format_error_t;

@@ -87,6 +87,16 @@ module mhdma_decoder
   logic [MRMAC_AXIS_W-1:0] qsfp_rx_tdata_bs;
   assign qsfp_rx_tdata_bs = byte_swap(rx_tdata_in);
 
+  // Overlay frame structures on byte-swapped data
+  h0_frame_t h0;
+  h1_frame_t h1;
+  h2_frame_t h2;
+  h3_frame_t h3;
+  assign h0 = qsfp_rx_tdata_bs;
+  assign h1 = qsfp_rx_tdata_bs;
+  assign h2 = qsfp_rx_tdata_bs;
+  assign h3 = qsfp_rx_tdata_bs;
+
   // =========================================================================================== //
   // QSFP RX
   // =========================================================================================== //
@@ -121,7 +131,7 @@ module mhdma_decoder
       dst_mac_addr <= 'h0;
     end else begin
       if (rx_tvalid_in & (rx_counter == 0)) begin
-        dst_mac_addr <= qsfp_rx_tdata_bs[H0_DST_MAC_ADDR_OFS-1:H0_SRC_OUI_OFS];
+        dst_mac_addr <= h0.dst_mac_addr;
       end else if (rx_tvalid_in & rx_tlast_in) begin
         dst_mac_addr <= 'h0;
       end
@@ -133,8 +143,8 @@ module mhdma_decoder
   // src_mac_address and eth len
   always_ff @(posedge clk_mrmac) begin
     if ((rx_tvalid_in) & (rx_counter == 1)) begin
-        eth_len      <= qsfp_rx_tdata_bs[H1_SRC_ETH_LEN_OFS-1:16];
-        src_mac_addr <= qsfp_rx_tdata_bs[H1_SRC_MAC_ADDR_OFS-1:H1_SRC_ETH_LEN_OFS];
+        eth_len      <= h1.eth_len;
+        src_mac_addr <= h1.src_mac_addr;
       end
   end
 
@@ -142,11 +152,11 @@ module mhdma_decoder
   // req_id, hpu_id, seq_num, src_addr, dst_addr and iop_id
   always_ff @(posedge clk_mrmac) begin
     if ((rx_tvalid_in) & (rx_counter == 2)) begin
-      hpu_id      <= qsfp_rx_tdata_bs[H2_HPU_ID_OFS-1:H2_SEQ_NUM_OFS];
-      seq_num     <= qsfp_rx_tdata_bs[H2_SEQ_NUM_OFS-1:H2_CT_SRC_ADDR_OFS];
-      ct_src_addr <= qsfp_rx_tdata_bs[H2_CT_SRC_ADDR_OFS-1:H2_CT_DST_ADDR_OFS];
-      ct_dst_addr <= qsfp_rx_tdata_bs[H2_CT_DST_ADDR_OFS-1:H2_IOP_ID_OFS];
-      iop_id      <= qsfp_rx_tdata_bs[H2_IOP_ID_OFS-1:0];
+      hpu_id      <= h2.hpu_id;
+      seq_num     <= h2.seq_num;
+      ct_src_addr <= h2.ct_src_addr;
+      ct_dst_addr <= h2.ct_dst_addr;
+      iop_id      <= h2.iop_id;
     end
   end
 
@@ -156,7 +166,7 @@ module mhdma_decoder
       req_id <= 'h0;
     end else begin
       if (rx_tvalid_in & (rx_counter == 2)) begin
-        req_id <= qsfp_rx_tdata_bs[H2_REQ_ID_OFS-1:H2_HPU_ID_OFS];
+        req_id <= h2.req_id;
       end else if (rx_tvalid_in & rx_tlast_in) begin
         req_id <= 'h0;
       end
@@ -165,7 +175,7 @@ module mhdma_decoder
 
   // FRAME 3 ------------------------------------------------------------------
   // size_b
-  assign size_b = ((rx_counter == 3) & rx_valid) ? qsfp_rx_tdata_bs[H3_SIZE_B_OFS-1:H3_EMPTY_OFS] : 'h0;
+  assign size_b = ((rx_counter == 3) & rx_valid) ? h3.size_b : 'h0;
 
   // assigning output -----------------------------------------------------------------------------
   logic nack_receivedD;
