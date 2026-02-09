@@ -860,7 +860,7 @@ logic [HPU_NB-1:0][ETH_PC-1:0]                          axi4_ct_rready;
     // After TLAST, not TVALID
     property no_valid_after_last(int lane);
       @(posedge clk_mrmac) disable iff (~s_rstn_mrmac)
-      (qsfp_tx_tvalid[lane] && sim_qsfp_tx_tready_a[lane] && qsfp_tx_tlast[lane]) |=> ~qsfp_tx_tvalid[lane];
+      (qsfp_tx_tvalid[lane] && qsfp_tx_tready[lane] && qsfp_tx_tlast[lane]) |=> ~qsfp_tx_tvalid[lane];
     endproperty
 
     // TLAST requires TVALID
@@ -872,7 +872,7 @@ logic [HPU_NB-1:0][ETH_PC-1:0]                          axi4_ct_rready;
     // TX/RX AXIS valid must stay stable until ready
     property axis_stable(int lane);
       @(posedge clk_mrmac) disable iff (!s_rstn_mrmac)
-      (qsfp_tx_tvalid[lane] && ~sim_qsfp_tx_tready_a[lane]) |=> $stable(qsfp_tx_tvalid[lane]) && $stable(qsfp_tx_tdata[lane]) && $stable(qsfp_tx_tkeep_user[lane]);
+      (qsfp_tx_tvalid[lane] && ~qsfp_tx_tready[lane]) |=> $stable(qsfp_tx_tvalid[lane]) && $stable(qsfp_tx_tdata[lane]) && $stable(qsfp_tx_tkeep_user[lane]);
     endproperty
 
     // Minimum Ethernet frame size (64 bytes) on valid frames - MRMAC inserts 4 bytes so we check for 60
@@ -881,8 +881,8 @@ logic [HPU_NB-1:0][ETH_PC-1:0]                          axi4_ct_rready;
       @(posedge clk_mrmac) disable iff (~s_rstn_mrmac)
       (!$past(qsfp_tx_tvalid[lane]) && qsfp_tx_tvalid[lane], byte_count=0) |->
         first_match(
-          (qsfp_tx_tvalid[lane], byte_count += (sim_qsfp_tx_tready_a[lane] ? $countones(qsfp_tx_tkeep_user[lane]) : 0))[*1:$] ##0
-          (qsfp_tx_tlast[lane] && sim_qsfp_tx_tready_a[lane])
+          (qsfp_tx_tvalid[lane], byte_count += (qsfp_tx_tready[lane] ? $countones(qsfp_tx_tkeep_user[lane]) : 0))[*1:$] ##0
+          (qsfp_tx_tlast[lane] && qsfp_tx_tready[lane])
         ) ##0 (byte_count >= 60);
     endproperty
 

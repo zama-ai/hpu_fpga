@@ -35,6 +35,8 @@ module tb_mhdma_errors;
   localparam int CLK_HALF_PERIOD_MRMAC = 1;
   localparam int ARST_ACTIVATION = 17;
 
+  localparam int MEM_SIM_SIZE = 16;
+
 // ============================================================================================== --
 // clock, reset
 // ============================================================================================== --
@@ -309,11 +311,11 @@ module tb_mhdma_errors;
 // Simple AXI4 Memory Model with Error Injection
 // ============================================================================================== --
   // Memory for read data
-  logic [255:0] axi_mem [2**16];
+  logic [255:0] axi_mem [2**MEM_SIM_SIZE];
 
   // Initialize memory
   initial begin
-    for (int i = 0; i < 2**16; i++) begin
+    for (int i = 0; i < 2**MEM_SIM_SIZE; i++) begin
       axi_mem[i] = {$urandom(), $urandom(), $urandom(), $urandom(),
                     $urandom(), $urandom(), $urandom(), $urandom()};
     end
@@ -349,7 +351,7 @@ module tb_mhdma_errors;
           if (rd_active) begin
             m_axi4_rvalid[pc] <= 1'b1;
             m_axi4_rid[pc]    <= rd_id;
-            m_axi4_rdata[pc]  <= axi_mem[rd_beat_cnt[15:0]];
+            m_axi4_rdata[pc]  <= axi_mem[rd_beat_cnt[7:0]];
             m_axi4_rlast[pc]  <= (rd_beat_cnt == rd_len);
 
             if (m_axi4_rready[pc]) begin
@@ -524,13 +526,13 @@ module tb_mhdma_errors;
 
       // Configure ONE HPU as current (correct configuration)
       // HPU 0 is current, others are not
-      maxil_drv.write_trans(MHDMA_SYSTEM_HPU_ID_0_OFS,  {1'b1, 3'b0, 4'h0, 24'hABCDE0});  // HPU 0 - current
-      maxil_drv.write_trans(MHDMA_SYSTEM_HPU_ID_1_OFS,   {1'b0, 3'b0, 4'h1, 24'hABCDE1});  // HPU 1
-      maxil_drv.write_trans(MHDMA_SYSTEM_HPU_ID_2_OFS,   {1'b0, 3'b0, 4'h2, 24'hABCDE2});  // HPU 2
+      maxil_drv.write_trans(MHDMA_SYSTEM_HPU_ID_0_OFS, {1'b1, 3'b0, 4'h0, 24'hABCDE0});  // HPU 0 - current
+      maxil_drv.write_trans(MHDMA_SYSTEM_HPU_ID_1_OFS, {1'b0, 3'b0, 4'h1, 24'hABCDE1});  // HPU 1
+      maxil_drv.write_trans(MHDMA_SYSTEM_HPU_ID_2_OFS, {1'b0, 3'b0, 4'h2, 24'hABCDE2});  // HPU 2
       maxil_drv.write_trans(MHDMA_SYSTEM_HPU_ID_3_OFS, {1'b0, 3'b0, 4'h3, 24'hABCDE3});  // HPU 3
-      maxil_drv.write_trans(MHDMA_SYSTEM_HPU_ID_4_OFS,  {1'b0, 3'b0, 4'h4, 24'hABCDE4});  // HPU 4
-      maxil_drv.write_trans(MHDMA_SYSTEM_HPU_ID_5_OFS,  {1'b0, 3'b0, 4'h5, 24'hABCDE5});  // HPU 5
-      maxil_drv.write_trans(MHDMA_SYSTEM_HPU_ID_6_OFS,   {1'b0, 3'b0, 4'h6, 24'hABCDE6});  // HPU 6
+      maxil_drv.write_trans(MHDMA_SYSTEM_HPU_ID_4_OFS, {1'b0, 3'b0, 4'h4, 24'hABCDE4});  // HPU 4
+      maxil_drv.write_trans(MHDMA_SYSTEM_HPU_ID_5_OFS, {1'b0, 3'b0, 4'h5, 24'hABCDE5});  // HPU 5
+      maxil_drv.write_trans(MHDMA_SYSTEM_HPU_ID_6_OFS, {1'b0, 3'b0, 4'h6, 24'hABCDE6});  // HPU 6
       maxil_drv.write_trans(MHDMA_SYSTEM_HPU_ID_7_OFS, {1'b0, 3'b0, 4'h7, 24'hABCDE7});  // HPU 7
 
       repeat(20) @(posedge clk_cfg);
@@ -551,7 +553,7 @@ module tb_mhdma_errors;
 
       // Configure TWO HPUs as current (invalid - not one-hot)
       maxil_drv.write_trans(MHDMA_SYSTEM_HPU_ID_0_OFS, {1'b1, 3'b0, 4'h0, 24'hABCDE0});
-      maxil_drv.write_trans(MHDMA_SYSTEM_HPU_ID_1_OFS,  {1'b1, 3'b0, 4'h1, 24'hABCDE1});
+      maxil_drv.write_trans(MHDMA_SYSTEM_HPU_ID_1_OFS, {1'b1, 3'b0, 4'h1, 24'hABCDE1});
 
       // Wait for error to propagate through CDC
       repeat(50) @(posedge clk_cfg);
@@ -568,7 +570,8 @@ module tb_mhdma_errors;
       end
 
       // Restore correct configuration (only one HPU as current)
-      maxil_drv.write_trans(MHDMA_SYSTEM_HPU_ID_0_OFS, {1'b0, 3'b0, 4'h1, 24'hABCDE1});  // HPU 1 - not current
+      maxil_drv.write_trans(MHDMA_SYSTEM_HPU_ID_0_OFS, {1'b1, 3'b0, 4'h0, 24'hABCDE0});
+      maxil_drv.write_trans(MHDMA_SYSTEM_HPU_ID_1_OFS, {1'b0, 3'b0, 4'h1, 24'hABCDE1});
 
       repeat(20) @(posedge clk_cfg);
       scenario_id = scenario_id + 1;
