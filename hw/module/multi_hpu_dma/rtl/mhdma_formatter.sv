@@ -483,7 +483,7 @@ module mhdma_formatter
   logic                              ce_word_cnt_reset;
 
   // we need to stall words coming from ciphertext emission to build headers
-  logic ce_stalling;             // level: up when we need to send header between packets
+  logic ce_stalling; // level: up when we need to send header between packets
 
   always_ff @(posedge clk_mrmac) begin
     if (~resetn_mrmac) begin
@@ -578,11 +578,24 @@ module mhdma_formatter
   assign read_request_sent = st_read_request   & tx_tlast_D;
   assign ciphertext_sent   = st_ct_emission    & tx_tlast_D & (ce_seq_num == NB_PACKETS_FULL);
 
-
   // =========================================================================================== //
   // Errors
   // =========================================================================================== //
-  assign format_error = 1'b0;
+  // Detect tvalid gap during payload transmission (MRMAC TX underrun)
+  logic payload_active;
+  assign payload_active = st_ct_emission & ce_first_header_sent & ~ce_stalling & |tx_cnt;
+
+  always_ff @(posedge clk_mrmac) begin
+    if (~resetn_mrmac ) begin
+      format_error.formatter_error <= 1'b0;
+    end else begin
+      if (rst_errors) begin
+        format_error.formatter_error <= 1'b0;
+      end else if (payload_active & ~ce_fifo_vld & qsfp_tx_tready) begin
+        format_error.formatter_error <= 1'b1;
+      end
+    end
+  end
 
   // =========================================================================================== //
   // Statistics

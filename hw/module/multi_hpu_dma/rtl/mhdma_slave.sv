@@ -713,6 +713,29 @@ module mhdma_slave
     end
   endgenerate
 
+  // Gate fifo_ce output: don't let formatter consume until all data is loaded.
+  // This prevents MRMAC TX underrun (tvalid gap mid-frame) when HBM reads are slow.
+  // If ever MRMAC drops the valid the current frame is dropped
+  logic ce_fifo_vld;
+
+  logic [$clog2(CT_NB_COEF+1)-1:0] ce_load_cnt;
+  logic                            ce_data_loaded;
+
+  always_ff @(posedge clk_mrmac) begin
+    if (~resetn_mrmac) begin
+      ce_load_cnt <= '0;
+    end else begin
+      if (ciphertext_sent) begin
+        ce_load_cnt <= '0;
+      end else if (fifo_ce_in_vld & fifo_ce_in_rdy) begin
+        ce_load_cnt <= ce_load_cnt + 1;
+      end
+    end
+  end
+
+  // we receive more than CT_NB_WORDS_MRMAC because CT_NB_COEF is not a power of two
+  assign ce_data_loaded = (ce_load_cnt >= CT_NB_WORDS_MRMAC);
+
   fifo_ram_rdy_vld # (
     .WIDTH      (MRMAC_AXIS_W   ),
     .DEPTH      (CT_NB_COEF     ),
@@ -727,10 +750,12 @@ module mhdma_slave
     .in_rdy      (fifo_ce_in_rdy),
 
     .out_data    (ce_payload),
-    .out_vld     (ce_vld),
-    .out_rdy     (ce_rdy),
+    .out_vld     (ce_fifo_vld),
+    .out_rdy     (ce_rdy & ce_data_loaded),
     .almost_full (/* UNUSED */)
   );
+
+  assign ce_vld = ce_fifo_vld & ce_data_loaded;
 
   // =========================================================================================== //
   // Interface to formatter
