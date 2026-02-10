@@ -659,7 +659,6 @@ module mhdma_master
   logic [ETH_PC-1:0]        axi4_write_pc;
   logic [ETH_PC-1:0]        target_fifo;
   logic [ETH_PC-1:0]        write_error;
-  logic [ETH_PC-1:0]        bid_mismatch;
   logic [CE_DATA_COUNT_W:0] fifo_cerx_cnt_tx;  // Counter for 64-bit words (only for debugging)
 
   always_ff @(posedge clk_mrmac) begin
@@ -1054,16 +1053,6 @@ module mhdma_master
       logic        axi_bready;
       axi4_b_if_t  m_axi4_b;
 
-      // Constant AWID: all writes use the same ID to force in-order B responses (AXI spec)
-      assign expected_wid = MHDMA_AXI_ARID;
-
-      // bid check for response tracking (constant ID, all BIDs should match)
-      logic [AXI4_ID_W-1:0] expected_bid;
-      logic                 bid_match;
-
-      assign expected_bid = MHDMA_AXI_ARID;
-      assign bid_match = (axi_b.bid == expected_bid);
-
       logic [BRSP_CNT_W-1:0]          brsp_bresp_cnt;
       logic [BRSP_CNT_W-1:0]          brsp_bresp_cntD;
       logic                           brsp_bresp_cnt_inc;
@@ -1101,26 +1090,13 @@ module mhdma_master
         end else begin
           if (rst_errors) begin
             write_error[gen_wr] <= 1'b0;
-          end else if (axi_bready & axi_bvalid & bid_match) begin
+          end else if (axi_bready & axi_bvalid) begin
             case (axi_b.bresp)
               AXI4_OKAY:   write_error[gen_wr] <= 1'b0;
               AXI4_EXOKAY: write_error[gen_wr] <= 1'b0;
               AXI4_SLVERR: write_error[gen_wr] <= 1'b1;
               AXI4_DECERR: write_error[gen_wr] <= 1'b1;
             endcase
-          end
-        end
-      end
-
-      // Handle BID mismatch errors
-      always_ff @(posedge clk_mrmac) begin
-        if (~resetn_mrmac) begin
-          bid_mismatch[gen_wr] <= 1'b0;
-        end else begin
-          if (rst_errors) begin
-            bid_mismatch[gen_wr] <= 1'b0;
-          end else if (axi_bready & axi_bvalid & ~bid_match) begin
-            bid_mismatch[gen_wr] <= 1'b1;
           end
         end
       end
@@ -1231,7 +1207,7 @@ module mhdma_master
   // =========================================================================================== //
   // Errors
   // =========================================================================================== //
-  assign master_error = {seq_num_mismatch, bid_mismatch, write_error};
+  assign master_error = {seq_num_mismatch, write_error};
 
   // =========================================================================================== //
   // Statistics

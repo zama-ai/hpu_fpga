@@ -197,7 +197,6 @@ package mhdma_pkg;
 
   typedef struct packed {
     logic              seq_num_mismatch;
-    logic [ETH_PC-1:0] bid_mismatch;
     logic [ETH_PC-1:0] write_error;
   } master_error_t;
 
