@@ -886,7 +886,7 @@ module mhdma_master
       // Address valid
       assign axi_a_awvalid  = axi4_write_pc[gen_wr] & ~addr_cmds_done &
                               (~req_pbs_first_burst | rcp_fifo_in_rdy) & (~req_last_axi_word_remain | brsp_fifo_in_rdy);
-      assign axi_a.awid     = expected_wid;
+      assign axi_a.awid     = MHDMA_AXI_ARID;
       assign axi_a.awaddr   = req_add_start;
       assign axi_a.awsize   = MHDMA_ARSIZE;
       assign axi_a.awburst  = AXI4B_INCR;
@@ -1054,36 +1054,15 @@ module mhdma_master
       logic        axi_bready;
       axi4_b_if_t  m_axi4_b;
 
-      // wid counter for address commands
-      always_ff @(posedge clk_mrmac) begin
-        if (~resetn_mrmac) begin
-          expected_wid <= 'h0;
-        end else begin
-          if (phy_addr_valid) begin
-            expected_wid <= 'h0;
-          end else if (axi_a_awready & axi_a_awvalid) begin
-            expected_wid <= expected_wid + 1;
-          end
-        end
-      end
+      // Constant AWID: all writes use the same ID to force in-order B responses (AXI spec)
+      assign expected_wid = MHDMA_AXI_ARID;
 
-      // bid counter for response tracking
+      // bid check for response tracking (constant ID, all BIDs should match)
       logic [AXI4_ID_W-1:0] expected_bid;
       logic                 bid_match;
 
+      assign expected_bid = MHDMA_AXI_ARID;
       assign bid_match = (axi_b.bid == expected_bid);
-
-      always_ff @(posedge clk_mrmac) begin
-        if (~resetn_mrmac) begin
-          expected_bid <= 'h0;
-        end else begin
-          if (phy_addr_valid) begin
-            expected_bid <= 'h0;
-          end else if (axi_bready & axi_bvalid & bid_match) begin
-            expected_bid <= expected_bid + 1;
-          end
-        end
-      end
 
       logic [BRSP_CNT_W-1:0]          brsp_bresp_cnt;
       logic [BRSP_CNT_W-1:0]          brsp_bresp_cntD;
