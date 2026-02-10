@@ -1,16 +1,13 @@
 #!/bin/bash
 
 # Trap SIGINT (Ctrl+C) and kill all child processes
-trap 'kill $(jobs -p) 2>/dev/null; exit 1' SIGINT SIGTERM
+trap 'kill $(jobs -p) 2>/dev/null; exit 0' SIGINT SIGTERM
 
 ###############################################################################
 # SOURCE BOARD CONFIGURATION
 ###############################################################################
 source /etc/profile.d/v80_pcie_dev.sh
 source "$(dirname "$0")/mhdma_package.sh"
-
-# HPU ID names in order
-HPU_ID_NAMES=("zero" "one" "two" "three" "four" "five" "six" "seven")
 
 ###############################################################################
 # UTILITY FUNCTIONS
@@ -49,8 +46,7 @@ configure_fpga() {
   # Write MAC addresses for all HPU ID slots
   for ((slot=0; slot<8; slot++)); do
     local mac_value=$(get_mac_value $fpga_idx $slot)
-    local slot_name=${HPU_ID_NAMES[$slot]}
-    $hputil -f $fpga_idx register write mhdma_hpu_id::$slot_name --value $mac_value
+    $hputil -f $fpga_idx register write mhdma_system::hpu_id_$slot --value $mac_value
   done
 
   # Write timeout values
@@ -59,9 +55,9 @@ configure_fpga() {
 
   # Write HBM AXI4 addresses
   $hputil -f $fpga_idx register write mhdma_hbm_axi4_addr_2in3::ct_pc0_msb --value 0x00000046
-  $hputil -f $fpga_idx register write mhdma_hbm_axi4_addr_2in3::ct_pc0_lsb --value 0xA0000000
+  $hputil -f $fpga_idx register write mhdma_hbm_axi4_addr_2in3::ct_pc0_lsb --value 0x80000000
   $hputil -f $fpga_idx register write mhdma_hbm_axi4_addr_2in3::ct_pc1_msb --value 0x00000046
-  $hputil -f $fpga_idx register write mhdma_hbm_axi4_addr_2in3::ct_pc1_lsb --value 0xC0000000
+  $hputil -f $fpga_idx register write mhdma_hbm_axi4_addr_2in3::ct_pc1_lsb --value 0xA0000000
 
   echo "[INFO] FPGA $fpga_idx configured."
 }

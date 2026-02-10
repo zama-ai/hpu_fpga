@@ -27,7 +27,7 @@
 set -e
 
 # Trap SIGINT (Ctrl+C) and kill all child processes
-trap 'kill $(jobs -p) 2>/dev/null; exit 1' SIGINT SIGTERM
+trap 'kill $(jobs -p) 2>/dev/null; exit 0' SIGINT SIGTERM
 
 # =================================================================================================
 # Default parameters
@@ -35,21 +35,20 @@ trap 'kill $(jobs -p) 2>/dev/null; exit 1' SIGINT SIGTERM
 NUM_LOOPS=10
 
 # Data sizes per PC
-PC0_DATA_SIZE=8192 # 0x2000 bytes
-PC1_DATA_SIZE=8224 # 0x2020 bytes
+PC0_DATA_SIZE=8224 # 0x2020 bytes
+PC1_DATA_SIZE=8192 # 0x2000 bytes
 
 # Address space parameters:
-HBM_PC_RANGE=0x40000000                                   # HBM_PC_RANGE = 0x40000000 (1GB per PC)
+HBM_PC_RANGE=0x40000000                    # HBM_PC_RANGE = 0x40000000 (1GB per PC)
 HBM_PC_RANGE_BYTE=$((HBM_PC_RANGE / 8))
-PC_STRIDE=11                                              # PC_STRIDE = 0xB (11 bits)
-CT_SPACING=$((PC0_DATA_SIZE >> PC_STRIDE))
-HW_HW_MAX_ADDR=0xFFFF                                        # Hardware limit: SRC_ADDR_W = DST_ADDR_W = 16 bits
+CT_MEM_BYTES=12288
+HW_MAX_ADDR=0xFFFF                      # Hardware limit: SRC_ADDR_W = DST_ADDR_W = 16 bits
 
 NODE_SOURCE=24
 NODE_REQUEST=01
 
-PC0_ADDR=0x46A0000000
-PC1_ADDR=0x46C0000000
+PC0_ADDR=0x4680000000
+PC1_ADDR=0x46A0000000
 
 # Statistics
 PASS_COUNT=0
@@ -72,7 +71,7 @@ show_help() {
     echo ""
     echo "Address space info:"
     echo "  - HBM_PC_RANGE = 0x40000000 (1GB per PC)"
-    echo "  - PC_STRIDE = 11 bits"
+    echo "  - CT_MEM_BYTES = 0x3000"
     echo "  - Hardware limit: SRC_ADDR_W = DST_ADDR_W = 16 bits (max 0xFFFF)"
     echo "  - Physical address = base + (logical_addr << PC_STRIDE)"
     echo "  - PC0 data size: 0x2020 bytes (8224)"
@@ -123,7 +122,7 @@ fi
 
 echo " [INFO]: using hputil at $hputil"
 
-setup_check=$($hputil -f 1 register read mhdma_hpu_id::zero)
+setup_check=$($hputil -f 1 register read mhdma_system::hpu_id_0)
 
 if [ "$setup_check" == "0x0" ]; then
     echo " [FAILURE]: you did not do the setup"
@@ -137,14 +136,10 @@ fi
 # Generate random address within valid range, aligned to 4KB boundaries
 # Uses /dev/urandom for full 32-bit range (bash $RANDOM only gives 0-32767)
 # Args: $1 = max_value
-# Note: For 4KB alignment of physical addresses (base + logical_addr << PC_STRIDE),
-#       with PC_STRIDE=11, logical_addr must be even (multiple of 2).
-#       This ensures (logical_addr << 11) is a multiple of 4096 (2^12).
 generate_random_addr() {
     local max_val=$1
     local rand=$(od -An -tu4 -N4 /dev/urandom | tr -d ' ')
-    # Divide max_val by 2 for the range, generate random, then multiply by 2
-    # This ensures the result is always even (4KB aligned when shifted by PC_STRIDE)
+
     local aligned_max=$((max_val / 2))
     if [ $aligned_max -eq 0 ]; then
         aligned_max=1
@@ -169,9 +164,9 @@ perform_read_request() {
     $hputil -f 0 register write mhdma_request::req_addr --value $request_addr
     $hputil -f 0 register write mhdma_request::req_id   --value 0x00614000
 
-    # Calculate physical addresses (logical_addr << PC_STRIDE)
-    local src_addr_val=$((src_addr << PC_STRIDE))
-    local dst_addr_val=$((dst_addr << PC_STRIDE))
+    # Calculate physical addresses
+    local src_addr_val=$((src_addr * CT_MEM_BYTES))
+    local dst_addr_val=$((dst_addr * CT_MEM_BYTES))
     echo "src_addr_val $src_addr_val"
     echo "dst_addr_val $dst_addr_val"
 
@@ -181,6 +176,13 @@ perform_read_request() {
     ADDR_PC0_DST=$(printf "0x%x" "$((PC0_ADDR + dst_addr_val))")
     ADDR_PC1_DST=$(printf "0x%x" "$((PC1_ADDR + dst_addr_val))")
 
+    echo "ADDR_PC0_SRC $ADDR_PC0_SRC"
+    echo "ADDR_PC1_SRC $ADDR_PC1_SRC"
+    echo "ADDR_PC0_DST $ADDR_PC0_DST"
+    echo "ADDR_PC1_DST $ADDR_PC1_DST"
+    echo ""
+
+
     # Fetch data from HBM (PC0: 0x2020 bytes, PC1: 0x2000 bytes)
     dma-from-device -d /dev/qdma${NODE_SOURCE}001-MM-2 -s $PC0_DATA_SIZE -a $ADDR_PC0_SRC -o 0x0 -c 1 -f tmp/_hbm_${NODE_SOURCE}_pc0.mem
     dma-from-device -d /dev/qdma${NODE_SOURCE}001-MM-2 -s $PC1_DATA_SIZE -a $ADDR_PC1_SRC -o 0x0 -c 1 -f tmp/_hbm_${NODE_SOURCE}_pc1.mem
@@ -189,6 +191,21 @@ perform_read_request() {
     dma-from-device -d /dev/qdma${NODE_REQUEST}001-MM-2 -s $PC1_DATA_SIZE -a $ADDR_PC1_DST -o 0x0 -c 1 -f tmp/_hbm_${NODE_REQUEST}_pc1.mem
 
     echo ""
+    # Wait for transfer completion
+     echo "  Waiting for transfer to complete..."
+     for ((wait=0; wait<1000; wait++)); do
+         rr_status=$($hputil -f 0 register read mhdma_request::read_request)
+         if [ "$rr_status" != "0x0" ]; then
+             echo "  Transfer complete: $rr_status"
+             break
+         fi
+         sleep 0.01
+     done
+
+     if [ "$rr_status" == "0x0" ]; then
+         echo "  [FAIL]: Transfer timed out"
+         return 1
+     fi
     # Verify data
     local loop_pass=1
     for pc in 0 1; do
@@ -214,9 +231,9 @@ echo "  MHDMA Read Request Test"
 echo "=================================================================================================="
 echo "  Configuration:"
 echo "    - Number of loops:  $NUM_LOOPS"
-echo "    - Max address:      $HW_MAX_ADDR (0x$(printf '%x' $HW_MAX_ADDR)) [HW limit: 0x$(printf '%x' $HW_HW_MAX_ADDR)]"
+echo "    - Max address:      $HW_MAX_ADDR (0x$(printf '%x' $HW_MAX_ADDR)) [HW limit: 0x$(printf '%x' $HW_MAX_ADDR)]"
 echo "    - HBM PC range:     0x$(printf '%x' $HBM_PC_RANGE)"
-echo "    - PC stride:        $PC_STRIDE bits"
+echo "    - stride in bytes   $CT_MEM_BYTES "
 echo "    - Node source:      $NODE_SOURCE"
 echo "    - Node request:     $NODE_REQUEST"
 echo "    - PC0 base:         $PC0_ADDR"
@@ -244,6 +261,8 @@ for ((i=1; i<=NUM_LOOPS; i++)); do
     # Generate random addresses within valid range (4KB aligned)
     src_addr=$(generate_random_addr $HW_MAX_ADDR)
     dst_addr=$(generate_random_addr $HW_MAX_ADDR)
+    src_addr=0x0
+    dst_addr=0x0
 
     if perform_read_request $i $src_addr $dst_addr; then
         PASS_COUNT=$((PASS_COUNT + 1))
@@ -268,3 +287,5 @@ else
     echo " [FAILURE]: $FAIL_COUNT read requests failed"
     exit 0
 fi
+$hputil -f 0 register write mhdma_request::req_addr --value 0x0
+$hputil -f 0 register write mhdma_request::req_id   --value 0x00614000

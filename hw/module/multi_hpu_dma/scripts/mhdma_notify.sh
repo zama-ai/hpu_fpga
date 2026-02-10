@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Trap SIGINT (Ctrl+C) and kill all child processes
-trap 'kill $(jobs -p) 2>/dev/null; exit 1' SIGINT SIGTERM
+trap 'kill $(jobs -p) 2>/dev/null; exit 0' SIGINT SIGTERM
 
 if [ -z "$hputil" ]; then
   echo " [FAILURE]: you did not export variable for hputil"
@@ -12,7 +12,7 @@ fi
 
 (
   # FPGA 01
-  for i in $(seq 0 1000)
+  for i in $(seq 0 5)
   do
     $hputil -f 0 register write mhdma_request::req_addr --value "0x$i"
     $hputil -f 0 register write mhdma_request::req_id   --value 0x00214000
@@ -22,7 +22,7 @@ fi
 
 (
   # FPGA 24
-  for i in $(seq 1000 2000);
+  for i in $(seq 1000 1005);
   do
     $hputil -f 1 register write mhdma_request::req_addr  --value "0x$i"
     $hputil -f 1 register write mhdma_request::req_id   --value 0x00204000

@@ -207,9 +207,6 @@ mhdma_status() {
   echo ""
   mhdma_errors $board
   echo ""
-  echo "--- Reset Monitor ---"
-  echo "  Reset monitor: $($hputil -f $board register read mhdma_reset::monitor)"
-  echo ""
   echo "--- Pending Requests ---"
   echo "  Notify register:       $($hputil -f $board register read mhdma_request::notify)"
   echo "  Read request register: $($hputil -f $board register read mhdma_request::read_request)"
@@ -243,14 +240,14 @@ mhdma_show_hpu_ids() {
     return 1
   fi
   echo "=== HPU IDs (Board $board) ==="
-  echo "  HPU 0: $($hputil -f $board register read mhdma_hpu_id::zero)"
-  echo "  HPU 1: $($hputil -f $board register read mhdma_hpu_id::one)"
-  echo "  HPU 2: $($hputil -f $board register read mhdma_hpu_id::two)"
-  echo "  HPU 3: $($hputil -f $board register read mhdma_hpu_id::three)"
-  echo "  HPU 4: $($hputil -f $board register read mhdma_hpu_id::four)"
-  echo "  HPU 5: $($hputil -f $board register read mhdma_hpu_id::five)"
-  echo "  HPU 6: $($hputil -f $board register read mhdma_hpu_id::six)"
-  echo "  HPU 7: $($hputil -f $board register read mhdma_hpu_id::seven)"
+  echo "  HPU 0: $($hputil -f $board register read mhdma_system::hpu_id_0)"
+  echo "  HPU 1: $($hputil -f $board register read mhdma_system::hpu_id_1)"
+  echo "  HPU 2: $($hputil -f $board register read mhdma_system::hpu_id_2)"
+  echo "  HPU 3: $($hputil -f $board register read mhdma_system::hpu_id_3)"
+  echo "  HPU 4: $($hputil -f $board register read mhdma_system::hpu_id_4)"
+  echo "  HPU 5: $($hputil -f $board register read mhdma_system::hpu_id_5)"
+  echo "  HPU 6: $($hputil -f $board register read mhdma_system::hpu_id_6)"
+  echo "  HPU 7: $($hputil -f $board register read mhdma_system::hpu_id_7)"
 }
 
 # Show all configuration
