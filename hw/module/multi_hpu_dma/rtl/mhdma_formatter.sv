@@ -378,7 +378,7 @@ module mhdma_formatter
       header_target_hpu_mac_addr <= hpu_mac_table_tmp[slave_command.hpu_id];
       header_req_id              <= slave_command.req_id;
       header_src_addr            <= slave_command.src_addr;
-      header_dst_addr            <= 'h0;
+      header_dst_addr            <= slave_command.dst_addr;
       header_iop_id              <= slave_command.iop_id;
     end else if (ce_fifo_vld) begin
       header_target_hpu_mac_addr <= hpu_mac_table_tmp[ce_hpu_id];

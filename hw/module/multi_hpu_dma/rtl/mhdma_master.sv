@@ -340,7 +340,7 @@ module mhdma_master
     .in_rstn     (resetn_cfg),
     .in_data     (rrqq_in_data),
     .in_rdy      (rrqq_in_rdy),
-    .in_vld      (rrqq_in_vld),
+    .in_vld      (rrqq_data_vld),
     .almost_full (/* UNUSED */),
     // MRMAC domain
     .out_clk     (clk_mrmac),
@@ -591,10 +591,15 @@ module mhdma_master
     if (~resetn_mrmac) begin
       expected_seq_num <= 'h0;
     end else begin
-      if (seq_num_valid & (decoded_command.seq_num == NB_PACKETS_FULL)) begin
+      if (start_read_request) begin
+        // we need to reset expected seq num at start of read requets: when RR fails it could lead to infinite retries
         expected_seq_num <= 'h0;
-      end else if (seq_num_valid & ~ (decoded_command.seq_num == NB_PACKETS_FULL)) begin
-        expected_seq_num <= expected_seq_num + 1;
+      end else begin
+        if (seq_num_valid & (decoded_command.seq_num == NB_PACKETS_FULL)) begin
+          expected_seq_num <= 'h0;
+        end else if (seq_num_valid & ~ (decoded_command.seq_num == NB_PACKETS_FULL)) begin
+          expected_seq_num <= expected_seq_num + 1;
+        end
       end
     end
   end
