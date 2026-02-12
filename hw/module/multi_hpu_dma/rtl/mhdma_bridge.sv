@@ -184,23 +184,23 @@ module mhdma_bridge
   logic     read_request_sent;
 
   // Slave <-> Formatter
-  command_t                slave_command;
-  logic                    slave_command_vld;
-  logic                    slave_command_rdy;
-
   logic [MRMAC_AXIS_W-1:0] ce_payload;
   logic                    ce_vld;
   logic                    ce_rdy;
 
-  logic                    ciphertext_sent;
-  logic                    notify_ack_sent;
+  command_t slave_command;
+  logic     slave_command_vld;
+  logic     slave_command_rdy;
+
+  logic     ciphertext_sent;
+  logic     notify_ack_sent;
 
   // Decoder <-> (Master & Slave)
-  command_t                decoded_command;
-  logic                    decoded_command_rdy;
-  logic                    decoded_command_vld;
-  logic                    decoded_command_rdy_slave;
-  logic                    decoded_command_rdy_master;
+  command_t decoded_command;
+  logic     decoded_command_rdy;
+  logic     decoded_command_vld;
+  logic     decoded_command_rdy_slave;
+  logic     decoded_command_rdy_master;
 
   assign decoded_command_rdy = decoded_command_rdy_slave | decoded_command_rdy_master;
 
@@ -208,7 +208,7 @@ module mhdma_bridge
   logic [MRMAC_AXIS_W-1:0] decoder_rx_tdata;
   logic                    decoder_rx_tvalid;
 
-  logic                    notify_ack_received;
+  logic notify_ack_received;
 
   // Errors
   mhdma_error_t mhdma_errors;
