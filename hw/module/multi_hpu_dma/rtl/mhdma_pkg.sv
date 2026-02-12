@@ -304,11 +304,7 @@ package mhdma_pkg;
   function automatic logic [MRMAC_AXIS_W-1:0] byte_swap(
     input logic [MRMAC_AXIS_W-1:0] data_in
   );
-    logic [MRMAC_AXIS_W-1:0] data_out;
-    for (int i = 0; i < 8; i++) begin
-      data_out[(MRMAC_AXIS_W - ((i + 1) * 8)) +: 8] = data_in[(i*8) +: 8];
-    end
-    return data_out;
+    return {<<8{data_in}};
   endfunction
 
 endpackage
