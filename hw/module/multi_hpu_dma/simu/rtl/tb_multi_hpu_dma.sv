@@ -4,7 +4,7 @@
 // ----------------------------------------------------------------------------------------------
 // Description  : This testbench only tests debug mode
 // Debug mode corresponds to the control of one lane through register file
-//
+// run with "run_edalize -m tb_multi_hpu_dma -t vcs -F TOP_PC TOP_PC_pem2_glwe1_bsk8_ksk8 -F TOP_PCMAX TOP_PCMAX_pem2_glwe1_bsk8_ksk8 -F AXI_DATA_W AXI_DATA_W_256"
 // ==============================================================================================
 
 `resetall

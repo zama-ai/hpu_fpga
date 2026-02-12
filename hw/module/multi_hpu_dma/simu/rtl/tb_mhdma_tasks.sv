@@ -25,7 +25,7 @@ function automatic void display_errors(
   $display(" format_error.formatter_error            : %b", errors_struct.format_error.formatter_error);
   $display(" decoder_error.error_fifo_rx_ovf         : %b", errors_struct.decoder_error.error_fifo_rx_ovf);
   $display(" slave_error.error_fifo_nrx_commands_ovf : %b", errors_struct.slave_error.error_fifo_nrx_commands_ovf);
-  $display(" master_error.seq_num_mismatch           : %b", errors_struct.master_error.seq_num_mismatch);
+  $display(" master_error.seq_num_error              : %b", errors_struct.master_error.seq_num_error);
   $display(" master_error.write_error                : %b", errors_struct.master_error.write_error);
   $display(" error_id                                : %b", errors_struct.error_id);
   $display(" -------------------------------------------------------------\n");

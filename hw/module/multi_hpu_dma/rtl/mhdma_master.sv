@@ -7,6 +7,11 @@
 // Receives requests from RPU and address them
 //
 // This module must be able to send Notify and Read Request to formatter
+//
+//
+// Read request retry can happen when
+// 1) a timeout occurs
+// 2) an incorrect seq num happens: we fill the memory with zeros and ask for a new read request
 // ==============================================================================================
 
 module mhdma_master
@@ -104,8 +109,6 @@ module mhdma_master
   // =========================================================================================== //
   // localparam
   // =========================================================================================== //
-  localparam int NB_MRMRAC_WORDS_PER_WRITE = AXI4_DATA_W/MRMAC_AXIS_W;
-
   localparam int NB_WORDS_TOTAL  = AXI4_WORD_PER_PC0 + (ETH_PC-1) * AXI4_WORD_PER_PC;
   localparam int NB_WORDS_TO_HBM = (NB_WORDS_TOTAL*AXI4_DATA_W)/MRMAC_AXIS_W;
 
@@ -118,7 +121,6 @@ module mhdma_master
   // FSM
   // ==============================================================================================
   logic timeout_reached_notify;
-  logic timeout_reached_read_request;
 
   // Notify TX (NTX) ------------------------------------------------------------------------------
   typedef enum logic [1:0] {
@@ -155,19 +157,12 @@ module mhdma_master
 
   assign st_ntx_wait_request = (ntx_state==NTX_WAIT_REQUEST);
 
-  always_ff @(posedge clk_mrmac) begin
-      if (~resetn_mrmac) begin
-        ntx_retry <= 1'b0;
-      end else begin
-        if (timeout_reached_notify) begin
-          ntx_retry <= 1'b1;
-        end else if (master_command_rdy & (master_command.req_id == REQ_ID_NOTIFY)) begin
-          ntx_retry <= 1'b0;
-        end
-      end
-  end
-
   // Read request ---------------------------------------------------------------------------------
+  logic start_read_request;
+  logic ciphertext_received;
+  logic valid_ciphertext_received;
+  logic rr_retry;
+
   typedef enum logic [1:0] {
     RR_XXX          = 'x,
     RR_WAIT_REQUEST = 2'b00,
@@ -180,12 +175,6 @@ module mhdma_master
 
   logic st_wait_packets;
   logic st_rr_wait_request;
-
-  logic ciphertext_received;
-  logic start_read_request;
-  logic seq_num_mismatch;
-  logic retry_seq_num;
-  logic rr_retry;
 
   always_ff @(posedge clk_mrmac) begin
     if (~resetn_mrmac) rreq_state <= RR_WAIT_REQUEST;
@@ -200,48 +189,120 @@ module mhdma_master
       RR_SEND_REQUEST:
         rreq_next_state =  read_request_sent ? RR_WAIT_PACKETS : RR_SEND_REQUEST;
       RR_WAIT_PACKETS:
-        // if seq_num_mismatch or timeout => RR_SEND_REQUEST
-        // if write into hbm is finished => RR_WAIT_REQUEST
-        rreq_next_state = rr_retry ? RR_SEND_REQUEST : ciphertext_received ? RR_WAIT_REQUEST: RR_WAIT_PACKETS;
+        rreq_next_state = rr_retry ? RR_SEND_REQUEST : valid_ciphertext_received ? RR_WAIT_REQUEST : RR_WAIT_PACKETS;
     endcase
   end
 
   assign st_wait_packets    = (rreq_state == RR_WAIT_PACKETS);
   assign st_rr_wait_request = (rreq_state == RR_WAIT_REQUEST);
 
+  // =========================================================================================== //
+  // Consuming decoded commands
+  // =========================================================================================== //
+  logic nack_rdy;
+  logic rr_packets_rdy;
+
+  always_ff @(posedge clk_mrmac)
+    nack_rdy <= decoded_command_vld & (decoded_command.req_id == REQ_ID_NOTIFY_ACK) & st_ntx_wait_request;
+
+  always_ff @(posedge clk_mrmac)
+    rr_packets_rdy <= decoded_command_vld & (decoded_command.req_id == REQ_ID_EMISSION) & st_wait_packets;
+
+  assign decoded_command_rdy = nack_rdy | rr_packets_rdy;
+
+  // =========================================================================================== //
+  // Retry
+  // =========================================================================================== //
+
+  // notify ---------------------------------------------------------------------------------------
   always_ff @(posedge clk_mrmac) begin
       if (~resetn_mrmac) begin
-        rr_retry <= 1'b0;
+        ntx_retry <= 1'b0;
       end else begin
-        if (timeout_reached_read_request | retry_seq_num) begin
-          rr_retry <= 1'b1;
-        end else if (master_command_rdy & (master_command.req_id == REQ_ID_READ)) begin
-          rr_retry <= 1'b0;
+        if (timeout_reached_notify) begin
+          ntx_retry <= 1'b1;
+        end else if (master_command_rdy & (master_command.req_id == REQ_ID_NOTIFY)) begin
+          ntx_retry <= 1'b0;
         end
       end
   end
 
-  logic last_read_req_had_mismatch;
-  logic seq_num_mismatch_Q;
-  logic front_edge_seq_num_mismatch;
+  // read requets ---------------------------------------------------------------------------------
+  logic mismatch_retry_pending;
+  logic timeout_reached_read_request;
+  logic retry_seq_num;
+  logic seq_num_mismatch;
+  logic wait_for_seq0;
 
-  always_ff @(posedge clk_mrmac)
-    seq_num_mismatch_Q <= seq_num_mismatch;
+  assign valid_ciphertext_received = ciphertext_received & ~mismatch_retry_pending;
 
   always_ff @(posedge clk_mrmac) begin
-    if(~resetn_mrmac) begin
-      last_read_req_had_mismatch <= 1'b0;
+    if (~resetn_mrmac) begin
+      rr_retry <= 1'b0;
     end else begin
-      if (front_edge_seq_num_mismatch) begin
-        last_read_req_had_mismatch <= 1'b1;
-      end else if (ciphertext_received) begin
-        last_read_req_had_mismatch <= 1'b0;
+      if (timeout_reached_read_request | retry_seq_num) begin
+        rr_retry <= 1'b1;
+      end else if (master_command_rdy & (master_command.req_id == REQ_ID_READ)) begin
+        rr_retry <= 1'b0;
       end
     end
   end
 
-  assign front_edge_seq_num_mismatch = seq_num_mismatch & ~seq_num_mismatch_Q;
-  assign retry_seq_num = last_read_req_had_mismatch & ciphertext_received;
+  always_ff @(posedge clk_mrmac) begin
+    if (~resetn_mrmac) begin
+      mismatch_retry_pending <= 1'b0;
+    end else begin
+      if (seq_num_mismatch) begin
+        mismatch_retry_pending <= 1'b1;
+      end else if (ciphertext_received) begin
+        mismatch_retry_pending <= 1'b0;
+      end
+    end
+  end
+
+  assign retry_seq_num = mismatch_retry_pending & ciphertext_received;
+
+  // Seq num mismatch decoding
+  logic [SEQ_NUM_W-1:0] expected_seq_num;
+  logic                 seq_num_valid;
+  logic                 rr_packets_rdyQ;
+  logic                 seq0_detected;
+
+  assign seq0_detected = rr_packets_rdy & (decoded_command.seq_num == 0);
+
+  always_ff @(posedge clk_mrmac)
+    rr_packets_rdyQ <= rr_packets_rdy;
+
+  // seq num valid over frontedge of rr_packets_rdy & there is no seq num errors
+  assign seq_num_valid = (rr_packets_rdy & ~rr_packets_rdyQ) & (~wait_for_seq0 | seq0_detected);
+
+  always_ff @(posedge clk_mrmac) begin
+    if (~resetn_mrmac) begin
+      expected_seq_num <= 'h0;
+    end else begin
+      if (start_read_request)
+        expected_seq_num <= 'h0;
+      else if (seq_num_valid) begin
+        expected_seq_num <= expected_seq_num + 1;
+      end
+    end
+  end
+
+  // After mismatch retry, ignore all CE emissions until one arrives with seq_num == 0
+  always_ff @(posedge clk_mrmac) begin
+    if (~resetn_mrmac) begin
+      wait_for_seq0 <= 1'b0;
+    end else begin
+      if (retry_seq_num) begin
+        wait_for_seq0 <= 1'b1;
+      end else if (seq0_detected) begin
+        wait_for_seq0 <= 1'b0;
+      end
+    end
+  end
+
+  // Any seq_num != expected is a mismatch: drop remaining packets, zero-pad, retry
+  assign seq_num_mismatch = seq_num_valid & (decoded_command.seq_num != expected_seq_num);
 
   // =========================================================================================== //
   // Timeouts
@@ -280,7 +341,11 @@ module mhdma_master
       to_read_request_cnt <= 'h0;
     end else begin
       if ((rreq_state == RR_WAIT_PACKETS)) begin
-        to_read_request_cnt <= to_read_request_cnt + 1;
+        if (mismatch_retry_pending) begin
+          to_read_request_cnt <= 'h0;
+        end else begin
+          to_read_request_cnt <= to_read_request_cnt + 1;
+        end
       end else begin
         to_read_request_cnt <= 'h0;
       end
@@ -326,7 +391,7 @@ module mhdma_master
   end
 
   assign rrqq_data_vld = rrqq_in_vld | rrqq_data_kept_avail;
-  assign rrqq_in_data = (rrqq_in_vld & rrqq_in_rdy) ? {regf_req_id, regf_req_addr} : rrqq_data_kept;
+  assign rrqq_in_data = (rrqq_in_rdy & rrqq_in_vld) ? {regf_req_id, regf_req_addr} : rrqq_data_kept;
 
   fifo_ram_rdy_vld_2clk # (
     .CDC_SYNC_STAGES (CDC_SYNC_STAGES),
@@ -471,13 +536,7 @@ module mhdma_master
       master_command_vld      <= (st_rr_wait_request & rrqq_cmd_vld) | rr_retry;
 
     end else begin
-      master_command.hpu_id   <= 'h0;
-      master_command.size_b   <= 'h0;
-      master_command.req_id   <= 'h0;
-      master_command.iop_id   <= 'h0;
-      master_command.src_addr <= 'h0;
-      master_command.dst_addr <= 'h0;
-      master_command_vld      <= 1'b0;
+      master_command_vld <= 1'b0;
     end
   end
 
@@ -503,23 +562,26 @@ module mhdma_master
 
   // First thig to do is to be sure that the current values are valid.
   // If we receive more data than what we expect we must invalidate it and not propagate it.
-  logic [31:0] ce_valid_cnt; // size is arbitrary toreview
-  logic ce_valid;
+  logic [COUNTER_W-1:0] ce_valid_cnt;
+  logic                 ce_valid;
 
+  // Count words entering fifo_ce_rx (valid only while waiting for packets)
   always_ff @(posedge clk_mrmac) begin
     if (~resetn_mrmac) begin
       ce_valid_cnt <= 'h0;
     end else begin
-      // if the master is in Emission mode & data from decocoder are valid
-      if ((master_command.req_id == REQ_ID_EMISSION) & decoder_rx_tvalid) begin
-        ce_valid_cnt <= ce_valid_cnt + 1;
-      end else begin
+      if (start_read_request | ciphertext_received) begin
         ce_valid_cnt <= 'h0;
+      end else if (st_wait_packets & fifo_cerx_in_vld & fifo_cerx_in_rdy) begin
+        ce_valid_cnt <= ce_valid_cnt + 1;
       end
     end
   end
 
-  assign ce_valid = (ce_valid_cnt<NB_WORDS_TO_HBM);
+  // hard cap to avoid accepting too much words
+  // Valid when no mismatch and having tolerated number of words and when error : valid is cleared
+  assign ce_valid = (ce_valid_cnt < NB_WORDS_TO_HBM) & ~mismatch_retry_pending
+                  & (~wait_for_seq0 | seq0_detected) & ~seq_num_mismatch;
 
   assign cnt_cerx_up   = fifo_cerx_in_vld & fifo_cerx_in_rdy;
   assign cnt_cerx_down = fifo_cerx_out_rdy & fifo_cerx_out_vld;
@@ -561,59 +623,70 @@ module mhdma_master
   // if fifo is empty and in_rdy then we can move the formatter FSM state to ST_READ_REQ
   assign ce_reception_ready = (fifo_cerx_cnt == 0) & fifo_cerx_in_rdy;
 
- // ready signal of sending fifo according to which one we should use
-  assign fifo_cerx_out_rdy = fifo_pc_backpressure;
-
   // =========================================================================================== //
-  // Consuming decoded commands
+  // Zero injection in case of a wrong seq num
   // =========================================================================================== //
-  logic nack_rdy;
-  logic rr_packets_rdy;
+  // Ciphertext emission RX mux
+  logic [NB_WORDS_TO_HBM-1:0] cerx_mux_word_cnt;
+  logic [MRMAC_AXIS_W-1:0]    cerx_mux_data;
+  logic                       cerx_mux_handshake;
 
-  always_ff @(posedge clk_mrmac)
-    nack_rdy <= decoded_command_vld & (decoded_command.req_id == REQ_ID_NOTIFY_ACK);
-  always_ff @(posedge clk_mrmac)
-    rr_packets_rdy <= decoded_command_vld & (decoded_command.req_id == REQ_ID_EMISSION) & st_wait_packets;
+  // Zero-padding at FIFO output
+  logic [NB_WORDS_TO_HBM-1:0] zpad_gap_start;
+  logic                       zpad_gap_pending;
+  logic                       zpad_injecting;
 
-  assign decoded_command_rdy = nack_rdy | rr_packets_rdy;
-
-  logic seq_num_valid;
-  logic seq_num_valid_D;
-
-  always_ff @(posedge clk_mrmac)
-    seq_num_valid_D <= rr_packets_rdy & decoded_command_rdy;
-
-  assign seq_num_valid = (rr_packets_rdy & decoded_command_rdy) & ~seq_num_valid_D;
-
-  logic [SEQ_NUM_W-1:0] expected_seq_num;
-
+  // Output word counter (tracks total words through the effective output path)
   always_ff @(posedge clk_mrmac) begin
     if (~resetn_mrmac) begin
-      expected_seq_num <= 'h0;
+      cerx_mux_word_cnt <= '0;
     end else begin
-      if (start_read_request) begin
-        // we need to reset expected seq num at start of read requets: when RR fails it could lead to infinite retries
-        expected_seq_num <= 'h0;
-      end else begin
-        if (seq_num_valid & (decoded_command.seq_num == NB_PACKETS_FULL)) begin
-          expected_seq_num <= 'h0;
-        end else if (seq_num_valid & ~ (decoded_command.seq_num == NB_PACKETS_FULL)) begin
-          expected_seq_num <= expected_seq_num + 1;
-        end
+      if (ciphertext_received) begin
+        cerx_mux_word_cnt <= '0;
+      end else if (cerx_mux_handshake) begin
+        cerx_mux_word_cnt <= cerx_mux_word_cnt + 1;
       end
     end
   end
 
+  // Zero-injection: pad from the gap start to NB_WORDS_TO_HBM
+  // End condition uses cerx_mux_word_cnt directly since gap always extends to end
   always_ff @(posedge clk_mrmac) begin
     if (~resetn_mrmac) begin
-      seq_num_mismatch <= 1'b0;
+      zpad_injecting <= 1'b0;
     end else begin
-      if (rst_errors) begin
-        seq_num_mismatch <= 1'b0;
-      end else if (seq_num_valid) begin
-        if (expected_seq_num != decoded_command.seq_num) begin
-          seq_num_mismatch <= 1'b1;
-        end
+      if (ciphertext_received) begin
+        zpad_injecting <= 1'b0;
+      end else if (~zpad_injecting & zpad_gap_pending & (cerx_mux_word_cnt == zpad_gap_start)) begin
+        zpad_injecting <= 1'b1;
+      end else if (zpad_injecting & fifo_pc_backpressure & (cerx_mux_word_cnt == NB_WORDS_TO_HBM - 1)) begin
+        zpad_injecting <= 1'b0;
+      end
+    end
+  end
+
+  // Effective output signals: mux between FIFO data and zero injection
+  assign cerx_mux_data      = zpad_injecting ? {MRMAC_AXIS_W{1'b0}} : fifo_cerx_out_data;
+  assign cerx_mux_handshake = zpad_injecting ? fifo_pc_backpressure : (fifo_cerx_out_rdy & fifo_cerx_out_vld);
+
+  // FIFO ready: hold off when injecting zeros or about to (prevents one real word leaking before zpad_injecting rises)
+  assign fifo_cerx_out_rdy = ~zpad_injecting
+                           & ~(zpad_gap_pending & (cerx_mux_word_cnt == zpad_gap_start))
+                           & fifo_pc_backpressure;
+
+  // Record gap start for FIFO-output zero injection
+  // On any seq_num mismatch: pad from current input position to NB_WORDS_TO_HBM
+  always_ff @(posedge clk_mrmac) begin
+    if (~resetn_mrmac) begin
+      zpad_gap_pending <= 1'b0;
+      zpad_gap_start   <= '0;
+    end else begin
+      if (ciphertext_received) begin
+        zpad_gap_pending <= 1'b0;
+        zpad_gap_start   <= '0;
+      end else if (seq_num_mismatch & ~zpad_injecting) begin
+        zpad_gap_pending <= 1'b1;
+        zpad_gap_start   <= ce_valid_cnt;
       end
     end
   end
@@ -629,7 +702,6 @@ module mhdma_master
   logic [DST_ADDR_W-1:0] received_dst_addr;
   logic [  IOP_ID_W-1:0] received_iop_id;
   logic [  HPU_ID_W-1:0] received_hpu_id;
-  logic                  received_valid;
 
   always_ff @(posedge clk_mrmac) begin
     if (decoded_command_rdy & decoded_command_vld) begin
@@ -639,15 +711,13 @@ module mhdma_master
     end
   end
 
-  assign received_valid = decoded_command_rdy & decoded_command_vld;
-
   // phys_addr = hbm_pc_offset + ctId * CT_MEM_BYTES
   logic [ETH_PC-1:0][AXI4_ADD_W-1:0] phy_addr;
   logic                              dst_addr_valid;
   logic                              phy_addr_valid;
 
   always_ff @(posedge clk_mrmac)
-    dst_addr_valid <= received_valid & (decoded_command.req_id == REQ_ID_EMISSION) & (decoded_command.seq_num == 0);
+    dst_addr_valid <= (decoded_command_rdy & decoded_command_vld) & (decoded_command.req_id == REQ_ID_EMISSION) & (decoded_command.seq_num == 0);
 
   always_ff @(posedge clk_mrmac)
     phy_addr_valid <= dst_addr_valid;
@@ -699,7 +769,6 @@ module mhdma_master
   logic [AXI4_DATA_W-1:0]                       realined_word;
   logic [$clog2(NB_MRMRAC_WORDS_PER_WRITE)-1:0] realign_cnt;
   logic                                         realined_word_vld;
-  logic                                         fifo_cerx_out_rdy_vld;
   logic                                         fifo_cerx_out_rdy_vld_reg;
 
   // Per-target-PC word counter and one-hot target_fifo selection
@@ -736,26 +805,24 @@ module mhdma_master
     end
   end
 
-  assign fifo_cerx_out_rdy_vld = fifo_cerx_out_rdy & fifo_cerx_out_vld;
-
   always_ff @(posedge clk_mrmac)
-    fifo_cerx_out_rdy_vld_reg <= fifo_cerx_out_rdy_vld;
+    fifo_cerx_out_rdy_vld_reg <= cerx_mux_handshake;
 
   always_ff @(posedge clk_mrmac) begin
     if(~resetn_mrmac) begin
       realign_cnt <= 'h0;
     end else begin
-       if (fifo_cerx_out_rdy_vld & (realign_cnt == NB_MRMRAC_WORDS_PER_WRITE-1)) begin
+       if (cerx_mux_handshake & (realign_cnt == NB_MRMRAC_WORDS_PER_WRITE-1)) begin
         realign_cnt <= 'h0;
-       end else if (fifo_cerx_out_rdy_vld) begin
+       end else if (cerx_mux_handshake) begin
         realign_cnt <= realign_cnt + 1;
       end
     end
   end
 
   always_ff @(posedge clk_mrmac)
-    if (fifo_cerx_out_rdy_vld)
-      realined_word[realign_cnt*MRMAC_AXIS_W+:MRMAC_AXIS_W] <= fifo_cerx_out_data;
+    if (cerx_mux_handshake)
+      realined_word[realign_cnt*MRMAC_AXIS_W+:MRMAC_AXIS_W] <= cerx_mux_data;
 
   assign realined_word_vld = (realign_cnt == 0) & fifo_cerx_out_rdy_vld_reg;
 
@@ -839,7 +906,6 @@ module mhdma_master
       logic [AXI4_ADD_W-1:0]            req_add_start;
       logic [PAGE_BYTES_WW-1:0]         req_page_word_remain;
       logic [AXI4_LEN_W:0]              req_axi_word_nb;
-      logic [AXI4_ID_W-1:0]             expected_wid;
 
       // FIFO ready signals
       logic rcp_fifo_in_rdy;
@@ -1180,7 +1246,8 @@ module mhdma_master
   // rr_regf_in_rdy there is no back pressurew
   assign rr_regf_in_data = {received_dst_addr, 4'b0, received_hpu_id, received_iop_id};
 
-  assign rr_regf_in_vld = ciphertext_received; //& ~last_read_req_had_mismatch
+  // Interrput must be triggered only when ciphertext is valid
+  assign rr_regf_in_vld = valid_ciphertext_received;
 
   fifo_ram_rdy_vld_2clk # (
     .CDC_SYNC_STAGES (CDC_SYNC_STAGES),
@@ -1212,7 +1279,21 @@ module mhdma_master
   // =========================================================================================== //
   // Errors
   // =========================================================================================== //
-  assign master_error = {seq_num_mismatch, write_error};
+  logic seq_num_error;
+
+  always_ff @(posedge clk_mrmac) begin
+    if (~resetn_mrmac) begin
+      seq_num_error <= 1'b0;
+    end else begin
+      if (rst_errors) begin
+        seq_num_error <= 1'b0;
+      end else if (seq_num_mismatch) begin
+        seq_num_error <= 1'b1;
+      end
+    end
+  end
+
+  assign master_error = {seq_num_error, write_error};
 
   // =========================================================================================== //
   // Statistics
@@ -1274,7 +1355,7 @@ module mhdma_master
       if (rst_cnt_read_req_retry) begin
         retry_read_req_cnt <= 'h0;
       end else begin
-        if (timeout_reached_read_request) begin
+        if (timeout_reached_read_request | retry_seq_num) begin
           retry_read_req_cnt <= retry_read_req_cnt + 1;
         end
       end

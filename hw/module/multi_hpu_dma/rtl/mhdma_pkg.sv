@@ -38,6 +38,10 @@ package mhdma_pkg;
   localparam int CT_NB_WORDS_MRMAC = CT_SIZE/MRMAC_AXIS_W; // because coef size is MRMAC size
   localparam int CT_NB_WORDS_AXI4  = CT_SIZE/AXI4_DATA_W;
 
+  localparam int NB_MRMRAC_WORDS_PER_WRITE = AXI4_DATA_W/MRMAC_AXIS_W;
+
+  localparam int COUNTER_W      = 32; // this is arbitrary
+
   localparam int QSFP_LANE_NB   = 4;
 
   // ETH_NB_BYTES_PAYLOAD must be divisible by MRMAC_AXIS_W. 1472 is the closest to 1518.
@@ -196,7 +200,7 @@ package mhdma_pkg;
   } slave_error_t;
 
   typedef struct packed {
-    logic              seq_num_mismatch;
+    logic              seq_num_error;
     logic [ETH_PC-1:0] write_error;
   } master_error_t;
 

@@ -385,6 +385,7 @@ logic [REG_DATA_W-1:0] stat_cnt_notify_received;
 logic [REG_DATA_W-1:0] stat_cnt_read_req_received;
 logic [REG_DATA_W-1:0] stat_cnt_ce_received;
 logic [REG_DATA_W-1:0] stat_read_req_timeout_retry;
+logic [REG_DATA_W-1:0] stat_errors;
 
 logic [SRC_ADDR_W-1:0] iop_src_addr;
 logic [DST_ADDR_W-1:0] iop_dst_addr;
@@ -534,6 +535,14 @@ logic [DST_ADDR_W-1:0] dst_addr;
 
   // scenario -------------------------------------------------------------------------------------
   int scenario_id;
+
+  int gap_start_flat;
+  int gap_size_flat;
+  int base_word_ofs;
+  logic [AXI4_DATA_W-1:0] mem_val;
+  logic zero_check_pass;
+  int err_cnt;
+
   initial begin
     maxil_drv_if.init();
 
@@ -667,9 +676,15 @@ logic [DST_ADDR_W-1:0] dst_addr;
     iop_id       = scenario_id;
     iop_src_addr = $urandom_range(0, 1<<SRC_ADDR_W);
     iop_dst_addr = $urandom_range(0, 1<<DST_ADDR_W);
-    read_request(dst_hpu_id, iop_id, iop_src_addr, iop_dst_addr);
 
-    wait(rx_header_vld & (rx_header.req_id == REQ_ID_READ));
+    fork
+      begin
+        read_request(dst_hpu_id, iop_id, iop_src_addr, iop_dst_addr);
+      end
+      begin
+        wait(rx_header_vld & (rx_header.req_id == REQ_ID_READ));
+      end
+    join
 
     // Send ciphertext emission packets as if we're the remote HPU responding
     for (int pkt = 0; pkt < NB_PACKETS_FULL+1; pkt++) begin
@@ -681,11 +696,19 @@ logic [DST_ADDR_W-1:0] dst_addr;
 
     maxil_drv_if.read_trans(MHDMA_REQUEST_STAT_NB_READ_REQ_RECEIVED_OFS, stat_cnt_read_req_received);
     maxil_drv_if.read_trans(MHDMA_REQUEST_STAT_NB_CE_RECEIVED_OFS, stat_cnt_ce_received);
+    maxil_drv_if.read_trans(MHDMA_REQUEST_STAT_READ_REQ_TIMEOUT_RETRY_OFS, stat_read_req_timeout_retry);
 
     assert (stat_cnt_ce_received == NB_PACKETS_FULL+1) begin
       $display("%t > [INFO]: stat_cnt_ce_received : %0d", $time, stat_cnt_ce_received);
     end else begin
       $display("%t > [ERROR]: HPU didn't receive correct amount of CE packets (%0d) expected %0d", $time, stat_cnt_ce_received, NB_PACKETS_FULL+1);
+      error_retry = 1'b1;
+    end
+
+    assert (stat_read_req_timeout_retry == 0) begin
+      $display("%t > [INFO]: HPU didn't retry sending other Read requests", $time);
+    end else begin
+      $display("%t > [ERROR]: Did %0d retries", $time, stat_read_req_timeout_retry);
       error_retry = 1'b1;
     end
 
@@ -729,22 +752,31 @@ logic [DST_ADDR_W-1:0] dst_addr;
     scenario_id = scenario_id + 1;
 
     $display("\n==================================================================================================");
-    $display("  SCENARIO %0d: Sending a wrong seq num", scenario_id);
+    $display("  SCENARIO %0d: Sending a wrong seq num — immediate zero-pad and retry", scenario_id);
     $display("==================================================================================================");
     // emptying stat_read_req_timeout_retry value
     maxil_drv_if.read_trans(MHDMA_REQUEST_STAT_READ_REQ_TIMEOUT_RETRY_OFS, stat_read_req_timeout_retry);
+    // Set timeout to max to prove retry happens via mismatch, NOT timeout
+    maxil_drv_if.write_trans(MHDMA_SYSTEM_TIMEOUT_READ_REQ_OFS, 32'hFFFFFFFF);
 
     iop_id       = scenario_id;
-    iop_src_addr = $urandom_range(0, 1<<SRC_ADDR_W);
-    iop_dst_addr = $urandom_range(0, 1<<DST_ADDR_W);
-    read_request(dst_hpu_id, iop_id, iop_src_addr, iop_dst_addr);
+    iop_src_addr = $urandom_range(0, (1 << MEM_SIM_SIZE) / CT_MEM_BYTES - 1);
+    iop_dst_addr = $urandom_range(0, (1 << MEM_SIM_SIZE) / CT_MEM_BYTES - 1);
 
-    wait(rx_header_vld & (rx_header.req_id == REQ_ID_READ));
+    fork
+      begin
+        read_request(dst_hpu_id, iop_id, iop_src_addr, iop_dst_addr);
+      end
+      begin
+        wait(rx_header_vld & (rx_header.req_id == REQ_ID_READ));
+      end
+    join
 
-    // Send ciphertext emission packets as if we're the remote HPU responding
+    // Send ciphertext emission packets: packet 8 has wrong seq_num (backward: 3 < 8)
+    // After mismatch detection, remaining packets are stale and will be ignored by DUT
     for (int pkt = 0; pkt < NB_PACKETS_FULL+1; pkt++) begin
       if (pkt == 8) begin
-        // for 8th packet we send a wrong arbitrary seq_num
+        // for 8th packet we send a wrong arbitrary seq_num (3 < expected 8 = backward mismatch)
         send_ciphertext_emission_packet(qsfp_rx_vif[0], dst_mac_addr, src_mac_addr, dst_hpu_id, iop_id, src_addr, dst_addr, 3);
       end else begin
         send_ciphertext_emission_packet(qsfp_rx_vif[0], dst_mac_addr, src_mac_addr, dst_hpu_id, iop_id, iop_src_addr, iop_dst_addr, pkt[7:0]);
@@ -752,25 +784,188 @@ logic [DST_ADDR_W-1:0] dst_addr;
       repeat(10) @(posedge clk_mrmac);
     end
 
-    repeat(500) @(posedge clk_control);
+    // Wait for DUT to detect mismatch (sticky flag)
+    wait(hpu_a.mhdma_bridge.mhdma_master.mismatch_retry_pending);
+    $display("%t > [INFO]: DUT detected seq_num mismatch", $time);
 
+    // Wait for zero-padded HBM write to complete (mismatch_retry_pending clears on ciphertext_received)
+    wait(!hpu_a.mhdma_bridge.mhdma_master.mismatch_retry_pending);
+    $display("%t > [INFO]: Zero-padded HBM write completed, retry triggered", $time);
+
+    fork
+      begin
+        repeat(50) @(posedge clk_control);
+
+        // Verify rr_retry was triggered (via mismatch, not timeout)
+        maxil_drv_if.read_trans(MHDMA_REQUEST_STAT_READ_REQ_TIMEOUT_RETRY_OFS, stat_read_req_timeout_retry);
+
+        assert (stat_read_req_timeout_retry != 0) begin
+          $display("%t > [INFO]: Did %0d retries after wrong seq num", $time, stat_read_req_timeout_retry);
+        end else begin
+          $display("%t > [ERROR]: HPU didn't retry after seq_num mismatch", $time);
+          error_retry = 1'b1;
+        end
+
+        // Check HBM memory: from packet 8's position to end should be zero-padded
+        gap_start_flat = (8 * NB_WORDS_PAYLOAD) / NB_MRMRAC_WORDS_PER_WRITE;
+        gap_size_flat  = (AXI4_WORD_PER_PC0 + (ETH_PC-1) * AXI4_WORD_PER_PC) - gap_start_flat;
+        base_word_ofs  = (iop_dst_addr * CT_MEM_BYTES) / AXI4_DATA_BYTES;
+
+        zero_check_pass = 1'b1;
+        err_cnt = 0;
+
+        $display("%t > [INFO]: Checking zero-padding: flat AXI4 words [%0d:%0d], base_word_ofs=%0d",
+                 $time, gap_start_flat, gap_start_flat + gap_size_flat - 1, base_word_ofs);
+
+        for (int w = gap_start_flat; w < gap_start_flat + gap_size_flat; w++) begin
+          if (w < AXI4_WORD_PER_PC0) begin
+            mem_val = gen_mem_pc[0].axi4_mem_ct.axi4_ram_ct_wr.mem[base_word_ofs + w];
+          end else begin
+            mem_val = gen_mem_pc[1].axi4_mem_ct.axi4_ram_ct_wr.mem[base_word_ofs + w - AXI4_WORD_PER_PC0];
+          end
+
+          if (mem_val !== '0) begin
+            if (err_cnt < 5)
+              $display("%t > [ERROR]: Non-zero at gap flat_idx=%0d, val=0x%h", $time, w, mem_val);
+            zero_check_pass = 1'b0;
+            err_cnt++;
+          end
+        end
+
+        assert (zero_check_pass) begin
+          $display("%t > [INFO]: Zero-padding check PASSED (%0d AXI4 words verified zero)", $time, gap_size_flat);
+        end else begin
+          $display("%t > [ERROR]: Zero-padding check FAILED (%0d errors)", $time, err_cnt);
+          error_retry = 1'b1;
+        end
+
+        // Check error register has seq_num_error
+        maxil_drv_if.read_trans(MHDMA_SYSTEM_ERRORS_OFS, stat_errors);
+        display_errors(stat_errors);
+      end
+      begin
+        // Wait for retry read request on QSFP TX
+        wait(rx_header_vld & (rx_header.req_id == REQ_ID_READ));
+        $display("%t > [INFO]: Retry read request detected on QSFP TX", $time);
+
+        // Respond to retry with correct ciphertext emission (all packets from seq_num 0)
+        // DUT is in wait_for_seq0 mode and will ignore stale CEs until seq_num == 0
+        for (int pkt = 0; pkt < NB_PACKETS_FULL+1; pkt++) begin
+          send_ciphertext_emission_packet(qsfp_rx_vif[0], dst_mac_addr, src_mac_addr, dst_hpu_id, iop_id, iop_src_addr, iop_dst_addr, pkt[7:0]);
+          repeat(10) @(posedge clk_mrmac);
+        end
+      end
+    join
+
+    repeat(100) @(posedge clk_control);
+
+    check_fsm_initialized();
+
+    scenario_id = scenario_id + 1;
+
+    $display("\n==================================================================================================");
+    $display("  SCENARIO %0d: a real drop of packet — zero-padding then retry", scenario_id);
+    $display("==================================================================================================");
     maxil_drv_if.read_trans(MHDMA_REQUEST_STAT_READ_REQ_TIMEOUT_RETRY_OFS, stat_read_req_timeout_retry);
 
-    // we must have a retry
-    assert (stat_read_req_timeout_retry != 0) begin
-      $display("%t > [INFO]: Did %0d retries after wrong seq num", $time, stat_read_req_timeout_retry);
-    end else begin
-      $display("%t > [ERROR]: HPU didn't retry sending other Notifies", $time);
-      error_retry = 1'b1;
-    end
+    iop_id       = scenario_id;
+    iop_src_addr = $urandom_range(0, (1 << MEM_SIM_SIZE) / CT_MEM_BYTES - 1);
+    iop_dst_addr = $urandom_range(0, (1 << MEM_SIM_SIZE) / CT_MEM_BYTES - 1);
 
-    // Send ciphertext emission packets as if we're the remote HPU responding
+    fork
+      begin
+        read_request(dst_hpu_id, iop_id, iop_src_addr, iop_dst_addr);
+      end
+      begin
+        wait(rx_header_vld & (rx_header.req_id == REQ_ID_READ));
+      end
+    join
+
+    // Send ciphertext emission packets — drop packet 8
     for (int pkt = 0; pkt < NB_PACKETS_FULL+1; pkt++) begin
-      send_ciphertext_emission_packet(qsfp_rx_vif[0], dst_mac_addr, src_mac_addr, dst_hpu_id, iop_src_addr, src_addr, iop_dst_addr, pkt[7:0]);
-      repeat(10) @(posedge clk_mrmac);
+      if (pkt == 8) begin
+        $display("%t > [INFO]: Dropping packet 8", $time);
+      end else begin
+        send_ciphertext_emission_packet(qsfp_rx_vif[0], dst_mac_addr, src_mac_addr, dst_hpu_id, iop_id, iop_src_addr, iop_dst_addr, pkt[7:0]);
+      end
+      repeat(2) @(posedge clk_mrmac);
     end
 
-    repeat(500) @(posedge clk_control);
+    // Wait for DUT to detect packet loss (sticky flag)
+    wait(hpu_a.mhdma_bridge.mhdma_master.seq_num_error);
+    $display("%t > [INFO]: DUT detected packet loss", $time);
+
+    // Wait for zero-padded HBM write to complete
+    // mismatch_retry_pending is set on seq_num_mismatch, cleared on ciphertext_received
+    wait(!hpu_a.mhdma_bridge.mhdma_master.mismatch_retry_pending);
+    $display("%t > [INFO]: Zero-padded HBM write completed", $time);
+
+    fork
+      begin
+        repeat(50) @(posedge clk_control);
+
+        // Verify rr_retry was triggered
+        maxil_drv_if.read_trans(MHDMA_REQUEST_STAT_READ_REQ_TIMEOUT_RETRY_OFS, stat_read_req_timeout_retry);
+
+        // we must have a retry
+        assert (stat_read_req_timeout_retry != 0) begin
+          $display("%t > [INFO]: Did %0d retries after wrong seq num", $time, stat_read_req_timeout_retry);
+        end else begin
+          $display("%t > [ERROR]: HPU didn't retry sending other Notifies", $time);
+          error_retry = 1'b1;
+        end
+        // Check HBM memory at packet 8's gap position for zero-padding
+        gap_start_flat = (8 * NB_WORDS_PAYLOAD) / NB_MRMRAC_WORDS_PER_WRITE;
+        gap_size_flat  = NB_WORDS_PAYLOAD / NB_MRMRAC_WORDS_PER_WRITE;
+        base_word_ofs  = (iop_dst_addr * CT_MEM_BYTES) / AXI4_DATA_BYTES;
+
+        zero_check_pass = 1'b1;
+        err_cnt = 0;
+
+        $display("%t > [INFO]: Checking zero-padding: flat AXI4 words [%0d:%0d], base_word_ofs=%0d, AXI4_WORD_PER_PC0=%0d",
+                 $time, gap_start_flat, gap_start_flat + gap_size_flat - 1, base_word_ofs, AXI4_WORD_PER_PC0);
+
+        for (int w = gap_start_flat; w < gap_start_flat + gap_size_flat; w++) begin
+          if (w < AXI4_WORD_PER_PC0) begin
+            mem_val = gen_mem_pc[0].axi4_mem_ct.axi4_ram_ct_wr.mem[base_word_ofs + w];
+          end else begin
+            mem_val = gen_mem_pc[1].axi4_mem_ct.axi4_ram_ct_wr.mem[base_word_ofs + w - AXI4_WORD_PER_PC0];
+          end
+
+          if (mem_val !== '0) begin
+            if (err_cnt < 5)
+              $display("%t > [ERROR]: Non-zero at gap flat_idx=%0d, val=0x%h", $time, w, mem_val);
+            zero_check_pass = 1'b0;
+            err_cnt++;
+          end
+        end
+
+        assert (zero_check_pass) begin
+          $display("%t > [INFO]: Zero-padding check PASSED (%0d AXI4 words verified zero)", $time, gap_size_flat);
+        end else begin
+          $display("%t > [ERROR]: Zero-padding check FAILED (%0d errors)", $time, err_cnt);
+          error_retry = 1'b1;
+        end
+
+        // Read and display error register
+        maxil_drv_if.read_trans(MHDMA_SYSTEM_ERRORS_OFS, stat_errors);
+        display_errors(stat_errors);
+      end
+      begin
+        // Wait for retry read request on QSFP TX
+        wait(rx_header_vld & (rx_header.req_id == REQ_ID_READ));
+        $display("%t > [INFO]: Retry read request detected on QSFP TX", $time);
+
+        // Respond to retry with correct ciphertext emission (all packets)
+        for (int pkt = 0; pkt < NB_PACKETS_FULL+1; pkt++) begin
+          send_ciphertext_emission_packet(qsfp_rx_vif[0], dst_mac_addr, src_mac_addr, dst_hpu_id, iop_id, iop_src_addr, iop_dst_addr, pkt[7:0]);
+          repeat(10) @(posedge clk_mrmac);
+        end
+
+      end
+    join
+
+    repeat(100) @(posedge clk_control);
 
     check_fsm_initialized();
 

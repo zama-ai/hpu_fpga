@@ -9,7 +9,7 @@
 //   error_fifo_nrx_commands_ovf   - Slave: Notify RX commands FIFO overflow
 //   error_rreq_command_queue_ovf  - Slave: Read Request command queue overflow
 //   write_error[ETH_PC-1:0]       - Master: AXI write response SLVERR/DECERR
-//   - seq_num_mismatch            - Master: seq num received during CE missmatched expected
+//   seq_num_error                 - Master: seq num mismatch
 //   error_id                      - Bridge: Multiple HPUs defined as current (not one-hot)
 //
 // Not tested (hardcoded to 0 in RTL):
@@ -723,8 +723,8 @@ module tb_mhdma_errors;
       errors_t = mhdma_error_t'(reg_error);
       $display("%t > Error register value :  0x%08b", $time, reg_error);
 
-      assert (errors_t.master_error.seq_num_mismatch) else begin
-        $display("%t > [ERROR] seq_num_mismatch not triggered", $time);
+      assert (errors_t.master_error.seq_num_error) else begin
+        $display("%t > [ERROR] seq_num_error not triggered", $time);
         error_unexpected = 1'b1;
       end
 
