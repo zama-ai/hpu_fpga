@@ -334,16 +334,24 @@ module multi_hpu_dma
   // CDC
   // ============================================================================================ //
   // CDC: Reset signals (CFG -> ETH)
-  xpm_cdc_handshake_wrapper #(
-    .WIDTH           ($bits(mhdma_rst_cnt_t)),
-    .CDC_SYNC_STAGES (CDC_SYNC_STAGES       )
-  ) cdc_rst_cnt (
-    .src_clk   (clk_eth_cfg    ),
-    .src_rst_n (resetn_eth_cfg ),
-    .dest_clk  (clk_eth_mrmac  ),
-    .src_in    (rst_cnt_cfg    ),
-    .dest_out  (rst_cnt_eth    )
-  );
+  localparam int RST_CNT_W = $bits(mhdma_rst_cnt_t);
+  logic [RST_CNT_W-1:0] rst_cnt_cfg_flat;
+  logic [RST_CNT_W-1:0] rst_cnt_eth_flat;
+
+  assign rst_cnt_cfg_flat = rst_cnt_cfg;
+  assign rst_cnt_eth      = mhdma_rst_cnt_t'(rst_cnt_eth_flat);
+
+  for (genvar i = 0; i < RST_CNT_W; i++) begin : gen_cdc_rst_cnt
+    xpm_cdc_single_wrapper #(
+      .CDC_SYNC_STAGES (CDC_SYNC_STAGES),
+      .SRC_INPUT_REG   (1              )
+    ) cdc_rst_cnt (
+      .src_clk  (clk_eth_cfg        ),
+      .dest_clk (clk_eth_mrmac      ),
+      .src_in   (rst_cnt_cfg_flat[i] ),
+      .dest_out (rst_cnt_eth_flat[i] )
+    );
+  end
 
   // CDC: Counter values (ETH -> CFG)
   xpm_cdc_handshake_wrapper #(
