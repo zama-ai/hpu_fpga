@@ -763,17 +763,18 @@ module mhdma_slave
   // acks takes precedence in from of read request
   always_ff @(posedge clk_mrmac) begin
     if (nrx_cmd_out_vld)  begin
-      slave_command         <= nrx_cmd_fifo;
-      slave_command_vld     <= nrx_cmd_out_vld;
-      slave_command.size_b  <= 'h0;
+      slave_command_vld       <= nrx_cmd_out_vld;
+      slave_command           <= nrx_cmd_fifo;
+      slave_command.size_b    <= 'h0;
+      slave_command.dst_addr  <= 'h0;
     end else if (rreq_cmd_out_vld) begin
+      slave_command_vld     <= rreq_cmd_out_vld;
       slave_command         <= rreq_cmd_fifo;
       slave_command.size_b  <= SIZE_B; // Fixed for now
-      slave_command_vld     <= rreq_cmd_out_vld;
     end else begin
+      slave_command_vld     <= 'h0;
       slave_command         <= 'h0;
       slave_command.size_b  <= 'h0;
-      slave_command_vld     <= 'h0;
     end
   end
 

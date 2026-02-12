@@ -273,9 +273,8 @@ module mhdma_formatter
 
   assign tx_small_last  = qsfp_tx_tready & (tx_cnt == NB_WORDS_MIN);
   assign tx_header_last = qsfp_tx_tready & (tx_cnt == NB_WORDS_CUST_HEADER_SIZE);
-  assign tx_last_word   = (st_ct_emission & ~ce_last_packet) ? qsfp_tx_tready & (tx_cnt == NB_WORDS_FULL) : qsfp_tx_tready & (tx_cnt == NB_WORDS_PARTIAL);
+  assign tx_last_word   = qsfp_tx_tready & st_ct_emission & (ce_last_packet ? (tx_cnt == NB_WORDS_PARTIAL) : (tx_cnt == NB_WORDS_FULL));
 
-  // TOREVIEW
   assign header_sop = (master_command_rdy & master_command_vld) | (slave_command_rdy & slave_command_vld) | ce_start_of_header;
 
   // =========================================================================================== //
@@ -352,7 +351,7 @@ module mhdma_formatter
     end
   end
 
-  assign ce_start_emission = qsfp_tx_tready & (ce_seq_num == 0) & ce_fifo_vld & ~ce_first_header_sent;
+  assign ce_start_emission = qsfp_tx_tready & st_ct_emission & (ce_seq_num == 0) & ce_fifo_vld & ~ce_first_header_sent;
 
   // =========================================================================================== //
   // Cycle by cycle construction
@@ -380,7 +379,7 @@ module mhdma_formatter
       header_src_addr            <= slave_command.src_addr;
       header_dst_addr            <= slave_command.dst_addr;
       header_iop_id              <= slave_command.iop_id;
-    end else if (ce_fifo_vld) begin
+    end else if (ce_fifo_vld & st_ct_emission) begin
       header_target_hpu_mac_addr <= hpu_mac_table_tmp[ce_hpu_id];
       header_req_id              <= REQ_ID_EMISSION;
       header_src_addr            <= ce_src_addr;
@@ -429,28 +428,29 @@ module mhdma_formatter
   logic [      MRMAC_AXIS_W/8-1:0]   tx_byte_enable;
   logic [      MRMAC_AXIS_W/8-1:0]   tx_byte_enable_d;
 
-  always_comb begin
-    case (last_word_bytes)
-      'h0 :
-        tx_byte_enable_d = 8'hFF;
-      'h1 :
-        tx_byte_enable_d = 8'h01;
-      'h2 :
-        tx_byte_enable_d = 8'h03;
-      'h3 :
-        tx_byte_enable_d = 8'h07;
-      'h4 :
-        tx_byte_enable_d = 8'h0F;
-      'h5 :
-        tx_byte_enable_d = 8'h1F;
-      'h6 :
-        tx_byte_enable_d = 8'h3F;
-      'h7 :
-        tx_byte_enable_d = 8'h7F;
-      default :
-        tx_byte_enable_d = 8'h0;
-    endcase
-  end
+  // always_comb begin
+  //   case (last_word_bytes)
+  //     'h0 :
+  //       tx_byte_enable_d = 8'hFF;
+  //     'h1 :
+  //       tx_byte_enable_d = 8'h01;
+  //     'h2 :
+  //       tx_byte_enable_d = 8'h03;
+  //     'h3 :
+  //       tx_byte_enable_d = 8'h07;
+  //     'h4 :
+  //       tx_byte_enable_d = 8'h0F;
+  //     'h5 :
+  //       tx_byte_enable_d = 8'h1F;
+  //     'h6 :
+  //       tx_byte_enable_d = 8'h3F;
+  //     'h7 :
+  //       tx_byte_enable_d = 8'h7F;
+  //     default :
+  //       tx_byte_enable_d = 8'h0;
+  //   endcase
+  // end
+  assign tx_byte_enable_d = (last_word_bytes == 0) ? 8'hFF : (1 << last_word_bytes) - 1;
 
   always_ff @(posedge clk_mrmac) begin
     if (~resetn_mrmac) begin
@@ -546,7 +546,8 @@ module mhdma_formatter
   logic                      tx_tlast_reg;
   logic                      tx_tvalid_reg;
 
-  assign tx_tdata_D      = small_packet ? tx_header : (ce_header_valid & tx_tvalid_D) ? tx_header : ce_fifo_vld ? ce_fifo_payload :'h0;
+  assign tx_tdata_D      = small_packet | ce_header_valid ? tx_header : ce_fifo_vld ? ce_fifo_payload : 'h0;
+  // assign tx_tdata_D      = small_packet ? tx_header : (ce_header_valid & tx_tvalid_D) ? tx_header : ce_fifo_vld ? ce_fifo_payload :'h0;
   assign tx_tvalid_D     = small_packet ? |tx_cnt : |tx_cnt & (ce_header_valid | ce_fifo_vld);
   assign tx_tkeep_user_D = {3'b000, tx_byte_enable};
   assign tx_tlast_D      = small_packet ? tx_small_last : st_ct_emission ? tx_last_word : 1'b0;
