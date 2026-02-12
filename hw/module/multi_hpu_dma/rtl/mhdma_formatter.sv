@@ -46,7 +46,7 @@ module mhdma_formatter
   output logic                                      qsfp_tx_tvalid,
   input  logic                                      qsfp_tx_tready,
   // statistics ---------------------------------------------------------------
-  output logic [2:0]                                stat_fsm_formatter
+  output formatter_stat_t                           stat
 );
 
   // =========================================================================================== //
@@ -601,6 +601,6 @@ module mhdma_formatter
   // =========================================================================================== //
   // Statistics
   // =========================================================================================== //
-  assign stat_fsm_formatter = tx_state;
+  assign stat.fsm_formatter = tx_state;
 
 endmodule

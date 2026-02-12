@@ -62,17 +62,8 @@ module mhdma_slave
   output slave_error_t                        slave_error,
   input  logic                                rst_errors,
   // statistics ---------------------------------------------------------------
-  // counters
-  output logic             [  REG_DATA_W-1:0] stat_nb_read_to_hbm,
-  output logic [ETH_PC-1:0][  REG_DATA_W-1:0] stat_nb_words_received_pc,
-  output logic [ETH_PC-1:0][  REG_DATA_W-1:0] stat_t_rr_wait_words_pc,
-  // rst
-  input  logic                                rst_nb_read_to_hbm,
-  input  logic [ETH_PC-1:0]                   rst_nb_words_received_pc,
-  // register
-  output logic [1:0]                          stat_fsm_notify_rx,
-  output logic [1:0]                          stat_fsm_cem,
-  output logic [ETH_PC-1:0][2*REG_DATA_W-1:0] stat_rr_phy_addr
+  output slave_stat_t                         stat,
+  input  slave_stat_rst_t                     stat_rst
 );
 
   // =========================================================================================== //
@@ -786,15 +777,15 @@ module mhdma_slave
   // =========================================================================================== //
   // Statistics
   // =========================================================================================== //
-  assign stat_fsm_notify_rx  = nrx_state;
-  assign stat_fsm_cem        = cem_state;
+  assign stat.fsm_notify_rx  = nrx_state;
+  assign stat.fsm_cem        = cem_state;
 
   logic [REG_DATA_W-1:0] nb_read_to_hbm;
   always_ff @(posedge clk_mrmac) begin
     if (~resetn_mrmac) begin
       nb_read_to_hbm <= 'h0;
     end else begin
-      if (rst_nb_read_to_hbm) begin
+      if (stat_rst.nb_read_to_hbm) begin
         nb_read_to_hbm <= 'h0;
       end else begin
         if (|(m_axi4_arready & m_axi4_arvalid)) begin
@@ -811,7 +802,7 @@ module mhdma_slave
         if (~resetn_mrmac) begin
           nb_words_received_pc[gen_i] <= 'h0;
         end else begin
-          if (rst_nb_words_received_pc[gen_i]) begin
+          if (stat_rst.nb_words_received_pc[gen_i]) begin
             nb_words_received_pc[gen_i] <= 'h0;
           end else begin
             if (m_axi4_rready[gen_i] & m_axi4_rvalid[gen_i]) begin
@@ -862,9 +853,9 @@ module mhdma_slave
     end
   endgenerate
 
-  assign stat_rr_phy_addr           = rr_phy_addr;
-  assign stat_nb_read_to_hbm        = nb_read_to_hbm;
-  assign stat_nb_words_received_pc  = nb_words_received_pc;
-  assign stat_t_rr_wait_words_pc    = t_rr_wait_words_pc;
+  assign stat.rr_phy_addr           = rr_phy_addr;
+  assign stat.nb_read_to_hbm        = nb_read_to_hbm;
+  assign stat.nb_words_received_pc  = nb_words_received_pc;
+  assign stat.t_rr_wait_words_pc    = t_rr_wait_words_pc;
 
 endmodule

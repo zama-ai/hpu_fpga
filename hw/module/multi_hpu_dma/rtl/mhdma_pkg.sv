@@ -213,6 +213,92 @@ package mhdma_pkg;
   } mhdma_error_t;
 
   // =========================================================================================== //
+  // Per-submodule stat/rst structs
+  // =========================================================================================== //
+  // Master stat output
+  typedef struct packed {
+    logic [REG_DATA_W-1:0] cnt_notify;
+    logic [REG_DATA_W-1:0] cnt_notify_ack;
+    logic [REG_DATA_W-1:0] cnt_notify_retries;
+    logic [REG_DATA_W-1:0] cnt_read_req_retries;
+    logic [REG_DATA_W-1:0] cnt_notify_timeout;
+    logic [REG_DATA_W-1:0] nb_ce_words_received;
+    logic [REG_DATA_W-1:0] nb_write_complete_cnt;
+    logic [REG_DATA_W-1:0] t_notify_to_ack;
+    logic [REG_DATA_W-1:0] t_rr_to_ce_received;
+    logic [1:0]            fsm_notify;
+    logic [1:0]            fsm_read_req;
+  } master_stat_t;
+
+  // Master stat reset input
+  typedef struct packed {
+    logic cnt_notify;
+    logic cnt_notify_ack;
+    logic cnt_timeout;
+    logic cnt_notify_retry;
+    logic cnt_read_req_retry;
+    logic nb_ce_words_received;
+  } master_stat_rst_t;
+
+  // Slave stat output
+  typedef struct packed {
+    logic             [  REG_DATA_W-1:0] nb_read_to_hbm;
+    logic [ETH_PC-1:0][  REG_DATA_W-1:0] nb_words_received_pc;
+    logic [ETH_PC-1:0][  REG_DATA_W-1:0] t_rr_wait_words_pc;
+    logic [1:0]                          fsm_notify_rx;
+    logic [1:0]                          fsm_cem;
+    logic [ETH_PC-1:0][2*REG_DATA_W-1:0] rr_phy_addr;
+  } slave_stat_t;
+
+  // Slave stat reset input
+  typedef struct packed {
+    logic              nb_read_to_hbm;
+    logic [ETH_PC-1:0] nb_words_received_pc;
+  } slave_stat_rst_t;
+
+  // Decoder stat output
+  typedef struct packed {
+    logic [REG_DATA_W-1:0] t_ce_first_to_last_pkt;
+    logic [REG_DATA_W-1:0] cnt_nack_received;
+    logic [REG_DATA_W-1:0] cnt_notify_received;
+    logic [REG_DATA_W-1:0] cnt_read_req_received;
+    logic [REG_DATA_W-1:0] cnt_ce_received;
+  } decoder_stat_t;
+
+  // Decoder stat reset input
+  typedef struct packed {
+    logic cnt_nack_received;
+    logic cnt_notify_received;
+    logic cnt_read_req_received;
+    logic cnt_ce_received;
+  } decoder_stat_rst_t;
+
+  // Formatter stat output
+  typedef struct packed {
+    logic [2:0] fsm_formatter;
+  } formatter_stat_t;
+
+  // =========================================================================================== //
+  // CDC structs (used in multi_hpu_dma top and mhdma_bridge)
+  // =========================================================================================== //
+  // Reset signals (single-bit, CFG -> ETH) - nests per-submodule rst structs
+  typedef struct packed {
+    master_stat_rst_t  master;
+    slave_stat_rst_t   slave;
+    decoder_stat_rst_t decoder;
+    logic              mhdma_errors;
+  } mhdma_rst_cnt_t;
+
+  // All stat values (ETH -> CFG) - nests per-submodule stat structs
+  typedef struct packed {
+    master_stat_t    master;
+    slave_stat_t     slave;
+    decoder_stat_t   decoder;
+    formatter_stat_t formatter;
+    logic [REG_DATA_W-1:0] mhdma_errors;
+  } mhdma_cnt_t;
+
+  // =========================================================================================== //
   // Functions
   // =========================================================================================== //
   function automatic logic [MRMAC_AXIS_W-1:0] byte_swap(

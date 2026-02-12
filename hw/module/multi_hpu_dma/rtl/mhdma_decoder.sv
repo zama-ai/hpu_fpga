@@ -23,17 +23,8 @@ module mhdma_decoder
   output logic [MRMAC_AXIS_W-1:0]  rx_tdata_out,
   output logic                     rx_tvalid_out,
   //  Statistics --------------------------------------------------------------
-  output logic [REG_DATA_W-1:0]    stat_t_ce_first_to_last_pkt,
-  // number of received events
-  output logic [REG_DATA_W-1:0]    stat_cnt_nack_received,
-  output logic [REG_DATA_W-1:0]    stat_cnt_notify_received,
-  output logic [REG_DATA_W-1:0]    stat_cnt_read_req_received,
-  output logic [REG_DATA_W-1:0]    stat_cnt_ce_received,
-  // rst
-  input  logic                     rst_cnt_nack_received,
-  input  logic                     rst_cnt_notify_received,
-  input  logic                     rst_cnt_read_req_received,
-  input  logic                     rst_cnt_ce_received,
+  output decoder_stat_t            stat,
+  input  decoder_stat_rst_t        stat_rst,
   // Error interface ----------------------------------------------------------
   output decoder_error_t           decoder_error,
   input  logic                     rst_errors,
@@ -298,12 +289,14 @@ module mhdma_decoder
     end
   end
 
+  logic [REG_DATA_W-1:0] stat_t_ce_first_to_last_pkt_r;
+
   always_ff @(posedge clk_mrmac) begin
     if (~resetn_mrmac) begin
-      stat_t_ce_first_to_last_pkt <= 'h0;
+      stat_t_ce_first_to_last_pkt_r <= 'h0;
     end else begin
       if (ce_received & (seq_num == NB_PACKETS_FULL) & rx_tlast_in) begin
-        stat_t_ce_first_to_last_pkt <= t_first_last_pkt;
+        stat_t_ce_first_to_last_pkt_r <= t_first_last_pkt;
       end
     end
   end
@@ -318,7 +311,7 @@ module mhdma_decoder
     if (~resetn_mrmac) begin
       cnt_notify_received <= 'h0;
     end else begin
-      if (rst_cnt_notify_received) begin
+      if (stat_rst.cnt_notify_received) begin
         cnt_notify_received <= 'h0;
       end else begin
         if (notify_request_received) begin
@@ -331,7 +324,7 @@ module mhdma_decoder
     if (~resetn_mrmac) begin
       cnt_read_req_received <= 'h0;
     end else begin
-      if (rst_cnt_read_req_received) begin
+      if (stat_rst.cnt_read_req_received) begin
         cnt_read_req_received <= 'h0;
       end else begin
         if (read_request_received) begin
@@ -344,7 +337,7 @@ module mhdma_decoder
     if (~resetn_mrmac) begin
       cnt_nack_received <= 'h0;
     end else begin
-      if (rst_cnt_nack_received) begin
+      if (stat_rst.cnt_nack_received) begin
         cnt_nack_received <= 'h0;
       end else begin
         if (notify_ack_received) begin
@@ -357,7 +350,7 @@ module mhdma_decoder
     if (~resetn_mrmac) begin
       cnt_ce_received <= 'h0;
     end else begin
-      if (rst_cnt_ce_received) begin
+      if (stat_rst.cnt_ce_received) begin
         cnt_ce_received <= 'h0;
       end else begin
         if (ciphertext_emission_received) begin
@@ -366,9 +359,10 @@ module mhdma_decoder
       end
     end
   end
-  assign stat_cnt_notify_received   = cnt_notify_received;
-  assign stat_cnt_read_req_received = cnt_read_req_received;
-  assign stat_cnt_nack_received     = cnt_nack_received;
-  assign stat_cnt_ce_received       = cnt_ce_received;
+  assign stat.t_ce_first_to_last_pkt = stat_t_ce_first_to_last_pkt_r;
+  assign stat.cnt_notify_received    = cnt_notify_received;
+  assign stat.cnt_read_req_received  = cnt_read_req_received;
+  assign stat.cnt_nack_received      = cnt_nack_received;
+  assign stat.cnt_ce_received        = cnt_ce_received;
 
 endmodule

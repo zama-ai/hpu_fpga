@@ -65,47 +65,8 @@ module mhdma_bridge
   input  logic                                    received_req,
   output logic                                    request_consumed,
   // statistics ---------------------------------------------------------------
-  output logic [REG_DATA_W-1:0]                   stat_cnt_notify,
-  output logic [REG_DATA_W-1:0]                   stat_cnt_notify_ack,
-  output logic [REG_DATA_W-1:0]                   stat_cnt_notify_timeout,
-  output logic [REG_DATA_W-1:0]                   stat_cnt_notify_retries,
-  output logic [REG_DATA_W-1:0]                   stat_nb_write_complete_cnt,
-
-  output logic [REG_DATA_W-1:0]                   stat_cnt_nack_received,
-  output logic [REG_DATA_W-1:0]                   stat_cnt_notify_received,
-  output logic [REG_DATA_W-1:0]                   stat_cnt_read_req_received,
-  output logic [REG_DATA_W-1:0]                   stat_cnt_read_req_retries,
-  output logic [REG_DATA_W-1:0]                   stat_cnt_ce_received,
-
-  output logic [ETH_PC-1:0][REG_DATA_W-1:0]       stat_nb_words_received_pc,
-  output logic             [REG_DATA_W-1:0]       stat_nb_read_to_hbm,
-  output logic             [REG_DATA_W-1:0]       stat_nb_ce_words_received,
-
-  output logic                 [  REG_DATA_W-1:0] stat_mhdma_errors,
-  input  logic                                    rst_mhdma_errors,
-
-  // timing
-  output logic [REG_DATA_W-1:0]                   stat_t_notify_to_ack,
-  output logic [REG_DATA_W-1:0]                   stat_t_rr_to_ce_received,
-  output logic [REG_DATA_W-1:0]                   stat_t_ce_first_to_last_pkt,
-  output logic [ETH_PC-1:0][REG_DATA_W-1:0]       stat_t_rr_wait_words_pc,
-
-  // reset counters
-  input  logic                                    rst_cnt_notify,
-  input  logic                                    rst_cnt_notify_ack,
-  input  logic                                    rst_cnt_notify_retry,
-  input  logic                                    rst_cnt_read_req_retry,
-  input  logic                                    rst_cnt_timeout,
-  input  logic                                    rst_cnt_nack_received,
-  input  logic                                    rst_cnt_notify_received,
-  input  logic                                    rst_cnt_read_req_received,
-  input  logic                                    rst_cnt_ce_received,
-  input  logic                                    rst_nb_read_to_hbm,
-  input  logic [ETH_PC-1:0]                       rst_nb_words_received_pc,
-  input  logic                                    rst_nb_ce_words_received,
-  // registers
-  output logic [REG_DATA_W-1:0]                   stat_reg_fsm,
-  output logic [ETH_PC-1:0][2*REG_DATA_W-1:0]     stat_rr_phy_addr,
+  output mhdma_cnt_t                              stat_cnt,
+  input  mhdma_rst_cnt_t                          rst_cnt,
   // statistics ---------------------------------------------------------------
   input  logic                                    clear_interrupt_notify,
   output logic                                    interrupt_notify,
@@ -130,12 +91,14 @@ module mhdma_bridge
   // =========================================================================================== //
   localparam int CDC_SYNC_STAGES = 2;
 
-  // statistics/debug that needs to be propagated to regif
-  logic [2:0] stat_fsm_formatter;
-  logic [1:0] stat_fsm_notify_rx;
-  logic [1:0] stat_fsm_cem;
-  logic [1:0] stat_fsm_notify;
-  logic [1:0] stat_fsm_read_req;
+  // per-submodule stat/rst struct wires
+  master_stat_t      master_stat;
+  master_stat_rst_t  master_stat_rst;
+  slave_stat_t       slave_stat;
+  slave_stat_rst_t   slave_stat_rst;
+  decoder_stat_t     decoder_stat;
+  decoder_stat_rst_t decoder_stat_rst;
+  formatter_stat_t   formatter_stat;
 
   // =========================================================================================== //
   // CDC from regf to mrmac clock
@@ -312,29 +275,10 @@ module mhdma_bridge
     .notify_sent                     (notify_sent                             ),
     // errors -----------------------------------------------------------------
     .master_error                    (master_error                            ),
-    .rst_errors                      (rst_mhdma_errors                        ),
+    .rst_errors                      (rst_cnt.mhdma_errors                    ),
     // statistics -------------------------------------------------------------
-    // counters
-    .stat_cnt_notify                 (stat_cnt_notify                         ),
-    .stat_cnt_notify_ack             (stat_cnt_notify_ack                     ),
-    .stat_cnt_notify_timeout         (stat_cnt_notify_timeout                 ),
-    .stat_cnt_notify_retries         (stat_cnt_notify_retries                 ),
-    .stat_nb_ce_words_received       (stat_nb_ce_words_received               ),
-    .stat_nb_write_complete_cnt      (stat_nb_write_complete_cnt              ),
-    .stat_cnt_read_req_retries       (stat_cnt_read_req_retries),
-    // timing
-    .stat_t_notify_to_ack            (stat_t_notify_to_ack                    ),
-    .stat_t_rr_to_ce_received        (stat_t_rr_to_ce_received                ),
-    // reset counters
-    .rst_cnt_notify                  (rst_cnt_notify                          ),
-    .rst_cnt_notify_ack              (rst_cnt_notify_ack                      ),
-    .rst_cnt_notify_retry            (rst_cnt_notify_retry                    ),
-    .rst_cnt_timeout                 (rst_cnt_timeout                         ),
-    .rst_nb_ce_words_received        (rst_nb_ce_words_received                ),
-    .rst_cnt_read_req_retry          (rst_cnt_read_req_retry                  ),
-    // fsms
-    .stat_fsm_notify                 (stat_fsm_notify                         ),
-    .stat_fsm_read_req               (stat_fsm_read_req                       )
+    .stat                            (master_stat                             ),
+    .stat_rst                        (master_stat_rst                         )
   );
 
   // Slave module does the control for Notify ack and ciphertext emission
@@ -383,19 +327,10 @@ module mhdma_bridge
     .notify_ack_sent                (notify_ack_sent                          ),
     // errors -----------------------------------------------------------------
     .slave_error                    (slave_error                              ),
-    .rst_errors                     (rst_mhdma_errors                         ),
+    .rst_errors                     (rst_cnt.mhdma_errors                     ),
     // statistics -------------------------------------------------------------
-    // counters
-    .stat_nb_read_to_hbm            (stat_nb_read_to_hbm                      ),
-    .stat_nb_words_received_pc      (stat_nb_words_received_pc                ),
-    .stat_t_rr_wait_words_pc        (stat_t_rr_wait_words_pc                  ),
-    // rst
-    .rst_nb_read_to_hbm             (rst_nb_read_to_hbm                       ),
-    .rst_nb_words_received_pc       (rst_nb_words_received_pc                 ),
-    // register
-    .stat_fsm_notify_rx             (stat_fsm_notify_rx                       ),
-    .stat_fsm_cem                   (stat_fsm_cem                             ),
-    .stat_rr_phy_addr               (stat_rr_phy_addr                         )
+    .stat                           (slave_stat                               ),
+    .stat_rst                       (slave_stat_rst                           )
   );
 
   // The decoder gathers axi-stream RX and decodes the received command
@@ -420,20 +355,10 @@ module mhdma_bridge
     .qsfp_rx_tvalid              (qsfp_rx_tvalid                              ),
     // errors -----------------------------------------------------------------
     .decoder_error               (decoder_error                               ),
-    .rst_errors                  (rst_mhdma_errors                            ),
+    .rst_errors                  (rst_cnt.mhdma_errors                        ),
     // statistics -------------------------------------------------------------
-    // timing
-    .stat_t_ce_first_to_last_pkt (stat_t_ce_first_to_last_pkt                 ),
-    // counters
-    .stat_cnt_nack_received      (stat_cnt_nack_received                      ),
-    .stat_cnt_notify_received    (stat_cnt_notify_received                    ),
-    .stat_cnt_read_req_received  (stat_cnt_read_req_received                  ),
-    .stat_cnt_ce_received        (stat_cnt_ce_received                        ),
-    // resets
-    .rst_cnt_nack_received       (rst_cnt_nack_received                       ),
-    .rst_cnt_notify_received     (rst_cnt_notify_received                     ),
-    .rst_cnt_read_req_received   (rst_cnt_read_req_received                   ),
-    .rst_cnt_ce_received         (rst_cnt_ce_received                         )
+    .stat                        (decoder_stat                                ),
+    .stat_rst                    (decoder_stat_rst                            )
   );
 
   // the formatter gathers commands from master & slave module and sends it to axis
@@ -473,9 +398,9 @@ module mhdma_bridge
     .qsfp_tx_tready                  (qsfp_tx_tready                          ),
     // errors -----------------------------------------------------------------
     .format_error                    (format_error                            ),
-    .rst_errors                      (rst_mhdma_errors                        ),
+    .rst_errors                      (rst_cnt.mhdma_errors                    ),
     // statistics -------------------------------------------------------------
-    .stat_fsm_formatter              (stat_fsm_formatter                      )
+    .stat                            (formatter_stat                          )
   );
 
   // ==============================================================================================
@@ -486,18 +411,20 @@ module mhdma_bridge
   assign mhdma_errors.slave_error   = slave_error;
   assign mhdma_errors.master_error  = master_error;
   assign mhdma_errors.error_id      = error_id;
-  assign stat_mhdma_errors = {{(32-$bits(mhdma_error_t)){1'b0}}, mhdma_errors};
+  assign stat_cnt.mhdma_errors = {{(32-$bits(mhdma_error_t)){1'b0}}, mhdma_errors};
 
   // =========================================================================================== //
-  // Statistics
+  // Statistics: map per-submodule structs to CDC structs
   // =========================================================================================== //
-  assign stat_reg_fsm = {12'b0, 2'b0, stat_fsm_formatter,  2'b0,stat_fsm_read_req, 2'b0,stat_fsm_cem, 2'b0,stat_fsm_notify_rx,  2'b0,stat_fsm_notify};
+  assign stat_cnt.master    = master_stat;
+  assign stat_cnt.slave     = slave_stat;
+  assign stat_cnt.decoder   = decoder_stat;
+  assign stat_cnt.formatter = formatter_stat;
 
-  // =========================================================================================== //
-  // Error agreggation
-  // =========================================================================================== //
-  // error_id_def: Definition of HPUs are not correct, several are defined as current
-  // error_packet_id_mismatch: seq_num received is unexpected
+  // reset mapping (rst_cnt -> per-submodule stat_rst)
+  assign master_stat_rst  = rst_cnt.master;
+  assign slave_stat_rst   = rst_cnt.slave;
+  assign decoder_stat_rst = rst_cnt.decoder;
 
 
 endmodule

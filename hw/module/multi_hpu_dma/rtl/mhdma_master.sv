@@ -83,27 +83,8 @@ module mhdma_master
   output master_error_t                       master_error,
   input  logic                                rst_errors,
   // statistics ---------------------------------------------------------------
-  // counters
-  output logic [REG_DATA_W-1:0]               stat_cnt_notify,
-  output logic [REG_DATA_W-1:0]               stat_cnt_notify_ack,
-  output logic [REG_DATA_W-1:0]               stat_cnt_notify_retries,
-  output logic [REG_DATA_W-1:0]               stat_cnt_read_req_retries,
-  output logic [REG_DATA_W-1:0]               stat_cnt_notify_timeout,
-  output logic [REG_DATA_W-1:0]               stat_nb_ce_words_received,
-  output logic [REG_DATA_W-1:0]               stat_nb_write_complete_cnt,
-  // timing
-  output logic [REG_DATA_W-1:0]               stat_t_notify_to_ack,
-  output logic [REG_DATA_W-1:0]               stat_t_rr_to_ce_received,
-  // resets
-  input  logic                                rst_cnt_notify,
-  input  logic                                rst_cnt_notify_ack,
-  input  logic                                rst_cnt_timeout, //unused
-  input  logic                                rst_cnt_notify_retry,
-  input  logic                                rst_cnt_read_req_retry,
-  input  logic                                rst_nb_ce_words_received,
-  // register
-  output logic [1:0]                          stat_fsm_notify,
-  output logic [1:0]                          stat_fsm_read_req
+  output master_stat_t                        stat,
+  input  master_stat_rst_t                    stat_rst
 );
 
   // =========================================================================================== //
@@ -1310,7 +1291,7 @@ module mhdma_master
     if (~resetn_mrmac) begin
       notify_cnt <= 'h0;
     end else begin
-      if (rst_cnt_notify) begin
+      if (stat_rst.cnt_notify) begin
         notify_cnt <= 'h0;
       end else begin
         if (notify_sent) begin
@@ -1324,7 +1305,7 @@ module mhdma_master
     if (~resetn_mrmac) begin
       notify_ack_cnt <= 'h0;
     end else begin
-      if (rst_cnt_notify_ack) begin
+      if (stat_rst.cnt_notify_ack) begin
         notify_ack_cnt <= 'h0;
       end else begin
         if (notify_ack_received) begin
@@ -1338,7 +1319,7 @@ module mhdma_master
     if(~resetn_mrmac) begin
       retry_notify_cnt <= 'h0;
     end else begin
-      if (rst_cnt_notify_retry) begin
+      if (stat_rst.cnt_notify_retry) begin
         retry_notify_cnt <= 'h0;
       end else begin
         if (timeout_reached_notify) begin
@@ -1352,7 +1333,7 @@ module mhdma_master
     if(~resetn_mrmac) begin
       retry_read_req_cnt <= 'h0;
     end else begin
-      if (rst_cnt_read_req_retry) begin
+      if (stat_rst.cnt_read_req_retry) begin
         retry_read_req_cnt <= 'h0;
       end else begin
         if (timeout_reached_read_request | retry_seq_num) begin
@@ -1415,35 +1396,39 @@ module mhdma_master
   end
 
   // value assignation for timing registers -------------------------------------------------------
+  logic [REG_DATA_W-1:0] stat_t_notify_to_ack_r;
+  logic [REG_DATA_W-1:0] stat_t_rr_to_ce_received_r;
+  logic [REG_DATA_W-1:0] stat_nb_ce_words_received_r;
+
   always_ff @(posedge clk_mrmac) begin
     if (~resetn_mrmac) begin
-      stat_t_notify_to_ack <= 'h0;
+      stat_t_notify_to_ack_r <= 'h0;
     end else begin
       if (notify_ack_received) begin
-        stat_t_notify_to_ack <= t_notify_to_ack;
+        stat_t_notify_to_ack_r <= t_notify_to_ack;
       end
     end
   end
 
   always_ff @(posedge clk_mrmac) begin
     if (~resetn_mrmac) begin
-      stat_t_rr_to_ce_received <= 'h0;
+      stat_t_rr_to_ce_received_r <= 'h0;
     end else begin
       if (ciphertext_received) begin
-        stat_t_rr_to_ce_received <= t_rr_to_ce_received;
+        stat_t_rr_to_ce_received_r <= t_rr_to_ce_received;
       end
     end
   end
 
   always_ff @(posedge clk_mrmac) begin
     if (~resetn_mrmac) begin
-      stat_nb_ce_words_received <= 'h0;
+      stat_nb_ce_words_received_r <= 'h0;
     end else begin
-      if (rst_nb_ce_words_received) begin
-        stat_nb_ce_words_received <= 'h0;
+      if (stat_rst.nb_ce_words_received) begin
+        stat_nb_ce_words_received_r <= 'h0;
       end else begin
         if (ciphertext_received) begin
-          stat_nb_ce_words_received <= { {(REG_DATA_W-CE_DATA_COUNT_W){1'b0}}, fifo_cerx_cnt_tx};
+          stat_nb_ce_words_received_r <= { {(REG_DATA_W-CE_DATA_COUNT_W){1'b0}}, fifo_cerx_cnt_tx};
         end
       end
     end
@@ -1460,13 +1445,16 @@ module mhdma_master
     end
   end
 
-  assign stat_fsm_notify            = ntx_state;
-  assign stat_fsm_read_req          = rreq_state;
-  assign stat_cnt_notify_retries    = retry_notify_cnt;
-  assign stat_cnt_read_req_retries  = retry_read_req_cnt;
-  assign stat_cnt_notify            = notify_cnt;
-  assign stat_cnt_notify_ack        = notify_ack_cnt;
-  assign stat_cnt_notify_timeout    = to_notify_cnt;    // maybe not useful
-  assign stat_nb_write_complete_cnt = nb_write_complete_cnt;
+  assign stat.fsm_notify            = ntx_state;
+  assign stat.fsm_read_req          = rreq_state;
+  assign stat.cnt_notify_retries    = retry_notify_cnt;
+  assign stat.cnt_read_req_retries  = retry_read_req_cnt;
+  assign stat.cnt_notify            = notify_cnt;
+  assign stat.cnt_notify_ack        = notify_ack_cnt;
+  assign stat.cnt_notify_timeout    = to_notify_cnt;
+  assign stat.nb_write_complete_cnt = nb_write_complete_cnt;
+  assign stat.t_notify_to_ack       = stat_t_notify_to_ack_r;
+  assign stat.t_rr_to_ce_received   = stat_t_rr_to_ce_received_r;
+  assign stat.nb_ce_words_received  = stat_nb_ce_words_received_r;
 
 endmodule
