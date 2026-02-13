@@ -537,9 +537,9 @@ module mhdma_master
   logic                       fifo_cerx_out_rdy;
   // ce-rx counters
   logic [CE_DATA_COUNT_W:0] fifo_cerx_cnt;    // counts the number of words used in fifo
-  logic                       cnt_cerx_up;
-  logic                       cnt_cerx_down;
-  logic                       fifo_pc_backpressure;
+  logic                     cnt_cerx_up;
+  logic                     cnt_cerx_down;
+  logic                     fifo_pc_backpressure;
 
   // First thig to do is to be sure that the current values are valid.
   // If we receive more data than what we expect we must invalidate it and not propagate it.
@@ -608,14 +608,14 @@ module mhdma_master
   // Zero injection in case of a wrong seq num
   // =========================================================================================== //
   // Ciphertext emission RX mux
-  logic [NB_WORDS_TO_HBM-1:0] cerx_mux_word_cnt;
-  logic [MRMAC_AXIS_W-1:0]    cerx_mux_data;
-  logic                       cerx_mux_handshake;
+  logic [$clog2(NB_WORDS_TO_HBM)-1:0] cerx_mux_word_cnt;
+  logic [MRMAC_AXIS_W-1:0]            cerx_mux_data;
+  logic                               cerx_mux_handshake;
 
   // Zero-padding at FIFO output
-  logic [NB_WORDS_TO_HBM-1:0] zpad_gap_start;
-  logic                       zpad_gap_pending;
-  logic                       zpad_injecting;
+  logic [$clog2(NB_WORDS_TO_HBM)-1:0] zpad_gap_start;
+  logic                               zpad_gap_pending;
+  logic                               zpad_injecting;
 
   // Output word counter (tracks total words through the effective output path)
   always_ff @(posedge clk_mrmac) begin
