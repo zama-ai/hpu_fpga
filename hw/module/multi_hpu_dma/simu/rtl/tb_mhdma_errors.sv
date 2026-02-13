@@ -440,7 +440,7 @@ module tb_mhdma_errors;
   logic [REG_DATA_W-1:0] stat_errors;
   mhdma_error_t          errors_struct;
 
-  logic [SIZE_B_W-1:0]   req_size_b;
+  logic [RSVD_W+FLAG_W+MODE_W-1:0] req_rfm;
   logic [MAC_ADDR_W-1:0] dst_mac_addr;
   logic [MAC_ADDR_W-1:0] src_mac_addr;
   logic [HPU_ID_W-1:0]   dst_hpu_id;
@@ -449,7 +449,7 @@ module tb_mhdma_errors;
   logic [SRC_ADDR_W-1:0] src_addr;
   logic [DST_ADDR_W-1:0] dst_addr;
 
-  assign req_size_b = 'h4000;
+  assign req_rfm = 'h0; // not something we test here
 
 // ============================================================================================== --
 // Main Test Scenario
@@ -593,8 +593,8 @@ module tb_mhdma_errors;
       axi_error_type = AXI4_SLVERR;
 
       // Step 1: Initiate a read request
-      read_req_id   = {8'h42, REQ_ID_READ, 4'h1, 16'h4000};  // Request to HPU 1
-      read_req_addr = {16'h5678, 16'h1234};  // dst_addr, src_addr
+      read_req_id   = {8'h42, REQ_ID_READ, 4'h1, req_rfm};
+      read_req_addr = {16'h5678, 16'h1234};
 
       maxil_drv.write_trans(MHDMA_REQUEST_REQ_ADDR_OFS, read_req_addr);
       maxil_drv.write_trans(MHDMA_REQUEST_REQ_ID_OFS, read_req_id);
@@ -696,8 +696,8 @@ module tb_mhdma_errors;
     begin
 
       // Step 1: Initiate a read request
-      read_req_id   = {8'h42, REQ_ID_READ, 4'h1, 16'h4000};  // Request to HPU 1
-      read_req_addr = {16'h5678, 16'h1234};  // dst_addr, src_addr
+      read_req_id   = {8'h42, REQ_ID_READ, 4'h1, req_rfm};
+      read_req_addr = {16'h5678, 16'h1234};
 
       maxil_drv.write_trans(MHDMA_REQUEST_REQ_ADDR_OFS, read_req_addr);
       maxil_drv.write_trans(MHDMA_REQUEST_REQ_ID_OFS, read_req_id);
@@ -756,7 +756,7 @@ module tb_mhdma_errors;
     logic [REG_DATA_W-1:0] read_req_addr;
     begin
       read_req_addr = {dest_addr, src_addr};
-      read_req_id = {iop_id, REQ_ID_READ, node_id, req_size_b};
+      read_req_id = {iop_id, REQ_ID_READ, node_id, req_rfm};
 
       maxil_drv.write_trans(MHDMA_REQUEST_REQ_ADDR_OFS, read_req_addr);
       maxil_drv.write_trans(MHDMA_REQUEST_REQ_ID_OFS, read_req_id);

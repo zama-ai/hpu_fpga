@@ -1,7 +1,7 @@
 // ============================================================================================== //
 // Description  : register  map address definition package
 // This file was generated with rust regmap generator:
-//  * Date:  2026-02-09
+//  * Date:  2026-02-13
 //  * Tool_version: 27d9e880d531030160fd8749c606142942d5558d
 // ---------------------------------------------------------------------------------------------- //
 //
@@ -50,7 +50,9 @@ package hpu_regif_core_eth_2in3_pkg;
     logic [(8-1):0] iop_id;
     logic [(4-1):0] req_id;
     logic [(4-1):0] node_id;
-    logic [(16-1):0] size_b;
+    logic [(2-1):0] mode;
+    logic [(6-1):0] flag;
+    logic [(8-1):0] rsvd;
    } mhdma_request_req_id_t;
   localparam int MHDMA_REQUEST_REQ_ID_OFS = 'h50100;
   typedef struct packed {

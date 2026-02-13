@@ -44,7 +44,7 @@ module tb_multi_hpu_dma;
 
   // simulation sizes to reduce runtime
   localparam int MEM_SIM_SIZE = 18; // must be < 22 in order to not slow down sim too much!
-  localparam int SIZE_B_SIM   = 'h40;
+  localparam int RFM_SIM      = 'h0;
 
   // Max ciphertext ID based on memory simulation size
   localparam int MEM_MAX_VALUE = (1 << MEM_SIM_SIZE) / CT_MEM_BYTES;
@@ -100,14 +100,14 @@ module tb_multi_hpu_dma;
   bit error;
   bit error_tb_notify;
   bit error_register_read;
-  bit error_notify_rx;
+  bit error_notify_payload;
   bit error_rr_payload;
   bit error_write_mismatch;
   bit error_interrupt_notify;
   bit error_assert;
   bit error_register;
 
-  assign error = error_register | error_tb_notify | error_register_read | error_notify_rx | error_rr_payload | error_write_mismatch | error_interrupt_notify | error_assert;
+  assign error = error_register | error_tb_notify | error_register_read | error_notify_payload | error_rr_payload | error_write_mismatch | error_interrupt_notify | error_assert;
 
   always_ff @(posedge clk_control)
     if (error) begin
@@ -479,9 +479,9 @@ module tb_multi_hpu_dma;
   logic [  REG_DATA_W-1:0] rr_payload_expected;
   logic [MRMAC_AXIS_W-1:0] rr_payload_ref_q[$];
 
-  // Fixed for now, might evolve later
-  logic [SIZE_B_W-1:0] req_size_b;
-  assign req_size_b = 'h4000;
+  // Randomized flag and mode, checked at each iteration
+  logic [FLAG_W-1:0] req_flag;
+  logic [MODE_W-1:0] req_mode;
 
 
   logic [DST_ADDR_W-1:0] received_address;
@@ -549,10 +549,11 @@ module tb_multi_hpu_dma;
     $display("==================================================================================================");
 
     for (int i = 0; i < random_iter; i++) begin
-      // for now size_b is fixed, all our ciphertext are 16.384kB (size_b=0x4000)
       iop_id       = $urandom();
       iop_src_addr = $urandom_range(0, MEM_MAX_VALUE-1);
       iop_dst_addr = $urandom_range(0, MEM_MAX_VALUE-1);
+      req_flag     = $urandom();
+      req_mode     = $urandom();
 
       repeat(2) @(posedge clk_control);
       notify_request(random_hpu_b, random_hpu_a, iop_id, iop_src_addr);
@@ -571,7 +572,18 @@ module tb_multi_hpu_dma;
         $display("%t > [ERROR]: random_hpu_b  = %x ", $time, random_hpu_b);
         $display("%t > [ERROR]: iop_id        = %x ", $time, iop_id);
 
-        error_notify_rx = 1'b1;
+        error_notify_payload = 1'b1;
+      end
+
+      // Check flag/mode on HPU_B's formatter (the sender of the notify)
+      assert (gen_multi_hpu_dma[1].multi_hpu_dma.mhdma_bridge.mhdma_formatter.header_flag == req_flag &&
+              gen_multi_hpu_dma[1].multi_hpu_dma.mhdma_bridge.mhdma_formatter.header_mode == req_mode) else begin
+        $display("%t > [ERROR]: mismatch between expected and received flag/mode on notify formatter", $time);
+        $display("%t > [ERROR]:    flag : %2x :: %2x", $time,
+          gen_multi_hpu_dma[1].multi_hpu_dma.mhdma_bridge.mhdma_formatter.header_flag, req_flag);
+        $display("%t > [ERROR]:    mode : %2x :: %2x", $time,
+          gen_multi_hpu_dma[1].multi_hpu_dma.mhdma_bridge.mhdma_formatter.header_mode, req_mode);
+        error_notify_payload = 1'b1;
       end
 
       repeat(2) @(posedge clk_control);
@@ -594,6 +606,17 @@ module tb_multi_hpu_dma;
         error_rr_payload = 1'b1;
       end
 
+      // Check flag/mode on HPU_A's formatter (the sender of the read request)
+      assert (gen_multi_hpu_dma[0].multi_hpu_dma.mhdma_bridge.mhdma_formatter.header_flag == req_flag &&
+              gen_multi_hpu_dma[0].multi_hpu_dma.mhdma_bridge.mhdma_formatter.header_mode == req_mode) else begin
+        $display("%t > [ERROR]: mismatch between expected and received flag/mode on read request formatter", $time);
+        $display("%t > [ERROR]:    flag : %2x :: %2x", $time,
+          gen_multi_hpu_dma[0].multi_hpu_dma.mhdma_bridge.mhdma_formatter.header_flag, req_flag);
+        $display("%t > [ERROR]:    mode : %2x :: %2x", $time,
+          gen_multi_hpu_dma[0].multi_hpu_dma.mhdma_bridge.mhdma_formatter.header_mode, req_mode);
+        error_rr_payload = 1'b1;
+      end
+
       check_memories(iop_src_addr, iop_dst_addr);
     end
 
@@ -604,10 +627,11 @@ module tb_multi_hpu_dma;
     $display("==================================================================================================");
     for (int k = 0; k < LOOP_NOTIFY; k++) begin
       for (int i = 0; i < arbitrary_notify_nb; i++) begin
-        // for now size_b is fixed, all our ciphertext are 16.384kB (size_b=0x4000)
         iop_id       = $urandom();
         iop_src_addr = $urandom_range(0, MEM_MAX_VALUE-1);
         iop_dst_addr = $urandom_range(0, MEM_MAX_VALUE-1);
+        req_flag     = $urandom();
+        req_mode     = $urandom();
 
         repeat(10) @(posedge clk_control);
         // Sending a NOTIFY from HPU-B to HPU-A -------------------------------------------------------
@@ -632,7 +656,7 @@ module tb_multi_hpu_dma;
           $display("%t > [ERROR]: iop_src_addr  = %x ", $time, iop_src_addr);
           $display("%t > [ERROR]: random_hpu_b  = %x ", $time, random_hpu_b);
           $display("%t > [ERROR]: iop_id        = %x ", $time, iop_id);
-          error_notify_rx = 1'b1;
+          error_notify_payload = 1'b1;
         end
       end
 
@@ -643,10 +667,11 @@ module tb_multi_hpu_dma;
       end
 
       for (int i = 0; i < arbitrary_notify_nb; i++) begin
-        // for now size_b is fixed, all our ciphertext are 16.384kB (size_b=0x4000)
         iop_id       = $urandom();
         iop_src_addr = $urandom_range(0, MEM_MAX_VALUE-1);
         iop_dst_addr = $urandom_range(0, MEM_MAX_VALUE-1);
+        req_flag     = $urandom();
+        req_mode     = $urandom();
 
         repeat(10) @(posedge clk_control);
         // Sending a NOTIFY from HPU-A to HPU-B -------------------------------------------------------
@@ -671,7 +696,7 @@ module tb_multi_hpu_dma;
           $display("%t > [ERROR]: iop_src_addr  = %x ", $time, iop_src_addr);
           $display("%t > [ERROR]: random_hpu_b  = %x ", $time, random_hpu_b);
           $display("%t > [ERROR]: iop_id        = %x ", $time, iop_id);
-          error_notify_rx = 1'b1;
+          error_notify_payload = 1'b1;
         end
       end
     end
@@ -692,6 +717,8 @@ module tb_multi_hpu_dma;
       iop_id       = $urandom();
       iop_src_addr = $urandom_range(0, MEM_MAX_VALUE-1);
       iop_dst_addr = $urandom_range(0, MEM_MAX_VALUE-1);
+      req_flag     = $urandom();
+      req_mode     = $urandom();
       read_request(random_hpu_b, iop_id, iop_src_addr, iop_dst_addr);
 
       rr_payload = {iop_dst_addr, 4'b0, random_hpu_b, iop_id};
@@ -715,7 +742,7 @@ module tb_multi_hpu_dma;
         $display("%t > [ERROR]: iop_dst_addr  = %x ", $time, iop_dst_addr);
         $display("%t > [ERROR]: random_hpu_b  = %x ", $time, random_hpu_b);
         $display("%t > [ERROR]: iop_id        = %x ", $time, iop_id);
-        error_notify_rx = 1'b1;
+        error_notify_payload = 1'b1;
       end
 
       exp_src_addr = rr_src_addr_ref_q.pop_back();
@@ -1002,7 +1029,7 @@ module tb_multi_hpu_dma;
     begin
       // see package
       read_req_addr = {dest_addr, src_addr};
-      read_req_id = {iop_id, REQ_ID_READ, node_id, req_size_b};
+      read_req_id = {iop_id, REQ_ID_READ, node_id, 8'h0, req_flag, req_mode};
 
       gen_maxil_if[0].maxil_if.write_trans(MHDMA_REQUEST_REQ_ADDR_OFS, read_req_addr);
       gen_maxil_if[0].maxil_if.write_trans(MHDMA_REQUEST_REQ_ID_OFS, read_req_id);
@@ -1026,7 +1053,7 @@ module tb_multi_hpu_dma;
     begin
 
       read_req_addr = {16'b0, src_addr};
-      read_req_id = {iop_id, REQ_ID_NOTIFY, dst_node_id, req_size_b};
+      read_req_id = {iop_id, REQ_ID_NOTIFY, dst_node_id, 8'h0, req_flag, req_mode};
 
       if (src_node_id == random_hpu_a) begin
         gen_maxil_if[0].maxil_if.write_trans(MHDMA_REQUEST_REQ_ADDR_OFS, read_req_addr);

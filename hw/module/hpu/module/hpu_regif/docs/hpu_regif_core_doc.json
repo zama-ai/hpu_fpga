@@ -4505,8 +4505,16 @@
               "params": [],
               "name_val": [
                 [
-                  "size_b",
-                  "'h4000"
+                  "rsvd",
+                  "'h0"
+                ],
+                [
+                  "flag",
+                  "'h0"
+                ],
+                [
+                  "mode",
+                  "'h0"
                 ],
                 [
                   "node_id",
@@ -4525,17 +4533,35 @@
           },
           "field": [
             {
-              "name": "size_b",
-              "description": "size request in bytes, default is ct size",
-              "size_b": 16,
+              "name": "rsvd",
+              "description": "Unused : reserved for latter ",
+              "size_b": 8,
               "offset_b": 0,
               "default": {
-                "Cst": 16384
+                "Cst": 0
+              }
+            },
+            {
+              "name": "flag",
+              "description": "flag ",
+              "size_b": 6,
+              "offset_b": 8,
+              "default": {
+                "Cst": 0
+              }
+            },
+            {
+              "name": "mode",
+              "description": "mode ",
+              "size_b": 2,
+              "offset_b": 14,
+              "default": {
+                "Cst": 0
               }
             },
             {
               "name": "node_id",
-              "description": "node id or HPU target id",
+              "description": "node id or HPU id",
               "size_b": 4,
               "offset_b": 16,
               "default": {

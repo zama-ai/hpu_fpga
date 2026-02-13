@@ -68,9 +68,11 @@ module mhdma_decoder
   logic [HPU_ID_W-1:0]   hpu_id;
   logic [REQ_ID_W-1:0]   req_id;
   logic [MAC_ADDR_W-1:0] src_mac_addr;
-  // third frame, ct src/dst address, iop id, size_byte
-  logic [SIZE_B_W-1:0]   size_b;
-  logic [IOP_ID_W-1:0]   iop_id;
+  // third frame, ct src/dst address, iop id, rsvd/flag/mode
+  logic [RSVD_W-1:0]    rsvd;
+  logic [FLAG_W-1:0]    flag;
+  logic [MODE_W-1:0]    mode;
+  logic [IOP_ID_W-1:0]  iop_id;
   logic [SRC_ADDR_W-1:0] ct_src_addr;
   logic [DST_ADDR_W-1:0] ct_dst_addr;
 
@@ -165,8 +167,10 @@ module mhdma_decoder
   end
 
   // FRAME 3 ------------------------------------------------------------------
-  // size_b
-  assign size_b = ((rx_counter == 3) & rx_valid) ? h3.size_b : 'h0;
+  // rsvd, flag, mode
+  assign rsvd = ((rx_counter == 3) & rx_valid) ? h3.h3_rsvd : 'h0;
+  assign flag = ((rx_counter == 3) & rx_valid) ? h3.flag    : 'h0;
+  assign mode = ((rx_counter == 3) & rx_valid) ? h3.mode    : 'h0;
 
   // assigning output -----------------------------------------------------------------------------
   logic nack_receivedD;
@@ -207,17 +211,17 @@ module mhdma_decoder
   assign fifo_rx_cmd_in_vld = notify_ack_received | notify_request_received | read_request_received | ciphertext_emission_received;
 
   fifo_ram_rdy_vld # (
-    .WIDTH(MAC_ADDR_W + SEQ_NUM_W + HPU_ID_W + SIZE_B_W + IOP_ID_W + SRC_ADDR_W + DST_ADDR_W + REQ_ID_W),
+    .WIDTH(MAC_ADDR_W + SEQ_NUM_W + HPU_ID_W + RSVD_W + FLAG_W + MODE_W + IOP_ID_W + SRC_ADDR_W + DST_ADDR_W + REQ_ID_W),
     .DEPTH(RX_FIFO_DEPTH)
   ) fifo_rx_cmd (
     .clk         (clk_mrmac          ),
     .s_rst_n     (resetn_mrmac       ),
 
-    .in_data     ({src_mac_addr, seq_num, hpu_id, size_b, iop_id, ct_src_addr, ct_dst_addr, req_id}),
+    .in_data     ({src_mac_addr, seq_num, hpu_id, rsvd, flag, mode, iop_id, ct_src_addr, ct_dst_addr, req_id}),
     .in_vld      (fifo_rx_cmd_in_vld),
     .in_rdy      (fifo_rx_cmd_in_rdy),
 
-    .out_data    ({decoded_command.src_mac_addr, decoded_command.seq_num, decoded_command.hpu_id, decoded_command.size_b, decoded_command.iop_id, decoded_command.src_addr, decoded_command.dst_addr, decoded_command.req_id}),
+    .out_data    ({decoded_command.src_mac_addr, decoded_command.seq_num, decoded_command.hpu_id, decoded_command.rsvd, decoded_command.flag, decoded_command.mode, decoded_command.iop_id, decoded_command.src_addr, decoded_command.dst_addr, decoded_command.req_id}),
     .out_vld     (decoded_command_vld),
     .out_rdy     (decoded_command_rdy),
 

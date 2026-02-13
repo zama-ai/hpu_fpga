@@ -313,7 +313,9 @@ module mhdma_formatter
   command_t              ce_header_payload_tmp;
   logic [DST_ADDR_W-1:0] ce_dst_addr;
   logic [SRC_ADDR_W-1:0] ce_src_addr;
-  logic [  SIZE_B_W-1:0] ce_size_b;
+  logic [    RSVD_W-1:0] ce_rsvd;
+  logic [    FLAG_W-1:0] ce_flag;
+  logic [    MODE_W-1:0] ce_mode;
   logic [  HPU_ID_W-1:0] ce_hpu_id;
   logic [  IOP_ID_W-1:0] ce_iop_id;
 
@@ -323,7 +325,9 @@ module mhdma_formatter
 
   assign ce_iop_id       = ce_header_payload_tmp.iop_id;
   assign ce_hpu_id       = ce_header_payload_tmp.hpu_id;
-  assign ce_size_b       = ce_header_payload_tmp.size_b;
+  assign ce_rsvd         = ce_header_payload_tmp.rsvd;
+  assign ce_flag         = ce_header_payload_tmp.flag;
+  assign ce_mode         = ce_header_payload_tmp.mode;
   assign ce_dst_addr     = ce_header_payload_tmp.dst_addr;
   assign ce_src_addr     = ce_header_payload_tmp.src_addr;
 
@@ -361,7 +365,9 @@ module mhdma_formatter
   logic [   SEQ_NUM_W-1:0] header_seq_num;
   logic [  DST_ADDR_W-1:0] header_dst_addr;
   logic [  SRC_ADDR_W-1:0] header_src_addr;
-  logic [    SIZE_B_W-1:0] header_size_b;
+  logic [      RSVD_W-1:0] header_rsvd;
+  logic [      FLAG_W-1:0] header_flag;
+  logic [      MODE_W-1:0] header_mode;
   logic [    REQ_ID_W-1:0] header_req_id;
   logic [    IOP_ID_W-1:0] header_iop_id;
 
@@ -373,18 +379,27 @@ module mhdma_formatter
       header_src_addr            <= master_command.src_addr;
       header_dst_addr            <= master_command.dst_addr;
       header_iop_id              <= master_command.iop_id;
+      header_rsvd                <= master_command.rsvd;
+      header_flag                <= master_command.flag;
+      header_mode                <= master_command.mode;
     end else if (slave_command_rdy & slave_command_vld) begin
       header_target_hpu_mac_addr <= hpu_mac_table_tmp[slave_command.hpu_id];
       header_req_id              <= slave_command.req_id;
       header_src_addr            <= slave_command.src_addr;
       header_dst_addr            <= slave_command.dst_addr;
       header_iop_id              <= slave_command.iop_id;
+      header_rsvd                <= slave_command.rsvd;
+      header_flag                <= slave_command.flag;
+      header_mode                <= slave_command.mode;
     end else if (ce_fifo_vld & st_ct_emission) begin
       header_target_hpu_mac_addr <= hpu_mac_table_tmp[ce_hpu_id];
       header_req_id              <= REQ_ID_EMISSION;
       header_src_addr            <= ce_src_addr;
       header_dst_addr            <= ce_dst_addr;
       header_iop_id              <= ce_iop_id;
+      header_rsvd                <= ce_rsvd;
+      header_flag                <= ce_flag;
+      header_mode                <= ce_mode;
     end
   end
 
@@ -401,10 +416,8 @@ module mhdma_formatter
   always_ff @(posedge clk_mrmac) begin : prc_header_ce
     if (st_ct_emission) begin
       header_seq_num <= ce_seq_num;
-      header_size_b  <= ce_size_b;
     end else begin
       header_seq_num <= 'h0;
-      header_size_b  <= 'h0;
     end
   end
 
@@ -417,7 +430,7 @@ module mhdma_formatter
       'h3 :
         tx_header = {LLC_CTRL, header_req_id, current_hpu_id, header_seq_num, header_src_addr, header_dst_addr, header_iop_id};
       'h4 :
-        tx_header = {header_size_b, 56'h0};
+        tx_header = {header_rsvd, header_flag, header_mode, 48'h0};
       default:
         tx_header = 'h0;
     endcase

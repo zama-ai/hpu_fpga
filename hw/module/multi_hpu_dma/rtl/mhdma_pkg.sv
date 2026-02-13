@@ -81,7 +81,9 @@ package mhdma_pkg;
   localparam int REQ_ID_W     = 4;
   localparam int ETHERNET_LEN = 16;
 
-  localparam int SIZE_B_W     = 16;
+  localparam int RSVD_W       = 8;
+  localparam int FLAG_W       = 6;
+  localparam int MODE_W       = 2;
   localparam int IOP_ID_W     = 8;
   localparam int SRC_ADDR_W   = 16;
   localparam int DST_ADDR_W   = 16;
@@ -90,7 +92,6 @@ package mhdma_pkg;
 
   // Ethernet header: values --------------------------------------------------
   localparam [MAC_OUI_W-1:0] MAC_OUI = 'h000A35;
-  localparam [ SIZE_B_W-1:0] SIZE_B  = 'h4000; // fixed for now to 16.384
 
   localparam [LLC_W-1:0] LLC_DSAP = 'hF8;
   localparam [LLC_W-1:0] LLC_SSAP = 'hF8;
@@ -150,7 +151,9 @@ package mhdma_pkg;
     logic [MAC_ADDR_W-1:0] src_mac_addr;
     logic [ SEQ_NUM_W-1:0] seq_num;
     logic [  HPU_ID_W-1:0] hpu_id;
-    logic [  SIZE_B_W-1:0] size_b;
+    logic [    RSVD_W-1:0] rsvd;
+    logic [    FLAG_W-1:0] flag;
+    logic [    MODE_W-1:0] mode;
     logic [  REQ_ID_W-1:0] req_id;
     logic [  IOP_ID_W-1:0] iop_id;
     logic [SRC_ADDR_W-1:0] src_addr;
@@ -182,8 +185,10 @@ package mhdma_pkg;
   } h2_frame_t;
 
   typedef struct packed {
-    logic [SIZE_B_W-1:0] size_b;
-    logic        [47:0]  rsvd;
+    logic [RSVD_W-1:0] h3_rsvd;
+    logic [FLAG_W-1:0] flag;
+    logic [MODE_W-1:0] mode;
+    logic      [47:0]  h3_pad;
   } h3_frame_t;
 
   // Errors ---------------------------------------------------------------------------------------

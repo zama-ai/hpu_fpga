@@ -1,5 +1,5 @@
 # HPU_REGIF_CORE documentation
-**Date**: 2026-02-09
+**Date**: 2026-02-13
 **Tool Version**: 27d9e880d531030160fd8749c606142942d5558d
 
 ## RegisterMap Overview
@@ -4399,8 +4399,10 @@ Register req_id contains following Sub-fields:
 
 | Field Name | Offset_b | Size_b | Default      | Description   |
 |-----------:|:--------:|:------:|:------------:|:--------------|
-| size_b      | 0 | 16 |16384| size request in bytes, default is ct size |
-| node_id      | 16 | 4 |0| node id or HPU target id |
+| rsvd      | 0 | 8 |0| Unused : reserved for latter  |
+| flag      | 8 | 6 |0| flag  |
+| mode      | 14 | 2 |0| mode  |
+| node_id      | 16 | 4 |0| node id or HPU id |
 | req_id      | 20 | 4 |0| request identifier |
 | iop_id      | 24 | 8 |0| IOP id from software point of view |
 

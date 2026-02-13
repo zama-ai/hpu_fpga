@@ -269,18 +269,18 @@ module mhdma_slave
   assign rreq_cmd_in_vld = st_got_read_req;
 
   fifo_ram_rdy_vld # (
-    .WIDTH      (HPU_ID_W+IOP_ID_W+DST_ADDR_W+SRC_ADDR_W+REQ_ID_W),
+    .WIDTH      (HPU_ID_W+IOP_ID_W+RSVD_W+FLAG_W+MODE_W+DST_ADDR_W+SRC_ADDR_W+REQ_ID_W),
     .DEPTH      (RREQ_CMD_DEPTH),
     .RAM_LATENCY(RREQ_CMD_RAM_LATENCY)
   ) rreq_command_queue (
     .clk         (clk_mrmac),
     .s_rst_n     (resetn_mrmac),
 
-    .in_data     ({decoded_command.hpu_id, decoded_command.iop_id, decoded_command.dst_addr, decoded_command.src_addr, REQ_ID_EMISSION}),
+    .in_data     ({decoded_command.hpu_id, decoded_command.iop_id, decoded_command.rsvd, decoded_command.flag, decoded_command.mode, decoded_command.dst_addr, decoded_command.src_addr, REQ_ID_EMISSION}),
     .in_vld      (rreq_cmd_in_vld),
     .in_rdy      (rreq_cmd_in_rdy),
 
-    .out_data    ({rreq_cmd_fifo.hpu_id, rreq_cmd_fifo.iop_id, rreq_cmd_fifo.dst_addr, rreq_cmd_fifo.src_addr, rreq_cmd_fifo.req_id}),
+    .out_data    ({rreq_cmd_fifo.hpu_id, rreq_cmd_fifo.iop_id, rreq_cmd_fifo.rsvd, rreq_cmd_fifo.flag, rreq_cmd_fifo.mode, rreq_cmd_fifo.dst_addr, rreq_cmd_fifo.src_addr, rreq_cmd_fifo.req_id}),
     .out_vld     (rreq_cmd_out_vld),
     .out_rdy     (rreq_cmd_out_rdy),
 
@@ -756,16 +756,16 @@ module mhdma_slave
     if (nrx_cmd_out_vld)  begin
       slave_command_vld       <= nrx_cmd_out_vld;
       slave_command           <= nrx_cmd_fifo;
-      slave_command.size_b    <= 'h0;
+      slave_command.rsvd      <= 'h0;
+      slave_command.flag      <= 'h0;
+      slave_command.mode      <= 'h0;
       slave_command.dst_addr  <= 'h0;
     end else if (rreq_cmd_out_vld) begin
       slave_command_vld     <= rreq_cmd_out_vld;
       slave_command         <= rreq_cmd_fifo;
-      slave_command.size_b  <= SIZE_B; // Fixed for now
     end else begin
       slave_command_vld     <= 'h0;
       slave_command         <= 'h0;
-      slave_command.size_b  <= 'h0;
     end
   end
 

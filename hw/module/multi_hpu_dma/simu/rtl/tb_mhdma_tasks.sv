@@ -50,7 +50,7 @@ task automatic send_notify_packet(
     pkt_data[0] = {MAC_OUI, dst_mac_addr, MAC_OUI[MAC_OUI_W-1:8]};
     pkt_data[1] = {MAC_OUI[7:0], src_mac_addr, ETH_LEN_MIN, LLC_DSAP, LLC_SSAP};
     pkt_data[2] = {LLC_CTRL, REQ_ID_NOTIFY, dst_hpu_id, 8'h00, src_addr, 16'h0000, iop_id};
-    pkt_data[3] = {16'h4000, 48'h0};
+    pkt_data[3] = 64'h0;
     for (int i = 4; i < 8; i++) pkt_data[i] = 64'h0;
 
     // Send packet
@@ -85,7 +85,7 @@ task automatic send_notify_ack_packet(
     pkt_data[0] = {MAC_OUI, dst_mac_addr, MAC_OUI[MAC_OUI_W-1:8]};
     pkt_data[1] = {MAC_OUI[7:0], src_mac_addr, ETH_LEN_MIN, LLC_DSAP, LLC_SSAP};
     pkt_data[2] = {LLC_CTRL, REQ_ID_NOTIFY_ACK, dst_hpu_id, 8'b0, src_addr, dst_addr, iop_id};
-    pkt_data[3] = {SIZE_B, 24'b0};
+    pkt_data[3] = 64'h0;
     for (int i = 4; i < 8; i++) pkt_data[i] = 64'h0;
 
     // Send packet
@@ -120,7 +120,7 @@ task automatic send_read_request_packet(
     pkt_data[0] = {MAC_OUI, dst_mac_addr, MAC_OUI[MAC_OUI_W-1:8]};
     pkt_data[1] = {MAC_OUI[7:0], src_mac_addr, ETH_LEN_MIN, LLC_DSAP, LLC_SSAP};
     pkt_data[2] = {LLC_CTRL, REQ_ID_READ, dst_hpu_id, 8'h00, src_addr, dst_addr, iop_id};
-    pkt_data[3] = {16'h4000, 48'h0};
+    pkt_data[3] = 64'h0;
     for (int i = 4; i < 8; i++) pkt_data[i] = 64'h0;
 
     // Send packet
@@ -181,7 +181,7 @@ task automatic send_ciphertext_emission_packet(
     vif.tvalid     = 1'b1;
 
     @(posedge vif.clk);
-    pkt_data       = {16'h4000, 48'h0};
+    pkt_data       = 64'h0;
     vif.tdata      = byte_swap(pkt_data);
     vif.tkeep_user = 11'h0FF;
     vif.tlast      = 1'b0;

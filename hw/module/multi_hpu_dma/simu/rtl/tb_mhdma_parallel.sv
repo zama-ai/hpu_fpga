@@ -41,8 +41,7 @@ module tb_mhdma_parallel;
   localparam bit MEM_USE_RD_RANDOM = 1;
 
   // simulation sizes to reduce runtime
-  localparam int MEM_SIM_SIZE = 18;         // must be < 22
-  localparam int SIZE_B_SIM   = 'h40;
+  localparam int MEM_SIM_SIZE = 18; // must be < 22
 
 // ============================================================================================== --
 // clock, reset
@@ -457,6 +456,9 @@ logic [HPU_NB-1:0][ETH_PC-1:0]                          axi4_ct_rready;
   logic [HPU_NB-1:0][SRC_ADDR_W-1:0] iop_src_addr;
   logic [HPU_NB-1:0][3:0] empty_notify;
 
+  logic [RSVD_W+FLAG_W+MODE_W-1:0] req_rfm;
+  assign req_rfm = 'h0;
+
   // for checking
   logic [HPU_NB-1:0][REG_DATA_W-1:0] notify_payload;
   logic [HPU_NB-1:0][REG_DATA_W-1:0] notify_payload_rd;
@@ -465,10 +467,6 @@ logic [HPU_NB-1:0][ETH_PC-1:0]                          axi4_ct_rready;
   logic [HPU_NB-1:0][REG_DATA_W-1:0] stat_notify_ack;
   logic             [REG_DATA_W-1:0] notify_a_ref_q[$];
   logic             [REG_DATA_W-1:0] notify_b_ref_q[$];
-
-  // Fixed for now, might evolve later
-  logic [SIZE_B_W-1:0] req_size_b;
-  assign req_size_b = 'h4000;
 
   int arbitrary_notify_nb;
   int arbitrary_read_req_nb;
@@ -744,7 +742,7 @@ logic [HPU_NB-1:0][ETH_PC-1:0]                          axi4_ct_rready;
     begin
       // see package
       read_req_addr = {dest_addr, src_addr};
-      read_req_id = {iop_id, REQ_ID_READ, node_id, req_size_b};
+      read_req_id = {iop_id, REQ_ID_READ, node_id, req_rfm};
 
       gen_maxil_if[0].maxil_if.write_trans(MHDMA_REQUEST_REQ_ADDR_OFS, read_req_addr);
       gen_maxil_if[0].maxil_if.write_trans(MHDMA_REQUEST_REQ_ID_OFS, read_req_id);
@@ -768,7 +766,7 @@ logic [HPU_NB-1:0][ETH_PC-1:0]                          axi4_ct_rready;
     begin
 
       read_req_addr = {16'b0, src_addr};
-      read_req_id = {iop_id, REQ_ID_NOTIFY, dst_node_id, req_size_b};
+      read_req_id = {iop_id, REQ_ID_NOTIFY, dst_node_id, req_rfm};
 
       if (src_node_id == random_hpu_a) begin
         gen_maxil_if[0].maxil_if.write_trans(MHDMA_REQUEST_REQ_ADDR_OFS, read_req_addr);

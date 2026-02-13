@@ -1,7 +1,7 @@
 // ============================================================================================== //
 // Description  : Axi4-lite register bank
 // This file was generated with rust regmap generator:
-//  * Date:  2026-02-09
+//  * Date:  2026-02-13
 //  * Tool_version: 27d9e880d531030160fd8749c606142942d5558d
 // ---------------------------------------------------------------------------------------------- //
 // xR[n]W[na]
@@ -30,8 +30,8 @@
 //      : Value provided by the RTL. The host can read it with notify. The write data is processed by the RTL.
 // ============================================================================================== //
 module hpu_regif_core_eth_2in3
-import axi_if_shell_axil_pkg::*;
 import axi_if_common_param_pkg::*;
+import axi_if_shell_axil_pkg::*;
 import hpu_regif_core_eth_2in3_pkg::*;
 #()(
   input  logic                           clk,
@@ -393,7 +393,9 @@ import hpu_regif_core_eth_2in3_pkg::*;
   mhdma_request_req_id_t mhdma_request_req_id_default;
   always_comb begin
     mhdma_request_req_id_default = 'h0;
-    mhdma_request_req_id_default.size_b = 'h4000;
+    mhdma_request_req_id_default.rsvd = 'h0;
+    mhdma_request_req_id_default.flag = 'h0;
+    mhdma_request_req_id_default.mode = 'h0;
     mhdma_request_req_id_default.node_id = 'h0;
     mhdma_request_req_id_default.req_id = 'h0;
     mhdma_request_req_id_default.iop_id = 'h0;
