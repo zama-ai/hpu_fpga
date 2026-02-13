@@ -42,13 +42,13 @@ PC1_DATA_SIZE=8192 # 0x2000 bytes
 HBM_PC_RANGE=0x40000000                    # HBM_PC_RANGE = 0x40000000 (1GB per PC)
 HBM_PC_RANGE_BYTE=$((HBM_PC_RANGE / 8))
 CT_MEM_BYTES=12288
-HW_MAX_ADDR=0xFFFF                      # Hardware limit: SRC_ADDR_W = DST_ADDR_W = 16 bits
+HW_MAX_ADDR=0xAAAA  # Hardware limit: floor(HBM_PORT_RANGE/CT_MEM_BYTES)
 
 NODE_SOURCE=24
 NODE_REQUEST=01
 
-PC0_ADDR=0x4680000000
-PC1_ADDR=0x46A0000000
+PC0_ADDR=0x4400000000
+PC1_ADDR=0x4420000000
 
 # Statistics
 PASS_COUNT=0
@@ -139,12 +139,7 @@ fi
 generate_random_addr() {
     local max_val=$1
     local rand=$(od -An -tu4 -N4 /dev/urandom | tr -d ' ')
-
-    local aligned_max=$((max_val / 2))
-    if [ $aligned_max -eq 0 ]; then
-        aligned_max=1
-    fi
-    local result=$(( (rand % aligned_max) * 2 ))
+    local result=$(( rand % $HW_MAX_ADDR ))
     echo $result
 }
 
@@ -242,13 +237,6 @@ echo "    - PC0 data size:    $PC0_DATA_SIZE bytes (0x$(printf '%x' $PC0_DATA_SI
 echo "    - PC1 data size:    $PC1_DATA_SIZE bytes (0x$(printf '%x' $PC1_DATA_SIZE))"
 echo "=================================================================================================="
 
-echo ""
-echo "=================================================================================================="
-echo "  Initializing HBM with random data (full PC range: 0x$(printf '%x' $HBM_PC_RANGE) bytes)"
-echo "=================================================================================================="
-
-dma-to-device -d /dev/qdma${NODE_SOURCE}001-MM-1 -s $HBM_PC_RANGE_BYTE -a $PC0_ADDR -o 0x0 -c 1 -f /dev/random
-dma-to-device -d /dev/qdma${NODE_SOURCE}001-MM-1 -s $HBM_PC_RANGE_BYTE -a $PC1_ADDR -o 0x0 -c 1 -f /dev/random
 
 mkdir -p tmp
 
@@ -258,11 +246,16 @@ echo "  Starting read request loops"
 echo "=================================================================================================="
 
 for ((i=1; i<=NUM_LOOPS; i++)); do
+
+    echo ""
+    echo " Initializing HBM with random data (full PC range: 0x$(printf '%x' $HBM_PC_RANGE) bytes)"
+    dma-to-device -d /dev/qdma${NODE_SOURCE}001-MM-1 -s $HBM_PC_RANGE_BYTE -a $PC0_ADDR -o 0x0 -c 1 -f /dev/random
+    dma-to-device -d /dev/qdma${NODE_SOURCE}001-MM-1 -s $HBM_PC_RANGE_BYTE -a $PC1_ADDR -o 0x0 -c 1 -f /dev/random
+    echo ""
+
     # Generate random addresses within valid range (4KB aligned)
     src_addr=$(generate_random_addr $HW_MAX_ADDR)
     dst_addr=$(generate_random_addr $HW_MAX_ADDR)
-    src_addr=0x0
-    dst_addr=0x0
 
     if perform_read_request $i $src_addr $dst_addr; then
         PASS_COUNT=$((PASS_COUNT + 1))
