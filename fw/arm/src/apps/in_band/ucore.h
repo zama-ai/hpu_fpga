@@ -13,6 +13,9 @@
 // ============================================================================================= //
 #include <stdio.h>
 
+#ifndef __UCORE_H__
+#define __UCORE_H__
+
 #define PLL_INF( t, m, ... ) printf( m, ##__VA_ARGS__ )  /* used for syst info (stats) */
 #define PLL_ERR( t, m, ... ) printf( m, ##__VA_ARGS__ )  /* used for errors            */
 #define PLL_WRN( t, m, ... ) printf( m, ##__VA_ARGS__ )  /* used for warnings          */
@@ -56,7 +59,56 @@
 // Local Ack -> IOp lookup
 #define ACK_IOP_DEPTH 256
 
+#define IOP_ID_MAX_COUNT  256
+#define MAX_DST_VARS      64
+#define MAX_VAR_BLKS      128
+#define HPU_MAX_COUNT     7
+#define FLAG_MAX_COUNT    64
+#define B2B_POOL_SIZE     4096
+#define SRC_NOTIFYQ_SIZE  1024
+#define DST_NOTIFYQ_SIZE  1024
+#define DST_QUEUE_SIZE    1024
 
+#define MHDMA_STATE_EMPTY          0 // no info
+#define MHDMA_STATE_NOTIFY_PENDING 1 // sync has been added, waiting on ISC before notify
+#define MHDMA_STATE_LB2B_WAITING   2 // load b2b has been seen, waiting on notify to trigger read
+#define MHDMA_STATE_RECEIVED       3 // notify received
+#define MHDMA_STATE_READING        4 // DMA request sent, waiting for data
+#define MHDMA_STATE_RESOLVED       5 // data has been received
+
+#define DST_STATE_NONE        0 // it means this dst is not needed for this iop
+#define DST_STATE_WAIT_NOTIFY 1 // reset value of dst store elt, it means dst is expecting data (local or remote)
+#define DST_STATE_READING     2 // dst remove read triggered but not done yet
+#define DST_STATE_RESOLVED    3 // dst locally available
+
+#define OPERAND_STATE_NONE         0 // no info on this operand
+#define OPERAND_STATE_READ_PENDING 1 // source/dst is needed and should be read as soon as IOp producing it is done or notify is received
+#define OPERAND_STATE_DMA_PENDING  2 // read request sent, waiting for data
+#define OPERAND_STATE_RESOLVED     3 // source/dst is ready locally
+
+#define IOP_STATE_UNKNOWN  0xFF // iop unknown
+#define IOP_STATE_RUNNING  0xFE // iop running
+#define IOP_STATE_DONE     0    // iop finished
+
+typedef struct {
+  uint8_t state;
+  uint8_t nb_hpu;
+} iop_state_t;
+
+typedef struct {
+  uint8_t owner[IOP_ID_MAX_COUNT][MAX_DST_VARS];
+  uint8_t state[IOP_ID_MAX_COUNT][MAX_DST_VARS][MAX_VAR_BLKS];
+} dst_store_t;
+
+// master HPU is read initiator
+// slave HPU is notified master, is receiving read and sending ct to master
+typedef struct {
+  uint8_t  state;
+  uint8_t  slave_hpu_id;
+  uint8_t  master_hpu_id;
+  uint16_t src_ct_id;
+  uint16_t dst_ct_id;
+} mhdma_element_t;
 
 // Type
 // ============================================================================================= //
@@ -84,6 +136,21 @@ typedef struct {
 
 // Hpu functions prototypes
 // ============================================================================================= //
+void iop_state_init(void);
+void iop_state_node_ack(uint8_t iid, uint8_t nb_hpu);
+void b2b_pool_init(void);
+uint16_t b2b_pool_pop(uint8_t iid);
+uint16_t b2b_pool_free(uint8_t iid);
+void dst_notifyq_init(void);
+void src_notifyq_init(void);
+RemoteOperand_t *src_notifyq_find_by_state(uint8_t iid, uint8_t state);
+uint16_t src_notifyq_free(uint8_t iid);
+void src_notifyq_print(uint8_t iid);
+void dst_store_reset_iop(uint8_t iid);
+void dst_store_init(void);
+void dst_store_initd(uint8_t iid, OperandBundle_t *iop_dst);
+void dst_store_print(uint8_t iid);
+void iop_teardown(uint8_t iid);
 uint32_t parse_iop(
      uint32_t *stream,
      uint32_t iop_pending_bytes,
@@ -100,7 +167,7 @@ uint32_t parse_iop(
 uint32_t get_lookup(IOpHeader_t header, IOpMapping_t mapping, uint8_t hid, Lookup_t* lookup);
 void patch_mem_dop(DOpu_t *dop, OperandBundle_t *iop_dst, OperandBundle_t *iop_src);
 void patch_imm_dop(DOpu_t *dop, ImmediatBundle_t *iop_imm);
-void patch_dop(DOpu_t *dop,
+int patch_dop(DOpu_t *dop,
                OperandBundle_t *dst,
                OperandBundle_t *src,
                ImmediatBundle_t *imm);
@@ -109,6 +176,9 @@ DOpSync_t get_sync_opcode(DOpu_t *dop);
 
 // Utilities function to get used/virt_id for a given phys_id
 // NB: easier to stay generic on `raw` format
-uint8_t get_vid_of(uint8_t vid, IOpMapping_t mapping);
+uint8_t get_virt_of(uint8_t phys, IOpMapping_t mapping);
+uint8_t get_phys_of(uint8_t vid, IOpMapping_t mapping);
 uint8_t get_used_of(uint8_t vid, IOpMapping_t mapping);
+uint8_t number_of_hpu(IOpMapping_t mapping);
 
+#endif //__UCORE_H__

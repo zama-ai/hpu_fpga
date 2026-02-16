@@ -585,7 +585,10 @@ static void vTaskFuncMain( void )
                 // Patch and stream DOps to HW
                 for (int i=0; i< dop_entry.len; i++) {
                   dop.raw = *(dop_entry.ptr + i);
-                  patch_dop(&dop, &dst_bundle, &src_bundle, &imm_bundle);
+                  if (patch_dop(&dop, &dst_bundle, &src_bundle, &imm_bundle)) {
+                    // it means current DOp was a UCORE DOp that got processed and removed from stream
+                    continue;
+                  }
                   dop_buffer[i%DOP_BUFFER_SIZE] = dop.raw;
 
                   // Flush buffer if full
@@ -1290,7 +1293,6 @@ static void updt_ucore_cfg(UcoreCfg_t* cfg)
   // Read value
   // NB: pvOSAL_MemCpy seems completly bugged on small size. replace it with explicit pointer read
   // pvOSAL_MemCpy((void*)DOP_FW_ADDR, (void*) cfg, sizeof(UcoreCfg_t));
- *cfg = *((volatile UcoreCfg_t*) DOP_FW_ADDR);
-
+  *cfg = *((volatile UcoreCfg_t*) DOP_FW_ADDR);
 }
 

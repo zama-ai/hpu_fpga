@@ -77,11 +77,6 @@ struct iop_operand_properties_t {
   uint8_t kind: 2;
 } __attribute__((packed));
 
-struct iop_opaddr_t {
-  uint16_t base_cid: 16;
-  uint16_t _pad: 16;
-} __attribute__((packed));
-
 // Union for casting between raw and inner type
 typedef union {
   uint32_t raw;
@@ -131,13 +126,25 @@ typedef union {
 #define OPERAND_BUNDLE_MAX_SLOT 32
 #define IMMEDIAT_BUNDLE_MAX_SLOT 4
 #define IMMEDIAT_MSG_MAX_SLOT 6
-// NB: Two word is used for each operands (i.e. props and addr)
+// NB: Two words are used for each operands (i.e. props and addr)
 #define IOP_MAX_WORDS (2 + 2*(2*OPERAND_BUNDLE_MAX_SLOT) + IMMEDIAT_BUNDLE_MAX_SLOT*(IMMEDIAT_MSG_MAX_SLOT/2))
 #define IOP_MAX_BYTES (IOP_MAX_WORDS * sizeof(uint32_t))
+
+// src/dst ct
+typedef struct {
+  uint16_t src_cid;
+  uint16_t dst_cid;
+  uint8_t iid;
+  uint8_t pos;
+  uint8_t state;
+  uint16_t target_cid;
+} RemoteOperand_t;
+
 // Operand are depict as vector starting from cid_ofst
 typedef struct {
-  uint8_t len;
   uint16_t cid_ofst;
+  uint8_t block;
+  uint8_t len;
   uint8_t iid;
   uint8_t pos;
 } Operand_t;

@@ -99,10 +99,18 @@ struct dop_pbs_t {
 } __attribute__((packed));
 
 struct dop_sync_t {
+  uint32_t _pad: 11;
+  uint8_t flag: 6;
+  uint8_t is_inner: 1;
+  uint8_t iid: 8;
+  uint8_t opcode:6;
+} __attribute__((packed));
+
+struct dop_ucore_t {
+  uint16_t slot: 16;
+  uint8_t mode: 1;
   uint8_t flag: 6;
   uint8_t hid: 3;
-  uint8_t wait_mode: 1;
-  uint16_t slot: 16;
   uint8_t opcode:6;
 } __attribute__((packed));
 
@@ -116,6 +124,7 @@ typedef union {
   struct dop_mem_t mem;
   struct dop_pbs_t pbs;
   struct dop_sync_t sync;
+  struct dop_ucore_t ucore;
 } DOpu_t;
 
 
@@ -123,10 +132,12 @@ typedef union {
 // ============================================================================================= //
 typedef enum {
   DOPK_ARITH = 0b00,
-  DOPK_SYNC = 0b01,
+  DOPK_UCORE = 0b01,
   DOPK_MEM = 0b10,
   DOPK_PBS = 0b11,
 } DOpKind_t ;
+
+#define SYNC_OPCODE 0b101111
 
 typedef enum {
   DOPS_NOTIFY = 0b0000,
