@@ -460,13 +460,16 @@ logic [HPU_NB-1:0][ETH_PC-1:0]                          axi4_ct_rready;
   assign req_rfm = 'h0;
 
   // for checking
-  logic [HPU_NB-1:0][REG_DATA_W-1:0] notify_payload;
-  logic [HPU_NB-1:0][REG_DATA_W-1:0] notify_payload_rd;
-  logic [HPU_NB-1:0][REG_DATA_W-1:0] notify_payload_expected;
+  logic [HPU_NB-1:0][REG_DATA_W-1:0] notify_req_id;
+  logic [HPU_NB-1:0][REG_DATA_W-1:0] notify_req_addr;
+  logic [HPU_NB-1:0][REG_DATA_W-1:0] notify_req_id_rd;
+  logic [HPU_NB-1:0][REG_DATA_W-1:0] notify_req_addr_rd;
+  logic [HPU_NB-1:0][REG_DATA_W-1:0] notify_req_id_expected;
+  logic [HPU_NB-1:0][REG_DATA_W-1:0] notify_req_addr_expected;
   logic [HPU_NB-1:0][REG_DATA_W-1:0] stat_notify;
   logic [HPU_NB-1:0][REG_DATA_W-1:0] stat_notify_ack;
-  logic             [REG_DATA_W-1:0] notify_a_ref_q[$];
-  logic             [REG_DATA_W-1:0] notify_b_ref_q[$];
+  logic       [2*REG_DATA_W-1:0] notify_a_ref_q[$];
+  logic       [2*REG_DATA_W-1:0] notify_b_ref_q[$];
 
   int arbitrary_notify_nb;
   int arbitrary_read_req_nb;
@@ -505,10 +508,11 @@ logic [HPU_NB-1:0][ETH_PC-1:0]                          axi4_ct_rready;
             // sending Notfies from A to B
             iop_id[0]       = $urandom();
             iop_src_addr[0] = $urandom_range(0, 1<<SRC_ADDR_W);
-            notify_payload[0] = {iop_src_addr[0], 4'b0, random_hpu_a, iop_id[0]};
+            notify_req_id[0]   = {iop_id[0], REQ_ID_NOTIFY, random_hpu_a, 16'b0};
+            notify_req_addr[0] = {16'b0, iop_src_addr[0]};
 
             notify_request(random_hpu_a, random_hpu_b, iop_id[0], iop_src_addr[0]);
-            notify_a_ref_q.push_back(notify_payload[0]);
+            notify_a_ref_q.push_back({notify_req_id[0], notify_req_addr[0]});
           end
         end
 
@@ -517,10 +521,11 @@ logic [HPU_NB-1:0][ETH_PC-1:0]                          axi4_ct_rready;
             // sending Notfies from B to A
             iop_id[1]       = $urandom();
             iop_src_addr[1] = $urandom_range(0, 1<<SRC_ADDR_W);
-            notify_payload[1] = {iop_src_addr[1], 4'b0, random_hpu_b, iop_id[1]};
+            notify_req_id[1]   = {iop_id[1], REQ_ID_NOTIFY, random_hpu_b, 16'b0};
+            notify_req_addr[1] = {16'b0, iop_src_addr[1]};
 
             notify_request(random_hpu_b, random_hpu_a, iop_id[1], iop_src_addr[1]);
-            notify_b_ref_q.push_back(notify_payload[1]);
+            notify_b_ref_q.push_back({notify_req_id[1], notify_req_addr[1]});
           end
         end
       join
@@ -531,12 +536,17 @@ logic [HPU_NB-1:0][ETH_PC-1:0]                          axi4_ct_rready;
       fork
         begin
           for (int i = 0; i < random_iter; i++) begin
-            // HPU A
-            gen_maxil_if[0].maxil_if.read_trans(MHDMA_REQUEST_NOTIFY_OFS, notify_payload_rd[0]);
-            notify_payload_expected[0] = notify_b_ref_q.pop_front();
+            // HPU A: read ADDR first (no pop), then ID (pops the FIFO)
+            gen_maxil_if[0].maxil_if.read_trans(MHDMA_REQUEST_NOTIFY_REQ_ADDR_OFS, notify_req_addr_rd[0]);
+            gen_maxil_if[0].maxil_if.read_trans(MHDMA_REQUEST_NOTIFY_REQ_ID_OFS,   notify_req_id_rd[0]);
+            {notify_req_id_expected[0], notify_req_addr_expected[0]} = notify_b_ref_q.pop_front();
 
-            assert (notify_payload_rd[0] == notify_payload_expected[0]) else begin
-              $display("%t > [ERROR::%0d]: Payload DATA incorrect HPU A (received %x) =! (exp %x)", $time, i, notify_payload_rd[0], notify_payload_expected[0]);
+            assert (notify_req_id_rd[0] == notify_req_id_expected[0]) else begin
+              $display("%t > [ERROR::%0d]: Notify REQ_ID incorrect HPU A (received %x) =! (exp %x)", $time, i, notify_req_id_rd[0], notify_req_id_expected[0]);
+              error_notify_rx = 1'b1;
+            end
+            assert (notify_req_addr_rd[0] == notify_req_addr_expected[0]) else begin
+              $display("%t > [ERROR::%0d]: Notify REQ_ADDR incorrect HPU A (received %x) =! (exp %x)", $time, i, notify_req_addr_rd[0], notify_req_addr_expected[0]);
               error_notify_rx = 1'b1;
             end
           end
@@ -544,11 +554,17 @@ logic [HPU_NB-1:0][ETH_PC-1:0]                          axi4_ct_rready;
 
         begin
           for (int i = 0; i < random_iter; i++) begin
-            gen_maxil_if[1].maxil_if.read_trans(MHDMA_REQUEST_NOTIFY_OFS, notify_payload_rd[1]);
-            notify_payload_expected[1] = notify_a_ref_q.pop_front();
+            // HPU B: read ADDR first (no pop), then ID (pops the FIFO)
+            gen_maxil_if[1].maxil_if.read_trans(MHDMA_REQUEST_NOTIFY_REQ_ADDR_OFS, notify_req_addr_rd[1]);
+            gen_maxil_if[1].maxil_if.read_trans(MHDMA_REQUEST_NOTIFY_REQ_ID_OFS,   notify_req_id_rd[1]);
+            {notify_req_id_expected[1], notify_req_addr_expected[1]} = notify_a_ref_q.pop_front();
 
-            assert (notify_payload_rd[1] == notify_payload_expected[1]) else begin
-              $display("%t > [ERROR::%0d]: Payload DATA incorrect HPU B (received %x) =! (exp %x)", $time, i, notify_payload_rd[1], notify_payload_expected[1]);
+            assert (notify_req_id_rd[1] == notify_req_id_expected[1]) else begin
+              $display("%t > [ERROR::%0d]: Notify REQ_ID incorrect HPU B (received %x) =! (exp %x)", $time, i, notify_req_id_rd[1], notify_req_id_expected[1]);
+              error_notify_rx = 1'b1;
+            end
+            assert (notify_req_addr_rd[1] == notify_req_addr_expected[1]) else begin
+              $display("%t > [ERROR::%0d]: Notify REQ_ADDR incorrect HPU B (received %x) =! (exp %x)", $time, i, notify_req_addr_rd[1], notify_req_addr_expected[1]);
               error_notify_rx = 1'b1;
             end
           end
@@ -858,29 +874,29 @@ logic [HPU_NB-1:0][ETH_PC-1:0]                          axi4_ct_rready;
     // After TLAST, not TVALID
     property no_valid_after_last(int lane);
       @(posedge clk_mrmac) disable iff (~s_rstn_mrmac)
-      (qsfp_tx_tvalid[lane] && qsfp_tx_tready[lane] && qsfp_tx_tlast[lane]) |=> ~qsfp_tx_tvalid[lane];
+      (qsfp_tx_tvalid[0][lane] && qsfp_tx_tready[0][lane] && qsfp_tx_tlast[0][lane]) |=> ~qsfp_tx_tvalid[0][lane];
     endproperty
 
     // TLAST requires TVALID
     property mrmac_tlast_valid(int lane);
       @(posedge clk_mrmac) disable iff (~s_rstn_mrmac)
-      qsfp_tx_tlast[lane] |-> qsfp_tx_tvalid[lane];
+      qsfp_tx_tlast[0][lane] |-> qsfp_tx_tvalid[0][lane];
     endproperty
 
     // TX/RX AXIS valid must stay stable until ready
     property axis_stable(int lane);
       @(posedge clk_mrmac) disable iff (!s_rstn_mrmac)
-      (qsfp_tx_tvalid[lane] && ~qsfp_tx_tready[lane]) |=> $stable(qsfp_tx_tvalid[lane]) && $stable(qsfp_tx_tdata[lane]) && $stable(qsfp_tx_tkeep_user[lane]);
+      (qsfp_tx_tvalid[0][lane] && ~qsfp_tx_tready[0][lane]) |=> $stable(qsfp_tx_tvalid[0][lane]) && $stable(qsfp_tx_tdata[0][lane]) && $stable(qsfp_tx_tkeep_user[0][lane]);
     endproperty
 
     // Minimum Ethernet frame size (64 bytes) on valid frames - MRMAC inserts 4 bytes so we check for 60
     property mrmac_min_frame_size(int lane);
       int byte_count;
       @(posedge clk_mrmac) disable iff (~s_rstn_mrmac)
-      (!$past(qsfp_tx_tvalid[lane]) && qsfp_tx_tvalid[lane], byte_count=0) |->
+      (!$past(qsfp_tx_tvalid[0][lane]) && qsfp_tx_tvalid[0][lane], byte_count=0) |->
         first_match(
-          (qsfp_tx_tvalid[lane], byte_count += (qsfp_tx_tready[lane] ? $countones(qsfp_tx_tkeep_user[lane]) : 0))[*1:$] ##0
-          (qsfp_tx_tlast[lane] && qsfp_tx_tready[lane])
+          (qsfp_tx_tvalid[0][lane], byte_count += (qsfp_tx_tready[0][lane] ? $countones(qsfp_tx_tkeep_user[0][lane]) : 0))[*1:$] ##0
+          (qsfp_tx_tlast[0][lane] && qsfp_tx_tready[0][lane])
         ) ##0 (byte_count >= 60);
     endproperty
 
