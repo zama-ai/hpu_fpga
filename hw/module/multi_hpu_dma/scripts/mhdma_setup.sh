@@ -54,10 +54,10 @@ configure_fpga() {
   $hputil -f $fpga_idx register write mhdma_system::timeout_read_req --value 0xFFFFFFFF
 
   # Write HBM AXI4 addresses
-  $hputil -f $fpga_idx register write mhdma_hbm_axi4_addr_2in3::ct_pc0_msb --value 0x00000046
-  $hputil -f $fpga_idx register write mhdma_hbm_axi4_addr_2in3::ct_pc0_lsb --value 0x80000000
-  $hputil -f $fpga_idx register write mhdma_hbm_axi4_addr_2in3::ct_pc1_msb --value 0x00000046
-  $hputil -f $fpga_idx register write mhdma_hbm_axi4_addr_2in3::ct_pc1_lsb --value 0xA0000000
+  $hputil -f $fpga_idx register write mhdma_hbm_axi4_addr_2in3::ct_pc0_msb --value 0x00000044
+  $hputil -f $fpga_idx register write mhdma_hbm_axi4_addr_2in3::ct_pc0_lsb --value 0x00000000
+  $hputil -f $fpga_idx register write mhdma_hbm_axi4_addr_2in3::ct_pc1_msb --value 0x00000044
+  $hputil -f $fpga_idx register write mhdma_hbm_axi4_addr_2in3::ct_pc1_lsb --value 0x20000000
 
   echo "[INFO] FPGA $fpga_idx configured."
 }
