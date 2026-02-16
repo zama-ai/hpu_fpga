@@ -116,8 +116,10 @@ module multi_hpu_dma
   // Register file
   // ============================================================================================ //
   logic [NB_MAX_HPU-1:0][REG_DATA_W-1:0]   r_regf_hpu_ids;
-  logic                 [REG_DATA_W-1:0]   r_request_notify;
-  logic                 [REG_DATA_W-1:0]   r_request_read;
+  logic                 [REG_DATA_W-1:0]   r_request_notify_req_id;
+  logic                 [REG_DATA_W-1:0]   r_request_notify_req_addr;
+  logic                 [REG_DATA_W-1:0]   r_request_read_req_id;
+  logic                 [REG_DATA_W-1:0]   r_request_read_addr;
   logic                 [REG_DATA_W-1:0]   r_request_req_id;
   logic                 [REG_DATA_W-1:0]   r_request_req_addr;
   logic                 [REG_DATA_W-1:0]   r_system_timeout_notify;
@@ -150,14 +152,18 @@ module multi_hpu_dma
 
   // updated registers ----------------------------------------------------------------------------
   // These registers are needed to ease timing
-  logic [REG_DATA_W-1:0] request_read_tmp;
-  logic [REG_DATA_W-1:0] request_notify_tmp;
+  logic [REG_DATA_W-1:0] request_notify_req_id_tmp;
+  logic [REG_DATA_W-1:0] request_notify_req_addr_tmp;
+  logic [REG_DATA_W-1:0] request_read_req_id_tmp;
+  logic [REG_DATA_W-1:0] request_read_addr_tmp;
   logic [REG_DATA_W-1:0] reset_monitor_tmp;
 
   always_ff @(posedge clk_eth_cfg) begin
-    request_read_tmp   <= r_request_read;
-    request_notify_tmp <= r_request_notify;
-    reset_monitor_tmp  <= r_reset_monitor;
+    request_notify_req_id_tmp   <= r_request_notify_req_id;
+    request_notify_req_addr_tmp <= r_request_notify_req_addr;
+    request_read_req_id_tmp     <= r_request_read_req_id;
+    request_read_addr_tmp       <= r_request_read_addr;
+    reset_monitor_tmp           <= r_reset_monitor;
   end
 
   // ============================================================================================ //
@@ -215,12 +221,18 @@ module multi_hpu_dma
     .r_mhdma_request_req_addr_wr_en                       (r_request_req_addr_wr_en                              ),
     .r_mhdma_request_req_addr                             (r_request_req_addr                                    ),
     // Updated from RTL only -------------------------------------------------------------------------------------
+    .r_mhdma_request_notify_req_id                        (/* UNUSED - register output, only _upd/_rd_en used */ ),
+    .r_mhdma_request_notify_req_id_upd                    (request_notify_req_id_tmp                             ),
+    .r_mhdma_request_notify_req_id_rd_en                  (clear_interrupt_notify                                ),
+    .r_mhdma_request_notify_req_addr                      (/* UNUSED - register output, only _upd/_rd_en used */ ),
+    .r_mhdma_request_notify_req_addr_upd                  (request_notify_req_addr_tmp                           ),
+    .r_mhdma_request_notify_req_addr_rd_en                (/* UNUSED */                                          ),
+    .r_mhdma_request_read_request_req_id                  (/* UNUSED - register output, only _upd/_rd_en used */ ),
+    .r_mhdma_request_read_request_req_id_upd              (request_read_req_id_tmp                               ),
+    .r_mhdma_request_read_request_req_id_rd_en            (clear_interrupt_rr                                    ),
     .r_mhdma_request_read_request                         (/* UNUSED - register output, only _upd/_rd_en used */ ),
-    .r_mhdma_request_read_request_upd                     (request_read_tmp                                      ),
-    .r_mhdma_request_read_request_rd_en                   (clear_interrupt_rr                                    ),
-    .r_mhdma_request_notify                               (/* UNUSED - register output, only _upd/_rd_en used */ ),
-    .r_mhdma_request_notify_upd                           (request_notify_tmp                                    ),
-    .r_mhdma_request_notify_rd_en                         (clear_interrupt_notify                                ),
+    .r_mhdma_request_read_request_upd                     (request_read_addr_tmp                                 ),
+    .r_mhdma_request_read_request_rd_en                   (/* UNUSED */                                          ),
     // control ---------------------------------------------------------------------------------------------------
     .r_mhdma_system_lane                                  (r_system_line                                         ),
     .r_mhdma_reset_datapath                               (r_reset_datapath                                      ),
@@ -404,8 +416,10 @@ module multi_hpu_dma
     .regf_ct_mem_addr               (r_ct_mem_addr                                                ),
     .regf_req_id                    (r_request_req_id                                             ),
     .regf_req_addr                  (r_request_req_addr                                           ),
-    .regf_notify_payload            (r_request_notify                                             ),
-    .regf_read_payload              (r_request_read                                               ),
+    .regf_notify_req_id             (r_request_notify_req_id                                      ),
+    .regf_notify_req_addr           (r_request_notify_req_addr                                    ),
+    .regf_read_req_id               (r_request_read_req_id                                        ),
+    .regf_read_addr                 (r_request_read_addr                                          ),
     .regf_timeout_duration_notify   (r_system_timeout_notify                                      ),
     .regf_timeout_duration_read_req (r_system_timeout_read_req                                    ),
     // interruptions and control ------------------------------------------------------------------

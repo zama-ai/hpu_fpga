@@ -52,7 +52,8 @@ module mhdma_master
   input  logic [ETH_PC-1:0][2*REG_DATA_W-1:0] regf_ct_mem_addr,
   input  logic               [REG_DATA_W-1:0] regf_req_id,
   input  logic               [REG_DATA_W-1:0] regf_req_addr,
-  output logic               [REG_DATA_W-1:0] regf_read_payload,
+  output logic               [REG_DATA_W-1:0] regf_read_req_id,
+  output logic               [REG_DATA_W-1:0] regf_read_addr,
   input  logic               [REG_DATA_W-1:0] regf_timeout_duration_notify,
   input  logic               [REG_DATA_W-1:0] regf_timeout_duration_read_req,
   // register control
@@ -685,14 +686,24 @@ module mhdma_master
   //  - between fifo_ce_rx and fifo_wr_pc we will avoid stalling as much as possible
   //  - we must transmit to regif relevant info and raise interrupt when all words ready in hbm
   logic [DST_ADDR_W-1:0] received_dst_addr;
+  logic [SRC_ADDR_W-1:0] received_src_addr;
   logic [  IOP_ID_W-1:0] received_iop_id;
   logic [  HPU_ID_W-1:0] received_hpu_id;
+  logic [  REQ_ID_W-1:0] received_req_id;
+  logic [    MODE_W-1:0] received_mode;
+  logic [    FLAG_W-1:0] received_flag;
+  logic [    RSVD_W-1:0] received_rsvd;
 
   always_ff @(posedge clk_mrmac) begin
     if (decoded_command_rdy & decoded_command_vld) begin
       received_dst_addr <= decoded_command.dst_addr;
+      received_src_addr <= decoded_command.src_addr;
       received_iop_id   <= decoded_command.iop_id;
       received_hpu_id   <= decoded_command.hpu_id;
+      received_req_id   <= decoded_command.req_id;
+      received_mode     <= decoded_command.mode;
+      received_flag     <= decoded_command.flag;
+      received_rsvd     <= decoded_command.rsvd;
     end
   end
 
@@ -1220,16 +1231,17 @@ module mhdma_master
   assign ciphertext_received = &(pc_brsp_ack | pc_brsp_ack_seen);
 
   // regf payload information ---------------------------------------------------------------------
-  logic [REG_DATA_W-1:0] rr_regf_in_data;
-  logic                  rr_regf_in_rdy;
-  logic                  rr_regf_in_vld;
+  logic [2*REG_DATA_W-1:0] rr_regf_in_data;
+  logic                    rr_regf_in_rdy;
+  logic                    rr_regf_in_vld;
 
-  logic [REG_DATA_W-1:0] rr_regf_out_data;
-  logic                  rr_regf_out_vld;
-  logic                  rr_regf_out_rdy;
+  logic [2*REG_DATA_W-1:0] rr_regf_out_data;
+  logic                    rr_regf_out_vld;
+  logic                    rr_regf_out_rdy;
 
-  // rr_regf_in_rdy there is no back pressurew
-  assign rr_regf_in_data = {received_dst_addr, 4'b0, received_hpu_id, received_iop_id};
+  // rr_regf_in_rdy there is no back pressure
+  // upper word = req_id register, lower word = addr register
+  assign rr_regf_in_data = {received_iop_id, received_req_id, received_hpu_id, received_mode, received_flag, received_rsvd, received_dst_addr, received_src_addr};
 
   // Interrput must be triggered only when ciphertext is valid
   assign rr_regf_in_vld = valid_ciphertext_received;
@@ -1237,7 +1249,7 @@ module mhdma_master
   fifo_ram_rdy_vld_2clk # (
     .CDC_SYNC_STAGES (CDC_SYNC_STAGES),
     // tweak theses parameters in package
-    .WIDTH           (REG_DATA_W),
+    .WIDTH           (2*REG_DATA_W),
     .DEPTH           (REQ_FIFO_DEPTH),
     .FIFO_MEMORY_TYPE(REQ_MEMORY_TYPE)
   ) rr_resp_ram_rdy_vld_2clk (
@@ -1258,7 +1270,9 @@ module mhdma_master
 
   assign rr_regf_out_rdy = clear_interrupt_rr;
 
-  assign regf_read_payload = rr_regf_out_data;
+  // upper word = req_id register, lower word = addr register
+  assign regf_read_req_id = rr_regf_out_data[2*REG_DATA_W-1:REG_DATA_W];
+  assign regf_read_addr = rr_regf_out_data[REG_DATA_W-1:0];
   assign interrupt_read_request = rr_regf_out_vld;
 
   // =========================================================================================== //

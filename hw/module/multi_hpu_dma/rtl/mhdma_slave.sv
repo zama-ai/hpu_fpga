@@ -39,7 +39,8 @@ module mhdma_slave
   output logic [ETH_PC-1:0]                                    m_axi4_rready,
   // regf interface -----------------------------------------------------------
   input  logic [ETH_PC-1:0][2*REG_DATA_W-1:0] regf_ct_mem_addr,
-  output logic             [  REG_DATA_W-1:0] regf_notify_payload,
+  output logic             [  REG_DATA_W-1:0] regf_notify_req_id,
+  output logic             [  REG_DATA_W-1:0] regf_notify_req_addr,
   // interrupt ----------------------------------------------------------------
   input  logic                                clear_interrupt_notify,
   output logic                                interrupt_notify,
@@ -134,18 +135,18 @@ module mhdma_slave
 
   // command fifo for notify RX, received from decoder
   fifo_ram_rdy_vld # (
-    .WIDTH      (SRC_ADDR_W+HPU_ID_W+IOP_ID_W+REQ_ID_W),
+    .WIDTH      (DST_ADDR_W+SRC_ADDR_W+HPU_ID_W+IOP_ID_W+RSVD_W+FLAG_W+MODE_W+REQ_ID_W),
     .DEPTH      (NRX_DEPTH),
     .RAM_LATENCY(NRX_RAM_LATENCY)
   ) fifo_nrx_commands (
     .clk         (clk_mrmac),
     .s_rst_n     (resetn_mrmac),
 
-    .in_data     ({decoded_command.src_addr, decoded_command.hpu_id, decoded_command.iop_id, REQ_ID_NOTIFY_ACK}),
+    .in_data     ({decoded_command.dst_addr, decoded_command.src_addr, decoded_command.hpu_id, decoded_command.iop_id, decoded_command.rsvd, decoded_command.flag, decoded_command.mode, REQ_ID_NOTIFY_ACK}),
     .in_vld      (nrx_cmd_in_vld),
     .in_rdy      (nrx_cmd_in_rdy),
 
-    .out_data    ({nrx_cmd_fifo.src_addr, nrx_cmd_fifo.hpu_id, nrx_cmd_fifo.iop_id, nrx_cmd_fifo.req_id}),
+    .out_data    ({nrx_cmd_fifo.dst_addr, nrx_cmd_fifo.src_addr, nrx_cmd_fifo.hpu_id, nrx_cmd_fifo.iop_id, nrx_cmd_fifo.rsvd, nrx_cmd_fifo.flag, nrx_cmd_fifo.mode, nrx_cmd_fifo.req_id}),
     .out_vld     (nrx_cmd_out_vld),
     .out_rdy     (nrx_cmd_out_rdy),
 
@@ -176,22 +177,22 @@ module mhdma_slave
   assign nrx_regf_write_enable = nrx_cmd_out_vld & nrx_cmd_out_rdy;
 
   // === CFG domain
-  logic [REG_DATA_W-1:0] nrx_regf_out_data;
-  logic                  nrx_regf_out_rdy;
-  logic                  nrx_regf_out_vld;
+  logic [2*REG_DATA_W-1:0] nrx_regf_out_data;
+  logic                    nrx_regf_out_rdy;
+  logic                    nrx_regf_out_vld;
 
-  // this fifo transforms rx commands into a 32 bit readable word for regfile
+  // this fifo transforms rx commands into two 32 bit readable words for regfile
   fifo_ram_rdy_vld_2clk # (
     .CDC_SYNC_STAGES (CDC_SYNC_STAGES),
     // tweak theses parameters in package
-    .WIDTH           (REG_DATA_W),
+    .WIDTH           (2*REG_DATA_W),
     .DEPTH           (REQ_FIFO_DEPTH),
     .FIFO_MEMORY_TYPE(REQ_MEMORY_TYPE)
   ) fifo_nrx_regf (
     // Write Domain ports: MRMAC domain
     .in_clk      (clk_mrmac),
     .in_rstn     (resetn_mrmac),
-    .in_data     ({nrx_cmd_fifo.src_addr, 4'b0, nrx_cmd_fifo.hpu_id, nrx_cmd_fifo.iop_id}),
+    .in_data     ({nrx_cmd_fifo.iop_id, REQ_ID_NOTIFY, nrx_cmd_fifo.hpu_id, nrx_cmd_fifo.mode, nrx_cmd_fifo.flag, nrx_cmd_fifo.rsvd, nrx_cmd_fifo.dst_addr, nrx_cmd_fifo.src_addr}),
     .in_rdy      (nrx_regf_in_rdy),
     .in_vld      (nrx_regf_write_enable),
     .almost_full (/* UNUSED */),
@@ -205,8 +206,9 @@ module mhdma_slave
 
   assign nrx_regf_out_rdy = clear_interrupt_notify;
 
-  // directly to regif interface
-  assign regf_notify_payload = nrx_regf_out_data;
+  // directly to regif interface: upper word = req_id register, lower word = req_addr register
+  assign regf_notify_req_id = nrx_regf_out_data[2*REG_DATA_W-1:REG_DATA_W];
+  assign regf_notify_req_addr = nrx_regf_out_data[REG_DATA_W-1:0];
   assign interrupt_notify = nrx_regf_out_vld;
 
   // ==============================================================================================

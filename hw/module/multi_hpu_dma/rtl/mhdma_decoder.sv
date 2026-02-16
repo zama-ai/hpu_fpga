@@ -85,6 +85,7 @@ module mhdma_decoder
   h1_frame_t h1;
   h2_frame_t h2;
   h3_frame_t h3;
+
   assign h0 = qsfp_rx_tdata_bs;
   assign h1 = qsfp_rx_tdata_bs;
   assign h2 = qsfp_rx_tdata_bs;
@@ -208,14 +209,17 @@ module mhdma_decoder
   logic fifo_rx_cmd_in_vld;
   logic fifo_rx_cmd_in_rdy;
 
-  assign fifo_rx_cmd_in_vld = notify_ack_received | notify_request_received | read_request_received | ciphertext_emission_received;
+  // There are three frames to account for. We are decoding received commad at Frame 2 but Frame 3 are not registered.
+  // Adding a pipe here is enough to wait for all needed data
+  always_ff @(posedge clk_mrmac)
+    fifo_rx_cmd_in_vld <= notify_ack_received | notify_request_received | read_request_received | ciphertext_emission_received;
 
   fifo_ram_rdy_vld # (
     .WIDTH(MAC_ADDR_W + SEQ_NUM_W + HPU_ID_W + RSVD_W + FLAG_W + MODE_W + IOP_ID_W + SRC_ADDR_W + DST_ADDR_W + REQ_ID_W),
     .DEPTH(RX_FIFO_DEPTH)
   ) fifo_rx_cmd (
-    .clk         (clk_mrmac          ),
-    .s_rst_n     (resetn_mrmac       ),
+    .clk         (clk_mrmac),
+    .s_rst_n     (resetn_mrmac),
 
     .in_data     ({src_mac_addr, seq_num, hpu_id, rsvd, flag, mode, iop_id, ct_src_addr, ct_dst_addr, req_id}),
     .in_vld      (fifo_rx_cmd_in_vld),

@@ -471,24 +471,19 @@ module tb_multi_hpu_dma;
   logic [DST_ADDR_W-1:0] exp_dst_addr;
 
   // for checking
-  logic [  REG_DATA_W-1:0] notify_payload;
-  logic [  REG_DATA_W-1:0] expected_notify_payload;
-  logic [MRMAC_AXIS_W-1:0] notify_payload_ref_q[$];
+  logic [  REG_DATA_W-1:0] notify_req_id_exp;
+  logic [  REG_DATA_W-1:0] notify_req_addr_exp;
+  logic [2*REG_DATA_W-1:0] notify_payload_ref_q[$];
 
-  logic [  REG_DATA_W-1:0] rr_payload;
-  logic [  REG_DATA_W-1:0] rr_payload_expected;
-  logic [MRMAC_AXIS_W-1:0] rr_payload_ref_q[$];
+  logic [  REG_DATA_W-1:0] rr_req_id_exp;
+  logic [  REG_DATA_W-1:0] rr_addr_exp;
+  logic [2*REG_DATA_W-1:0] rr_payload_ref_q[$];
 
   // Randomized flag and mode, checked at each iteration
   logic [FLAG_W-1:0] req_flag;
   logic [MODE_W-1:0] req_mode;
 
-
-  logic [DST_ADDR_W-1:0] received_address;
-  logic [HPU_ID_W-1:0] received_hpu_id;
-  logic [IOP_ID_W-1:0] received_iop_id;
-
-  logic [REG_DATA_W-1:0]   stat_errors;
+  logic [REG_DATA_W-1:0] stat_errors;
 
   logic [REG_DATA_W-1:0] regf_start_addr_ofs;
 
@@ -556,64 +551,53 @@ module tb_multi_hpu_dma;
       req_mode     = $urandom();
 
       repeat(2) @(posedge clk_control);
-      notify_request(random_hpu_b, random_hpu_a, iop_id, iop_src_addr);
+      notify_request(random_hpu_b, random_hpu_a, iop_id, iop_src_addr, req_flag, req_mode);
 
       // if a Notify is received by HPU A we should be able to confirm it by reading in the regf
-      notify_payload = {iop_src_addr, 4'b0, random_hpu_b, iop_id};
+      notify_req_id_exp   = {iop_id, REQ_ID_NOTIFY, random_hpu_b, req_mode, req_flag, 8'h0};
+      notify_req_addr_exp = {16'b0, iop_src_addr};
 
       wait (interrupt_notify[0] == 1'b1);
 
-      // Interrupt detected, checking Notify payload
-      gen_maxil_if[0].maxil_if.read_trans(MHDMA_REQUEST_NOTIFY_OFS, read_data);
-
-      assert (read_data == notify_payload) else begin
-        $display("%t > [ERROR]: Payload DATA incorrect %x %x", $time, read_data, notify_payload);
-        $display("%t > [ERROR]: iop_src_addr  = %x ", $time, iop_src_addr);
-        $display("%t > [ERROR]: random_hpu_b  = %x ", $time, random_hpu_b);
-        $display("%t > [ERROR]: iop_id        = %x ", $time, iop_id);
-
+      gen_maxil_if[0].maxil_if.read_trans(MHDMA_REQUEST_NOTIFY_REQ_ADDR_OFS, read_data);
+      assert (read_data == notify_req_addr_exp) else begin
+        $display("%t > [ERROR]: Notify REQ_ADDR incorrect %x != exp %x", $time, read_data, notify_req_addr_exp);
         error_notify_payload = 1'b1;
       end
 
-      // Check flag/mode on HPU_B's formatter (the sender of the notify)
-      assert (gen_multi_hpu_dma[1].multi_hpu_dma.mhdma_bridge.mhdma_formatter.header_flag == req_flag &&
-              gen_multi_hpu_dma[1].multi_hpu_dma.mhdma_bridge.mhdma_formatter.header_mode == req_mode) else begin
-        $display("%t > [ERROR]: mismatch between expected and received flag/mode on notify formatter", $time);
-        $display("%t > [ERROR]:    flag : %2x :: %2x", $time,
-          gen_multi_hpu_dma[1].multi_hpu_dma.mhdma_bridge.mhdma_formatter.header_flag, req_flag);
-        $display("%t > [ERROR]:    mode : %2x :: %2x", $time,
-          gen_multi_hpu_dma[1].multi_hpu_dma.mhdma_bridge.mhdma_formatter.header_mode, req_mode);
+      gen_maxil_if[0].maxil_if.read_trans(MHDMA_REQUEST_NOTIFY_REQ_ID_OFS, read_data);
+      assert (read_data == notify_req_id_exp) else begin
+        $display("%t > [ERROR]: Notify REQ_ID incorrect %x != exp %x", $time, read_data, notify_req_id_exp);
+        $display("%t > [ERROR]: iop_id     %x != %x ", $time, iop_id,       read_data[31:24]);
+        $display("%t > [ERROR]: hpu_id     %x != %x ", $time, random_hpu_b, read_data[19:16]);
+        $display("%t > [ERROR]: mode       %x != %x ", $time, req_mode,     read_data[15:14]);
+        $display("%t > [ERROR]: flag       %x != %x ", $time, req_flag,     read_data[13:8]);
         error_notify_payload = 1'b1;
       end
 
       repeat(2) @(posedge clk_control);
 
       // Sending a read request from HPU-A to HPU-B -------------------------------------------------
-      read_request(random_hpu_b, iop_id, iop_src_addr, iop_dst_addr);
+      read_request(random_hpu_b, iop_id, iop_src_addr, iop_dst_addr, req_flag, req_mode);
 
       wait (interrupt_read_request[0] == 1'b1);
+
+      rr_addr_exp   = {iop_dst_addr, iop_src_addr};
+      rr_req_id_exp = {iop_id, REQ_ID_EMISSION, random_hpu_b, req_mode, req_flag, 8'h0};
+
       gen_maxil_if[0].maxil_if.read_trans(MHDMA_REQUEST_READ_REQUEST_OFS, read_data);
-
-      received_address = read_data[31:16];
-      received_hpu_id  = read_data[11:8];
-      received_iop_id  = read_data[7:0];
-
-      assert (read_data == {iop_dst_addr, 4'b0, random_hpu_b, iop_id}) else begin
-        $display("%t > [ERROR]: mismatch between expected and received read request payload on regif", $time);
-        $display("%t > [ERROR]: address : %2x :: %2x", $time, received_address, iop_dst_addr);
-        $display("%t > [ERROR]:  iop:id : %2x :: %2x", $time, received_iop_id, iop_id);
-        $display("%t > [ERROR]:  hpu:id : %2x :: %2x", $time, received_hpu_id, random_hpu_b);
+      assert (read_data == rr_addr_exp) else begin
+        $display("%t > [ERROR]: RR REQ_ADDR incorrect %x != exp %x", $time, read_data, rr_addr_exp);
         error_rr_payload = 1'b1;
       end
 
-      // Check flag/mode on HPU_A's formatter (the sender of the read request)
-      assert (gen_multi_hpu_dma[0].multi_hpu_dma.mhdma_bridge.mhdma_formatter.header_flag == req_flag &&
-              gen_multi_hpu_dma[0].multi_hpu_dma.mhdma_bridge.mhdma_formatter.header_mode == req_mode) else begin
-        $display("%t > [ERROR]: mismatch between expected and received flag/mode on read request formatter", $time);
-        $display("%t > [ERROR]:    flag : %2x :: %2x", $time,
-          gen_multi_hpu_dma[0].multi_hpu_dma.mhdma_bridge.mhdma_formatter.header_flag, req_flag);
-        $display("%t > [ERROR]:    mode : %2x :: %2x", $time,
-          gen_multi_hpu_dma[0].multi_hpu_dma.mhdma_bridge.mhdma_formatter.header_mode, req_mode);
+      gen_maxil_if[0].maxil_if.read_trans(MHDMA_REQUEST_READ_REQUEST_REQ_ID_OFS, read_data);
+      assert (read_data == rr_req_id_exp) else begin
+        $display("%t > [ERROR]: RR REQ_ID incorrect %x != exp %x", $time, read_data, rr_req_id_exp);
+        $display("%t > [ERROR]: iop_id     %x != %x ", $time, iop_id,       read_data[31:24]);
+        $display("%t > [ERROR]: hpu_id     %x != %x ", $time, random_hpu_b, read_data[19:16]);
+        $display("%t > [ERROR]: mode       %x != %x ", $time, req_mode,     read_data[15:14]);
+        $display("%t > [ERROR]: flag       %x != %x ", $time, req_flag,     read_data[13:8]);
         error_rr_payload = 1'b1;
       end
 
@@ -635,11 +619,10 @@ module tb_multi_hpu_dma;
 
         repeat(10) @(posedge clk_control);
         // Sending a NOTIFY from HPU-B to HPU-A -------------------------------------------------------
-        notify_request(random_hpu_b, random_hpu_a, iop_id, iop_src_addr);
+        notify_request(random_hpu_b, random_hpu_a, iop_id, iop_src_addr, req_flag, req_mode);
 
         // if a Notify is received by HPU A we should be able to confirm it by reading in the regf
-        notify_payload = {iop_src_addr, 4'b0, random_hpu_b, iop_id};
-        notify_payload_ref_q.push_front(notify_payload);
+        notify_payload_ref_q.push_front({iop_id, REQ_ID_NOTIFY, random_hpu_b, req_mode, req_flag, 8'h0, 16'b0, iop_src_addr});
       end
 
       $display("%t > INFO : All %0d Notify have been sent from B to A", $time, arbitrary_notify_nb);
@@ -648,14 +631,18 @@ module tb_multi_hpu_dma;
 
         // we must wait for interrupt to be raised before reading
         wait (interrupt_notify[0] == 1'b1);
-        gen_maxil_if[0].maxil_if.read_trans(MHDMA_REQUEST_NOTIFY_OFS, read_data);
-        expected_notify_payload = notify_payload_ref_q.pop_back();
+        // Read ADDR first (no pop), then ID (pops the FIFO)
+        gen_maxil_if[0].maxil_if.read_trans(MHDMA_REQUEST_NOTIFY_REQ_ADDR_OFS, read_data);
+        {notify_req_id_exp, notify_req_addr_exp} = notify_payload_ref_q.pop_back();
 
-        assert (read_data == expected_notify_payload) else begin
-          $display("%t > [ERROR]: Payload DATA incorrect (received %x) =! (exp %x)", $time, read_data, expected_notify_payload);
-          $display("%t > [ERROR]: iop_src_addr  = %x ", $time, iop_src_addr);
-          $display("%t > [ERROR]: random_hpu_b  = %x ", $time, random_hpu_b);
-          $display("%t > [ERROR]: iop_id        = %x ", $time, iop_id);
+        assert (read_data == notify_req_addr_exp) else begin
+          $display("%t > [ERROR]: Notify REQ_ADDR incorrect (received %x) =! (exp %x)", $time, read_data, notify_req_addr_exp);
+          error_notify_payload = 1'b1;
+        end
+
+        gen_maxil_if[0].maxil_if.read_trans(MHDMA_REQUEST_NOTIFY_REQ_ID_OFS, read_data);
+        assert (read_data == notify_req_id_exp) else begin
+          $display("%t > [ERROR]: Notify REQ_ID incorrect (received %x) =! (exp %x)", $time, read_data, notify_req_id_exp);
           error_notify_payload = 1'b1;
         end
       end
@@ -675,11 +662,10 @@ module tb_multi_hpu_dma;
 
         repeat(10) @(posedge clk_control);
         // Sending a NOTIFY from HPU-A to HPU-B -------------------------------------------------------
-        notify_request(random_hpu_a, random_hpu_b, iop_id, iop_src_addr);
+        notify_request(random_hpu_a, random_hpu_b, iop_id, iop_src_addr, req_flag, req_mode);
 
-        // if a Notify is received by HPU A we should be able to confirm it by reading in the regf
-        notify_payload = {iop_src_addr, 4'b0, random_hpu_a, iop_id};
-        notify_payload_ref_q.push_front(notify_payload);
+        // if a Notify is received by HPU B we should be able to confirm it by reading in the regf
+        notify_payload_ref_q.push_front({iop_id, REQ_ID_NOTIFY, random_hpu_a, req_mode, req_flag, 8'h0});
       end
 
       $display("%t > INFO : All %0d Notify have been sent from A to B", $time, arbitrary_notify_nb);
@@ -688,14 +674,15 @@ module tb_multi_hpu_dma;
 
         // we must wait for interrupt to be raised before reading
         wait (interrupt_notify[1] == 1'b1);
-        gen_maxil_if[1].maxil_if.read_trans(MHDMA_REQUEST_NOTIFY_OFS, read_data);
-        expected_notify_payload = notify_payload_ref_q.pop_back();
 
-        assert (read_data == expected_notify_payload) else begin
-          $display("%t > [ERROR]: Payload DATA incorrect (received %x) =! (exp %x)", $time, read_data, expected_notify_payload);
-          $display("%t > [ERROR]: iop_src_addr  = %x ", $time, iop_src_addr);
-          $display("%t > [ERROR]: random_hpu_b  = %x ", $time, random_hpu_b);
-          $display("%t > [ERROR]: iop_id        = %x ", $time, iop_id);
+        gen_maxil_if[1].maxil_if.read_trans(MHDMA_REQUEST_NOTIFY_REQ_ID_OFS, read_data);
+        notify_req_id_exp = notify_payload_ref_q.pop_back();
+        assert (read_data == notify_req_id_exp) else begin
+          $display("%t > [ERROR]: Notify REQ_ID incorrect %x != exp %x", $time, read_data, notify_req_id_exp);
+          $display("%t > [ERROR]: iop_id     %x != %x ", $time, iop_id,       read_data[31:24]);
+          $display("%t > [ERROR]: hpu_id     %x != %x ", $time, random_hpu_b, read_data[19:16]);
+          $display("%t > [ERROR]: mode       %x != %x ", $time, req_mode,     read_data[15:14]);
+          $display("%t > [ERROR]: flag       %x != %x ", $time, req_flag,     read_data[13:8]);
           error_notify_payload = 1'b1;
         end
       end
@@ -719,10 +706,9 @@ module tb_multi_hpu_dma;
       iop_dst_addr = $urandom_range(0, MEM_MAX_VALUE-1);
       req_flag     = $urandom();
       req_mode     = $urandom();
-      read_request(random_hpu_b, iop_id, iop_src_addr, iop_dst_addr);
+      read_request(random_hpu_b, iop_id, iop_src_addr, iop_dst_addr, req_flag, req_mode);
 
-      rr_payload = {iop_dst_addr, 4'b0, random_hpu_b, iop_id};
-      rr_payload_ref_q.push_front(rr_payload);
+      rr_payload_ref_q.push_front({iop_id, REQ_ID_EMISSION, random_hpu_b, req_mode, req_flag, 8'h0});
       rr_src_addr_ref_q.push_front(iop_src_addr);
       rr_dst_addr_ref_q.push_front(iop_dst_addr);
 
@@ -734,14 +720,15 @@ module tb_multi_hpu_dma;
       iop_dst_addr = $urandom_range(0, MEM_MAX_VALUE-1);
       // we must wait for interrupt to be raised before reading
       wait (interrupt_read_request[0] == 1'b1);
-      gen_maxil_if[0].maxil_if.read_trans(MHDMA_REQUEST_READ_REQUEST_OFS, read_data);
-      rr_payload_expected = rr_payload_ref_q.pop_back();
 
-      assert (read_data == rr_payload_expected) else begin
-        $display("%t > [ERROR]: Payload DATA incorrect (received %x) =! (exp %x)", $time, read_data, rr_payload_expected);
-        $display("%t > [ERROR]: iop_dst_addr  = %x ", $time, iop_dst_addr);
-        $display("%t > [ERROR]: random_hpu_b  = %x ", $time, random_hpu_b);
-        $display("%t > [ERROR]: iop_id        = %x ", $time, iop_id);
+      gen_maxil_if[0].maxil_if.read_trans(MHDMA_REQUEST_READ_REQUEST_REQ_ID_OFS, read_data);
+      rr_req_id_exp = rr_payload_ref_q.pop_back();
+      assert (read_data == rr_req_id_exp) else begin
+        $display("%t > [ERROR]: Read request REQ_ID incorrect %x != exp %x", $time, read_data, rr_req_id_exp);
+        $display("%t > [ERROR]: iop_id     %x != %x ", $time, rr_req_id_exp[31:24], read_data[31:24]);
+        $display("%t > [ERROR]: hpu_id     %x != %x ", $time, rr_req_id_exp[19:16], read_data[19:16]);
+        $display("%t > [ERROR]: mode       %x != %x ", $time, rr_req_id_exp[15:14], read_data[15:14]);
+        $display("%t > [ERROR]: flag       %x != %x ", $time, rr_req_id_exp[13:8], read_data[13:8]);
         error_notify_payload = 1'b1;
       end
 
@@ -1022,7 +1009,9 @@ module tb_multi_hpu_dma;
     input logic [  HPU_ID_W-1:0] node_id,
     input logic [  IOP_ID_W-1:0] iop_id,
     input logic [SRC_ADDR_W-1:0] src_addr,
-    input logic [DST_ADDR_W-1:0] dest_addr
+    input logic [DST_ADDR_W-1:0] dest_addr,
+    input logic [    FLAG_W-1:0] req_flag,
+    input logic [    MODE_W-1:0] req_mode
   );
     logic [REG_DATA_W-1:0] read_req_id;
     logic [REG_DATA_W-1:0] read_req_addr;
@@ -1046,7 +1035,9 @@ module tb_multi_hpu_dma;
     input logic [  HPU_ID_W-1:0] src_node_id,
     input logic [  HPU_ID_W-1:0] dst_node_id,
     input logic [  IOP_ID_W-1:0] iop_id,
-    input logic [SRC_ADDR_W-1:0] src_addr
+    input logic [SRC_ADDR_W-1:0] src_addr,
+    input logic [    FLAG_W-1:0] req_flag,
+    input logic [    MODE_W-1:0] req_mode
   );
     logic [REG_DATA_W-1:0] read_req_id;
     logic [REG_DATA_W-1:0] read_req_addr;

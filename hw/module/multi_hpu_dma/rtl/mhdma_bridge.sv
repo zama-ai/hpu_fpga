@@ -57,8 +57,10 @@ module mhdma_bridge
   input  logic [    ETH_PC-1:0][2*REG_DATA_W-1:0] regf_ct_mem_addr,
   input  logic                 [  REG_DATA_W-1:0] regf_req_id,
   input  logic                 [  REG_DATA_W-1:0] regf_req_addr,
-  output logic                 [  REG_DATA_W-1:0] regf_notify_payload,
-  output logic                 [  REG_DATA_W-1:0] regf_read_payload,
+  output logic                 [  REG_DATA_W-1:0] regf_notify_req_id,
+  output logic                 [  REG_DATA_W-1:0] regf_notify_req_addr,
+  output logic                 [  REG_DATA_W-1:0] regf_read_req_id,
+  output logic                 [  REG_DATA_W-1:0] regf_read_addr,
   input  logic                 [  REG_DATA_W-1:0] regf_timeout_duration_notify,
   input  logic                 [  REG_DATA_W-1:0] regf_timeout_duration_read_req,
   // control ------------------------------------------------------------------
@@ -248,7 +250,8 @@ module mhdma_bridge
     .regf_ct_mem_addr                (regf_ct_mem_addr                        ),
     .regf_req_id                     (regf_req_id                             ),
     .regf_req_addr                   (regf_req_addr                           ),
-    .regf_read_payload               (regf_read_payload                       ),
+    .regf_read_req_id                (regf_read_req_id                        ),
+    .regf_read_addr                  (regf_read_addr                          ),
     .regf_timeout_duration_notify    (regf_timeout_duration_notify            ),
     .regf_timeout_duration_read_req  (regf_timeout_duration_read_req          ),
     // register control
@@ -306,7 +309,8 @@ module mhdma_bridge
     .m_axi4_rready                  (m_axi4_rready                            ),
     // regf interface ---------------------------------------------------------
     .regf_ct_mem_addr               (regf_ct_mem_addr                         ),
-    .regf_notify_payload            (regf_notify_payload                      ),
+    .regf_notify_req_id             (regf_notify_req_id                       ),
+    .regf_notify_req_addr           (regf_notify_req_addr                     ),
     // interrupt interface ----------------------------------------------------
     .clear_interrupt_notify         (clear_interrupt_notify                   ),
     .interrupt_notify               (interrupt_notify                         ),

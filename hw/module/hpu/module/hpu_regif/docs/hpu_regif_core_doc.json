@@ -5,8 +5,8 @@
   "offset": 0,
   "range": 393216,
   "ext_pkg": [
-    "axi_if_common_param_pkg",
-    "axi_if_shell_axil_pkg"
+    "axi_if_shell_axil_pkg",
+    "axi_if_common_param_pkg"
   ],
   "section": [
     {
@@ -4491,7 +4491,7 @@
       "description": "Request registers interface",
       "offset": 327936,
       "bytes_align": 4,
-      "range": 108,
+      "range": 116,
       "register": [
         {
           "name": "req_id",
@@ -4632,7 +4632,7 @@
           ]
         },
         {
-          "name": "notify",
+          "name": "notify_req_id",
           "description": "When a notify is received, this register will be updated",
           "owner": "Kernel",
           "read_access": "ReadNotify",
@@ -4643,7 +4643,15 @@
               "params": [],
               "name_val": [
                 [
-                  "iop_id",
+                  "rsvd",
+                  "'h0"
+                ],
+                [
+                  "flag",
+                  "'h0"
+                ],
+                [
+                  "mode",
                   "'h0"
                 ],
                 [
@@ -4651,7 +4659,11 @@
                   "'h0"
                 ],
                 [
-                  "src_addr",
+                  "req_id",
+                  "'h0"
+                ],
+                [
+                  "iop_id",
                   "'h0"
                 ]
               ]
@@ -4659,28 +4671,193 @@
           },
           "field": [
             {
-              "name": "iop_id",
-              "description": "what is the IOP ID of received Notify",
-              "size_b": 4,
+              "name": "rsvd",
+              "description": "Unused : reserved for latter ",
+              "size_b": 8,
               "offset_b": 0,
               "default": {
                 "Cst": 0
               }
             },
             {
-              "name": "node_id",
-              "description": "what HPU is the source of this Notify",
-              "size_b": 4,
-              "offset_b": 4,
+              "name": "flag",
+              "description": "flag ",
+              "size_b": 6,
+              "offset_b": 8,
               "default": {
                 "Cst": 0
               }
             },
             {
-              "name": "src_addr",
-              "description": "what is the source address of the ct notified",
+              "name": "mode",
+              "description": "mode ",
+              "size_b": 2,
+              "offset_b": 14,
+              "default": {
+                "Cst": 0
+              }
+            },
+            {
+              "name": "node_id",
+              "description": "node id or HPU id",
+              "size_b": 4,
+              "offset_b": 16,
+              "default": {
+                "Cst": 0
+              }
+            },
+            {
+              "name": "req_id",
+              "description": "request identifier",
+              "size_b": 4,
+              "offset_b": 20,
+              "default": {
+                "Cst": 0
+              }
+            },
+            {
+              "name": "iop_id",
+              "description": "IOP id from software point of view",
+              "size_b": 8,
+              "offset_b": 24,
+              "default": {
+                "Cst": 0
+              }
+            }
+          ]
+        },
+        {
+          "name": "notify_req_addr",
+          "description": "When a notify is received, this register will be updated",
+          "owner": "Kernel",
+          "read_access": "ReadNotify",
+          "write_access": "None",
+          "offset": 327948,
+          "default": {
+            "ParamsField": {
+              "params": [],
+              "name_val": [
+                [
+                  "src",
+                  "'h0"
+                ],
+                [
+                  "dst",
+                  "'h0"
+                ]
+              ]
+            }
+          },
+          "field": [
+            {
+              "name": "src",
+              "description": "ciphertext source address",
+              "size_b": 16,
+              "offset_b": 0,
+              "default": {
+                "Cst": 0
+              }
+            },
+            {
+              "name": "dst",
+              "description": "ciphertext destination address",
               "size_b": 16,
               "offset_b": 16,
+              "default": {
+                "Cst": 0
+              }
+            }
+          ]
+        },
+        {
+          "name": "read_request_req_id",
+          "description": "When a read request has bneen processed, this register will be updated",
+          "owner": "Kernel",
+          "read_access": "ReadNotify",
+          "write_access": "None",
+          "offset": 327952,
+          "default": {
+            "ParamsField": {
+              "params": [],
+              "name_val": [
+                [
+                  "rsvd",
+                  "'h0"
+                ],
+                [
+                  "flag",
+                  "'h0"
+                ],
+                [
+                  "mode",
+                  "'h0"
+                ],
+                [
+                  "node_id",
+                  "'h0"
+                ],
+                [
+                  "req_id",
+                  "'h0"
+                ],
+                [
+                  "iop_id",
+                  "'h0"
+                ]
+              ]
+            }
+          },
+          "field": [
+            {
+              "name": "rsvd",
+              "description": "Unused : reserved for latter ",
+              "size_b": 8,
+              "offset_b": 0,
+              "default": {
+                "Cst": 0
+              }
+            },
+            {
+              "name": "flag",
+              "description": "flag ",
+              "size_b": 6,
+              "offset_b": 8,
+              "default": {
+                "Cst": 0
+              }
+            },
+            {
+              "name": "mode",
+              "description": "mode ",
+              "size_b": 2,
+              "offset_b": 14,
+              "default": {
+                "Cst": 0
+              }
+            },
+            {
+              "name": "node_id",
+              "description": "node id or HPU id",
+              "size_b": 4,
+              "offset_b": 16,
+              "default": {
+                "Cst": 0
+              }
+            },
+            {
+              "name": "req_id",
+              "description": "request identifier",
+              "size_b": 4,
+              "offset_b": 20,
+              "default": {
+                "Cst": 0
+              }
+            },
+            {
+              "name": "iop_id",
+              "description": "IOP id from software point of view",
+              "size_b": 8,
+              "offset_b": 24,
               "default": {
                 "Cst": 0
               }
@@ -4693,21 +4870,17 @@
           "owner": "Kernel",
           "read_access": "ReadNotify",
           "write_access": "None",
-          "offset": 327948,
+          "offset": 327956,
           "default": {
             "ParamsField": {
               "params": [],
               "name_val": [
                 [
-                  "iop_id",
+                  "src",
                   "'h0"
                 ],
                 [
-                  "node_id",
-                  "'h0"
-                ],
-                [
-                  "dst_addr",
+                  "dst",
                   "'h0"
                 ]
               ]
@@ -4715,26 +4888,17 @@
           },
           "field": [
             {
-              "name": "iop_id",
-              "description": "what is the IOP ID of received ct",
-              "size_b": 4,
+              "name": "src",
+              "description": "ciphertext source address",
+              "size_b": 16,
               "offset_b": 0,
               "default": {
                 "Cst": 0
               }
             },
             {
-              "name": "node_id",
-              "description": "from what HPU has been retrieved this ct",
-              "size_b": 4,
-              "offset_b": 4,
-              "default": {
-                "Cst": 0
-              }
-            },
-            {
-              "name": "dst_addr",
-              "description": "where is the ct",
+              "name": "dst",
+              "description": "ciphertext destination address",
               "size_b": 16,
               "offset_b": 16,
               "default": {
@@ -4749,7 +4913,7 @@
           "owner": "Kernel",
           "read_access": "ReadNotify",
           "write_access": "None",
-          "offset": 327952,
+          "offset": 327960,
           "default": {
             "Cst": 0
           },
@@ -4761,7 +4925,7 @@
           "owner": "Kernel",
           "read_access": "ReadNotify",
           "write_access": "None",
-          "offset": 327956,
+          "offset": 327964,
           "default": {
             "Cst": 0
           },
@@ -4773,7 +4937,7 @@
           "owner": "Kernel",
           "read_access": "ReadNotify",
           "write_access": "None",
-          "offset": 327960,
+          "offset": 327968,
           "default": {
             "Cst": 0
           },
@@ -4785,7 +4949,7 @@
           "owner": "Kernel",
           "read_access": "ReadNotify",
           "write_access": "None",
-          "offset": 327964,
+          "offset": 327972,
           "default": {
             "Cst": 0
           },
@@ -4797,7 +4961,7 @@
           "owner": "Kernel",
           "read_access": "ReadNotify",
           "write_access": "None",
-          "offset": 327968,
+          "offset": 327976,
           "default": {
             "Cst": 0
           },
@@ -4809,7 +4973,7 @@
           "owner": "Kernel",
           "read_access": "ReadNotify",
           "write_access": "None",
-          "offset": 327972,
+          "offset": 327980,
           "default": {
             "Cst": 0
           },
@@ -4821,7 +4985,7 @@
           "owner": "Kernel",
           "read_access": "ReadNotify",
           "write_access": "None",
-          "offset": 327976,
+          "offset": 327984,
           "default": {
             "Cst": 0
           },
@@ -4833,7 +4997,7 @@
           "owner": "Kernel",
           "read_access": "ReadNotify",
           "write_access": "None",
-          "offset": 327980,
+          "offset": 327988,
           "default": {
             "Cst": 0
           },
@@ -4845,7 +5009,7 @@
           "owner": "Kernel",
           "read_access": "ReadNotify",
           "write_access": "None",
-          "offset": 327984,
+          "offset": 327992,
           "default": {
             "Cst": 0
           },
@@ -4857,7 +5021,7 @@
           "owner": "Kernel",
           "read_access": "ReadNotify",
           "write_access": "None",
-          "offset": 327988,
+          "offset": 327996,
           "default": {
             "Cst": 0
           },
@@ -4869,7 +5033,7 @@
           "owner": "Kernel",
           "read_access": "ReadNotify",
           "write_access": "None",
-          "offset": 327992,
+          "offset": 328000,
           "default": {
             "Cst": 0
           },
@@ -4881,7 +5045,7 @@
           "owner": "Kernel",
           "read_access": "ReadNotify",
           "write_access": "None",
-          "offset": 327996,
+          "offset": 328004,
           "default": {
             "Cst": 0
           },
@@ -4893,7 +5057,7 @@
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "None",
-          "offset": 328000,
+          "offset": 328008,
           "default": {
             "Cst": 0
           },
@@ -4905,7 +5069,7 @@
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "None",
-          "offset": 328004,
+          "offset": 328012,
           "default": {
             "Cst": 0
           },
@@ -4917,7 +5081,7 @@
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "None",
-          "offset": 328008,
+          "offset": 328016,
           "default": {
             "Cst": 0
           },
@@ -4929,7 +5093,7 @@
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "None",
-          "offset": 328012,
+          "offset": 328020,
           "default": {
             "Cst": 0
           },
@@ -4941,7 +5105,7 @@
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "None",
-          "offset": 328016,
+          "offset": 328024,
           "default": {
             "Cst": 0
           },
@@ -4953,7 +5117,7 @@
           "owner": "Kernel",
           "read_access": "ReadNotify",
           "write_access": "None",
-          "offset": 328020,
+          "offset": 328028,
           "default": {
             "Cst": 0
           },
@@ -4965,7 +5129,7 @@
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "None",
-          "offset": 328024,
+          "offset": 328032,
           "default": {
             "Cst": 0
           },
@@ -4977,7 +5141,7 @@
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "None",
-          "offset": 328028,
+          "offset": 328036,
           "default": {
             "Cst": 0
           },
@@ -4989,7 +5153,7 @@
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "None",
-          "offset": 328032,
+          "offset": 328040,
           "default": {
             "Cst": 0
           },
@@ -5001,7 +5165,7 @@
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "None",
-          "offset": 328036,
+          "offset": 328044,
           "default": {
             "Cst": 0
           },
@@ -5013,7 +5177,7 @@
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "None",
-          "offset": 328040,
+          "offset": 328048,
           "default": {
             "Cst": 0
           },

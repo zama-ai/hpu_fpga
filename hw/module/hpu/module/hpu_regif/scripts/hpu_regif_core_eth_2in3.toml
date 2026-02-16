@@ -87,12 +87,12 @@ offset= 0x100
   owner="User"
   read_access="Read"
   write_access="WriteNotify"
-  field.rsvd    = {size_b=8, offset_b=0,   default={Cst=0x0},    description="Unused : reserved for latter "}
-  field.flag    = {size_b=6, offset_b=8,   default={Cst=0x0},    description="flag "}
-  field.mode    = {size_b=2, offset_b=14,  default={Cst=0x0},    description="mode "}
-  field.node_id = {size_b=4,  offset_b=16, default={Cst=0x0},    description="node id or HPU id"}
-  field.req_id  = {size_b=4,  offset_b=20, default={Cst=0x0},    description="request identifier"}
-  field.iop_id  = {size_b=8,  offset_b=24, default={Cst=0x0},    description="IOP id from software point of view"}
+  field.rsvd    = {size_b=8, offset_b=0,  default={Cst=0x0}, description="Unused : reserved for latter "}
+  field.flag    = {size_b=6, offset_b=8,  default={Cst=0x0}, description="flag "}
+  field.mode    = {size_b=2, offset_b=14, default={Cst=0x0}, description="mode "}
+  field.node_id = {size_b=4, offset_b=16, default={Cst=0x0}, description="node id or HPU id"}
+  field.req_id  = {size_b=4, offset_b=20, default={Cst=0x0}, description="request identifier"}
+  field.iop_id  = {size_b=8, offset_b=24, default={Cst=0x0}, description="IOP id from software point of view"}
 
 [section.mhdma_request.register.req_addr]
   description="request address"
@@ -102,23 +102,45 @@ offset= 0x100
   field.src = {size_b=16, offset_b=0,  default={Cst=0x0}, description="ciphertext source address"}
   field.dst = {size_b=16, offset_b=16, default={Cst=0x0}, description="ciphertext destination address"}
 
-[section.mhdma_request.register.notify]
+[section.mhdma_request.register.notify_req_id]
   description="When a notify is received, this register will be updated"
   owner="Kernel"
   read_access="ReadNotify"
   write_access="None"
-  field.iop_id    = {size_b=4,  offset_b=0,  default={Cst=0x0}, description="what is the IOP ID of received Notify"}
-  field.node_id   = {size_b=4,  offset_b=4,  default={Cst=0x0}, description="what HPU is the source of this Notify"}
-  field.src_addr  = {size_b=16, offset_b=16, default={Cst=0x0}, description="what is the source address of the ct notified"}
+  field.rsvd    = {size_b=8, offset_b=0,   default={Cst=0x0},    description="Unused : reserved for latter "}
+  field.flag    = {size_b=6, offset_b=8,   default={Cst=0x0},    description="flag "}
+  field.mode    = {size_b=2, offset_b=14,  default={Cst=0x0},    description="mode "}
+  field.node_id = {size_b=4,  offset_b=16, default={Cst=0x0},    description="node id or HPU id"}
+  field.req_id  = {size_b=4,  offset_b=20, default={Cst=0x0},    description="request identifier"}
+  field.iop_id  = {size_b=8,  offset_b=24, default={Cst=0x0},    description="IOP id from software point of view"}
+
+[section.mhdma_request.register.notify_req_addr]
+  description="When a notify is received, this register will be updated"
+  owner="Kernel"
+  read_access="ReadNotify"
+  write_access="None"
+  field.src = {size_b=16, offset_b=0,  default={Cst=0x0}, description="ciphertext source address"}
+  field.dst = {size_b=16, offset_b=16, default={Cst=0x0}, description="ciphertext destination address"}
+
+[section.mhdma_request.register.read_request_req_id]
+  description="When a read request has bneen processed, this register will be updated"
+  owner="Kernel"
+  read_access="ReadNotify"
+  write_access="None"
+  field.rsvd    = {size_b=8, offset_b=0,   default={Cst=0x0},    description="Unused : reserved for latter "}
+  field.flag    = {size_b=6, offset_b=8,   default={Cst=0x0},    description="flag "}
+  field.mode    = {size_b=2, offset_b=14,  default={Cst=0x0},    description="mode "}
+  field.node_id = {size_b=4,  offset_b=16, default={Cst=0x0},    description="node id or HPU id"}
+  field.req_id  = {size_b=4,  offset_b=20, default={Cst=0x0},    description="request identifier"}
+  field.iop_id  = {size_b=8,  offset_b=24, default={Cst=0x0},    description="IOP id from software point of view"}
 
 [section.mhdma_request.register.read_request]
   description="When a read request has bneen processed, this register will be updated"
   owner="Kernel"
   read_access="ReadNotify"
   write_access="None"
-  field.iop_id    = {size_b=4,  offset_b=0,  default={Cst=0x0}, description="what is the IOP ID of received ct"}
-  field.node_id   = {size_b=4,  offset_b=4,  default={Cst=0x0}, description="from what HPU has been retrieved this ct"}
-  field.dst_addr  = {size_b=16, offset_b=16, default={Cst=0x0}, description="where is the ct"}
+  field.src = {size_b=16, offset_b=0,  default={Cst=0x0}, description="ciphertext source address"}
+  field.dst = {size_b=16, offset_b=16, default={Cst=0x0}, description="ciphertext destination address"}
 
 [section.mhdma_request.register.stat_notify]
   description="Number of notify that have been sent"

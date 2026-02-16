@@ -30,8 +30,8 @@
 //      : Value provided by the RTL. The host can read it with notify. The write data is processed by the RTL.
 // ============================================================================================== //
 module hpu_regif_core_eth_2in3
-import axi_if_common_param_pkg::*;
 import axi_if_shell_axil_pkg::*;
+import axi_if_common_param_pkg::*;
 import hpu_regif_core_eth_2in3_pkg::*;
 #()(
   input  logic                           clk,
@@ -95,10 +95,18 @@ import hpu_regif_core_eth_2in3_pkg::*;
   // Register IO: mhdma_request_req_addr
     , output mhdma_request_req_addr_t r_mhdma_request_req_addr
     , output logic r_mhdma_request_req_addr_wr_en
-  // Register IO: mhdma_request_notify
-    , output mhdma_request_notify_t r_mhdma_request_notify
-    , input  mhdma_request_notify_t r_mhdma_request_notify_upd
-    , output logic r_mhdma_request_notify_rd_en
+  // Register IO: mhdma_request_notify_req_id
+    , output mhdma_request_notify_req_id_t r_mhdma_request_notify_req_id
+    , input  mhdma_request_notify_req_id_t r_mhdma_request_notify_req_id_upd
+    , output logic r_mhdma_request_notify_req_id_rd_en
+  // Register IO: mhdma_request_notify_req_addr
+    , output mhdma_request_notify_req_addr_t r_mhdma_request_notify_req_addr
+    , input  mhdma_request_notify_req_addr_t r_mhdma_request_notify_req_addr_upd
+    , output logic r_mhdma_request_notify_req_addr_rd_en
+  // Register IO: mhdma_request_read_request_req_id
+    , output mhdma_request_read_request_req_id_t r_mhdma_request_read_request_req_id
+    , input  mhdma_request_read_request_req_id_t r_mhdma_request_read_request_req_id_upd
+    , output logic r_mhdma_request_read_request_req_id_rd_en
   // Register IO: mhdma_request_read_request
     , output mhdma_request_read_request_t r_mhdma_request_read_request
     , input  mhdma_request_read_request_t r_mhdma_request_read_request_upd
@@ -407,21 +415,41 @@ import hpu_regif_core_eth_2in3_pkg::*;
     mhdma_request_req_addr_default.src = 'h0;
     mhdma_request_req_addr_default.dst = 'h0;
   end
-//-- Default mhdma_request_notify
-  mhdma_request_notify_t mhdma_request_notify_default;
+//-- Default mhdma_request_notify_req_id
+  mhdma_request_notify_req_id_t mhdma_request_notify_req_id_default;
   always_comb begin
-    mhdma_request_notify_default = 'h0;
-    mhdma_request_notify_default.iop_id = 'h0;
-    mhdma_request_notify_default.node_id = 'h0;
-    mhdma_request_notify_default.src_addr = 'h0;
+    mhdma_request_notify_req_id_default = 'h0;
+    mhdma_request_notify_req_id_default.rsvd = 'h0;
+    mhdma_request_notify_req_id_default.flag = 'h0;
+    mhdma_request_notify_req_id_default.mode = 'h0;
+    mhdma_request_notify_req_id_default.node_id = 'h0;
+    mhdma_request_notify_req_id_default.req_id = 'h0;
+    mhdma_request_notify_req_id_default.iop_id = 'h0;
+  end
+//-- Default mhdma_request_notify_req_addr
+  mhdma_request_notify_req_addr_t mhdma_request_notify_req_addr_default;
+  always_comb begin
+    mhdma_request_notify_req_addr_default = 'h0;
+    mhdma_request_notify_req_addr_default.src = 'h0;
+    mhdma_request_notify_req_addr_default.dst = 'h0;
+  end
+//-- Default mhdma_request_read_request_req_id
+  mhdma_request_read_request_req_id_t mhdma_request_read_request_req_id_default;
+  always_comb begin
+    mhdma_request_read_request_req_id_default = 'h0;
+    mhdma_request_read_request_req_id_default.rsvd = 'h0;
+    mhdma_request_read_request_req_id_default.flag = 'h0;
+    mhdma_request_read_request_req_id_default.mode = 'h0;
+    mhdma_request_read_request_req_id_default.node_id = 'h0;
+    mhdma_request_read_request_req_id_default.req_id = 'h0;
+    mhdma_request_read_request_req_id_default.iop_id = 'h0;
   end
 //-- Default mhdma_request_read_request
   mhdma_request_read_request_t mhdma_request_read_request_default;
   always_comb begin
     mhdma_request_read_request_default = 'h0;
-    mhdma_request_read_request_default.iop_id = 'h0;
-    mhdma_request_read_request_default.node_id = 'h0;
-    mhdma_request_read_request_default.dst_addr = 'h0;
+    mhdma_request_read_request_default.src = 'h0;
+    mhdma_request_read_request_default.dst = 'h0;
   end
 //-- Default mhdma_request_stat_notify
   logic [REG_DATA_W-1:0]mhdma_request_stat_notify_default;
@@ -718,11 +746,21 @@ import hpu_regif_core_eth_2in3_pkg::*;
       r_mhdma_request_req_addr       <= r_mhdma_request_req_addrD;
     end
   end
-// Register FF: mhdma_request_notify
-  logic [REG_DATA_W-1:0] r_mhdma_request_notifyD;
-  assign r_mhdma_request_notifyD       = r_mhdma_request_notify_upd;
-  assign r_mhdma_request_notify_rd_en = rd_en_ok && (rd_add[AXIL_ADD_RANGE_W-1:0] == MHDMA_REQUEST_NOTIFY_OFS[AXIL_ADD_RANGE_W-1:0]);
-  assign r_mhdma_request_notify = r_mhdma_request_notify_upd;
+// Register FF: mhdma_request_notify_req_id
+  logic [REG_DATA_W-1:0] r_mhdma_request_notify_req_idD;
+  assign r_mhdma_request_notify_req_idD       = r_mhdma_request_notify_req_id_upd;
+  assign r_mhdma_request_notify_req_id_rd_en = rd_en_ok && (rd_add[AXIL_ADD_RANGE_W-1:0] == MHDMA_REQUEST_NOTIFY_REQ_ID_OFS[AXIL_ADD_RANGE_W-1:0]);
+  assign r_mhdma_request_notify_req_id = r_mhdma_request_notify_req_id_upd;
+// Register FF: mhdma_request_notify_req_addr
+  logic [REG_DATA_W-1:0] r_mhdma_request_notify_req_addrD;
+  assign r_mhdma_request_notify_req_addrD       = r_mhdma_request_notify_req_addr_upd;
+  assign r_mhdma_request_notify_req_addr_rd_en = rd_en_ok && (rd_add[AXIL_ADD_RANGE_W-1:0] == MHDMA_REQUEST_NOTIFY_REQ_ADDR_OFS[AXIL_ADD_RANGE_W-1:0]);
+  assign r_mhdma_request_notify_req_addr = r_mhdma_request_notify_req_addr_upd;
+// Register FF: mhdma_request_read_request_req_id
+  logic [REG_DATA_W-1:0] r_mhdma_request_read_request_req_idD;
+  assign r_mhdma_request_read_request_req_idD       = r_mhdma_request_read_request_req_id_upd;
+  assign r_mhdma_request_read_request_req_id_rd_en = rd_en_ok && (rd_add[AXIL_ADD_RANGE_W-1:0] == MHDMA_REQUEST_READ_REQUEST_REQ_ID_OFS[AXIL_ADD_RANGE_W-1:0]);
+  assign r_mhdma_request_read_request_req_id = r_mhdma_request_read_request_req_id_upd;
 // Register FF: mhdma_request_read_request
   logic [REG_DATA_W-1:0] r_mhdma_request_read_requestD;
   assign r_mhdma_request_read_requestD       = r_mhdma_request_read_request_upd;
@@ -1028,8 +1066,14 @@ import hpu_regif_core_eth_2in3_pkg::*;
           MHDMA_REQUEST_REQ_ADDR_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register mhdma_request_req_addr
             axil_rdataD = r_mhdma_request_req_addr;
           end
-          MHDMA_REQUEST_NOTIFY_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register mhdma_request_notify
-            axil_rdataD = r_mhdma_request_notify;
+          MHDMA_REQUEST_NOTIFY_REQ_ID_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register mhdma_request_notify_req_id
+            axil_rdataD = r_mhdma_request_notify_req_id;
+          end
+          MHDMA_REQUEST_NOTIFY_REQ_ADDR_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register mhdma_request_notify_req_addr
+            axil_rdataD = r_mhdma_request_notify_req_addr;
+          end
+          MHDMA_REQUEST_READ_REQUEST_REQ_ID_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register mhdma_request_read_request_req_id
+            axil_rdataD = r_mhdma_request_read_request_req_id;
           end
           MHDMA_REQUEST_READ_REQUEST_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register mhdma_request_read_request
             axil_rdataD = r_mhdma_request_read_request;

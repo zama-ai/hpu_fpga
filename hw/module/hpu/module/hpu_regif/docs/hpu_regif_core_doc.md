@@ -17,7 +17,7 @@ HPU ethernet configuration register interface. Will be accessed by RPU to define
 **Offset**: 0x0
 **Range**: 0x60000
 **Word Size (b)**: 32
-**External Packages**: "axi_if_common_param_pkg.sv","axi_if_shell_axil_pkg.sv"
+**External Packages**: "axi_if_shell_axil_pkg.sv","axi_if_common_param_pkg.sv"
 
 
 ---
@@ -46,7 +46,7 @@ Below is a summary of all the registers in the current register map:
 | [runtime_3in3](#section-runtime-3in3) | 0x32000 | 0x48 | Runtime information |
 | [mhdma_system](#section-mhdma-system) | 0x50000 | 0x34 | system configuration |
 | [mhdma_reset](#section-mhdma-reset) | 0x50090 | 0x8 | Controllable resets for transceivers |
-| [mhdma_request](#section-mhdma-request) | 0x50100 | 0x6c | Request registers interface |
+| [mhdma_request](#section-mhdma-request) | 0x50100 | 0x74 | Request registers interface |
 | [mhdma_lane](#section-mhdma-lane) | 0x50200 | 0x4 | Line parameter sections |
 | [mhdma_hbm_axi4_addr_2in3](#section-mhdma-hbm-axi4-addr-2in3) | 0x51000 | 0x10 | HBM AXI4 connection address offset |
 
@@ -4353,31 +4353,33 @@ Below is a summary of all the registers in the current section mhdma_request:
 |-----------------:|:------:|:------:|:------------|
 | [req_id](#register-mhdma-requestreq-id) | 0x50100 | RW |  Different parameters for qsfp lines |
 | [req_addr](#register-mhdma-requestreq-addr) | 0x50104 | RW |  request address |
-| [notify](#register-mhdma-requestnotify) | 0x50108 | R. |  When a notify is received, this register will be updated |
-| [read_request](#register-mhdma-requestread-request) | 0x5010c | R. |  When a read request has bneen processed, this register will be updated |
-| [stat_notify](#register-mhdma-requeststat-notify) | 0x50110 | R. |  Number of notify that have been sent |
-| [stat_notify_ack](#register-mhdma-requeststat-notify-ack) | 0x50114 | R. |  Number of notify ack that have been received |
-| [stat_notify_timeout_retry](#register-mhdma-requeststat-notify-timeout-retry) | 0x50118 | R. |  Number of retries that have been done |
-| [stat_read_req_timeout_retry](#register-mhdma-requeststat-read-req-timeout-retry) | 0x5011c | R. |  Number of retries that have been done |
-| [stat_nb_nack_received](#register-mhdma-requeststat-nb-nack-received) | 0x50120 | R. |  timeout counter on notify |
-| [stat_nb_notify_received](#register-mhdma-requeststat-nb-notify-received) | 0x50124 | R. |  timeout counter on notify |
-| [stat_nb_read_req_received](#register-mhdma-requeststat-nb-read-req-received) | 0x50128 | R. |  timeout counter on notify |
-| [stat_nb_ce_received](#register-mhdma-requeststat-nb-ce-received) | 0x5012c | R. |  timeout counter on notify |
-| [stat_nb_read_to_hbm](#register-mhdma-requeststat-nb-read-to-hbm) | 0x50130 | R. |  counter of number of reads to HBM executed |
-| [stat_nb_words_received_pc_pc0](#register-mhdma-requeststat-nb-words-received-pc-pc0) | 0x50134 | R. |  counter of number of words received by HBM |
-| [stat_nb_words_received_pc_pc1](#register-mhdma-requeststat-nb-words-received-pc-pc1) | 0x50138 | R. |  counter of number of words received by HBM |
-| [stat_nb_ce_words_received](#register-mhdma-requeststat-nb-ce-words-received) | 0x5013c | R. |  number of words received during ciphertext reception |
-| [stat_t_notify_to_ack](#register-mhdma-requeststat-t-notify-to-ack) | 0x50140 | R. |  time between notify tlast and ack reception in decoder |
-| [stat_t_rr_to_ce_received](#register-mhdma-requeststat-t-rr-to-ce-received) | 0x50144 | R. |  time between read request tlast and all pkt received from ce |
-| [stat_t_ce_first_to_last_pkt](#register-mhdma-requeststat-t-ce-first-to-last-pkt) | 0x50148 | R. |  time between first and last pkt on ce |
-| [stat_t_rr_wait_words_pc_pc0](#register-mhdma-requeststat-t-rr-wait-words-pc-pc0) | 0x5014c | R. |  time spent waiting for reads in hbm |
-| [stat_t_rr_wait_words_pc_pc1](#register-mhdma-requeststat-t-rr-wait-words-pc-pc1) | 0x50150 | R. |  time spent waiting for reads in hbm |
-| [stat_notify_timeout](#register-mhdma-requeststat-notify-timeout) | 0x50154 | R. |  timeout counter on notify |
-| [stat_physical_addr_pc0_lsb](#register-mhdma-requeststat-physical-addr-pc0-lsb) | 0x50158 | R. |  timeout counter on notify |
-| [stat_physical_addr_pc0_msb](#register-mhdma-requeststat-physical-addr-pc0-msb) | 0x5015c | R. |  timeout counter on notify |
-| [stat_physical_addr_pc1_lsb](#register-mhdma-requeststat-physical-addr-pc1-lsb) | 0x50160 | R. |  timeout counter on notify |
-| [stat_physical_addr_pc1_msb](#register-mhdma-requeststat-physical-addr-pc1-msb) | 0x50164 | R. |  timeout counter on notify |
-| [stat_cnt_nb_write_complete](#register-mhdma-requeststat-cnt-nb-write-complete) | 0x50168 | R. |  timeout counter on notify |
+| [notify_req_id](#register-mhdma-requestnotify-req-id) | 0x50108 | R. |  When a notify is received, this register will be updated |
+| [notify_req_addr](#register-mhdma-requestnotify-req-addr) | 0x5010c | R. |  When a notify is received, this register will be updated |
+| [read_request_req_id](#register-mhdma-requestread-request-req-id) | 0x50110 | R. |  When a read request has bneen processed, this register will be updated |
+| [read_request](#register-mhdma-requestread-request) | 0x50114 | R. |  When a read request has bneen processed, this register will be updated |
+| [stat_notify](#register-mhdma-requeststat-notify) | 0x50118 | R. |  Number of notify that have been sent |
+| [stat_notify_ack](#register-mhdma-requeststat-notify-ack) | 0x5011c | R. |  Number of notify ack that have been received |
+| [stat_notify_timeout_retry](#register-mhdma-requeststat-notify-timeout-retry) | 0x50120 | R. |  Number of retries that have been done |
+| [stat_read_req_timeout_retry](#register-mhdma-requeststat-read-req-timeout-retry) | 0x50124 | R. |  Number of retries that have been done |
+| [stat_nb_nack_received](#register-mhdma-requeststat-nb-nack-received) | 0x50128 | R. |  timeout counter on notify |
+| [stat_nb_notify_received](#register-mhdma-requeststat-nb-notify-received) | 0x5012c | R. |  timeout counter on notify |
+| [stat_nb_read_req_received](#register-mhdma-requeststat-nb-read-req-received) | 0x50130 | R. |  timeout counter on notify |
+| [stat_nb_ce_received](#register-mhdma-requeststat-nb-ce-received) | 0x50134 | R. |  timeout counter on notify |
+| [stat_nb_read_to_hbm](#register-mhdma-requeststat-nb-read-to-hbm) | 0x50138 | R. |  counter of number of reads to HBM executed |
+| [stat_nb_words_received_pc_pc0](#register-mhdma-requeststat-nb-words-received-pc-pc0) | 0x5013c | R. |  counter of number of words received by HBM |
+| [stat_nb_words_received_pc_pc1](#register-mhdma-requeststat-nb-words-received-pc-pc1) | 0x50140 | R. |  counter of number of words received by HBM |
+| [stat_nb_ce_words_received](#register-mhdma-requeststat-nb-ce-words-received) | 0x50144 | R. |  number of words received during ciphertext reception |
+| [stat_t_notify_to_ack](#register-mhdma-requeststat-t-notify-to-ack) | 0x50148 | R. |  time between notify tlast and ack reception in decoder |
+| [stat_t_rr_to_ce_received](#register-mhdma-requeststat-t-rr-to-ce-received) | 0x5014c | R. |  time between read request tlast and all pkt received from ce |
+| [stat_t_ce_first_to_last_pkt](#register-mhdma-requeststat-t-ce-first-to-last-pkt) | 0x50150 | R. |  time between first and last pkt on ce |
+| [stat_t_rr_wait_words_pc_pc0](#register-mhdma-requeststat-t-rr-wait-words-pc-pc0) | 0x50154 | R. |  time spent waiting for reads in hbm |
+| [stat_t_rr_wait_words_pc_pc1](#register-mhdma-requeststat-t-rr-wait-words-pc-pc1) | 0x50158 | R. |  time spent waiting for reads in hbm |
+| [stat_notify_timeout](#register-mhdma-requeststat-notify-timeout) | 0x5015c | R. |  timeout counter on notify |
+| [stat_physical_addr_pc0_lsb](#register-mhdma-requeststat-physical-addr-pc0-lsb) | 0x50160 | R. |  timeout counter on notify |
+| [stat_physical_addr_pc0_msb](#register-mhdma-requeststat-physical-addr-pc0-msb) | 0x50164 | R. |  timeout counter on notify |
+| [stat_physical_addr_pc1_lsb](#register-mhdma-requeststat-physical-addr-pc1-lsb) | 0x50168 | R. |  timeout counter on notify |
+| [stat_physical_addr_pc1_msb](#register-mhdma-requeststat-physical-addr-pc1-msb) | 0x5016c | R. |  timeout counter on notify |
+| [stat_cnt_nb_write_complete](#register-mhdma-requeststat-cnt-nb-write-complete) | 0x50170 | R. |  timeout counter on notify |
 
 
 ---
@@ -4435,7 +4437,7 @@ Register req_addr contains following Sub-fields:
 ---
 
 
-### Register mhdma-request.notify
+### Register mhdma-request.notify-req-id
 
 - **Description**: When a notify is received, this register will be updated
 - **Owner**: Kernel
@@ -4447,13 +4449,68 @@ Register req_addr contains following Sub-fields:
 
 #### Field Details
 
-Register notify contains following Sub-fields:
+Register notify_req_id contains following Sub-fields:
 
 | Field Name | Offset_b | Size_b | Default      | Description   |
 |-----------:|:--------:|:------:|:------------:|:--------------|
-| iop_id      | 0 | 4 |0| what is the IOP ID of received Notify |
-| node_id      | 4 | 4 |0| what HPU is the source of this Notify |
-| src_addr      | 16 | 16 |0| what is the source address of the ct notified |
+| rsvd      | 0 | 8 |0| Unused : reserved for latter  |
+| flag      | 8 | 6 |0| flag  |
+| mode      | 14 | 2 |0| mode  |
+| node_id      | 16 | 4 |0| node id or HPU id |
+| req_id      | 20 | 4 |0| request identifier |
+| iop_id      | 24 | 8 |0| IOP id from software point of view |
+
+
+
+---
+
+
+### Register mhdma-request.notify-req-addr
+
+- **Description**: When a notify is received, this register will be updated
+- **Owner**: Kernel
+- **Read Access**: ReadNotify
+- **Write Access**: None
+- **Offset**: 0x5010c
+- **Default**: C.f. fields
+
+
+#### Field Details
+
+Register notify_req_addr contains following Sub-fields:
+
+| Field Name | Offset_b | Size_b | Default      | Description   |
+|-----------:|:--------:|:------:|:------------:|:--------------|
+| src      | 0 | 16 |0| ciphertext source address |
+| dst      | 16 | 16 |0| ciphertext destination address |
+
+
+
+---
+
+
+### Register mhdma-request.read-request-req-id
+
+- **Description**: When a read request has bneen processed, this register will be updated
+- **Owner**: Kernel
+- **Read Access**: ReadNotify
+- **Write Access**: None
+- **Offset**: 0x50110
+- **Default**: C.f. fields
+
+
+#### Field Details
+
+Register read_request_req_id contains following Sub-fields:
+
+| Field Name | Offset_b | Size_b | Default      | Description   |
+|-----------:|:--------:|:------:|:------------:|:--------------|
+| rsvd      | 0 | 8 |0| Unused : reserved for latter  |
+| flag      | 8 | 6 |0| flag  |
+| mode      | 14 | 2 |0| mode  |
+| node_id      | 16 | 4 |0| node id or HPU id |
+| req_id      | 20 | 4 |0| request identifier |
+| iop_id      | 24 | 8 |0| IOP id from software point of view |
 
 
 
@@ -4466,7 +4523,7 @@ Register notify contains following Sub-fields:
 - **Owner**: Kernel
 - **Read Access**: ReadNotify
 - **Write Access**: None
-- **Offset**: 0x5010c
+- **Offset**: 0x50114
 - **Default**: C.f. fields
 
 
@@ -4476,9 +4533,8 @@ Register read_request contains following Sub-fields:
 
 | Field Name | Offset_b | Size_b | Default      | Description   |
 |-----------:|:--------:|:------:|:------------:|:--------------|
-| iop_id      | 0 | 4 |0| what is the IOP ID of received ct |
-| node_id      | 4 | 4 |0| from what HPU has been retrieved this ct |
-| dst_addr      | 16 | 16 |0| where is the ct |
+| src      | 0 | 16 |0| ciphertext source address |
+| dst      | 16 | 16 |0| ciphertext destination address |
 
 
 
@@ -4491,7 +4547,7 @@ Register read_request contains following Sub-fields:
 - **Owner**: Kernel
 - **Read Access**: ReadNotify
 - **Write Access**: None
-- **Offset**: 0x50110
+- **Offset**: 0x50118
 - **Default**: 0
 
 
@@ -4506,7 +4562,7 @@ Register read_request contains following Sub-fields:
 - **Owner**: Kernel
 - **Read Access**: ReadNotify
 - **Write Access**: None
-- **Offset**: 0x50114
+- **Offset**: 0x5011c
 - **Default**: 0
 
 
@@ -4521,7 +4577,7 @@ Register read_request contains following Sub-fields:
 - **Owner**: Kernel
 - **Read Access**: ReadNotify
 - **Write Access**: None
-- **Offset**: 0x50118
+- **Offset**: 0x50120
 - **Default**: 0
 
 
@@ -4536,7 +4592,7 @@ Register read_request contains following Sub-fields:
 - **Owner**: Kernel
 - **Read Access**: ReadNotify
 - **Write Access**: None
-- **Offset**: 0x5011c
+- **Offset**: 0x50124
 - **Default**: 0
 
 
@@ -4551,7 +4607,7 @@ Register read_request contains following Sub-fields:
 - **Owner**: Kernel
 - **Read Access**: ReadNotify
 - **Write Access**: None
-- **Offset**: 0x50120
+- **Offset**: 0x50128
 - **Default**: 0
 
 
@@ -4566,7 +4622,7 @@ Register read_request contains following Sub-fields:
 - **Owner**: Kernel
 - **Read Access**: ReadNotify
 - **Write Access**: None
-- **Offset**: 0x50124
+- **Offset**: 0x5012c
 - **Default**: 0
 
 
@@ -4581,7 +4637,7 @@ Register read_request contains following Sub-fields:
 - **Owner**: Kernel
 - **Read Access**: ReadNotify
 - **Write Access**: None
-- **Offset**: 0x50128
+- **Offset**: 0x50130
 - **Default**: 0
 
 
@@ -4596,7 +4652,7 @@ Register read_request contains following Sub-fields:
 - **Owner**: Kernel
 - **Read Access**: ReadNotify
 - **Write Access**: None
-- **Offset**: 0x5012c
+- **Offset**: 0x50134
 - **Default**: 0
 
 
@@ -4611,7 +4667,7 @@ Register read_request contains following Sub-fields:
 - **Owner**: Kernel
 - **Read Access**: ReadNotify
 - **Write Access**: None
-- **Offset**: 0x50130
+- **Offset**: 0x50138
 - **Default**: 0
 
 
@@ -4626,7 +4682,7 @@ Register read_request contains following Sub-fields:
 - **Owner**: Kernel
 - **Read Access**: ReadNotify
 - **Write Access**: None
-- **Offset**: 0x50134
+- **Offset**: 0x5013c
 - **Default**: 0
 
 
@@ -4641,7 +4697,7 @@ Register read_request contains following Sub-fields:
 - **Owner**: Kernel
 - **Read Access**: ReadNotify
 - **Write Access**: None
-- **Offset**: 0x50138
+- **Offset**: 0x50140
 - **Default**: 0
 
 
@@ -4656,7 +4712,7 @@ Register read_request contains following Sub-fields:
 - **Owner**: Kernel
 - **Read Access**: ReadNotify
 - **Write Access**: None
-- **Offset**: 0x5013c
+- **Offset**: 0x50144
 - **Default**: 0
 
 
@@ -4671,7 +4727,7 @@ Register read_request contains following Sub-fields:
 - **Owner**: Kernel
 - **Read Access**: Read
 - **Write Access**: None
-- **Offset**: 0x50140
+- **Offset**: 0x50148
 - **Default**: 0
 
 
@@ -4686,7 +4742,7 @@ Register read_request contains following Sub-fields:
 - **Owner**: Kernel
 - **Read Access**: Read
 - **Write Access**: None
-- **Offset**: 0x50144
+- **Offset**: 0x5014c
 - **Default**: 0
 
 
@@ -4701,7 +4757,7 @@ Register read_request contains following Sub-fields:
 - **Owner**: Kernel
 - **Read Access**: Read
 - **Write Access**: None
-- **Offset**: 0x50148
+- **Offset**: 0x50150
 - **Default**: 0
 
 
@@ -4716,7 +4772,7 @@ Register read_request contains following Sub-fields:
 - **Owner**: Kernel
 - **Read Access**: Read
 - **Write Access**: None
-- **Offset**: 0x5014c
+- **Offset**: 0x50154
 - **Default**: 0
 
 
@@ -4731,7 +4787,7 @@ Register read_request contains following Sub-fields:
 - **Owner**: Kernel
 - **Read Access**: Read
 - **Write Access**: None
-- **Offset**: 0x50150
+- **Offset**: 0x50158
 - **Default**: 0
 
 
@@ -4746,7 +4802,7 @@ Register read_request contains following Sub-fields:
 - **Owner**: Kernel
 - **Read Access**: ReadNotify
 - **Write Access**: None
-- **Offset**: 0x50154
+- **Offset**: 0x5015c
 - **Default**: 0
 
 
@@ -4761,7 +4817,7 @@ Register read_request contains following Sub-fields:
 - **Owner**: Kernel
 - **Read Access**: Read
 - **Write Access**: None
-- **Offset**: 0x50158
+- **Offset**: 0x50160
 - **Default**: 0
 
 
@@ -4776,7 +4832,7 @@ Register read_request contains following Sub-fields:
 - **Owner**: Kernel
 - **Read Access**: Read
 - **Write Access**: None
-- **Offset**: 0x5015c
+- **Offset**: 0x50164
 - **Default**: 0
 
 
@@ -4791,7 +4847,7 @@ Register read_request contains following Sub-fields:
 - **Owner**: Kernel
 - **Read Access**: Read
 - **Write Access**: None
-- **Offset**: 0x50160
+- **Offset**: 0x50168
 - **Default**: 0
 
 
@@ -4806,7 +4862,7 @@ Register read_request contains following Sub-fields:
 - **Owner**: Kernel
 - **Read Access**: Read
 - **Write Access**: None
-- **Offset**: 0x50164
+- **Offset**: 0x5016c
 - **Default**: 0
 
 
@@ -4821,7 +4877,7 @@ Register read_request contains following Sub-fields:
 - **Owner**: Kernel
 - **Read Access**: Read
 - **Write Access**: None
-- **Offset**: 0x50168
+- **Offset**: 0x50170
 - **Default**: 0
 
 
