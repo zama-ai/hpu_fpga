@@ -584,8 +584,18 @@ module mhdma_master
     end
   end
 
-  assign fifo_cerx_in_vld  = decoder_rx_tvalid & ce_valid;
-  assign fifo_cerx_in_data = decoder_rx_tdata;
+  // Register decoder payload to align with rr_packets_rdy / seq_num_mismatch timing.
+  // Without this, payload data arrives one cycle before the seq_num check can gate ce_valid.
+  logic                    decoder_rx_tvalid_Q;
+  logic [MRMAC_AXIS_W-1:0] decoder_rx_tdata_Q;
+
+  always_ff @(posedge clk_mrmac) begin
+    decoder_rx_tvalid_Q <= decoder_rx_tvalid;
+    decoder_rx_tdata_Q  <= decoder_rx_tdata;
+  end
+
+  assign fifo_cerx_in_vld  = decoder_rx_tvalid_Q & ce_valid;
+  assign fifo_cerx_in_data = decoder_rx_tdata_Q;
 
   fifo_ram_rdy_vld # (
     .WIDTH             (MRMAC_AXIS_W    ),
