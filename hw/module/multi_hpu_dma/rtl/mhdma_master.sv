@@ -392,7 +392,7 @@ module mhdma_master
     // MRMAC domain
     .out_clk     (clk_mrmac),
     .out_rstn    (resetn_mrmac),
-    .out_data    ({rrqq_cmd.iop_id, rrqq_cmd.req_id, rrqq_cmd.hpu_id, rrqq_cmd.rsvd, rrqq_cmd.flag, rrqq_cmd.mode, rrqq_cmd.dst_addr, rrqq_cmd.src_addr}),
+    .out_data    ({rrqq_cmd.iop_id, rrqq_cmd.req_id, rrqq_cmd.hpu_id, rrqq_cmd.mode, rrqq_cmd.flag, rrqq_cmd.rsvd, rrqq_cmd.dst_addr, rrqq_cmd.src_addr}),
     .out_rdy     (rrqq_cmd_rdy),
     .out_vld     (rrqq_cmd_vld)
   );
@@ -454,7 +454,7 @@ module mhdma_master
     //  MRMAC domain
     .out_clk     (clk_mrmac),
     .out_rstn    (resetn_mrmac),
-    .out_data    ({nrqq_cmd_data.iop_id, nrqq_cmd_data.req_id, nrqq_cmd_data.hpu_id, nrqq_cmd_data.rsvd, nrqq_cmd_data.flag, nrqq_cmd_data.mode, nrqq_cmd_data.dst_addr, nrqq_cmd_data.src_addr}),
+    .out_data    ({nrqq_cmd_data.iop_id, nrqq_cmd_data.req_id, nrqq_cmd_data.hpu_id, nrqq_cmd_data.mode, nrqq_cmd_data.flag, nrqq_cmd_data.rsvd, nrqq_cmd_data.dst_addr, nrqq_cmd_data.src_addr}),
     .out_rdy     (nrqq_cmd_rdy),
     .out_vld     (nrqq_cmd_vld)
   );
@@ -475,11 +475,11 @@ module mhdma_master
     .clk         (clk_mrmac   ),
     .s_rst_n     (resetn_mrmac),
 
-    .in_data     ({nrqq_cmd_data.iop_id, nrqq_cmd_data.hpu_id, nrqq_cmd_data.rsvd, nrqq_cmd_data.flag, nrqq_cmd_data.mode, nrqq_cmd_data.dst_addr, nrqq_cmd_data.src_addr}),
+    .in_data     ({nrqq_cmd_data.iop_id, nrqq_cmd_data.hpu_id, nrqq_cmd_data.mode, nrqq_cmd_data.flag, nrqq_cmd_data.rsvd, nrqq_cmd_data.dst_addr, nrqq_cmd_data.src_addr}),
     .in_vld      (start_notify_request),
     .in_rdy      (nrqq_retry_in_rdy   ),
 
-    .out_data    ({nrqq_retry_data.iop_id, nrqq_retry_data.hpu_id, nrqq_retry_data.rsvd, nrqq_retry_data.flag, nrqq_retry_data.mode, nrqq_retry_data.dst_addr, nrqq_retry_data.src_addr}),
+    .out_data    ({nrqq_retry_data.iop_id, nrqq_retry_data.hpu_id, nrqq_retry_data.mode, nrqq_retry_data.flag, nrqq_retry_data.rsvd, nrqq_retry_data.dst_addr, nrqq_retry_data.src_addr}),
     .out_vld     (nrqq_retry_vld),
     .out_rdy     (nrqq_retry_rdy),
 

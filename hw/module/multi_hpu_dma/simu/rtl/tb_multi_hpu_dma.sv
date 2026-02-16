@@ -1018,7 +1018,7 @@ module tb_multi_hpu_dma;
     begin
       // see package
       read_req_addr = {dest_addr, src_addr};
-      read_req_id = {iop_id, REQ_ID_READ, node_id, 8'h0, req_flag, req_mode};
+      read_req_id = {iop_id, REQ_ID_READ, node_id, req_mode, req_flag, 8'h0};
 
       gen_maxil_if[0].maxil_if.write_trans(MHDMA_REQUEST_REQ_ADDR_OFS, read_req_addr);
       gen_maxil_if[0].maxil_if.write_trans(MHDMA_REQUEST_REQ_ID_OFS, read_req_id);
@@ -1044,7 +1044,7 @@ module tb_multi_hpu_dma;
     begin
 
       read_req_addr = {16'b0, src_addr};
-      read_req_id = {iop_id, REQ_ID_NOTIFY, dst_node_id, 8'h0, req_flag, req_mode};
+      read_req_id = {iop_id, REQ_ID_NOTIFY, dst_node_id, req_mode, req_flag, 8'h0};
 
       if (src_node_id == random_hpu_a) begin
         gen_maxil_if[0].maxil_if.write_trans(MHDMA_REQUEST_REQ_ADDR_OFS, read_req_addr);
