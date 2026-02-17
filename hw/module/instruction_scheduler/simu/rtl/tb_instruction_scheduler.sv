@@ -40,7 +40,8 @@ module tb_instruction_scheduler;
   localparam string FILE_ASM_INSN    = "input/dop_stream.hex";
   localparam int    ASM_INSN_HALT    = 2; // Chance to draw long delay over 255 values
 
-  localparam int DOP_SYNC_WORD = 'h4000fff0;
+  localparam int DOP_SYNC_WORD = 'hBC00fff0;
+  localparam int DOP_SYNC_OPCODE = 'h2F;
   localparam int DOP_ITER = 4;
 
   // Max time take by fake pe
@@ -124,7 +125,7 @@ module tb_instruction_scheduler;
   logic[PE_INST_W-1: 0] insn_pld;
   logic                 insn_vld;
   logic                 insn_ack_rdy;
-  logic[PE_INST_W-1: 0] insn_ack_cnt;
+  logic[PE_INST_W-1: 0] insn_ack;
   logic                 insn_ack_vld;
   logic                 insn_ack_int;
 
@@ -176,7 +177,7 @@ module tb_instruction_scheduler;
     .insn_vld(insn_vld),
 
     .insn_ack_rdy(insn_ack_rdy),
-    .insn_ack_cnt(insn_ack_cnt),
+    .insn_ack    (insn_ack),
     .insn_ack_vld(insn_ack_vld),
     .insn_ack_int(insn_ack_int),
 
@@ -228,7 +229,7 @@ module tb_instruction_scheduler;
   ) axis_insn_ack_ep ( .clk(clk), .rst_n(s_rst_n));
 
   // Connect interface on testbench signals
-  assign axis_insn_ack_ep.tdata = insn_ack_cnt;
+  assign axis_insn_ack_ep.tdata = insn_ack;
   assign insn_ack_rdy = axis_insn_ack_ep.tready;
   assign axis_insn_ack_ep.tvalid = insn_ack_vld;
 
@@ -471,9 +472,10 @@ endtask
   bit [PE_INST_W-1: 0] insn_retire;
   bit [PE_INST_W-1: 0] retire_q[$];
   bit _is_last;
-  bit [PE_INST_W-1: 0] _iop_retire;
+  bit [PE_INST_W-1: 0] iop_ack;
 
   int order_errors;
+  int insert_idx;
 
   initial begin
   // Init axis
@@ -483,6 +485,18 @@ endtask
 
   // Read insn from file
   read_insn_stream(insn_q, insn_cnt);
+  $display("%t > INFO: read %d DOp instructions", $time, insn_cnt);
+  insert_idx = $urandom % (insn_cnt/3);
+
+  repeat($urandom() % 5) begin
+    $display("%t > INFO: introduced inner sync %08x at index", $time, 32'hBC07F800, insert_idx);
+    insn_q.insert(insert_idx, 32'hBC07F800);
+    insert_idx+= ($urandom() % 10) + 10;
+    insn_cnt++;
+    if (insert_idx > insn_cnt) begin
+      break;
+    end
+  end
 
   while (!s_rst_n) @(posedge clk);
   repeat(1000) @(posedge clk);
@@ -493,7 +507,9 @@ endtask
       begin
         foreach(insn_q[i]) begin
           axis_insn_drv.push(insn_q[i], 1'bx);
-          ref_q.push_back(insn_q[i]);
+          if (insn_q[i][PE_INST_W-1 -: DOP_W] != DOP_SYNC_OPCODE) begin
+            ref_q.push_back(insn_q[i]);
+          end
           // Draw random value for stream delay
           if (!rand_insn_delay.randomize() with {rand_insn_delay.data dist {
                 [0: 5] :/ ((2**8-1)-ASM_INSN_HALT),
@@ -501,8 +517,7 @@ endtask
             $display("%t > ERROR: randomization of rand_vld", $time);
             $finish;
           end
-        repeat(rand_insn_delay.get_data) @(posedge clk);
-
+          repeat(rand_insn_delay.get_data) @(posedge clk);
         end
         $display("%t > INFO: All instruction pushed in DUT [%d]",$time, insn_cnt);
         // Append a sync for proper end of simulation
@@ -517,12 +532,20 @@ endtask
        @(posedge clk);
       end while (1);
     end
-    begin // Probe end condition
-      for(int dop_iter=0; dop_iter < DOP_ITER; dop_iter++)
-      begin
-        axis_insn_ack_ep.pop(_iop_retire, _is_last);
-        $display("%t > INFO: DUT generate Ack",$time);
-      end
+    begin // Probe end condition & internal ack
+      int end_of_iop = 0;
+      do begin
+        axis_insn_ack_ep.pop(iop_ack, _is_last);
+        if (iop_ack[17] == 1'b0) begin
+          end_of_iop++;
+          $display("%t > INFO: DUT generate Ack",$time);
+          if (end_of_iop == DOP_ITER) break;
+        end
+        else begin
+          $display("%t > INFO: DUT generate internal Ack %08x",$time, iop_ack);
+        end
+        @(posedge clk);
+      end while (1);
     end
     join_any
     disable fork;

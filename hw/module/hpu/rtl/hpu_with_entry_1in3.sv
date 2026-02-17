@@ -275,7 +275,7 @@ module hpu_with_entry_1in3
     .insn_vld           (isc_dop_vld),
 
     .insn_ack_rdy       (isc_ack_rdy),
-    .insn_ack_cnt       (isc_ack),
+    .insn_ack           (isc_ack),
     .insn_ack_vld       (isc_ack_vld),
     .insn_ack_int       (isc_ack_int),
 
