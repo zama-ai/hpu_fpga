@@ -1,7 +1,10 @@
 #!/bin/bash
-# ==============================================================================
-# MHDMA Debug Package
-# ==============================================================================
+# ==============================================================================================
+# BSD 3-Clause Clear License
+# Copyright © 2025 ZAMA. All rights reserved.
+# ----------------------------------------------------------------------------------------------
+# Description  : MHDMA Debug Package
+# ==============================================================================================
 # This file contains debugging functions for the Multi-HPU DMA module.
 # Source this file to make all functions available:
 #   source mhdma_debug.sh

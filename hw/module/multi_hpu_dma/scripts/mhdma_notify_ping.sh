@@ -1,14 +1,12 @@
 #!/bin/bash
-# mhdma_notify_ping.sh — Ping notify: each card notifies all other cards
+# ==============================================================================================
+# BSD 3-Clause Clear License
+# Copyright © 2025 ZAMA. All rights reserved.
+# ----------------------------------------------------------------------------------------------
+# Description  : Ping notify: each card notifies all other cards
+# ==============================================================================================
 # Usage: ./mhdma_notify_ping.sh <num_cards>
 #
-# req_id bitfield:
-#   [7:0]   rsvd    (8b)
-#   [13:8]  flag    (6b) — incremented per destination
-#   [15:14] mode    (2b) — set to 2
-#   [19:16] node_id (4b) — destination card
-#   [23:20] req_id  (4b)
-#   [31:24] iop_id  (8b)
 
 trap 'kill $(jobs -p) 2>/dev/null; exit 0' SIGINT SIGTERM
 

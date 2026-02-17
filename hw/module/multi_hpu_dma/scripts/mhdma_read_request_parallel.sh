@@ -1,8 +1,10 @@
 #!/bin/bash
-
-# =================================================================================================
-# MHDMA Parallel Read Request Test Script (Ring Topology)
-# =================================================================================================
+# ==============================================================================================
+# BSD 3-Clause Clear License
+# Copyright © 2025 ZAMA. All rights reserved.
+# ----------------------------------------------------------------------------------------------
+# Description  : MHDMA Parallel Read Request Test Script (Ring Topology)
+# ==============================================================================================
 # Performs one parallel read request per board in a ring topology.
 # Board 0 → Board 1 → Board 2 → ... → Board N-1 → Board 0
 #

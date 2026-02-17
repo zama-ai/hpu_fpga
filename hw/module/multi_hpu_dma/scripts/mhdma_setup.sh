@@ -1,5 +1,10 @@
 #!/bin/bash
-# mhdma_setup.sh — Configure FPGA MAC addresses, timeouts and HBM addresses
+# ==============================================================================================
+# BSD 3-Clause Clear License
+# Copyright © 2025 ZAMA. All rights reserved.
+# ----------------------------------------------------------------------------------------------
+# Description  : Configure FPGA MAC addresses, timeouts and HBM addresses
+# ==============================================================================================
 # Usage: ./mhdma_setup.sh -n <2|4|8> [-l] [-h]
 
 trap 'kill $(jobs -p) 2>/dev/null; exit 0' SIGINT SIGTERM

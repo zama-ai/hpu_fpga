@@ -1,8 +1,10 @@
 #!/bin/bash
-
-# =================================================================================================
-# MHDMA Read Request Test Script with Random Addresses
-# =================================================================================================
+# ==============================================================================================
+# BSD 3-Clause Clear License
+# Copyright © 2025 ZAMA. All rights reserved.
+# ----------------------------------------------------------------------------------------------
+# Description  : MHDMA Read Request Test Script with Random Addresses
+# ==============================================================================================
 # This script performs multiple read request tests with random source and destination addresses.
 # Based on the testbench address space from tb_multi_hpu_dma.sv
 #

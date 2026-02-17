@@ -1,4 +1,8 @@
 #!/bin/bash
+# ==============================================================================================
+# BSD 3-Clause Clear License
+# Copyright © 2025 ZAMA. All rights reserved.
+# ==============================================================================================
 # sprint_demo.sh — Step-by-step demo: notify (0), init HBM (1), read request (2)
 # Usage: ./sprint_demo.sh <0|1|2>
 

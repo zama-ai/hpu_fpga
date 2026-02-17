@@ -1,5 +1,10 @@
 #!/bin/bash
-# mhdma_notify_flood.sh — All cards notify one random target card
+# ==============================================================================================
+# BSD 3-Clause Clear License
+# Copyright © 2025 ZAMA. All rights reserved.
+# ----------------------------------------------------------------------------------------------
+# Description  : All cards notify one random target card
+# ==============================================================================================
 # Usage: ./mhdma_notify_flood.sh <num_cards> [num_requests (default 10)]
 
 trap 'kill $(jobs -p) 2>/dev/null; exit 0' SIGINT SIGTERM

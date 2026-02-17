@@ -1,5 +1,10 @@
 #!/bin/bash
-# mhdma_notify.sh — Ring notify: card i notifies card (i+1)%N
+# ==============================================================================================
+# BSD 3-Clause Clear License
+# Copyright © 2025 ZAMA. All rights reserved.
+# ----------------------------------------------------------------------------------------------
+# Description  : Ring notify: card i notifies card (i+1)%N
+# ==============================================================================================
 # Usage: ./mhdma_notify.sh <num_cards> [num_requests (default 10)]
 
 trap 'kill $(jobs -p) 2>/dev/null; exit 0' SIGINT SIGTERM
