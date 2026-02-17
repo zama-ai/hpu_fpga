@@ -123,8 +123,9 @@ module tb_mhdma_pkt_loss;
   bit error_tb_notify;
   bit error_register_read;
   bit error_fsm;
+  bit error_interrupt;
 
-  assign error = error_ack | error_retry | error_tb_notify | error_register_read | error_fsm;
+  assign error = error_ack | error_retry | error_tb_notify | error_register_read | error_fsm | error_interrupt;
 
   always_ff @(posedge clk_control)
     if (error) begin
@@ -712,9 +713,19 @@ logic [DST_ADDR_W-1:0] dst_addr;
       error_retry = 1'b1;
     end
 
+    if (interrupt_read_request) begin
+      maxil_drv_if.read_trans(MHDMA_REQUEST_READ_REQUEST_REQ_ID_OFS, read_data); // don't care about answer just need to lower itr
+    end else begin
+      $display("%t > [ERROR]: interrupt_read_request has not been raised", $time);
+      error_interrupt = 1'b1;
+    end
+
     repeat(100) @(posedge clk_control);
 
     check_fsm_initialized();
+
+    if (~interrupt_read_request)
+      $display("%t > [INFO]: interrupt_read_request correctly lowered", $time);
 
     scenario_id = scenario_id + 1;
 
@@ -747,7 +758,20 @@ logic [DST_ADDR_W-1:0] dst_addr;
 
     repeat(100) @(posedge clk_control);
 
+    if (interrupt_read_request) begin
+      maxil_drv_if.read_trans(MHDMA_REQUEST_READ_REQUEST_REQ_ID_OFS, read_data); // don't care about answer just need to lower itr
+    end else begin
+      $display("%t > [ERROR]: interrupt_read_request has not been raised", $time);
+      error_interrupt = 1'b1;
+    end
+
+    repeat(100) @(posedge clk_control);
+
     check_fsm_initialized();
+
+    if (~interrupt_read_request)
+      $display("%t > [INFO]: interrupt_read_request correctly lowered", $time);
+
 
     scenario_id = scenario_id + 1;
 
@@ -791,6 +815,11 @@ logic [DST_ADDR_W-1:0] dst_addr;
     // Wait for zero-padded HBM write to complete (mismatch_retry_pending clears on ciphertext_received)
     wait(!hpu_a.mhdma_bridge.mhdma_master.mismatch_retry_pending);
     $display("%t > [INFO]: Zero-padded HBM write completed, retry triggered", $time);
+
+    if (interrupt_read_request) begin
+      $display("%t > [ERROR]: interrupt_read_request should not have been raised ! ", $time);
+      error_interrupt = 1'b1;
+    end
 
     fork
       begin
@@ -859,7 +888,19 @@ logic [DST_ADDR_W-1:0] dst_addr;
 
     repeat(100) @(posedge clk_control);
 
+    if (interrupt_read_request) begin
+      maxil_drv_if.read_trans(MHDMA_REQUEST_READ_REQUEST_REQ_ID_OFS, read_data); // don't care about answer just need to lower itr
+    end else begin
+      $display("%t > [ERROR]: interrupt_read_request has not been raised", $time);
+      error_interrupt = 1'b1;
+    end
+
+    repeat(100) @(posedge clk_control);
+
     check_fsm_initialized();
+
+    if (~interrupt_read_request)
+      $display("%t > [INFO]: interrupt_read_request correctly lowered", $time);
 
     scenario_id = scenario_id + 1;
 
@@ -899,6 +940,11 @@ logic [DST_ADDR_W-1:0] dst_addr;
     // mismatch_retry_pending is set on seq_num_mismatch, cleared on ciphertext_received
     wait(!hpu_a.mhdma_bridge.mhdma_master.mismatch_retry_pending);
     $display("%t > [INFO]: Zero-padded HBM write completed", $time);
+
+    if (interrupt_read_request) begin
+      $display("%t > [ERROR]: interrupt_read_request should not have been raised ! ", $time);
+      error_interrupt = 1'b1;
+    end
 
     fork
       begin
@@ -967,7 +1013,18 @@ logic [DST_ADDR_W-1:0] dst_addr;
 
     repeat(100) @(posedge clk_control);
 
+    if (interrupt_read_request) begin
+      maxil_drv_if.read_trans(MHDMA_REQUEST_READ_REQUEST_REQ_ID_OFS, read_data); // don't care about answer just need to lower itr
+    end else begin
+      $display("%t > [ERROR]: interrupt_read_request has not been raised", $time);
+      error_interrupt = 1'b1;
+    end
+
+    repeat(100) @(posedge clk_control);
+
     check_fsm_initialized();
+    if (~interrupt_read_request)
+      $display("%t > [INFO]: interrupt_read_request correctly lowered", $time);
 
     $display("\n ----------------- HPU_A Final Summary -----------------------");
     maxil_drv_if.read_trans(MHDMA_REQUEST_STAT_NOTIFY_OFS, stat_notify);
