@@ -16,8 +16,12 @@
 // ==============================================================================================
 
 #include "profile_hal.h"
+#ifndef UCORE_MHDMA_SIMU
+#include "pll.h"
+#endif
 #include "ucore.h"
 #include "mhdma_driver/mhdma_driver.h"
+#include <stdbool.h>
 
 uint8_t cur_iid;
 IOpMapping_t cur_mapping;
@@ -35,7 +39,6 @@ void iop_state_init(void) {
 }
 
 void iop_state_node_ack(uint8_t iid, uint8_t nb_hpu) {
-  printf("iop_state_node_ack iid %d nb_hpu %d (state %d)\n", iid, nb_hpu, iop_state[iid].state);
   if ((iop_state[iid].state == IOP_STATE_UNKNOWN)
    || (iop_state[iid].state == IOP_STATE_RUNNING)
    || (iop_state[iid].state == IOP_STATE_DONE)) {
@@ -43,7 +46,7 @@ void iop_state_node_ack(uint8_t iid, uint8_t nb_hpu) {
   } else {
     iop_state[iid].state -= 1;
   }
-  printf("iop_state_node_ack iid %d state %d nb_hpu %d\n", iid, iop_state[iid].state, iop_state[iid].nb_hpu);
+  PLL_INF("ucore", "[HPU%d] iop_state_node_ack iid %d state %d nb_hpu %d", phys_hpu_id, iid, iop_state[iid].state, iop_state[iid].nb_hpu);
 }
 
 // B2B Pool
@@ -93,7 +96,8 @@ uint16_t b2b_pool_free(uint8_t iid) {
 }
 
 void b2b_pool_print(void) {
-  printf("b2b_pool head %d (iid %d) tail %d (iid %d)free %d\n",
+  PLL_INF("ucore", "[HPU%d] b2b_pool head %d (iid %d) tail %d (iid %d)free %d",
+      phys_hpu_id,
       b2b_pool_head,
       b2b_pool[b2b_pool_head],
       b2b_pool_tail,
@@ -128,10 +132,15 @@ RemoteOperand_t *dst_notifyq_pop(uint8_t iid) {
 }
 
 void dst_notifyq_print(uint8_t iid) {
-  printf("dst_notifyq head %d tail %d free %d\n", dst_notifyq_head, dst_notifyq_tail, dst_notifyq_free_cnt);
+  PLL_INF("ucore", "[HPU%d] dst_notifyq head %d tail %d free %d",
+      phys_hpu_id,
+      dst_notifyq_head,
+      dst_notifyq_tail,
+      dst_notifyq_free_cnt);
   uint16_t index = (dst_notifyq_head - 1) % DST_NOTIFYQ_SIZE;
   while (dst_notifyq[index].iid == iid) {
-    printf("dst_notifyq iid %d pos %d state %d src %d dst %04x target %d\n",
+    PLL_INF("ucore", "[HPU%d] dst_notifyq iid %d pos %d state %d src %d dst %04x target %d",
+        phys_hpu_id,
         iid,
         dst_notifyq[index].pos,
         dst_notifyq[index].state,
@@ -234,10 +243,15 @@ RemoteOperand_t *src_notifyq_find_by_state(uint8_t iid, uint8_t state) {
 }
 
 void src_notifyq_print(uint8_t iid) {
-  printf("src_notifyq head %d tail %d free %d\n", src_notifyq_head, src_notifyq_tail, src_notifyq_free_cnt);
+  PLL_INF("ucore", "[HPU%d] src_notifyq head %d tail %d free %d",
+      phys_hpu_id,
+      src_notifyq_head,
+      src_notifyq_tail,
+      src_notifyq_free_cnt);
   uint16_t index = (src_notifyq_head - 1) % SRC_NOTIFYQ_SIZE;
   while (src_notifyq[index].iid == iid) {
-    printf("src_notifyq iid %d pos %d state %d src %d dst %d\n",
+    PLL_INF("ucore", "[HPU%d] src_notifyq iid %d pos %d state %d src %d dst %d",
+        phys_hpu_id,
         iid,
         src_notifyq[index].pos,
         src_notifyq[index].state,
@@ -303,11 +317,11 @@ uint16_t dst_store_get_owned(uint8_t iid, uint8_t hid) {
 void dst_store_print(uint8_t iid) {
   for (int i = 0; i < MAX_DST_VARS; i++) {
     if (dst_store.owner[iid][i] != 0xFF) {
-      printf("dst_store: IOP %d dst %d owner %d: ", iid, i, dst_store.owner[iid][i]);
+      PLL_INF("ucore", "[HPU%d] dst_store: IOP %d dst %d owner %d: ", phys_hpu_id, iid, i, dst_store.owner[iid][i]);
       for (int j = 0; j < 7; j++) {
-        printf("%d", dst_store.state[iid][i][j]);
+        PLL_INF("ucore", "%d", dst_store.state[iid][i][j]);
       }
-      printf("\n");
+      PLL_INF("ucore", "[HPU%d]\n", phys_hpu_id);
     }
   }
 }
@@ -317,7 +331,8 @@ void iop_teardown(uint8_t iid) {
   //flush dst_notifyq
   RemoteOperand_t *remote_operand = dst_notifyq_getdst(iid);
   while (remote_operand != NULL) {
-    printf("iop_teardown remote_operand iid %d pos %d state %d src %d dst %04x target %d\n",
+    PLL_INF("ucore", "[HPU%d] iop_teardown remote_operand iid %d pos %d state %d src %d dst %04x target %d",
+        phys_hpu_id,
         iid,
         remote_operand->pos,
         remote_operand->state,
@@ -327,14 +342,16 @@ void iop_teardown(uint8_t iid) {
     remote_operand->state = OPERAND_STATE_READ_PENDING;
     generate_ucore_notify(iid, remote_operand->pos, remote_operand->src_cid, remote_operand->dst_cid, remote_operand->target_cid);
     remote_operand = dst_notifyq_getdst(iid);
+#ifdef UCORE_MHDMA_SIMU
     sleep(3);
+#endif
   }
   //flush remote source queue
   uint16_t src_free_cnt = src_notifyq_free(iid);
-  printf("iop_teardown free source slots: %d\n", src_free_cnt);
+  PLL_INF("ucore", "[HPU%d] iop_teardown free source slots: %d", phys_hpu_id, src_free_cnt);
 
   //wait dst owned by local hpu but produced somewhere else
-  dst_store_print(iid);
+  //dst_store_print(iid);
   uint16_t non_resolved_owned_dst = dst_store_get_owned(iid, phys_hpu_id);
   while (non_resolved_owned_dst != 0xFFFF) {
     // wait until notify or read ct is received
@@ -342,12 +359,17 @@ void iop_teardown(uint8_t iid) {
     uint8_t tid = (non_resolved_owned_dst >> 8) & 0xFF;
     uint8_t bid = non_resolved_owned_dst & 0xFF;
     while (dst_store.state[iid][tid][bid] != DST_STATE_RESOLVED) {
-      printf("iop_teardown wait on iop %d hpu_id %d tid %d bid %d - being resolved\n",
+      PLL_INF("ucore", "[HPU%d] iop_teardown wait on iop %d hpu_id %d tid %d bid %d - being resolved",
+          phys_hpu_id,
           iid,
           phys_hpu_id,
           tid,
           bid);
+#ifdef UCORE_MHDMA_SIMU
       sleep(10);
+#else
+      iOSAL_Task_SleepTicks(10);
+#endif
     }
     non_resolved_owned_dst = dst_store_get_owned(iid, phys_hpu_id);
   }
@@ -356,7 +378,9 @@ void iop_teardown(uint8_t iid) {
   for (int i = 0; i < MAX_HPU_IN_CLUSTER; i++) {
     if (i != phys_hpu_id) {
       generate_iop_notify(iid, iop_state[iid].nb_hpu, i);
+#ifdef UCORE_MHDMA_SIMU
       sleep(1);
+#endif
     }
   }
   // update iop_state
@@ -365,7 +389,7 @@ void iop_teardown(uint8_t iid) {
   // release b2b pool slot for this IOp
   if (iop_state[iid].state == IOP_STATE_DONE) {
     uint16_t b2b_free_cnt = b2b_pool_free(iid);
-    printf("iop_teardown free b2b_pool slots: %d\n", b2b_free_cnt);
+    PLL_INF("ucore", "[HPU%d] iop_teardown free b2b_pool slots: %d", phys_hpu_id, b2b_free_cnt);
   }
 
   // reset all dst of iop for next execution of this iid
@@ -411,10 +435,6 @@ uint32_t parse_iop(
     PLL_ERR("parse_iop", "not enough bytes after header");
     return 0;
   }
-  printf("IOP HDR opcode %d src_align %d dst_align %d\n",
-	header->header.opcode,
-	header->header.src_align,
-	header->header.dst_align);
 
   //2. Get mapping
   mapping->raw = stream[stream_pos];
@@ -424,13 +444,6 @@ uint32_t parse_iop(
     PLL_ERR("parse_iop", "not enough bytes after mapping");
     return 0;
   }
-  printf("IOP mapping 0 %d:%d 1 %d:%d 2 %d:%d\n",
-	mapping->header.used_0,
-	mapping->header.phys_0,
-	mapping->header.used_1,
-	mapping->header.phys_1,
-	mapping->header.used_2,
-	mapping->header.phys_2);
 
   //3. Get list of destination operands
   uint32_t dst_pos = 0;
@@ -454,11 +467,6 @@ uint32_t parse_iop(
     dst->operand[dst_pos].pos = operand_prop->operand_prop.pos;
     dst->operand[dst_pos].len = operand_prop->operand_prop.vec_size +1;
     dst->operand[dst_pos].block = operand_prop->operand_prop.block +1;
-    printf("DST iid %d pos %d block_nb %d cid_ofst %d\n",
-	dst->operand[dst_pos].iid,
-	dst->operand[dst_pos].pos,
-        dst->operand[dst_pos].block,
- 	dst->operand[dst_pos].cid_ofst);
     dst_pos +=1;
   } while (!operand_prop->operand_prop.is_last);
 
@@ -467,7 +475,11 @@ uint32_t parse_iop(
   cur_mapping.raw = mapping->raw;
   iop_state[cur_iid].state  = IOP_STATE_RUNNING;
   iop_state[cur_iid].nb_hpu = number_of_hpu(*mapping);
-  printf("parse_iop starting iop %d state %d nb_hpu %d\n", cur_iid, iop_state[cur_iid].state, iop_state[cur_iid].nb_hpu);
+  PLL_INF("ucore", "[HPU%d] parse_iop starting iop %d state %d nb_hpu %d",
+      phys_hpu_id,
+      cur_iid,
+      iop_state[cur_iid].state,
+      iop_state[cur_iid].nb_hpu);
   // Fill bundle length
   dst->len = dst_pos;
   dst_store_initd(cur_iid, dst);
@@ -493,11 +505,6 @@ uint32_t parse_iop(
     src->operand[src_pos].pos = operand_prop->operand_prop.pos;
     src->operand[src_pos].len = operand_prop->operand_prop.vec_size +1;
     src->operand[src_pos].block = operand_prop->operand_prop.block +1;
-    printf("SRC iid %d pos %d block_nb %d cid_ofst %d\n",
-	src->operand[src_pos].iid,
-	src->operand[src_pos].pos,
-        src->operand[src_pos].block,
- 	src->operand[src_pos].cid_ofst);
     src_pos +=1;
   } while (!operand_prop->operand_prop.is_last);
 
@@ -659,13 +666,17 @@ void patch_mem_dop(DOpu_t *dop, OperandBundle_t *iop_dst, OperandBundle_t *iop_s
 
         while (remote_src->state != OPERAND_STATE_RESOLVED) {
           // wait until notify or read ct is received
-          //iOSAL_Task_SleepTicks(1);
-          printf("iop %d wait on remote src - src_iid %d src_hpu_id %d src_cid %d\n",
+          PLL_INF("ucore", "[HPU%d] iop %d wait on remote src - src_iid %d src_hpu_id %d src_cid %d\n",
+              phys_hpu_id,
               cur_iid,
               src_iid,
               src_hpu_id,
               src_cid);
+#ifdef UCORE_MHDMA_SIMU
           sleep(10);
+#else
+          iOSAL_Task_SleepTicks(10);
+#endif
         }
         dop->mem.slot = remote_src->dst_cid;
       }
@@ -675,7 +686,6 @@ void patch_mem_dop(DOpu_t *dop, OperandBundle_t *iop_dst, OperandBundle_t *iop_s
       // Replace mem (tid,bid) by concrete addr and toggle the mode
       uint8_t tid = (dop->mem.slot >> 8) & 0xff;
       uint8_t bid = dop->mem.slot & 0xff;
-      printf("iop %d mem_dst %08x %04x %d %d\n", cur_iid, dop->raw, dop->mem.slot, tid, bid);
       if (iop_src->operand[tid].pos == phys_hpu_id) {
         // local access
         dop->mem.slot = iop_dst->operand[tid].cid_ofst + bid;
@@ -760,11 +770,6 @@ int process_ucore_dop(DOpu_t *dop) {
       current_elt->src_ct_id = raw_ct_id;
       current_elt->slave_hpu_id = phys_hpu_id;
       current_elt->master_hpu_id = get_phys_of(dop->ucore.hid, cur_mapping);
-      printf("process_ucore_dop DOPS_NOTIFY iid %d slave %d master %d state %d\n",
-          cur_iid,
-          current_elt->slave_hpu_id,
-          current_elt->master_hpu_id,
-          current_elt->state);
 
       //replace notify by sync DOp
       dop->sync.flag = dop->ucore.flag;
@@ -781,9 +786,12 @@ int process_ucore_dop(DOpu_t *dop) {
       while (  (data_required && current_elt->state < MHDMA_STATE_RESOLVED)
             || (!data_required && current_elt->state < MHDMA_STATE_RECEIVED) ) {
         // wait until notify or read ct is received
-        //iOSAL_Task_SleepTicks(1);
-        printf("wait on iop_id %d flag %d state %d\n", cur_iid, dop->ucore.flag, current_elt->state);
+        PLL_INF("ucore", "[HPU%d] wait on iop_id %d flag %d state %d\n", phys_hpu_id, cur_iid, dop->ucore.flag, current_elt->state);
+#ifdef UCORE_MHDMA_SIMU
         sleep(10);
+#else
+        iOSAL_Task_SleepTicks(10);
+#endif
       }
       // This DOp needs to be removed from DOp stream given to ISC
       return 1;

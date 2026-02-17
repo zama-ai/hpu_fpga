@@ -73,6 +73,7 @@
 
 /* HPU related */
 #include "ucore.h"
+#include "mhdma_driver.h"
 
 /******************************************************************************/
 /* Defines                                                                    */
@@ -264,6 +265,7 @@ uint64_t isc_intr_global_cnt = 0;
 uint64_t debug_intr_global_cnt = 0;
 uint64_t intr_notify_cnt = 0;
 uint32_t intr_notify_data = 0;
+uint64_t intr_readc_cnt = 0;
 uint32_t ackq_head = 0;
 uint32_t ackq_tail = 0;
 volatile uint32_t *toAmiIopAckqHead = ( volatile uint32_t* )( HAL_RPU_SHARED_MEMORY_BASE_ADDR + OFFSET_TO_AMI_IOPACKQ_HEAD );
@@ -275,6 +277,13 @@ volatile uint32_t *toAmiIopAckqData = ( volatile uint32_t* )( HAL_RPU_SHARED_MEM
 #define ACTIVE_ONE_INTR     0x1  // default value, triggers when signal is at 1
 
 extern XScuGic xInterruptController;
+
+// HPU global variables
+extern uint8_t cur_iid;
+extern uint8_t phys_hpu_id;
+extern iop_state_t iop_state[IOP_ID_MAX_COUNT];
+extern dst_store_t dst_store;
+extern mhdma_element_t mhdma_table[IOP_ID_MAX_COUNT][FLAG_MAX_COUNT];
 
 /******************************************************************************/
 /* Function implementations                                                   */
@@ -302,10 +311,36 @@ void vInterruptHandler_isc_ack( void* pvCallBackRef ) {
         HAL_FLUSH_CACHE_DATA( (uintptr_t)ackq_idx, sizeof(uint32_t));
 
         if (popped_iop_ack > 0) {
-            // Update queue head
-            ackq_head += 1;
-            *toAmiIopAckqHead = ackq_head;
-            HAL_FLUSH_CACHE_DATA( (uintptr_t)toAmiIopAckqHead, sizeof(uint32_t));
+            DOpu_t dop_ack;
+            dop_ack.raw = popped_iop_ack;
+            PLL_INF("AMC", "[HPU%d] recv ack: %08x opcode %06x iid %d flag %d is_inner %d\n",
+                phys_hpu_id,
+                dop_ack.raw,
+                dop_ack.sync.opcode,
+                dop_ack.sync.iid,
+                dop_ack.sync.flag,
+                dop_ack.sync.is_inner);
+
+            if (dop_ack.sync.opcode == SYNC_OPCODE) {
+              if (dop_ack.sync.is_inner == 1) {
+                // internal ack
+                generate_user_notify(dop_ack.sync.iid, dop_ack.sync.flag);
+              } else {
+                // iop ack
+                uint8_t ack_iid = dop_ack.sync.iid;
+                iop_teardown(ack_iid);
+
+                // Write ack value in queue body
+                volatile uint32_t* ackq_idx = toAmiIopAckqData + (ackq_head % AMI_IOPACKQ_MAX_WORDS);
+                uint32_t popped_iop_ack = pop_isc_ack();
+                *ackq_idx = popped_iop_ack;
+                HAL_FLUSH_CACHE_DATA( (uintptr_t)ackq_idx, sizeof(uint32_t));
+                // Update queue head
+                ackq_head += 1;
+                *toAmiIopAckqHead = ackq_head;
+                HAL_FLUSH_CACHE_DATA( (uintptr_t)toAmiIopAckqHead, sizeof(uint32_t));
+              }
+            }
         }
     }
 }
@@ -325,9 +360,145 @@ void vInterruptHandler_debug( void* pvCallBackRef ) {
  */
 void vInterruptHandler_mhdma_notify( void* pvCallBackRef ) {
     intr_notify_cnt = intr_notify_cnt + 1;
+    uint64_t notify_data = 0;
+    uint32_t notify_tmp_req_id = 0;
+    uint32_t notify_tmp_req_addr = 0;
     // read request::notify 0x50108
-    HAL_INVALIDATE_CACHE_DATA( (uintptr_t)(XPAR_AXI_LPD_BASEADDR + 0x50108) , sizeof(uint32_t) );
-    intr_notify_data = * (volatile uint32_t *) (XPAR_AXI_LPD_BASEADDR + 0x50108);
+    HAL_INVALIDATE_CACHE_DATA( (uintptr_t)(XPAR_AXI_LPD_BASEADDR + MHDMA_NOTIFY_DATA_REQ_ID) , sizeof(uint32_t) );
+    notify_tmp_req_id = * (volatile uint32_t *) (XPAR_AXI_LPD_BASEADDR + MHDMA_NOTIFY_DATA_REQ_ID);
+    HAL_INVALIDATE_CACHE_DATA( (uintptr_t)(XPAR_AXI_LPD_BASEADDR + MHDMA_NOTIFY_DATA_REQ_ADDR) , sizeof(uint32_t) );
+    notify_tmp_req_addr = * (volatile uint32_t *) (XPAR_AXI_LPD_BASEADDR + MHDMA_NOTIFY_DATA_REQ_ADDR);
+    notify_data = (((uint64_t)notify_tmp_req_addr) << 32) | notify_tmp_req_id;
+    // read register
+    mhdma_cmd_t notify;
+    notify.raw = notify_data;
+
+    // get iop_id, slave_hpu_id, src_ct_id, dst_ct_id, flag
+    uint8_t iid = notify.fields.iid;
+    uint8_t slave_hpu_id = notify.fields.hid;
+    uint8_t mode = notify.fields.mode;
+    // is also the nb_hpu in CMD_SRC
+    uint8_t flag = notify.fields.flag;
+
+    //printf("notify recv: iid %d from %d mode %d flag %d\n", iid, slave_hpu_id, mode, flag);
+
+    switch (mode) {
+      case CMD_USER: {
+        mhdma_element_t *current_elt = &mhdma_table[iid][flag];
+        //printf("notify user before: iid %d flag %d state %d\n", iid, flag, current_elt->state);
+        uint8_t current_state = current_elt->state;
+        current_elt->state = MHDMA_STATE_RECEIVED;
+        if (current_state == MHDMA_STATE_LB2B_WAITING) {
+          current_elt->state = MHDMA_STATE_READING;
+          generate_read_req(iid, flag);
+        }
+        //printf("notify user after: iid %d flag %d state %d\n", iid, flag, current_elt->state);
+        break;
+      }
+      case CMD_DST: {
+        uint8_t tid = (notify.fields.flag);
+        uint8_t bid = (notify.fields._pad & 0xFF);
+        // if dst is None it is probably an error
+        //if dst is reading or resolved then there is nothing to do here
+        if (dst_store.state[iid][tid][bid] == DST_STATE_WAIT_NOTIFY) {
+          uint16_t target_cid = (tid << 8) | bid;
+          generate_operand_read_req(iid, mode, slave_hpu_id, notify.fields.src_cid, notify.fields.dst_cid, target_cid);
+          dst_store.state[iid][tid][bid] = DST_STATE_READING;
+        }
+        //dst_store_print(iid);
+        break;
+      }
+      case CMD_SRC: {
+        iop_state_node_ack(iid, flag);
+        //printf("iop_state[%d] = %d\n", iid, iop_state[iid].state);
+
+        if (iop_state[iid].state == IOP_STATE_DONE) {
+          // if remote_src is state NONE, it means b2b_pool slot is not ready => do nothing here
+          // if remote_src is state DMA pending, it means read of this src is already on-going => do nothing here
+          // if remote_src is resolved, then nothing todo either
+          RemoteOperand_t *remote_src = src_notifyq_find_by_state(iid, OPERAND_STATE_READ_PENDING);
+          while (remote_src != NULL) {
+            // by design remote_src->state == OPERAND_STATE_READ_PENDING)
+            generate_operand_read_req(iid, mode, remote_src->pos, remote_src->src_cid, remote_src->dst_cid, 0);
+            remote_src->state = OPERAND_STATE_DMA_PENDING;
+          }
+
+          uint16_t b2b_free_cnt = b2b_pool_free(iid);
+          //printf("free b2b_pool slots: %d\n", b2b_free_cnt);
+
+        }
+        break;
+      }
+    }
+}
+
+/*
+ * @brief   debug only interrupt handler
+ */
+void vInterruptHandler_mhdma_read_complete( void* pvCallBackRef ) {
+  intr_readc_cnt = intr_readc_cnt + 1;
+  uint64_t rc_data = 0;
+  uint32_t rc_tmp_req_id = 0;
+  uint32_t rc_tmp_req_addr = 0;
+  // read request::rc 0x50108
+  HAL_INVALIDATE_CACHE_DATA( (uintptr_t)(XPAR_AXI_LPD_BASEADDR + MHDMA_NOTIFY_DATA_REQ_ID) , sizeof(uint32_t) );
+  rc_tmp_req_id = * (volatile uint32_t *) (XPAR_AXI_LPD_BASEADDR + MHDMA_READ_DONE_DATA_REQ_ID);
+  HAL_INVALIDATE_CACHE_DATA( (uintptr_t)(XPAR_AXI_LPD_BASEADDR + MHDMA_NOTIFY_DATA_REQ_ADDR) , sizeof(uint32_t) );
+  rc_tmp_req_addr = * (volatile uint32_t *) (XPAR_AXI_LPD_BASEADDR + MHDMA_READ_DONE_DATA_REQ_ADDR);
+  rc_data = (((uint64_t)rc_tmp_req_addr) << 32) | rc_tmp_req_id;
+  // read register
+  mhdma_cmd_t rc;
+  rc.raw = rc_data;
+
+  // get iop_id, slave_hpu_id, src_ct_id, dst_ct_id, flag
+  uint8_t iid = rc.fields.iid;
+  uint8_t slave_hpu_id = rc.fields.hid;
+  uint8_t mode = rc.fields.mode;
+  // is also the nb_hpu in CMD_SRC
+  uint8_t flag = rc.fields.flag;
+
+  //printf("read_complete recv: iid %d from %d mode %d flag %d\n", iid, slave_hpu_id, mode, flag);
+
+  switch (mode) {
+    case CMD_USER: {
+      mhdma_element_t *current_elt = &mhdma_table[iid][flag];
+      //printf("[HPU%d] read_complete user before: iid %d flag %d state %d\n", phys_hpu_id, iid, flag, current_elt->state);
+      // state should be MHDMA_STATE_READING
+      if (current_elt->state == MHDMA_STATE_READING) {
+        current_elt->state = MHDMA_STATE_RESOLVED;
+      }
+      //printf("[HPU%d] read_complete user after: iid %d flag %d state %d\n", phys_hpu_id, iid, flag, current_elt->state);
+      break;
+    }
+    case CMD_DST: {
+      uint8_t tid = rc.fields.flag;
+      uint8_t bid = (rc.fields._pad & 0xFF);
+      // state should be reading
+      if (dst_store.state[iid][tid][bid] == DST_STATE_READING) {
+        dst_store.state[iid][tid][bid] = DST_STATE_RESOLVED;
+      }
+      dst_store_print(iid);
+      break;
+    }
+    case CMD_SRC: {
+      // there may be a src identification issue here
+      //uint8_t tid = (rc.fields.src_cid >> 8) & 0xFF;
+      //uint8_t bid = (rc.fields.src_cid & 0xFF);
+
+      // here there is no verification read complete is exactly about source requested
+      RemoteOperand_t *remote_src = src_notifyq_find_by_state(iid, OPERAND_STATE_DMA_PENDING);
+      if (remote_src != NULL) {
+        // by design remote_src->state == OPERAND_STATE_DMA_PENDING
+        remote_src->state = OPERAND_STATE_RESOLVED;
+        //printf("flag one src as resolved: %d %d %d\n",
+        //    remote_src->iid,
+        //    (remote_src->src_cid >> 8) & 0xFF,
+        //    (remote_src->src_cid & 0xFF));
+      }
+      src_notifyq_print(iid);
+      break;
+    }
+  }
 }
 
 /*
@@ -451,6 +622,16 @@ static void vTaskFuncMain( void )
        PLL_ERR( AMC_NAME, "failed enabling interrupt hpu_interrupt[3](notify)\r\n" );
     } else {
        PLL_INF( AMC_NAME, "enabling hpu_interrupt[3](notify) on level\r\n" );
+    }
+    if( OSAL_ERRORS_NONE != iOSAL_Interrupt_Setup( XPAR_FABRIC_RTL_INTERRUPT_4_INTR, vInterruptHandler_mhdma_read_complete, NULL ) ) {
+       PLL_ERR( AMC_NAME, "failed init interrupt hpu_interrupt[4](read_complete)\r\n" );
+    } else {
+       PLL_INF( AMC_NAME, "interrupt handler on hpu_interrupt[4](read_complete) initialised\r\n" );
+    }
+    if( OSAL_ERRORS_NONE != iOSAL_Interrupt_Enable( XPAR_FABRIC_RTL_INTERRUPT_4_INTR) ) {
+       PLL_ERR( AMC_NAME, "failed enabling interrupt hpu_interrupt[4](read_complete)\r\n" );
+    } else {
+       PLL_INF( AMC_NAME, "enabling hpu_interrupt[4](read_complete) on level\r\n" );
     }
 
     // Init IOp queue descriptor
@@ -605,7 +786,13 @@ static void vTaskFuncMain( void )
                 }
 
                 // Add DOp sync
-                dop_buffer[dop_entry.len % DOP_BUFFER_SIZE] = SYNC_DOP_WORD;
+                DOpu_t dop_sync;
+                dop_sync.sync.opcode = SYNC_OPCODE;
+                dop_sync.sync.iid = cur_iid;
+                dop_sync.sync.is_inner = 0;
+                dop_sync.sync.flag = 0;
+                dop_sync.sync._pad = 0;
+                dop_buffer[dop_entry.len % DOP_BUFFER_SIZE] = dop_sync.raw;
                 // Correctly handle full buffer flush
                 uint32_t remaining_dop = (((dop_entry.len+1)%DOP_BUFFER_SIZE) == 0)? DOP_BUFFER_SIZE:(dop_entry.len+1)%DOP_BUFFER_SIZE;
                 PLL_INF("UCORE", "flush %d remaining value to isc", remaining_dop);

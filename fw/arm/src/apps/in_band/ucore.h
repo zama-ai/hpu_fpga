@@ -16,13 +16,16 @@
 #ifndef __UCORE_H__
 #define __UCORE_H__
 
-#define PLL_INF( t, m, ... ) printf( m, ##__VA_ARGS__ )  /* used for syst info (stats) */
-#define PLL_ERR( t, m, ... ) printf( m, ##__VA_ARGS__ )  /* used for errors            */
-#define PLL_WRN( t, m, ... ) printf( m, ##__VA_ARGS__ )  /* used for warnings          */
-#define PLL_LOG( t, m, ... ) printf( m, ##__VA_ARGS__ )  /* used for general printing  */
-#define PLL_DBG( t, m, ... ) printf( m, ##__VA_ARGS__ )  /* used for debug prints      */
+#ifdef UCORE_MHDMA_SIMU
+#define PLL_INF( t, m, ... ) printf( m "\n", ##__VA_ARGS__ )  /* used for syst info (stats) */
+#define PLL_ERR( t, m, ... ) printf( m "\n", ##__VA_ARGS__ )  /* used for errors            */
+#define PLL_WRN( t, m, ... ) printf( m "\n", ##__VA_ARGS__ )  /* used for warnings          */
+#define PLL_LOG( t, m, ... ) printf( m "\n", ##__VA_ARGS__ )  /* used for general printing  */
+#define PLL_DBG( t, m, ... ) printf( m "\n", ##__VA_ARGS__ )  /* used for debug prints      */
 
 #define HAL_INVALIDATE_CACHE_DATA(a,b) printf("invalidate cache\n")
+#endif
+
 
 // Constants
 // ============================================================================================= //
@@ -50,7 +53,7 @@
 #define FW_TABLE_ENTRY 128
 #define MAX_FW_TABLE_ENTRY_OFST ((IOP_NUMBER*MAX_HPU_IN_CLUSTER*FW_TABLE_ENTRY)*sizeof(uint32_t))
 #define MAX_FW_SIZE 0x2000000
-#define SYNC_DOP_WORD 0x4000ffff
+#define SYNC_DOP_WORD 0xBC000000
 
 // WARN seems to have limitation on isc_write
 #define DOP_BUFFER_LOG2_SIZE 8
