@@ -38,7 +38,14 @@
       "is_include_file": false
     },
     {
-      "name": "hw/module/multi_hpu_dma/simu/rtl/tb_mhdma_parallel.sv",
+      "name": "hw/module/multi_hpu_dma/simu/rtl/tb_mhdma_parallel_notify.sv",
+      "library": "work",
+      "env": ["simu"],
+      "target": ["all"],
+      "is_include_file": false
+    },
+    {
+      "name": "hw/module/multi_hpu_dma/simu/rtl/tb_mhdma_parallel_read.sv",
       "library": "work",
       "env": ["simu"],
       "target": ["all"],
@@ -46,6 +53,13 @@
     },
     {
       "name": "hw/module/multi_hpu_dma/simu/rtl/tb_mhdma_errors.sv",
+      "library": "work",
+      "env": ["simu"],
+      "target": ["all"],
+      "is_include_file": false
+    },
+    {
+      "name": "hw/module/multi_hpu_dma/simu/rtl/tb_mhdma_several.sv",
       "library": "work",
       "env": ["simu"],
       "target": ["all"],

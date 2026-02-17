@@ -7,7 +7,7 @@
 
 `resetall
 `timescale 1ns/10ps
-module tb_mhdma_parallel;
+module tb_mhdma_parallel_notify;
   import mhdma_pkg::*;                    // multi-hpu-dma
   import axi_if_shell_axil_pkg::*;        // axi4-lite + REG_DATA_W
   import axi_if_common_param_pkg::*;      // general axi4
