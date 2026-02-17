@@ -31,9 +31,6 @@ get_mac_value() {
   local base_mac=${V80_BOARDS_MAP[$slot_idx,mac_address]}
   local mac_int=$((base_mac))
 
-  # Add slot index in upper byte [30:24]
-  mac_int=$((mac_int | (slot_idx << 24)))
-
   # If this slot matches the FPGA index, set the "local" bit (bit 31)
   if [ "$fpga_idx" -eq "$slot_idx" ]; then
     mac_int=$((mac_int | 0x80000000))
