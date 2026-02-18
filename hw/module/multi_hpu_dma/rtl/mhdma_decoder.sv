@@ -169,9 +169,13 @@ module mhdma_decoder
 
   // FRAME 3 ------------------------------------------------------------------
   // rsvd, flag, mode
-  assign rsvd = ((rx_counter == 3) & rx_valid) ? h3.h3_rsvd : 'h0;
-  assign flag = ((rx_counter == 3) & rx_valid) ? h3.flag    : 'h0;
-  assign mode = ((rx_counter == 3) & rx_valid) ? h3.mode    : 'h0;
+  always_ff @(posedge clk_mrmac) begin
+    if ((rx_counter == 3) & rx_valid) begin
+      rsvd <= h3.h3_rsvd;
+      flag <= h3.flag;
+      mode <= h3.mode;
+    end
+  end
 
   // assigning output -----------------------------------------------------------------------------
   logic nack_receivedD;
@@ -201,16 +205,20 @@ module mhdma_decoder
   logic ciphertext_emission_received;
   // notify_ack_received is an output
 
-  assign notify_ack_received          = nack_receivedD & ~nack_received;
-  assign notify_request_received      = nr_receivedD   & ~nr_received;
-  assign read_request_received        = rr_receivedD   & ~rr_received;
-  assign ciphertext_emission_received = ce_receivedD   & ~ce_received;
+  always_ff @(posedge clk_mrmac) begin
+    notify_ack_received          <= nack_receivedD & ~nack_received;
+    notify_request_received      <= nr_receivedD   & ~nr_received;
+    read_request_received        <= rr_receivedD   & ~rr_received;
+    ciphertext_emission_received <= ce_receivedD   & ~ce_received;
+  end
 
   logic fifo_rx_cmd_in_vld;
   logic fifo_rx_cmd_in_rdy;
 
-  // There are three frames to account for. We are decoding received commad at Frame 2 but Frame 3 are not registered.
-  // Adding a pipe here is enough to wait for all needed data
+  // There are four frames to account for. We are decoding received command at Frame 2 but Frame 3
+  // fields (rsvd, flag, mode) are registered.
+  // *_received signals are also registered for pulse generation.
+  // Adding another pipes here waits for all needed data (frame 3) before pushing to the FIFO.
   always_ff @(posedge clk_mrmac)
     fifo_rx_cmd_in_vld <= notify_ack_received | notify_request_received | read_request_received | ciphertext_emission_received;
 
@@ -249,16 +257,26 @@ module mhdma_decoder
   end
 
   // payload interface to master module -----------------------------------------------------------
+  // Two pipe stages to align with the command FIFO push timing: the registered *_received
+  // signals add one cycle to the command path, so the payload must be delayed to match.
+  logic [MRMAC_AXIS_W-1:0] rx_tdata_pipe;
+  logic                    rx_tvalid_pipe;
+
   always_ff @(posedge clk_mrmac)
     if (ce_received & rx_tvalid_in & (rx_tkeep_user_in != 'h0) & (rx_counter>NB_WORDS_CUST_HEADER_SIZE-1))
-      rx_tdata_out <= qsfp_rx_tdata_bs;
+      rx_tdata_pipe <= qsfp_rx_tdata_bs;
 
   always_ff @(posedge clk_mrmac) begin
     if (ce_received & rx_tvalid_in & (rx_tkeep_user_in != 'h0) & (rx_counter>NB_WORDS_CUST_HEADER_SIZE-1)) begin
-      rx_tvalid_out <= 1'b1;
+      rx_tvalid_pipe <= 1'b1;
     end else begin
-      rx_tvalid_out <= 1'b0;
+      rx_tvalid_pipe <= 1'b0;
     end
+  end
+
+  always_ff @(posedge clk_mrmac) begin
+    rx_tdata_out  <= rx_tdata_pipe;
+    rx_tvalid_out <= rx_tvalid_pipe;
   end
 
   // =========================================================================================== //

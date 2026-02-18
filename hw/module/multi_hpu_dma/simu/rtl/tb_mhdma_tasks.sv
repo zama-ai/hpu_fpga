@@ -42,7 +42,9 @@ task automatic send_notify_packet(
   input logic [MAC_ADDR_W-1:0]    src_mac_addr,
   input logic [HPU_ID_W-1:0]      dst_hpu_id,
   input logic [IOP_ID_W-1:0]      iop_id,
-  input logic [SRC_ADDR_W-1:0]    src_addr
+  input logic [SRC_ADDR_W-1:0]    src_addr,
+  input logic [FLAG_W-1:0]        flag = 6'h0,
+  input logic [MODE_W-1:0]        mode = 2'b0
 );
   logic [MRMAC_AXIS_W-1:0] pkt_data [8];
   begin
@@ -50,7 +52,7 @@ task automatic send_notify_packet(
     pkt_data[0] = {MAC_OUI, dst_mac_addr, MAC_OUI[MAC_OUI_W-1:8]};
     pkt_data[1] = {MAC_OUI[7:0], src_mac_addr, ETH_LEN_MIN, LLC_DSAP, LLC_SSAP};
     pkt_data[2] = {LLC_CTRL, REQ_ID_NOTIFY, dst_hpu_id, 8'h00, src_addr, 16'h0000, iop_id};
-    pkt_data[3] = 64'h0;
+    pkt_data[3] = {8'h0, flag, mode, 48'h0};
     for (int i = 4; i < 8; i++) pkt_data[i] = 64'h0;
 
     // Send packet
@@ -77,7 +79,9 @@ task automatic send_notify_ack_packet(
   input logic [HPU_ID_W-1:0]      dst_hpu_id,
   input logic [IOP_ID_W-1:0]      iop_id,
   input logic [SRC_ADDR_W-1:0]    src_addr,
-  input logic [DST_ADDR_W-1:0]    dst_addr
+  input logic [DST_ADDR_W-1:0]    dst_addr,
+  input logic [FLAG_W-1:0]        flag = 6'h0,
+  input logic [MODE_W-1:0]        mode = 2'b0
 );
   logic [MRMAC_AXIS_W-1:0] pkt_data [8];
   begin
@@ -85,7 +89,7 @@ task automatic send_notify_ack_packet(
     pkt_data[0] = {MAC_OUI, dst_mac_addr, MAC_OUI[MAC_OUI_W-1:8]};
     pkt_data[1] = {MAC_OUI[7:0], src_mac_addr, ETH_LEN_MIN, LLC_DSAP, LLC_SSAP};
     pkt_data[2] = {LLC_CTRL, REQ_ID_NOTIFY_ACK, dst_hpu_id, 8'b0, src_addr, dst_addr, iop_id};
-    pkt_data[3] = 64'h0;
+    pkt_data[3] = {8'h0, flag, mode, 48'h0};
     for (int i = 4; i < 8; i++) pkt_data[i] = 64'h0;
 
     // Send packet
@@ -106,13 +110,15 @@ endtask
 
 // Send a Read Request packet via QSFP RX interface
 task automatic send_read_request_packet(
-  virtual qsfp_if.master       vif,
+  virtual qsfp_if.master          vif,
   input logic [MAC_ADDR_W-1:0]    dst_mac_addr,
   input logic [MAC_ADDR_W-1:0]    src_mac_addr,
   input logic [HPU_ID_W-1:0]      dst_hpu_id,
   input logic [IOP_ID_W-1:0]      iop_id,
   input logic [SRC_ADDR_W-1:0]    src_addr,
-  input logic [DST_ADDR_W-1:0]    dst_addr
+  input logic [DST_ADDR_W-1:0]    dst_addr,
+  input logic [FLAG_W-1:0]        flag = 6'h0,
+  input logic [MODE_W-1:0]        mode = 2'b0
 );
   logic [MRMAC_AXIS_W-1:0] pkt_data [8];
   begin
@@ -120,7 +126,7 @@ task automatic send_read_request_packet(
     pkt_data[0] = {MAC_OUI, dst_mac_addr, MAC_OUI[MAC_OUI_W-1:8]};
     pkt_data[1] = {MAC_OUI[7:0], src_mac_addr, ETH_LEN_MIN, LLC_DSAP, LLC_SSAP};
     pkt_data[2] = {LLC_CTRL, REQ_ID_READ, dst_hpu_id, 8'h00, src_addr, dst_addr, iop_id};
-    pkt_data[3] = 64'h0;
+    pkt_data[3] = {8'h0, flag, mode, 48'h0};
     for (int i = 4; i < 8; i++) pkt_data[i] = 64'h0;
 
     // Send packet
@@ -140,23 +146,37 @@ task automatic send_read_request_packet(
 endtask
 
 // Send a Ciphertext Emission packet via QSFP RX interface
+// payload_data_out returns the raw payload words for verification.
+// num_payload_words: when 0 (default), computed from seq_num.
 task automatic send_ciphertext_emission_packet(
-  virtual qsfp_if.master          vif,
-  input logic [MAC_ADDR_W-1:0]    dst_mac_addr,
-  input logic [MAC_ADDR_W-1:0]    src_mac_addr,
-  input logic [HPU_ID_W-1:0]      dst_hpu_id,
-  input logic [IOP_ID_W-1:0]      iop_id,
-  input logic [SRC_ADDR_W-1:0]    src_addr,
-  input logic [DST_ADDR_W-1:0]    dst_addr,
-  input logic [SEQ_NUM_W-1:0]     seq_num
+  virtual qsfp_if.master                vif,
+  input  logic [MAC_ADDR_W-1:0]         dst_mac_addr,
+  input  logic [MAC_ADDR_W-1:0]         src_mac_addr,
+  input  logic [HPU_ID_W-1:0]           dst_hpu_id,
+  input  logic [IOP_ID_W-1:0]           iop_id,
+  input  logic [SRC_ADDR_W-1:0]         src_addr,
+  input  logic [DST_ADDR_W-1:0]         dst_addr,
+  input  logic [SEQ_NUM_W-1:0]          seq_num,
+  output logic [MRMAC_AXIS_W-1:0]       payload_data_out [$],
+  input  logic [FLAG_W-1:0]             flag = 6'h0,
+  input  logic [MODE_W-1:0]             mode = 2'b0,
+  input  int                            num_payload_words = 0
 );
-  int num_payload_words;
+  int nwords;
   logic [MRMAC_AXIS_W-1:0] pkt_data;
+  logic [MRMAC_AXIS_W-1:0] word;
   begin
-    if (seq_num == NB_PACKETS_FULL) begin
-      num_payload_words = NB_WORDS_LAST_PACKET;
+    payload_data_out = {};
+
+    // Compute payload size from seq_num when not explicitly provided
+    if (num_payload_words == 0) begin
+      if (seq_num == NB_PACKETS_FULL) begin
+        nwords = NB_WORDS_LAST_PACKET;
+      end else begin
+        nwords = NB_WORDS_PAYLOAD;
+      end
     end else begin
-      num_payload_words = NB_WORDS_PAYLOAD;
+      nwords = num_payload_words;
     end
 
     @(posedge vif.clk);
@@ -181,15 +201,17 @@ task automatic send_ciphertext_emission_packet(
     vif.tvalid     = 1'b1;
 
     @(posedge vif.clk);
-    pkt_data       = 64'h0;
+    pkt_data       = {8'h0, flag, mode, 48'h0};
     vif.tdata      = byte_swap(pkt_data);
     vif.tkeep_user = 11'h0FF;
     vif.tlast      = 1'b0;
     vif.tvalid     = 1'b1;
 
-    // Payload words
-    for (int i = 0; i < num_payload_words - 1; i++) begin
+    for (int i = 0; i < nwords - 1; i++) begin
       @(posedge vif.clk);
+      // word = {$urandom(), $urandom()};
+      // payload_data_out.push_back(byte_swap(word));
+      // vif.tdata      = byte_swap(word);
       vif.tdata      = {$urandom(), $urandom()};
       vif.tkeep_user = 11'h0FF;
       vif.tlast      = 1'b0;

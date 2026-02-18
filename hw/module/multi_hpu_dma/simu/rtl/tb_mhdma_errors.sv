@@ -93,6 +93,8 @@ module tb_mhdma_errors;
 // ============================================================================================== --
 // DUT signals
 // ============================================================================================== --
+  logic [MRMAC_AXIS_W-1:0]                unused_payload [$];
+
   // AXI4-Lite interface
   logic [AXIL_ADD_W-1:0]                  s_axil_dma_awaddr;
   logic                                   s_axil_dma_awvalid;
@@ -607,7 +609,7 @@ module tb_mhdma_errors;
         iop_id = $urandom();
         src_addr = $urandom();
         dst_addr = $urandom();
-        send_ciphertext_emission_packet(qsfp_rx_vif[0], dst_mac_addr, src_mac_addr, dst_hpu_id, iop_id, src_addr, dst_addr, pkt[7:0]);
+        send_ciphertext_emission_packet(qsfp_rx_vif[0], dst_mac_addr, src_mac_addr, dst_hpu_id, iop_id, src_addr, dst_addr, pkt[7:0], unused_payload);
         repeat(10) @(posedge clk_mrmac);
       end
 
@@ -666,7 +668,7 @@ module tb_mhdma_errors;
         iop_id = $urandom();
         src_addr = $urandom();
         dst_addr = $urandom();
-        send_ciphertext_emission_packet(qsfp_rx_vif[0], dst_mac_addr, src_mac_addr, dst_hpu_id, iop_id, src_addr, dst_addr, i[7:0]);
+        send_ciphertext_emission_packet(qsfp_rx_vif[0], dst_mac_addr, src_mac_addr, dst_hpu_id, iop_id, src_addr, dst_addr, i[7:0], unused_payload);
         repeat(5) @(posedge clk_mrmac);
       end
 
@@ -712,9 +714,9 @@ module tb_mhdma_errors;
         src_addr = $urandom();
         dst_addr = $urandom();
         if (pkt == 6) begin
-          send_ciphertext_emission_packet(qsfp_rx_vif[0], dst_mac_addr, src_mac_addr, dst_hpu_id, iop_id, src_addr, dst_addr, 5);
+          send_ciphertext_emission_packet(qsfp_rx_vif[0], dst_mac_addr, src_mac_addr, dst_hpu_id, iop_id, src_addr, dst_addr, 5, unused_payload);
         end else begin
-          send_ciphertext_emission_packet(qsfp_rx_vif[0], dst_mac_addr, src_mac_addr, dst_hpu_id, iop_id, src_addr, dst_addr, pkt[7:0]);
+          send_ciphertext_emission_packet(qsfp_rx_vif[0], dst_mac_addr, src_mac_addr, dst_hpu_id, iop_id, src_addr, dst_addr, pkt[7:0], unused_payload);
         end
         repeat(10) @(posedge clk_mrmac);
       end

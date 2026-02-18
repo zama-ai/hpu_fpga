@@ -59,7 +59,7 @@
       "is_include_file": false
     },
     {
-      "name": "hw/module/multi_hpu_dma/simu/rtl/tb_mhdma_several.sv",
+      "name": "hw/module/multi_hpu_dma/simu/rtl/unit_tests/tb_mhdma_decoder.sv",
       "library": "work",
       "env": ["simu"],
       "target": ["all"],

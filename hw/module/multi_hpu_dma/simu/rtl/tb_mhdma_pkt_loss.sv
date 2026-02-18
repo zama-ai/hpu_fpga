@@ -63,12 +63,8 @@ module tb_mhdma_pkt_loss;
 
   localparam int MAX_BURST_SIZE  = PAGE_BYTES/AXI4_DATA_BYTES;
 
-  // Use CT_MEM_BYTES from pem_common_param_pkg for address calculation
-  localparam int PC_CT_BYTES [ETH_PC] = '{default: CT_MEM_BYTES};
-
-  // PC0 has one extra word (body word), remaining PCs use AXI4_WORD_PER_PC
-
   localparam int TOTAL_NB_PACKETS = $ceil(CT_NB_COEF / NB_WORDS_PAYLOAD) + 1;
+
 // ============================================================================================== --
 // clock, reset
 // ============================================================================================== --
@@ -136,6 +132,8 @@ module tb_mhdma_pkt_loss;
 // ============================================================================================== --
 // input / output signals
 // ============================================================================================== --
+  logic [MRMAC_AXIS_W-1:0]    unused_payload [$];
+
   logic [AXIL_ADD_W-1:0]      s_axil_dma_awaddr;
   logic                       s_axil_dma_awvalid;
   logic                       s_axil_dma_awready;
@@ -689,7 +687,7 @@ logic [DST_ADDR_W-1:0] dst_addr;
 
     // Send ciphertext emission packets as if we're the remote HPU responding
     for (int pkt = 0; pkt < NB_PACKETS_FULL+1; pkt++) begin
-      send_ciphertext_emission_packet(qsfp_rx_vif[0], dst_mac_addr, src_mac_addr, dst_hpu_id, iop_id, iop_src_addr, iop_dst_addr, pkt[7:0]);
+      send_ciphertext_emission_packet(qsfp_rx_vif[0], dst_mac_addr, src_mac_addr, dst_hpu_id, iop_id, iop_src_addr, iop_dst_addr, pkt[7:0], unused_payload);
       repeat(10) @(posedge clk_mrmac);
     end
 
@@ -743,7 +741,7 @@ logic [DST_ADDR_W-1:0] dst_addr;
 
   // Send ciphertext emission packets as if we're the remote HPU responding
     for (int pkt = 0; pkt < NB_PACKETS_FULL+1; pkt++) begin
-      send_ciphertext_emission_packet(qsfp_rx_vif[0], dst_mac_addr, src_mac_addr, dst_hpu_id, iop_id, iop_src_addr, iop_dst_addr, pkt[7:0]);
+      send_ciphertext_emission_packet(qsfp_rx_vif[0], dst_mac_addr, src_mac_addr, dst_hpu_id, iop_id, iop_src_addr, iop_dst_addr, pkt[7:0], unused_payload);
       repeat(10) @(posedge clk_mrmac);
     end
 
@@ -801,9 +799,9 @@ logic [DST_ADDR_W-1:0] dst_addr;
     for (int pkt = 0; pkt < NB_PACKETS_FULL+1; pkt++) begin
       if (pkt == 8) begin
         // for 8th packet we send a wrong arbitrary seq_num (3 < expected 8 = backward mismatch)
-        send_ciphertext_emission_packet(qsfp_rx_vif[0], dst_mac_addr, src_mac_addr, dst_hpu_id, iop_id, src_addr, dst_addr, 3);
+        send_ciphertext_emission_packet(qsfp_rx_vif[0], dst_mac_addr, src_mac_addr, dst_hpu_id, iop_id, iop_src_addr, iop_dst_addr, 3, unused_payload);
       end else begin
-        send_ciphertext_emission_packet(qsfp_rx_vif[0], dst_mac_addr, src_mac_addr, dst_hpu_id, iop_id, iop_src_addr, iop_dst_addr, pkt[7:0]);
+        send_ciphertext_emission_packet(qsfp_rx_vif[0], dst_mac_addr, src_mac_addr, dst_hpu_id, iop_id, iop_src_addr, iop_dst_addr, pkt[7:0], unused_payload);
       end
       repeat(10) @(posedge clk_mrmac);
     end
@@ -843,6 +841,26 @@ logic [DST_ADDR_W-1:0] dst_addr;
         zero_check_pass = 1'b1;
         err_cnt = 0;
 
+        // Check boundary AXI4 word: at most one MRMAC word (lowest slot) may be non-zero
+        if (gap_start_flat < AXI4_WORD_PER_PC0) begin
+          mem_val = gen_mem_pc[0].axi4_mem_ct.axi4_ram_ct_wr.mem[base_word_ofs + gap_start_flat];
+        end else begin
+          mem_val = gen_mem_pc[1].axi4_mem_ct.axi4_ram_ct_wr.mem[base_word_ofs + gap_start_flat - AXI4_WORD_PER_PC0];
+        end
+
+        assert (mem_val[AXI4_DATA_W-1:MRMAC_AXIS_W] === '0) begin
+          $display("%t > [INFO]: Boundary word %0d: 1 MRMAC word leaked (expected), upper slots zero",
+                   $time, gap_start_flat);
+        end else begin
+          $display("%t > [ERROR]: Boundary word %0d: more than 1 MRMAC word leaked, val=0x%h",
+                   $time, gap_start_flat, mem_val);
+          zero_check_pass = 1'b0;
+        end
+
+        // Check remaining gap (boundary+1 onward) is fully zero
+        gap_start_flat = gap_start_flat + 1;
+        gap_size_flat  = gap_size_flat - 1;
+
         $display("%t > [INFO]: Checking zero-padding: flat AXI4 words [%0d:%0d], base_word_ofs=%0d",
                  $time, gap_start_flat, gap_start_flat + gap_size_flat - 1, base_word_ofs);
 
@@ -880,13 +898,13 @@ logic [DST_ADDR_W-1:0] dst_addr;
         // Respond to retry with correct ciphertext emission (all packets from seq_num 0)
         // DUT is in wait_for_seq0 mode and will ignore stale CEs until seq_num == 0
         for (int pkt = 0; pkt < NB_PACKETS_FULL+1; pkt++) begin
-          send_ciphertext_emission_packet(qsfp_rx_vif[0], dst_mac_addr, src_mac_addr, dst_hpu_id, iop_id, iop_src_addr, iop_dst_addr, pkt[7:0]);
+          send_ciphertext_emission_packet(qsfp_rx_vif[0], dst_mac_addr, src_mac_addr, dst_hpu_id, iop_id, iop_src_addr, iop_dst_addr, pkt[7:0], unused_payload);
           repeat(10) @(posedge clk_mrmac);
         end
       end
     join
 
-    repeat(100) @(posedge clk_control);
+    repeat(200) @(posedge clk_control);
 
     if (interrupt_read_request) begin
       maxil_drv_if.read_trans(MHDMA_REQUEST_READ_REQUEST_REQ_ID_OFS, read_data); // don't care about answer just need to lower itr
@@ -927,7 +945,7 @@ logic [DST_ADDR_W-1:0] dst_addr;
       if (pkt == 8) begin
         $display("%t > [INFO]: Dropping packet 8", $time);
       end else begin
-        send_ciphertext_emission_packet(qsfp_rx_vif[0], dst_mac_addr, src_mac_addr, dst_hpu_id, iop_id, iop_src_addr, iop_dst_addr, pkt[7:0]);
+        send_ciphertext_emission_packet(qsfp_rx_vif[0], dst_mac_addr, src_mac_addr, dst_hpu_id, iop_id, iop_src_addr, iop_dst_addr, pkt[7:0], unused_payload);
       end
       repeat(2) @(posedge clk_mrmac);
     end
@@ -1004,7 +1022,7 @@ logic [DST_ADDR_W-1:0] dst_addr;
 
         // Respond to retry with correct ciphertext emission (all packets)
         for (int pkt = 0; pkt < NB_PACKETS_FULL+1; pkt++) begin
-          send_ciphertext_emission_packet(qsfp_rx_vif[0], dst_mac_addr, src_mac_addr, dst_hpu_id, iop_id, iop_src_addr, iop_dst_addr, pkt[7:0]);
+          send_ciphertext_emission_packet(qsfp_rx_vif[0], dst_mac_addr, src_mac_addr, dst_hpu_id, iop_id, iop_src_addr, iop_dst_addr, pkt[7:0], unused_payload);
           repeat(10) @(posedge clk_mrmac);
         end
 
