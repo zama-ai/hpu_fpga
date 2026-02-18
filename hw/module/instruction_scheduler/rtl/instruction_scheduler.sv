@@ -142,8 +142,8 @@ logic sync_rdy;
 // Use FifoElem type 3 to cut the rdy path for timing purpose
 fifo_element #(
   .WIDTH          (PE_INST_W),
-  .DEPTH          (2),
-  .TYPE_ARRAY     (8'h31),
+  .DEPTH          (1),
+  .TYPE_ARRAY     (8'h3),
   .DO_RESET_DATA  (0),
   .RESET_DATA_VAL (0)
 ) insn_ack_fifo_element (
