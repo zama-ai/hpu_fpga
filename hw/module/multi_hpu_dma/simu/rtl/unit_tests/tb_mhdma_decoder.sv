@@ -20,7 +20,7 @@
 //   > Notify ACK packet decode
 //   > Read Request packet decode
 //   > Ciphertext Emission packet decode
-//   > MAC address filtering//
+//   > MAC address filtering
 //   > Back-to-back packets
 //   > FIFO backpressure & error overflow
 //   > Statistics reset
@@ -352,14 +352,14 @@ module tb_mhdma_decoder;
 
       consume_decoded_command(captured_command);
 
-      assert (captured_command.req_id   == REQ_ID_READ)  else begin $display("[ERROR:%0d]: req_id mismatch", scenario_id);   error_decoded_cmd = 1'b1; end
-      assert (captured_command.hpu_id   == dst_hpu_id)   else begin $display("[ERROR:%0d]: hpu_id mismatch", scenario_id);   error_decoded_cmd = 1'b1; end
-      assert (captured_command.iop_id   == iop_id)       else begin $display("[ERROR:%0d]: iop_id mismatch", scenario_id);   error_decoded_cmd = 1'b1; end
-      assert (captured_command.src_addr == src_addr)     else begin $display("[ERROR:%0d]: src_addr mismatch", scenario_id); error_decoded_cmd = 1'b1; end
-      assert (captured_command.dst_addr == dst_addr)     else begin $display("[ERROR:%0d]: dst_addr mismatch", scenario_id); error_decoded_cmd = 1'b1; end
-      assert (captured_command.flag     == flag)         else begin $display("[ERROR:%0d]: flag mismatch", scenario_id);     error_decoded_cmd = 1'b1; end
-      assert (captured_command.mode     == mode)         else begin $display("[ERROR:%0d]: mode mismatch", scenario_id);     error_decoded_cmd = 1'b1; end
-      assert (captured_command.rsvd     == 8'h00)        else begin $display("[ERROR:%0d]: rsvd mismatch", scenario_id);     error_decoded_cmd = 1'b1; end
+      assert (captured_command.req_id   == REQ_ID_READ) else begin $display("[ERROR:%0d]: req_id mismatch", scenario_id);   error_decoded_cmd = 1'b1; end
+      assert (captured_command.hpu_id   == dst_hpu_id)  else begin $display("[ERROR:%0d]: hpu_id mismatch", scenario_id);   error_decoded_cmd = 1'b1; end
+      assert (captured_command.iop_id   == iop_id)      else begin $display("[ERROR:%0d]: iop_id mismatch", scenario_id);   error_decoded_cmd = 1'b1; end
+      assert (captured_command.src_addr == src_addr)    else begin $display("[ERROR:%0d]: src_addr mismatch", scenario_id); error_decoded_cmd = 1'b1; end
+      assert (captured_command.dst_addr == dst_addr)    else begin $display("[ERROR:%0d]: dst_addr mismatch", scenario_id); error_decoded_cmd = 1'b1; end
+      assert (captured_command.flag     == flag)        else begin $display("[ERROR:%0d]: flag mismatch", scenario_id);     error_decoded_cmd = 1'b1; end
+      assert (captured_command.mode     == mode)        else begin $display("[ERROR:%0d]: mode mismatch", scenario_id);     error_decoded_cmd = 1'b1; end
+      assert (captured_command.rsvd     == 8'h00)       else begin $display("[ERROR:%0d]: rsvd mismatch", scenario_id);     error_decoded_cmd = 1'b1; end
 
       assert (stat.cnt_read_req_received == 1) else begin $display("[ERROR:%0d]: cnt_read_req_received != 1", scenario_id);  error_stat = 1'b1; end
 
@@ -423,7 +423,7 @@ module tb_mhdma_decoder;
       end
 
       assert (received_payload.size() == num_payload_words) else begin
-        $display("[ERROR:%0d]: payload word count mismatch: got %0d, expected %0d", received_payload.size(), scenario_id, num_payload_words);
+        $display("[ERROR:%0d]: payload word count mismatch: got %0d, expected %0d", scenario_id, received_payload.size(), num_payload_words);
         error_payload = 1'b1;
       end
 
@@ -893,9 +893,11 @@ module tb_mhdma_decoder;
   // After reset and before any CE reception, rx_tvalid_out must be low.
   // During non-CE reception (req_id != REQ_ID_EMISSION), rx_tvalid_out must be low.
   // Note: decoder.ce_received is the registered version indicating CE is in progress.
+  // rx_tdata_out/rx_tvalid_out are two pipeline stages behind ce_received
+  // (rx_tvalid_pipe then rx_tvalid_out), so rx_tvalid_out can trail ce_received by up to 2 cycles.
   property rx_tvalid_only_during_ce;
     @(posedge clk) disable iff (~s_rstn)
-    (rx_tvalid_out) |-> (decoder.ce_received);
+    (rx_tvalid_out) |-> (decoder.ce_received || $past(decoder.ce_received) || $past(decoder.ce_received, 2));
   endproperty
 
   assert_rx_tvalid_only_during_ce: assert property(rx_tvalid_only_during_ce)

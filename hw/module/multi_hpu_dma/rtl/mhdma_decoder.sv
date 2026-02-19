@@ -114,7 +114,7 @@ module mhdma_decoder
     end
   end
 
-  // FRAME 0 ------------------------------------------------------------------
+  // FRAME 0 --------------------------------------------------------------------------------------
   // dst_mac_addr
   //    destination mac address is not needed from the first clock cycle
   //    this register will help define if next words in receptions are valid
@@ -133,7 +133,7 @@ module mhdma_decoder
 
   assign rx_valid = (current_hpu_mac == dst_mac_addr);
 
-  // FRAME 1 ------------------------------------------------------------------
+  // FRAME 1 --------------------------------------------------------------------------------------
   // src_mac_address and eth len
   always_ff @(posedge clk_mrmac) begin
     if ((rx_tvalid_in) & (rx_counter == 1)) begin
@@ -142,7 +142,12 @@ module mhdma_decoder
       end
   end
 
-  // FRAME 2 ------------------------------------------------------------------
+  // FRAME 2 --------------------------------------------------------------------------------------
+  logic notify_request_received;
+  logic read_request_received;
+  logic ciphertext_emission_received;
+  // notify_ack_received is an output
+
   // req_id, hpu_id, seq_num, src_addr, dst_addr and iop_id
   always_ff @(posedge clk_mrmac) begin
     if ((rx_tvalid_in) & (rx_counter == 2)) begin
@@ -167,31 +172,20 @@ module mhdma_decoder
     end
   end
 
-  // FRAME 3 ------------------------------------------------------------------
-  // rsvd, flag, mode
-  always_ff @(posedge clk_mrmac) begin
-    if ((rx_counter == 3) & rx_valid) begin
-      rsvd <= h3.h3_rsvd;
-      flag <= h3.flag;
-      mode <= h3.mode;
-    end
-  end
-
-  // assigning output -----------------------------------------------------------------------------
   logic nack_receivedD;
   logic nr_receivedD;
   logic rr_receivedD;
   logic ce_receivedD;
 
-  logic nack_received;
-  logic nr_received;
-  logic rr_received;
-  logic ce_received;
-
   assign nack_receivedD = rx_valid & (req_id == REQ_ID_NOTIFY_ACK);
   assign nr_receivedD   = rx_valid & (req_id == REQ_ID_NOTIFY);
   assign rr_receivedD   = rx_valid & (req_id == REQ_ID_READ);
   assign ce_receivedD   = rx_valid & (req_id == REQ_ID_EMISSION);
+
+  logic nack_received;
+  logic nr_received;
+  logic rr_received;
+  logic ce_received;
 
   always_ff @(posedge clk_mrmac) begin
     nack_received <= nack_receivedD;
@@ -200,11 +194,6 @@ module mhdma_decoder
     ce_received   <= ce_receivedD;
   end
 
-  logic notify_request_received;
-  logic read_request_received;
-  logic ciphertext_emission_received;
-  // notify_ack_received is an output
-
   always_ff @(posedge clk_mrmac) begin
     notify_ack_received          <= nack_receivedD & ~nack_received;
     notify_request_received      <= nr_receivedD   & ~nr_received;
@@ -212,13 +201,24 @@ module mhdma_decoder
     ciphertext_emission_received <= ce_receivedD   & ~ce_received;
   end
 
+
+  // FRAME 3 --------------------------------------------------------------------------------------
+  // There are four frames in total to account for
+  // We are decoding received command at Frame 2
+  // Fields (rsvd, flag, mode) are registered
+  always_ff @(posedge clk_mrmac) begin
+    if ((rx_counter == 3) & rx_valid) begin
+      rsvd <= h3.h3_rsvd;
+      flag <= h3.flag;
+      mode <= h3.mode;
+    end
+  end
+
   logic fifo_rx_cmd_in_vld;
   logic fifo_rx_cmd_in_rdy;
 
-  // There are four frames to account for. We are decoding received command at Frame 2 but Frame 3
-  // fields (rsvd, flag, mode) are registered.
-  // *_received signals are also registered for pulse generation.
-  // Adding another pipes here waits for all needed data (frame 3) before pushing to the FIFO.
+  // *_received signals are at frame 2.
+  // Registering fifo_rx_cmd_in_vld for all needed data (frame 3) ready before pushing into FIFO
   always_ff @(posedge clk_mrmac)
     fifo_rx_cmd_in_vld <= notify_ack_received | notify_request_received | read_request_received | ciphertext_emission_received;
 
@@ -256,7 +256,9 @@ module mhdma_decoder
     end
   end
 
-  // payload interface to master module -----------------------------------------------------------
+  // =========================================================================================== //
+  // payload interface to master module
+  // =========================================================================================== //
   // Two pipe stages to align with the command FIFO push timing: the registered *_received
   // signals add one cycle to the command path, so the payload must be delayed to match.
   logic [MRMAC_AXIS_W-1:0] rx_tdata_pipe;
