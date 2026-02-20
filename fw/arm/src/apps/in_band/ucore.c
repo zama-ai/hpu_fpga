@@ -331,19 +331,21 @@ void iop_teardown(uint8_t iid) {
   //flush dst_notifyq
   RemoteOperand_t *remote_operand = dst_notifyq_getdst(iid);
   while (remote_operand != NULL) {
-    //PLL_INF("ucore", "[HPU%d] iop_teardown remote_operand iid %d pos %d state %d src %d dst %04x target %d",
-    //    phys_hpu_id,
-    //    iid,
-    //    remote_operand->pos,
-    //    remote_operand->state,
-    //    remote_operand->src_cid,
-    //    remote_operand->dst_cid,
-    //    remote_operand->target_cid);
+    PLL_ERR("ucore", "[HPU%d] iop_teardown remote_operand iid %d pos %d state %d src %d dst %04x target %d",
+        phys_hpu_id,
+        iid,
+        remote_operand->pos,
+        remote_operand->state,
+        remote_operand->src_cid,
+        remote_operand->dst_cid,
+        remote_operand->target_cid);
     remote_operand->state = OPERAND_STATE_READ_PENDING;
     generate_ucore_notify(iid, remote_operand->pos, remote_operand->src_cid, remote_operand->dst_cid, remote_operand->target_cid);
     remote_operand = dst_notifyq_getdst(iid);
 #ifdef UCORE_MHDMA_SIMU
-    sleep(3);
+    //sleep(3);
+#else
+    iOSAL_Task_SleepTicks(10);
 #endif
   }
   //flush remote source queue

@@ -36,7 +36,7 @@ extern mhdma_element_t mhdma_table[IOP_ID_MAX_COUNT][FLAG_MAX_COUNT];
   }
 #else
   volatile uint32_t *cmd_req_id = (volatile uint32_t*)(XPAR_AXI_LPD_BASEADDR + MHDMA_CMD_WRITE_REQ_ID );
-  volatile uint32_t *cmd_req_addr = (volatile uint32_t*)(XPAR_AXI_LPD_BASEADDR + MHDMA_CMD_WRITE_REQ_ID );
+  volatile uint32_t *cmd_req_addr = (volatile uint32_t*)(XPAR_AXI_LPD_BASEADDR + MHDMA_CMD_WRITE_REQ_ADDR );
   
   void write_read_req_command(uint8_t master_hpu_id, uint64_t cmd) {
     (void)master_hpu_id;
@@ -46,9 +46,15 @@ extern mhdma_element_t mhdma_table[IOP_ID_MAX_COUNT][FLAG_MAX_COUNT];
   }
   void write_notify_command(uint8_t slave_hpu_id, uint64_t cmd) {
     (void)slave_hpu_id;
+    //PLL_ERR("mhdma_driver", "write notify %08x:%08x %08x:%08x",
+    //    (uintptr_t)cmd_req_id,
+    //    (cmd & 0xFFFFFFFF),
+    //    (uintptr_t)cmd_req_addr,
+    //    ((cmd >> 32) & 0xFFFFFFFF));
     *cmd_req_id = cmd & 0xFFFFFFFF;
+    HAL_FLUSH_CACHE_DATA( (uintptr_t)cmd_req_id, sizeof(uint32_t));
     *cmd_req_addr = (cmd >> 32) & 0xFFFFFFFF;
-    HAL_FLUSH_CACHE_DATA( (uintptr_t)cmd_req_id, sizeof(uint64_t));
+    HAL_FLUSH_CACHE_DATA( (uintptr_t)cmd_req_addr, sizeof(uint32_t));
   }
 #endif
 
@@ -144,7 +150,7 @@ void generate_iop_notify(uint8_t iop_id, uint8_t nb_hpus, uint8_t master_hpu_id)
 }
 
 void generate_ucore_notify(uint8_t iid, uint8_t master_hpu_id, uint16_t src_cid, uint16_t dst_cid, uint16_t target_cid) {
-  //PLL_INF("mhdma", "[HPU%d] generate notify for iop %d mode %d dst from hpu %d to hpu %d src_ct_id %d dst_ct_id %d dst tid %d bid %d",
+  //PLL_ERR("mhdma", "[HPU%d] generate notify for iop %d mode %d dst from hpu %d to hpu %d src_ct_id %d dst_ct_id %d dst tid %d bid %d",
   //    phys_hpu_id,
   //    iid,
   //    CMD_DST,

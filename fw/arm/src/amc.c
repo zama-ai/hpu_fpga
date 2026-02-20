@@ -656,7 +656,7 @@ static void vTaskFuncMain( void )
        PLL_ERR( AMC_NAME, "MHDMA MBOX initialised\r\n" );
     }
 
-    if ( OSAL_ERRORS_NONE != iOSAL_Task_Create(&xMhdmaWorkerTask, vMhdmaWorkerTask, 1024, NULL, AMC_TASK_PRIO_DEFAULT, "Mhdma Worker") ) {
+    if ( OSAL_ERRORS_NONE != iOSAL_Task_Create(&xMhdmaWorkerTask, vMhdmaWorkerTask, 4096, NULL, AMC_TASK_PRIO_DEFAULT, "Mhdma Worker") ) {
        PLL_ERR( AMC_NAME, "failed creating MHDMA worker task\r\n" );
     } else {
        PLL_ERR( AMC_NAME, "MHDMA worker task initialised\r\n" );
