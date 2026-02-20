@@ -3,6 +3,22 @@
 // Copyright © 2025 ZAMA. All rights reserved.
 // ----------------------------------------------------------------------------------------------
 // Description  : Multi-HPU DMA reception and decoder module
+//
+// Receives raw QSFP RX AXI-Stream data, parses the custom Ethernet header word by word (h0..h3),
+// pushes decoded commands into a FIFO for downstream consumption.
+// For Ciphertext Emission packets, payload data is forwarded on a separate AXI-Stream like bus
+//
+// Latency: QSFP input to decoded command =
+//  > input stage (1) + frame parsing (4) + fifo_rx_cmd (1) = 6 cycles
+//
+// Assumptions / Limitations:
+// - No backpressure on QSFP RX input (no tready output with MRMAC configuration).
+//   If the command FIFO overflows, incoming commands are silently dropped and error_fifo_rx_ovf is
+//    raised (sticky until rst_errors).
+// - A packet with an unrecognized req_id, registers dst_mac_addr and req_id but generates
+//    no command & increments no counter.
+// - Stat counters (cnt_*) are REG_DATA_W wide with no saturation. They wrap on overflow.
+//
 // ==============================================================================================
 
 module mhdma_decoder
@@ -36,9 +52,9 @@ module mhdma_decoder
   input  logic                     qsfp_rx_tvalid
 );
 
-  // ==============================================================================================
-  // Temp axi4-stream inputs
-  // ==============================================================================================
+  // =========================================================================================== //
+  // Input pipeline stage
+  // =========================================================================================== //
   logic [MRMAC_AXIS_W-1:0]  rx_tdata_in;
   logic [MRMAC_TKEEP_W-1:0] rx_tkeep_user_in;
   logic                     rx_tlast_in;
@@ -53,31 +69,38 @@ module mhdma_decoder
   always_ff @(posedge clk_mrmac)
     rx_tlast_in <= qsfp_rx_tlast;
 
-  always_ff @(posedge clk_mrmac)
-    rx_tvalid_in <= qsfp_rx_tvalid;
+  always_ff @(posedge clk_mrmac) begin
+    if (~resetn_mrmac) begin
+      rx_tvalid_in <= ('h0);
+    end else begin
+      rx_tvalid_in <= qsfp_rx_tvalid;
+    end
+  end
 
-  // ==============================================================================================
-  // packet decoder
-  // ==============================================================================================
-  // On RX lanes, should know as soon as possible what type of packets I should see
-  // First frame I can check that the destination address is me
-  logic [MAC_ADDR_W-1:0] dst_mac_addr;
+  // =========================================================================================== //
+  // Packet decoder
+  // =========================================================================================== //
+  // Frame-by-frame field extraction from byte-swapped AXI-Stream data.
+  // Frame 0 (counter==0, h0): dst_mac_addr  → used to build rx_valid
+  logic [MAC_ADDR_W-1:0]   dst_mac_addr;
+  // Frame 1 (counter==1, h1): src_mac_addr, eth_len
   logic [ETHERNET_LEN-1:0] eth_len;
-  // Second frame I will know who is the sender, request ID, seq num
-  logic [SEQ_NUM_W-1:0]  seq_num;
-  logic [HPU_ID_W-1:0]   hpu_id;
-  logic [REQ_ID_W-1:0]   req_id;
-  logic [MAC_ADDR_W-1:0] src_mac_addr;
-  // third frame, ct src/dst address, iop id, rsvd/flag/mode
-  logic [RSVD_W-1:0]    rsvd;
-  logic [FLAG_W-1:0]    flag;
-  logic [MODE_W-1:0]    mode;
-  logic [IOP_ID_W-1:0]  iop_id;
-  logic [SRC_ADDR_W-1:0] ct_src_addr;
-  logic [DST_ADDR_W-1:0] ct_dst_addr;
+  logic [MAC_ADDR_W-1:0]   src_mac_addr;
+  // Frame 2 (counter==2, h2): req_id, hpu_id, seq_num, ct_src/dst_addr, iop_id
+  logic [SEQ_NUM_W-1:0]    seq_num;
+  logic [HPU_ID_W-1:0]     hpu_id;
+  logic [REQ_ID_W-1:0]     req_id;
+  logic [IOP_ID_W-1:0]     iop_id;
+  logic [SRC_ADDR_W-1:0]   ct_src_addr;
+  logic [DST_ADDR_W-1:0]   ct_dst_addr;
+  // Frame 3 (counter==3, h3): rsvd, flag, mode
+  logic [RSVD_W-1:0]       rsvd;
+  logic [FLAG_W-1:0]       flag;
+  logic [MODE_W-1:0]       mode;
 
   // We need to byte swap tdata in
   logic [MRMAC_AXIS_W-1:0] qsfp_rx_tdata_bs;
+
   assign qsfp_rx_tdata_bs = byte_swap(rx_tdata_in);
 
   // Overlay frame structures on byte-swapped data
@@ -94,13 +117,9 @@ module mhdma_decoder
   // =========================================================================================== //
   // QSFP RX
   // =========================================================================================== //
-  // We must gather RX data as soon as possible and redirect commands into their respective
-  // command queue or signal.
-  // - ACK Notify TX is only a reception signal     : ntx_ack
-  // - Notify RX goes to respective queue           : NRXQ
-  // - Read request goes to write fifo to go to HBM : RRFIFO
-  // - Ciphertext Emission goes to queue            : CEQ
-  logic [$clog2(ETH_LEN_MAX):0] rx_counter;
+  // Word counter: tracks current frame position within a packet.
+  // Increments on each valid beat, resets on tlast.
+  logic [$clog2(NB_WORDS_MAX):0] rx_counter;
 
   always_ff @(posedge clk_mrmac) begin
     if (~resetn_mrmac) begin
@@ -207,7 +226,7 @@ module mhdma_decoder
   // We are decoding received command at Frame 2
   // Fields (rsvd, flag, mode) are registered
   always_ff @(posedge clk_mrmac) begin
-    if ((rx_counter == 3) & rx_valid) begin
+    if ((rx_tvalid_in) & (rx_counter == 3)) begin
       rsvd <= h3.h3_rsvd;
       flag <= h3.flag;
       mode <= h3.mode;
@@ -217,10 +236,12 @@ module mhdma_decoder
   logic fifo_rx_cmd_in_vld;
   logic fifo_rx_cmd_in_rdy;
 
-  // *_received signals are at frame 2.
-  // Registering fifo_rx_cmd_in_vld for all needed data (frame 3) ready before pushing into FIFO
+  // Push into FIFO one cycle after frame 3 data is captured (NBA makes rsvd/flag/mode stable).
+  // Gate with *_receivedD to only push for known command types with matching MAC.
+  // (rx_counter == 3) & rx_tvalid_in is a single-cycle pulse (counter advances to 4 on the same beat).
   always_ff @(posedge clk_mrmac)
-    fifo_rx_cmd_in_vld <= notify_ack_received | notify_request_received | read_request_received | ciphertext_emission_received;
+    fifo_rx_cmd_in_vld <= (rx_tvalid_in & (rx_counter == 3))
+                        & (nack_receivedD | nr_receivedD | rr_receivedD | ce_receivedD);
 
   fifo_ram_rdy_vld # (
     .WIDTH(MAC_ADDR_W + SEQ_NUM_W + HPU_ID_W + RSVD_W + FLAG_W + MODE_W + IOP_ID_W + SRC_ADDR_W + DST_ADDR_W + REQ_ID_W),
@@ -257,10 +278,11 @@ module mhdma_decoder
   end
 
   // =========================================================================================== //
-  // payload interface to master module
+  // Payload interface to master module
   // =========================================================================================== //
-  // Two pipe stages to align with the command FIFO push timing: the registered *_received
-  // signals add one cycle to the command path, so the payload must be delayed to match.
+  // CE payload forwarding: two pipe stages before output.
+  // First stage captures data when ce_received is active and counter is past the custom header.
+  // Second stage adds one more register for timing.
   logic [MRMAC_AXIS_W-1:0] rx_tdata_pipe;
   logic                    rx_tvalid_pipe;
 
@@ -287,7 +309,8 @@ module mhdma_decoder
   assign decoder_error = error_fifo_rx_ovf;
 
   // =========================================================================================== //
-  // statistics
+  // Statistics
+  // Note that cnt_*_received have no overflow system, only here for debugging
   // =========================================================================================== //
   // computing timing between first and last packet received on ciphertext emission
   logic [REG_DATA_W-1:0] t_first_last_pkt;
@@ -306,14 +329,10 @@ module mhdma_decoder
   end
 
   always_ff @(posedge clk_mrmac) begin
-    if (~resetn_mrmac) begin
-      t_first_last_pkt <= 'h0;
+    if (count_time_first_to_last) begin
+      t_first_last_pkt <= t_first_last_pkt + 1;
     end else begin
-      if (count_time_first_to_last) begin
-        t_first_last_pkt <= t_first_last_pkt + 1;
-      end else begin
-        t_first_last_pkt <= 'h0;
-      end
+      t_first_last_pkt <= 'h0;
     end
   end
 

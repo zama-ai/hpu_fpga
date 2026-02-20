@@ -21,6 +21,10 @@
 //   > Read Request packet decode
 //   > Ciphertext Emission packet decode
 //   > MAC address filtering
+//   > Mid-packet bubble (tvalid drop between frames)
+//   > Unknown/invalid req_id
+//   > Consecutive same-type packets (pulse detection)
+//   > Dynamic MAC address change
 //   > Back-to-back packets
 //   > FIFO backpressure & error overflow
 //   > Statistics reset
@@ -264,7 +268,8 @@ module tb_mhdma_decoder;
       assert (captured_command.src_addr == src_addr)      else begin $display("[ERROR:%0d]: src_addr mismatch", scenario_id); error_decoded_cmd = 1'b1; end
       assert (captured_command.flag     == flag)          else begin $display("[ERROR:%0d]: flag mismatch", scenario_id);     error_decoded_cmd = 1'b1; end
       assert (captured_command.mode     == mode)          else begin $display("[ERROR:%0d]: mode mismatch", scenario_id);     error_decoded_cmd = 1'b1; end
-      assert (captured_command.rsvd     == 8'h00)         else begin $display("[ERROR:%0d]: rsvd mismatch", scenario_id);     error_decoded_cmd = 1'b1; end
+      assert (captured_command.rsvd         == 8'h00)          else begin $display("[ERROR:%0d]: rsvd mismatch", scenario_id);         error_decoded_cmd = 1'b1; end
+      assert (captured_command.src_mac_addr == TB_SRC_MAC_ADDR) else begin $display("[ERROR:%0d]: src_mac_addr mismatch", scenario_id); error_decoded_cmd = 1'b1; end
 
       assert (stat.cnt_notify_received   == 1) else begin $display("[ERROR:%0d]: cnt_notify_received != 1", scenario_id);   error_stat = 1'b1; end
       assert (stat.cnt_nack_received     == 0) else begin $display("[ERROR:%0d]: cnt_nack_received != 0", scenario_id);     error_stat = 1'b1; end
@@ -312,13 +317,17 @@ module tb_mhdma_decoder;
         end
       join
 
-      assert (seen_nack_pulse) else begin $display("[ERROR:%0d]: notify_ack_received pulse not seen", scenario_id); error_nack_pulse = 1'b1; end
+      assert (seen_nack_pulse) else begin
+        $display("[ERROR:%0d]: notify_ack_received pulse not seen", scenario_id);
+        error_nack_pulse = 1'b1;
+      end
 
       consume_decoded_command(captured_command);
 
-      assert (captured_command.req_id == REQ_ID_NOTIFY_ACK) else begin $display("[ERROR:%0d]: req_id mismatch", scenario_id); error_decoded_cmd = 1'b1; end
-      assert (captured_command.hpu_id == dst_hpu_id)        else begin $display("[ERROR:%0d]: hpu_id mismatch", scenario_id); error_decoded_cmd = 1'b1; end
-      assert (stat.cnt_nack_received == 1)                  else begin $display("[ERROR:%0d]: cnt_nack_received != 1", scenario_id); error_stat = 1'b1; end
+      assert (captured_command.req_id       == REQ_ID_NOTIFY_ACK) else begin $display("[ERROR:%0d]: req_id mismatch", scenario_id);       error_decoded_cmd = 1'b1; end
+      assert (captured_command.hpu_id       == dst_hpu_id)        else begin $display("[ERROR:%0d]: hpu_id mismatch", scenario_id);       error_decoded_cmd = 1'b1; end
+      assert (captured_command.src_mac_addr == TB_SRC_MAC_ADDR)   else begin $display("[ERROR:%0d]: src_mac_addr mismatch", scenario_id); error_decoded_cmd = 1'b1; end
+      assert (stat.cnt_nack_received == 1)                        else begin $display("[ERROR:%0d]: cnt_nack_received != 1", scenario_id); error_stat = 1'b1; end
 
       $display("%t > SCENARIO %0d: PASSED", $time, scenario_id);
     end
@@ -361,7 +370,12 @@ module tb_mhdma_decoder;
       assert (captured_command.mode     == mode)        else begin $display("[ERROR:%0d]: mode mismatch", scenario_id);     error_decoded_cmd = 1'b1; end
       assert (captured_command.rsvd     == 8'h00)       else begin $display("[ERROR:%0d]: rsvd mismatch", scenario_id);     error_decoded_cmd = 1'b1; end
 
-      assert (stat.cnt_read_req_received == 1) else begin $display("[ERROR:%0d]: cnt_read_req_received != 1", scenario_id);  error_stat = 1'b1; end
+      assert (captured_command.src_mac_addr == TB_SRC_MAC_ADDR) else begin $display("[ERROR:%0d]: src_mac_addr mismatch", scenario_id); error_decoded_cmd = 1'b1; end
+
+      assert (stat.cnt_read_req_received == 1) else begin
+        $display("[ERROR:%0d]: cnt_read_req_received != 1", scenario_id);
+        error_stat = 1'b1;
+      end
 
       $display("%t > SCENARIO %0d: PASSED", $time, scenario_id);
     end
@@ -422,6 +436,11 @@ module tb_mhdma_decoder;
         error_decoded_cmd = 1'b1;
       end
 
+      assert (captured_command.src_mac_addr == TB_SRC_MAC_ADDR) else begin
+        $display("[ERROR:%0d]: src_mac_addr mismatch", scenario_id);
+        error_decoded_cmd = 1'b1;
+      end
+
       assert (received_payload.size() == num_payload_words) else begin
         $display("[ERROR:%0d]: payload word count mismatch: got %0d, expected %0d", scenario_id, received_payload.size(), num_payload_words);
         error_payload = 1'b1;
@@ -439,7 +458,7 @@ module tb_mhdma_decoder;
         error_stat = 1'b1;
       end
 
-      $display("%t > SCENARIO %0d: PASSED (received paylaod %0d)", $time, scenario_id, received_payload.size());
+      $display("%t > SCENARIO %0d: PASSED (received payload %0d)", $time, scenario_id, received_payload.size());
     end
 
     scenario_id = scenario_id + 1;
@@ -491,6 +510,292 @@ module tb_mhdma_decoder;
       assert (stat.cnt_nack_received     == saved_cnt_nack)     else begin $display("[ERROR:%0d]: cnt_nack changed", scenario_id);     error_mac_filter = 1'b1; end
       assert (stat.cnt_read_req_received == saved_cnt_read_req) else begin $display("[ERROR:%0d]: cnt_read_req changed", scenario_id); error_mac_filter = 1'b1; end
       assert (stat.cnt_ce_received       == saved_cnt_ce)       else begin $display("[ERROR:%0d]: cnt_ce changed", scenario_id);       error_mac_filter = 1'b1; end
+
+      $display("%t > SCENARIO %0d: PASSED", $time, scenario_id);
+    end
+    scenario_id = scenario_id + 1;
+    repeat (20) @(posedge clk);
+
+    $display("\n==================================================================================================");
+    $display("  SCENARIO %0d: Mid-packet bubble (tvalid drop between frame 2 and frame 3)", scenario_id);
+    $display("==================================================================================================");
+    // Verifies that rsvd/flag/mode (frame 3) are captured from valid data only,
+    // not from garbage present on the bus during a tvalid bubble.
+    begin
+      command_t captured_command;
+      logic [MRMAC_AXIS_W-1:0] pkt_data [8];
+      logic [HPU_ID_W-1:0]     bubble_hpu_id;
+      logic [IOP_ID_W-1:0]     bubble_iop_id;
+      logic [SRC_ADDR_W-1:0]   bubble_src_addr;
+      logic [DST_ADDR_W-1:0]   bubble_dst_addr;
+      logic [FLAG_W-1:0]       bubble_flag;
+      logic [MODE_W-1:0]       bubble_mode;
+
+      bubble_hpu_id   = $urandom_range(1, 7);
+      bubble_iop_id   = $urandom();
+      bubble_src_addr = $urandom();
+      bubble_dst_addr = $urandom();
+      bubble_flag     = $urandom();
+      bubble_mode     = $urandom();
+
+      // Build a Read Request packet (exercises all decoded fields)
+      pkt_data[0] = {MAC_OUI, TB_DUT_MAC_ADDR, MAC_OUI[MAC_OUI_W-1:8]};
+      pkt_data[1] = {MAC_OUI[7:0], TB_SRC_MAC_ADDR, ETH_LEN_MIN, LLC_DSAP, LLC_SSAP};
+      pkt_data[2] = {LLC_CTRL, REQ_ID_READ, bubble_hpu_id, 8'h00, bubble_src_addr, bubble_dst_addr, bubble_iop_id};
+      pkt_data[3] = {8'h0, bubble_flag, bubble_mode, 48'h0};
+      for (int i = 4; i < 8; i++) pkt_data[i] = 64'h0;
+
+      // Send frame words 0-2 normally
+      for (int i = 0; i < 3; i++) begin
+        @(posedge clk);
+        qsfp_rx_vif.tdata      = byte_swap(pkt_data[i]);
+        qsfp_rx_vif.tkeep_user = 11'h0FF;
+        qsfp_rx_vif.tlast      = 1'b0;
+        qsfp_rx_vif.tvalid     = 1'b1;
+      end
+
+      // Insert 2-cycle bubble between frame 2 and frame 3
+      // Put deliberate garbage on the bus to detect if it gets latched
+      @(posedge clk);
+      qsfp_rx_vif.tvalid = 1'b0;
+      qsfp_rx_vif.tdata  = {$urandom(), $urandom()};
+      @(posedge clk);
+      qsfp_rx_vif.tdata  = {$urandom(), $urandom()};
+
+      // Resume with frame 3 onwards
+      for (int i = 3; i < 8; i++) begin
+        @(posedge clk);
+        qsfp_rx_vif.tdata      = byte_swap(pkt_data[i]);
+        qsfp_rx_vif.tkeep_user = (i < 7) ? 11'h0FF : 11'h00F;
+        qsfp_rx_vif.tlast      = (i == 7);
+        qsfp_rx_vif.tvalid     = 1'b1;
+      end
+
+      @(posedge clk);
+      qsfp_rx_vif.tvalid     = 1'b0;
+      qsfp_rx_vif.tlast      = 1'b0;
+      qsfp_rx_vif.tkeep_user = 'h0;
+
+      consume_decoded_command(captured_command);
+
+      assert (captured_command.req_id       == REQ_ID_READ)      else begin $display("[ERROR:%0d]: req_id mismatch", scenario_id);                    error_decoded_cmd = 1'b1; end
+      assert (captured_command.hpu_id       == bubble_hpu_id)    else begin $display("[ERROR:%0d]: hpu_id mismatch", scenario_id);                    error_decoded_cmd = 1'b1; end
+      assert (captured_command.src_mac_addr == TB_SRC_MAC_ADDR)  else begin $display("[ERROR:%0d]: src_mac_addr mismatch", scenario_id);              error_decoded_cmd = 1'b1; end
+      assert (captured_command.iop_id       == bubble_iop_id)    else begin $display("[ERROR:%0d]: iop_id mismatch", scenario_id);                    error_decoded_cmd = 1'b1; end
+      assert (captured_command.src_addr     == bubble_src_addr)  else begin $display("[ERROR:%0d]: src_addr mismatch", scenario_id);                  error_decoded_cmd = 1'b1; end
+      assert (captured_command.dst_addr     == bubble_dst_addr)  else begin $display("[ERROR:%0d]: dst_addr mismatch", scenario_id);                  error_decoded_cmd = 1'b1; end
+      assert (captured_command.flag         == bubble_flag)      else begin $display("[ERROR:%0d]: flag mismatch (bubble corruption?)", scenario_id); error_decoded_cmd = 1'b1; end
+      assert (captured_command.mode         == bubble_mode)      else begin $display("[ERROR:%0d]: mode mismatch (bubble corruption?)", scenario_id); error_decoded_cmd = 1'b1; end
+      assert (captured_command.rsvd         == 8'h00)            else begin $display("[ERROR:%0d]: rsvd mismatch (bubble corruption?)", scenario_id); error_decoded_cmd = 1'b1; end
+
+      $display("%t > SCENARIO %0d: PASSED", $time, scenario_id);
+    end
+    scenario_id = scenario_id + 1;
+    repeat (20) @(posedge clk);
+
+    $display("\n==================================================================================================");
+    $display("  SCENARIO %0d: Unknown/invalid req_id", scenario_id);
+    $display("==================================================================================================");
+    // A packet with a req_id that does not match any known type should not push
+    // any command into the FIFO and should not increment any statistic counter.
+    begin
+      logic [MRMAC_AXIS_W-1:0] pkt_data [8];
+      logic [REG_DATA_W-1:0]   saved_cnt_notify;
+      logic [REG_DATA_W-1:0]   saved_cnt_nack;
+      logic [REG_DATA_W-1:0]   saved_cnt_read_req;
+      logic [REG_DATA_W-1:0]   saved_cnt_ce;
+      logic                    seen_command_valid;
+
+      saved_cnt_notify   = stat.cnt_notify_received;
+      saved_cnt_nack     = stat.cnt_nack_received;
+      saved_cnt_read_req = stat.cnt_read_req_received;
+      saved_cnt_ce       = stat.cnt_ce_received;
+      seen_command_valid = 1'b0;
+
+      // Build packet with invalid req_id = 4'hF (not NOTIFY/NACK/READ/EMISSION)
+      pkt_data[0] = {MAC_OUI, TB_DUT_MAC_ADDR, MAC_OUI[MAC_OUI_W-1:8]};
+      pkt_data[1] = {MAC_OUI[7:0], TB_SRC_MAC_ADDR, ETH_LEN_MIN, LLC_DSAP, LLC_SSAP};
+      pkt_data[2] = {LLC_CTRL, 4'hF, 4'h1, 8'h00, 16'hAAAA, 16'hBBBB, 8'hCC};
+      pkt_data[3] = {8'h0, 6'h3F, 2'b11, 48'h0};
+      for (int i = 4; i < 8; i++) pkt_data[i] = 64'h0;
+
+      for (int i = 0; i < 8; i++) begin
+        @(posedge clk);
+        qsfp_rx_vif.tdata      = byte_swap(pkt_data[i]);
+        qsfp_rx_vif.tkeep_user = (i < 7) ? 11'h0FF : 11'h00F;
+        qsfp_rx_vif.tlast      = (i == 7);
+        qsfp_rx_vif.tvalid     = 1'b1;
+      end
+
+      @(posedge clk);
+      qsfp_rx_vif.tvalid     = 1'b0;
+      qsfp_rx_vif.tlast      = 1'b0;
+      qsfp_rx_vif.tkeep_user = 'h0;
+
+      // Wait for pipeline to settle and check that no command was produced
+      repeat (30) @(posedge clk);
+      for (int i = 0; i < 10; i++) begin
+        @(posedge clk);
+        if (decoded_command_vld) seen_command_valid = 1'b1;
+      end
+
+      assert (!seen_command_valid) else begin
+        $display("[ERROR:%0d]: command produced for unknown req_id", scenario_id);
+        error_decoded_cmd = 1'b1;
+      end
+
+      assert (stat.cnt_notify_received   == saved_cnt_notify)   else begin $display("[ERROR:%0d]: cnt_notify changed", scenario_id);   error_stat = 1'b1; end
+      assert (stat.cnt_nack_received     == saved_cnt_nack)     else begin $display("[ERROR:%0d]: cnt_nack changed", scenario_id);     error_stat = 1'b1; end
+      assert (stat.cnt_read_req_received == saved_cnt_read_req) else begin $display("[ERROR:%0d]: cnt_read_req changed", scenario_id); error_stat = 1'b1; end
+      assert (stat.cnt_ce_received       == saved_cnt_ce)       else begin $display("[ERROR:%0d]: cnt_ce changed", scenario_id);       error_stat = 1'b1; end
+
+      $display("%t > SCENARIO %0d: PASSED", $time, scenario_id);
+    end
+    scenario_id = scenario_id + 1;
+    repeat (20) @(posedge clk);
+
+    $display("\n==================================================================================================");
+    $display("  SCENARIO %0d: Consecutive same-type packets (pulse detection)", scenario_id);
+    $display("==================================================================================================");
+    // Verify that the rising-edge pulse detection generates two separate notify_request_received pulses for two back-to-back NOTIFY packets.
+    // The req_id reset on tlast creates the falling edge needed to re-arm.
+    begin
+      int pulse_count;
+      logic [REG_DATA_W-1:0] saved_cnt_notify;
+
+      saved_cnt_notify = stat.cnt_notify_received;
+      pulse_count = 0;
+
+      fork
+        // Send two identical NOTIFY packets back-to-back (no inter-packet gap)
+        begin
+          send_notify_packet(
+            .vif(qsfp_rx_vif),
+            .dst_mac_addr(TB_DUT_MAC_ADDR),
+            .src_mac_addr(TB_SRC_MAC_ADDR),
+            .dst_hpu_id(4'h5),
+            .iop_id(8'hAA),
+            .src_addr(16'hF000)
+          );
+          send_notify_packet(
+            .vif(qsfp_rx_vif),
+            .dst_mac_addr(TB_DUT_MAC_ADDR),
+            .src_mac_addr(TB_SRC_MAC_ADDR),
+            .dst_hpu_id(4'h6),
+            .iop_id(8'hBB),
+            .src_addr(16'hF001)
+          );
+        end
+        // Monitor notify_request_received pulses (internal DUT signal via hierarchy)
+        begin : monitor_notify_pulses
+          int wait_count;
+          wait_count = 0;
+          while (wait_count < 200) begin
+            @(posedge clk);
+            if (decoder.notify_request_received) pulse_count++;
+            wait_count++;
+          end
+        end
+      join
+
+      assert (pulse_count == 2) else begin
+        $display("[ERROR:%0d]: expected 2 notify pulses, got %0d", scenario_id, pulse_count);
+        error_notify_pulse = 1'b1;
+      end
+
+      // Consume both commands and verify ordering
+      begin
+        command_t cmd1;
+        command_t cmd2;
+        consume_decoded_command(cmd1);
+        consume_decoded_command(cmd2);
+
+        assert (cmd1.req_id == REQ_ID_NOTIFY && cmd1.hpu_id == 4'h5) else begin
+          $display("[ERROR:%0d]: first NOTIFY mismatch", scenario_id);
+          error_decoded_cmd = 1'b1;
+        end
+        assert (cmd2.req_id == REQ_ID_NOTIFY && cmd2.hpu_id == 4'h6) else begin
+          $display("[ERROR:%0d]: second NOTIFY mismatch", scenario_id);
+          error_decoded_cmd = 1'b1;
+        end
+      end
+
+      assert (stat.cnt_notify_received == saved_cnt_notify + 2) else begin
+        $display("[ERROR:%0d]: cnt_notify mismatch: expected +2", scenario_id);
+        error_stat = 1'b1;
+      end
+
+      $display("%t > SCENARIO %0d: PASSED", $time, scenario_id);
+    end
+    scenario_id = scenario_id + 1;
+    repeat (20) @(posedge clk);
+
+    $display("\n==================================================================================================");
+    $display("  SCENARIO %0d: Dynamic MAC address change", scenario_id);
+    $display("==================================================================================================");
+    // Verify that changing current_hpu_mac at runtime correctly updates filtering:
+    // a packet to the old MAC is rejected, a packet to the new MAC is accepted.
+    begin
+      localparam [MAC_ADDR_W-1:0] NEW_MAC_ADDR = 24'h112233;
+
+      logic seen_command_valid;
+      logic [REG_DATA_W-1:0] saved_cnt_notify;
+      command_t captured_command;
+
+      saved_cnt_notify = stat.cnt_notify_received;
+
+      // Switch MAC address
+      @(posedge clk);
+      current_hpu_mac = NEW_MAC_ADDR;
+      repeat (5) @(posedge clk);
+
+      // Send packet addressed to OLD MAC (should be rejected)
+      send_notify_packet(
+        .vif(qsfp_rx_vif),
+        .dst_mac_addr(TB_DUT_MAC_ADDR),
+        .src_mac_addr(TB_SRC_MAC_ADDR),
+        .dst_hpu_id(4'h1),
+        .iop_id(8'h01),
+        .src_addr(16'hD000)
+      );
+
+      seen_command_valid = 1'b0;
+      repeat (30) @(posedge clk);
+      for (int i = 0; i < 10; i++) begin
+        @(posedge clk);
+        if (decoded_command_vld) seen_command_valid = 1'b1;
+      end
+
+      assert (!seen_command_valid) else begin
+        $display("[ERROR:%0d]: command produced for old MAC after change", scenario_id);
+        error_mac_filter = 1'b1;
+      end
+      assert (stat.cnt_notify_received == saved_cnt_notify) else begin
+        $display("[ERROR:%0d]: cnt_notify changed for old MAC", scenario_id);
+        error_mac_filter = 1'b1;
+      end
+
+      // Send packet addressed to NEW MAC (should be accepted)
+      send_notify_packet(
+        .vif(qsfp_rx_vif),
+        .dst_mac_addr(NEW_MAC_ADDR), .src_mac_addr(TB_SRC_MAC_ADDR),
+        .dst_hpu_id(4'h2), .iop_id(8'h02), .src_addr(16'hD001)
+      );
+
+      consume_decoded_command(captured_command);
+
+      assert (captured_command.req_id == REQ_ID_NOTIFY) else begin $display("[ERROR:%0d]: req_id mismatch for new MAC", scenario_id); error_decoded_cmd = 1'b1; end
+      assert (captured_command.hpu_id == 4'h2)          else begin $display("[ERROR:%0d]: hpu_id mismatch for new MAC", scenario_id); error_decoded_cmd = 1'b1; end
+
+      assert (stat.cnt_notify_received == saved_cnt_notify + 1) else begin
+        $display("[ERROR:%0d]: cnt_notify not incremented for new MAC", scenario_id);
+        error_stat = 1'b1;
+      end
+
+      // Restore original MAC for subsequent scenarios
+      @(posedge clk);
+      current_hpu_mac = TB_DUT_MAC_ADDR;
+      repeat (5) @(posedge clk);
 
       $display("%t > SCENARIO %0d: PASSED", $time, scenario_id);
     end
@@ -705,8 +1010,10 @@ module tb_mhdma_decoder;
       end
 
       // Pulse rst_errors
-      @(posedge clk); rst_errors = 1'b1;
-      @(posedge clk); rst_errors = 1'b0;
+      @(posedge clk);
+      rst_errors = 1'b1;
+      @(posedge clk);
+      rst_errors = 1'b0;
       repeat (3) @(posedge clk);
 
       assert (decoder_error == 1'b0) else begin
@@ -889,12 +1196,6 @@ module tb_mhdma_decoder;
 // ============================================================================================== --
 `ifndef XSIM
 
-  // rx_tvalid_out should only be high when a CE packet is being received.
-  // After reset and before any CE reception, rx_tvalid_out must be low.
-  // During non-CE reception (req_id != REQ_ID_EMISSION), rx_tvalid_out must be low.
-  // Note: decoder.ce_received is the registered version indicating CE is in progress.
-  // rx_tdata_out/rx_tvalid_out are two pipeline stages behind ce_received
-  // (rx_tvalid_pipe then rx_tvalid_out), so rx_tvalid_out can trail ce_received by up to 2 cycles.
   property rx_tvalid_only_during_ce;
     @(posedge clk) disable iff (~s_rstn)
     (rx_tvalid_out) |-> (decoder.ce_received || $past(decoder.ce_received) || $past(decoder.ce_received, 2));
