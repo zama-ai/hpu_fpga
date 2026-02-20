@@ -55,37 +55,83 @@ module mhdma_formatter
   localparam int NB_WORDS_FULL    = NB_WORDS_CUST_HEADER_SIZE+NB_WORDS_PAYLOAD;
   localparam int NB_WORDS_PARTIAL = NB_WORDS_LAST_PACKET+NB_WORDS_CUST_HEADER_SIZE;
 
+  localparam int CE_FRAME_CNT_W  = $clog2(NB_WORDS_PAYLOAD+1);
+
   // =========================================================================================== //
-  // tmp
+  // MAC table pipeline
   // =========================================================================================== //
   // this register is needed to ease timing
   logic [NB_MAX_HPU-1:0][MAC_ADDR_W-1:0] hpu_mac_table_tmp;
 
-  always_ff @(posedge clk_mrmac)
-    hpu_mac_table_tmp <= hpu_mac_table;
+  always_ff @(posedge clk_mrmac) begin
+    if (~resetn_mrmac) begin
+      hpu_mac_table_tmp <= 'h0;
+    end else begin
+      hpu_mac_table_tmp <= hpu_mac_table;
+    end
+  end
 
+  // =========================================================================================== //
+  // Ciphertext Emission FIFO
+  // =========================================================================================== //
   logic                    ce_fifo_rdy;
   logic                    ce_fifo_vld;
-  logic [MRMAC_AXIS_W-1:0] ce_fifo_payload;
+  logic                    ce_frame_ready;
 
-  fifo_element #(
-    .WIDTH          (MRMAC_AXIS_W),
-    .DEPTH          (2),
-    .TYPE_ARRAY     ({4'h1,4'h2}),
-    .DO_RESET_DATA  (0),
-    .RESET_DATA_VAL (0)
-  ) fifo_element_ce (
-    .clk     (clk_mrmac   ),
-    .s_rst_n (resetn_mrmac),
+  logic [MRMAC_AXIS_W-1:0] ce_fifo_out_data;
+  logic                    ce_fifo_out_vld;
+  logic                    ce_fifo_out_rdy;
 
-    .in_data (ce_payload),
-    .in_vld  (ce_vld),
-    .in_rdy  (ce_rdy),
+  // Frame-level buffering: accumulate enough payload words before allowing
+  // consumption, to guarantee no tvalid gap mid-frame (MRMAC drops frames on gap)
+  fifo_ram_rdy_vld # (
+    .WIDTH       (MRMAC_AXIS_W    ),
+    .DEPTH       (NB_WORDS_PAYLOAD),
+    .RAM_LATENCY (CE_RAM_LATENCY  ),
+    .ALMOST_FULL_REMAIN (0)
+  ) fifo_ce (
+    .clk         (clk_mrmac   ),
+    .s_rst_n     (resetn_mrmac),
 
-    .out_data(ce_fifo_payload),
-    .out_vld (ce_fifo_vld),
-    .out_rdy (ce_fifo_rdy)
+    .in_data     (ce_payload),
+    .in_vld      (ce_vld),
+    .in_rdy      (ce_rdy),
+
+    .out_data    (ce_fifo_out_data),
+    .out_vld     (ce_fifo_out_vld),
+    .out_rdy     (ce_fifo_out_rdy),
+
+    .almost_full (/* UNUSED */)
   );
+
+  assign ce_fifo_out_rdy = ce_fifo_rdy & ce_frame_ready;
+
+  // Gate FIFO output: downstream only sees valid data when a full frame is buffered
+  assign ce_fifo_vld = ce_fifo_out_vld & ce_frame_ready;
+
+  // counting if there is enough words into fifo to continue
+  logic [CE_FRAME_CNT_W-1:0] ce_frame_cnt;
+  logic                       ce_fifo_up;
+  logic                       ce_fifo_down;
+
+  always_ff @(posedge clk_mrmac) begin
+    if (~resetn_mrmac) begin
+      ce_frame_cnt <= 'h0;
+    end else begin
+      if (ciphertext_sent) begin
+        ce_frame_cnt <= 'h0;
+      end else begin
+        if (ce_fifo_up & ~ce_fifo_down) begin
+          ce_frame_cnt <= ce_frame_cnt + 1;
+        end else if (ce_fifo_down & ~ce_fifo_up) begin
+          ce_frame_cnt <= ce_frame_cnt - 1;
+        end
+      end
+    end
+  end
+
+  assign ce_fifo_up   = ce_vld & ce_rdy;
+  assign ce_fifo_down = ce_fifo_out_rdy & ce_fifo_out_vld;
 
   // =========================================================================================== //
   // FSM
@@ -100,12 +146,12 @@ module mhdma_formatter
   logic consume_notify_ack;
   logic consume_read_request;
 
-  // SINK FSM -------------------------------------------------------------------------------------
+  // TX FSM ---------------------------------------------------------------------------------------
   typedef enum logic [2:0] {
     ST_XXX         = 'x,
     ST_IDLE        = 3'b000,
     ST_CT_EMISSION = 3'b001,
-    ST_NACK        = 3'b010,
+    ST_NOTIFY_ACK        = 3'b010,
     ST_READ_REQ    = 3'b011,
     ST_NOTIFY      = 3'b100
   } st_tx;
@@ -126,7 +172,7 @@ module mhdma_formatter
           if (ct_emission_pending) begin
             tx_next_state = ST_CT_EMISSION;
           end else if (notify_ack_pending) begin
-            tx_next_state = ST_NACK;
+            tx_next_state = ST_NOTIFY_ACK;
           end else if (read_request_pending) begin
             tx_next_state = ST_READ_REQ;
           end else if (notify_request_pending) begin
@@ -137,12 +183,14 @@ module mhdma_formatter
         end
       ST_CT_EMISSION:
         tx_next_state = ciphertext_sent ? ST_IDLE : ST_CT_EMISSION;
-      ST_NACK:
-        tx_next_state = notify_ack_sent ? ST_IDLE : ST_NACK;
+      ST_NOTIFY_ACK:
+        tx_next_state = notify_ack_sent ? ST_IDLE : ST_NOTIFY_ACK;
       ST_READ_REQ:
         tx_next_state = read_request_sent ? ST_IDLE : ST_READ_REQ;
       ST_NOTIFY:
         tx_next_state = notify_sent ? ST_IDLE : ST_NOTIFY;
+      default:
+        tx_next_state = ST_IDLE;
     endcase
   end
 
@@ -153,7 +201,7 @@ module mhdma_formatter
   logic st_notify_request;
 
   assign st_ct_emission    = tx_state == ST_CT_EMISSION;
-  assign st_notify_ack     = tx_state == ST_NACK;
+  assign st_notify_ack     = tx_state == ST_NOTIFY_ACK;
   assign st_read_request   = tx_state == ST_READ_REQ;
   assign st_notify_request = tx_state == ST_NOTIFY;
 
@@ -170,7 +218,7 @@ module mhdma_formatter
   logic st_read_requestQ;
   logic st_notify_requestQ;
 
-  always_ff @(posedge clk_mrmac)begin
+  always_ff @(posedge clk_mrmac) begin
     st_ct_emissionQ    <= st_ct_emission;
     st_notify_ackQ     <= st_notify_ack;
     st_read_requestQ   <= st_read_request;
@@ -240,7 +288,7 @@ module mhdma_formatter
     end else begin
       if (okay_to_send_request & ~end_of_packet & qsfp_tx_tready) begin
         if (st_ct_emission) begin
-          if(ce_header_valid | (ce_fifo_rdy & ce_fifo_vld)) begin
+          if (ce_header_valid | (ce_fifo_out_rdy & ce_fifo_vld)) begin
             tx_cnt <= tx_cnt+1;
           end
         end else begin
@@ -297,7 +345,7 @@ module mhdma_formatter
   assign ce_end_of_packet = ce_last_packet & tx_tlast_D;
 
   always_ff @(posedge clk_mrmac) begin
-    if(~resetn_mrmac) begin
+    if (~resetn_mrmac) begin
       ce_first_header <= 1'b0;
     end else begin
       if (tx_header_last) begin
@@ -373,33 +421,44 @@ module mhdma_formatter
 
   // header assignation depending on request
   always_ff @(posedge clk_mrmac) begin : prc_header_gen
-    if (master_command_rdy & master_command_vld) begin
-      header_target_hpu_mac_addr <= hpu_mac_table_tmp[master_command.hpu_id];
-      header_req_id              <= master_command.req_id;
-      header_src_addr            <= master_command.src_addr;
-      header_dst_addr            <= master_command.dst_addr;
-      header_iop_id              <= master_command.iop_id;
-      header_rsvd                <= master_command.rsvd;
-      header_flag                <= master_command.flag;
-      header_mode                <= master_command.mode;
-    end else if (slave_command_rdy & slave_command_vld) begin
-      header_target_hpu_mac_addr <= hpu_mac_table_tmp[slave_command.hpu_id];
-      header_req_id              <= slave_command.req_id;
-      header_src_addr            <= slave_command.src_addr;
-      header_dst_addr            <= slave_command.dst_addr;
-      header_iop_id              <= slave_command.iop_id;
-      header_rsvd                <= slave_command.rsvd;
-      header_flag                <= slave_command.flag;
-      header_mode                <= slave_command.mode;
-    end else if (ce_fifo_vld & st_ct_emission) begin
-      header_target_hpu_mac_addr <= hpu_mac_table_tmp[ce_hpu_id];
-      header_req_id              <= REQ_ID_EMISSION;
-      header_src_addr            <= ce_src_addr;
-      header_dst_addr            <= ce_dst_addr;
-      header_iop_id              <= ce_iop_id;
-      header_rsvd                <= ce_rsvd;
-      header_flag                <= ce_flag;
-      header_mode                <= ce_mode;
+    if (~resetn_mrmac) begin
+      header_target_hpu_mac_addr <= 'h0;
+      header_req_id              <= 'h0;
+      header_src_addr            <= 'h0;
+      header_dst_addr            <= 'h0;
+      header_iop_id              <= 'h0;
+      header_rsvd                <= 'h0;
+      header_flag                <= 'h0;
+      header_mode                <= 'h0;
+    end else begin
+      if (master_command_rdy & master_command_vld) begin
+        header_target_hpu_mac_addr <= hpu_mac_table_tmp[master_command.hpu_id];
+        header_req_id              <= master_command.req_id;
+        header_src_addr            <= master_command.src_addr;
+        header_dst_addr            <= master_command.dst_addr;
+        header_iop_id              <= master_command.iop_id;
+        header_rsvd                <= master_command.rsvd;
+        header_flag                <= master_command.flag;
+        header_mode                <= master_command.mode;
+      end else if (slave_command_rdy & slave_command_vld) begin
+        header_target_hpu_mac_addr <= hpu_mac_table_tmp[slave_command.hpu_id];
+        header_req_id              <= slave_command.req_id;
+        header_src_addr            <= slave_command.src_addr;
+        header_dst_addr            <= slave_command.dst_addr;
+        header_iop_id              <= slave_command.iop_id;
+        header_rsvd                <= slave_command.rsvd;
+        header_flag                <= slave_command.flag;
+        header_mode                <= slave_command.mode;
+      end else if (ce_fifo_vld & st_ct_emission) begin
+        header_target_hpu_mac_addr <= hpu_mac_table_tmp[ce_hpu_id];
+        header_req_id              <= REQ_ID_EMISSION;
+        header_src_addr            <= ce_src_addr;
+        header_dst_addr            <= ce_dst_addr;
+        header_iop_id              <= ce_iop_id;
+        header_rsvd                <= ce_rsvd;
+        header_flag                <= ce_flag;
+        header_mode                <= ce_mode;
+      end
     end
   end
 
@@ -441,28 +500,6 @@ module mhdma_formatter
   logic [      MRMAC_AXIS_W/8-1:0]   tx_byte_enable;
   logic [      MRMAC_AXIS_W/8-1:0]   tx_byte_enable_d;
 
-  // always_comb begin
-  //   case (last_word_bytes)
-  //     'h0 :
-  //       tx_byte_enable_d = 8'hFF;
-  //     'h1 :
-  //       tx_byte_enable_d = 8'h01;
-  //     'h2 :
-  //       tx_byte_enable_d = 8'h03;
-  //     'h3 :
-  //       tx_byte_enable_d = 8'h07;
-  //     'h4 :
-  //       tx_byte_enable_d = 8'h0F;
-  //     'h5 :
-  //       tx_byte_enable_d = 8'h1F;
-  //     'h6 :
-  //       tx_byte_enable_d = 8'h3F;
-  //     'h7 :
-  //       tx_byte_enable_d = 8'h7F;
-  //     default :
-  //       tx_byte_enable_d = 8'h0;
-  //   endcase
-  // end
   assign tx_byte_enable_d = (last_word_bytes == 0) ? 8'hFF : (1 << last_word_bytes) - 1;
 
   always_ff @(posedge clk_mrmac) begin
@@ -491,31 +528,8 @@ module mhdma_formatter
   // We should send NB_PACKETS_FULL packets and last one is of size LAST_PACKET_BYTE_SIZE
   // LAST_PACKET_BYTE_SIZE must be greater than minimum (ETH_NB_BYTES_MIN=64)
 
-  // How many words did we receive yet ?
-  logic [$clog2(NB_WORDS_PAYLOAD):0] ce_word_counter;
-  logic                              ce_word_cnt_reset;
-
   // we need to stall words coming from ciphertext emission to build headers
   logic ce_stalling; // level: up when we need to send header between packets
-
-  always_ff @(posedge clk_mrmac) begin
-    if (~resetn_mrmac) begin
-      ce_word_counter <= 'h0;
-    end else begin
-      if (qsfp_tx_tready & (ce_fifo_rdy & ce_fifo_vld)) begin
-        if (ce_word_counter == NB_WORDS_PAYLOAD-1) begin
-          ce_word_counter <= 'h0;
-        end else begin
-          ce_word_counter <= ce_word_counter + 1;
-        end
-      end else if (ce_word_cnt_reset) begin
-        ce_word_counter <= 'h0;
-      end
-    end
-  end
-
-  always_ff @(posedge clk_mrmac)
-    ce_word_cnt_reset <= ciphertext_sent;
 
   // we should stall the emission of coefficients after we have to correct number of words
   // we should un-stall when header has left
@@ -531,13 +545,27 @@ module mhdma_formatter
     end
   end
 
-  // new header pulse
+  // edge detection on ce_stalling (used to set pending flag)
   logic ce_stalling_tmp;
-  // to define if we have a new header to send we can just do a positive edge detection
   always_ff @(posedge clk_mrmac)
     ce_stalling_tmp <= ce_stalling;
 
-  assign ce_sop_header = ce_stalling & ~ce_stalling_tmp;
+  // inter-frame header pending flag: converts edge into level that waits for CE FIFO ready
+  logic ce_header_pending;
+  always_ff @(posedge clk_mrmac) begin
+    if (~resetn_mrmac) begin
+      ce_header_pending <= 1'b0;
+    end else begin
+      if (ce_sop_header) begin
+        ce_header_pending <= 1'b0;
+      end else if (ce_stalling & ~ce_stalling_tmp) begin
+        ce_header_pending <= 1'b1;
+      end
+    end
+  end
+
+  // header starts only when FIFO has enough data for the next frame
+  assign ce_sop_header = ce_header_pending & ce_frame_ready;
 
   // level active when we have headers on ciphertext emission
   assign ce_header_valid = (ce_first_header | ce_stalling);
@@ -551,6 +579,36 @@ module mhdma_formatter
   assign ce_fifo_rdy = qsfp_tx_tready & st_ct_emission & ce_first_header_sent & ~ce_stalling;
 
   // =========================================================================================== //
+  // Frame-level gating :
+  // =========================================================================================== //
+  // Track FIFO fill level to know when enough payload data is available for a frame.
+  // This prevents starting a frame before the FIFO can sustain continuous tvalid.
+  logic [CE_FRAME_CNT_W-1:0] ce_frame_threshold;
+
+  // When header is pending, look ahead one frame (+1) to pick the correct threshold
+  assign ce_frame_threshold = ((ce_seq_num + ce_header_pending) >= NB_PACKETS_FULL)
+      ? CE_FRAME_CNT_W'(NB_WORDS_LAST_PACKET)
+      : CE_FRAME_CNT_W'(NB_WORDS_PAYLOAD);
+
+  // During stalling, tracks threshold combinationally so ce_frame_ready
+  // is already correct when stalling clears (no reassertion latency).
+  // Outside stalling, latches high to prevent mid-frame tvalid drop.
+  // Clears only on ciphertext_sent.
+  always_ff @(posedge clk_mrmac) begin
+    if (~resetn_mrmac) begin
+      ce_frame_ready <= 1'b0;
+    end else begin
+      if (ciphertext_sent) begin
+        ce_frame_ready <= 1'b0;
+      end else if (ce_stalling) begin
+        ce_frame_ready <= (ce_frame_cnt >= ce_frame_threshold);
+      end else if (~ce_frame_ready & (ce_frame_cnt >= ce_frame_threshold)) begin
+        ce_frame_ready <= 1'b1;
+      end
+    end
+  end
+
+  // =========================================================================================== //
   // AXI4-stream
   // =========================================================================================== //
   // before sending anything to MRMAC we register it
@@ -559,8 +617,7 @@ module mhdma_formatter
   logic                      tx_tlast_reg;
   logic                      tx_tvalid_reg;
 
-  assign tx_tdata_D      = small_packet | ce_header_valid ? tx_header : ce_fifo_vld ? ce_fifo_payload : 'h0;
-  // assign tx_tdata_D      = small_packet ? tx_header : (ce_header_valid & tx_tvalid_D) ? tx_header : ce_fifo_vld ? ce_fifo_payload :'h0;
+  assign tx_tdata_D      = small_packet | ce_header_valid ? tx_header : ce_fifo_vld ? ce_fifo_out_data : 'h0;
   assign tx_tvalid_D     = small_packet ? |tx_cnt : |tx_cnt & (ce_header_valid | ce_fifo_vld);
   assign tx_tkeep_user_D = {3'b000, tx_byte_enable};
   assign tx_tlast_D      = small_packet ? tx_small_last : st_ct_emission ? tx_last_word : 1'b0;
