@@ -46,7 +46,7 @@ void iop_state_node_ack(uint8_t iid, uint8_t nb_hpu) {
   } else {
     iop_state[iid].state -= 1;
   }
-  PLL_INF("ucore", "[HPU%d] iop_state_node_ack iid %d state %d nb_hpu %d", phys_hpu_id, iid, iop_state[iid].state, iop_state[iid].nb_hpu);
+  //PLL_INF("ucore", "[HPU%d] iop_state_node_ack iid %d state %d nb_hpu %d", phys_hpu_id, iid, iop_state[iid].state, iop_state[iid].nb_hpu);
 }
 
 // B2B Pool
@@ -331,14 +331,14 @@ void iop_teardown(uint8_t iid) {
   //flush dst_notifyq
   RemoteOperand_t *remote_operand = dst_notifyq_getdst(iid);
   while (remote_operand != NULL) {
-    PLL_INF("ucore", "[HPU%d] iop_teardown remote_operand iid %d pos %d state %d src %d dst %04x target %d",
-        phys_hpu_id,
-        iid,
-        remote_operand->pos,
-        remote_operand->state,
-        remote_operand->src_cid,
-        remote_operand->dst_cid,
-        remote_operand->target_cid);
+    //PLL_INF("ucore", "[HPU%d] iop_teardown remote_operand iid %d pos %d state %d src %d dst %04x target %d",
+    //    phys_hpu_id,
+    //    iid,
+    //    remote_operand->pos,
+    //    remote_operand->state,
+    //    remote_operand->src_cid,
+    //    remote_operand->dst_cid,
+    //    remote_operand->target_cid);
     remote_operand->state = OPERAND_STATE_READ_PENDING;
     generate_ucore_notify(iid, remote_operand->pos, remote_operand->src_cid, remote_operand->dst_cid, remote_operand->target_cid);
     remote_operand = dst_notifyq_getdst(iid);
@@ -348,7 +348,7 @@ void iop_teardown(uint8_t iid) {
   }
   //flush remote source queue
   uint16_t src_free_cnt = src_notifyq_free(iid);
-  PLL_INF("ucore", "[HPU%d] iop_teardown free source slots: %d", phys_hpu_id, src_free_cnt);
+  PLL_ERR("ucore", "[HPU%d] iop_teardown free source slots: %d", phys_hpu_id, src_free_cnt);
 
   //wait dst owned by local hpu but produced somewhere else
   //dst_store_print(iid);
@@ -359,12 +359,12 @@ void iop_teardown(uint8_t iid) {
     uint8_t tid = (non_resolved_owned_dst >> 8) & 0xFF;
     uint8_t bid = non_resolved_owned_dst & 0xFF;
     while (dst_store.state[iid][tid][bid] != DST_STATE_RESOLVED) {
-      PLL_INF("ucore", "[HPU%d] iop_teardown wait on iop %d hpu_id %d tid %d bid %d - being resolved",
-          phys_hpu_id,
-          iid,
-          phys_hpu_id,
-          tid,
-          bid);
+      //PLL_INF("ucore", "[HPU%d] iop_teardown wait on iop %d hpu_id %d tid %d bid %d - being resolved",
+      //    phys_hpu_id,
+      //    iid,
+      //    phys_hpu_id,
+      //    tid,
+      //    bid);
 #ifdef UCORE_MHDMA_SIMU
       sleep(10);
 #else
@@ -389,17 +389,17 @@ void iop_teardown(uint8_t iid) {
   // release b2b pool slot for this IOp
   if (iop_state[iid].state == IOP_STATE_DONE) {
     uint16_t b2b_free_cnt = b2b_pool_free(iid);
-    PLL_INF("ucore", "[HPU%d] iop_teardown free b2b_pool slots: %d", phys_hpu_id, b2b_free_cnt);
+    PLL_ERR("ucore", "[HPU%d] iop_teardown free b2b_pool slots: %d", phys_hpu_id, b2b_free_cnt);
   }
 
   // reset all dst of iop for next execution of this iid
   dst_store_reset_iop(iid);
   // debug
-  dst_store_print(iid);
-  src_notifyq_print(iid);
-  src_notifyq_print(0);
-  dst_notifyq_print(iid);
-  b2b_pool_print();
+  //dst_store_print(iid);
+  //src_notifyq_print(iid);
+  //src_notifyq_print(0);
+  //dst_notifyq_print(iid);
+  //b2b_pool_print();
 }
 
 // Ops functions body
@@ -473,11 +473,15 @@ uint32_t parse_iop(
 
   cur_iid = dst->operand[0].iid;
   cur_mapping.raw = mapping->raw;
-  iop_state[cur_iid].state  = IOP_STATE_RUNNING;
+  uint8_t nb_hpu = number_of_hpu(*mapping);
+  if (iop_state[cur_iid].state >= nb_hpu) {
+    iop_state[cur_iid].state  = IOP_STATE_RUNNING;
+  }
   iop_state[cur_iid].nb_hpu = number_of_hpu(*mapping);
-  PLL_INF("ucore", "[HPU%d] parse_iop starting iop %d state %d nb_hpu %d",
+  PLL_ERR("ucore", "[HPU%d] parse_iop starting iop %d (virt hid %d) state %d nb_hpu %d",
       phys_hpu_id,
       cur_iid,
+      get_virt_of(phys_hpu_id, *mapping),
       iop_state[cur_iid].state,
       iop_state[cur_iid].nb_hpu);
   // Fill bundle length
@@ -505,6 +509,11 @@ uint32_t parse_iop(
     src->operand[src_pos].pos = operand_prop->operand_prop.pos;
     src->operand[src_pos].len = operand_prop->operand_prop.vec_size +1;
     src->operand[src_pos].block = operand_prop->operand_prop.block +1;
+    PLL_ERR("ucore", "[HPU%d] parse_iop src %d.%d pos %d",
+        phys_hpu_id,
+        src_pos,
+        src->operand[src_pos].block,
+        src->operand[src_pos].pos);
     src_pos +=1;
   } while (!operand_prop->operand_prop.is_last);
 

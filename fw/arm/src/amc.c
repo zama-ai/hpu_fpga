@@ -110,6 +110,19 @@ typedef enum AMC_TASK_PRIOS
 
 } AMC_TASK_PRIOS;
 
+typedef enum {
+  MHDMA_CMD_PRINT_ERR = 0,
+  MHDMA_CMD_IOP_TEARDOWN,
+  MHDMA_CMD_IOP_READSRC,
+} MhdmaCmdType_t;
+
+typedef struct {
+  MhdmaCmdType_t cmdID;
+  uint32_t payload;
+} MhdmaCommand_t;
+
+void *xMhdmaCommandMbox = NULL;
+void *xMhdmaWorkerTask = NULL;
 
 /******************************************************************************/
 /* EVL Callback Declarations                                                  */
@@ -272,7 +285,7 @@ volatile uint32_t *toAmiIopAckqHead = ( volatile uint32_t* )( HAL_RPU_SHARED_MEM
 volatile uint32_t *toAmiIopAckqTail = ( volatile uint32_t* )( HAL_RPU_SHARED_MEMORY_BASE_ADDR + OFFSET_TO_AMI_IOPACKQ_TAIL );
 volatile uint32_t *toAmiIopAckqData = ( volatile uint32_t* )( HAL_RPU_SHARED_MEMORY_BASE_ADDR + OFFSET_TO_AMI_IOPACKQ_DATA_START );
 
-#define HIGH_PRIORITY_INTR  0x20 // default is around 0xA0 and lower val means higher priority
+#define HIGH_PRIORITY_INTR  0xA0 // default is around 0xA0 and lower val means higher priority
 #define EDGE_SENSITIVE_INTR 0x3  // triggers on posedge of interrupt signal
 #define ACTIVE_ONE_INTR     0x1  // default value, triggers when signal is at 1
 
@@ -305,40 +318,31 @@ void vInterruptHandler_isc_ack( void* pvCallBackRef ) {
     //PLL_INF("AMC", "IOpAck queue is full, abort isc ack forwarding");
     if (ackq_free_words != 0) {
         // Write ack value in queue body
-        volatile uint32_t* ackq_idx = toAmiIopAckqData + (ackq_head % AMI_IOPACKQ_MAX_WORDS);
         uint32_t popped_iop_ack = pop_isc_ack();
-        *ackq_idx = popped_iop_ack;
-        HAL_FLUSH_CACHE_DATA( (uintptr_t)ackq_idx, sizeof(uint32_t));
 
         if (popped_iop_ack > 0) {
             DOpu_t dop_ack;
             dop_ack.raw = popped_iop_ack;
-            PLL_INF("AMC", "[HPU%d] recv ack: %08x opcode %06x iid %d flag %d is_inner %d\n",
-                phys_hpu_id,
-                dop_ack.raw,
-                dop_ack.sync.opcode,
-                dop_ack.sync.iid,
-                dop_ack.sync.flag,
-                dop_ack.sync.is_inner);
+            //PLL_INF("AMC", "[HPU%d] recv ack: %08x opcode %06x iid %d flag %d is_inner %d\n",
+            //    phys_hpu_id,
+            //    dop_ack.raw,
+            //    dop_ack.sync.opcode,
+            //    dop_ack.sync.iid,
+            //    dop_ack.sync.flag,
+            //    dop_ack.sync.is_inner);
 
             if (dop_ack.sync.opcode == SYNC_OPCODE) {
               if (dop_ack.sync.is_inner == 1) {
                 // internal ack
                 generate_user_notify(dop_ack.sync.iid, dop_ack.sync.flag);
               } else {
-                // iop ack
-                uint8_t ack_iid = dop_ack.sync.iid;
-                iop_teardown(ack_iid);
-
-                // Write ack value in queue body
-                volatile uint32_t* ackq_idx = toAmiIopAckqData + (ackq_head % AMI_IOPACKQ_MAX_WORDS);
-                uint32_t popped_iop_ack = pop_isc_ack();
-                *ackq_idx = popped_iop_ack;
-                HAL_FLUSH_CACHE_DATA( (uintptr_t)ackq_idx, sizeof(uint32_t));
-                // Update queue head
-                ackq_head += 1;
-                *toAmiIopAckqHead = ackq_head;
-                HAL_FLUSH_CACHE_DATA( (uintptr_t)toAmiIopAckqHead, sizeof(uint32_t));
+                MhdmaCommand_t cmd;
+                cmd.cmdID = MHDMA_CMD_IOP_TEARDOWN;
+                cmd.payload = popped_iop_ack;
+                if (xMhdmaCommandMbox) {
+                    iOSAL_MBox_PostFromISR(xMhdmaCommandMbox,
+                                          (void*)&cmd);
+                }
               }
             }
         }
@@ -380,7 +384,13 @@ void vInterruptHandler_mhdma_notify( void* pvCallBackRef ) {
     // is also the nb_hpu in CMD_SRC
     uint8_t flag = notify.fields.flag;
 
-    //printf("notify recv: iid %d from %d mode %d flag %d\n", iid, slave_hpu_id, mode, flag);
+    MhdmaCommand_t cmd;
+    cmd.cmdID = MHDMA_CMD_PRINT_ERR;
+    cmd.payload = (iid << 24 | slave_hpu_id << 16 | mode << 8 | flag);
+    if (xMhdmaCommandMbox) {
+        iOSAL_MBox_PostFromISR(xMhdmaCommandMbox,
+                              (void*)&cmd);
+    }
 
     switch (mode) {
       case CMD_USER: {
@@ -413,19 +423,13 @@ void vInterruptHandler_mhdma_notify( void* pvCallBackRef ) {
         //printf("iop_state[%d] = %d\n", iid, iop_state[iid].state);
 
         if (iop_state[iid].state == IOP_STATE_DONE) {
-          // if remote_src is state NONE, it means b2b_pool slot is not ready => do nothing here
-          // if remote_src is state DMA pending, it means read of this src is already on-going => do nothing here
-          // if remote_src is resolved, then nothing todo either
-          RemoteOperand_t *remote_src = src_notifyq_find_by_state(iid, OPERAND_STATE_READ_PENDING);
-          while (remote_src != NULL) {
-            // by design remote_src->state == OPERAND_STATE_READ_PENDING)
-            generate_operand_read_req(iid, mode, remote_src->pos, remote_src->src_cid, remote_src->dst_cid, 0);
-            remote_src->state = OPERAND_STATE_DMA_PENDING;
+          MhdmaCommand_t cmd;
+          cmd.cmdID = MHDMA_CMD_IOP_READSRC;
+          cmd.payload = iid << 24 | mode << 8;
+          if (xMhdmaCommandMbox) {
+              iOSAL_MBox_PostFromISR(xMhdmaCommandMbox,
+                                    (void*)&cmd);
           }
-
-          uint16_t b2b_free_cnt = b2b_pool_free(iid);
-          //printf("free b2b_pool slots: %d\n", b2b_free_cnt);
-
         }
         break;
       }
@@ -457,7 +461,13 @@ void vInterruptHandler_mhdma_read_complete( void* pvCallBackRef ) {
   // is also the nb_hpu in CMD_SRC
   uint8_t flag = rc.fields.flag;
 
-  //printf("read_complete recv: iid %d from %d mode %d flag %d\n", iid, slave_hpu_id, mode, flag);
+  MhdmaCommand_t cmd;
+  cmd.cmdID = MHDMA_CMD_PRINT_ERR;
+  cmd.payload = (iid << 24 | slave_hpu_id << 16 | mode << 8 | flag) | 0x80000000;
+  if (xMhdmaCommandMbox) {
+      iOSAL_MBox_PostFromISR(xMhdmaCommandMbox,
+                            (void*)&cmd);
+  }
 
   switch (mode) {
     case CMD_USER: {
@@ -477,7 +487,7 @@ void vInterruptHandler_mhdma_read_complete( void* pvCallBackRef ) {
       if (dst_store.state[iid][tid][bid] == DST_STATE_READING) {
         dst_store.state[iid][tid][bid] = DST_STATE_RESOLVED;
       }
-      dst_store_print(iid);
+      //dst_store_print(iid);
       break;
     }
     case CMD_SRC: {
@@ -495,8 +505,61 @@ void vInterruptHandler_mhdma_read_complete( void* pvCallBackRef ) {
         //    (remote_src->src_cid >> 8) & 0xFF,
         //    (remote_src->src_cid & 0xFF));
       }
-      src_notifyq_print(iid);
+      //src_notifyq_print(iid);
       break;
+    }
+  }
+}
+
+void vMhdmaWorkerTask(void *pvParameters) {
+  MhdmaCommand_t rxCmd;
+  // Infinite loop for the task
+  FOREVER {
+    if ( OSAL_ERRORS_NONE == iOSAL_MBox_Pend( xMhdmaCommandMbox, (void*)&rxCmd, OSAL_TIMEOUT_WAIT_FOREVER) ) {
+      PLL_ERR("MhdmaWorker", "rcv cmd %d %08x", rxCmd.cmdID, rxCmd.payload);
+      switch (rxCmd.cmdID) {
+        case MHDMA_CMD_IOP_TEARDOWN:
+          DOpu_t dop;
+          dop.raw = rxCmd.payload;
+          uint8_t ack_iid = dop.sync.iid;
+          iop_teardown(ack_iid);
+
+          // Write ack value in queue body
+          volatile uint32_t* ackq_idx = toAmiIopAckqData + (ackq_head % AMI_IOPACKQ_MAX_WORDS);
+          *ackq_idx = dop.raw;
+          HAL_FLUSH_CACHE_DATA( (uintptr_t)ackq_idx, sizeof(uint32_t));
+          // Update queue head
+          ackq_head += 1;
+          *toAmiIopAckqHead = ackq_head;
+          HAL_FLUSH_CACHE_DATA( (uintptr_t)toAmiIopAckqHead, sizeof(uint32_t));
+          break;
+
+        case MHDMA_CMD_IOP_READSRC:
+          uint8_t iid = (rxCmd.payload >> 24) & 0xFF;
+          uint8_t mode = (rxCmd.payload >> 8) & 0xFF;
+          // if remote_src is state NONE, it means b2b_pool slot is not ready => do nothing here
+          // if remote_src is state DMA pending, it means read of this src is already on-going => do nothing here
+          // if remote_src is resolved, then nothing todo either
+          RemoteOperand_t *remote_src = src_notifyq_find_by_state(iid, OPERAND_STATE_READ_PENDING);
+          while (remote_src != NULL) {
+            // by design remote_src->state == OPERAND_STATE_READ_PENDING)
+            PLL_ERR("MhdmaWorker", "iop read src %d from %d src %04X dst %04X", iid, remote_src->pos, remote_src->src_cid, remote_src->dst_cid);
+            generate_operand_read_req(iid, mode, remote_src->pos, remote_src->src_cid, remote_src->dst_cid, 0);
+            remote_src->state = OPERAND_STATE_DMA_PENDING;
+          }
+
+          // local b2b pool linked to this IOp (for dst) are not needed anymore
+          uint16_t b2b_free_cnt = b2b_pool_free(iid);
+          PLL_ERR("MhdmaWorker", "iop read src clean local b2bpool (%d slots)", b2b_free_cnt);
+
+        case MHDMA_CMD_PRINT_ERR:
+          PLL_ERR("MhdmaWorker", "data: %08x", rxCmd.payload);
+          break;
+
+        default:
+          PLL_ERR("MhdmaWorker", "rcv mhdma cmd unknown %d %08x", rxCmd.cmdID, rxCmd.payload);
+          break;
+      }
     }
   }
 }
@@ -586,11 +649,24 @@ static void vTaskFuncMain( void )
     *toAmiIopAckqHead = ackq_head;
     HAL_FLUSH_CACHE_DATA( (uintptr_t) (toAmiIopAckqHead), sizeof(uint32_t) );
 
+    // create queue for mhdma related actions
+    if ( OSAL_ERRORS_NONE != iOSAL_MBox_Create(&xMhdmaCommandMbox, 10, sizeof(MhdmaCommand_t),"Mhdma Queue") ) {
+       PLL_ERR( AMC_NAME, "failed creating MHDMA MBOX\r\n" );
+    } else {
+       PLL_ERR( AMC_NAME, "MHDMA MBOX initialised\r\n" );
+    }
+
+    if ( OSAL_ERRORS_NONE != iOSAL_Task_Create(&xMhdmaWorkerTask, vMhdmaWorkerTask, 1024, NULL, AMC_TASK_PRIO_DEFAULT, "Mhdma Worker") ) {
+       PLL_ERR( AMC_NAME, "failed creating MHDMA worker task\r\n" );
+    } else {
+       PLL_ERR( AMC_NAME, "MHDMA worker task initialised\r\n" );
+    }
+
     // Initialise Interrupts
     if( OSAL_ERRORS_NONE != iOSAL_Interrupt_Setup( XPAR_FABRIC_RTL_INTERRUPT_1_INTR, vInterruptHandler_isc_ack, NULL ) ) {
        PLL_ERR( AMC_NAME, "failed init isc interruption\r\n" );
     } else {
-       PLL_INF( AMC_NAME, "interrupt handler on isc interrupt initialised\r\n" );
+       PLL_ERR( AMC_NAME, "interrupt handler on isc interrupt initialised\r\n" );
     }
     XScuGic_SetPriorityTriggerType(
        &xInterruptController,
@@ -601,7 +677,7 @@ static void vTaskFuncMain( void )
     if( OSAL_ERRORS_NONE != iOSAL_Interrupt_Enable( XPAR_FABRIC_RTL_INTERRUPT_1_INTR) ) {
        PLL_ERR( AMC_NAME, "failed enabling isc interrupt\r\n" );
     } else {
-       PLL_INF( AMC_NAME, "enabling isc interrupt on rising edge\r\n" );
+       PLL_ERR( AMC_NAME, "enabling isc interrupt on rising edge\r\n" );
     }
     if( OSAL_ERRORS_NONE != iOSAL_Interrupt_Setup( XPAR_FABRIC_RTL_INTERRUPT_0_INTR, vInterruptHandler_debug, NULL ) ) {
        PLL_ERR( AMC_NAME, "failed init interrupt hpu_interrupt[0](debug)\r\n" );
@@ -632,6 +708,15 @@ static void vTaskFuncMain( void )
        PLL_ERR( AMC_NAME, "failed enabling interrupt hpu_interrupt[4](read_complete)\r\n" );
     } else {
        PLL_INF( AMC_NAME, "enabling hpu_interrupt[4](read_complete) on level\r\n" );
+    }
+  
+    // init
+    {
+      iop_state_init();
+      b2b_pool_init();
+      dst_notifyq_init();
+      src_notifyq_init();
+      dst_store_init();
     }
 
     // Init IOp queue descriptor
@@ -673,7 +758,6 @@ static void vTaskFuncMain( void )
 
     FOREVER {
         uint32_t write_isc_rv = OK;
-
         // ----------------------------------------------------------------------------------------
         // Second handle IOp queue containing IOp pushed by AMI driver
         // Update queue pointer
@@ -696,13 +780,16 @@ static void vTaskFuncMain( void )
                 PLL_ERR("AMC", "interrupt[1](isc) count %d edges", isc_intr_global_cnt);
                 PLL_ERR("AMC", "interrupt[0](debug) count %d level at 1", debug_intr_global_cnt);
                 PLL_ERR("AMC", "interrupt[3](mhdma notify) count %d", intr_notify_cnt);
-                PLL_ERR("AMC", "interrupt[3](mhdma notify) last-data %x", intr_notify_data);
+                PLL_ERR("AMC", "interrupt[4](mhdma readc) count %x", intr_readc_cnt);
+                PLL_ERR("AMC", "iop_state: %d/%d %d/%d", iop_state[1].state, iop_state[1].nb_hpu, iop_state[2].state, iop_state[2].nb_hpu);
             }
             PLL_INF("AMC", "Fw received IOP request, translation into DOP needed [head 0x%x; tail 0x%x]", iopq_head, iopq_tail);
 
             // Update ucore configuration
             updt_ucore_cfg(&ucore_cfg);
-            PLL_INF("AMC", "Current core config: node_id %d", ucore_cfg.node_id);
+            PLL_ERR("AMC", "Current core config: node_id %d", ucore_cfg.node_id);
+            phys_hpu_id = ucore_cfg.node_id;
+            PLL_ERR("AMC", "Current core config: phys_hpu_id %d", phys_hpu_id);
 
             // 1. Compute bytes to read from queue
             uint32_t read_bytes = (iopq_used_bytes > IOP_MAX_BYTES)? IOP_MAX_BYTES: iopq_used_bytes;
@@ -740,13 +827,14 @@ static void vTaskFuncMain( void )
             PLL_INF("ParseIOp", "@slot[%d] header 0x%x [len_bytes %d]", chunk_idx, iop_buffer[0], read_bytes);
             uint32_t iop_complete_len = parse_iop(iop_buffer, read_bytes, &header, &mapping, &operand_prop, &operand_addr, &imm_header, &dst_bundle, &src_bundle, &imm_bundle);
             PLL_INF("ParseIOp", "IOp [0x%x] [map %x] [dst %d] [src %d] [imm %d] [stream_len %d]", header.header.opcode, mapping.raw, dst_bundle.len, src_bundle.len, imm_bundle.len, iop_complete_len);
+            PLL_ERR("AMC", "Current iid: %d", cur_iid);
 
             if (iop_complete_len != 0) {
                 // Update tail of IOp queue
                 iopq_tail += iop_complete_len;
                 *fromAmiIopqTail = iopq_tail;
                 HAL_FLUSH_CACHE_DATA((uintptr_t)fromAmiIopqTail, sizeof(uint32_t));
-                PLL_INF("AMC", "One IOp processed [head 0x%x, tail 0x%x]", iopq_head, iopq_tail);
+                PLL_INF("AMC", "One IOp parsed [head 0x%x, tail 0x%x]", iopq_head, iopq_tail);
 
 
                 // Retrieved DOp stream, patch it and send it to Isc

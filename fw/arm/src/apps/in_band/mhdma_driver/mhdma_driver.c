@@ -54,14 +54,14 @@ extern mhdma_element_t mhdma_table[IOP_ID_MAX_COUNT][FLAG_MAX_COUNT];
 
 void generate_read_req(uint8_t iop_id, uint8_t flag) {
   mhdma_element_t *current_elt = &mhdma_table[iop_id][flag];
-  PLL_INF("mhdma", "[HPU%d] generate read req for iop %d flag %d to hpu %d src_ct_id %d dst_ct_id %d state %d",
-      phys_hpu_id,
-      iop_id,
-      flag,
-      current_elt->slave_hpu_id,
-      current_elt->src_ct_id,
-      current_elt->dst_ct_id,
-      current_elt->state);
+  //PLL_INF("mhdma", "[HPU%d] generate read req for iop %d flag %d to hpu %d src_ct_id %d dst_ct_id %d state %d",
+  //    phys_hpu_id,
+  //    iop_id,
+  //    flag,
+  //    current_elt->slave_hpu_id,
+  //    current_elt->src_ct_id,
+  //    current_elt->dst_ct_id,
+  //    current_elt->state);
   mhdma_cmd_t read_req;
   read_req.raw = 0;
   read_req.fields.dst_cid = current_elt->dst_ct_id;
@@ -76,14 +76,14 @@ void generate_read_req(uint8_t iop_id, uint8_t flag) {
 }
 
 void generate_operand_read_req(uint8_t iop_id, uint8_t mode, uint8_t slave_hpu_id, uint16_t src_cid, uint16_t dst_cid, uint16_t target_cid) {
-  PLL_INF("mhdma", "[HPU%d] generate operand read req for iop %d mode %d to hpu %d src_ct_id %d dst_ct_id %d target_cid %d",
-      phys_hpu_id,
-      iop_id,
-      mode,
-      slave_hpu_id,
-      src_cid,
-      dst_cid,
-      target_cid);
+  //PLL_INF("mhdma", "[HPU%d] generate operand read req for iop %d mode %d to hpu %d src_ct_id %d dst_ct_id %d target_cid %d",
+  //    phys_hpu_id,
+  //    iop_id,
+  //    mode,
+  //    slave_hpu_id,
+  //    src_cid,
+  //    dst_cid,
+  //    target_cid);
   mhdma_cmd_t read_req;
   read_req.raw = 0;
   read_req.fields.dst_cid = dst_cid;
@@ -100,15 +100,15 @@ void generate_operand_read_req(uint8_t iop_id, uint8_t mode, uint8_t slave_hpu_i
 
 void generate_user_notify(uint8_t iop_id, uint8_t flag) {
   mhdma_element_t *current_elt = &mhdma_table[iop_id][flag];
-  PLL_INF("mhdma", "[HPU%d] generate notify for iop %d mode %d flag %d from hpu %d to hpu %d src_ct_id %d state %d",
-      phys_hpu_id,
-      iop_id,
-      CMD_USER,
-      flag,
-      current_elt->slave_hpu_id,
-      current_elt->master_hpu_id,
-      current_elt->src_ct_id,
-      current_elt->state);
+  //PLL_INF("mhdma", "[HPU%d] generate notify for iop %d mode %d flag %d from hpu %d to hpu %d src_ct_id %d state %d",
+  //    phys_hpu_id,
+  //    iop_id,
+  //    CMD_USER,
+  //    flag,
+  //    current_elt->slave_hpu_id,
+  //    current_elt->master_hpu_id,
+  //    current_elt->src_ct_id,
+  //    current_elt->state);
   mhdma_cmd_t nc;
   nc.raw = 0;
   nc.fields.dst_cid = 0;
@@ -123,13 +123,13 @@ void generate_user_notify(uint8_t iop_id, uint8_t flag) {
 }
 
 void generate_iop_notify(uint8_t iop_id, uint8_t nb_hpus, uint8_t master_hpu_id) {
-  PLL_INF("mhdma", "[HPU%d] generate notify for end of iop %d mode %d from hpu %d to hpu %d nb_hpu %d",
-      phys_hpu_id,
-      iop_id,
-      CMD_SRC,
-      phys_hpu_id,
-      master_hpu_id,
-      nb_hpus);
+  //PLL_INF("mhdma", "[HPU%d] generate notify for end of iop %d mode %d from hpu %d to hpu %d nb_hpu %d",
+  //    phys_hpu_id,
+  //    iop_id,
+  //    CMD_SRC,
+  //    phys_hpu_id,
+  //    master_hpu_id,
+  //    nb_hpus);
   mhdma_cmd_t nc;
   nc.raw = 0;
   nc.fields.dst_cid = 0;
@@ -144,16 +144,16 @@ void generate_iop_notify(uint8_t iop_id, uint8_t nb_hpus, uint8_t master_hpu_id)
 }
 
 void generate_ucore_notify(uint8_t iid, uint8_t master_hpu_id, uint16_t src_cid, uint16_t dst_cid, uint16_t target_cid) {
-  PLL_INF("mhdma", "[HPU%d] generate notify for iop %d mode %d dst from hpu %d to hpu %d src_ct_id %d dst_ct_id %d dst tid %d bid %d",
-      phys_hpu_id,
-      iid,
-      CMD_DST,
-      phys_hpu_id,
-      master_hpu_id,
-      src_cid,
-      target_cid,
-      (dst_cid >> 8) & 0x3F,
-      (dst_cid & 0xFF));
+  //PLL_INF("mhdma", "[HPU%d] generate notify for iop %d mode %d dst from hpu %d to hpu %d src_ct_id %d dst_ct_id %d dst tid %d bid %d",
+  //    phys_hpu_id,
+  //    iid,
+  //    CMD_DST,
+  //    phys_hpu_id,
+  //    master_hpu_id,
+  //    src_cid,
+  //    target_cid,
+  //    (dst_cid >> 8) & 0x3F,
+  //    (dst_cid & 0xFF));
   mhdma_cmd_t nc;
   nc.raw = 0;
   nc.fields.dst_cid = target_cid;
