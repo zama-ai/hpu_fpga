@@ -64,11 +64,7 @@ module mhdma_formatter
   logic [NB_MAX_HPU-1:0][MAC_ADDR_W-1:0] hpu_mac_table_tmp;
 
   always_ff @(posedge clk_mrmac) begin
-    if (~resetn_mrmac) begin
-      hpu_mac_table_tmp <= 'h0;
-    end else begin
-      hpu_mac_table_tmp <= hpu_mac_table;
-    end
+    hpu_mac_table_tmp <= hpu_mac_table;
   end
 
   // =========================================================================================== //
@@ -275,11 +271,7 @@ module mhdma_formatter
   logic                 ce_sop_header;        // pulse: start-of headers between packets
 
   always_ff @(posedge clk_mrmac) begin
-    if (~resetn_mrmac) begin
-      small_packet <= 1'b0;
-    end else begin
-      small_packet <= st_read_request | st_notify_request | st_notify_ack;
-    end
+    small_packet <= st_read_request | st_notify_request | st_notify_ack;
   end
 
   always_ff @(posedge clk_mrmac) begin
@@ -421,44 +413,33 @@ module mhdma_formatter
 
   // header assignation depending on request
   always_ff @(posedge clk_mrmac) begin : prc_header_gen
-    if (~resetn_mrmac) begin
-      header_target_hpu_mac_addr <= 'h0;
-      header_req_id              <= 'h0;
-      header_src_addr            <= 'h0;
-      header_dst_addr            <= 'h0;
-      header_iop_id              <= 'h0;
-      header_rsvd                <= 'h0;
-      header_flag                <= 'h0;
-      header_mode                <= 'h0;
-    end else begin
-      if (master_command_rdy & master_command_vld) begin
-        header_target_hpu_mac_addr <= hpu_mac_table_tmp[master_command.hpu_id];
-        header_req_id              <= master_command.req_id;
-        header_src_addr            <= master_command.src_addr;
-        header_dst_addr            <= master_command.dst_addr;
-        header_iop_id              <= master_command.iop_id;
-        header_rsvd                <= master_command.rsvd;
-        header_flag                <= master_command.flag;
-        header_mode                <= master_command.mode;
-      end else if (slave_command_rdy & slave_command_vld) begin
-        header_target_hpu_mac_addr <= hpu_mac_table_tmp[slave_command.hpu_id];
-        header_req_id              <= slave_command.req_id;
-        header_src_addr            <= slave_command.src_addr;
-        header_dst_addr            <= slave_command.dst_addr;
-        header_iop_id              <= slave_command.iop_id;
-        header_rsvd                <= slave_command.rsvd;
-        header_flag                <= slave_command.flag;
-        header_mode                <= slave_command.mode;
-      end else if (ce_fifo_vld & st_ct_emission) begin
-        header_target_hpu_mac_addr <= hpu_mac_table_tmp[ce_hpu_id];
-        header_req_id              <= REQ_ID_EMISSION;
-        header_src_addr            <= ce_src_addr;
-        header_dst_addr            <= ce_dst_addr;
-        header_iop_id              <= ce_iop_id;
-        header_rsvd                <= ce_rsvd;
-        header_flag                <= ce_flag;
-        header_mode                <= ce_mode;
-      end
+    if (master_command_rdy & master_command_vld) begin
+      header_target_hpu_mac_addr <= hpu_mac_table_tmp[master_command.hpu_id];
+      header_req_id              <= master_command.req_id;
+      header_src_addr            <= master_command.src_addr;
+      header_dst_addr            <= master_command.dst_addr;
+      header_iop_id              <= master_command.iop_id;
+      header_rsvd                <= master_command.rsvd;
+      header_flag                <= master_command.flag;
+      header_mode                <= master_command.mode;
+    end else if (slave_command_rdy & slave_command_vld) begin
+      header_target_hpu_mac_addr <= hpu_mac_table_tmp[slave_command.hpu_id];
+      header_req_id              <= slave_command.req_id;
+      header_src_addr            <= slave_command.src_addr;
+      header_dst_addr            <= slave_command.dst_addr;
+      header_iop_id              <= slave_command.iop_id;
+      header_rsvd                <= slave_command.rsvd;
+      header_flag                <= slave_command.flag;
+      header_mode                <= slave_command.mode;
+    end else if (ce_fifo_vld & st_ct_emission) begin
+      header_target_hpu_mac_addr <= hpu_mac_table_tmp[ce_hpu_id];
+      header_req_id              <= REQ_ID_EMISSION;
+      header_src_addr            <= ce_src_addr;
+      header_dst_addr            <= ce_dst_addr;
+      header_iop_id              <= ce_iop_id;
+      header_rsvd                <= ce_rsvd;
+      header_flag                <= ce_flag;
+      header_mode                <= ce_mode;
     end
   end
 
