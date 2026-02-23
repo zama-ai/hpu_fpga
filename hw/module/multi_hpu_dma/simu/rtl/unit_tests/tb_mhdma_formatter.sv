@@ -437,36 +437,6 @@ module tb_mhdma_formatter;
   logic [MODE_W-1:0]     req_mode;
   logic [HPU_ID_W-1:0]   hpu_id;
 
-  // ---------------------------------------------------------------------------
-  // Randomize command fields with a given target HPU
-  // ---------------------------------------------------------------------------
-  task automatic randomize_command_fields(input logic [HPU_ID_W-1:0] target_hpu);
-    hpu_id       = target_hpu;
-    iop_id       = $urandom();
-    iop_src_addr = $urandom();
-    iop_dst_addr = $urandom();
-    req_flag     = $urandom();
-    req_mode     = $urandom();
-  endtask
-
-  // ---------------------------------------------------------------------------
-  // Print scenario banner and clear TX capture
-  // ---------------------------------------------------------------------------
-  task automatic scenario_start(input string name);
-    $display("\n==================================================================================================");
-    $display("  SCENARIO %0d: %s", scenario_id, name);
-    $display("==================================================================================================");
-    clear_tx_capture();
-  endtask
-
-  // ---------------------------------------------------------------------------
-  // Print scenario result and increment ID
-  // ---------------------------------------------------------------------------
-  task automatic scenario_end();
-    $display("%t > SCENARIO %0d: PASSED", $time, scenario_id);
-    scenario_id++;
-    repeat (20) @(posedge clk);
-  endtask
 
   // ---------------------------------------------------------------------------
   // Verify a single-frame small packet (NOTIFY, NACK, READ_REQ)
@@ -588,8 +558,9 @@ module tb_mhdma_formatter;
   // SCENARIO: Send a Notify packet
   // ---------------------------------------------------------------------------
   task automatic run_scenario_notify();
-    scenario_start("Send a Notify packet");
-    randomize_command_fields(4'h1);
+    clear_tx_capture();
+    scenario_start(scenario_id, "Send a Notify packet");
+    randomize_command_fields(4'h1, hpu_id, iop_id, iop_src_addr, iop_dst_addr, req_flag, req_mode);
 
     drive_master_command(
       .req_id  (REQ_ID_NOTIFY),
@@ -630,15 +601,16 @@ module tb_mhdma_formatter;
     end
 
     check_fsm_idle();
-    scenario_end();
+    scenario_end(scenario_id, clk);
   endtask
 
   // ---------------------------------------------------------------------------
   // SCENARIO: Send a Notify ACK packet
   // ---------------------------------------------------------------------------
   task automatic run_scenario_notify_ack();
-    scenario_start("Send a Notify ACK packet");
-    randomize_command_fields(4'h2);
+    clear_tx_capture();
+    scenario_start(scenario_id, "Send a Notify ACK packet");
+    randomize_command_fields(4'h2, hpu_id, iop_id, iop_src_addr, iop_dst_addr, req_flag, req_mode);
 
     drive_slave_command(
       .req_id  (REQ_ID_NOTIFY_ACK),
@@ -656,16 +628,17 @@ module tb_mhdma_formatter;
     check_small_packet(MAC_ADDR_HPU2, REQ_ID_NOTIFY_ACK, $sformatf("%0d", scenario_id), error_header_check);
 
     check_fsm_idle();
-    scenario_end();
+    scenario_end(scenario_id, clk);
   endtask
 
   // ---------------------------------------------------------------------------
   // SCENARIO: Send a Read Request packet
   // ---------------------------------------------------------------------------
   task automatic run_scenario_read_req();
-    scenario_start("Send a Read Request packet");
+    clear_tx_capture();
+    scenario_start(scenario_id, "Send a Read Request packet");
     ce_reception_ready = 1'b1;
-    randomize_command_fields(4'h1);
+    randomize_command_fields(4'h1, hpu_id, iop_id, iop_src_addr, iop_dst_addr, req_flag, req_mode);
 
     drive_master_command(
       .req_id  (REQ_ID_READ ),
@@ -683,15 +656,16 @@ module tb_mhdma_formatter;
     check_small_packet(MAC_ADDR_HPU1, REQ_ID_READ, $sformatf("%0d", scenario_id), error_header_check);
 
     check_fsm_idle();
-    scenario_end();
+    scenario_end(scenario_id, clk);
   endtask
 
   // ---------------------------------------------------------------------------
   // SCENARIO: Send a Ciphertext Emission (full multi-frame transfer)
   // ---------------------------------------------------------------------------
   task automatic run_scenario_ce_emission();
-    scenario_start("Send a Ciphertext Emission");
-    randomize_command_fields(4'h1);
+    clear_tx_capture();
+    scenario_start(scenario_id, "Send a Ciphertext Emission");
+    randomize_command_fields(4'h1, hpu_id, iop_id, iop_src_addr, iop_dst_addr, req_flag, req_mode);
 
     drive_slave_command(
       .req_id  (REQ_ID_EMISSION),
@@ -734,7 +708,7 @@ module tb_mhdma_formatter;
     end
 
     check_fsm_idle();
-    scenario_end();
+    scenario_end(scenario_id, clk);
   endtask
 
   // ---------------------------------------------------------------------------
@@ -746,7 +720,8 @@ module tb_mhdma_formatter;
     int ce_done_time;
     int notify_done_time;
 
-    scenario_start("FSM priority CT_EMISSION > NOTIFY");
+    clear_tx_capture();
+    scenario_start(scenario_id, "FSM priority CT_EMISSION > NOTIFY");
 
     ce_done = 1'b0;
     notify_done = 1'b0;
@@ -827,7 +802,7 @@ module tb_mhdma_formatter;
 
     repeat (10) @(posedge clk);
     check_fsm_idle();
-    scenario_end();
+    scenario_end(scenario_id, clk);
   endtask
 
   // ---------------------------------------------------------------------------
@@ -838,7 +813,8 @@ module tb_mhdma_formatter;
     int read_done_time;
     int notify_s6_done_time;
 
-    scenario_start("FSM priority NACK > READ_REQ > NOTIFY");
+    clear_tx_capture();
+    scenario_start(scenario_id, "FSM priority NACK > READ_REQ > NOTIFY");
     ce_reception_ready = 1'b1;
 
     nack_done_time = 0;
@@ -847,29 +823,29 @@ module tb_mhdma_formatter;
 
     // Present NACK on slave + READ on master simultaneously
     @(posedge clk);
-    slave_command.req_id   <= REQ_ID_NOTIFY_ACK;
-    slave_command.hpu_id   <= 4'h2;
-    slave_command.iop_id   <= 8'hA1;
-    slave_command.src_addr <= 16'h7000;
-    slave_command.dst_addr <= 16'h8000;
-    slave_command.rsvd     <= 8'h0;
-    slave_command.flag     <= 6'h0;
-    slave_command.mode     <= 2'h0;
-    slave_command.seq_num  <= '0;
-    slave_command.src_mac_addr <= '0;
-    slave_command_vld      <= 1'b1;
+    slave_command.req_id        <= REQ_ID_NOTIFY_ACK;
+    slave_command.hpu_id        <= 4'h2;
+    slave_command.iop_id        <= 8'hA1;
+    slave_command.src_addr      <= 16'h7000;
+    slave_command.dst_addr      <= 16'h8000;
+    slave_command.rsvd          <= 8'h0;
+    slave_command.flag          <= 6'h0;
+    slave_command.mode          <= 2'h0;
+    slave_command.seq_num       <= '0;
+    slave_command.src_mac_addr  <= '0;
+    slave_command_vld           <= 1'b1;
 
-    master_command.req_id   <= REQ_ID_READ;
-    master_command.hpu_id   <= 4'h1;
-    master_command.iop_id   <= 8'hB2;
-    master_command.src_addr <= 16'h9000;
-    master_command.dst_addr <= 16'hA000;
-    master_command.rsvd     <= 8'h0;
-    master_command.flag     <= 6'h0;
-    master_command.mode     <= 2'h0;
-    master_command.seq_num  <= '0;
+    master_command.req_id       <= REQ_ID_READ;
+    master_command.hpu_id       <= 4'h1;
+    master_command.iop_id       <= 8'hB2;
+    master_command.src_addr     <= 16'h9000;
+    master_command.dst_addr     <= 16'hA000;
+    master_command.rsvd         <= 8'h0;
+    master_command.flag         <= 6'h0;
+    master_command.mode         <= 2'h0;
+    master_command.seq_num      <= '0;
     master_command.src_mac_addr <= '0;
-    master_command_vld      <= 1'b1;
+    master_command_vld          <= 1'b1;
 
     // Wait for NACK to be consumed
     // Deassert one cycle later: rdy is a one-shot pulse so the extra
@@ -927,15 +903,16 @@ module tb_mhdma_formatter;
 
     repeat (10) @(posedge clk);
     check_fsm_idle();
-    scenario_end();
+    scenario_end(scenario_id, clk);
   endtask
 
   // ---------------------------------------------------------------------------
   // SCENARIO: TX backpressure
   // ---------------------------------------------------------------------------
   task automatic run_scenario_tx_backpressure();
-    scenario_start("TX backpressure");
-    randomize_command_fields(4'h1);
+    clear_tx_capture();
+    scenario_start(scenario_id, "TX backpressure");
+    randomize_command_fields(4'h1, hpu_id, iop_id, iop_src_addr, iop_dst_addr, req_flag, req_mode);
 
     fork
       drive_master_command(
@@ -968,15 +945,16 @@ module tb_mhdma_formatter;
     check_small_packet(MAC_ADDR_HPU1, REQ_ID_NOTIFY, $sformatf("%0d", scenario_id), error_backpressure);
 
     check_fsm_idle();
-    scenario_end();
+    scenario_end(scenario_id, clk);
   endtask
 
   // ---------------------------------------------------------------------------
   // SCENARIO: CE multi-frame with backpressure
   // ---------------------------------------------------------------------------
   task automatic run_scenario_ce_multiframe_bp();
-    scenario_start("CE multi-frame with backpressure");
-    randomize_command_fields(4'h1);
+    clear_tx_capture();
+    scenario_start(scenario_id, "CE multi-frame with backpressure");
+    randomize_command_fields(4'h1, hpu_id, iop_id, iop_src_addr, iop_dst_addr, req_flag, req_mode);
 
     fork
       drive_slave_command(
@@ -1008,7 +986,7 @@ module tb_mhdma_formatter;
     check_ce_multiframe_headers(MAC_ADDR_HPU1, $sformatf("%0d", scenario_id), error_ce_multiframe);
 
     check_fsm_idle();
-    scenario_end();
+    scenario_end(scenario_id, clk);
   endtask
 
   // ---------------------------------------------------------------------------
@@ -1017,8 +995,9 @@ module tb_mhdma_formatter;
   task automatic run_scenario_fifo_starvation();
     // Frame-level gating buffers a full frame before alloword_ing TX, so random gaps
     // in the CE payload stream must NOT cause tvalid drops mid-frame.
-    scenario_start("FIFO starvation resilience");
-    randomize_command_fields(4'h1);
+    clear_tx_capture();
+    scenario_start(scenario_id, "FIFO starvation resilience");
+    randomize_command_fields(4'h1, hpu_id, iop_id, iop_src_addr, iop_dst_addr, req_flag, req_mode);
     repeat (20) @(posedge clk);
 
     fork
@@ -1051,18 +1030,19 @@ module tb_mhdma_formatter;
 
     check_fsm_idle();
 
-    scenario_end();
+    scenario_end(scenario_id, clk);
   endtask
 
   // ---------------------------------------------------------------------------
   // SCENARIO: Header field correctness
   // ---------------------------------------------------------------------------
   task automatic run_scenario_header_fields();
-    scenario_start("Header field correctness");
+    clear_tx_capture();
+    scenario_start(scenario_id, "Header field correctness");
 
     // --- NOTIFY with specific fields ---
     clear_tx_capture();
-    randomize_command_fields(4'h2);
+    randomize_command_fields(4'h2, hpu_id, iop_id, iop_src_addr, iop_dst_addr, req_flag, req_mode);
 
     drive_master_command(
       .req_id  (REQ_ID_NOTIFY),
@@ -1095,7 +1075,7 @@ module tb_mhdma_formatter;
 
     // --- NACK with specific fields ---
     clear_tx_capture();
-    randomize_command_fields(4'h1);
+    randomize_command_fields(4'h1, hpu_id, iop_id, iop_src_addr, iop_dst_addr, req_flag, req_mode);
 
     drive_slave_command(
       .req_id  (REQ_ID_NOTIFY_ACK),
@@ -1130,7 +1110,7 @@ module tb_mhdma_formatter;
     // --- READ_REQ with specific fields ---
     clear_tx_capture();
     ce_reception_ready = 1'b1;
-    randomize_command_fields(4'h2);
+    randomize_command_fields(4'h2, hpu_id, iop_id, iop_src_addr, iop_dst_addr, req_flag, req_mode);
 
     drive_master_command(
       .req_id  (REQ_ID_READ),
@@ -1163,7 +1143,7 @@ module tb_mhdma_formatter;
 
     // --- CE first frame header with specific fields ---
     clear_tx_capture();
-    randomize_command_fields(4'h2);
+    randomize_command_fields(4'h2, hpu_id, iop_id, iop_src_addr, iop_dst_addr, req_flag, req_mode);
 
     fork
       drive_slave_command(
@@ -1208,7 +1188,7 @@ module tb_mhdma_formatter;
     $display("%t > %0d: CE header verified", $time, scenario_id);
 
     check_fsm_idle();
-    scenario_end();
+    scenario_end(scenario_id, clk);
   endtask
 
   // ---------------------------------------------------------------------------
@@ -1220,11 +1200,12 @@ module tb_mhdma_formatter;
     int expected_frame_words;
     logic [ETHERNET_LEN-1:0] expected_eth_len;
 
-    scenario_start("tkeep_user correctness");
+    clear_tx_capture();
+    scenario_start(scenario_id, "tkeep_user correctness");
 
     // --- Small packet tkeep (NOTIFY) ---
     clear_tx_capture();
-    randomize_command_fields(4'h1);
+    randomize_command_fields(4'h1, hpu_id, iop_id, iop_src_addr, iop_dst_addr, req_flag, req_mode);
 
     drive_master_command(
       .req_id  (REQ_ID_NOTIFY),
@@ -1257,7 +1238,7 @@ module tb_mhdma_formatter;
 
     // --- CE frame tkeep ---
     clear_tx_capture();
-    randomize_command_fields(4'h1);
+    randomize_command_fields(4'h1, hpu_id, iop_id, iop_src_addr, iop_dst_addr, req_flag, req_mode);
 
     fork
       drive_slave_command(
@@ -1310,16 +1291,17 @@ module tb_mhdma_formatter;
     $display("%t > %0d: CE tkeep verified across all frames", $time, scenario_id);
 
     check_fsm_idle();
-    scenario_end();
+    scenario_end(scenario_id, clk);
   endtask
 
   // ---------------------------------------------------------------------------
   // SCENARIO: ce_reception_ready = 0 blocks READ_REQ
   // ---------------------------------------------------------------------------
   task automatic run_scenario_ce_ready_blocks_read();
-    scenario_start("ce_reception_ready = 0 blocks READ_REQ");
+    clear_tx_capture();
+    scenario_start(scenario_id, "ce_reception_ready = 0 blocks READ_REQ");
     ce_reception_ready = 1'b0;
-    randomize_command_fields(4'h1);
+    randomize_command_fields(4'h1, hpu_id, iop_id, iop_src_addr, iop_dst_addr, req_flag, req_mode);
 
     // Present READ command on master interface
     @(posedge clk);
@@ -1373,7 +1355,7 @@ module tb_mhdma_formatter;
     end
 
     check_fsm_idle();
-    scenario_end();
+    scenario_end(scenario_id, clk);
   endtask
 
   // ---------------------------------------------------------------------------
@@ -1391,7 +1373,8 @@ module tb_mhdma_formatter;
     logic [    MODE_W-1:0] mode_1;
     logic [    MODE_W-1:0] mode_2;
 
-    scenario_start("Back-to-back small packets (NOTIFY -> NACK)");
+    clear_tx_capture();
+    scenario_start(scenario_id, "Back-to-back small packets (NOTIFY -> NACK)");
 
     iop_id_1   = $urandom();
     src_addr_1 = $urandom();
@@ -1452,18 +1435,19 @@ module tb_mhdma_formatter;
     end
 
     check_fsm_idle();
-    scenario_end();
+    scenario_end(scenario_id, clk);
   endtask
 
   // ---------------------------------------------------------------------------
   // SCENARIO: Back-to-back CE emissions
   // ---------------------------------------------------------------------------
   task automatic run_scenario_b2b_ce();
-    scenario_start("Back-to-back CE emissions");
+    clear_tx_capture();
+    scenario_start(scenario_id, "Back-to-back CE emissions");
 
     // --- First CE ---
     clear_tx_capture();
-    randomize_command_fields(4'h1);
+    randomize_command_fields(4'h1, hpu_id, iop_id, iop_src_addr, iop_dst_addr, req_flag, req_mode);
 
     drive_slave_command(
       .req_id  (REQ_ID_EMISSION),
@@ -1488,7 +1472,7 @@ module tb_mhdma_formatter;
 
     // --- Second CE (minimal gap) ---
     clear_tx_capture();
-    randomize_command_fields(4'h2);
+    randomize_command_fields(4'h2, hpu_id, iop_id, iop_src_addr, iop_dst_addr, req_flag, req_mode);
 
     drive_slave_command(
       .req_id  (REQ_ID_EMISSION),
@@ -1508,15 +1492,16 @@ module tb_mhdma_formatter;
     check_ce_multiframe_headers(MAC_ADDR_HPU2, $sformatf("%0d-2nd", scenario_id), error_b2b);
 
     check_fsm_idle();
-    scenario_end();
+    scenario_end(scenario_id, clk);
   endtask
 
   // ---------------------------------------------------------------------------
   // SCENARIO: Mid-frame backpressure for CE
   // ---------------------------------------------------------------------------
   task automatic run_scenario_mid_frame_backpressure();
-    scenario_start("Mid-frame backpressure for CE");
-    randomize_command_fields(4'h1);
+    clear_tx_capture();
+    scenario_start(scenario_id, "Mid-frame backpressure for CE");
+    randomize_command_fields(4'h1, hpu_id, iop_id, iop_src_addr, iop_dst_addr, req_flag, req_mode);
 
     // Spawn backpressure controller in background
     fork
@@ -1559,15 +1544,16 @@ module tb_mhdma_formatter;
     end
 
     check_fsm_idle();
-    scenario_end();
+    scenario_end(scenario_id, clk);
   endtask
 
   // ---------------------------------------------------------------------------
   // SCENARIO: Max hpu_id (NB_MAX_HPU-1)
   // ---------------------------------------------------------------------------
   task automatic run_scenario_max_hpu_id();
-    scenario_start("Max hpu_id (NB_MAX_HPU-1)");
-    randomize_command_fields(NB_MAX_HPU - 1);
+    clear_tx_capture();
+    scenario_start(scenario_id, "Max hpu_id (NB_MAX_HPU-1)");
+    randomize_command_fields(NB_MAX_HPU - 1, hpu_id, iop_id, iop_src_addr, iop_dst_addr, req_flag, req_mode);
 
     drive_master_command(
       .req_id  (REQ_ID_NOTIFY),
@@ -1585,14 +1571,15 @@ module tb_mhdma_formatter;
     check_small_packet(MAC_ADDR_HPU7, REQ_ID_NOTIFY, $sformatf("%0d-MAX_HPU", scenario_id), error_header_check);
 
     check_fsm_idle();
-    scenario_end();
+    scenario_end(scenario_id, clk);
   endtask
 
   // ---------------------------------------------------------------------------
   // SCENARIO: Reset during active transmission
   // ---------------------------------------------------------------------------
   task automatic run_scenario_reset_mid_tx();
-    scenario_start("Reset during active transmission");
+    clear_tx_capture();
+    scenario_start(scenario_id, "Reset during active transmission");
 
     // Drive NOTIFY directly (avoid task to prevent fork issues on reset)
     @(posedge clk);
@@ -1662,7 +1649,7 @@ module tb_mhdma_formatter;
     end
 
     check_fsm_idle();
-    scenario_end();
+    scenario_end(scenario_id, clk);
   endtask
 
 // ============================================================================================== --
