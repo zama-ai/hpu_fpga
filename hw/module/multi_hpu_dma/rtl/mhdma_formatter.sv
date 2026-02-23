@@ -5,6 +5,7 @@
 // Description  : Multi-HPU DMA formatter (TX module for QSFP lane)
 //
 // Builds custom Ethernet frames from slave/master commands and CE payload data.
+// Ouptut Data is byte swapped
 //
 // Packet types (FSM priority, highest first):
 //   CT_EMISSION  (slave)  - multi-frame: NB_PACKETS_FULL (full) + 1 (partial), payload from CE FIFO
@@ -12,13 +13,10 @@
 //   READ_REQ     (master) - single small packet, gated by ce_reception_ready
 //   NOTIFY       (master) - single small packet
 //
-// CE frame-level gating: payload words are accumulated in fifo_ce.
-// Transmission of a frame only starts once enough payload is buffered to guarantee
-// continuous tvalid mid-frame (MRMAC drops frames on tvalid gap).
+// Ciphertext is put into a store & forward FIFO:
+// This garantees continuous tvalid mid-frame dependingf on packet size (MRMAC drops frames on gap).
 //
 // Completion signals (*_sent) are a registered pulse.
-//
-// Ouptut Data is byte swapped
 //
 // Assumptions / Limitations:
 // - command.hpu_id must be < NB_MAX_HPU. No bounds check on MAC table index;
@@ -102,8 +100,8 @@ module mhdma_formatter
   logic                    ce_fifo_out_vld;
   logic                    ce_fifo_out_rdy;
 
-  // Frame-level buffering: accumulate enough payload words before allowing
-  // consumption, to guarantee no tvalid gap mid-frame (MRMAC drops frames on gap)
+  // Frame-level buffering: accumulate enough payload words before allowing consumption.
+  // This is needed to guarantee no tvalid gap mid-frame, otherwise MRMAC drops the frame
   fifo_ram_rdy_vld # (
     .WIDTH       (MRMAC_AXIS_W    ),
     .DEPTH       (NB_WORDS_PAYLOAD),
@@ -126,7 +124,7 @@ module mhdma_formatter
 
   assign ce_fifo_out_rdy = ce_fifo_rdy & ce_frame_ready;
 
-  // Net fill-level counter for CE FIFO (used for cut through)
+  // Fill-level counter for fifo_ce for store & forward by frame-size
   logic [CE_FRAME_CNT_W-1:0] ce_frame_cnt;
   logic                      ce_fifo_up;
   logic                      ce_fifo_down;
@@ -400,27 +398,12 @@ module mhdma_formatter
     end
   end
 
-  // TODO: remove this & simplify
-  command_t              ce_header_payload_tmp;
-  logic [DST_ADDR_W-1:0] ce_dst_addr;
-  logic [SRC_ADDR_W-1:0] ce_src_addr;
-  logic [    RSVD_W-1:0] ce_rsvd;
-  logic [    FLAG_W-1:0] ce_flag;
-  logic [    MODE_W-1:0] ce_mode;
-  logic [  HPU_ID_W-1:0] ce_hpu_id;
-  logic [  IOP_ID_W-1:0] ce_iop_id;
+  // Registration of slave command
+  command_t ce_header_payload_tmp;
 
   always_ff @(posedge clk_mrmac)
     if (consume_ct_emission)
       ce_header_payload_tmp <= slave_command;
-
-  assign ce_iop_id       = ce_header_payload_tmp.iop_id;
-  assign ce_hpu_id       = ce_header_payload_tmp.hpu_id;
-  assign ce_rsvd         = ce_header_payload_tmp.rsvd;
-  assign ce_flag         = ce_header_payload_tmp.flag;
-  assign ce_mode         = ce_header_payload_tmp.mode;
-  assign ce_dst_addr     = ce_header_payload_tmp.dst_addr;
-  assign ce_src_addr     = ce_header_payload_tmp.src_addr;
 
   always_ff @(posedge clk_mrmac) begin
     if (~resetn_mrmac) begin
@@ -483,14 +466,14 @@ module mhdma_formatter
       header_flag                <= slave_command.flag;
       header_mode                <= slave_command.mode;
     end else if (ce_fifo_out_vld & st_ct_emission) begin
-      header_target_hpu_mac_addr <= hpu_mac_table_tmp[ce_hpu_id];
+      header_target_hpu_mac_addr <= hpu_mac_table_tmp[ce_header_payload_tmp.hpu_id];
       header_req_id              <= REQ_ID_EMISSION;
-      header_src_addr            <= ce_src_addr;
-      header_dst_addr            <= ce_dst_addr;
-      header_iop_id              <= ce_iop_id;
-      header_rsvd                <= ce_rsvd;
-      header_flag                <= ce_flag;
-      header_mode                <= ce_mode;
+      header_src_addr            <= ce_header_payload_tmp.src_addr;
+      header_dst_addr            <= ce_header_payload_tmp.dst_addr;
+      header_iop_id              <= ce_header_payload_tmp.iop_id;
+      header_rsvd                <= ce_header_payload_tmp.rsvd;
+      header_flag                <= ce_header_payload_tmp.flag;
+      header_mode                <= ce_header_payload_tmp.mode;
     end
   end
 
