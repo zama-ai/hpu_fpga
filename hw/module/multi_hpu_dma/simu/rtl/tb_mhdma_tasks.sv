@@ -10,6 +10,85 @@
 // ==============================================================================================
 
 // ==============================================================================================
+// Common types
+// ==============================================================================================
+
+// AXI-Stream captured word (used by TX frame capture and header verification)
+typedef struct {
+  logic [MRMAC_AXIS_W-1:0]  tdata;
+  logic [MRMAC_TKEEP_W-1:0] tkeep_user;
+  logic                     tlast;
+} tx_word_t;
+
+// ==============================================================================================
+// Header helpers
+// ==============================================================================================
+
+// Build expected header words (before byte_swap) for a given command
+function automatic void build_expected_header(
+  input  logic [MAC_ADDR_W-1:0]   target_mac,
+  input  logic [MAC_ADDR_W-1:0]   self_mac,
+  input  logic [ETHERNET_LEN-1:0] eth_len,
+  input  logic [REQ_ID_W-1:0]     req_id,
+  input  logic [HPU_ID_W-1:0]     hpu_id,
+  input  logic [SEQ_NUM_W-1:0]    seq_num,
+  input  logic [SRC_ADDR_W-1:0]   src_addr,
+  input  logic [DST_ADDR_W-1:0]   dst_addr,
+  input  logic [IOP_ID_W-1:0]     iop_id,
+  input  logic [FLAG_W-1:0]       flag,
+  input  logic [MODE_W-1:0]       mode,
+  output logic [MRMAC_AXIS_W-1:0] expected_header [4]
+);
+  expected_header[0] = {MAC_OUI, target_mac, MAC_OUI[MAC_OUI_W-1:8]};
+  expected_header[1] = {MAC_OUI[7:0], self_mac, eth_len, LLC_DSAP, LLC_SSAP};
+  expected_header[2] = {LLC_CTRL, req_id, hpu_id, seq_num, src_addr, dst_addr, iop_id};
+  expected_header[3] = {{RSVD_W{1'b0}}, flag, mode, 48'h0};
+endfunction
+
+// Verify header words of a captured frame against expected values
+task automatic check_header(
+  input tx_word_t frame_words[$],
+  input logic [MRMAC_AXIS_W-1:0] expected_header [4],
+  input string scenario_name,
+  ref bit error_flag
+);
+  logic [MRMAC_AXIS_W-1:0] expected_swapped;
+  begin
+    for (int i = 0; i < 4; i++) begin
+      expected_swapped = byte_swap(expected_header[i]);
+      if (frame_words[i].tdata !== expected_swapped) begin
+        $display("%t > [ERROR] %s: header word %0d mismatch: got 0x%016h, expected 0x%016h", $time, scenario_name, i, frame_words[i].tdata, expected_swapped);
+        error_flag = 1'b1;
+      end
+    end
+  end
+endtask
+
+// ==============================================================================================
+// Helper functions
+// ==============================================================================================
+
+// // ---------------------------------------------------------------------------
+// // Print scenario banner and clear TX capture
+// // ---------------------------------------------------------------------------
+// task automatic scenario_start(input string name);
+//   $display("\n==================================================================================================");
+//   $display("  SCENARIO %0d: %s", scenario_id, name);
+//   $display("==================================================================================================");
+//   clear_tx_capture();
+// endtask
+
+// // ---------------------------------------------------------------------------
+// // Print scenario result and increment ID
+// // ---------------------------------------------------------------------------
+// task automatic scenario_end();
+//   $display("%t > SCENARIO %0d: PASSED", $time, scenario_id);
+//   scenario_id++;
+//   repeat (20) @(posedge clk);
+// endtask
+
+
+// ==============================================================================================
 // Error Display Function
 // ==============================================================================================
 
@@ -209,10 +288,9 @@ task automatic send_ciphertext_emission_packet(
 
     for (int i = 0; i < nwords - 1; i++) begin
       @(posedge vif.clk);
-      // word = {$urandom(), $urandom()};
-      // payload_data_out.push_back(byte_swap(word));
-      // vif.tdata      = byte_swap(word);
-      vif.tdata      = {$urandom(), $urandom()};
+      word = {$urandom(), $urandom()};
+      payload_data_out.push_back(byte_swap(word));
+      vif.tdata      = byte_swap(word);
       vif.tkeep_user = 11'h0FF;
       vif.tlast      = 1'b0;
       vif.tvalid     = 1'b1;
