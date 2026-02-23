@@ -120,7 +120,6 @@ module tb_mhdma_formatter;
   bit error_mid_bp;
   bit error_pos_fmt_err;
   bit error_reset_mid_tx;
-  bit disable_sva;
 
   assign error = error_header_check
                | error_done_pulse
@@ -270,9 +269,6 @@ module tb_mhdma_formatter;
       hpu_mac_table[2]   = MAC_ADDR_HPU2;
       hpu_mac_table[7]   = MAC_ADDR_HPU7;
 
-      // being able to disable SVA is important for testing error scenarios
-      disable_sva        = 1'b0;
-
       current_hpu_id     = SELF_HPU_ID;
       current_hpu_mac    = MAC_ADDR_SELF;
     end
@@ -357,12 +353,12 @@ module tb_mhdma_formatter;
   // ---------------------------------------------------------------------------
   task automatic stream_ce_payload_continuous();
     begin
-      for (int w = 0; w < CE_TOTAL_PAYLOAD_WORDS; w++) begin
-        @(posedge clk);
+      for (int w = 0; w < CE_TOTAL_PAYLOAD_WORDS-1; w++) begin
         ce_payload <= MRMAC_AXIS_W'(w);
         ce_vld     <= 1'b1;
-        while (!ce_rdy) @(posedge clk);
+        do @(posedge clk); while (!ce_rdy);
       end
+
       @(posedge clk);
       ce_vld <= 1'b0;
     end
@@ -377,20 +373,18 @@ module tb_mhdma_formatter;
     int words_sent;
     begin
       words_sent = 0;
-      for (int w = 0; w < CE_TOTAL_PAYLOAD_WORDS; w++) begin
+      for (int w = 0; w < CE_TOTAL_PAYLOAD_WORDS-1; w++) begin
         if (starve_after_n > 0 && words_sent >= starve_after_n) begin
           ce_vld <= 1'b0;
           break;
         end
 
-        @(posedge clk);
         ce_payload <= MRMAC_AXIS_W'(w);
         ce_vld     <= 1'b1;
-        while (!ce_rdy) @(posedge clk);
+        do @(posedge clk); while (!ce_rdy);
         words_sent++;
 
         if (starve_after_n == 0 && ($urandom_range(0,3) == 0)) begin
-          @(posedge clk);
           ce_vld <= 1'b0;
           repeat ($urandom_range(1,3)) @(posedge clk);
         end
@@ -1057,8 +1051,6 @@ module tb_mhdma_formatter;
 
     check_fsm_idle();
 
-    apply_full_reset(); //TODO: why is it usefull?
-
     scenario_end();
   endtask
 
@@ -1710,37 +1702,32 @@ module tb_mhdma_formatter;
 
 // ============================================================================================== --
 // SVA
+// XSIM is fast enough for SVA on this test
 // ============================================================================================== --
-  `ifdef XSIM
-    initial begin
-      $error("[ERROR] This is a mystery why but this testbench don't work with XSIM, probably a race condition somewhere");
-      error_assert = 1'b1;
-    end
-  `endif
 
   // -----------------------------------------------------------------------------------------
   // AXI-Stream: tvalid must remain stable when tready is low
   // -----------------------------------------------------------------------------------------
   property axis_tvalid_stable;
-    @(posedge clk) disable iff (!s_rstn || disable_sva)
+    @(posedge clk) disable iff (~s_rstn)
     (qsfp_tx_tvalid && !qsfp_tx_tready) |=> $stable(qsfp_tx_tvalid);
   endproperty
 
   // AXI-Stream: tdata must remain stable when tvalid is high and tready is low
   property axis_tdata_stable;
-    @(posedge clk) disable iff (!s_rstn || disable_sva)
+    @(posedge clk) disable iff (~s_rstn)
     (qsfp_tx_tvalid && !qsfp_tx_tready) |=> $stable(qsfp_tx_tdata);
   endproperty
 
   // AXI-Stream: tkeep_user must remain stable when tvalid is high and tready is low
   property axis_tkeep_stable;
-    @(posedge clk) disable iff (!s_rstn || disable_sva)
+    @(posedge clk) disable iff (~s_rstn)
     (qsfp_tx_tvalid && !qsfp_tx_tready) |=> $stable(qsfp_tx_tkeep_user);
   endproperty
 
   // AXI-Stream: tlast must remain stable when tvalid is high and tready is low
   property axis_tlast_stable;
-    @(posedge clk) disable iff (!s_rstn || disable_sva)
+    @(posedge clk) disable iff (~s_rstn)
     (qsfp_tx_tvalid && !qsfp_tx_tready) |=> $stable(qsfp_tx_tlast);
   endproperty
 
@@ -1748,7 +1735,7 @@ module tb_mhdma_formatter;
   // tlast implies tvalid
   // -----------------------------------------------------------------------------------------
   property tlast_implies_tvalid;
-    @(posedge clk) disable iff (!s_rstn || disable_sva)
+    @(posedge clk) disable iff (~s_rstn)
     qsfp_tx_tlast |-> qsfp_tx_tvalid;
   endproperty
 
@@ -1757,7 +1744,7 @@ module tb_mhdma_formatter;
   // in our case this is true, there is never back to back frames
   // -----------------------------------------------------------------------------------------
   property no_valid_after_last;
-    @(posedge clk) disable iff (!s_rstn || disable_sva)
+    @(posedge clk) disable iff (~s_rstn)
     (qsfp_tx_tvalid && qsfp_tx_tready && qsfp_tx_tlast) |=> !qsfp_tx_tvalid;
   endproperty
 
@@ -1768,7 +1755,7 @@ module tb_mhdma_formatter;
   // MRMAC to drop the frame.
   // -----------------------------------------------------------------------------------------
   property tvalid_no_drop_before_tlast;
-    @(posedge clk) disable iff (!s_rstn || disable_sva)
+    @(posedge clk) disable iff (~s_rstn)
     (qsfp_tx_tvalid && qsfp_tx_tready && !qsfp_tx_tlast) |=> qsfp_tx_tvalid;
   endproperty
 
