@@ -16,14 +16,14 @@ module mhdma_slave
   import axi_if_common_param_pkg::*; // HBM page
   import pem_common_param_pkg::*;    // CT_MEM_BYTES, AXI4_WORD_PER_PC*
 #(
-  parameter int   CDC_SYNC_STAGES = 2
+  parameter int CDC_SYNC_STAGES = 2
 ) (
   // Ethernet configuration interface -----------------------------------------
-  input  logic                                clk_cfg,
-  input  logic                                resetn_cfg,
+  input  logic                                                 clk_cfg,
+  input  logic                                                 resetn_cfg,
   // Ethernet fast clock interface --------------------------------------------
-  input  logic                                clk_mrmac,
-  input  logic                                resetn_mrmac,
+  input  logic                                                 clk_mrmac,
+  input  logic                                                 resetn_mrmac,
   // Axi4 interface for NMU ---------------------------------------------------
   output logic [ETH_PC-1:0][  AXI4_ADD_W-1:0]                  m_axi4_araddr,
   output logic [ETH_PC-1:0][  AXI4_LEN_W-1:0]                  m_axi4_arlen,
@@ -38,39 +38,34 @@ module mhdma_slave
   input  logic [ETH_PC-1:0]                                    m_axi4_rvalid,
   output logic [ETH_PC-1:0]                                    m_axi4_rready,
   // regf interface -----------------------------------------------------------
-  input  logic [ETH_PC-1:0][2*REG_DATA_W-1:0] regf_ct_mem_addr,
-  output logic             [  REG_DATA_W-1:0] regf_notify_req_id,
-  output logic             [  REG_DATA_W-1:0] regf_notify_req_addr,
+  input  logic [ETH_PC-1:0][2*REG_DATA_W-1:0]                  regf_ct_mem_addr,
+  output logic             [  REG_DATA_W-1:0]                  regf_notify_req_id,
+  output logic             [  REG_DATA_W-1:0]                  regf_notify_req_addr,
   // interrupt ----------------------------------------------------------------
-  input  logic                                clear_interrupt_notify,
-  output logic                                interrupt_notify,
+  input  logic                                                 clear_interrupt_notify,
+  output logic                                                 interrupt_notify,
   // decoder interface --------------------------------------------------------
-  input  command_t                            decoded_command,
-  input  logic                                decoded_command_vld,
-  output logic                                decoded_command_rdy,
+  input  command_t                                             decoded_command,
+  input  logic                                                 decoded_command_vld,
+  output logic                                                 decoded_command_rdy,
   // format interface ---------------------------------------------------------
-  output command_t                            slave_command,
-  output logic                                slave_command_vld,
-  input  logic                                slave_command_rdy,
+  output command_t                                             slave_command,
+  output logic                                                 slave_command_vld,
+  input  logic                                                 slave_command_rdy,
 
-  output logic             [MRMAC_AXIS_W-1:0] ce_payload,
-  output logic                                ce_vld,
-  input  logic                                ce_rdy,
+  output logic             [MRMAC_AXIS_W-1:0]                  ce_payload,
+  output logic                                                 ce_vld,
+  input  logic                                                 ce_rdy,
 
-  input  logic                                ciphertext_sent,
-  input  logic                                notify_ack_sent,
+  input  logic                                                 ciphertext_sent,
+  input  logic                                                 notify_ack_sent,
   // Error interface ----------------------------------------------------------
-  output slave_error_t                        slave_error,
-  input  logic                                rst_errors,
+  output slave_error_t                                         slave_error,
+  input  logic                                                 rst_errors,
   // statistics ---------------------------------------------------------------
-  output slave_stat_t                         stat,
-  input  slave_stat_rst_t                     stat_rst
+  output slave_stat_t                                          stat,
+  input  slave_stat_rst_t                                      stat_rst
 );
-
-  // =========================================================================================== //
-  // localparam
-  // =========================================================================================== //
-  localparam int NB_MRMRAC_WORDS_PER_READ = AXI4_DATA_W/MRMAC_AXIS_W;
 
   // =========================================================================================== //
   // Received
@@ -86,12 +81,7 @@ module mhdma_slave
   // ==============================================================================================
   logic start_notify_ack;
   logic nrx_cmd_in_rdy;
-  logic st_wait_notify;
-  logic st_transmit_ack;
-  logic st_nrx_got_request;
 
-  // => must transmit to regfile IOP_ID, HPU_ID and src_addr
-  // => must trigger interrupt signal when registers are ready to be read
   typedef enum logic [1:0] {
     NRX_XXX          = 'x,
     NRX_WAIT_REQUEST = 2'b00,
@@ -121,15 +111,20 @@ module mhdma_slave
     endcase
   end
 
+  logic st_wait_notify;
+  logic st_transmit_ack;
+  logic st_nrx_got_request;
+
   assign st_wait_notify     = (nrx_state == NRX_WAIT_REQUEST);
   assign st_nrx_got_request = (nrx_state == NRX_GOT_REQUEST);
   assign st_transmit_ack    = (nrx_state == NRX_TRANSMIT_ACK);
 
   // Notify RX command queue --------------------------------------------------
-  logic     nrx_cmd_in_vld;
+  command_t nrx_cmd_fifo;
   logic     nrx_cmd_out_vld;
   logic     nrx_cmd_out_rdy;
-  command_t nrx_cmd_fifo;
+
+  logic     nrx_cmd_in_vld;
 
   assign nrx_cmd_in_vld = st_nrx_got_request;
 
@@ -214,12 +209,8 @@ module mhdma_slave
   // ==============================================================================================
   // Ciphertext EMission (CEM)
   // ==============================================================================================
-  // FSM ------------------------------------------------------------------------------------------
   logic start_of_ct_emission;
   logic rreq_cmd_in_rdy;
-  logic st_wait_rr;
-  logic st_read_send;
-  logic st_got_read_req;
 
   typedef enum logic [1:0] {
     CEM_XXX           = 'x,
@@ -250,23 +241,21 @@ module mhdma_slave
     endcase
   end
 
+  logic st_wait_rr;
+  logic st_read_send;
+  logic st_got_read_req;
+
   assign st_wait_rr      = (cem_state == CEM_WAIT_REQUEST);
   assign st_got_read_req = (cem_state == CEM_GOT_REQUEST);
   assign st_read_send    = (cem_state == CEM_READ_N_SEND);
 
   // sending command to read request command queue ------------------------------------------------
   // when qsfp tlast is ready we are sure that all commands have been correctly received
-  // we need to pass along:
-  //    > HPU ID
-  //    > IOP ID
-  //    > DST ADDR
-  //    > SRC ADDR
-  //   => REQ ID must be switched from read request to ciphertext emission
-  logic    rreq_cmd_in_vld;
-
   command_t rreq_cmd_fifo;
   logic    rreq_cmd_out_vld;
   logic    rreq_cmd_out_rdy;
+
+  logic    rreq_cmd_in_vld;
 
   assign rreq_cmd_in_vld = st_got_read_req;
 
@@ -349,12 +338,14 @@ module mhdma_slave
   // flag that states that read request is ready
   logic rreq_ready;
   logic rreq_ready_tmp;
+  logic rreq_ready_pulse;
+
   always_ff @(posedge clk_mrmac)
     rreq_ready <= rreq_cmd_out_vld & rreq_cmd_out_rdy;
+
   always_ff @(posedge clk_mrmac)
     rreq_ready_tmp <= rreq_ready;
 
-  logic rreq_ready_pulse;
   assign rreq_ready_pulse = rreq_ready & ~rreq_ready_tmp;
 
   // process an axi4-read on each PC --------------------------------------------------------------
@@ -706,32 +697,9 @@ module mhdma_slave
     end
   endgenerate
 
-  // Gate fifo_ce output: don't let formatter consume until all data is loaded.
-  // This prevents MRMAC TX underrun (tvalid gap mid-frame) when HBM reads are slow.
-  // If ever MRMAC drops the valid the current frame is dropped
-  logic ce_fifo_vld;
-
-  logic [$clog2(CT_NB_COEF+1)-1:0] ce_load_cnt;
-  logic                            ce_data_loaded;
-
-  always_ff @(posedge clk_mrmac) begin
-    if (~resetn_mrmac) begin
-      ce_load_cnt <= '0;
-    end else begin
-      if (ciphertext_sent) begin
-        ce_load_cnt <= '0;
-      end else if (fifo_ce_in_vld & fifo_ce_in_rdy) begin
-        ce_load_cnt <= ce_load_cnt + 1;
-      end
-    end
-  end
-
-  // we receive more than CT_NB_WORDS_MRMAC because CT_NB_COEF is not a power of two
-  assign ce_data_loaded = (ce_load_cnt >= CT_NB_WORDS_MRMAC);
-
   fifo_ram_rdy_vld # (
     .WIDTH      (MRMAC_AXIS_W   ),
-    .DEPTH      (CT_NB_COEF     ),
+    .DEPTH      (CT_NB_COEF     ), // TODO: check value
     .RAM_LATENCY(CE_RAM_LATENCY ),
     .ALMOST_FULL_REMAIN (0)
   ) fifo_ce (
@@ -743,12 +711,10 @@ module mhdma_slave
     .in_rdy      (fifo_ce_in_rdy),
 
     .out_data    (ce_payload),
-    .out_vld     (ce_fifo_vld),
-    .out_rdy     (ce_rdy & ce_data_loaded),
+    .out_vld     (ce_vld),
+    .out_rdy     (ce_rdy),
     .almost_full (/* UNUSED */)
   );
-
-  assign ce_vld = ce_fifo_vld & ce_data_loaded;
 
   // =========================================================================================== //
   // Interface to formatter

@@ -30,7 +30,9 @@ package mhdma_pkg;
   // beware of block design if modifying this values
   localparam int MRMAC_AXIS_W   = 64;
   localparam int MRMAC_TKEEP_W  = 11;
-  localparam int ETH_PC         = PEM_PC; // MHDMA is tied to PEM module: mandatory same number of PC
+  localparam int NB_MRMRAC_WORDS_PER_READ = AXI4_DATA_W/MRMAC_AXIS_W;
+
+  localparam int ETH_PC       = PEM_PC; // MHDMA is tied to PEM module: mandatory same number of PC
   // beware of regfile if modifying this value
   localparam int NB_MAX_HPU   = 8;
   localparam int NB_MAX_HPU_W = $clog2(NB_MAX_HPU);
