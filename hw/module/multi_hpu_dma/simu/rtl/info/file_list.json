@@ -9,6 +9,27 @@
       "env": ["simu"],
       "target": ["all"],
       "is_include_file": false
+    },
+    {
+      "name": "hw/module/multi_hpu_dma/simu/rtl/unit_tests/tb_mhdma_formatter.sv",
+      "library": "work",
+      "env": ["simu"],
+      "target": ["all"],
+      "is_include_file": false
+    },
+    {
+      "name": "hw/module/multi_hpu_dma/simu/rtl/unit_tests/tb_mhdma_master.sv",
+      "library": "work",
+      "env": ["simu"],
+      "target": ["all"],
+      "is_include_file": false
+    },
+    {
+      "name": "hw/module/multi_hpu_dma/simu/rtl/unit_tests/tb_mhdma_slave.sv",
+      "library": "work",
+      "env": ["simu"],
+      "target": ["all"],
+      "is_include_file": false
     }
   ],
   "dependency_dir": ["hw/module/multi_hpu_dma/simu", "hw/module/multi_hpu_dma"],
