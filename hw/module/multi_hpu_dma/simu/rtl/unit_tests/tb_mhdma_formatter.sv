@@ -63,7 +63,7 @@ module tb_mhdma_formatter;
   localparam int CE_TOTAL_PAYLOAD_WORDS = NB_PACKETS_FULL * NB_WORDS_PAYLOAD + NB_WORDS_LAST_PACKET;
 
   // Timeout guard: maximum cycles before declaring failure
-  // otherword_ise most scenarios here are running continuously
+  // otherwise most scenarios here are running continuously
   localparam int TIMEOUT_CYCLES = 500_000;
 
 // ============================================================================================== --
@@ -1689,7 +1689,7 @@ module tb_mhdma_formatter;
 
 // ============================================================================================== --
 // SVA
-// XSIM is fast enough for SVA on this test
+// XSIM is fast enough for SVA in this test
 // ============================================================================================== --
 
   // -----------------------------------------------------------------------------------------
