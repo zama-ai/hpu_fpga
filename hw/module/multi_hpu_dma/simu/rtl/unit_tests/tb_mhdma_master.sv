@@ -382,39 +382,37 @@ module tb_mhdma_master;
     end
   endtask
 
-  // --------------------------------------------------------------------------------------------- --
-  // Simulate formatter acknowledging that a notify frame was sent (mrmac domain)
-  // --------------------------------------------------------------------------------------------- --
-  task automatic simulate_notify_sent();
+  // wait tasks are using directly an output of the DUT, easier to not be merged
+  task automatic wait_master_command_vld(
+    input  int   max_cycles,
+    output logic timed_out
+  );
+    int cnt;
     begin
-      @(posedge clk_mrmac);
-      notify_sent = 1'b1;
-      @(posedge clk_mrmac);
-      notify_sent = 1'b0;
+      timed_out = 1'b0;
+      cnt = 0;
+      while (!master_command_vld && cnt < max_cycles) begin
+        @(posedge clk_mrmac);
+        cnt++;
+      end
+      if (cnt >= max_cycles) timed_out = 1'b1;
     end
   endtask
 
-  // --------------------------------------------------------------------------------------------- --
-  // Simulate decoder reporting a notify ACK was received (mrmac domain)
-  // --------------------------------------------------------------------------------------------- --
-  task automatic simulate_notify_ack();
+  // wait tasks are using directly an output of the DUT, easier to not be merged
+  task automatic wait_interrupt_rr(
+    input  int   max_cycles,
+    output logic timed_out
+  );
+    int cnt;
     begin
-      @(posedge clk_mrmac);
-      notify_ack_received = 1'b1;
-      @(posedge clk_mrmac);
-      notify_ack_received = 1'b0;
-    end
-  endtask
-
-  // --------------------------------------------------------------------------------------------- --
-  // Simulate formatter acknowledging that a read request frame was sent (mrmac domain)
-  // --------------------------------------------------------------------------------------------- --
-  task automatic simulate_read_request_sent();
-    begin
-      @(posedge clk_mrmac);
-      read_request_sent = 1'b1;
-      @(posedge clk_mrmac);
-      read_request_sent = 1'b0;
+      timed_out = 1'b0;
+      cnt = 0;
+      while (!interrupt_read_request && cnt < max_cycles) begin
+        @(posedge clk_mrmac);
+        cnt++;
+      end
+      if (cnt >= max_cycles) timed_out = 1'b1;
     end
   endtask
 
@@ -485,56 +483,6 @@ module tb_mhdma_master;
       for (int pkt = 0; pkt < NB_PACKETS_FULL + 1; pkt++) begin
         feed_ce_packet(pkt[SEQ_NUM_W-1:0], iop_id, hpu_id, mode, flag, src_addr, dst_addr);
       end
-    end
-  endtask
-
-  // --------------------------------------------------------------------------------------------- --
-  // Wait for master_command_vld with a timeout (mrmac domain)
-  // --------------------------------------------------------------------------------------------- --
-  task automatic wait_master_command_vld(
-    input  int   max_cycles,
-    output logic timed_out
-  );
-    int cnt;
-    begin
-      timed_out = 1'b0;
-      cnt = 0;
-      while (!master_command_vld && cnt < max_cycles) begin
-        @(posedge clk_mrmac);
-        cnt++;
-      end
-      if (cnt >= max_cycles) timed_out = 1'b1;
-    end
-  endtask
-
-  // --------------------------------------------------------------------------------------------- --
-  // Wait for interrupt_read_request with a timeout (cfg domain)
-  // --------------------------------------------------------------------------------------------- --
-  task automatic wait_interrupt_rr(
-    input  int   max_cycles,
-    output logic timed_out
-  );
-    int cnt;
-    begin
-      timed_out = 1'b0;
-      cnt = 0;
-      while (!interrupt_read_request && cnt < max_cycles) begin
-        @(posedge clk_mrmac);
-        cnt++;
-      end
-      if (cnt >= max_cycles) timed_out = 1'b1;
-    end
-  endtask
-
-  // --------------------------------------------------------------------------------------------- --
-  // Clear the read request interrupt (cfg domain)
-  // --------------------------------------------------------------------------------------------- --
-  task automatic clear_rr_interrupt();
-    begin
-      @(posedge clk_cfg);
-      clear_interrupt_rr = 1'b1;
-      @(posedge clk_cfg);
-      clear_interrupt_rr = 1'b0;
     end
   endtask
 
@@ -639,8 +587,8 @@ module tb_mhdma_master;
       end
 
       consume_master_command();
-      simulate_notify_sent();
-      simulate_notify_ack();
+      simulate_pulse(notify_sent, clk_mrmac);
+      simulate_pulse(notify_ack_received, clk_mrmac);
       repeat (20) @(posedge clk_mrmac);
     end
   endtask
@@ -678,7 +626,7 @@ module tb_mhdma_master;
       end
 
       consume_master_command();
-      simulate_read_request_sent();
+      simulate_pulse(read_request_sent, clk_mrmac);
       feed_full_ciphertext(iop_id, hpu_id, req_mode, req_flag, iop_src_addr, iop_dst_addr);
 
       wait_interrupt_rr(5000, irq_timed_out);
@@ -687,7 +635,7 @@ module tb_mhdma_master;
         failed = 1'b1;
       end
 
-      clear_rr_interrupt();
+      clear_signal(clear_interrupt_rr, clk_cfg);
     end
   endtask
 
@@ -726,8 +674,8 @@ module tb_mhdma_master;
       assert (master_command.src_addr == iop_src_addr ) else begin $display("[ERROR:%0d] src_addr mismatch", scenario_id); error_scenario = 1'b1; end
 
       consume_master_command();
-      simulate_notify_sent();
-      simulate_notify_ack();
+      simulate_pulse(notify_sent, clk_mrmac);
+      simulate_pulse(notify_ack_received, clk_mrmac);
 
       repeat (50) @(posedge clk_mrmac);
       assert (stat.fsm_notify == 2'b00) else begin
@@ -770,7 +718,7 @@ module tb_mhdma_master;
       end
 
       consume_master_command();
-      simulate_notify_sent();
+      simulate_pulse(notify_sent, clk_mrmac);
       // Do NOT send notify_ack
 
       repeat (TIMEOUT_NOTIFY + 20) @(posedge clk_mrmac);
@@ -790,8 +738,8 @@ module tb_mhdma_master;
       end
 
       consume_master_command();
-      simulate_notify_sent();
-      simulate_notify_ack();
+      simulate_pulse(notify_sent, clk_mrmac);
+      simulate_pulse(notify_ack_received, clk_mrmac);
 
       repeat (20) @(posedge clk_mrmac);
       assert (stat.fsm_notify == 2'b00) else begin
@@ -837,7 +785,7 @@ module tb_mhdma_master;
       end
 
       consume_master_command();
-      simulate_read_request_sent();
+      simulate_pulse(read_request_sent, clk_mrmac);
 
       feed_full_ciphertext(
         .iop_id   (iop_id      ),
@@ -861,7 +809,7 @@ module tb_mhdma_master;
       assert (regf_read_req_id == exp_read_req_id) else begin $display("[ERROR:%0d] regf_read_req_id | exp %0h got %0h", scenario_id, exp_read_req_id, regf_read_req_id); error_scenario = 1'b1; end
       assert (regf_read_addr   == exp_read_addr  ) else begin $display("[ERROR:%0d] regf_read_addr   | exp %0h got %0h", scenario_id, exp_read_addr,   regf_read_addr  ); error_scenario = 1'b1; end
 
-      clear_rr_interrupt();
+      clear_signal(clear_interrupt_rr, clk_cfg);
 
       repeat (10) @(posedge clk_cfg);
       assert (!interrupt_read_request) else begin
@@ -912,7 +860,7 @@ module tb_mhdma_master;
       end
 
       consume_master_command();
-      simulate_read_request_sent();
+      simulate_pulse(read_request_sent, clk_mrmac);
       // Do NOT send CE data
 
       repeat (TIMEOUT_READ_REQ + 20) @(posedge clk_mrmac);
@@ -932,7 +880,7 @@ module tb_mhdma_master;
       end
 
       consume_master_command();
-      simulate_read_request_sent();
+      simulate_pulse(read_request_sent, clk_mrmac);
       feed_full_ciphertext(
         .iop_id   (iop_id      ),
         .hpu_id   (hpu_id      ),
@@ -947,7 +895,7 @@ module tb_mhdma_master;
         $display("[ERROR:%0d] Timed out waiting for interrupt after retry", scenario_id);
         error_scenario = 1'b1;
       end
-      clear_rr_interrupt();
+      clear_signal(clear_interrupt_rr, clk_cfg);
 
       repeat (20) @(posedge clk_mrmac);
       assert (stat.fsm_read_req == 2'b00) else begin
@@ -987,7 +935,7 @@ module tb_mhdma_master;
         error_scenario = 1'b1;
       end
       consume_master_command();
-      simulate_read_request_sent();
+      simulate_pulse(read_request_sent, clk_mrmac);
 
       // Feed first CE packet with seq_num=0 (correct)
       feed_ce_packet(8'h0, iop_id, hpu_id, req_mode, req_flag, iop_src_addr, iop_dst_addr);
@@ -1014,7 +962,7 @@ module tb_mhdma_master;
       end
 
       consume_master_command();
-      simulate_read_request_sent();
+      simulate_pulse(read_request_sent, clk_mrmac);
       feed_full_ciphertext(
         .iop_id   (iop_id      ),
         .hpu_id   (hpu_id      ),
@@ -1029,7 +977,7 @@ module tb_mhdma_master;
         $display("[ERROR:%0d] Timed out waiting for interrupt after retry", scenario_id);
         error_scenario = 1'b1;
       end
-      clear_rr_interrupt();
+      clear_signal(clear_interrupt_rr, clk_cfg);
 
       // Clear error for subsequent scenarios
       pulse_rst_errors();
@@ -1041,15 +989,15 @@ module tb_mhdma_master;
   // --------------------------------------------------------------------------------------------- --
   // Scenario : AXI4 page boundary splitting
   // TODO
-  //  1. Single hardcoded offset — The test only exercises 0xF00 (8 words before boundary). It misses important edge cases:
+  //  1. Single hardcoded offset - The test only exercises 0xF00 (8 words before boundary). It misses important edge cases:
   // - Page-aligned address (offset 0x000): should produce no unnecessary split
-  // - 1 word before boundary (e.g. offset 0xFE0): first burst is just 1 word — minimal split
+  // - 1 word before boundary (e.g. offset 0xFE0): first burst is just 1 word - minimal split
   // - Offset that doesn't divide evenly: different remainder patterns
-  // 2. No burst contiguity check — The test checks first burst offset, second burst alignment, and total word count, but never verifies that bursts are actually contiguous.
+  // 2. No burst contiguity check - The test checks first burst offset, second burst alignment, and total word count, but never verifies that bursts are actually contiguous.
   //  A gap or overlap between bursts would go undetected. Should check: burst[i+1].addr == burst[i].addr + (burst[i].len+1) * AXI4_DATA_BYTES
-  // 3. Middle bursts not validated — When the transfer spans 3+ pages, all middle bursts should be exactly PAGE_AXI4_DATA words (full page). The test doesn't check this.
-  // 4. Only PC0 is tested — If ETH_PC > 1, the other PCs are completely ignored. They have a different word count (AXI4_WORD_PER_PC vs AXI4_WORD_PER_PC0) and could have different splitting behavior.
-  // 5. Redundant variable — saved_ct_mem_addr_pc0 / save-restore pattern would become cleaner if the test iterated over addresses, and expected_words_pc0 is used only once (could inline it).
+  // 3. Middle bursts not validated - When the transfer spans 3+ pages, all middle bursts should be exactly PAGE_AXI4_DATA words (full page). The test doesn't check this.
+  // 4. Only PC0 is tested - If ETH_PC > 1, the other PCs are completely ignored. They have a different word count (AXI4_WORD_PER_PC vs AXI4_WORD_PER_PC0) and could have different splitting behavior.
+  // 5. Redundant variable - saved_ct_mem_addr_pc0 / save-restore pattern would become cleaner if the test iterated over addresses, and expected_words_pc0 is used only once (could inline it).
   // --------------------------------------------------------------------------------------------- --
   task automatic run_scenario_axi4_page_boundary();
     logic [2*REG_DATA_W-1:0] saved_ct_mem_addr_pc0;
@@ -1088,7 +1036,7 @@ module tb_mhdma_master;
       end
 
       consume_master_command();
-      simulate_read_request_sent();
+      simulate_pulse(read_request_sent, clk_mrmac);
       feed_full_ciphertext(
         .iop_id   (iop_id      ),
         .hpu_id   (hpu_id      ),
@@ -1103,7 +1051,7 @@ module tb_mhdma_master;
         $display("[ERROR:%0d] Timed out waiting for interrupt", scenario_id);
         error_scenario = 1'b1;
       end
-      clear_rr_interrupt();
+      clear_signal(clear_interrupt_rr, clk_cfg);
 
       repeat (20) @(posedge clk_mrmac);
 
@@ -1194,7 +1142,7 @@ module tb_mhdma_master;
       end
 
       consume_master_command();
-      simulate_read_request_sent();
+      simulate_pulse(read_request_sent, clk_mrmac);
       feed_full_ciphertext(
         .iop_id   (iop_id      ),
         .hpu_id   (hpu_id      ),
@@ -1209,7 +1157,7 @@ module tb_mhdma_master;
         $display("[ERROR:%0d] Timed out waiting for interrupt", scenario_id);
         error_scenario = 1'b1;
       end
-      clear_rr_interrupt();
+      clear_signal(clear_interrupt_rr, clk_cfg);
 
       repeat (20) @(posedge clk_mrmac);
       assert (master_error.write_error[0] == 1'b1) else begin
@@ -1271,7 +1219,7 @@ module tb_mhdma_master;
       end
 
       consume_master_command();
-      simulate_read_request_sent();
+      simulate_pulse(read_request_sent, clk_mrmac);
 
       // Feed first CE packet and check ce_reception_ready goes low
       feed_ce_packet(8'h0, iop_id, hpu_id, req_mode, req_flag, iop_src_addr, iop_dst_addr);
@@ -1300,7 +1248,7 @@ module tb_mhdma_master;
         $display("[ERROR:%0d] Timed out waiting for interrupt", scenario_id);
         error_scenario = 1'b1;
       end
-      clear_rr_interrupt();
+      clear_signal(clear_interrupt_rr, clk_cfg);
 
       // Wait for pipeline to drain
       repeat (100) @(posedge clk_mrmac);
@@ -1426,10 +1374,10 @@ module tb_mhdma_master;
       );
       wait_master_command_vld(500, cmd_timed_out);
       consume_master_command();
-      simulate_read_request_sent();
+      simulate_pulse(read_request_sent, clk_mrmac);
       feed_full_ciphertext(iop_id, hpu_id, req_mode, req_flag, iop_src_addr, iop_dst_addr);
       wait_interrupt_rr(5000, irq_timed_out);
-      clear_rr_interrupt();
+      clear_signal(clear_interrupt_rr, clk_cfg);
 
       repeat (20) @(posedge clk_mrmac);
       assert (stat.t_rr_to_ce_received != 0) else begin
@@ -1497,7 +1445,7 @@ module tb_mhdma_master;
         error_scenario = 1'b1;
       end
       consume_master_command();
-      simulate_read_request_sent();
+      simulate_pulse(read_request_sent, clk_mrmac);
 
       // Feed seq_num=0 then seq_num=2 (skip 1 = mismatch)
       feed_ce_packet(8'h0, iop_id, hpu_id, req_mode, req_flag, iop_src_addr, iop_dst_addr);
@@ -1529,10 +1477,10 @@ module tb_mhdma_master;
         error_scenario = 1'b1;
       end
       consume_master_command();
-      simulate_read_request_sent();
+      simulate_pulse(read_request_sent, clk_mrmac);
       feed_full_ciphertext(iop_id, hpu_id, req_mode, req_flag, iop_src_addr, iop_dst_addr);
       wait_interrupt_rr(5000, irq_timed_out);
-      clear_rr_interrupt();
+      clear_signal(clear_interrupt_rr, clk_cfg);
       repeat (20) @(posedge clk_mrmac);
 
       scenario_end(scenario_id, clk_cfg);
@@ -1576,8 +1524,9 @@ module tb_mhdma_master;
 
 // ============================================================================================== --
 // SVA
+// XSIM is fast enough for SVA in this test
 // ============================================================================================== --
-// `ifndef XSIM
+
   // AXI4 protocol: awvalid must remain stable until awready
   generate
     for (genvar gen_pc = 0; gen_pc < ETH_PC; gen_pc++) begin : gen_sva_axi4
@@ -1647,7 +1596,5 @@ module tb_mhdma_master;
       $display("[ERROR-SVA] master_command_vld did not deassert after handshake");
       error_assert = 1'b1;
     end
-
-// `endif
 
 endmodule

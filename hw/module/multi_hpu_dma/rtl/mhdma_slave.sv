@@ -9,9 +9,7 @@
 //   2) Ciphertext Emission path: reads ciphertext data from HBM and streams it to the formatter
 //
 // Architecture overview:
-//   - Two FSMs operate in the clk_mrmac domain:
-//       * NRX (Notify RX)
-//       * CEM (Ciphertext EMission)
+//   - There are two FSMs : NRX (Notify RX) & CEM (Ciphertext EMission)
 //   - A CDC FIFO (fifo_nrx_regf) bridges notify information from clk_mrmac to clk_cfg.
 //   - Ciphertext reads are issued to HBM through per-PC AXI4 channels, one PC at a time,
 //     with page-boundary-aware burst splitting.
@@ -26,6 +24,12 @@
 //   - ciphertext_sent and notify_ack_sent are single-cycle pulses
 //   - regf_ct_mem_addr is stable for the entire duration of a read operation
 //   - ETH_PC >= 1
+//
+// TODO ?
+//  - use only one instance of axi4 read and not PEM_PC
+//  - overflow error detection for rreq_command_queue
+//  - The fifo_ce FIFO depth of CT_NB_COEF seems overly large
+//  - AXI4 response channel signals (rresp, rid) are not connected same for m_axi4_rlast
 //
 // ==============================================================================================
 
@@ -573,7 +577,10 @@ module mhdma_slave
 
       assign pc_read_finished = temp_finished_flag[NB_MRMRAC_WORDS_PER_READ-1];
 
-      // read word each (AXI4_DATA_W/MRMAC_AXIS_W) clock cycles, we trigger at 1 as slow_pace_count default is 0
+      // read_fifo_out_ready checks fifo_ce_pc_in_rdy before triggering a deserialization burst.
+      // Once triggered, the burst produces NB_MRMRAC_WORDS_PER_READ words without re-checking rdy.
+      // This is safe because fifo_ce depth (CT_NB_COEF) >> NB_MRMRAC_WORDS_PER_READ, and only
+      // one PC deserializes at a time, so the in-flight words cannot overflow fifo_ce.
       assign read_fifo_out_ready = (slow_pace_count == 1) && reading_which_pc[gen_rd] & fifo_ce_pc_in_rdy[gen_rd];
 
       logic [NB_MRMRAC_WORDS_PER_READ-1:0][MRMAC_AXIS_W-1:0] ce_data_out;

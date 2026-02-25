@@ -778,7 +778,7 @@ logic [DST_ADDR_W-1:0] dst_addr;
     scenario_id = scenario_id + 1;
 
     $display("\n==================================================================================================");
-    $display("  SCENARIO %0d: Sending a wrong seq num — immediate zero-pad and retry", scenario_id);
+    $display("  SCENARIO %0d: Sending a wrong seq num - immediate zero-pad and retry", scenario_id);
     $display("==================================================================================================");
     // emptying stat_read_req_timeout_retry value
     maxil_drv_if.read_trans(MHDMA_REQUEST_STAT_READ_REQ_TIMEOUT_RETRY_OFS, stat_read_req_timeout_retry);
@@ -927,7 +927,7 @@ logic [DST_ADDR_W-1:0] dst_addr;
     scenario_id = scenario_id + 1;
 
     $display("\n==================================================================================================");
-    $display("  SCENARIO %0d: a real drop of packet — zero-padding then retry", scenario_id);
+    $display("  SCENARIO %0d: a real drop of packet - zero-padding then retry", scenario_id);
     $display("==================================================================================================");
     maxil_drv_if.read_trans(MHDMA_REQUEST_STAT_READ_REQ_TIMEOUT_RETRY_OFS, stat_read_req_timeout_retry);
 
@@ -944,7 +944,7 @@ logic [DST_ADDR_W-1:0] dst_addr;
       end
     join
 
-    // Send ciphertext emission packets — drop packet 8
+    // Send ciphertext emission packets - drop packet 8
     for (int pkt = 0; pkt < NB_PACKETS_FULL+1; pkt++) begin
       if (pkt == 8) begin
         $display("%t > [INFO]: Dropping packet 8", $time);

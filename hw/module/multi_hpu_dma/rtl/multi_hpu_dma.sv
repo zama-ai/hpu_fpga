@@ -316,7 +316,7 @@ module multi_hpu_dma
   logic [1:0] received_req;
   logic       request_consumed;
 
-  // received_req singals lower module that
+  // received_req signals lower module that
   always_ff @(posedge clk_eth_cfg) begin
     if (~resetn_eth_cfg) begin
       received_req <= '0;

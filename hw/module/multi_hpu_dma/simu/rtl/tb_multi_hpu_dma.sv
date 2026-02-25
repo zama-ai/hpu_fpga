@@ -4,6 +4,8 @@
 // ----------------------------------------------------------------------------------------------
 // Description  : This testbench only tests debug mode
 // Debug mode corresponds to the control of one lane through register file
+//
+// Note: fifo starvation on QSFP TX is not tested here but on formatter testbench.
 // run with "run_edalize -m tb_multi_hpu_dma -t vcs -F TOP_PC TOP_PC_pem2_glwe1_bsk8_ksk8 -F TOP_PCMAX TOP_PCMAX_pem2_glwe1_bsk8_ksk8 -F AXI_DATA_W AXI_DATA_W_256"
 // ==============================================================================================
 
@@ -1154,6 +1156,12 @@ module tb_multi_hpu_dma;
       (qsfp_tx_tvalid[0][lane] && ~qsfp_tx_tready[0][lane]) |=> $stable(qsfp_tx_tvalid[0][lane]) && $stable(qsfp_tx_tdata[0][lane]) && $stable(qsfp_tx_tkeep_user[0][lane]);
     endproperty
 
+    // Once tvalid is asserted, it must be held until tlast handshake
+    property tvalid_held_until_tlast(int lane);
+      @(posedge clk_mrmac) disable iff (~s_rstn_mrmac)
+      (qsfp_tx_tvalid[0][lane] && !(qsfp_tx_tlast[0][lane] && qsfp_tx_tready[0][lane])) |=> qsfp_tx_tvalid[0][lane];
+    endproperty
+
     // Minimum Ethernet frame size (64 bytes) on valid frames - MRMAC inserts 4 bytes so we check for 60
     property mrmac_min_frame_size(int lane);
       int byte_count;
@@ -1188,6 +1196,12 @@ module tb_multi_hpu_dma;
         correct_min_size: assert property(mrmac_min_frame_size(i))
           else begin
             $error("[ERROR-SVA]: incorrect minimum size");
+            error_assert = 1'b1;
+          end
+
+        assert_tvalid_held_until_tlast: assert property(tvalid_held_until_tlast(i))
+          else begin
+            $error("[ERROR-SVA]: tvalid dropped before tlast");
             error_assert = 1'b1;
           end
 

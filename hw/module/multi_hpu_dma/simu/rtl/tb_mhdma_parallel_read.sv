@@ -501,7 +501,7 @@ logic [HPU_NB-1:0][ETH_PC-1:0]                          axi4_ct_rready;
         begin
           for (int j = 0; j < random_iter; j++) begin
             // sending Read Request from A to B
-            // Use lower half of address space to avoid overlap with B→A direction
+            // Use lower half of address space to avoid overlap with B->A direction
             iop_id[0]       = $urandom();
             iop_src_addr[0] = $urandom_range(0, MEM_MAX_VALUE/2-1);
             iop_dst_addr[0] = $urandom_range(0, MEM_MAX_VALUE/2-1);
@@ -536,7 +536,7 @@ logic [HPU_NB-1:0][ETH_PC-1:0]                          axi4_ct_rready;
         begin
           for (int j = 0; j < random_iter; j++) begin
             // sending Read Request from B to A
-            // Use upper half of address space to avoid overlap with A→B direction
+            // Use upper half of address space to avoid overlap with A->B direction
             iop_id[1]       = $urandom();
             iop_src_addr[1] = $urandom_range(MEM_MAX_VALUE/2, MEM_MAX_VALUE-1);
             iop_dst_addr[1] = $urandom_range(MEM_MAX_VALUE/2, MEM_MAX_VALUE-1);

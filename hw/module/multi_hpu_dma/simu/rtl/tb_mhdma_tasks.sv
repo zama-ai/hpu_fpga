@@ -65,6 +65,36 @@ task automatic check_header(
 endtask
 
 // ==============================================================================================
+// Generic signal helpers
+// ==============================================================================================
+
+// Pulse a signal high for one clock cycle
+task automatic simulate_pulse(
+  ref logic signal,
+  ref bit   clk
+);
+  begin
+    @(posedge clk);
+    signal = 1'b1;
+    @(posedge clk);
+    signal = 1'b0;
+  end
+endtask
+
+// Clear a signal by pulsing it high for one clock cycle
+task automatic clear_signal(
+  ref logic signal,
+  ref bit   clk
+);
+  begin
+    @(posedge clk);
+    signal = 1'b1;
+    @(posedge clk);
+    signal = 1'b0;
+  end
+endtask
+
+// ==============================================================================================
 // Scenario helpers
 // ==============================================================================================
 

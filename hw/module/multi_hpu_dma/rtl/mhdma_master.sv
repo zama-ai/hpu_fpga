@@ -10,7 +10,7 @@
 //
 // Assumption:
 //  - master_command_valid drops only one clock cycle efter ready : this is not a problem since
-// we are doing handshakes between FSMs. With this sytem we are saving one fifo element
+// we are doing handshakes between FSMs. With this system we are saving one fifo element
 //
 // Read request retry can happen when
 // 1) a timeout occurs
@@ -219,7 +219,7 @@ module mhdma_master
       end
   end
 
-  // read requets ---------------------------------------------------------------------------------
+  // read request ---------------------------------------------------------------------------------
   logic mismatch_retry_pending;
   logic timeout_reached_read_request;
   logic retry_seq_num;
@@ -782,7 +782,7 @@ module mhdma_master
   end
 
   // when phy_addr is computed from data received by decoder and valid or when we have done all
-  // neeed writes on the first PC we can shift to the next
+  // needed writes on the first PC we can shift to the next
   // when all writes on the second pc is done we can reset the signal
   always_ff @(posedge clk_mrmac) begin : prc_write_pc_one_at_a_time
     if (~resetn_mrmac) begin
@@ -1285,7 +1285,7 @@ module mhdma_master
   // upper word = req_id register, lower word = addr register
   assign rr_regf_in_data = {received_iop_id, received_req_id, received_hpu_id, received_mode, received_flag, received_rsvd, received_dst_addr, received_src_addr};
 
-  // Interrput must be triggered only when ciphertext is valid
+  // Interrupt must be triggered only when ciphertext is valid
   assign rr_regf_in_vld = valid_ciphertext_received;
 
   fifo_ram_rdy_vld_2clk # (

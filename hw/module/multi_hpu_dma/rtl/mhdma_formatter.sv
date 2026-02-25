@@ -5,7 +5,7 @@
 // Description  : Multi-HPU DMA formatter (TX module for QSFP lane)
 //
 // Builds custom Ethernet frames from slave/master commands and CE payload data.
-// Ouptut Data is byte swapped
+// Output Data is byte swapped
 //
 // Packet types (FSM priority, highest first):
 //   CT_EMISSION  (slave)  - multi-frame: NB_PACKETS_FULL (full) + 1 (partial), payload from CE FIFO
@@ -14,7 +14,7 @@
 //   NOTIFY       (master) - single small packet
 //
 // Ciphertext is put into a store & forward FIFO:
-// This garantees continuous tvalid mid-frame dependingf on packet size (MRMAC drops frames on gap).
+// This guarantees continuous tvalid mid-frame dependingf on packet size (MRMAC drops frames on gap).
 //
 // Completion signals (*_sent) are a registered pulse.
 //

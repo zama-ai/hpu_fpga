@@ -81,7 +81,7 @@ module mhdma_decoder
   // Packet decoder
   // =========================================================================================== //
   // Frame-by-frame field extraction from byte-swapped AXI-Stream data.
-  // Frame 0 (counter==0, h0): dst_mac_addr  → used to build rx_valid
+  // Frame 0 (counter==0, h0): dst_mac_addr -> used to build rx_valid
   logic [MAC_ADDR_W-1:0]   dst_mac_addr;
   // Frame 1 (counter==1, h1): src_mac_addr, eth_len
   logic [ETHERNET_LEN-1:0] eth_len;
