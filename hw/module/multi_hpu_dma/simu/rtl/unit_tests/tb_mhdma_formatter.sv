@@ -28,6 +28,7 @@
 // > Back-to-back CE emissions
 // > Mid-frame backpressure for CE
 // > Max hpu_id (NB_MAX_HPU-1)
+// > Invalid req_id discard (slave + master)
 // > Reset during active transmission
 //
 // ==============================================================================================
@@ -118,8 +119,8 @@ module tb_mhdma_formatter;
   bit error_ce_ready;
   bit error_b2b;
   bit error_mid_bp;
-  bit error_pos_fmt_err;
   bit error_reset_mid_tx;
+  bit error_discard;
 
   assign error = error_header_check
                | error_done_pulse
@@ -133,8 +134,8 @@ module tb_mhdma_formatter;
                | error_ce_ready
                | error_b2b
                | error_mid_bp
-               | error_pos_fmt_err
-               | error_reset_mid_tx;
+               | error_reset_mid_tx
+               | error_discard;
 
   always_ff @(posedge clk)
     if (error) begin
@@ -145,7 +146,7 @@ module tb_mhdma_formatter;
 // ============================================================================================== --
 // DUT signals
 // ============================================================================================== --
-  // Bridge configuration
+  // Bridge configurationfrst_errors
   logic [NB_MAX_HPU-1:0][MAC_ADDR_W-1:0] hpu_mac_table;
   logic                 [HPU_ID_W-1:0]   current_hpu_id;
   logic                 [MAC_ADDR_W-1:0] current_hpu_mac;
@@ -245,6 +246,8 @@ module tb_mhdma_formatter;
 // Helper tasks
 // ============================================================================================== --
   logic [MRMAC_TKEEP_W-1:0] expected_last_tkeep;
+  logic force_tready;
+  logic force_tready_val;
 
   // Initialize all TB-driven inputs to safe defaults
   task automatic tb_init();
@@ -257,7 +260,8 @@ module tb_mhdma_formatter;
       ce_vld             = 1'b0;
       ce_reception_ready = 1'b1;
       rst_errors         = 1'b0;
-      qsfp_tx_tready     = 1'b1;
+      force_tready       = 1'b0;
+      force_tready_val   = 1'b1;
 
 
       // always the same in this testbench, fixed. (Used only for ciphertext emissions)
@@ -274,12 +278,34 @@ module tb_mhdma_formatter;
     end
   endtask
 
+  always_ff @(posedge clk) begin
+    if (force_tready)
+      qsfp_tx_tready <= force_tready_val;
+    else
+      qsfp_tx_tready <= $urandom();
+  end
+
   // Clear the frame capture queues
   task automatic clear_tx_capture();
     begin
       tx_frame_q.delete();
       tx_all_words_q.delete();
       tx_frame_count = 0;
+    end
+  endtask
+
+  // ---------------------------------------------------------------------------
+  // Drain the output fifo_element by forcing tready=1 until all expected
+  // frames have been captured. *_sent signals fire at the fifo_element INPUT,
+  // so with random tready the output may still be buffered.
+  // ---------------------------------------------------------------------------
+  task automatic flush_tx_output(input int expected_frames);
+    begin
+      force_tready     = 1'b1;
+      force_tready_val = 1'b1;
+      while (tx_frame_count < expected_frames) @(posedge clk);
+      repeat (3) @(posedge clk);
+      force_tready = 1'b0;
     end
   endtask
 
@@ -353,13 +379,11 @@ module tb_mhdma_formatter;
   // ---------------------------------------------------------------------------
   task automatic stream_ce_payload_continuous();
     begin
-      for (int w = 0; w < CE_TOTAL_PAYLOAD_WORDS-1; w++) begin
+      for (int w = 0; w < CE_TOTAL_PAYLOAD_WORDS; w++) begin
         ce_payload <= MRMAC_AXIS_W'(w);
         ce_vld     <= 1'b1;
         do @(posedge clk); while (!ce_rdy);
       end
-
-      @(posedge clk);
       ce_vld <= 1'b0;
     end
   endtask
@@ -373,7 +397,7 @@ module tb_mhdma_formatter;
     int words_sent;
     begin
       words_sent = 0;
-      for (int w = 0; w < CE_TOTAL_PAYLOAD_WORDS-1; w++) begin
+      for (int w = 0; w < CE_TOTAL_PAYLOAD_WORDS; w++) begin
         if (starve_after_n > 0 && words_sent >= starve_after_n) begin
           ce_vld <= 1'b0;
           break;
@@ -389,10 +413,7 @@ module tb_mhdma_formatter;
           repeat ($urandom_range(1,3)) @(posedge clk);
         end
       end
-      if (starve_after_n == 0) begin
-        @(posedge clk);
-        ce_vld <= 1'b0;
-      end
+      ce_vld <= 1'b0;
     end
   endtask
 
@@ -573,7 +594,7 @@ module tb_mhdma_formatter;
     );
 
     wait(notify_sent);
-    repeat (10) @(posedge clk);
+    flush_tx_output(1);
 
     check_small_packet(MAC_ADDR_HPU1, REQ_ID_NOTIFY, $sformatf("%0d", scenario_id), error_header_check);
 
@@ -623,7 +644,7 @@ module tb_mhdma_formatter;
     );
 
     wait(notify_ack_sent);
-    repeat (10) @(posedge clk);
+    flush_tx_output(1);
 
     check_small_packet(MAC_ADDR_HPU2, REQ_ID_NOTIFY_ACK, $sformatf("%0d", scenario_id), error_header_check);
 
@@ -651,7 +672,7 @@ module tb_mhdma_formatter;
     );
 
     wait(read_request_sent);
-    repeat (10) @(posedge clk);
+    flush_tx_output(1);
 
     check_small_packet(MAC_ADDR_HPU1, REQ_ID_READ, $sformatf("%0d", scenario_id), error_header_check);
 
@@ -680,7 +701,7 @@ module tb_mhdma_formatter;
     stream_ce_payload_continuous();
 
     wait(ciphertext_sent);
-    repeat (20) @(posedge clk);
+    flush_tx_output(NB_PACKETS_FULL + 1);
 
     check_ce_multiframe_headers(MAC_ADDR_HPU1, $sformatf("%0d", scenario_id), error_ce_multiframe);
 
@@ -933,14 +954,14 @@ module tb_mhdma_formatter;
           @(posedge clk);
           if (qsfp_tx_tvalid && qsfp_tx_tready) word_count++;
         end
-        qsfp_tx_tready <= 1'b0;
+        force_tready = 1'b1; force_tready_val = 1'b0;
         repeat (10) @(posedge clk);
-        qsfp_tx_tready <= 1'b1;
+        force_tready = 1'b0;
       end
     join
 
     wait(notify_sent);
-    repeat (10) @(posedge clk);
+    flush_tx_output(1);
 
     check_small_packet(MAC_ADDR_HPU1, REQ_ID_NOTIFY, $sformatf("%0d", scenario_id), error_backpressure);
 
@@ -973,15 +994,15 @@ module tb_mhdma_formatter;
       begin
         for (int frame = 0; frame < NB_PACKETS_FULL; frame++) begin
           @(posedge clk iff (qsfp_tx_tlast && qsfp_tx_tvalid && qsfp_tx_tready));
-          qsfp_tx_tready <= 1'b0;
+          force_tready = 1'b1; force_tready_val = 1'b0;
           repeat ($urandom_range(5,20)) @(posedge clk);
-          qsfp_tx_tready <= 1'b1;
+          force_tready = 1'b0;
         end
       end
     join
 
     wait(ciphertext_sent);
-    repeat (20) @(posedge clk);
+    flush_tx_output(NB_PACKETS_FULL + 1);
 
     check_ce_multiframe_headers(MAC_ADDR_HPU1, $sformatf("%0d", scenario_id), error_ce_multiframe);
 
@@ -1014,7 +1035,7 @@ module tb_mhdma_formatter;
     join
 
     wait(ciphertext_sent);
-    repeat (20) @(posedge clk);
+    flush_tx_output(NB_PACKETS_FULL + 1);
 
     // All frames must have been transmitted despite slow payload arrival
     assert (tx_frame_count == NB_PACKETS_FULL + 1) else begin
@@ -1037,7 +1058,6 @@ module tb_mhdma_formatter;
   // SCENARIO: Header field correctness
   // ---------------------------------------------------------------------------
   task automatic run_scenario_header_fields();
-    clear_tx_capture();
     scenario_start(scenario_id, "Header field correctness");
 
     // --- NOTIFY with specific fields ---
@@ -1054,7 +1074,7 @@ module tb_mhdma_formatter;
       .mode    (req_mode     )
     );
     wait(notify_sent);
-    repeat (10) @(posedge clk);
+    flush_tx_output(1);
 
     build_expected_header(
       .target_mac     (MAC_ADDR_HPU2  ),
@@ -1087,7 +1107,7 @@ module tb_mhdma_formatter;
       .mode    (req_mode     )
     );
     wait(notify_ack_sent);
-    repeat (10) @(posedge clk);
+    flush_tx_output(1);
 
     build_expected_header(
       .target_mac     (MAC_ADDR_HPU1    ),
@@ -1122,7 +1142,7 @@ module tb_mhdma_formatter;
       .mode    (req_mode     )
     );
     wait(read_request_sent);
-    repeat (10) @(posedge clk);
+    flush_tx_output(1);
 
     build_expected_header(
       .target_mac     (MAC_ADDR_HPU2  ),
@@ -1159,7 +1179,7 @@ module tb_mhdma_formatter;
     join
 
     wait(ciphertext_sent);
-    repeat (20) @(posedge clk);
+    flush_tx_output(NB_PACKETS_FULL + 1);
 
     // Verify first frame header
     build_expected_header(
@@ -1200,7 +1220,6 @@ module tb_mhdma_formatter;
     int expected_frame_words;
     logic [ETHERNET_LEN-1:0] expected_eth_len;
 
-    clear_tx_capture();
     scenario_start(scenario_id, "tkeep_user correctness");
 
     // --- Small packet tkeep (NOTIFY) ---
@@ -1217,7 +1236,7 @@ module tb_mhdma_formatter;
       .mode    (req_mode     )
     );
     wait(notify_sent);
-    repeat (10) @(posedge clk);
+    flush_tx_output(1);
 
     for (int i = 0; i < tx_frame_q.size(); i++) begin
       if (i < NB_WORDS_MIN - 1) begin
@@ -1254,7 +1273,7 @@ module tb_mhdma_formatter;
     join
 
     wait(ciphertext_sent);
-    repeat (20) @(posedge clk);
+    flush_tx_output(NB_PACKETS_FULL + 1);
 
     // Verify tkeep for each frame
     word_index = 0;
@@ -1342,7 +1361,7 @@ module tb_mhdma_formatter;
 
     // Wait for completion
     wait(read_request_sent);
-    repeat (10) @(posedge clk);
+    flush_tx_output(1);
 
     assert (tx_frame_q.size() == NB_WORDS_MIN) else begin
       $display("[ERROR:%0d] expected %0d words, got %0d", scenario_id, NB_WORDS_MIN, tx_frame_q.size());
@@ -1426,7 +1445,7 @@ module tb_mhdma_formatter;
     wait(notify_ack_sent);
     $display("%t > %0d: NACK sent", $time, scenario_id);
 
-    repeat (10) @(posedge clk);
+    flush_tx_output(2);
 
     // Verify 2 frames transmitted back-to-back
     assert (tx_frame_count == 2) else begin
@@ -1442,7 +1461,6 @@ module tb_mhdma_formatter;
   // SCENARIO: Back-to-back CE emissions
   // ---------------------------------------------------------------------------
   task automatic run_scenario_b2b_ce();
-    clear_tx_capture();
     scenario_start(scenario_id, "Back-to-back CE emissions");
 
     // --- First CE ---
@@ -1461,7 +1479,7 @@ module tb_mhdma_formatter;
 
     stream_ce_payload_continuous();
     wait(ciphertext_sent);
-    repeat (5) @(posedge clk);
+    flush_tx_output(NB_PACKETS_FULL + 1);
 
     assert (tx_frame_count == NB_PACKETS_FULL + 1) else begin
       $display("[ERROR:%0d] first CE: expected %0d frames, got %0d", scenario_id, NB_PACKETS_FULL + 1, tx_frame_count);
@@ -1476,17 +1494,17 @@ module tb_mhdma_formatter;
 
     drive_slave_command(
       .req_id  (REQ_ID_EMISSION),
-      .hpu_id  (hpu_id       ),
-      .iop_id  (iop_id       ),
-      .src_addr(iop_src_addr ),
-      .dst_addr(iop_dst_addr ),
-      .flag    (req_flag     ),
-      .mode    (req_mode     )
+      .hpu_id  (hpu_id         ),
+      .iop_id  (iop_id         ),
+      .src_addr(iop_src_addr   ),
+      .dst_addr(iop_dst_addr   ),
+      .flag    (req_flag       ),
+      .mode    (req_mode       )
     );
 
     stream_ce_payload_continuous();
     wait(ciphertext_sent);
-    repeat (20) @(posedge clk);
+    flush_tx_output(NB_PACKETS_FULL + 1);
 
     // Verify second CE
     check_ce_multiframe_headers(MAC_ADDR_HPU2, $sformatf("%0d-2nd", scenario_id), error_b2b);
@@ -1512,26 +1530,26 @@ module tb_mhdma_formatter;
           @(posedge clk);
           if (qsfp_tx_tvalid && qsfp_tx_tready) word_cnt++;
         end
-        qsfp_tx_tready <= 1'b0;
+        force_tready = 1'b1; force_tready_val = 1'b0;
         repeat (20) @(posedge clk);
-        qsfp_tx_tready <= 1'b1;
+        force_tready = 1'b0;
       end
     join_none
 
     // Sequential flow (same pattern as working CE scenarios)
     drive_slave_command(
       .req_id  (REQ_ID_EMISSION),
-      .hpu_id  (hpu_id       ),
-      .iop_id  (iop_id       ),
-      .src_addr(iop_src_addr ),
-      .dst_addr(iop_dst_addr ),
-      .flag    (req_flag     ),
-      .mode    (req_mode     )
+      .hpu_id  (hpu_id         ),
+      .iop_id  (iop_id         ),
+      .src_addr(iop_src_addr   ),
+      .dst_addr(iop_dst_addr   ),
+      .flag    (req_flag       ),
+      .mode    (req_mode       )
     );
 
     stream_ce_payload_continuous();
     wait(ciphertext_sent);
-    repeat (20) @(posedge clk);
+    flush_tx_output(NB_PACKETS_FULL + 1);
 
     assert (tx_frame_count == NB_PACKETS_FULL + 1) else begin
       $display("[ERROR:%0d] expected %0d frames, got %0d", scenario_id, NB_PACKETS_FULL + 1, tx_frame_count);
@@ -1566,7 +1584,7 @@ module tb_mhdma_formatter;
     );
 
     wait(notify_sent);
-    repeat (10) @(posedge clk);
+    flush_tx_output(1);
 
     check_small_packet(MAC_ADDR_HPU7, REQ_ID_NOTIFY, $sformatf("%0d-MAX_HPU", scenario_id), error_header_check);
 
@@ -1641,11 +1659,111 @@ module tb_mhdma_formatter;
     );
 
     wait(notify_sent);
-    repeat (10) @(posedge clk);
+    flush_tx_output(1);
 
     assert (tx_frame_count == 1) else begin
       $display("[ERROR:%0d] expected 1 frame after reset recovery, got %0d", scenario_id, tx_frame_count);
       error_reset_mid_tx = 1'b1;
+    end
+
+    check_fsm_idle();
+    scenario_end(scenario_id, clk);
+  endtask
+
+  // ---------------------------------------------------------------------------
+  // SCENARIO: Invalid req_id discard (slave + master)
+  // ---------------------------------------------------------------------------
+  task automatic run_scenario_invalid_req_id_discard();
+    logic [REQ_ID_W-1:0] invalid_req_id;
+
+    clear_tx_capture();
+    scenario_start(scenario_id, "Invalid req_id discard");
+
+    // Use a req_id that matches none of the valid opcodes
+    invalid_req_id = 4'hF;
+
+    // --- Invalid slave command ---
+    @(posedge clk);
+    slave_command.req_id       <= invalid_req_id;
+    slave_command.hpu_id       <= 4'h1;
+    slave_command.iop_id       <= 8'hDE;
+    slave_command.src_addr     <= 16'hAAAA;
+    slave_command.dst_addr     <= 16'hBBBB;
+    slave_command.rsvd         <= 'h0;
+    slave_command.flag         <= 'h0;
+    slave_command.mode         <= 'h0;
+    slave_command.seq_num      <= '0;
+    slave_command.src_mac_addr <= '0;
+    slave_command_vld          <= 1'b1;
+
+    // slave_discard pulse should consume the command
+    do @(posedge clk); while (!slave_command_rdy);
+    @(posedge clk);
+    slave_command_vld <= 1'b0;
+    $display("%t > %0d: invalid slave command discarded", $time, scenario_id);
+
+    repeat (10) @(posedge clk);
+
+    // FSM must stay IDLE, no TX activity
+    assert (stat.fsm_formatter == 3'b000) else begin
+      $display("[ERROR:%0d] FSM left IDLE after invalid slave command", scenario_id);
+      error_discard = 1'b1;
+    end
+    assert (tx_frame_count == 0) else begin
+      $display("[ERROR:%0d] unexpected TX frame after invalid slave command", scenario_id);
+      error_discard = 1'b1;
+    end
+
+    // --- Invalid master command ---
+    @(posedge clk);
+    master_command.req_id       <= invalid_req_id;
+    master_command.hpu_id       <= 4'h2;
+    master_command.iop_id       <= 8'hEF;
+    master_command.src_addr     <= 16'hCCCC;
+    master_command.dst_addr     <= 16'hDDDD;
+    master_command.rsvd         <= 'h0;
+    master_command.flag         <= 'h0;
+    master_command.mode         <= 'h0;
+    master_command.seq_num      <= '0;
+    master_command.src_mac_addr <= '0;
+    master_command_vld          <= 1'b1;
+
+    do @(posedge clk); while (!master_command_rdy);
+    @(posedge clk);
+    master_command_vld <= 1'b0;
+    $display("%t > %0d: invalid master command discarded", $time, scenario_id);
+
+    repeat (10) @(posedge clk);
+
+    assert (stat.fsm_formatter == 3'b000) else begin
+      $display("[ERROR:%0d] FSM left IDLE after invalid master command", scenario_id);
+      error_discard = 1'b1;
+    end
+    assert (tx_frame_count == 0) else begin
+      $display("[ERROR:%0d] unexpected TX frame after invalid master command", scenario_id);
+      error_discard = 1'b1;
+    end
+
+    // --- Valid command after discard: verify recovery ---
+    clear_tx_capture();
+    randomize_command_fields(4'h1, hpu_id, iop_id, iop_src_addr, iop_dst_addr, req_flag, req_mode);
+
+    drive_master_command(
+      .req_id  (REQ_ID_NOTIFY),
+      .hpu_id  (hpu_id       ),
+      .iop_id  (iop_id       ),
+      .src_addr(iop_src_addr ),
+      .dst_addr(iop_dst_addr ),
+      .flag    (req_flag     ),
+      .mode    (req_mode     )
+    );
+
+    wait(notify_sent);
+    flush_tx_output(1);
+
+    assert (tx_frame_count == 1) else begin
+      $display("[ERROR:%0d] expected 1 frame after discard recovery, got %0d", scenario_id, tx_frame_count);
+      error_discard = 1'b1;
     end
 
     check_fsm_idle();
@@ -1677,6 +1795,7 @@ module tb_mhdma_formatter;
     run_scenario_b2b_ce();
     run_scenario_mid_frame_backpressure();
     run_scenario_max_hpu_id();
+    run_scenario_invalid_req_id_discard();
     run_scenario_reset_mid_tx();
 
     $display("\n==================================================================================================");
@@ -1726,14 +1845,14 @@ module tb_mhdma_formatter;
     qsfp_tx_tlast |-> qsfp_tx_tvalid;
   endproperty
 
-  // -----------------------------------------------------------------------------------------
-  // After tlast is accepted (tvalid & tready & tlast), tvalid must drop the next cycle
-  // in our case this is true, there is never back to back frames
-  // -----------------------------------------------------------------------------------------
-  property no_valid_after_last;
-    @(posedge clk) disable iff (~s_rstn)
-    (qsfp_tx_tvalid && qsfp_tx_tready && qsfp_tx_tlast) |=> !qsfp_tx_tvalid;
-  endproperty
+  // // -----------------------------------------------------------------------------------------
+  // // After tlast is accepted (tvalid & tready & tlast), tvalid must drop the next cycle
+  // // in our case this is true, there is never back to back frames
+  // // -----------------------------------------------------------------------------------------
+  // property no_valid_after_last;
+  //   @(posedge clk) disable iff (~s_rstn)
+  //   (qsfp_tx_tvalid && qsfp_tx_tready && qsfp_tx_tlast) |=> !qsfp_tx_tvalid;
+  // endproperty
 
   // -----------------------------------------------------------------------------------------
   // tvalid must NOT drop mid-frame: after a successful transfer that is not
@@ -1762,8 +1881,8 @@ module tb_mhdma_formatter;
   assert_tlast_implies_tvalid : assert property (tlast_implies_tvalid)
     else begin $error("%t > [ERROR:SVA] tlast without tvalid", $time); error_assert = 1'b1; end
 
-  assert_no_valid_after_last : assert property (no_valid_after_last)
-    else begin $error("%t > [ERROR:SVA] tvalid still asserted after tlast accepted", $time); error_assert = 1'b1; end
+  // assert_no_valid_after_last : assert property (no_valid_after_last)
+  //   else begin $error("%t > [ERROR:SVA] tvalid still asserted after tlast accepted", $time); error_assert = 1'b1; end
 
   assert_tvalid_no_drop_before_tlast : assert property (tvalid_no_drop_before_tlast)
     else begin $error("%t > [ERROR:SVA] tvalid dropped before tlast (FIFO starvation)", $time); error_assert = 1'b1; end

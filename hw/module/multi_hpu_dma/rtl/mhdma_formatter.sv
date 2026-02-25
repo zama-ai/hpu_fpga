@@ -13,17 +13,21 @@
 //   READ_REQ     (master) - single small packet, gated by ce_reception_ready
 //   NOTIFY       (master) - single small packet
 //
-// Ciphertext is put into a store & forward FIFO:
-// This guarantees continuous tvalid mid-frame dependingf on packet size (MRMAC drops frames on gap).
-//
 // Completion signals (*_sent) are a registered pulse.
 //
-// Assumptions / Limitations:
+// Notes :
+//  > slave_command_rdy & master_command_rdy are single-cycle pulses (from consume_* edge detectors),
+// not levels. The upstream slave/master hold command_vld high until theses pulse arrives.
+//  > Ciphertext is put into a store & forward FIFO:
+// This guarantees continuous tvalid mid-frame depending on packet size (MRMAC drops frames on gap).
+//
+// Assumptions :
+// - The upstream slave/master hold command_vld high until theses pulse arrives.
 // - command.hpu_id must be < NB_MAX_HPU. No bounds check on MAC table index;
 // - NB_PACKETS_FULL >= 1. The stalling / threshold logic assumes at least one full frame.
-// - LAST_PACKET_BYTE_SIZE >= ETH_NB_BYTES_MIN (64). Not enforced in RTL.
+// - LAST_PACKET_BYTE_SIZE >= ETH_NB_BYTES_MIN (64).
 // - Commands with unrecognized req_id are silently discarded
-// - formatter_error (sticky, cleared by rst_errors) detects tvalid gap during CE payload
+// - Formatter_error (sticky, cleared by rst_errors) detects tvalid gap during CE payload
 //   transmission. fifo_ce gating should prevent this under normal operation.
 //
 // ==============================================================================================
@@ -72,7 +76,14 @@ module mhdma_formatter
   output formatter_stat_t                           stat
 );
 
-  // =========================================================================================== //
+// pragma translate_off
+  initial begin
+    assert (LAST_PACKET_BYTE_SIZE >= ETH_NB_BYTES_MIN)
+    else $error("> ERROR: ULAST_PACKET_BYTE_SIZE must be >= ETH_NB_BYTES_MIN");
+  end
+// pragma translate_on
+
+// =========================================================================================== //
   // Localparam
   // =========================================================================================== //
   localparam int NB_WORDS_FULL    = NB_WORDS_CUST_HEADER_SIZE+NB_WORDS_PAYLOAD;
@@ -134,8 +145,7 @@ module mhdma_formatter
       ce_frame_cnt <= 'h0;
     end else begin
       if (ciphertext_sent) begin
-        // TODO: check this
-        ce_frame_cnt <= ce_fifo_up ? 'h1 : 'h0;
+        ce_frame_cnt <= 'h0;
       end else begin
         if (ce_fifo_up & ~ce_fifo_down) begin
           ce_frame_cnt <= ce_frame_cnt + 1;
@@ -318,11 +328,7 @@ module mhdma_formatter
   logic                 ce_sop_header;        // pulse: start-of headers between packets
 
   always_ff @(posedge clk_mrmac) begin
-    if (~resetn_mrmac) begin
-      small_packet <= 1'b0;
-    end else begin
-      small_packet <= st_read_request | st_notify_request | st_notify_ack;
-    end
+    small_packet <= st_read_request | st_notify_request | st_notify_ack;
   end
 
   always_ff @(posedge clk_mrmac) begin
@@ -512,22 +518,23 @@ module mhdma_formatter
 
   // tkeep ----------------------------------------------------------------------------------------
   logic [$clog2(MRMAC_AXIS_W/8)-1:0] last_word_bytes;
-  logic [      MRMAC_AXIS_W/8-1:0]   tx_byte_enable;
-  logic [      MRMAC_AXIS_W/8-1:0]   tx_byte_enable_d;
+  logic [        MRMAC_AXIS_W/8-1:0] tx_byte_enable;
+  logic [        MRMAC_AXIS_W/8-1:0] tx_byte_enable_d;
 
-  assign tx_byte_enable_d = (last_word_bytes == 0) ? 8'hFF : (1 << last_word_bytes) - 1;
+  assign tx_byte_enable_d = (last_word_bytes == 0) ? 8'hFF : 8'(1 << last_word_bytes) - 1;
 
   always_ff @(posedge clk_mrmac) begin
     if (~resetn_mrmac) begin
-      tx_byte_enable <= 8'h00;
+      tx_byte_enable <= 'h0;
     end else begin
       if (okay_to_send_request & tx_tready) begin
-        if ((tx_cnt == 0) | ~small_packet)
+        if ((tx_cnt == 0) | ~small_packet) begin
           tx_byte_enable <= 8'hFF;
-        else if (small_packet & (tx_cnt == (NB_WORDS_MIN-1)) )
+        end else if (small_packet & (tx_cnt == (NB_WORDS_MIN-1))) begin
           tx_byte_enable <= tx_byte_enable_d;
-        // else if (tx_tlast_D)
-        //   tx_byte_enable <= 8'h00;
+        end else if (ce_last_packet & (tx_cnt == (NB_WORDS_PARTIAL-1))) begin
+           tx_byte_enable <= tx_byte_enable_d;
+        end
       end
     end
   end
@@ -615,7 +622,7 @@ module mhdma_formatter
   // =========================================================================================== //
   // AXI4-stream
   // =========================================================================================== //
-  assign tx_tdata_D      = (small_packet | ce_header_valid) ? tx_header : ce_fifo_out_vld ? ce_fifo_out_data : 'h0;
+  assign tx_tdata_D      = (small_packet | ce_header_valid) ? tx_header : ce_fifo_out_data;
   assign tx_tvalid_D     = small_packet ? (|tx_cnt) : ((|tx_cnt) & (ce_header_valid | ce_fifo_out_vld));
   assign tx_tkeep_user_D = {3'b000, tx_byte_enable};
   assign tx_tlast_D      = small_packet ? tx_small_last : (st_ct_emission ? tx_last_word : 1'b0);
@@ -664,7 +671,7 @@ module mhdma_formatter
   assign payload_active = st_ct_emission & ce_first_header_sent & ~ce_stalling & |tx_cnt;
 
   always_ff @(posedge clk_mrmac) begin
-    if (~resetn_mrmac ) begin
+    if (~resetn_mrmac) begin
       format_error.formatter_error <= 1'b0;
     end else begin
       if (rst_errors) begin
