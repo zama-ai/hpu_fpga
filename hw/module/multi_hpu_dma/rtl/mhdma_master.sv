@@ -8,6 +8,9 @@
 //
 // This module must be able to send Notify and Read Request to formatter
 //
+// Assumption:
+//  - master_command_valid drops only one clock cycle efter ready : this is not a problem since
+// we are doing handshakes between FSMs. With this sytem we are saving one fifo element
 //
 // Read request retry can happen when
 // 1) a timeout occurs
@@ -184,11 +187,18 @@ module mhdma_master
   logic nack_rdy;
   logic rr_packets_rdy;
 
-  always_ff @(posedge clk_mrmac)
-    nack_rdy <= decoded_command_vld & (decoded_command.req_id == REQ_ID_NOTIFY_ACK) & st_ntx_wait_request;
-
-  always_ff @(posedge clk_mrmac)
-    rr_packets_rdy <= decoded_command_vld & (decoded_command.req_id == REQ_ID_EMISSION) & st_wait_packets;
+  // NOTE: decoded_command_rdy is intentionally registered for timing.
+  // The decoder MUST hold decoded_command_vld and decoded_command stable
+  // until decoded_command_rdy is asserted (FIFO-style output protocol).
+  always_ff @(posedge clk_mrmac) begin
+    if (~resetn_mrmac) begin
+      nack_rdy       <= 1'b0;
+      rr_packets_rdy <= 1'b0;
+    end else begin
+      nack_rdy       <= decoded_command_vld & (decoded_command.req_id == REQ_ID_NOTIFY_ACK) & st_ntx_wait_request;
+      rr_packets_rdy <= decoded_command_vld & (decoded_command.req_id == REQ_ID_EMISSION) & st_wait_packets;
+    end
+  end
 
   assign decoded_command_rdy = nack_rdy | rr_packets_rdy;
 
@@ -252,8 +262,13 @@ module mhdma_master
 
   assign seq0_detected = rr_packets_rdy & (decoded_command.seq_num == 0);
 
-  always_ff @(posedge clk_mrmac)
-    rr_packets_rdyQ <= rr_packets_rdy;
+  always_ff @(posedge clk_mrmac) begin
+    if (~resetn_mrmac) begin
+      rr_packets_rdyQ <= 1'b0;
+    end else begin
+      rr_packets_rdyQ <= rr_packets_rdy;
+    end
+  end
 
   // seq num valid over frontedge of rr_packets_rdy & there is no seq num errors
   assign seq_num_valid = (rr_packets_rdy & ~rr_packets_rdyQ) & (~wait_for_seq0 | seq0_detected);
@@ -468,9 +483,9 @@ module mhdma_master
   assign start_notify_request = nrqq_cmd_rdy;
 
   fifo_ram_rdy_vld # (
-    .WIDTH             (IOP_ID_W + HPU_ID_W + RSVD_W + FLAG_W + MODE_W + DST_ADDR_W + SRC_ADDR_W),
-    .DEPTH             (REQ_FIFO_DEPTH),
-    .RAM_LATENCY       (CE_RAM_LATENCY)
+    .WIDTH       (IOP_ID_W + HPU_ID_W + RSVD_W + FLAG_W + MODE_W + DST_ADDR_W + SRC_ADDR_W),
+    .DEPTH       (REQ_FIFO_DEPTH),
+    .RAM_LATENCY (CE_RAM_LATENCY)
   ) nrqq_fifo_retries (
     .clk         (clk_mrmac   ),
     .s_rst_n     (resetn_mrmac),
@@ -497,6 +512,10 @@ module mhdma_master
   // Master command allocation
   // =========================================================================================== //
   always_ff @(posedge clk_mrmac) begin
+    if (~resetn_mrmac) begin
+      master_command.req_id <= 'h0;   // prevents X upon start of FSM
+      master_command_vld    <= 1'b0;
+    end else begin
     if (nrqq_cmd_vld | ntx_retry) begin
       master_command.hpu_id   <= ntx_retry ? nrqq_retry_data.hpu_id   : nrqq_cmd_data.hpu_id;
       master_command.rsvd     <= ntx_retry ? nrqq_retry_data.rsvd     : nrqq_cmd_data.rsvd;
@@ -507,7 +526,7 @@ module mhdma_master
       master_command.dst_addr <= 'h0;
       master_command.req_id   <= REQ_ID_NOTIFY;
 
-      master_command_vld      <= (st_ntx_wait_request & nrqq_cmd_vld) | (nrqq_retry_vld & ntx_retry);
+      master_command_vld      <= ((st_ntx_wait_request & nrqq_cmd_vld) | (nrqq_retry_vld & ntx_retry));
 
     end else if (rrqq_cmd_vld | rr_retry) begin
       master_command.hpu_id   <= rrqq_cmd.hpu_id;
@@ -519,10 +538,11 @@ module mhdma_master
       master_command.dst_addr <= rrqq_cmd.dst_addr;
       master_command.req_id   <= REQ_ID_READ;
 
-      master_command_vld      <= (st_rr_wait_request & rrqq_cmd_vld) | rr_retry;
+      master_command_vld      <= ((st_rr_wait_request & rrqq_cmd_vld) | rr_retry);
 
     end else begin
       master_command_vld <= 1'b0;
+    end
     end
   end
 
@@ -590,9 +610,16 @@ module mhdma_master
   logic [MRMAC_AXIS_W-1:0] decoder_rx_tdata_Q;
 
   always_ff @(posedge clk_mrmac) begin
-    decoder_rx_tvalid_Q <= decoder_rx_tvalid;
-    decoder_rx_tdata_Q  <= decoder_rx_tdata;
+    if (~resetn_mrmac) begin
+      decoder_rx_tvalid_Q <= 1'b0;
+    end else begin
+      decoder_rx_tvalid_Q <= decoder_rx_tvalid;
+    end
   end
+
+  always_ff @(posedge clk_mrmac)
+    decoder_rx_tdata_Q  <= decoder_rx_tdata;
+
 
   assign fifo_cerx_in_vld  = decoder_rx_tvalid_Q & ce_valid;
   assign fifo_cerx_in_data = decoder_rx_tdata_Q;
@@ -772,9 +799,9 @@ module mhdma_master
   end
 
   // Deserialization of 64bits words (MRMAC) to 256b (AXI4_DATA_W)
-  logic [AXI4_DATA_W-1:0]                       realined_word;
+  logic [AXI4_DATA_W-1:0]                       realigned_word;
   logic [$clog2(NB_MRMRAC_WORDS_PER_WRITE)-1:0] realign_cnt;
-  logic                                         realined_word_vld;
+  logic                                         realigned_word_vld;
   logic                                         fifo_cerx_out_rdy_vld_reg;
 
   // Per-target-PC word counter and one-hot target_fifo selection
@@ -787,7 +814,7 @@ module mhdma_master
     if (~resetn_mrmac) begin
       target_pc_word_cnt <= 'h0;
     end else begin
-      if (realined_word_vld) begin
+      if (realigned_word_vld) begin
         if (ciphertext_received | target_pc_last_word) begin
           target_pc_word_cnt <= 'h0;
         end else begin
@@ -803,7 +830,7 @@ module mhdma_master
     end else begin
       if (ciphertext_received) begin
         target_fifo <= {{(ETH_PC-1){1'b0}}, 1'b1};
-      end else if (realined_word_vld) begin
+      end else if (realigned_word_vld) begin
         if (target_pc_last_word) begin
           target_fifo <= target_fifo << 1;
         end
@@ -811,11 +838,16 @@ module mhdma_master
     end
   end
 
-  always_ff @(posedge clk_mrmac)
-    fifo_cerx_out_rdy_vld_reg <= cerx_mux_handshake;
+  always_ff @(posedge clk_mrmac) begin
+    if (~resetn_mrmac) begin
+      fifo_cerx_out_rdy_vld_reg <= 1'b0;
+    end else begin
+      fifo_cerx_out_rdy_vld_reg <= cerx_mux_handshake;
+    end
+  end
 
   always_ff @(posedge clk_mrmac) begin
-    if(~resetn_mrmac) begin
+    if (~resetn_mrmac) begin
       realign_cnt <= 'h0;
     end else begin
        if (cerx_mux_handshake & (realign_cnt == NB_MRMRAC_WORDS_PER_WRITE-1)) begin
@@ -828,9 +860,9 @@ module mhdma_master
 
   always_ff @(posedge clk_mrmac)
     if (cerx_mux_handshake)
-      realined_word[realign_cnt*MRMAC_AXIS_W+:MRMAC_AXIS_W] <= cerx_mux_data;
+      realigned_word[realign_cnt*MRMAC_AXIS_W+:MRMAC_AXIS_W] <= cerx_mux_data;
 
-  assign realined_word_vld = (realign_cnt == 0) & fifo_cerx_out_rdy_vld_reg;
+  assign realigned_word_vld = (realign_cnt == 0) & fifo_cerx_out_rdy_vld_reg;
 
   generate
     for (genvar gen_wr=0; gen_wr<ETH_PC; gen_wr++) begin : gen_ce_write
@@ -848,7 +880,7 @@ module mhdma_master
         .clk         (clk_mrmac         ),
         .s_rst_n     (resetn_mrmac      ),
 
-        .in_data     (realined_word     ),
+        .in_data     (realigned_word     ),
         .in_vld      (fifo_pc_wr_in_vld ),
         .in_rdy      (fifo_pc_wr_in_rdy ),
 
@@ -859,7 +891,7 @@ module mhdma_master
         .almost_full (/* UNUSED */)
       );
 
-      assign fifo_pc_wr_in_vld = target_fifo[gen_wr] & realined_word_vld ;
+      assign fifo_pc_wr_in_vld = target_fifo[gen_wr] & realigned_word_vld ;
 
       logic [FIFO_PC_DATA_COUNT_W:0] fifo_pc_wr_cnt;
       logic                          cnt_fifo_pc_wr_up;
@@ -1158,7 +1190,7 @@ module mhdma_master
       assign brsp_bresp_cnt_dec_val    = brsp_fifo_out_burst_cnt_m1 + 1;
 
       assign brsp_ack          = brsp_fifo_out_vld & brsp_all_bresp_received;
-      assign brsp_fifo_out_rdy = brsp_all_bresp_received;
+      assign brsp_fifo_out_rdy = brsp_fifo_out_vld & brsp_all_bresp_received;
 
       // Handle write errors
       always_ff @(posedge clk_mrmac) begin
@@ -1344,7 +1376,7 @@ module mhdma_master
   end
 
   always_ff @(posedge clk_mrmac) begin
-    if(~resetn_mrmac) begin
+    if (~resetn_mrmac) begin
       retry_notify_cnt <= 'h0;
     end else begin
       if (stat_rst.cnt_notify_retry) begin
@@ -1358,7 +1390,7 @@ module mhdma_master
   end
 
   always_ff @(posedge clk_mrmac) begin
-    if(~resetn_mrmac) begin
+    if (~resetn_mrmac) begin
       retry_read_req_cnt <= 'h0;
     end else begin
       if (stat_rst.cnt_read_req_retry) begin
@@ -1467,6 +1499,7 @@ module mhdma_master
       nb_write_complete_cnt <= 'h0;
     end else begin
       // Count completed transfers (all B responses received)
+      // Since PCs are written one by one cannot have the two PCs ack =1
       if (|pc_brsp_ack) begin
         nb_write_complete_cnt <= nb_write_complete_cnt +1;
       end
