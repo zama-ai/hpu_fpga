@@ -120,6 +120,7 @@ module mhdma_master
 
   logic start_notify_request;
   logic st_ntx_wait_request;
+  logic st_ntx_wait_ack;
   logic ntx_retry;
 
   always_ff @(posedge clk_mrmac) begin
@@ -141,6 +142,7 @@ module mhdma_master
   end
 
   assign st_ntx_wait_request = (ntx_state==NTX_WAIT_REQUEST);
+  assign st_ntx_wait_ack     = (ntx_state==NTX_WAIT_ACK);
 
   // Read request ---------------------------------------------------------------------------------
   logic start_read_request;
@@ -188,15 +190,14 @@ module mhdma_master
   logic rr_packets_rdy;
 
   // NOTE: decoded_command_rdy is intentionally registered for timing.
-  // The decoder MUST hold decoded_command_vld and decoded_command stable
-  // until decoded_command_rdy is asserted (FIFO-style output protocol).
+  // The decoder holds decoded_command_vld and decoded_command stable until decoded_command_rdy is 1
   always_ff @(posedge clk_mrmac) begin
     if (~resetn_mrmac) begin
       nack_rdy       <= 1'b0;
       rr_packets_rdy <= 1'b0;
     end else begin
-      nack_rdy       <= decoded_command_vld & (decoded_command.req_id == REQ_ID_NOTIFY_ACK) & st_ntx_wait_request;
-      rr_packets_rdy <= decoded_command_vld & (decoded_command.req_id == REQ_ID_EMISSION) & st_wait_packets;
+      nack_rdy       <= decoded_command_vld & (decoded_command.req_id == REQ_ID_NOTIFY_ACK);
+      rr_packets_rdy <= decoded_command_vld & (decoded_command.req_id == REQ_ID_EMISSION);
     end
   end
 
