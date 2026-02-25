@@ -37,7 +37,7 @@ else
 fi
 
 # Set default tools
-export PROJECT_SIMU_TOOL="xsim"
+export PROJECT_SIMU_TOOL="vcs"
 export PROJECT_SYN_TOOL="vivado"
 export PROJECT_TOP_SYN_TOOL="vitis"
 
