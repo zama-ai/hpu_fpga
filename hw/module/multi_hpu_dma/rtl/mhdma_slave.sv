@@ -4,9 +4,29 @@
 // ----------------------------------------------------------------------------------------------
 // Description  : Multi-HPU-DMA Slave module
 // ----------------------------------------------------------------------------------------------
-// Must react to decoded commands
+// Reacts to decoded commands from the decoder and drives:
+//   1) Notify-ACK path: acknowledges incoming notify requests via the formatter
+//   2) Ciphertext Emission path: reads ciphertext data from HBM and streams it to the formatter
 //
-// This module handles the logic around ciphertext emission and Notify ack
+// Architecture overview:
+//   - Two FSMs operate in the clk_mrmac domain:
+//       * NRX (Notify RX)
+//       * CEM (Ciphertext EMission)
+//   - A CDC FIFO (fifo_nrx_regf) bridges notify information from clk_mrmac to clk_cfg.
+//   - Ciphertext reads are issued to HBM through per-PC AXI4 channels, one PC at a time,
+//     with page-boundary-aware burst splitting.
+//   - AXI4 read data (AXI4_DATA_W wide) is deserialized into MRMAC_AXIS_W words before
+//     being pushed into the CE FIFO for the formatter.
+//
+//
+// Assumptions:
+//   - CT_MEM_BYTES is page-aligned (used in phy_addr = base + ctId * CT_MEM_BYTES)
+//   - AXI4_DATA_W is an integer multiple of MRMAC_AXIS_W
+//   - The upstream decoder holds decoded_command stable while decoded_command_vld is high
+//   - ciphertext_sent and notify_ack_sent are single-cycle pulses
+//   - regf_ct_mem_addr is stable for the entire duration of a read operation
+//   - ETH_PC >= 1
+//
 // ==============================================================================================
 
 module mhdma_slave
@@ -34,7 +54,7 @@ module mhdma_slave
   output logic [ETH_PC-1:0][axi_if_eth_axi_pkg::AXI4_ID_W-1:0] m_axi4_arid,
 
   input  logic [ETH_PC-1:0][AXI4_DATA_W-1:0]                   m_axi4_rdata,
-  input  logic [ETH_PC-1:0]                                    m_axi4_rlast,
+  input  logic [ETH_PC-1:0]                                    m_axi4_rlast, // TODO: never used
   input  logic [ETH_PC-1:0]                                    m_axi4_rvalid,
   output logic [ETH_PC-1:0]                                    m_axi4_rready,
   // regf interface -----------------------------------------------------------
@@ -67,6 +87,9 @@ module mhdma_slave
   input  slave_stat_rst_t                                      stat_rst
 );
 
+  logic slave_rdy_notify;
+  logic slave_rdy_read;
+
   // =========================================================================================== //
   // Received
   // =========================================================================================== //
@@ -85,7 +108,6 @@ module mhdma_slave
   typedef enum logic [1:0] {
     NRX_XXX          = 'x,
     NRX_WAIT_REQUEST = 2'b00,
-    NRX_GOT_REQUEST  = 2'b01,
     NRX_TRANSMIT_ACK = 2'b10
   } st_nrx;
 
@@ -97,51 +119,55 @@ module mhdma_slave
     else nrx_state <= nrx_next_state;
   end
 
-  assign start_notify_ack = decoded_command_vld & received_notify;
+  assign start_notify_ack = decoded_command_vld & slave_rdy_notify;
 
   always_comb begin
     nrx_next_state = NRX_XXX;
     case (nrx_state)
       NRX_WAIT_REQUEST:
-        nrx_next_state = start_notify_ack ? NRX_GOT_REQUEST : NRX_WAIT_REQUEST;
-      NRX_GOT_REQUEST:
-        nrx_next_state = nrx_cmd_in_rdy ? NRX_TRANSMIT_ACK : NRX_GOT_REQUEST;
+        nrx_next_state = start_notify_ack ? NRX_TRANSMIT_ACK : NRX_WAIT_REQUEST;
       NRX_TRANSMIT_ACK:
         nrx_next_state = notify_ack_sent ? NRX_WAIT_REQUEST : NRX_TRANSMIT_ACK;
+      default: nrx_next_state = NRX_WAIT_REQUEST;
     endcase
   end
 
   logic st_wait_notify;
   logic st_transmit_ack;
-  logic st_nrx_got_request;
 
-  assign st_wait_notify     = (nrx_state == NRX_WAIT_REQUEST);
-  assign st_nrx_got_request = (nrx_state == NRX_GOT_REQUEST);
-  assign st_transmit_ack    = (nrx_state == NRX_TRANSMIT_ACK);
+  assign st_wait_notify  = (nrx_state == NRX_WAIT_REQUEST);
+  assign st_transmit_ack = (nrx_state == NRX_TRANSMIT_ACK);
 
   // Notify RX command queue --------------------------------------------------
   command_t nrx_cmd_fifo;
   logic     nrx_cmd_out_vld;
   logic     nrx_cmd_out_rdy;
 
+  command_t nrx_cmd_in;
   logic     nrx_cmd_in_vld;
 
-  assign nrx_cmd_in_vld = st_nrx_got_request;
+  assign nrx_cmd_in_vld = start_notify_ack;
 
   // command fifo for notify RX, received from decoder
+  // Note: it is important to be in always_comb to avoid having multiple concurrent drivers
+  always_comb begin
+    nrx_cmd_in        = decoded_command;
+    nrx_cmd_in.req_id = REQ_ID_NOTIFY_ACK;
+  end
+
   fifo_ram_rdy_vld # (
-    .WIDTH      (DST_ADDR_W+SRC_ADDR_W+HPU_ID_W+IOP_ID_W+RSVD_W+FLAG_W+MODE_W+REQ_ID_W),
+    .WIDTH      ($bits(command_t)),
     .DEPTH      (NRX_DEPTH),
     .RAM_LATENCY(NRX_RAM_LATENCY)
   ) fifo_nrx_commands (
     .clk         (clk_mrmac),
     .s_rst_n     (resetn_mrmac),
 
-    .in_data     ({decoded_command.dst_addr, decoded_command.src_addr, decoded_command.hpu_id, decoded_command.iop_id, decoded_command.rsvd, decoded_command.flag, decoded_command.mode, REQ_ID_NOTIFY_ACK}),
+    .in_data     (nrx_cmd_in),
     .in_vld      (nrx_cmd_in_vld),
     .in_rdy      (nrx_cmd_in_rdy),
 
-    .out_data    ({nrx_cmd_fifo.dst_addr, nrx_cmd_fifo.src_addr, nrx_cmd_fifo.hpu_id, nrx_cmd_fifo.iop_id, nrx_cmd_fifo.rsvd, nrx_cmd_fifo.flag, nrx_cmd_fifo.mode, nrx_cmd_fifo.req_id}),
+    .out_data    (nrx_cmd_fifo),
     .out_vld     (nrx_cmd_out_vld),
     .out_rdy     (nrx_cmd_out_rdy),
 
@@ -215,7 +241,6 @@ module mhdma_slave
   typedef enum logic [1:0] {
     CEM_XXX           = 'x,
     CEM_WAIT_REQUEST  = 2'b00,
-    CEM_GOT_REQUEST   = 2'b01,
     CEM_READ_N_SEND   = 2'b10
   } st_cem;
 
@@ -227,83 +252,84 @@ module mhdma_slave
     else cem_state <= cem_next_state;
   end
 
-  assign start_of_ct_emission  = decoded_command_vld & received_read_request;
+  assign start_of_ct_emission  = decoded_command_vld & slave_rdy_read;
 
   always_comb begin
     cem_next_state = CEM_XXX;
     case (cem_state)
       CEM_WAIT_REQUEST:
-        cem_next_state = start_of_ct_emission ? CEM_GOT_REQUEST : CEM_WAIT_REQUEST;
-      CEM_GOT_REQUEST:
-        cem_next_state = rreq_cmd_in_rdy ? CEM_READ_N_SEND : CEM_GOT_REQUEST;
+        cem_next_state = start_of_ct_emission ? CEM_READ_N_SEND : CEM_WAIT_REQUEST;
       CEM_READ_N_SEND:
         cem_next_state = ciphertext_sent ? CEM_WAIT_REQUEST : CEM_READ_N_SEND;
+      default: cem_next_state = CEM_WAIT_REQUEST;
     endcase
   end
 
   logic st_wait_rr;
   logic st_read_send;
-  logic st_got_read_req;
 
-  assign st_wait_rr      = (cem_state == CEM_WAIT_REQUEST);
-  assign st_got_read_req = (cem_state == CEM_GOT_REQUEST);
-  assign st_read_send    = (cem_state == CEM_READ_N_SEND);
+  assign st_wait_rr   = (cem_state == CEM_WAIT_REQUEST);
+  assign st_read_send = (cem_state == CEM_READ_N_SEND);
 
   // sending command to read request command queue ------------------------------------------------
-  // when qsfp tlast is ready we are sure that all commands have been correctly received
   command_t rreq_cmd_fifo;
   logic    rreq_cmd_out_vld;
   logic    rreq_cmd_out_rdy;
 
-  logic    rreq_cmd_in_vld;
+  command_t rreq_cmd_in;
+  logic     rreq_cmd_in_vld;
 
-  assign rreq_cmd_in_vld = st_got_read_req;
+  assign rreq_cmd_in_vld = start_of_ct_emission;
+
+  always_comb begin
+    rreq_cmd_in        = decoded_command;
+    rreq_cmd_in.req_id = REQ_ID_EMISSION;
+  end
 
   fifo_ram_rdy_vld # (
-    .WIDTH      (HPU_ID_W+IOP_ID_W+RSVD_W+FLAG_W+MODE_W+DST_ADDR_W+SRC_ADDR_W+REQ_ID_W),
+    .WIDTH      ($bits(command_t)),
     .DEPTH      (RREQ_CMD_DEPTH),
     .RAM_LATENCY(RREQ_CMD_RAM_LATENCY)
   ) rreq_command_queue (
     .clk         (clk_mrmac),
     .s_rst_n     (resetn_mrmac),
 
-    .in_data     ({decoded_command.hpu_id, decoded_command.iop_id, decoded_command.rsvd, decoded_command.flag, decoded_command.mode, decoded_command.dst_addr, decoded_command.src_addr, REQ_ID_EMISSION}),
+    .in_data     (rreq_cmd_in),
     .in_vld      (rreq_cmd_in_vld),
     .in_rdy      (rreq_cmd_in_rdy),
 
-    .out_data    ({rreq_cmd_fifo.hpu_id, rreq_cmd_fifo.iop_id, rreq_cmd_fifo.rsvd, rreq_cmd_fifo.flag, rreq_cmd_fifo.mode, rreq_cmd_fifo.dst_addr, rreq_cmd_fifo.src_addr, rreq_cmd_fifo.req_id}),
+    .out_data    (rreq_cmd_fifo),
     .out_vld     (rreq_cmd_out_vld),
     .out_rdy     (rreq_cmd_out_rdy),
 
     .almost_full (/* UNUSED */)
   );
 
-  always_ff @(posedge clk_mrmac)
-    rreq_cmd_out_rdy <= st_read_send & slave_command_rdy;
-
-  logic [RQQ_CMD_DATA_COUNT_W-1:0] rreq_cnt;
-  logic                            rreq_cnt_down;
-  logic                            rreq_cnt_up;
-
-  assign rreq_cnt_down = rreq_cmd_out_vld & rreq_cmd_out_rdy;
-  assign rreq_cnt_up   = rreq_cmd_in_vld & rreq_cmd_in_rdy;
-
-  always_ff @(posedge clk_mrmac) begin
-    if (~resetn_mrmac) begin
-      rreq_cnt <= 'h0;
-    end else begin
-      if (rreq_cnt_up & ~rreq_cnt_down) begin
-        rreq_cnt <= rreq_cnt + 1;
-      end else if (rreq_cnt_down & ~rreq_cnt_up) begin
-        rreq_cnt <= rreq_cnt - 1;
-      end
-    end
-  end
+  assign rreq_cmd_out_rdy = st_read_send & slave_command_rdy;
 
   // ==============================================================================================
   // Consuming Decoded commands
   // ==============================================================================================
-  assign decoded_command_rdy = (st_nrx_got_request & ~st_read_send) | (st_got_read_req & ~st_transmit_ack);
+  // We are ready when receiving a command while waiting for it, as long as fifo in_rdy is ready as well.
+  // Added a self clearing condition to have a pulse
+
+  always_ff @(posedge clk_mrmac) begin
+    if (~resetn_mrmac) begin
+      slave_rdy_notify <= 1'b0;
+    end else begin
+      slave_rdy_notify <= decoded_command_vld & st_wait_notify & received_notify & nrx_cmd_in_rdy & ~slave_rdy_notify;
+    end
+  end
+
+  always_ff @(posedge clk_mrmac) begin
+    if (~resetn_mrmac) begin
+      slave_rdy_read <= 1'b0;
+    end else begin
+      slave_rdy_read <= decoded_command_vld & st_wait_rr & received_read_request & rreq_cmd_in_rdy & ~slave_rdy_read;
+    end
+  end
+
+  assign decoded_command_rdy = slave_rdy_notify | slave_rdy_read;
 
   // =========================================================================================== //
   // Read into HBM
@@ -317,20 +343,11 @@ module mhdma_slave
 
   // phys_addr = hbm_pc_offset + ctId * CT_MEM_BYTES
   logic [ETH_PC-1:0] [AXI4_ADD_W-1:0] phy_addr;
-  logic [ETH_PC-1:0]                  phy_addr_valid;
   generate
     for (genvar gen_p=0; gen_p<ETH_PC; gen_p=gen_p+1) begin : gen_phy_addr
       always_ff @(posedge clk_mrmac)
         if (rreq_cmd_out_rdy & rreq_cmd_out_vld)
           phy_addr[gen_p] <= regf_ct_mem_addr[gen_p] + (rr_ct_src_addr * CT_MEM_BYTES);
-
-      always_ff @(posedge clk_mrmac) begin
-        if (~resetn_mrmac) begin
-          phy_addr_valid[gen_p] <= 'h0;
-        end else begin
-          phy_addr_valid[gen_p] <= rreq_cmd_out_rdy & rreq_cmd_out_vld;
-        end
-      end
     end
   endgenerate
 
@@ -340,11 +357,21 @@ module mhdma_slave
   logic rreq_ready_tmp;
   logic rreq_ready_pulse;
 
-  always_ff @(posedge clk_mrmac)
-    rreq_ready <= rreq_cmd_out_vld & rreq_cmd_out_rdy;
+  always_ff @(posedge clk_mrmac) begin
+    if (~resetn_mrmac) begin
+      rreq_ready <= 1'b0;
+    end else begin
+      rreq_ready <= rreq_cmd_out_vld & rreq_cmd_out_rdy;
+    end
+  end
 
-  always_ff @(posedge clk_mrmac)
-    rreq_ready_tmp <= rreq_ready;
+  always_ff @(posedge clk_mrmac) begin
+    if (~resetn_mrmac) begin
+      rreq_ready_tmp <= 1'b0;
+    end else begin
+      rreq_ready_tmp <= rreq_ready;
+    end
+  end
 
   assign rreq_ready_pulse = rreq_ready & ~rreq_ready_tmp;
 
@@ -358,8 +385,8 @@ module mhdma_slave
     for (genvar gen_rd=0; gen_rd<ETH_PC; gen_rd++) begin : gen_ce_reads
       // Per-PC parameters
       localparam int AXI4_WORD_PER_PATH    = (gen_rd == 0) ? AXI4_WORD_PER_PC0 : AXI4_WORD_PER_PC;
-      localparam int AXI4_WORD_PER_PATH_W  = $clog2(AXI4_WORD_PER_PATH) == 0 ? 1 : $clog2(AXI4_WORD_PER_PATH);
-      localparam int AXI4_WORD_PER_PATH_WW = $clog2(AXI4_WORD_PER_PATH+1) == 0 ? 1 : $clog2(AXI4_WORD_PER_PATH+1);
+      localparam int AXI4_WORD_PER_PATH_W  = (gen_rd == 0) ? AXI4_WORD_PER_PC0_W : AXI4_WORD_PER_PC_W;
+      localparam int AXI4_WORD_PER_PATH_WW = (gen_rd == 0) ? AXI4_WORD_PER_PC0_WW : AXI4_WORD_PER_PC_WW;
 
       // AXI interface
       axi4_ar_if_t                       axi_ar;
@@ -501,7 +528,7 @@ module mhdma_slave
         .almost_full (/* UNUSED */)
       );
 
-      // we are going to read 4 times slower the fifo than we are feeding it
+      // we are going to read (AXI4_DATA_W/MRMAC_AXIS_W) times slower the fifo than we are feeding it
       logic [$clog2(NB_MRMRAC_WORDS_PER_READ)-1:0] slow_pace_count;
       logic [AXI4_WORD_PER_PATH_WW-1:0]            read_fifo_out_cnt;
       logic                                        pc_read_finished;
@@ -546,7 +573,7 @@ module mhdma_slave
 
       assign pc_read_finished = temp_finished_flag[NB_MRMRAC_WORDS_PER_READ-1];
 
-      // read word each 4 clock cycles, we trigger at 1 as slow_pace_count default is 0
+      // read word each (AXI4_DATA_W/MRMAC_AXIS_W) clock cycles, we trigger at 1 as slow_pace_count default is 0
       assign read_fifo_out_ready = (slow_pace_count == 1) && reading_which_pc[gen_rd] & fifo_ce_pc_in_rdy[gen_rd];
 
       logic [NB_MRMRAC_WORDS_PER_READ-1:0][MRMAC_AXIS_W-1:0] ce_data_out;
@@ -597,40 +624,10 @@ module mhdma_slave
         end
       end
 
-      // always_ff @(posedge clk_mrmac)
       assign fifo_ce_pc_in_data[gen_rd] = ce_data_out[realign_cnt];
 
-      // always_ff @(posedge clk_mrmac)
       assign fifo_ce_pc_in_vld[gen_rd] = start_deserialize;
 
-    end
-  endgenerate
-
-  // which PC must be read ------------------------------------------------------------------------
-  // Track data reception per PC (count rlast signals to know when all data received)
-  logic [ETH_PC-1:0] finished_reading_pc;
-  generate
-    for (genvar gen_rd=0; gen_rd<ETH_PC; gen_rd++) begin : gen_control_pc
-      // Since PEM_PC | AXI4_WORD_PER_BLWE, the body is processed by PC0
-      localparam int AXI4_WORD_PER_PATH    = (gen_rd == 0) ? AXI4_WORD_PER_PC0 : AXI4_WORD_PER_PC;
-      localparam int AXI4_WORD_PER_PATH_WW = $clog2(AXI4_WORD_PER_PATH+1) == 0 ? 1 : $clog2(AXI4_WORD_PER_PATH+1);
-
-      logic [AXI4_WORD_PER_PATH_WW-1:0] r_word_cnt;
-      // Track how many words have been received
-      always_ff @(posedge clk_mrmac) begin
-        if (~resetn_mrmac) begin
-          r_word_cnt <= 'h0;
-        end else begin
-          if (m_axi4_rvalid[gen_rd] & m_axi4_rready[gen_rd]) begin
-            if (r_word_cnt == AXI4_WORD_PER_PATH - 1)
-              r_word_cnt <= 'h0;
-            else
-              r_word_cnt <= r_word_cnt + 1;
-          end
-        end
-      end
-
-      assign finished_reading_pc[gen_rd] = m_axi4_rvalid[gen_rd] & m_axi4_rready[gen_rd] & (r_word_cnt == AXI4_WORD_PER_PATH - 1);
     end
   endgenerate
 
@@ -719,21 +716,35 @@ module mhdma_slave
   // =========================================================================================== //
   // Interface to formatter
   // =========================================================================================== //
-  // acks takes precedence in from of read request
+  // acks takes precedence in front of read request
+  // we don't need dst_addr, flag & mode for ack
   always_ff @(posedge clk_mrmac) begin
     if (nrx_cmd_out_vld)  begin
-      slave_command_vld       <= nrx_cmd_out_vld;
-      slave_command           <= nrx_cmd_fifo;
-      slave_command.rsvd      <= 'h0;
-      slave_command.flag      <= 'h0;
-      slave_command.mode      <= 'h0;
-      slave_command.dst_addr  <= 'h0;
+      slave_command          <= nrx_cmd_fifo;
+      slave_command.rsvd     <= 'h0;
+      slave_command.flag     <= 'h0;
+      slave_command.mode     <= 'h0;
+      slave_command.dst_addr <= 'h0;
     end else if (rreq_cmd_out_vld) begin
-      slave_command_vld     <= rreq_cmd_out_vld;
-      slave_command         <= rreq_cmd_fifo;
+      slave_command          <= rreq_cmd_fifo;
     end else begin
-      slave_command_vld     <= 'h0;
-      slave_command         <= 'h0;
+      slave_command          <= 'h0;
+    end
+  end
+
+  // Slave_command_vld is taking valid from vld output FIFOs fifo_nrx_commands & rreq_command_queue
+  // Theses fifos have their data consumed when slave_command_rdy and correct fsm state is current
+  always_ff @(posedge clk_mrmac) begin
+    if (~resetn_mrmac) begin
+      slave_command_vld   <= 1'b0;
+    end else begin
+      if (nrx_cmd_out_vld)  begin
+        slave_command_vld <= nrx_cmd_out_vld;
+      end else if (rreq_cmd_out_vld) begin
+        slave_command_vld <= rreq_cmd_out_vld;
+      end else begin
+        slave_command_vld <= 'h0;
+      end
     end
   end
 
@@ -790,7 +801,7 @@ module mhdma_slave
 
       // note that if we read several times we will include it in the counter
       always_ff @(posedge clk_mrmac) begin
-        if(~resetn_mrmac) begin
+        if (~resetn_mrmac) begin
           t_wait_words_en[gen_i] <= 1'b0;
         end else begin
           if (m_axi4_arvalid[gen_i]) begin
