@@ -779,8 +779,6 @@ module tb_mhdma_formatter;
       stream_ce_payload_continuous();
 
       // Wait for slave_command_rdy (CE consumed first)
-      // Deassert one cycle later: rdy is a one-shot pulse so the extra cycle of vld=1 is harmless
-      // and avoids an Active-region race (maybe XSIM problem?).
       begin
         do @(posedge clk); while (!slave_command_rdy);
         @(posedge clk);
