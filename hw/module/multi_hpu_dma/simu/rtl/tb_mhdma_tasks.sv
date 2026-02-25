@@ -65,27 +65,52 @@ task automatic check_header(
 endtask
 
 // ==============================================================================================
-// Helper functions
+// Scenario helpers
 // ==============================================================================================
 
-// // ---------------------------------------------------------------------------
-// // Print scenario banner and clear TX capture
-// // ---------------------------------------------------------------------------
-// task automatic scenario_start(input string name);
-//   $display("\n==================================================================================================");
-//   $display("  SCENARIO %0d: %s", scenario_id, name);
-//   $display("==================================================================================================");
-//   clear_tx_capture();
-// endtask
+// ---------------------------------------------------------------------------
+// Randomize command fields with a given target HPU
+// ---------------------------------------------------------------------------
+task automatic randomize_command_fields(
+  input  logic [HPU_ID_W-1:0]   target_hpu,
+  ref    logic [HPU_ID_W-1:0]   hpu_id,
+  ref    logic [IOP_ID_W-1:0]   iop_id,
+  ref    logic [SRC_ADDR_W-1:0] iop_src_addr,
+  ref    logic [DST_ADDR_W-1:0] iop_dst_addr,
+  ref    logic [FLAG_W-1:0]     req_flag,
+  ref    logic [MODE_W-1:0]     req_mode
+);
+  hpu_id       = target_hpu;
+  iop_id       = $urandom();
+  iop_src_addr = $urandom();
+  iop_dst_addr = $urandom();
+  req_flag     = $urandom();
+  req_mode     = $urandom();
+endtask
 
-// // ---------------------------------------------------------------------------
-// // Print scenario result and increment ID
-// // ---------------------------------------------------------------------------
-// task automatic scenario_end();
-//   $display("%t > SCENARIO %0d: PASSED", $time, scenario_id);
-//   scenario_id++;
-//   repeat (20) @(posedge clk);
-// endtask
+// ---------------------------------------------------------------------------
+// Print scenario banner
+// ---------------------------------------------------------------------------
+task automatic scenario_start(
+  input int    scenario_id,
+  input string name
+);
+  $display("\n==================================================================================================");
+  $display("  SCENARIO %0d: %s", scenario_id, name);
+  $display("==================================================================================================");
+endtask
+
+// ---------------------------------------------------------------------------
+// Print scenario result and increment ID
+// ---------------------------------------------------------------------------
+task automatic scenario_end(
+  ref int scenario_id,
+  ref bit clk
+);
+  $display("%t > SCENARIO %0d: PASSED", $time, scenario_id);
+  scenario_id++;
+  repeat (20) @(posedge clk);
+endtask
 
 
 // ==============================================================================================
