@@ -50,7 +50,7 @@ module tb_mhdma_formatter;
   localparam int CLK_HALF_PERIOD = 1;
   localparam int ARST_ACTIVATION = 17;
 
-  // Known MAC addresses for verification, hardcoded to simplfy
+  // Known MAC addresses for verification, hardcoded to simplify
   localparam [MAC_ADDR_W-1:0] MAC_ADDR_HPU0 = 24'hAA_BB_CC;
   localparam [MAC_ADDR_W-1:0] MAC_ADDR_HPU1 = 24'hDD_EE_FF;
   localparam [MAC_ADDR_W-1:0] MAC_ADDR_HPU2 = 24'h11_22_33;
