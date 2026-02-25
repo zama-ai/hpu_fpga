@@ -504,27 +504,31 @@ logic [DST_ADDR_W-1:0] dst_addr;
 
   // this is supposed to be HPU_B decoder
   mhdma_decoder mhdma_decoder (
-    .clk_mrmac                   (clk_mrmac   ),
-    .resetn_mrmac                (s_rstn_mrmac),
+    .clk_mrmac           (clk_mrmac               ),
+    .resetn_mrmac        (s_rstn_mrmac            ),
 
-    .notify_ack_received         (/* unused */),
+    .notify_ack_received (/*    unused          */),
+    .current_hpu_mac     (src_mac_addr            ),
 
-    .current_hpu_mac             (src_mac_addr),
+    .decoded_command     (rx_header               ),
+    .decoded_command_vld (rx_header_vld           ),
+    .decoded_command_rdy (rx_header_rdy           ),
 
-    .decoded_command             (rx_header),
-    .decoded_command_vld         (rx_header_vld),
-    .decoded_command_rdy         (rx_header_rdy),
-
-    .rx_tdata_out                (/*   unused          */),
-    .rx_tvalid_out               (/*   unused          */),
+    .rx_tdata_out        (/*    unused          */),
+    .rx_tvalid_out       (/*    unused          */),
 
     // stats are completely ignored here
+    .stat                (/*    unused          */),
+    .stat_rst            (/*    unused          */),
+
+    .decoder_error       (/*    unused          */),
+    .rst_errors          (/*    unused          */),
 
     // only one lane is used in this tb
-    .qsfp_rx_tdata               (qsfp_tx_tdata[lane]),
-    .qsfp_rx_tkeep_user          (qsfp_tx_tkeep_user[lane]),
-    .qsfp_rx_tlast               (qsfp_tx_tlast[lane]),
-    .qsfp_rx_tvalid              (qsfp_tx_tvalid[lane])
+    .qsfp_rx_tdata       (qsfp_tx_tdata[lane]     ),
+    .qsfp_rx_tkeep_user  (qsfp_tx_tkeep_user[lane]),
+    .qsfp_rx_tlast       (qsfp_tx_tlast[lane]     ),
+    .qsfp_rx_tvalid      (qsfp_tx_tvalid[lane]    )
   );
 
   always_ff @(posedge clk_mrmac)
@@ -1122,8 +1126,8 @@ logic [DST_ADDR_W-1:0] dst_addr;
     input logic [MAC_ADDR_W-1:0] dst_mac_addr
   );
     begin
-      maxil_drv_if.write_trans(MHDMA_SYSTEM_HPU_ID_0_OFS,  {1'b1, 3'b0, 4'h0, src_mac_addr});
-      maxil_drv_if.write_trans(MHDMA_SYSTEM_HPU_ID_1_OFS,   {1'b0, 3'b0, 4'h1, dst_mac_addr});
+      maxil_drv_if.write_trans(MHDMA_SYSTEM_HPU_ID_0_OFS, {1'b1, 7'b0, src_mac_addr});
+      maxil_drv_if.write_trans(MHDMA_SYSTEM_HPU_ID_1_OFS, {1'b0, 7'b0, dst_mac_addr});
 
       repeat(50) @(posedge clk_mrmac);
 
