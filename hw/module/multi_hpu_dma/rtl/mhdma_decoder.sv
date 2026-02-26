@@ -12,12 +12,14 @@
 //  > input stage (1) + frame parsing (4) + fifo_rx_cmd (1) = 6 cycles
 //
 // Assumptions / Limitations:
-// - No backpressure on QSFP RX input (no tready output with MRMAC configuration).
-//   If the command FIFO overflows, incoming commands are silently dropped and error_fifo_rx_ovf is
+// - No backpressure on QSFP RX input (no tready output with our MRMAC configuration).
+//   Ciphertext Emission words have no backpressure and go to master through streaming interface
+// - If the command FIFO overflows, incoming commands are silently dropped and error_fifo_rx_ovf is
 //    raised (sticky until rst_errors).
+// - ETH LEN is only used for packet handling outside FPGA, we ignore it here
 // - A packet with an unrecognized req_id, registers dst_mac_addr and req_id but generates
 //    no command & increments no counter.
-// - Stat counters (cnt_*) are REG_DATA_W wide with no saturation. They wrap on overflow.
+// - Stat counters (cnt_*) are REG_DATA_W wide and wrap on overflow.
 //
 // ==============================================================================================
 
@@ -25,26 +27,26 @@ module mhdma_decoder
   import mhdma_pkg::*;             // multi-hpu-dma
   import axi_if_shell_axil_pkg::*; // REG_DATA_W
 (
-  // Ethernet fast clock interface --------------------------------------------
+  // Ethernet fast clock interface ----------------------------------------------------------------
   input  logic                     clk_mrmac,
   input  logic                     resetn_mrmac,
-  // Command interface --------------------------------------------------------
+  // Command interface ----------------------------------------------------------------------------
   output logic                     notify_ack_received,
   input  logic [MAC_ADDR_W-1:0]    current_hpu_mac,
-  // Header information -------------------------------------------------------
+  // Header information ---------------------------------------------------------------------------
   output command_t                 decoded_command,
   output logic                     decoded_command_vld,
   input  logic                     decoded_command_rdy,
-  // RX payload ---------------------------------------------------------------
+  // Streaming Ciphertext payload -----------------------------------------------------------------
   output logic [MRMAC_AXIS_W-1:0]  rx_tdata_out,
   output logic                     rx_tvalid_out,
-  //  Statistics --------------------------------------------------------------
+  //  Statistics ----------------------------------------------------------------------------------
   output decoder_stat_t            stat,
   input  decoder_stat_rst_t        stat_rst,
-  // Error interface ----------------------------------------------------------
+  // Error interface ------------------------------------------------------------------------------
   output decoder_error_t           decoder_error,
   input  logic                     rst_errors,
-  // QSFP system interface ----------------------------------------------------
+  // QSFP system interface ------------------------------------------------------------------------
   // == RX
   input  logic [MRMAC_AXIS_W-1:0]  qsfp_rx_tdata,
   input  logic [MRMAC_TKEEP_W-1:0] qsfp_rx_tkeep_user,
@@ -53,38 +55,39 @@ module mhdma_decoder
 );
 
   // =========================================================================================== //
+  // Localparam
+  // =========================================================================================== //
+  localparam int NUM_STAT_CNTS = 4;
+
+  // =========================================================================================== //
   // Input pipeline stage
   // =========================================================================================== //
   logic [MRMAC_AXIS_W-1:0]  rx_tdata_in;
-  logic [MRMAC_TKEEP_W-1:0] rx_tkeep_user_in;
   logic                     rx_tlast_in;
   logic                     rx_tvalid_in;
 
-  always_ff @(posedge clk_mrmac)
-    rx_tdata_in <= qsfp_rx_tdata;
-
-  always_ff @(posedge clk_mrmac)
-    rx_tkeep_user_in <= qsfp_rx_tkeep_user;
-
-  always_ff @(posedge clk_mrmac)
-    rx_tlast_in <= qsfp_rx_tlast;
-
   always_ff @(posedge clk_mrmac) begin
     if (~resetn_mrmac) begin
-      rx_tvalid_in <= ('h0);
+      rx_tvalid_in <= 1'b0;
     end else begin
       rx_tvalid_in <= qsfp_rx_tvalid;
+      rx_tlast_in  <= qsfp_rx_tlast;
+      rx_tdata_in  <= qsfp_rx_tdata;
     end
   end
 
+  // We need to byte swap tdata in
+  logic [MRMAC_AXIS_W-1:0] qsfp_rx_tdata_bs;
+
+  assign qsfp_rx_tdata_bs = byte_swap(rx_tdata_in);
+
   // =========================================================================================== //
   // Packet decoder
-  // =========================================================================================== //
   // Frame-by-frame field extraction from byte-swapped AXI-Stream data.
+  // =========================================================================================== //
   // Frame 0 (counter==0, h0): dst_mac_addr -> used to build rx_valid
   logic [MAC_ADDR_W-1:0]   dst_mac_addr;
-  // Frame 1 (counter==1, h1): src_mac_addr, eth_len
-  logic [ETHERNET_LEN-1:0] eth_len;
+  // Frame 1 (counter==1, h1): src_mac_addr, (eth_len not used)
   logic [MAC_ADDR_W-1:0]   src_mac_addr;
   // Frame 2 (counter==2, h2): req_id, hpu_id, seq_num, ct_src/dst_addr, iop_id
   logic [SEQ_NUM_W-1:0]    seq_num;
@@ -97,11 +100,6 @@ module mhdma_decoder
   logic [RSVD_W-1:0]       rsvd;
   logic [FLAG_W-1:0]       flag;
   logic [MODE_W-1:0]       mode;
-
-  // We need to byte swap tdata in
-  logic [MRMAC_AXIS_W-1:0] qsfp_rx_tdata_bs;
-
-  assign qsfp_rx_tdata_bs = byte_swap(rx_tdata_in);
 
   // Overlay frame structures on byte-swapped data
   h0_frame_t h0;
@@ -135,7 +133,7 @@ module mhdma_decoder
 
   // FRAME 0 --------------------------------------------------------------------------------------
   // dst_mac_addr
-  //    destination mac address is not needed from the first clock cycle
+  //    destination mac address is not needed on first clock cycle
   //    this register will help define if next words in receptions are valid
   logic rx_valid;
   always_ff @(posedge clk_mrmac)
@@ -153,21 +151,21 @@ module mhdma_decoder
   assign rx_valid = (current_hpu_mac == dst_mac_addr);
 
   // FRAME 1 --------------------------------------------------------------------------------------
-  // src_mac_address and eth len
+  // src_mac_address
+  // h1.eth_len is not used today
   always_ff @(posedge clk_mrmac) begin
     if ((rx_tvalid_in) & (rx_counter == 1)) begin
-        eth_len      <= h1.eth_len;
         src_mac_addr <= h1.src_mac_addr;
       end
   end
 
   // FRAME 2 --------------------------------------------------------------------------------------
+  // Gathering req_id, hpu_id, seq_num, src_addr, dst_addr and iop_id + building *_received signals
   logic notify_request_received;
   logic read_request_received;
   logic ciphertext_emission_received;
   // notify_ack_received is an output
 
-  // req_id, hpu_id, seq_num, src_addr, dst_addr and iop_id
   always_ff @(posedge clk_mrmac) begin
     if ((rx_tvalid_in) & (rx_counter == 2)) begin
       hpu_id      <= h2.hpu_id;
@@ -222,9 +220,7 @@ module mhdma_decoder
 
 
   // FRAME 3 --------------------------------------------------------------------------------------
-  // There are four frames in total to account for
-  // We are decoding received command at Frame 2
-  // Fields (rsvd, flag, mode) are registered
+  // Gathering rsvd, flag, mode.
   always_ff @(posedge clk_mrmac) begin
     if ((rx_tvalid_in) & (rx_counter == 3)) begin
       rsvd <= h3.h3_rsvd;
@@ -233,34 +229,36 @@ module mhdma_decoder
     end
   end
 
-  logic fifo_rx_cmd_in_vld;
-  logic fifo_rx_cmd_in_rdy;
+  command_t fifo_rx_cmd_in_data;
+  logic     fifo_rx_cmd_in_vld;
+  logic     fifo_rx_cmd_in_rdy;
 
-  // Push into FIFO one cycle after frame 3 data is captured (NBA makes rsvd/flag/mode stable).
-  // Gate with *_receivedD to only push for known command types with matching MAC.
-  // (rx_counter == 3) & rx_tvalid_in is a single-cycle pulse (counter advances to 4 on the same beat).
+  // Push into FIFO one cycle after frame 3 data is captured.
+  // Gate with *_receivedD to only push for known command types with matching MAC address.
   always_ff @(posedge clk_mrmac)
-    fifo_rx_cmd_in_vld <= (rx_tvalid_in & (rx_counter == 3))
-                        & (nack_receivedD | nr_receivedD | rr_receivedD | ce_receivedD);
+    fifo_rx_cmd_in_vld <= (rx_tvalid_in & (rx_counter == 3)) & (nack_receivedD | nr_receivedD | rr_receivedD | ce_receivedD);
+
+  assign fifo_rx_cmd_in_data = {src_mac_addr, seq_num, hpu_id, rsvd, flag, mode, req_id, iop_id, ct_src_addr, ct_dst_addr};
 
   fifo_ram_rdy_vld # (
-    .WIDTH(MAC_ADDR_W + SEQ_NUM_W + HPU_ID_W + RSVD_W + FLAG_W + MODE_W + IOP_ID_W + SRC_ADDR_W + DST_ADDR_W + REQ_ID_W),
-    .DEPTH(RX_FIFO_DEPTH)
+    .WIDTH       ($bits(command_t)    ),
+    .DEPTH       (RX_FIFO_DEPTH       )
   ) fifo_rx_cmd (
-    .clk         (clk_mrmac),
-    .s_rst_n     (resetn_mrmac),
+    .clk         (clk_mrmac           ),
+    .s_rst_n     (resetn_mrmac        ),
 
-    .in_data     ({src_mac_addr, seq_num, hpu_id, rsvd, flag, mode, iop_id, ct_src_addr, ct_dst_addr, req_id}),
-    .in_vld      (fifo_rx_cmd_in_vld),
-    .in_rdy      (fifo_rx_cmd_in_rdy),
+    .in_data     (fifo_rx_cmd_in_data ),
+    .in_vld      (fifo_rx_cmd_in_vld  ),
+    .in_rdy      (fifo_rx_cmd_in_rdy  ),
 
-    .out_data    ({decoded_command.src_mac_addr, decoded_command.seq_num, decoded_command.hpu_id, decoded_command.rsvd, decoded_command.flag, decoded_command.mode, decoded_command.iop_id, decoded_command.src_addr, decoded_command.dst_addr, decoded_command.req_id}),
-    .out_vld     (decoded_command_vld),
-    .out_rdy     (decoded_command_rdy),
+    .out_data    (decoded_command     ),
+    .out_vld     (decoded_command_vld ),
+    .out_rdy     (decoded_command_rdy ),
 
-    .almost_full (/* UNUSED */)
+    .almost_full (/*     UNUSED     */)
   );
 
+  // Building sticky error bit on fifo_rx_cmd overflow
   logic error_fifo_rx_ovf;
 
   always_ff @(posedge clk_mrmac) begin
@@ -280,18 +278,18 @@ module mhdma_decoder
   // =========================================================================================== //
   // Payload interface to master module
   // =========================================================================================== //
-  // CE payload forwarding: two pipe stages before output.
+  // Ciphertext Emission forwarding: two pipe stages before output.
   // First stage captures data when ce_received is active and counter is past the custom header.
   // Second stage adds one more register for timing.
   logic [MRMAC_AXIS_W-1:0] rx_tdata_pipe;
   logic                    rx_tvalid_pipe;
 
   always_ff @(posedge clk_mrmac)
-    if (ce_received & rx_tvalid_in & (rx_tkeep_user_in != 'h0) & (rx_counter>NB_WORDS_CUST_HEADER_SIZE-1))
+    if (ce_received & rx_tvalid_in & (rx_counter>NB_WORDS_CUST_HEADER_SIZE-1))
       rx_tdata_pipe <= qsfp_rx_tdata_bs;
 
   always_ff @(posedge clk_mrmac) begin
-    if (ce_received & rx_tvalid_in & (rx_tkeep_user_in != 'h0) & (rx_counter>NB_WORDS_CUST_HEADER_SIZE-1)) begin
+    if (ce_received & rx_tvalid_in & (rx_counter>NB_WORDS_CUST_HEADER_SIZE-1)) begin
       rx_tvalid_pipe <= 1'b1;
     end else begin
       rx_tvalid_pipe <= 1'b0;
@@ -310,7 +308,7 @@ module mhdma_decoder
 
   // =========================================================================================== //
   // Statistics
-  // Note that cnt_*_received have no overflow system, only here for debugging
+  // Note that cnt_*_received have no overflow system: only here for debugging
   // =========================================================================================== //
   // computing timing between first and last packet received on ciphertext emission
   logic [REG_DATA_W-1:0] t_first_last_pkt;
@@ -349,67 +347,42 @@ module mhdma_decoder
   end
 
   // counters on received commands
-  logic [REG_DATA_W-1:0] cnt_notify_received;
-  logic [REG_DATA_W-1:0] cnt_read_req_received;
-  logic [REG_DATA_W-1:0] cnt_nack_received;
-  logic [REG_DATA_W-1:0] cnt_ce_received;
+  logic [NUM_STAT_CNTS][   REG_DATA_W-1:0] stat_cnt;
+  logic                [NUM_STAT_CNTS-1:0] stat_cnt_inc;
+  logic                [NUM_STAT_CNTS-1:0] stat_cnt_rst;
 
-  always_ff @(posedge clk_mrmac) begin
-    if (~resetn_mrmac) begin
-      cnt_notify_received <= 'h0;
-    end else begin
-      if (stat_rst.cnt_notify_received) begin
-        cnt_notify_received <= 'h0;
+  assign stat_cnt_inc = {
+    ciphertext_emission_received,
+    notify_ack_received,
+    read_request_received,
+    notify_request_received
+  };
+
+  assign stat_cnt_rst = {
+    stat_rst.cnt_ce_received,
+    stat_rst.cnt_nack_received,
+    stat_rst.cnt_read_req_received,
+    stat_rst.cnt_notify_received
+  };
+
+  for (genvar gen_i = 0; gen_i < NUM_STAT_CNTS; gen_i++) begin : gen_stat_cnt
+    always_ff @(posedge clk_mrmac) begin
+      if (~resetn_mrmac) begin
+        stat_cnt[gen_i] <= 'h0;
       end else begin
-        if (notify_request_received) begin
-          cnt_notify_received <= cnt_notify_received + 1;
+        if (stat_cnt_rst[gen_i]) begin
+          stat_cnt[gen_i] <= 'h0;
+        end else if (stat_cnt_inc[gen_i]) begin
+          stat_cnt[gen_i] <= stat_cnt[gen_i] + 1;
         end
       end
     end
   end
-  always_ff @(posedge clk_mrmac) begin
-    if (~resetn_mrmac) begin
-      cnt_read_req_received <= 'h0;
-    end else begin
-      if (stat_rst.cnt_read_req_received) begin
-        cnt_read_req_received <= 'h0;
-      end else begin
-        if (read_request_received) begin
-          cnt_read_req_received <= cnt_read_req_received + 1;
-        end
-      end
-    end
-  end
-  always_ff @(posedge clk_mrmac) begin
-    if (~resetn_mrmac) begin
-      cnt_nack_received <= 'h0;
-    end else begin
-      if (stat_rst.cnt_nack_received) begin
-        cnt_nack_received <= 'h0;
-      end else begin
-        if (notify_ack_received) begin
-          cnt_nack_received <= cnt_nack_received + 1;
-        end
-      end
-    end
-  end
-  always_ff @(posedge clk_mrmac) begin
-    if (~resetn_mrmac) begin
-      cnt_ce_received <= 'h0;
-    end else begin
-      if (stat_rst.cnt_ce_received) begin
-        cnt_ce_received <= 'h0;
-      end else begin
-        if (ciphertext_emission_received) begin
-          cnt_ce_received <= cnt_ce_received + 1;
-        end
-      end
-    end
-  end
+
   assign stat.t_ce_first_to_last_pkt = stat_t_ce_first_to_last_pkt_r;
-  assign stat.cnt_notify_received    = cnt_notify_received;
-  assign stat.cnt_read_req_received  = cnt_read_req_received;
-  assign stat.cnt_nack_received      = cnt_nack_received;
-  assign stat.cnt_ce_received        = cnt_ce_received;
+  assign stat.cnt_notify_received    = stat_cnt[0];
+  assign stat.cnt_read_req_received  = stat_cnt[1];
+  assign stat.cnt_nack_received      = stat_cnt[2];
+  assign stat.cnt_ce_received        = stat_cnt[3];
 
 endmodule

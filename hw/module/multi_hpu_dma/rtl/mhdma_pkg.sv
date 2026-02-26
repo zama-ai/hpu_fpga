@@ -161,6 +161,7 @@ package mhdma_pkg;
   } command_t;
 
   //  Ethernet frames, one by one -----------------------------------------------------------------
+  // some fields are placeholders and not usefull in the FPGA decoder
   typedef struct packed {
     logic [MAC_OUI_W-1:0]  dst_mac_oui;
     logic [MAC_ADDR_W-1:0] dst_mac_addr;
@@ -170,12 +171,12 @@ package mhdma_pkg;
   typedef struct packed {
     logic [7:0]              src_mac_oui;
     logic [MAC_ADDR_W-1:0]   src_mac_addr;
-    logic [ETHERNET_LEN-1:0] eth_len;
-    logic [2*LLC_W-1:0]      llc; // DSAP + SSAP
+    logic [ETHERNET_LEN-1:0] eth_len;       // not used in FPGA
+    logic [2*LLC_W-1:0]      llc;           // not used in FPGA : DSAP + SSAP
   } h1_frame_t;
 
   typedef struct packed {
-    logic [LLC_W-1:0]      llc_ctrl;
+    logic [LLC_W-1:0]      llc_ctrl;        // not used in FPGA
     logic [REQ_ID_W-1:0]   req_id;
     logic [HPU_ID_W-1:0]   hpu_id;
     logic [SEQ_NUM_W-1:0]  seq_num;
