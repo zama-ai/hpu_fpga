@@ -4,6 +4,8 @@
 // ------------------------------------------------------------------------------------------------
 // Description  : Testbench for testing interlacing of Notify during a CE on multi-HPU DMA.
 //
+// NOTE: It is important to read notify and read request words otherwise this test gets stuck
+//
 // ================================================================================================
 
 `resetall
@@ -54,7 +56,7 @@ module tb_mhdma_notify_insertion;
 
   // Timeout guard: maximum cycles before declaring failure
   // otherworise tis testbench can run forever
-  localparam int TIMEOUT_CYCLES = 500_000;
+  localparam int TIMEOUT_CYCLES = 5_000_000;
 
 // ============================================================================================== --
 // clock, reset
@@ -534,8 +536,11 @@ logic [DST_ADDR_W-1:0] dst_addr;
   // scenario -------------------------------------------------------------------------------------
   logic [HPU_ID_W-1:0]   target_hpu;
   logic [MAC_ADDR_W-1:0] target_mac_addr;
+  logic [REG_DATA_W-1:0] rdata;
 
   int random_insersion;
+  int random_iterations;
+
 
   initial begin
     maxil_drv_if.init();
@@ -551,88 +556,94 @@ logic [DST_ADDR_W-1:0] dst_addr;
     $display("==================================================================================================");
     init_config();
 
-    random_insersion = $urandom_range(1, NB_PACKETS_FULL);
-    $display("\n==================================================================================================");
-    $display("  Scenario: During CE, at packet %0d we inset a Notify", random_insersion);
-    $display("==================================================================================================");
-    // Only one scenario here:
-    // We need to check if wether receiving a notify during a ciphertext emission breaks the system
-    // MHDMA must :
-    //  - Respond Notify with an ack during CE reception
-    //  - CE reception must end correctly after being interrupted by Notifies
-    // We will do standalones CE & Notify to check that the module does dont gets blocked
-    // TODO
+    random_iterations = $urandom_range(100, 500);
 
-    target_hpu = 4'h0;
-    target_mac_addr = dst_mac_addr;
+    for (int i = 0; i < random_iterations; i++) begin
+      random_insersion = $urandom_range(1, NB_PACKETS_FULL);
+      $display("\n==================================================================================================");
+      $display("  Scenario %0d: During CE, at packet %0d we inset a Notify", i, random_insersion);
+      $display("==================================================================================================");
+      // Only one scenario here:
+      // We need to check if wether receiving a notify during a ciphertext emission breaks the system
+      // MHDMA must :
+      //  - Respond Notify with an ack during CE reception
+      //  - CE reception must end correctly after being interrupted by Notifies
+      // We will do standalones CE & Notify to check that the module does dont gets blocked
 
-    randomize_command_fields(target_hpu, src_hpu_id, iop_id, iop_src_addr, iop_dst_addr, flag, mode);
+      target_hpu = 4'h0;
+      target_mac_addr = dst_mac_addr;
 
-    read_request(4'h1, iop_id, iop_src_addr, iop_dst_addr, flag, mode);
+      randomize_command_fields(target_hpu, src_hpu_id, iop_id, iop_src_addr, iop_dst_addr, flag, mode);
 
-    fork
-     begin
-       for (int pkt = 0; pkt < random_insersion; pkt++) begin
-         send_ciphertext_emission_packet(qsfp_rx_vif[0], src_mac_addr, target_mac_addr, src_hpu_id, iop_id, iop_src_addr, iop_dst_addr, pkt[7:0], unused_payload);
-         repeat(10) @(posedge clk_mhdma);
-       end
+      read_request(4'h1, iop_id, iop_src_addr, iop_dst_addr, flag, mode);
 
-       // Notify insersion
-       send_notify_packet(qsfp_rx_vif[0], src_mac_addr, target_mac_addr, target_hpu, iop_id, iop_src_addr, flag, mode);
-
-       for (int pkt = random_insersion; pkt < NB_PACKETS_FULL+1; pkt++) begin
-         send_ciphertext_emission_packet(qsfp_rx_vif[0], src_mac_addr, target_mac_addr, src_hpu_id, iop_id, iop_src_addr, iop_dst_addr, pkt[7:0], unused_payload);
-         repeat(10) @(posedge clk_mhdma);
-       end
-     end
-
-     begin
-       wait(notify_ack_received);
-       $display("[INFO]: Notiy ACK received from DUT!");
-     end
-
-     begin
-       wait(multi_hpu_dma.mhdma_bridge.mhdma_master.ciphertext_received);
-       $display("[INFO]: Ciphertext correctly processed on module!");
-     end
-
-    join
-
-
-    $display("[INFO] Checking that standalone RR ends correctly after notify packet insersion");
-
-    read_request(4'h1, iop_id, iop_src_addr, iop_dst_addr, flag, mode);
-
-    fork
+      fork
       begin
-        for (int pkt = 0; pkt < NB_PACKETS_FULL+1; pkt++) begin
+        for (int pkt = 0; pkt < random_insersion; pkt++) begin
+          send_ciphertext_emission_packet(qsfp_rx_vif[0], src_mac_addr, target_mac_addr, src_hpu_id, iop_id, iop_src_addr, iop_dst_addr, pkt[7:0], unused_payload);
+          repeat(10) @(posedge clk_mhdma);
+        end
+
+        // Notify insersion
+        send_notify_packet(qsfp_rx_vif[0], src_mac_addr, target_mac_addr, target_hpu, iop_id, iop_src_addr, flag, mode);
+
+        for (int pkt = random_insersion; pkt < NB_PACKETS_FULL+1; pkt++) begin
           send_ciphertext_emission_packet(qsfp_rx_vif[0], src_mac_addr, target_mac_addr, src_hpu_id, iop_id, iop_src_addr, iop_dst_addr, pkt[7:0], unused_payload);
           repeat(10) @(posedge clk_mhdma);
         end
       end
 
       begin
+        wait(notify_ack_received);
+        $display("[INFO]: Notify ACK received from DUT!");
+        // Drain fifo_nrx_regf: read the Notify register to clear the interrupt
+        wait(interrupt_notify);
+        maxil_drv_if.read_trans(MHDMA_REQUEST_NOTIFY_REQ_ID_OFS, rdata);
+      end
+
+      begin
         wait(multi_hpu_dma.mhdma_bridge.mhdma_master.ciphertext_received);
         $display("[INFO]: Ciphertext correctly processed on module!");
       end
-    join
+
+      join
 
 
-    $display("[INFO] Checking that standalone Notify produces a correct ack");
+      $display("[INFO] Checking that standalone RR ends correctly after notify packet insersion");
 
-    fork
+      read_request(4'h1, iop_id, iop_src_addr, iop_dst_addr, flag, mode);
 
-      begin
-        send_notify_packet(qsfp_rx_vif[0], src_mac_addr, target_mac_addr, target_hpu, iop_id, iop_src_addr, flag, mode);
-      end
+      fork
+        begin
+          for (int pkt = 0; pkt < NB_PACKETS_FULL+1; pkt++) begin
+            send_ciphertext_emission_packet(qsfp_rx_vif[0], src_mac_addr, target_mac_addr, src_hpu_id, iop_id, iop_src_addr, iop_dst_addr, pkt[7:0], unused_payload);
+            repeat(10) @(posedge clk_mhdma);
+          end
+        end
 
-      begin
-        wait(notify_ack_received);
-        $display("[INFO]: Notiy ACK received from DUT!");
-      end
-    join
+        begin
+          wait(multi_hpu_dma.mhdma_bridge.mhdma_master.ciphertext_received);
+          $display("[INFO]: Ciphertext correctly processed on module!");
+        end
+      join
 
-    read_request(4'h1, iop_id, iop_src_addr, iop_dst_addr, flag, mode);
+
+      $display("[INFO] Checking that standalone Notify produces a correct ack");
+
+      fork
+        begin
+          send_notify_packet(qsfp_rx_vif[0], src_mac_addr, target_mac_addr, target_hpu, iop_id, iop_src_addr, flag, mode);
+        end
+
+        begin
+          wait(notify_ack_received);
+          $display("[INFO]: Notiy ACK received from DUT!");
+          // Drain fifo_nrx_regf: read the Notify register to clear the interrupt
+          wait(interrupt_notify);
+          maxil_drv_if.read_trans(MHDMA_REQUEST_NOTIFY_REQ_ID_OFS, rdata);
+        end
+      join
+    end
 
     $display("%t > INFO: End simulation",$time);
     repeat(20) @(posedge clk_control);
