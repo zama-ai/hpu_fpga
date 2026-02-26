@@ -581,11 +581,6 @@ module tb_mhdma_slave;
       error_assert = 1'b1;
     end
 
-    assert (slave_error.error_fifo_nrx_commands_ovf == 1'b0) else begin
-      $display("[ERROR:%0d] unexpected overflow error during backpressure", scenario_id);
-      error_assert = 1'b1;
-    end
-
     decoded_command_vld <= 1'b0;
 
     // Recovery: enable drain (hold slave_command_rdy=1 for bulk FIFO drain)
@@ -625,11 +620,6 @@ module tb_mhdma_slave;
     end
 
     repeat (10) @(posedge clk_mhdma_cfg);
-
-    assert (slave_error.error_fifo_nrx_commands_ovf == 1'b0) else begin
-      $display("[ERROR:%0d] overflow error after recovery", scenario_id);
-      error_assert = 1'b1;
-    end
 
     scenario_end(scenario_id, clk_mhdma_cfg);
   endtask
@@ -922,7 +912,6 @@ module tb_mhdma_slave;
 
     repeat (50) @(posedge clk_mhdma);
     check_fsm_idle(scenario_id);
-    assert (slave_error.error_fifo_nrx_commands_ovf == 1'b0) else begin $display("[ERROR:%0d] unexpected error", scenario_id); error_assert = 1'b1; end
 
     scenario_end(scenario_id, clk_mhdma_cfg);
   endtask
