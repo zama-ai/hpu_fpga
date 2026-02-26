@@ -6,15 +6,17 @@
 // ----------------------------------------------------------------------------------------------
 // Receives requests from RPU and address them
 //
-// This module must be able to send Notify and Read Request to formatter
+// This module must be able to send Notify and Read Request commands to the formatter
 //
 // Assumption:
-//  - master_command_valid drops only one clock cycle efter ready : this is not a problem since
-// we are doing handshakes between FSMs. With this system we are saving one fifo element
+//  - master_command_valid drops only one clock cycle after ready :
+//      This is not a problem since we are doing handshakes between FSMs.
+//      With this system we are using less ressource than if we have used a fifo element.
 //
 // Read request retry can happen when
 // 1) a timeout occurs
 // 2) an incorrect seq num happens: we fill the memory with zeros and ask for a new read request
+//
 // ==============================================================================================
 
 module mhdma_master
@@ -136,13 +138,13 @@ module mhdma_master
       NTX_SEND_NOTIFY:
         ntx_next_state = notify_sent ? NTX_WAIT_ACK : NTX_SEND_NOTIFY;
       NTX_WAIT_ACK:
-        // (Assumption) transmission is not instantaneous, notify_ack_received cannot arrive before axis tlast
+        // Transmission is not instantaneous, notify_ack_received cannot arrive before axis tlast
         ntx_next_state = notify_ack_received ? NTX_WAIT_REQUEST : timeout_reached_notify ? NTX_SEND_NOTIFY : NTX_WAIT_ACK;
     endcase
   end
 
-  assign st_ntx_wait_request = (ntx_state==NTX_WAIT_REQUEST);
-  assign st_ntx_wait_ack     = (ntx_state==NTX_WAIT_ACK);
+  assign st_ntx_wait_request = (ntx_state == NTX_WAIT_REQUEST);
+  assign st_ntx_wait_ack     = (ntx_state == NTX_WAIT_ACK);
 
   // Read request ---------------------------------------------------------------------------------
   logic start_read_request;
@@ -220,7 +222,7 @@ module mhdma_master
       end
   end
 
-  // read request ---------------------------------------------------------------------------------
+  // retry signal ---------------------------------------------------------------------------------
   logic mismatch_retry_pending;
   logic timeout_reached_read_request;
   logic retry_seq_num;
@@ -229,6 +231,7 @@ module mhdma_master
 
   assign valid_ciphertext_received = ciphertext_received & ~mismatch_retry_pending;
 
+  // building read request retry signal
   always_ff @(posedge clk_mrmac) begin
     if (~resetn_mrmac) begin
       rr_retry <= 1'b0;
@@ -253,9 +256,10 @@ module mhdma_master
     end
   end
 
+  // NOTE that mismatch_retry_pending has one cycle delay with ciphertext_received
   assign retry_seq_num = mismatch_retry_pending & ciphertext_received;
 
-  // Seq num mismatch decoding
+  // Seq num mismatch decoding --------------------------------------------------------------------
   logic [SEQ_NUM_W-1:0] expected_seq_num;
   logic                 seq_num_valid;
   logic                 rr_packets_rdyQ;
@@ -321,7 +325,7 @@ module mhdma_master
     if (~resetn_mrmac) begin
       to_notify_cnt <= 'h0;
     end else begin
-      if ((ntx_state == NTX_WAIT_ACK)) begin
+      if (ntx_state == NTX_WAIT_ACK) begin
         to_notify_cnt <= to_notify_cnt + 1;
       end else begin
         to_notify_cnt <= 'h0;
@@ -338,7 +342,7 @@ module mhdma_master
     if (~resetn_mrmac) begin
       to_read_request_cnt <= 'h0;
     end else begin
-      if ((rreq_state == RR_WAIT_PACKETS)) begin
+      if (rreq_state == RR_WAIT_PACKETS) begin
         if (mismatch_retry_pending) begin
           to_read_request_cnt <= 'h0;
         end else begin
@@ -371,7 +375,7 @@ module mhdma_master
   logic     rrqq_cmd_vld;
 
   assign rrqq_in_vld = received_req & (regf_req_id[23:20] == REQ_ID_READ);
-  // backpressure
+
   always_ff @(posedge clk_cfg)
     if (~rrqq_in_rdy & rrqq_in_vld)
       rrqq_data_kept <= {regf_req_id, regf_req_addr};
@@ -413,8 +417,8 @@ module mhdma_master
     .out_vld     (rrqq_cmd_vld)
   );
 
-  assign start_read_request = master_command_rdy & (master_command.req_id == REQ_ID_READ);
   assign rrqq_cmd_rdy = start_read_request & st_rr_wait_request;
+  assign start_read_request = master_command_rdy & (master_command.req_id == REQ_ID_READ);
 
   // Notify ReQuest Queue (NRQQ) ------------------------------------------------------------------
   // === CFG domain
@@ -426,9 +430,9 @@ module mhdma_master
   logic                    nrqq_data_kept_avail;
   logic                    nrqq_data_vld;
   // === MRMAC domain
-  command_t nrqq_cmd_data;
-  logic     nrqq_cmd_rdy;
-  logic     nrqq_cmd_vld;
+  command_t                nrqq_cmd_data;
+  logic                    nrqq_cmd_rdy;
+  logic                    nrqq_cmd_vld;
 
   // @cfg clock ---------------------------------
   assign nrqq_in_vld = received_req & (regf_req_id[23:20] == REQ_ID_NOTIFY);
@@ -565,7 +569,7 @@ module mhdma_master
   logic [CE_DATA_COUNT_W:0] fifo_cerx_cnt;    // counts the number of words used in fifo
   logic                     cnt_cerx_up;
   logic                     cnt_cerx_down;
-  logic                     fifo_pc_backpressure;
+  logic                     fifo_pc_can_accept;
 
   // First thig to do is to be sure that the current values are valid.
   // If we receive more data than what we expect we must invalidate it and not propagate it.
@@ -683,7 +687,7 @@ module mhdma_master
         zpad_injecting <= 1'b0;
       end else if (~zpad_injecting & zpad_gap_pending & (cerx_mux_word_cnt == zpad_gap_start)) begin
         zpad_injecting <= 1'b1;
-      end else if (zpad_injecting & fifo_pc_backpressure & (cerx_mux_word_cnt == NB_WORDS_TO_HBM - 1)) begin
+      end else if (zpad_injecting & fifo_pc_can_accept & (cerx_mux_word_cnt == NB_WORDS_TO_HBM - 1)) begin
         zpad_injecting <= 1'b0;
       end
     end
@@ -691,12 +695,12 @@ module mhdma_master
 
   // Effective output signals: mux between FIFO data and zero injection
   assign cerx_mux_data      = zpad_injecting ? {MRMAC_AXIS_W{1'b0}} : fifo_cerx_out_data;
-  assign cerx_mux_handshake = zpad_injecting ? fifo_pc_backpressure : (fifo_cerx_out_rdy & fifo_cerx_out_vld);
+  assign cerx_mux_handshake = zpad_injecting ? fifo_pc_can_accept : (fifo_cerx_out_rdy & fifo_cerx_out_vld);
 
   // FIFO ready: hold off when injecting zeros or about to (prevents one real word leaking before zpad_injecting rises)
   assign fifo_cerx_out_rdy = ~zpad_injecting
                            & ~(zpad_gap_pending & (cerx_mux_word_cnt == zpad_gap_start))
-                           & fifo_pc_backpressure;
+                           & fifo_pc_can_accept;
 
   // Record gap start for FIFO-output zero injection
   // On any seq_num mismatch: pad from current input position to NB_WORDS_TO_HBM
@@ -1243,7 +1247,7 @@ module mhdma_master
     end
   endgenerate
 
-  assign fifo_pc_backpressure = |(target_fifo & fifo_pc_wr_rdy);
+  assign fifo_pc_can_accept = |(target_fifo & fifo_pc_wr_rdy);
 
   // Interrupt generation -------------------------------------------------------------------------
   // Ciphertext received when both PCs have completed their transfers (= all B responses received)
