@@ -17,8 +17,8 @@ set_false_path -from    [get_cells -hierarchical -regexp -filter { NAME =~ ".*/r
 set_false_path -through [get_cells -hierarchical -regexp -filter { NAME =~ ".*/r_mhdma_system_lane_reg.*"}]
 
 # raises concerning warnings:
-set_false_path -to [get_cells -hierarchical -filter {NAME =~ *mhdma_slave/*phy_addr_reg*}] -from [get_cells -hierarchical -filter {NAME =~ *hpu_regif_core_eth_2in3/*addr_2in3_ct_*}]
-set_false_path -to [get_cells -hierarchical -filter {NAME =~ *mhdma_master/*phy_addr_reg*}] -from [get_cells -hierarchical -filter {NAME =~ *hpu_regif_core_eth_2in3/*addr_2in3_ct_*}]
+set_false_path -to [get_cells -hierarchical -filter {NAME =~ *mhdma_slave/*phy_addr_reg*}] -from [get_cells -hierarchical -filter {NAME =~ *hpu_regif_core_mhdma_2in3/*addr_2in3_ct_*}]
+set_false_path -to [get_cells -hierarchical -filter {NAME =~ *mhdma_master/*phy_addr_reg*}] -from [get_cells -hierarchical -filter {NAME =~ *hpu_regif_core_mhdma_2in3/*addr_2in3_ct_*}]
 
 # Use URAM for ciphertext buffering
 # set_property ram_style "ultra" [get_cells -hier -regexp .*fifo_read_pc[*]/ram/ram_1R1W/ram_1R1W_core/a_reg.*]

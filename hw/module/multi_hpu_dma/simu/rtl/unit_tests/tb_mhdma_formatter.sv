@@ -39,7 +39,7 @@ module tb_mhdma_formatter;
   import mhdma_pkg::*;                    // multi-hpu-dma
   import axi_if_shell_axil_pkg::*;        // axi4-lite + REG_DATA_W
   import axi_if_common_param_pkg::*;      // general axi4
-  import axi_if_eth_axi_pkg::*;           // AXI ethernet
+  import axi_if_mhdma_axi_pkg::*;           // AXI ethernet
   import pem_common_param_pkg::*;         // CT_MEM_BYTES, AXI4_WORD_PER_PC*
 
   `include "tb_mhdma_tasks.sv"
@@ -187,8 +187,8 @@ module tb_mhdma_formatter;
 // DUT instantiation
 // ============================================================================================== --
   mhdma_formatter mhdma_formatter (
-    .clk_mrmac          (clk               ),
-    .resetn_mrmac       (s_rstn            ),
+    .clk_mhdma          (clk               ),
+    .resetn_mhdma       (s_rstn            ),
     .hpu_mac_table      (hpu_mac_table     ),
     .current_hpu_id     (current_hpu_id    ),
     .current_hpu_mac    (current_hpu_mac   ),

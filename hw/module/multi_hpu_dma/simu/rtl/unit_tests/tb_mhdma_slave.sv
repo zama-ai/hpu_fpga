@@ -39,7 +39,7 @@ module tb_mhdma_slave;
   import mhdma_pkg::*;
   import axi_if_shell_axil_pkg::*;
   import axi_if_common_param_pkg::*;
-  import axi_if_eth_axi_pkg::*;
+  import axi_if_mhdma_axi_pkg::*;
   import pem_common_param_pkg::*;
 
   `include "tb_mhdma_tasks.sv"
@@ -65,36 +65,36 @@ module tb_mhdma_slave;
 // ============================================================================================== --
 // clock, reset
 // ============================================================================================== --
-  bit clk_cfg;
-  bit clk_mrmac;
+  bit clk_mhdma_cfg;
+  bit clk_mhdma;
 
   initial begin
-    clk_cfg   = 1'b0;
-    clk_mrmac = 1'b0;
+    clk_mhdma_cfg   = 1'b0;
+    clk_mhdma = 1'b0;
   end
 
   always begin
-    #CLK_HALF_PERIOD_CFG clk_cfg = ~clk_cfg;
+    #CLK_HALF_PERIOD_CFG clk_mhdma_cfg = ~clk_mhdma_cfg;
   end
 
   always begin
-    #CLK_HALF_PERIOD_MRMAC clk_mrmac = ~clk_mrmac;
+    #CLK_HALF_PERIOD_MRMAC clk_mhdma = ~clk_mhdma;
   end
 
   bit a_rst_n;
   bit s_rstn_cfg;
-  bit s_rstn_mrmac;
+  bit s_rstn_mhdma;
 
   initial begin
     a_rst_n = 1'b0;
     #ARST_ACTIVATION a_rst_n = 1'b1;
   end
 
-  always_ff @(posedge clk_cfg)
+  always_ff @(posedge clk_mhdma_cfg)
     s_rstn_cfg <= a_rst_n;
 
-  always_ff @(posedge clk_mrmac)
-    s_rstn_mrmac <= a_rst_n;
+  always_ff @(posedge clk_mhdma)
+    s_rstn_mhdma <= a_rst_n;
 
 // ============================================================================================== --
 // End of test
@@ -108,11 +108,11 @@ module tb_mhdma_slave;
 
   initial begin
     wait (end_of_test);
-    @(posedge clk_cfg) $display("%t > SUCCEED !", $time);
+    @(posedge clk_mhdma_cfg) $display("%t > SUCCEED !", $time);
     $finish;
   end
 
-  always_ff @(posedge clk_cfg)
+  always_ff @(posedge clk_mhdma_cfg)
     if (error) begin
       $display("%t > FAILURE !", $time);
       $finish;
@@ -128,7 +128,7 @@ module tb_mhdma_slave;
   logic [ETH_PC-1:0][AXI4_BURST_W-1:0]                  m_axi4_arburst;
   logic [ETH_PC-1:0]                                    m_axi4_arvalid;
   logic [ETH_PC-1:0]                                    m_axi4_arready;
-  logic [ETH_PC-1:0][axi_if_eth_axi_pkg::AXI4_ID_W-1:0] m_axi4_arid;
+  logic [ETH_PC-1:0][axi_if_mhdma_axi_pkg::AXI4_ID_W-1:0] m_axi4_arid;
 
   logic [ETH_PC-1:0][AXI4_DATA_W-1:0]                   m_axi4_rdata;
   logic [ETH_PC-1:0]                                    m_axi4_rlast;
@@ -175,10 +175,10 @@ module tb_mhdma_slave;
   mhdma_slave #(
     .CDC_SYNC_STAGES(CDC_SYNC_STAGES)
   ) mhdma_slave (
-    .clk_cfg                (clk_cfg               ),
-    .resetn_cfg             (s_rstn_cfg            ),
-    .clk_mrmac              (clk_mrmac             ),
-    .resetn_mrmac           (s_rstn_mrmac          ),
+    .clk_mhdma_cfg                (clk_mhdma_cfg               ),
+    .resetn_mhdma_cfg             (s_rstn_cfg            ),
+    .clk_mhdma              (clk_mhdma             ),
+    .resetn_mhdma           (s_rstn_mhdma          ),
 
     .m_axi4_araddr          (m_axi4_araddr         ),
     .m_axi4_arlen           (m_axi4_arlen          ),
@@ -232,7 +232,7 @@ module tb_mhdma_slave;
       axi4_mem #(
         .DATA_WIDTH      (AXI4_DATA_W),
         .ADDR_WIDTH      (AXI4_ADD_W),
-        .ID_WIDTH        (axi_if_eth_axi_pkg::AXI4_ID_W),
+        .ID_WIDTH        (axi_if_mhdma_axi_pkg::AXI4_ID_W),
         .STRB_WIDTH      (AXI4_DATA_W/8),
         .RD_CMD_BUF_DEPTH(AXI4_MEM_RD_CMD_BUF_DEPTH),
         .RD_DATA_LATENCY (AXI4_MEM_RD_DATA_LATENCY),
@@ -241,10 +241,10 @@ module tb_mhdma_slave;
         .USE_RD_RANDOM   (AXI4_MEM_USE_RD_RANDOM),
         .USE_WR_RANDOM   (0)   // write channel unused
       ) u_axi4_mem (
-        .clk              (clk_mrmac),
-        .rst              (~s_rstn_mrmac),
+        .clk              (clk_mhdma),
+        .rst              (~s_rstn_mhdma),
         // Write channel - tied off (DUT is read-only, no AW/W/B)
-        .s_axi4_awid      ({axi_if_eth_axi_pkg::AXI4_ID_W{1'b0}}),
+        .s_axi4_awid      ({axi_if_mhdma_axi_pkg::AXI4_ID_W{1'b0}}),
         .s_axi4_awaddr    ({AXI4_ADD_W{1'b0}}),
         .s_axi4_awlen     (8'h0),
         .s_axi4_awsize    (3'h0),
@@ -291,8 +291,8 @@ module tb_mhdma_slave;
   // Track AR transactions per PC
   generate
     for (genvar gen_pc = 0; gen_pc < ETH_PC; gen_pc++) begin : gen_ar_tracker
-      always_ff @(posedge clk_mrmac) begin
-        if (~s_rstn_mrmac)
+      always_ff @(posedge clk_mhdma) begin
+        if (~s_rstn_mhdma)
           ar_transaction_count[gen_pc] <= 0;
         else if (m_axi4_arvalid[gen_pc] && m_axi4_arready[gen_pc])
           ar_transaction_count[gen_pc] <= ar_transaction_count[gen_pc] + 1;
@@ -329,7 +329,7 @@ module tb_mhdma_slave;
     end
   endtask
 
-  always_ff @(posedge clk_mrmac) begin
+  always_ff @(posedge clk_mhdma) begin
     ce_rdy <= $urandom();
   end
 
@@ -344,7 +344,7 @@ module tb_mhdma_slave;
     input logic [SEQ_NUM_W-1:0]   seq_num
   );
     begin
-      @(posedge clk_mrmac);
+      @(posedge clk_mhdma);
       decoded_command.req_id       <= req_id;
       decoded_command.hpu_id       <= hpu_id;
       decoded_command.iop_id       <= iop_id;
@@ -357,8 +357,8 @@ module tb_mhdma_slave;
       decoded_command.seq_num      <= seq_num;
       decoded_command_vld          <= 1'b1;
 
-      do @(posedge clk_mrmac); while (~decoded_command_rdy);
-      @(posedge clk_mrmac);
+      do @(posedge clk_mhdma); while (~decoded_command_rdy);
+      @(posedge clk_mhdma);
       decoded_command_vld <= 1'b0;
     end
   endtask
@@ -372,7 +372,7 @@ module tb_mhdma_slave;
       timed_out = 1'b0;
       count = 0;
       while (~slave_command_vld & count < max_cycles) begin
-        @(posedge clk_mrmac);
+        @(posedge clk_mhdma);
         count++;
       end
       if (count >= max_cycles) timed_out = 1'b1;
@@ -388,7 +388,7 @@ module tb_mhdma_slave;
       timed_out = 1'b0;
       count = 0;
       while (!ce_vld & count < max_cycles) begin
-        @(posedge clk_mrmac);
+        @(posedge clk_mhdma);
         count++;
       end
 
@@ -407,7 +407,7 @@ module tb_mhdma_slave;
       timed_out = 1'b0;
       count = 0;
       while (~interrupt_notify & (count < max_cycles)) begin
-        @(posedge clk_cfg);
+        @(posedge clk_mhdma_cfg);
         count++;
       end
       if (count >= max_cycles)
@@ -420,9 +420,9 @@ module tb_mhdma_slave;
   // --------------------------------------------------------------------------------------------- --
   task automatic consume_slave_command();
     begin
-      @(posedge clk_mrmac);
+      @(posedge clk_mhdma);
       slave_command_rdy <= 1'b1;
-      @(posedge clk_mrmac);
+      @(posedge clk_mhdma);
       slave_command_rdy <= 1'b0;
     end
   endtask
@@ -450,7 +450,7 @@ module tb_mhdma_slave;
         cycle_count = 0;
 
         while ((ce_count < CT_NB_WORDS_MRMAC) & (cycle_count < timeout)) begin
-          @(posedge clk_mrmac);
+          @(posedge clk_mhdma);
           if (ce_vld & ce_rdy) ce_count++;
           cycle_count++;
         end
@@ -461,8 +461,8 @@ module tb_mhdma_slave;
         end
       end
 
-      simulate_pulse(ciphertext_sent, clk_mrmac);
-      repeat (50) @(posedge clk_mrmac);
+      simulate_pulse(ciphertext_sent, clk_mhdma);
+      repeat (50) @(posedge clk_mhdma);
     end
   endtask
 
@@ -524,7 +524,7 @@ module tb_mhdma_slave;
     assert (slave_command.src_addr == iop_src_addr)    else begin $display("[ERROR:%0d] src_addr mismatch", scenario_id); error_assert = 1'b1; end
 
     consume_slave_command();
-    simulate_pulse(notify_ack_sent, clk_mrmac);
+    simulate_pulse(notify_ack_sent, clk_mhdma);
 
     wait_interrupt_notify(500, timed_out);
 
@@ -541,12 +541,12 @@ module tb_mhdma_slave;
       error_assert = 1'b1;
     end
 
-    clear_signal(clear_interrupt_notify, clk_cfg);
-    repeat (10) @(posedge clk_cfg);
+    clear_signal(clear_interrupt_notify, clk_mhdma_cfg);
+    repeat (10) @(posedge clk_mhdma_cfg);
     assert (~interrupt_notify)           else begin $display("[ERROR:%0d] interrupt not cleared", scenario_id); error_assert = 1'b1; end
     assert (stat.fsm_notify_rx == 2'b00) else begin $display("[ERROR:%0d] NRX FSM not idle", scenario_id);     error_assert = 1'b1; end
 
-    scenario_end(scenario_id, clk_cfg);
+    scenario_end(scenario_id, clk_mhdma_cfg);
   endtask
 
   // -------------------------------------------------------------------------
@@ -560,21 +560,21 @@ module tb_mhdma_slave;
     for (int i = 0; i < NRX_DEPTH - 1; i++) begin
       randomize_command_fields($urandom(), hpu_id, iop_id, iop_src_addr, iop_dst_addr, req_flag, req_mode);
       send_decoded_command(REQ_ID_NOTIFY, hpu_id, iop_id, iop_src_addr, iop_dst_addr, req_flag, req_mode, '0);
-      simulate_pulse(notify_ack_sent, clk_mrmac);
-      repeat (5) @(posedge clk_mrmac);
+      simulate_pulse(notify_ack_sent, clk_mhdma);
+      repeat (5) @(posedge clk_mhdma);
     end
 
     // Send one more to fill FIFO completely; keep FSM in TRANSMIT_ACK for drain
     randomize_command_fields($urandom(), hpu_id, iop_id, iop_src_addr, iop_dst_addr, req_flag, req_mode);
     send_decoded_command(REQ_ID_NOTIFY, hpu_id, iop_id, iop_src_addr, iop_dst_addr, req_flag, req_mode, '0);
-    repeat (5) @(posedge clk_mrmac);
+    repeat (5) @(posedge clk_mhdma);
 
     // FIFO full + FSM in TRANSMIT_ACK -> decoded_command_rdy must stay 0
-    @(posedge clk_mrmac);
+    @(posedge clk_mhdma);
     decoded_command.req_id <= REQ_ID_NOTIFY;
     decoded_command_vld    <= 1'b1;
 
-    repeat (20) @(posedge clk_mrmac);
+    repeat (20) @(posedge clk_mhdma);
 
     assert (decoded_command_rdy == 1'b0) else begin
       $display("[ERROR:%0d] rdy should be 0 when FIFO full", scenario_id);
@@ -590,18 +590,18 @@ module tb_mhdma_slave;
 
     // Recovery: enable drain (hold slave_command_rdy=1 for bulk FIFO drain)
     slave_command_rdy = 1'b1;
-    repeat (200) @(posedge clk_mrmac);
-    simulate_pulse(notify_ack_sent, clk_mrmac);
-    repeat (50) @(posedge clk_mrmac);
+    repeat (200) @(posedge clk_mhdma);
+    simulate_pulse(notify_ack_sent, clk_mhdma);
+    repeat (50) @(posedge clk_mhdma);
     slave_command_rdy = 1'b0;
 
     // Drain pending interrupts
     repeat (NRX_DEPTH + 1) begin
       wait_interrupt_notify(200, timed_out);
       if (~timed_out) begin
-        clear_signal(clear_interrupt_notify, clk_cfg);
+        clear_signal(clear_interrupt_notify, clk_mhdma_cfg);
       end
-      repeat (5) @(posedge clk_cfg);
+      repeat (5) @(posedge clk_mhdma_cfg);
     end
 
     // Verify: recovery works - send one more NOTIFY successfully
@@ -614,24 +614,24 @@ module tb_mhdma_slave;
 
     consume_slave_command();
 
-    simulate_pulse(notify_ack_sent, clk_mrmac);
+    simulate_pulse(notify_ack_sent, clk_mhdma);
 
     wait_interrupt_notify(500, timed_out);
 
     check_no_timeout(timed_out, scenario_id, "recovery NOTIFY interrupt timeout");
 
     if (~timed_out) begin
-      clear_signal(clear_interrupt_notify, clk_cfg);
+      clear_signal(clear_interrupt_notify, clk_mhdma_cfg);
     end
 
-    repeat (10) @(posedge clk_cfg);
+    repeat (10) @(posedge clk_mhdma_cfg);
 
     assert (slave_error.error_fifo_nrx_commands_ovf == 1'b0) else begin
       $display("[ERROR:%0d] overflow error after recovery", scenario_id);
       error_assert = 1'b1;
     end
 
-    scenario_end(scenario_id, clk_cfg);
+    scenario_end(scenario_id, clk_mhdma_cfg);
   endtask
 
   // -------------------------------------------------------------------------
@@ -662,7 +662,7 @@ module tb_mhdma_slave;
       int wait_count;
       wait_count = 0;
       while (~m_axi4_arvalid[0] & (wait_count < TIMEOUT_CYCLES)) begin
-        @(posedge clk_mrmac);
+        @(posedge clk_mhdma);
         wait_count++;
       end
       assert (wait_count < TIMEOUT_CYCLES) else begin
@@ -675,16 +675,16 @@ module tb_mhdma_slave;
     check_no_timeout(timed_out, scenario_id, "ce_vld timeout");
 
     // Consume CE data
-    repeat (CT_NB_WORDS_MRMAC + 200) @(posedge clk_mrmac);
+    repeat (CT_NB_WORDS_MRMAC + 200) @(posedge clk_mhdma);
 
-    simulate_pulse(ciphertext_sent, clk_mrmac);
-    repeat (50) @(posedge clk_mrmac);
+    simulate_pulse(ciphertext_sent, clk_mhdma);
+    repeat (50) @(posedge clk_mhdma);
     assert (stat.fsm_cem == 2'b00) else begin
       $display("[ERROR:%0d] CEM FSM not idle", scenario_id);
       error_assert = 1'b1;
     end
 
-    scenario_end(scenario_id, clk_cfg);
+    scenario_end(scenario_id, clk_mhdma_cfg);
   endtask
 
 
@@ -705,7 +705,7 @@ module tb_mhdma_slave;
     randomize_command_fields($urandom(), hpu_id, iop_id, iop_src_addr, iop_dst_addr, req_flag, req_mode);
 
     // Send NOTIFY, check that rdy asserts (registered, 1-cycle latency)
-    @(posedge clk_mrmac);
+    @(posedge clk_mhdma);
     decoded_command.req_id   <= REQ_ID_NOTIFY;
     decoded_command.hpu_id   <= hpu_id;
     decoded_command.iop_id   <= iop_id;
@@ -720,7 +720,7 @@ module tb_mhdma_slave;
       int wait_count;
       wait_count = 0;
       while (~decoded_command_rdy &( wait_count < 500)) begin
-        @(posedge clk_mrmac);
+        @(posedge clk_mhdma);
         wait_count++;
       end
       assert (wait_count < 500) else begin
@@ -735,18 +735,18 @@ module tb_mhdma_slave;
       error_assert = 1'b1;
     end
 
-    @(posedge clk_mrmac);
+    @(posedge clk_mhdma);
     decoded_command_vld <= 1'b0;
 
     // Complete notify flow
     wait_slave_command_vld(500, timed_out);
     consume_slave_command();
-    simulate_pulse(notify_ack_sent, clk_mrmac);
+    simulate_pulse(notify_ack_sent, clk_mhdma);
     wait_interrupt_notify(500, timed_out);
-    clear_signal(clear_interrupt_notify, clk_cfg);
-    repeat (10) @(posedge clk_cfg);
+    clear_signal(clear_interrupt_notify, clk_mhdma_cfg);
+    repeat (10) @(posedge clk_mhdma_cfg);
 
-    scenario_end(scenario_id, clk_cfg);
+    scenario_end(scenario_id, clk_mhdma_cfg);
   endtask
 
   // -------------------------------------------------------------------------
@@ -774,7 +774,7 @@ module tb_mhdma_slave;
     end
     $display("%t > %0d: nb_read_to_hbm: before=%0d, after=%0d", $time, scenario_id, hbm_reads_before, stat.nb_read_to_hbm);
 
-    scenario_end(scenario_id, clk_cfg);
+    scenario_end(scenario_id, clk_mhdma_cfg);
   endtask
 
   // -------------------------------------------------------------------------
@@ -789,11 +789,11 @@ module tb_mhdma_slave;
     assert (stat.nb_read_to_hbm > 0) else begin $display("[ERROR:%0d] nb_read_to_hbm should be non-zero", scenario_id); error_assert = 1'b1; end
 
     // Reset nb_read_to_hbm
-    @(posedge clk_mrmac);
+    @(posedge clk_mhdma);
     stat_rst.nb_read_to_hbm <= 1'b1;
-    @(posedge clk_mrmac);
+    @(posedge clk_mhdma);
     stat_rst.nb_read_to_hbm <= 1'b0;
-    @(posedge clk_mrmac);
+    @(posedge clk_mhdma);
     assert (stat.nb_read_to_hbm == 0) else begin
       $display("[ERROR:%0d] nb_read_to_hbm not reset", scenario_id);
       error_assert = 1'b1;
@@ -806,11 +806,11 @@ module tb_mhdma_slave;
       assert (words_pc1_before > 0) else begin $display("[ERROR:%0d] nb_words_received_pc[1] should be non-zero", scenario_id); error_assert = 1'b1; end
 
       // Reset only PC0 counter
-      @(posedge clk_mrmac);
+      @(posedge clk_mhdma);
       stat_rst.nb_words_received_pc[0] <= 1'b1;
-      @(posedge clk_mrmac);
+      @(posedge clk_mhdma);
       stat_rst.nb_words_received_pc[0] <= 1'b0;
-      @(posedge clk_mrmac);
+      @(posedge clk_mhdma);
       assert (stat.nb_words_received_pc[0] == 0)                else begin $display("[ERROR:%0d] nb_words_received_pc[0] not reset", scenario_id);               error_assert = 1'b1; end
       assert (stat.nb_words_received_pc[1] == words_pc1_before) else begin $display("[ERROR:%0d] nb_words_received_pc[1] was affected by PC0 reset", scenario_id); error_assert = 1'b1; end
     end else begin
@@ -818,18 +818,18 @@ module tb_mhdma_slave;
         $display("[ERROR:%0d] nb_words_received_pc[0] should be non-zero", scenario_id);
         error_assert = 1'b1;
       end
-      @(posedge clk_mrmac);
+      @(posedge clk_mhdma);
       stat_rst.nb_words_received_pc[0] <= 1'b1;
-      @(posedge clk_mrmac);
+      @(posedge clk_mhdma);
       stat_rst.nb_words_received_pc[0] <= 1'b0;
-      @(posedge clk_mrmac);
+      @(posedge clk_mhdma);
       assert (stat.nb_words_received_pc[0] == 0) else begin
         $display("[ERROR:%0d] nb_words_received_pc[0] not reset", scenario_id);
         error_assert = 1'b1;
       end
     end
 
-    scenario_end(scenario_id, clk_cfg);
+    scenario_end(scenario_id, clk_mhdma_cfg);
   endtask
 
   // -------------------------------------------------------------------------
@@ -889,7 +889,7 @@ module tb_mhdma_slave;
         wait_slave_command_vld(TIMEOUT_CYCLES, timed_out);
         if (~timed_out & slave_command.req_id == REQ_ID_NOTIFY_ACK) begin
           consume_slave_command();
-          simulate_pulse(notify_ack_sent, clk_mrmac);
+          simulate_pulse(notify_ack_sent, clk_mhdma);
         end
       end
       // Thread 3: Handle interrupt
@@ -897,7 +897,7 @@ module tb_mhdma_slave;
         wait_interrupt_notify(TIMEOUT_CYCLES, timed_out);
         if (~timed_out) begin
           notify_interrupt_received = 1'b1;
-          clear_signal(clear_interrupt_notify, clk_cfg);
+          clear_signal(clear_interrupt_notify, clk_mhdma_cfg);
         end
       end
       // Thread 4: Complete CEM flow after read is sent
@@ -908,8 +908,8 @@ module tb_mhdma_slave;
           consume_slave_command();
           wait_ce_vld(TIMEOUT_CYCLES, timed_out);
           if (~timed_out) begin
-            repeat (CT_NB_WORDS_MRMAC + 200) @(posedge clk_mrmac);
-            simulate_pulse(ciphertext_sent, clk_mrmac);
+            repeat (CT_NB_WORDS_MRMAC + 200) @(posedge clk_mhdma);
+            simulate_pulse(ciphertext_sent, clk_mhdma);
             read_flow_complete = 1'b1;
           end
         end
@@ -920,11 +920,11 @@ module tb_mhdma_slave;
     assert (notify_interrupt_received) else begin $display("[ERROR:%0d] NOTIFY interrupt not received", scenario_id); error_assert  = 1'b1; end
     assert (read_flow_complete)        else begin $display("[ERROR:%0d] READ flow not complete", scenario_id);        error_timeout = 1'b1; end
 
-    repeat (50) @(posedge clk_mrmac);
+    repeat (50) @(posedge clk_mhdma);
     check_fsm_idle(scenario_id);
     assert (slave_error.error_fifo_nrx_commands_ovf == 1'b0) else begin $display("[ERROR:%0d] unexpected error", scenario_id); error_assert = 1'b1; end
 
-    scenario_end(scenario_id, clk_cfg);
+    scenario_end(scenario_id, clk_mhdma_cfg);
   endtask
 
   // -------------------------------------------------------------------------
@@ -950,7 +950,7 @@ module tb_mhdma_slave;
       for (int pc = 0; pc < ETH_PC; pc++)
         ar_count_before[pc] = ar_transaction_count[pc];
 
-      repeat (100) @(posedge clk_mrmac);
+      repeat (100) @(posedge clk_mhdma);
 
       for (int pc = 0; pc < ETH_PC; pc++) begin
         assert (ar_transaction_count[pc] == ar_count_before[pc]) else begin
@@ -970,15 +970,15 @@ module tb_mhdma_slave;
     wait_ce_vld(TIMEOUT_CYCLES, timed_out);
     check_no_timeout(timed_out, scenario_id, "ce_vld timeout after consume");
 
-    repeat (CT_NB_WORDS_MRMAC + 200) @(posedge clk_mrmac);
-    simulate_pulse(ciphertext_sent, clk_mrmac);
-    repeat (50) @(posedge clk_mrmac);
+    repeat (CT_NB_WORDS_MRMAC + 200) @(posedge clk_mhdma);
+    simulate_pulse(ciphertext_sent, clk_mhdma);
+    repeat (50) @(posedge clk_mhdma);
     assert (stat.fsm_cem == 2'b00) else begin
       $display("[ERROR:%0d] CEM FSM not idle", scenario_id);
       error_assert = 1'b1;
     end
 
-    scenario_end(scenario_id, clk_cfg);
+    scenario_end(scenario_id, clk_mhdma_cfg);
   endtask
 
   // -------------------------------------------------------------------------
@@ -1003,7 +1003,7 @@ module tb_mhdma_slave;
     begin : wait_cem_active
       int cnt;
       cnt = 0;
-      while (stat.fsm_cem != 2'b10 & cnt < 500) begin @(posedge clk_mrmac); cnt++; end
+      while (stat.fsm_cem != 2'b10 & cnt < 500) begin @(posedge clk_mhdma); cnt++; end
       assert (cnt < 500) else begin $display("[ERROR:%0d] CEM FSM not in READ_N_SEND", scenario_id); error_assert = 1'b1; end
     end
 
@@ -1011,7 +1011,7 @@ module tb_mhdma_slave;
     send_decoded_command(REQ_ID_NOTIFY, hpu_id_n, iop_id_n, src_n, dst_n, flag_n, mode_n, '0);
 
     // 4. NRX has priority in slave_command mux - verify NOTIFY_ACK shows up
-    repeat (5) @(posedge clk_mrmac);
+    repeat (5) @(posedge clk_mhdma);
     assert (slave_command_vld) else begin
       $display("[ERROR:%0d] slave_command_vld not asserted", scenario_id);
       error_assert = 1'b1;
@@ -1023,22 +1023,22 @@ module tb_mhdma_slave;
 
     // 5. Consume -> pops NRX (combinational) + schedules RREQ pop (registered)
     consume_slave_command();
-    simulate_pulse(notify_ack_sent, clk_mrmac);
+    simulate_pulse(notify_ack_sent, clk_mhdma);
 
     // 6. Complete NRX: interrupt
     wait_interrupt_notify(500, timed_out);
     check_no_timeout(timed_out, scenario_id, "interrupt_notify timeout");
-    clear_signal(clear_interrupt_notify, clk_cfg);
+    clear_signal(clear_interrupt_notify, clk_mhdma_cfg);
 
     // 7. Complete CEM: RREQ already popped via registered rdy -> AXI4 reads -> CE data
     wait_ce_vld(TIMEOUT_CYCLES, timed_out);
     check_no_timeout(timed_out, scenario_id, "ce_vld timeout");
-    repeat (CT_NB_WORDS_MRMAC + 200) @(posedge clk_mrmac);
-    simulate_pulse(ciphertext_sent, clk_mrmac);
-    repeat (50) @(posedge clk_mrmac);
+    repeat (CT_NB_WORDS_MRMAC + 200) @(posedge clk_mhdma);
+    simulate_pulse(ciphertext_sent, clk_mhdma);
+    repeat (50) @(posedge clk_mhdma);
 
     check_fsm_idle(scenario_id);
-    scenario_end(scenario_id, clk_cfg);
+    scenario_end(scenario_id, clk_mhdma_cfg);
   endtask
 
   // -------------------------------------------------------------------------
@@ -1076,22 +1076,22 @@ module tb_mhdma_slave;
 
     // 4. Consume -> pops NRX (combinational) + schedules RREQ pop (registered)
     consume_slave_command();
-    simulate_pulse(notify_ack_sent, clk_mrmac);
+    simulate_pulse(notify_ack_sent, clk_mhdma);
 
     // 5. Complete NRX: interrupt
     wait_interrupt_notify(500, timed_out);
     check_no_timeout(timed_out, scenario_id, "interrupt_notify timeout");
-    clear_signal(clear_interrupt_notify, clk_cfg);
+    clear_signal(clear_interrupt_notify, clk_mhdma_cfg);
 
     // 6. Complete CEM: RREQ already popped via registered rdy -> AXI4 reads -> CE data
     wait_ce_vld(TIMEOUT_CYCLES, timed_out);
     check_no_timeout(timed_out, scenario_id, "ce_vld timeout");
-    repeat (CT_NB_WORDS_MRMAC + 200) @(posedge clk_mrmac);
-    simulate_pulse(ciphertext_sent, clk_mrmac);
-    repeat (50) @(posedge clk_mrmac);
+    repeat (CT_NB_WORDS_MRMAC + 200) @(posedge clk_mhdma);
+    simulate_pulse(ciphertext_sent, clk_mhdma);
+    repeat (50) @(posedge clk_mhdma);
 
     check_fsm_idle(scenario_id);
-    scenario_end(scenario_id, clk_cfg);
+    scenario_end(scenario_id, clk_mhdma_cfg);
   endtask
 
   // -------------------------------------------------------------------------
@@ -1118,7 +1118,7 @@ module tb_mhdma_slave;
     randomize_command_fields($urandom(), hpu_id_r, iop_id_r, src_r, dst_r, flag_r, mode_r);
 
     // Drive NOTIFY, keep vld asserted across both handshakes
-    @(posedge clk_mrmac);
+    @(posedge clk_mhdma);
     decoded_command.req_id       <= REQ_ID_NOTIFY;
     decoded_command.hpu_id       <= hpu_id_n;
     decoded_command.iop_id       <= iop_id_n;
@@ -1132,7 +1132,7 @@ module tb_mhdma_slave;
     decoded_command_vld          <= 1'b1;
 
     // Wait for first handshake (NOTIFY)
-    do @(posedge clk_mrmac); while (~decoded_command_rdy);
+    do @(posedge clk_mhdma); while (~decoded_command_rdy);
 
     // Immediately switch to READ - vld stays high, no idle cycle
     decoded_command.req_id       <= REQ_ID_READ;
@@ -1144,8 +1144,8 @@ module tb_mhdma_slave;
     decoded_command.mode         <= mode_r;
 
     // Wait for second handshake (READ)
-    do @(posedge clk_mrmac); while (~decoded_command_rdy);
-    @(posedge clk_mrmac);
+    do @(posedge clk_mhdma); while (~decoded_command_rdy);
+    @(posedge clk_mhdma);
     decoded_command_vld <= 1'b0;
 
     // Complete NRX flow
@@ -1158,21 +1158,21 @@ module tb_mhdma_slave;
 
     // Consume -> pops NRX (combinational) + schedules RREQ pop (registered)
     consume_slave_command();
-    simulate_pulse(notify_ack_sent, clk_mrmac);
+    simulate_pulse(notify_ack_sent, clk_mhdma);
 
     wait_interrupt_notify(500, timed_out);
     check_no_timeout(timed_out, scenario_id, "interrupt_notify timeout");
-    clear_signal(clear_interrupt_notify, clk_cfg);
+    clear_signal(clear_interrupt_notify, clk_mhdma_cfg);
 
     // Complete CEM flow
     wait_ce_vld(TIMEOUT_CYCLES, timed_out);
     check_no_timeout(timed_out, scenario_id, "ce_vld timeout");
-    repeat (CT_NB_WORDS_MRMAC + 200) @(posedge clk_mrmac);
-    simulate_pulse(ciphertext_sent, clk_mrmac);
-    repeat (50) @(posedge clk_mrmac);
+    repeat (CT_NB_WORDS_MRMAC + 200) @(posedge clk_mhdma);
+    simulate_pulse(ciphertext_sent, clk_mhdma);
+    repeat (50) @(posedge clk_mhdma);
 
     check_fsm_idle(scenario_id);
-    scenario_end(scenario_id, clk_cfg);
+    scenario_end(scenario_id, clk_mhdma_cfg);
   endtask
 
   // -------------------------------------------------------------------------
@@ -1219,7 +1219,7 @@ module tb_mhdma_slave;
       int monitor_cnt;
       monitor_cnt = 0;
       while (monitor_cnt < TIMEOUT_CYCLES) begin
-        @(posedge clk_mrmac);
+        @(posedge clk_mhdma);
         for (int pc = 0; pc < ETH_PC; pc++) begin
           if (~captured[pc] & m_axi4_arvalid[pc] & m_axi4_arready[pc]) begin
             captured_first_araddr[pc] = m_axi4_araddr[pc];
@@ -1243,9 +1243,9 @@ module tb_mhdma_slave;
     // Now drain CE data and complete the CEM flow
     wait_ce_vld(TIMEOUT_CYCLES, timed_out);
     check_no_timeout(timed_out, scenario_id, "ce_vld timeout");
-    repeat (2 * CT_NB_WORDS_MRMAC + 500) @(posedge clk_mrmac);
-    simulate_pulse(ciphertext_sent, clk_mrmac);
-    repeat (50) @(posedge clk_mrmac);
+    repeat (2 * CT_NB_WORDS_MRMAC + 500) @(posedge clk_mhdma);
+    simulate_pulse(ciphertext_sent, clk_mhdma);
+    repeat (50) @(posedge clk_mhdma);
 
     // Check address correctness per PC
     for (int pc = 0; pc < ETH_PC; pc++) begin
@@ -1275,7 +1275,7 @@ module tb_mhdma_slave;
     for (int pc = 0; pc < ETH_PC; pc++)
       regf_ct_mem_addr[pc] = saved_addr[pc];
 
-    scenario_end(scenario_id, clk_cfg);
+    scenario_end(scenario_id, clk_mhdma_cfg);
   endtask
 
 // ============================================================================================== --
@@ -1286,11 +1286,11 @@ module tb_mhdma_slave;
     scenario_id = 0;
 
     wait (s_rstn_cfg == 1'b1);
-    wait (s_rstn_mrmac == 1'b1);
-    repeat (20) @(posedge clk_cfg);
+    wait (s_rstn_mhdma == 1'b1);
+    repeat (20) @(posedge clk_mhdma_cfg);
 
     // waiting a bit more time that CDC fifo are not reset busy..
-    repeat (50) @(posedge clk_cfg);
+    repeat (50) @(posedge clk_mhdma_cfg);
 
     run_scenario_notify_rx_flow();
     run_scenario_notify_rx_backpressure();
@@ -1308,7 +1308,7 @@ module tb_mhdma_slave;
     $display("\n==================================================================================================");
     $display("  All scenarios completed");
     $display("==================================================================================================");
-    repeat (50) @(posedge clk_cfg);
+    repeat (50) @(posedge clk_mhdma_cfg);
     end_of_test = 1'b1;
   end
 
@@ -1321,13 +1321,13 @@ module tb_mhdma_slave;
     for (genvar gen_pc = 0; gen_pc < ETH_PC; gen_pc++) begin : gen_sva_axi4
 
       property axi4_arvalid_stable;
-        @(posedge clk_mrmac) disable iff (~s_rstn_mrmac)
+        @(posedge clk_mhdma) disable iff (~s_rstn_mhdma)
         (m_axi4_arvalid[gen_pc] && !m_axi4_arready[gen_pc]) |=>
           $stable(m_axi4_arvalid[gen_pc]) && $stable(m_axi4_araddr[gen_pc]) && $stable(m_axi4_arlen[gen_pc]);
       endproperty
 
       property axi4_arburst_incr;
-        @(posedge clk_mrmac) disable iff (~s_rstn_mrmac)
+        @(posedge clk_mhdma) disable iff (~s_rstn_mhdma)
         m_axi4_arvalid[gen_pc] |-> (m_axi4_arburst[gen_pc] == AXI4B_INCR);
       endproperty
 
@@ -1348,7 +1348,7 @@ module tb_mhdma_slave;
 
   // NRX FSM should not be in unknown state
   property nrx_fsm_valid;
-    @(posedge clk_mrmac) disable iff (~s_rstn_mrmac)
+    @(posedge clk_mhdma) disable iff (~s_rstn_mhdma)
     (stat.fsm_notify_rx inside {2'b00, 2'b10});
   endproperty
 
@@ -1360,7 +1360,7 @@ module tb_mhdma_slave;
 
   // CEM FSM should not be in unknown state
   property cem_fsm_valid;
-    @(posedge clk_mrmac) disable iff (~s_rstn_mrmac)
+    @(posedge clk_mhdma) disable iff (~s_rstn_mhdma)
     (stat.fsm_cem inside {2'b00, 2'b10});
   endproperty
 

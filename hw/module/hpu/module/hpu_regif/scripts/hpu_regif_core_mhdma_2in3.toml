@@ -1,4 +1,4 @@
-module_name="hpu_regif_core_eth_2in3"
+module_name="hpu_regif_core_mhdma_2in3"
 description="HPU ethernet configuration register interface. Will be accessed by RPU to define registers."
 word_size_b = 32
 offset = 0x50000

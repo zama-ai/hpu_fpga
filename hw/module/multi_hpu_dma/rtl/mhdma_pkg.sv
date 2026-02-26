@@ -6,7 +6,7 @@
 package mhdma_pkg;
   import param_tfhe_pkg::*;           // TFHE parameterset
   import axi_if_common_param_pkg::*;  // HBM pages
-  import axi_if_eth_axi_pkg::*;       // AXI4
+  import axi_if_mhdma_axi_pkg::*;       // AXI4
   import axi_if_shell_axil_pkg::*;    // REG_DATA_W
 
   import top_common_param_pkg::*;    // PEM_PC

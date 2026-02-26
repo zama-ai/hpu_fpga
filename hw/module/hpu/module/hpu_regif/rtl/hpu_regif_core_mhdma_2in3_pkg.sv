@@ -1,13 +1,13 @@
 // ============================================================================================== //
 // Description  : register  map address definition package
 // This file was generated with rust regmap generator:
-//  * Date:  2026-02-13
+//  * Date:  2026-02-26
 //  * Tool_version: 27d9e880d531030160fd8749c606142942d5558d
 // ---------------------------------------------------------------------------------------------- //
 //
 // Should only be used in testbench to drive the register interface
 // ============================================================================================== //
-package hpu_regif_core_eth_2in3_pkg;
+package hpu_regif_core_mhdma_2in3_pkg;
   typedef struct packed {
     logic [(1-1):0] debug;
     logic [(18-1):0] padding_13;

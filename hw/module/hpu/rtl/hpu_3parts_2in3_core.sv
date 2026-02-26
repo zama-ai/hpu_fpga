@@ -26,7 +26,7 @@ module hpu_3parts_2in3_core
   import axi_if_ksk_axi_pkg::*;
   import axi_if_glwe_axi_pkg::*;
   import axi_if_ct_axi_pkg::*;
-  import axi_if_eth_axi_pkg::*;
+  import axi_if_mhdma_axi_pkg::*;
   import axi_if_trc_axi_pkg::*;
   import regf_common_param_pkg::*;
   import pem_common_param_pkg::*;
@@ -43,7 +43,7 @@ module hpu_3parts_2in3_core
   parameter int    AXI4_GLWE_ADD_W  = 64,
   parameter int    AXI4_BSK_ADD_W   = 64,
   parameter int    AXI4_KSK_ADD_W   = 64,
-  parameter int    AXI4_ETH_HBM_ADD_W = 64,
+  parameter int    AXI4_MHDMA_HBM_ADD_W = 64,
 
   // HPU version
   parameter int    VERSION_MAJOR    = 2,
@@ -56,29 +56,29 @@ module hpu_3parts_2in3_core
   input  logic                               cfg_clk,     // config clock
   input  logic                               cfg_srst_n, // synchronous reset
 
-  input logic                                cfg_eth_clk,     // ethernet configuration slow clock
+  input logic                                cfg_mhdma_clk, // ethernet configuration slow clock
 
-  input logic                                prc_mrmac_clk,    // mrmac clock at axis speed
+  input logic                                prc_mhdma_clk, // mhdma clock at mrmac-axis speed
 
   output interrupt_t                         interrupt,
 
-  input  logic [AXIL_ADD_W-1:0]              s_axil_dma_awaddr,
-  input  logic                               s_axil_dma_awvalid,
-  output logic                               s_axil_dma_awready,
-  input  logic [AXIL_DATA_W-1:0]             s_axil_dma_wdata,
-  input  logic [AXIL_DATA_BYTES-1:0]         s_axil_dma_wstrb, /* UNUSED */
-  input  logic                               s_axil_dma_wvalid,
-  output logic                               s_axil_dma_wready,
-  output logic [1:0]                         s_axil_dma_bresp,
-  output logic                               s_axil_dma_bvalid,
-  input  logic                               s_axil_dma_bready,
-  input  logic [AXIL_ADD_W-1:0]              s_axil_dma_araddr,
-  input  logic                               s_axil_dma_arvalid,
-  output logic                               s_axil_dma_arready,
-  output logic [AXIL_DATA_W-1:0]             s_axil_dma_rdata,
-  output logic [1:0]                         s_axil_dma_rresp,
-  output logic                               s_axil_dma_rvalid,
-  input  logic                               s_axil_dma_rready,
+  input  logic [AXIL_ADD_W-1:0]              s_axil_mhdma_awaddr,
+  input  logic                               s_axil_mhdma_awvalid,
+  output logic                               s_axil_mhdma_awready,
+  input  logic [AXIL_DATA_W-1:0]             s_axil_mhdma_wdata,
+  input  logic [AXIL_DATA_BYTES-1:0]         s_axil_mhdma_wstrb, /* UNUSED */
+  input  logic                               s_axil_mhdma_wvalid,
+  output logic                               s_axil_mhdma_wready,
+  output logic [1:0]                         s_axil_mhdma_bresp,
+  output logic                               s_axil_mhdma_bvalid,
+  input  logic                               s_axil_mhdma_bready,
+  input  logic [AXIL_ADD_W-1:0]              s_axil_mhdma_araddr,
+  input  logic                               s_axil_mhdma_arvalid,
+  output logic                               s_axil_mhdma_arready,
+  output logic [AXIL_DATA_W-1:0]             s_axil_mhdma_rdata,
+  output logic [1:0]                         s_axil_mhdma_rresp,
+  output logic                               s_axil_mhdma_rvalid,
+  input  logic                               s_axil_mhdma_rready,
 
   // Decomposer -> NTT
   input  logic [PSI-1:0][R-1:0]              decomp_ntt_data_avail,
@@ -123,7 +123,7 @@ module hpu_3parts_2in3_core
   output pep_rif_elt_t                       pep_rif_elt,
 
   // Multi-HPU-DMA
-  `HPU_AXI4_IO(eth_hbm, ETH_HBM, axi_if_eth_axi_pkg, [ETH_PC-1:0])
+  `HPU_AXI4_IO(mhdma_hbm, MHDMA_HBM, axi_if_mhdma_axi_pkg, [ETH_PC-1:0])
   // QSFP system interface
   // == TX
   output logic [QSFP_LANE_NB-1:0][MRMAC_AXIS_W-1:0]  qsfp_tx_tdata,
@@ -458,49 +458,49 @@ module hpu_3parts_2in3_core
   //
   // initialize axi4 signals ----------------------------------------------------------------------
   // Tie-off m_axi4 unused features
-  `HPU_AXI4_TIE_GL_UNUSED(eth_hbm, [ETH_PC-1:0], ETH_PC)
+  `HPU_AXI4_TIE_GL_UNUSED(mhdma_hbm, [ETH_PC-1:0], ETH_PC)
 
-  // /!\ Workaround : simulation AXI4_ETH_HBM_ADD_W may be different from
-  // the AXI4_ETH_HBM_ADD_W of the package (= the synthesized value).
+  // /!\ Workaround : simulation AXI4_MHDMA_HBM_ADD_W may be different from
+  // the AXI4_MHDMA_HBM_ADD_W of the package (= the synthesized value).
   // Use intermediate variable.
-  logic [ETH_PC-1:0][axi_if_eth_axi_pkg::AXI4_ADD_W-1:0] m_axi4_eth_hbm_araddr_tmp;
+  logic [ETH_PC-1:0][axi_if_mhdma_axi_pkg::AXI4_ADD_W-1:0] m_axi4_mhdma_hbm_araddr_tmp;
   always_comb
     for (int i=0; i<ETH_PC; i=i+1)
-      m_axi4_eth_hbm_araddr[i] = m_axi4_eth_hbm_araddr_tmp[i][AXI4_ETH_HBM_ADD_W-1:0];
+      m_axi4_mhdma_hbm_araddr[i] = m_axi4_mhdma_hbm_araddr_tmp[i][AXI4_MHDMA_HBM_ADD_W-1:0];
 
 // pragma translate_off
-  always_ff @(posedge prc_mrmac_clk)
-    if (!prc_mrmac_srst_n) begin
+  always_ff @(posedge prc_mhdma_clk)
+    if (!prc_mhdma_srst_n) begin
       // Do nothing
     end
     else begin
       for (int i=0; i<ETH_PC; i=i+1) begin
-        if (m_axi4_eth_hbm_arvalid[i]) begin
-          assert(m_axi4_eth_hbm_araddr_tmp[i] >> AXI4_ETH_HBM_ADD_W == '0)
+        if (m_axi4_mhdma_hbm_arvalid[i]) begin
+          assert(m_axi4_mhdma_hbm_araddr_tmp[i] >> AXI4_MHDMA_HBM_ADD_W == '0)
           else begin
-            $fatal(1,"%t > ERROR: HBM ETHERNET AXI [%d] address overflows. Simulation supports only %d bits: 0x%0x.",$time, i, AXI4_ETH_HBM_ADD_W, m_axi4_eth_hbm_araddr_tmp[i]);
+            $fatal(1,"%t > ERROR: HBM ETHERNET AXI [%d] address overflows. Simulation supports only %d bits: 0x%0x.",$time, i, AXI4_MHDMA_HBM_ADD_W, m_axi4_mhdma_hbm_araddr_tmp[i]);
           end
         end
       end
     end
 // pragma translate_on
 
-  logic [ETH_PC-1:0][axi_if_eth_axi_pkg::AXI4_ADD_W-1:0] m_axi4_eth_hbm_awaddr_tmp;
+  logic [ETH_PC-1:0][axi_if_mhdma_axi_pkg::AXI4_ADD_W-1:0] m_axi4_mhdma_hbm_awaddr_tmp;
   always_comb
     for (int i=0; i<ETH_PC; i=i+1)
-      m_axi4_eth_hbm_awaddr[i] = m_axi4_eth_hbm_awaddr_tmp[i][AXI4_ETH_HBM_ADD_W-1:0];
+      m_axi4_mhdma_hbm_awaddr[i] = m_axi4_mhdma_hbm_awaddr_tmp[i][AXI4_MHDMA_HBM_ADD_W-1:0];
 
 // pragma translate_off
-  always_ff @(posedge prc_mrmac_clk)
-    if (!prc_mrmac_srst_n) begin
+  always_ff @(posedge prc_mhdma_clk)
+    if (!prc_mhdma_srst_n) begin
       // Do nothing
     end
     else begin
       for (int i=0; i<ETH_PC; i=i+1) begin
-        if (m_axi4_eth_hbm_arvalid[i]) begin
-          assert(m_axi4_eth_hbm_awaddr_tmp[i] >> AXI4_ETH_HBM_ADD_W == '0)
+        if (m_axi4_mhdma_hbm_arvalid[i]) begin
+          assert(m_axi4_mhdma_hbm_awaddr_tmp[i] >> AXI4_MHDMA_HBM_ADD_W == '0)
           else begin
-            $fatal(1,"%t > ERROR: HBM ETHERNET AXI [%d] address overflows. Simulation supports only %d bits: 0x%0x.",$time, i, AXI4_ETH_HBM_ADD_W, m_axi4_eth_hbm_awaddr_tmp[i]);
+            $fatal(1,"%t > ERROR: HBM ETHERNET AXI [%d] address overflows. Simulation supports only %d bits: 0x%0x.",$time, i, AXI4_MHDMA_HBM_ADD_W, m_axi4_mhdma_hbm_awaddr_tmp[i]);
           end
         end
       end
@@ -509,8 +509,8 @@ module hpu_3parts_2in3_core
   // ==============================================================================================
 
   // reset for mrmac resyncronized for the two clock frequencies
-  logic cfg_eth_srst_n;   // ethernet configuration slow clock
-  logic prc_mrmac_srst_n; // mrmac clock at axis speed
+  logic cfg_mhdma_srst_n; // ethernet configuration slow clock
+  logic prc_mhdma_srst_n; // mrmac clock at axis speed
 
   xpm_cdc_single_wrapper #(
     // The frequency of the input signal is extremely low, this should be enough
@@ -519,8 +519,8 @@ module hpu_3parts_2in3_core
   ) sync_cfg_prc_mrmac_slow (
     .src_clk  ( prc_clk           ) ,
     .src_in   ( prc_srst_n        ) ,
-    .dest_clk ( cfg_eth_clk       ) ,
-    .dest_out ( cfg_eth_srst_n    )
+    .dest_clk ( cfg_mhdma_clk       ) ,
+    .dest_out ( cfg_mhdma_srst_n    )
   );
 
   xpm_cdc_single_wrapper #(
@@ -530,37 +530,37 @@ module hpu_3parts_2in3_core
   ) sync_cfg_prc_mrmac_fast (
     .src_clk  ( prc_clk           ) ,
     .src_in   ( prc_srst_n        ) ,
-    .dest_clk ( prc_mrmac_clk     ) ,
-    .dest_out ( prc_mrmac_srst_n  )
+    .dest_clk ( prc_mhdma_clk     ) ,
+    .dest_out ( prc_mhdma_srst_n  )
   );
 
   multi_hpu_dma #(
   ) multi_hpu_dma (
     // System interface
-    .clk_eth_cfg            (cfg_eth_clk),
-    .resetn_eth_cfg         (cfg_eth_srst_n),
-    .clk_eth_mrmac          (prc_mrmac_clk),
-    .resetn_eth_mrmac       (prc_mrmac_srst_n),
+    .clk_mhdma_cfg          (cfg_mhdma_clk),
+    .resetn_mhdma_cfg       (cfg_mhdma_srst_n),
+    .clk_mhdma              (prc_mhdma_clk),
+    .resetn_mhdma           (prc_mhdma_srst_n),
     // register interface
-    .s_axil_dma_awaddr      (s_axil_dma_awaddr),
-    .s_axil_dma_awvalid     (s_axil_dma_awvalid),
-    .s_axil_dma_awready     (s_axil_dma_awready),
-    .s_axil_dma_wdata       (s_axil_dma_wdata),
-    .s_axil_dma_wstrb       (s_axil_dma_wstrb),
-    .s_axil_dma_wvalid      (s_axil_dma_wvalid),
-    .s_axil_dma_wready      (s_axil_dma_wready),
-    .s_axil_dma_bresp       (s_axil_dma_bresp),
-    .s_axil_dma_bvalid      (s_axil_dma_bvalid),
-    .s_axil_dma_bready      (s_axil_dma_bready),
-    .s_axil_dma_araddr      (s_axil_dma_araddr),
-    .s_axil_dma_arvalid     (s_axil_dma_arvalid),
-    .s_axil_dma_arready     (s_axil_dma_arready),
-    .s_axil_dma_rdata       (s_axil_dma_rdata),
-    .s_axil_dma_rresp       (s_axil_dma_rresp),
-    .s_axil_dma_rvalid      (s_axil_dma_rvalid),
-    .s_axil_dma_rready      (s_axil_dma_rready),
+    .s_axil_mhdma_awaddr    (s_axil_mhdma_awaddr),
+    .s_axil_mhdma_awvalid   (s_axil_mhdma_awvalid),
+    .s_axil_mhdma_awready   (s_axil_mhdma_awready),
+    .s_axil_mhdma_wdata     (s_axil_mhdma_wdata),
+    .s_axil_mhdma_wstrb     (s_axil_mhdma_wstrb),
+    .s_axil_mhdma_wvalid    (s_axil_mhdma_wvalid),
+    .s_axil_mhdma_wready    (s_axil_mhdma_wready),
+    .s_axil_mhdma_bresp     (s_axil_mhdma_bresp),
+    .s_axil_mhdma_bvalid    (s_axil_mhdma_bvalid),
+    .s_axil_mhdma_bready    (s_axil_mhdma_bready),
+    .s_axil_mhdma_araddr    (s_axil_mhdma_araddr),
+    .s_axil_mhdma_arvalid   (s_axil_mhdma_arvalid),
+    .s_axil_mhdma_arready   (s_axil_mhdma_arready),
+    .s_axil_mhdma_rdata     (s_axil_mhdma_rdata),
+    .s_axil_mhdma_rresp     (s_axil_mhdma_rresp),
+    .s_axil_mhdma_rvalid    (s_axil_mhdma_rvalid),
+    .s_axil_mhdma_rready    (s_axil_mhdma_rready),
     // HBM axi4
-    `HPU_AXI4_SHORT_INSTANCE(eth_hbm, eth_hbm, _tmp, [ETH_PC-1:0])
+    `HPU_AXI4_SHORT_INSTANCE(mhdma_hbm, mhdma_hbm, _tmp, [ETH_PC-1:0])
     // interrupts
     .interrupt_notify       (interrupt_notify),
     .interrupt_read_request (interrupt_read_request),

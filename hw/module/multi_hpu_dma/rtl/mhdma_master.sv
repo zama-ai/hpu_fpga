@@ -21,7 +21,7 @@
 
 module mhdma_master
   import mhdma_pkg::*;               // for all mhdma modules
-  import axi_if_eth_axi_pkg::*;      // AXI4
+  import axi_if_mhdma_axi_pkg::*;      // AXI4
   import axi_if_shell_axil_pkg::*;   // REG_DATA_W
   import axi_if_common_param_pkg::*; // HBM page
   import pem_common_param_pkg::*;    // CT_MEM_BYTES, AXI4_WORD_PER_PC_L*
@@ -29,11 +29,11 @@ module mhdma_master
   parameter int CDC_SYNC_STAGES = 2
 ) (
   // Ethernet configuration interface -----------------------------------------
-  input  logic                                clk_cfg,
-  input  logic                                resetn_cfg,
+  input  logic                                clk_mhdma_cfg,
+  input  logic                                resetn_mhdma_cfg,
   // Ethernet fast clock interface --------------------------------------------
-  input  logic                                clk_mrmac,
-  input  logic                                resetn_mrmac,
+  input  logic                                clk_mhdma,
+  input  logic                                resetn_mhdma,
   // Axi4 interface for NMU ---------------------------------------------------
   output logic [ETH_PC-1:0][AXI4_ID_W-1:0]    m_axi4_awid,
   output logic [ETH_PC-1:0][AXI4_ADD_W-1:0]   m_axi4_awaddr,
@@ -125,8 +125,8 @@ module mhdma_master
   logic st_ntx_wait_ack;
   logic ntx_retry;
 
-  always_ff @(posedge clk_mrmac) begin
-    if (~resetn_mrmac) ntx_state <= NTX_WAIT_REQUEST;
+  always_ff @(posedge clk_mhdma) begin
+    if (~resetn_mhdma) ntx_state <= NTX_WAIT_REQUEST;
     else ntx_state <= ntx_next_state;
   end
 
@@ -165,8 +165,8 @@ module mhdma_master
   logic st_wait_packets;
   logic st_rr_wait_request;
 
-  always_ff @(posedge clk_mrmac) begin
-    if (~resetn_mrmac) rreq_state <= RR_WAIT_REQUEST;
+  always_ff @(posedge clk_mhdma) begin
+    if (~resetn_mhdma) rreq_state <= RR_WAIT_REQUEST;
     else rreq_state <= rreq_next_state;
   end
 
@@ -193,8 +193,8 @@ module mhdma_master
 
   // NOTE: decoded_command_rdy is intentionally registered for timing.
   // The decoder holds decoded_command_vld and decoded_command stable until decoded_command_rdy is 1
-  always_ff @(posedge clk_mrmac) begin
-    if (~resetn_mrmac) begin
+  always_ff @(posedge clk_mhdma) begin
+    if (~resetn_mhdma) begin
       nack_rdy       <= 1'b0;
       rr_packets_rdy <= 1'b0;
     end else begin
@@ -210,8 +210,8 @@ module mhdma_master
   // =========================================================================================== //
 
   // notify ---------------------------------------------------------------------------------------
-  always_ff @(posedge clk_mrmac) begin
-      if (~resetn_mrmac) begin
+  always_ff @(posedge clk_mhdma) begin
+      if (~resetn_mhdma) begin
         ntx_retry <= 1'b0;
       end else begin
         if (timeout_reached_notify) begin
@@ -232,8 +232,8 @@ module mhdma_master
   assign valid_ciphertext_received = ciphertext_received & ~mismatch_retry_pending;
 
   // building read request retry signal
-  always_ff @(posedge clk_mrmac) begin
-    if (~resetn_mrmac) begin
+  always_ff @(posedge clk_mhdma) begin
+    if (~resetn_mhdma) begin
       rr_retry <= 1'b0;
     end else begin
       if (timeout_reached_read_request | retry_seq_num) begin
@@ -244,8 +244,8 @@ module mhdma_master
     end
   end
 
-  always_ff @(posedge clk_mrmac) begin
-    if (~resetn_mrmac) begin
+  always_ff @(posedge clk_mhdma) begin
+    if (~resetn_mhdma) begin
       mismatch_retry_pending <= 1'b0;
     end else begin
       if (seq_num_mismatch) begin
@@ -267,8 +267,8 @@ module mhdma_master
 
   assign seq0_detected = rr_packets_rdy & (decoded_command.seq_num == 0);
 
-  always_ff @(posedge clk_mrmac) begin
-    if (~resetn_mrmac) begin
+  always_ff @(posedge clk_mhdma) begin
+    if (~resetn_mhdma) begin
       rr_packets_rdyQ <= 1'b0;
     end else begin
       rr_packets_rdyQ <= rr_packets_rdy;
@@ -278,8 +278,8 @@ module mhdma_master
   // seq num valid over frontedge of rr_packets_rdy & there is no seq num errors
   assign seq_num_valid = (rr_packets_rdy & ~rr_packets_rdyQ) & (~wait_for_seq0 | seq0_detected);
 
-  always_ff @(posedge clk_mrmac) begin
-    if (~resetn_mrmac) begin
+  always_ff @(posedge clk_mhdma) begin
+    if (~resetn_mhdma) begin
       expected_seq_num <= 'h0;
     end else begin
       if (start_read_request)
@@ -291,8 +291,8 @@ module mhdma_master
   end
 
   // After mismatch retry, ignore all CE emissions until one arrives with seq_num == 0
-  always_ff @(posedge clk_mrmac) begin
-    if (~resetn_mrmac) begin
+  always_ff @(posedge clk_mhdma) begin
+    if (~resetn_mhdma) begin
       wait_for_seq0 <= 1'b0;
     end else begin
       if (retry_seq_num) begin
@@ -312,17 +312,17 @@ module mhdma_master
   logic [REG_DATA_W-1:0] to_dur_read_req;
   logic [REG_DATA_W-1:0] to_dur_notify;
 
-  always_ff @(posedge clk_mrmac)
+  always_ff @(posedge clk_mhdma)
     to_dur_read_req <= regf_timeout_duration_read_req;
 
-  always_ff @(posedge clk_mrmac)
+  always_ff @(posedge clk_mhdma)
     to_dur_notify <= regf_timeout_duration_notify;
 
   // timeout --------------------------------------------------------------------------------------
   logic [REG_DATA_W-1:0] to_notify_cnt;
 
-  always_ff @(posedge clk_mrmac) begin : timeout_counter
-    if (~resetn_mrmac) begin
+  always_ff @(posedge clk_mhdma) begin : timeout_counter
+    if (~resetn_mhdma) begin
       to_notify_cnt <= 'h0;
     end else begin
       if (ntx_state == NTX_WAIT_ACK) begin
@@ -338,8 +338,8 @@ module mhdma_master
   // timeout read request -------------------------------------------------------------------------
   logic [REG_DATA_W-1:0] to_read_request_cnt;
 
-  always_ff @(posedge clk_mrmac) begin : timeout_counter_rr
-    if (~resetn_mrmac) begin
+  always_ff @(posedge clk_mhdma) begin : timeout_counter_rr
+    if (~resetn_mhdma) begin
       to_read_request_cnt <= 'h0;
     end else begin
       if (rreq_state == RR_WAIT_PACKETS) begin
@@ -376,12 +376,12 @@ module mhdma_master
 
   assign rrqq_in_vld = received_req & (regf_req_id[23:20] == REQ_ID_READ);
 
-  always_ff @(posedge clk_cfg)
+  always_ff @(posedge clk_mhdma_cfg)
     if (~rrqq_in_rdy & rrqq_in_vld)
       rrqq_data_kept <= {regf_req_id, regf_req_addr};
 
-  always_ff @(posedge clk_cfg) begin
-    if (~resetn_cfg) begin
+  always_ff @(posedge clk_mhdma_cfg) begin
+    if (~resetn_mhdma_cfg) begin
       rrqq_data_kept_avail <= 1'b0;
     end else begin
       if (rrqq_in_vld & ~rrqq_in_rdy) begin
@@ -403,15 +403,15 @@ module mhdma_master
     .FIFO_MEMORY_TYPE(REQ_MEMORY_TYPE)
   ) rrqq_fifo_ram_rdy_vld_2clk (
     // CFG domain
-    .in_clk      (clk_cfg),
-    .in_rstn     (resetn_cfg),
+    .in_clk      (clk_mhdma_cfg),
+    .in_rstn     (resetn_mhdma_cfg),
     .in_data     (rrqq_in_data),
     .in_rdy      (rrqq_in_rdy),
     .in_vld      (rrqq_data_vld),
     .almost_full (/* UNUSED */),
     // MRMAC domain
-    .out_clk     (clk_mrmac),
-    .out_rstn    (resetn_mrmac),
+    .out_clk     (clk_mhdma),
+    .out_rstn    (resetn_mhdma),
     .out_data    ({rrqq_cmd.iop_id, rrqq_cmd.req_id, rrqq_cmd.hpu_id, rrqq_cmd.mode, rrqq_cmd.flag, rrqq_cmd.rsvd, rrqq_cmd.dst_addr, rrqq_cmd.src_addr}),
     .out_rdy     (rrqq_cmd_rdy),
     .out_vld     (rrqq_cmd_vld)
@@ -438,12 +438,12 @@ module mhdma_master
   assign nrqq_in_vld = received_req & (regf_req_id[23:20] == REQ_ID_NOTIFY);
 
   // backpressure
-  always_ff @(posedge clk_cfg)
+  always_ff @(posedge clk_mhdma_cfg)
     if (nrqq_in_vld & ~nrqq_in_rdy)
       nrqq_data_kept <= {regf_req_id, regf_req_addr};
 
-  always_ff @(posedge clk_cfg) begin
-    if (~resetn_cfg) begin
+  always_ff @(posedge clk_mhdma_cfg) begin
+    if (~resetn_mhdma_cfg) begin
       nrqq_data_kept_avail <= 1'b0;
     end else begin
       if (nrqq_in_vld & ~nrqq_in_rdy) begin
@@ -465,15 +465,15 @@ module mhdma_master
     .FIFO_MEMORY_TYPE(REQ_MEMORY_TYPE)
   ) nrqq_fifo_ram_rdy_vld_2clk (
     // CFG domain
-    .in_clk      (clk_cfg),
-    .in_rstn     (resetn_cfg),
+    .in_clk      (clk_mhdma_cfg),
+    .in_rstn     (resetn_mhdma_cfg),
     .in_data     (nrqq_in_data),
     .in_rdy      (nrqq_in_rdy),
     .in_vld      (nrqq_data_vld),
     .almost_full (/* UNUSED */),
     //  MRMAC domain
-    .out_clk     (clk_mrmac),
-    .out_rstn    (resetn_mrmac),
+    .out_clk     (clk_mhdma),
+    .out_rstn    (resetn_mhdma),
     .out_data    ({nrqq_cmd_data.iop_id, nrqq_cmd_data.req_id, nrqq_cmd_data.hpu_id, nrqq_cmd_data.mode, nrqq_cmd_data.flag, nrqq_cmd_data.rsvd, nrqq_cmd_data.dst_addr, nrqq_cmd_data.src_addr}),
     .out_rdy     (nrqq_cmd_rdy),
     .out_vld     (nrqq_cmd_vld)
@@ -492,8 +492,8 @@ module mhdma_master
     .DEPTH       (REQ_FIFO_DEPTH),
     .RAM_LATENCY (CE_RAM_LATENCY)
   ) nrqq_fifo_retries (
-    .clk         (clk_mrmac   ),
-    .s_rst_n     (resetn_mrmac),
+    .clk         (clk_mhdma   ),
+    .s_rst_n     (resetn_mhdma),
 
     .in_data     ({nrqq_cmd_data.iop_id, nrqq_cmd_data.hpu_id, nrqq_cmd_data.mode, nrqq_cmd_data.flag, nrqq_cmd_data.rsvd, nrqq_cmd_data.dst_addr, nrqq_cmd_data.src_addr}),
     .in_vld      (start_notify_request),
@@ -516,8 +516,8 @@ module mhdma_master
   // =========================================================================================== //
   // Master command allocation
   // =========================================================================================== //
-  always_ff @(posedge clk_mrmac) begin
-    if (~resetn_mrmac) begin
+  always_ff @(posedge clk_mhdma) begin
+    if (~resetn_mhdma) begin
       master_command.req_id <= 'h0;   // prevents X upon start of FSM
       master_command_vld    <= 1'b0;
     end else begin
@@ -577,8 +577,8 @@ module mhdma_master
   logic                 ce_valid;
 
   // Count words entering fifo_ce_rx (valid only while waiting for packets)
-  always_ff @(posedge clk_mrmac) begin
-    if (~resetn_mrmac) begin
+  always_ff @(posedge clk_mhdma) begin
+    if (~resetn_mhdma) begin
       ce_valid_cnt <= 'h0;
     end else begin
       if (start_read_request | ciphertext_received) begin
@@ -597,8 +597,8 @@ module mhdma_master
   assign cnt_cerx_up   = fifo_cerx_in_vld & fifo_cerx_in_rdy;
   assign cnt_cerx_down = fifo_cerx_out_rdy & fifo_cerx_out_vld;
 
-  always_ff @(posedge clk_mrmac) begin
-    if (~resetn_mrmac) begin
+  always_ff @(posedge clk_mhdma) begin
+    if (~resetn_mhdma) begin
       fifo_cerx_cnt <= 'h0;
     end else begin
       if (cnt_cerx_up & ~cnt_cerx_down) begin
@@ -614,15 +614,15 @@ module mhdma_master
   logic                    decoder_rx_tvalid_Q;
   logic [MRMAC_AXIS_W-1:0] decoder_rx_tdata_Q;
 
-  always_ff @(posedge clk_mrmac) begin
-    if (~resetn_mrmac) begin
+  always_ff @(posedge clk_mhdma) begin
+    if (~resetn_mhdma) begin
       decoder_rx_tvalid_Q <= 1'b0;
     end else begin
       decoder_rx_tvalid_Q <= decoder_rx_tvalid;
     end
   end
 
-  always_ff @(posedge clk_mrmac)
+  always_ff @(posedge clk_mhdma)
     decoder_rx_tdata_Q  <= decoder_rx_tdata;
 
 
@@ -634,8 +634,8 @@ module mhdma_master
     .DEPTH             (CT_NB_COEF      ),
     .RAM_LATENCY       (CE_RAM_LATENCY)
   ) fifo_ce_rx (
-    .clk         (clk_mrmac   ),
-    .s_rst_n     (resetn_mrmac),
+    .clk         (clk_mhdma   ),
+    .s_rst_n     (resetn_mhdma),
 
     .in_data     (fifo_cerx_in_data),
     .in_vld      (fifo_cerx_in_vld ),
@@ -665,8 +665,8 @@ module mhdma_master
   logic                               zpad_injecting;
 
   // Output word counter (tracks total words through the effective output path)
-  always_ff @(posedge clk_mrmac) begin
-    if (~resetn_mrmac) begin
+  always_ff @(posedge clk_mhdma) begin
+    if (~resetn_mhdma) begin
       cerx_mux_word_cnt <= '0;
     end else begin
       if (ciphertext_received) begin
@@ -679,8 +679,8 @@ module mhdma_master
 
   // Zero-injection: pad from the gap start to NB_WORDS_TO_HBM
   // End condition uses cerx_mux_word_cnt directly since gap always extends to end
-  always_ff @(posedge clk_mrmac) begin
-    if (~resetn_mrmac) begin
+  always_ff @(posedge clk_mhdma) begin
+    if (~resetn_mhdma) begin
       zpad_injecting <= 1'b0;
     end else begin
       if (ciphertext_received) begin
@@ -704,8 +704,8 @@ module mhdma_master
 
   // Record gap start for FIFO-output zero injection
   // On any seq_num mismatch: pad from current input position to NB_WORDS_TO_HBM
-  always_ff @(posedge clk_mrmac) begin
-    if (~resetn_mrmac) begin
+  always_ff @(posedge clk_mhdma) begin
+    if (~resetn_mhdma) begin
       zpad_gap_pending <= 1'b0;
       zpad_gap_start   <= '0;
     end else begin
@@ -736,7 +736,7 @@ module mhdma_master
   logic [    FLAG_W-1:0] received_flag;
   logic [    RSVD_W-1:0] received_rsvd;
 
-  always_ff @(posedge clk_mrmac) begin
+  always_ff @(posedge clk_mhdma) begin
     if (decoded_command_rdy & decoded_command_vld) begin
       received_dst_addr <= decoded_command.dst_addr;
       received_src_addr <= decoded_command.src_addr;
@@ -754,15 +754,15 @@ module mhdma_master
   logic                              dst_addr_valid;
   logic                              phy_addr_valid;
 
-  always_ff @(posedge clk_mrmac)
+  always_ff @(posedge clk_mhdma)
     dst_addr_valid <= (decoded_command_rdy & decoded_command_vld) & (decoded_command.req_id == REQ_ID_EMISSION) & (decoded_command.seq_num == 0);
 
-  always_ff @(posedge clk_mrmac)
+  always_ff @(posedge clk_mhdma)
     phy_addr_valid <= dst_addr_valid;
 
   generate
     for (genvar gen_p=0; gen_p<ETH_PC; gen_p=gen_p+1)
-      always_ff @(posedge clk_mrmac)
+      always_ff @(posedge clk_mhdma)
         if (dst_addr_valid)
           phy_addr[gen_p] <= regf_ct_mem_addr[gen_p] + received_dst_addr * CT_MEM_BYTES;
   endgenerate
@@ -774,8 +774,8 @@ module mhdma_master
   logic [ETH_PC-1:0]        write_error;
   logic [CE_DATA_COUNT_W:0] fifo_cerx_cnt_tx;  // Counter for 64-bit words (only for debugging)
 
-  always_ff @(posedge clk_mrmac) begin
-    if (~resetn_mrmac) begin
+  always_ff @(posedge clk_mhdma) begin
+    if (~resetn_mhdma) begin
       fifo_cerx_cnt_tx <= 'h0;
     end else begin
       if (fifo_cerx_out_vld & fifo_cerx_out_rdy) begin
@@ -789,8 +789,8 @@ module mhdma_master
   // when phy_addr is computed from data received by decoder and valid or when we have done all
   // needed writes on the first PC we can shift to the next
   // when all writes on the second pc is done we can reset the signal
-  always_ff @(posedge clk_mrmac) begin : prc_write_pc_one_at_a_time
-    if (~resetn_mrmac) begin
+  always_ff @(posedge clk_mhdma) begin : prc_write_pc_one_at_a_time
+    if (~resetn_mhdma) begin
       axi4_write_pc <= 'h0;
     end else begin
       if (phy_addr_valid) begin
@@ -815,8 +815,8 @@ module mhdma_master
 
   assign target_pc_last_word = target_fifo[0] ? (target_pc_word_cnt == AXI4_WORD_PER_PC0 - 1) : (target_pc_word_cnt == AXI4_WORD_PER_PC - 1);
 
-  always_ff @(posedge clk_mrmac) begin
-    if (~resetn_mrmac) begin
+  always_ff @(posedge clk_mhdma) begin
+    if (~resetn_mhdma) begin
       target_pc_word_cnt <= 'h0;
     end else begin
       if (realigned_word_vld) begin
@@ -829,8 +829,8 @@ module mhdma_master
     end
   end
 
-  always_ff @(posedge clk_mrmac) begin
-    if (~resetn_mrmac) begin
+  always_ff @(posedge clk_mhdma) begin
+    if (~resetn_mhdma) begin
       target_fifo <= {{(ETH_PC-1){1'b0}}, 1'b1};
     end else begin
       if (ciphertext_received) begin
@@ -843,16 +843,16 @@ module mhdma_master
     end
   end
 
-  always_ff @(posedge clk_mrmac) begin
-    if (~resetn_mrmac) begin
+  always_ff @(posedge clk_mhdma) begin
+    if (~resetn_mhdma) begin
       fifo_cerx_out_rdy_vld_reg <= 1'b0;
     end else begin
       fifo_cerx_out_rdy_vld_reg <= cerx_mux_handshake;
     end
   end
 
-  always_ff @(posedge clk_mrmac) begin
-    if (~resetn_mrmac) begin
+  always_ff @(posedge clk_mhdma) begin
+    if (~resetn_mhdma) begin
       realign_cnt <= 'h0;
     end else begin
        if (cerx_mux_handshake & (realign_cnt == NB_MRMRAC_WORDS_PER_WRITE-1)) begin
@@ -863,7 +863,7 @@ module mhdma_master
     end
   end
 
-  always_ff @(posedge clk_mrmac)
+  always_ff @(posedge clk_mhdma)
     if (cerx_mux_handshake)
       realigned_word[realign_cnt*MRMAC_AXIS_W+:MRMAC_AXIS_W] <= cerx_mux_data;
 
@@ -882,8 +882,8 @@ module mhdma_master
         .WIDTH(AXI4_DATA_W),
         .DEPTH(FIFO_PC_DEPTH)
       ) fifo_pc_wr (
-        .clk         (clk_mrmac         ),
-        .s_rst_n     (resetn_mrmac      ),
+        .clk         (clk_mhdma         ),
+        .s_rst_n     (resetn_mhdma      ),
 
         .in_data     (realigned_word     ),
         .in_vld      (fifo_pc_wr_in_vld ),
@@ -905,8 +905,8 @@ module mhdma_master
       assign cnt_fifo_pc_wr_up   = fifo_pc_wr_in_vld & fifo_pc_wr_in_rdy;
       assign cnt_fifo_pc_wr_down = fifo_pc_wr_out_rdy & fifo_pc_wr_out_vld;
 
-      always_ff @(posedge clk_mrmac) begin
-        if (~resetn_mrmac) begin
+      always_ff @(posedge clk_mhdma) begin
+        if (~resetn_mhdma) begin
           fifo_pc_wr_cnt <= 'h0;
         end else begin
           if (cnt_fifo_pc_wr_up & ~cnt_fifo_pc_wr_down) begin
@@ -961,8 +961,8 @@ module mhdma_master
       assign req_pbs_first_burstD     = req_send_axi_cmd ? req_last_axi_word_remain ? 1'b1 : 1'b0 : req_pbs_first_burst;
       assign req_burst_cnt_m1D        = req_send_axi_cmd ? req_last_axi_word_remain ? '0 : req_burst_cnt_m1 + 1 : req_burst_cnt_m1;
 
-      always_ff @(posedge clk_mrmac)
-        if (~resetn_mrmac) begin
+      always_ff @(posedge clk_mhdma)
+        if (~resetn_mhdma) begin
           req_axi_word_remain <= AXI4_WORD_PER_PC_L;
           req_pbs_first_burst <= 1'b1;
           req_burst_cnt_m1    <= '0;
@@ -979,15 +979,15 @@ module mhdma_master
       assign req_page_word_remain = PAGE_AXI4_DATA - req_add_start[PAGE_BYTES_W-1:AXI4_DATA_BYTES_W];
       assign req_axi_word_nb      = req_page_word_remain < req_axi_word_remain ? req_page_word_remain : req_axi_word_remain;
 
-      always_ff @(posedge clk_mrmac)
-        if (~resetn_mrmac) req_add <= '0;
+      always_ff @(posedge clk_mhdma)
+        if (~resetn_mhdma) req_add <= '0;
         else               req_add <= req_addD;
 
       // Track when all address commands for this PC have been sent
       logic addr_cmds_done;
 
-      always_ff @(posedge clk_mrmac) begin
-        if (~resetn_mrmac) begin
+      always_ff @(posedge clk_mhdma) begin
+        if (~resetn_mhdma) begin
           addr_cmds_done <= 1'b0;
         end else if (req_send_axi_cmd & req_last_axi_word_remain) begin
           addr_cmds_done <= 1'b1;
@@ -1018,8 +1018,8 @@ module mhdma_master
         .DO_RESET_DATA  (1'b0),
         .RESET_DATA_VAL (0)
       ) fifo_element_awrite_temp (
-        .clk     (clk_mrmac),
-        .s_rst_n (resetn_mrmac),
+        .clk     (clk_mhdma),
+        .s_rst_n (resetn_mhdma),
 
         .in_data (axi_a),
         .in_vld  (axi_a_awvalid),
@@ -1046,8 +1046,8 @@ module mhdma_master
         .DEPTH       (2),
         .LAT_PIPE_MH ({1'b1, 1'b1})
       ) rcp_fifo (
-        .clk      (clk_mrmac),
-        .s_rst_n  (resetn_mrmac),
+        .clk      (clk_mhdma),
+        .s_rst_n  (resetn_mhdma),
 
         .in_data  (req_axi_word_nb),
         .in_vld   (rcp_fifo_in_vld),
@@ -1074,8 +1074,8 @@ module mhdma_master
         .DEPTH       (2),
         .LAT_PIPE_MH ({1'b1, 1'b1})
       ) brsp_fifo (
-        .clk      (clk_mrmac),
-        .s_rst_n  (resetn_mrmac),
+        .clk      (clk_mhdma),
+        .s_rst_n  (resetn_mhdma),
 
         .in_data  (req_burst_cnt_m1),
         .in_vld   (brsp_fifo_in_vld),
@@ -1108,8 +1108,8 @@ module mhdma_master
       assign w_burst_word_max  = w_first_burst ? rcp_fifo_out_len - 1 : AXI4_LEN_MAX;
       assign w_last_burst_word = w_last_word | (w_burst_word_cnt == w_burst_word_max);
 
-      always_ff @(posedge clk_mrmac) begin
-        if (~resetn_mrmac) begin
+      always_ff @(posedge clk_mhdma) begin
+        if (~resetn_mhdma) begin
           w_word_cnt       <= '0;
           w_burst_word_cnt <= '0;
           w_first_burst    <= 1'b1;
@@ -1145,8 +1145,8 @@ module mhdma_master
         .DO_RESET_DATA  (0),
         .RESET_DATA_VAL (0)
       ) fifo_element_write_temp (
-        .clk     (clk_mrmac   ),
-        .s_rst_n (resetn_mrmac),
+        .clk     (clk_mhdma   ),
+        .s_rst_n (resetn_mhdma),
 
         .in_data (axi_w),
         .in_vld  (axi_wvalid),
@@ -1185,8 +1185,8 @@ module mhdma_master
                                     brsp_bresp_cnt_inc  && brsp_bresp_cnt_dec  ? brsp_bresp_cnt - brsp_bresp_cnt_dec_val_m1 :
                                     brsp_bresp_cnt;
 
-      always_ff @(posedge clk_mrmac)
-        if (~resetn_mrmac) brsp_bresp_cnt <= '0;
+      always_ff @(posedge clk_mhdma)
+        if (~resetn_mhdma) brsp_bresp_cnt <= '0;
         else               brsp_bresp_cnt <= brsp_bresp_cntD;
 
       assign brsp_all_bresp_received   = (brsp_bresp_cnt > brsp_fifo_out_burst_cnt_m1);
@@ -1198,8 +1198,8 @@ module mhdma_master
       assign brsp_fifo_out_rdy = brsp_fifo_out_vld & brsp_all_bresp_received;
 
       // Handle write errors
-      always_ff @(posedge clk_mrmac) begin
-        if (~resetn_mrmac) begin
+      always_ff @(posedge clk_mhdma) begin
+        if (~resetn_mhdma) begin
           write_error[gen_wr] <= 1'b0;
         end else begin
           if (rst_errors) begin
@@ -1225,8 +1225,8 @@ module mhdma_master
         .DO_RESET_DATA  (0),
         .RESET_DATA_VAL (0)
       ) fifo_element_bresp_temp (
-        .clk     (clk_mrmac),
-        .s_rst_n (resetn_mrmac),
+        .clk     (clk_mhdma),
+        .s_rst_n (resetn_mhdma),
 
         .in_data (m_axi4_b),
         .in_vld  (m_axi4_bvalid[gen_wr]),
@@ -1260,8 +1260,8 @@ module mhdma_master
       assign pc_brsp_ack[gen_i] = gen_ce_write[gen_i].brsp_ack;
 
       // Track if brsp_ack was seen (sticky until ciphertext_received)
-      always_ff @(posedge clk_mrmac) begin
-        if (~resetn_mrmac) begin
+      always_ff @(posedge clk_mhdma) begin
+        if (~resetn_mhdma) begin
           pc_brsp_ack_seen[gen_i] <= 1'b0;
         end else begin
           if (ciphertext_received) begin
@@ -1301,15 +1301,15 @@ module mhdma_master
     .FIFO_MEMORY_TYPE(REQ_MEMORY_TYPE)
   ) rr_resp_ram_rdy_vld_2clk (
     // Write Domain ports: MRMAC domain
-    .in_clk      (clk_mrmac),
-    .in_rstn     (resetn_mrmac),
+    .in_clk      (clk_mhdma),
+    .in_rstn     (resetn_mhdma),
     .in_data     (rr_regf_in_data),
     .in_rdy      (rr_regf_in_rdy),
     .in_vld      (rr_regf_in_vld),
     .almost_full (/* UNUSED */),
     // Read Domain ports: CFG domain
-    .out_clk     (clk_cfg),
-    .out_rstn    (resetn_cfg),
+    .out_clk     (clk_mhdma_cfg),
+    .out_rstn    (resetn_mhdma_cfg),
     .out_data    (rr_regf_out_data),
     .out_rdy     (rr_regf_out_rdy),
     .out_vld     (rr_regf_out_vld)
@@ -1327,8 +1327,8 @@ module mhdma_master
   // =========================================================================================== //
   logic seq_num_error;
 
-  always_ff @(posedge clk_mrmac) begin
-    if (~resetn_mrmac) begin
+  always_ff @(posedge clk_mhdma) begin
+    if (~resetn_mhdma) begin
       seq_num_error <= 1'b0;
     end else begin
       if (rst_errors) begin
@@ -1352,8 +1352,8 @@ module mhdma_master
   logic [REG_DATA_W-1:0] t_rr_to_ce_received;
   logic [REG_DATA_W-1:0] nb_write_complete_cnt;
 
-  always_ff @(posedge clk_mrmac) begin
-    if (~resetn_mrmac) begin
+  always_ff @(posedge clk_mhdma) begin
+    if (~resetn_mhdma) begin
       notify_cnt <= 'h0;
     end else begin
       if (stat_rst.cnt_notify) begin
@@ -1366,8 +1366,8 @@ module mhdma_master
     end
   end
 
-  always_ff @(posedge clk_mrmac) begin
-    if (~resetn_mrmac) begin
+  always_ff @(posedge clk_mhdma) begin
+    if (~resetn_mhdma) begin
       notify_ack_cnt <= 'h0;
     end else begin
       if (stat_rst.cnt_notify_ack) begin
@@ -1380,8 +1380,8 @@ module mhdma_master
     end
   end
 
-  always_ff @(posedge clk_mrmac) begin
-    if (~resetn_mrmac) begin
+  always_ff @(posedge clk_mhdma) begin
+    if (~resetn_mhdma) begin
       retry_notify_cnt <= 'h0;
     end else begin
       if (stat_rst.cnt_notify_retry) begin
@@ -1394,8 +1394,8 @@ module mhdma_master
     end
   end
 
-  always_ff @(posedge clk_mrmac) begin
-    if (~resetn_mrmac) begin
+  always_ff @(posedge clk_mhdma) begin
+    if (~resetn_mhdma) begin
       retry_read_req_cnt <= 'h0;
     end else begin
       if (stat_rst.cnt_read_req_retry) begin
@@ -1410,8 +1410,8 @@ module mhdma_master
 
   // timing counter : counter between notify sent from this HPU (on tlast) and ack reception (2nd frame of the header)
   logic count_notify_ack;
-  always_ff @(posedge clk_mrmac) begin
-    if (~resetn_mrmac) begin
+  always_ff @(posedge clk_mhdma) begin
+    if (~resetn_mhdma) begin
       count_notify_ack <= 1'b0;
     end else begin
       if (notify_sent) begin
@@ -1422,8 +1422,8 @@ module mhdma_master
     end
   end
 
-  always_ff @(posedge clk_mrmac) begin
-    if (~resetn_mrmac) begin
+  always_ff @(posedge clk_mhdma) begin
+    if (~resetn_mhdma) begin
       t_notify_to_ack <= 'h0;
     end else begin
       if (count_notify_ack) begin
@@ -1436,8 +1436,8 @@ module mhdma_master
 
   // timing counter : counter between start and end of read request
   logic count_rreq_receive;
-  always_ff @(posedge clk_mrmac) begin
-    if (~resetn_mrmac) begin
+  always_ff @(posedge clk_mhdma) begin
+    if (~resetn_mhdma) begin
       count_rreq_receive <= 1'b0;
     end else begin
       if (start_read_request) begin
@@ -1448,8 +1448,8 @@ module mhdma_master
     end
   end
 
-  always_ff @(posedge clk_mrmac) begin
-    if (~resetn_mrmac) begin
+  always_ff @(posedge clk_mhdma) begin
+    if (~resetn_mhdma) begin
       t_rr_to_ce_received <= 'h0;
     end else begin
        if(count_rreq_receive) begin
@@ -1465,8 +1465,8 @@ module mhdma_master
   logic [REG_DATA_W-1:0] stat_t_rr_to_ce_received_r;
   logic [REG_DATA_W-1:0] stat_nb_ce_words_received_r;
 
-  always_ff @(posedge clk_mrmac) begin
-    if (~resetn_mrmac) begin
+  always_ff @(posedge clk_mhdma) begin
+    if (~resetn_mhdma) begin
       stat_t_notify_to_ack_r <= 'h0;
     end else begin
       if (notify_ack_received) begin
@@ -1475,8 +1475,8 @@ module mhdma_master
     end
   end
 
-  always_ff @(posedge clk_mrmac) begin
-    if (~resetn_mrmac) begin
+  always_ff @(posedge clk_mhdma) begin
+    if (~resetn_mhdma) begin
       stat_t_rr_to_ce_received_r <= 'h0;
     end else begin
       if (ciphertext_received) begin
@@ -1485,8 +1485,8 @@ module mhdma_master
     end
   end
 
-  always_ff @(posedge clk_mrmac) begin
-    if (~resetn_mrmac) begin
+  always_ff @(posedge clk_mhdma) begin
+    if (~resetn_mhdma) begin
       stat_nb_ce_words_received_r <= 'h0;
     end else begin
       if (stat_rst.nb_ce_words_received) begin
@@ -1499,8 +1499,8 @@ module mhdma_master
     end
   end
 
-  always_ff @(posedge clk_mrmac) begin
-    if (~resetn_mrmac)begin
+  always_ff @(posedge clk_mhdma) begin
+    if (~resetn_mhdma)begin
       nb_write_complete_cnt <= 'h0;
     end else begin
       // Count completed transfers (all B responses received)

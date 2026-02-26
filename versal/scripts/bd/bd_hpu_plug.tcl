@@ -14,7 +14,7 @@ source ${BD_SCRIPTS_DIR}/bd_base_logic.tcl
 source ${BD_SCRIPTS_DIR}/bd_ddr_noc.tcl
 source ${BD_SCRIPTS_DIR}/bd_shell_wrapper.tcl
 source ${BD_SCRIPTS_DIR}/bd_noc_wrapper.tcl
-source ${BD_SCRIPTS_DIR}/bd_eth_wrapper.tcl
+source ${BD_SCRIPTS_DIR}/bd_mrmac_wrapper.tcl
 source ${BD_SCRIPTS_DIR}/bd_main.tcl
 
 ################################################################
@@ -56,12 +56,13 @@ namespace eval _nsp_hpu {
     variable USER_0_FREQ $freq
     variable USER_1_FREQ 100.000
 
-    # Ethernet
-    variable ETH_FREERUN_FREQ 100
+    # MHDMA
+    variable MHDMA_FREERUN_FREQ 100
     # APB3 freerunning mandatory clock for MRMAC
-    variable ETH_APB3_FREQ 200
-    # we are in 4x25GE Narrow mode: 64b
-    variable ETH_MRMAC_FREQ 390.625
+    variable MRMAC_APB3_FREQ 200
+    # MHDMA RTL module frequency is the same as GT's today.
+    # We are in 4x25GE Narrow mode 64bits, frequency is fixed by this configuration
+    variable MHDMA_FREQ 390.625
 
     #========================
     # AXI
@@ -78,11 +79,11 @@ namespace eval _nsp_hpu {
     set AXIS_NOC_DATA_BYTE [expr (($AXIS_DATA_BYTES + 15) / 16) * 16]
     set AXIS_NOC_DATA_W [expr $AXIS_NOC_DATA_BYTE * 8]
 
-    # Ethernet configuration
+    # MHDMA configuration
     # 64 depends on the line configurations, beware
     # current configuration is: 4x Independent 64b Non-Segmented
-    set AXIS_DATA_ETH_W 64
-    set AXIS_DATA_ETH_BYTES [expr $AXIS_DATA_ETH_W / 8]
+    set AXIS_DATA_MHDMA_W 64
+    set AXIS_DATA_MHDMA_BYTES [expr $AXIS_DATA_MHDMA_W / 8]
 
     #========================
     # QOS
@@ -128,13 +129,13 @@ namespace eval _nsp_hpu {
     variable PMC_DDR_RD_BURST_AVG 256
     variable PMC_DDR_WR_BURST_AVG 256
 
-    # ETH <-> HBM
-    variable ETH_HBM_RD_BW 100
-    variable ETH_HBM_WR_BW 100
-    variable ETH_HBM_RD_BURST_AVG 256
-    variable ETH_HBM_WR_BURST_AVG 256
-    variable ETH_HBM_BURST_MAX 256
-    variable ETH_HBM_DATA_W 256
+    # MHDMA <-> HBM
+    variable MHDMA_HBM_RD_BW 100
+    variable MHDMA_HBM_WR_BW 100
+    variable MHDMA_HBM_RD_BURST_AVG 256
+    variable MHDMA_HBM_WR_BURST_AVG 256
+    variable MHDMA_HBM_BURST_MAX 256
+    variable MHDMA_HBM_DATA_W 256
 
     # Key <-> HBM
     # WARNING:
@@ -199,7 +200,7 @@ namespace eval _nsp_hpu {
     variable CT_AXI_NB 2
     variable GLWE_AXI_NB 1
     variable TRC_AXI_NB 1
-    variable ETHPC_AXI_NB 2
+    variable MHDMA_PC_AXI_NB 2
     # DOP and ACK
     variable AXIS_NB 2
 
@@ -220,7 +221,7 @@ namespace eval _nsp_hpu {
     variable TRC_NOC_PINS_L [list]
     variable CT_NOC_PINS_L [list]
     variable GLWE_NOC_PINS_L [list]
-    variable ETH_NOC_PINS_L [list]
+    variable MHDMA_NOC_PINS_L [list]
 
     # HBM port mapping
     variable KSK_HBM_PORTS_L [list]
@@ -228,7 +229,7 @@ namespace eval _nsp_hpu {
     variable TRC_HBM_PORTS_L [list]
     variable CT_HBM_PORTS_L [list]
     variable GLWE_HBM_PORTS_L [list]
-    variable ETH_HBM_PORTS_L [list]
+    variable MHDMA_HBM_PORTS_L [list]
 
     # /!\ do not touch
     # - one is for communication to gcq, uuid and reset
@@ -239,8 +240,8 @@ namespace eval _nsp_hpu {
     variable LPD_AXI_NB 1
     variable REGIF_NB 2
 
-    # Ethernet
-    variable ETH_AXI_NB 2
+    # MHDMA
+    variable MHDMA_AXI_NB 2
 
     # For each regif we have REGIF_CLK_NB
     variable REGIF_CLK_NB 2

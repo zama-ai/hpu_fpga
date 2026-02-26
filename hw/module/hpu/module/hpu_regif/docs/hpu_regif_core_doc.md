@@ -1,5 +1,5 @@
 # HPU_REGIF_CORE documentation
-**Date**: 2026-02-13
+**Date**: 2026-02-26
 **Tool Version**: 27d9e880d531030160fd8749c606142942d5558d
 
 ## RegisterMap Overview

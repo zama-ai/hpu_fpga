@@ -5,13 +5,13 @@
 # aliases are not expanded when the shell is not interactive.
 # Redefine here for more clarity
 
-run_edalize=${PROJECT_DIR}/hw/script/edalize/run_edalize.py
+run_edalize=${PROJECT_DIR}/hw/scripts/edalize/run_edalize.py
 
 RED='\033[1;31m'
 GREEN='\033[1;32m'
 NC='\033[0m'
 
-module="tb_dma"
+module="tb_multi_hpu_dma"
 
 ###################################################################################################
 # Usage
@@ -55,23 +55,41 @@ args=$@
 SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" &> /dev/null && pwd)
 mkdir -p ${PROJECT_DIR}/hw/output
 SEED_FILE="${PROJECT_DIR}/hw/output/${module}.seed"
-CMD_FILE="${PROJECT_DIR}/hw/output/${module}.cmd.log"
 TMP_FILE="${PROJECT_DIR}/hw/output/${RANDOM}${RANDOM}._tmp"
 echo -n "" > $SEED_FILE
 echo -n "" > $TMP_FILE
-echo -n "" > $CMD_FILE
 
-for i in {1..1}; do
+R=2
+AXI_DATA_W_L=("256")
+
+echo " In Module MHDMA word sizes are fixed as well as AXI_DATA_W_L"
+
+for i in `seq 1 5`; do
+    GLWE_K=$((1+$RANDOM % 3))
+    S=$((6+$RANDOM % 5))
+
+    PEM_PC=$(($RANDOM % 2))
+    PEM_PC=$((2**$PEM_PC))
+
+    # Choose AXI_DATA_W
+    size=${#AXI_DATA_W_L[@]}
+    index=$(($RANDOM % $size))
+    AXI_DATA_W=${AXI_DATA_W_L[$index]}
+
     cmd="${SCRIPT_DIR}/run.sh \
-        -C \
-        -- \
-        $args"
+          -g $GLWE_K \
+          -R $R \
+          -S $S \
+          -E $PEM_PC \
+          -- $args \
+          -F AXI_DATA_W AXI_DATA_W_${AXI_DATA_W}"
+
     echo "==========================================================="
     echo "INFO> Running : $cmd"
     echo "==========================================================="
-    echo $cmd >> $CMD_FILE
     $cmd | tee >(grep "Seed" | head -1 >> $SEED_FILE) |  grep -c "> SUCCEED !" > $TMP_FILE
     exit_status=$?
+    # In case of post processing, presence of several SUCCEED is necessary to be a real success
     succeed_cnt=$(cat $TMP_FILE)
     rm -f $TMP_FILE
     if [ $exit_status -gt 0 ] || [ $succeed_cnt -ne 1 ] ; then

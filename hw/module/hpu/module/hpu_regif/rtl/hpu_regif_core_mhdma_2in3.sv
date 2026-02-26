@@ -1,7 +1,7 @@
 // ============================================================================================== //
 // Description  : Axi4-lite register bank
 // This file was generated with rust regmap generator:
-//  * Date:  2026-02-13
+//  * Date:  2026-02-26
 //  * Tool_version: 27d9e880d531030160fd8749c606142942d5558d
 // ---------------------------------------------------------------------------------------------- //
 // xR[n]W[na]
@@ -29,10 +29,10 @@
 // kRnWn: Read-only register with notification (rd/wr)
 //      : Value provided by the RTL. The host can read it with notify. The write data is processed by the RTL.
 // ============================================================================================== //
-module hpu_regif_core_eth_2in3
+module hpu_regif_core_mhdma_2in3
 import axi_if_shell_axil_pkg::*;
 import axi_if_common_param_pkg::*;
-import hpu_regif_core_eth_2in3_pkg::*;
+import hpu_regif_core_mhdma_2in3_pkg::*;
 #()(
   input  logic                           clk,
   input  logic                           s_rst_n,

@@ -11,14 +11,14 @@ module mhdma_bridge
   import mhdma_pkg::*;                            // multi-hpu-dma
   import axi_if_shell_axil_pkg::*;                // REG_DATA_W
   import axi_if_common_param_pkg::*;              // general axi4
-  import axi_if_eth_axi_pkg::*;                   // AXI ethernet
+  import axi_if_mhdma_axi_pkg::*;                   // AXI ethernet
 #() (
   // Ethernet configuration interface -----------------------------------------
-  input  logic                                    clk_cfg,
-  input  logic                                    resetn_cfg,
+  input  logic                                    clk_mhdma_cfg,
+  input  logic                                    resetn_mhdma_cfg,
   // Ethernet fast clock interface --------------------------------------------
-  input  logic                                    clk_mrmac,
-  input  logic                                    resetn_mrmac,
+  input  logic                                    clk_mhdma,
+  input  logic                                    resetn_mhdma,
   // Axi4 interface for NMU ---------------------------------------------------
   // Read channel
   output logic [ETH_PC-1:0][   AXI4_ID_W-1:0]     m_axi4_arid,      // unused
@@ -111,12 +111,12 @@ module mhdma_bridge
 
   generate
     for (genvar gen_i_id = 0; gen_i_id < NB_MAX_HPU; gen_i_id++)
-      always_ff @(posedge clk_mrmac)
+      always_ff @(posedge clk_mhdma)
         hpu_ids_cdc[0][gen_i_id] <= regf_hpu_ids[gen_i_id];
 
     for (genvar gen_i_cdc = 1; gen_i_cdc < CDC_SYNC_STAGES ; gen_i_cdc = gen_i_cdc + 1)
       for (genvar gen_i_id = 0; gen_i_id < NB_MAX_HPU; gen_i_id++)
-        always_ff @(posedge clk_mrmac)
+        always_ff @(posedge clk_mhdma)
           hpu_ids_cdc[gen_i_cdc][gen_i_id] <= hpu_ids_cdc[gen_i_cdc-1][gen_i_id];
   endgenerate
 
@@ -130,7 +130,7 @@ module mhdma_bridge
 
   generate
     for (genvar i=0; i<NB_MAX_HPU; i++) begin
-      always_ff @(posedge clk_mrmac) begin : hpu_id_table_creation
+      always_ff @(posedge clk_mhdma) begin : hpu_id_table_creation
         hpu_mac_table[i] <= hpu_ids[i][MAC_ADDR_W-1:0];
         one_hot_id[i]    <= hpu_ids[i][31];
       end
@@ -141,8 +141,8 @@ module mhdma_bridge
   // when one_hot_id is all zeros, we cannot conclude if there is an error or not
   // TODO: if half is ones and the rest are zeros, error not raised
   logic error_id;
-  always_ff @(posedge clk_mrmac) begin : error_on_hpu_id
-    if (~resetn_mrmac) begin
+  always_ff @(posedge clk_mhdma) begin : error_on_hpu_id
+    if (~resetn_mhdma) begin
       error_id <= 1'b0;
     end else begin
       error_id <= (one_hot_id==0) ? 'b0: ~ (^one_hot_id);
@@ -168,7 +168,7 @@ module mhdma_bridge
   logic [  HPU_ID_W-1:0] current_hpu_id;
   logic [MAC_ADDR_W-1:0] current_hpu_mac;
 
-  always_ff @(posedge clk_mrmac) begin
+  always_ff @(posedge clk_mhdma) begin
     current_hpu_id  <= current_hpu_idD;
     current_hpu_mac <= current_hpu_macD;
   end
@@ -222,11 +222,11 @@ module mhdma_bridge
   // Master module does the controls for sending read request and Notifies requests
   mhdma_master mhdma_master (
     // Ethernet configuration interface ---------------------------------------
-    .clk_cfg                         (clk_cfg                                 ),
-    .resetn_cfg                      (resetn_cfg                              ),
+    .clk_mhdma_cfg                         (clk_mhdma_cfg                                 ),
+    .resetn_mhdma_cfg                      (resetn_mhdma_cfg                              ),
     // Ethernet fast clock interface ------------------------------------------
-    .clk_mrmac                       (clk_mrmac                               ),
-    .resetn_mrmac                    (resetn_mrmac                            ),
+    .clk_mhdma                       (clk_mhdma                               ),
+    .resetn_mhdma                    (resetn_mhdma                            ),
     // Axi4 interface ---------------------------------------------------------
     .m_axi4_awid                     (m_axi4_awid                             ),
     .m_axi4_awaddr                   (m_axi4_awaddr                           ),
@@ -289,11 +289,11 @@ module mhdma_bridge
     .CDC_SYNC_STAGES                (CDC_SYNC_STAGES                          )
   ) mhdma_slave (
     // Ethernet configuration interface ---------------------------------------
-    .clk_cfg                        (clk_cfg                                  ),
-    .resetn_cfg                     (resetn_cfg                               ),
+    .clk_mhdma_cfg                        (clk_mhdma_cfg                                  ),
+    .resetn_mhdma_cfg                     (resetn_mhdma_cfg                               ),
     // Ethernet fast clock interface ------------------------------------------
-    .clk_mrmac                      (clk_mrmac                                ),
-    .resetn_mrmac                   (resetn_mrmac                             ),
+    .clk_mhdma                      (clk_mhdma                                ),
+    .resetn_mhdma                   (resetn_mhdma                             ),
     // AXI4-4 full read interface ---------------------------------------------
     .m_axi4_araddr                  (m_axi4_araddr                            ),
     .m_axi4_arlen                   (m_axi4_arlen                             ),
@@ -340,8 +340,8 @@ module mhdma_bridge
   // The decoder gathers axi-stream RX and decodes the received command
   mhdma_decoder mhdma_decoder (
     // Ethernet fast clock interface ------------------------------------------
-    .clk_mrmac                   (clk_mrmac                                   ),
-    .resetn_mrmac                (resetn_mrmac                                ),
+    .clk_mhdma                   (clk_mhdma                                   ),
+    .resetn_mhdma                (resetn_mhdma                                ),
     // Command interface ------------------------------------------------------
     .notify_ack_received         (notify_ack_received                         ),
     .current_hpu_mac             (current_hpu_mac                             ),
@@ -368,8 +368,8 @@ module mhdma_bridge
   // the formatter gathers commands from master & slave module and sends it to axis
   mhdma_formatter mhdma_formatter (
     // Ethernet fast clock interface ------------------------------------------
-    .clk_mrmac                       (clk_mrmac                               ),
-    .resetn_mrmac                    (resetn_mrmac                            ),
+    .clk_mhdma                       (clk_mhdma                               ),
+    .resetn_mhdma                    (resetn_mhdma                            ),
     // Bridge interface -------------------------------------------------------
     .hpu_mac_table                   (hpu_mac_table                           ),
     .current_hpu_id                  (current_hpu_id                          ),

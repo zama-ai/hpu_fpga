@@ -7,7 +7,7 @@
 // Parameters for axi interface that addresses the CT area
 // ==============================================================================================
 
-package axi_if_eth_axi_pkg;
+package axi_if_mhdma_axi_pkg;
   import axi_if_data_w_definition_pkg::*;
   import axi_if_common_param_pkg::*;
 

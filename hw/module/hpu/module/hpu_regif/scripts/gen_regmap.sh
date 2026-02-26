@@ -30,7 +30,7 @@ set -e
    --toml-file ${ORIG_DIR}/${MODULE_NAME}_cfg_3in3.toml \
    --toml-file ${ORIG_DIR}/${MODULE_NAME}_prc_1in3.toml \
    --toml-file ${ORIG_DIR}/${MODULE_NAME}_prc_3in3.toml \
-   --toml-file ${ORIG_DIR}/${MODULE_NAME}_eth_2in3.toml \
+   --toml-file ${ORIG_DIR}/${MODULE_NAME}_mhdma_2in3.toml \
    --output-path ${REGMAP_OUT} \
    --basename ${MODULE_NAME}
 
@@ -39,5 +39,3 @@ set -e
  mv ${REGMAP_OUT}/*_doc.* ${ORIG_DIR}/../docs
 
  cd ${ORIG_DIR}
-
-

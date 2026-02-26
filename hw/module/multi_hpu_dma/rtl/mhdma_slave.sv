@@ -10,7 +10,7 @@
 //
 // Architecture overview:
 //   - There are two FSMs : NRX (Notify RX) & CEM (Ciphertext EMission)
-//   - A CDC FIFO (fifo_nrx_regf) bridges notify information from clk_mrmac to clk_cfg.
+//   - A CDC FIFO (fifo_nrx_regf) bridges notify information from clk_mhdma to clk_mhdma_cfg.
 //   - Ciphertext reads are issued to HBM through per-PC AXI4 channels, one PC at a time,
 //     with page-boundary-aware burst splitting.
 //   - AXI4 read data (AXI4_DATA_W wide) is deserialized into MRMAC_AXIS_W words before
@@ -35,7 +35,7 @@
 
 module mhdma_slave
   import mhdma_pkg::*;               // for all mhdma modules
-  import axi_if_eth_axi_pkg::*;      // AXI4
+  import axi_if_mhdma_axi_pkg::*;      // AXI4
   import axi_if_shell_axil_pkg::*;   // REG_DATA_W
   import axi_if_common_param_pkg::*; // HBM page
   import pem_common_param_pkg::*;    // CT_MEM_BYTES, AXI4_WORD_PER_PC*
@@ -43,11 +43,11 @@ module mhdma_slave
   parameter int CDC_SYNC_STAGES = 2
 ) (
   // Ethernet configuration interface -----------------------------------------
-  input  logic                                                 clk_cfg,
-  input  logic                                                 resetn_cfg,
+  input  logic                                                 clk_mhdma_cfg,
+  input  logic                                                 resetn_mhdma_cfg,
   // Ethernet fast clock interface --------------------------------------------
-  input  logic                                                 clk_mrmac,
-  input  logic                                                 resetn_mrmac,
+  input  logic                                                 clk_mhdma,
+  input  logic                                                 resetn_mhdma,
   // Axi4 interface for NMU ---------------------------------------------------
   output logic [ETH_PC-1:0][  AXI4_ADD_W-1:0]                  m_axi4_araddr,
   output logic [ETH_PC-1:0][  AXI4_LEN_W-1:0]                  m_axi4_arlen,
@@ -55,7 +55,7 @@ module mhdma_slave
   output logic [ETH_PC-1:0][AXI4_BURST_W-1:0]                  m_axi4_arburst,
   output logic [ETH_PC-1:0]                                    m_axi4_arvalid,
   input  logic [ETH_PC-1:0]                                    m_axi4_arready,
-  output logic [ETH_PC-1:0][axi_if_eth_axi_pkg::AXI4_ID_W-1:0] m_axi4_arid,
+  output logic [ETH_PC-1:0][axi_if_mhdma_axi_pkg::AXI4_ID_W-1:0] m_axi4_arid,
 
   input  logic [ETH_PC-1:0][AXI4_DATA_W-1:0]                   m_axi4_rdata,
   input  logic [ETH_PC-1:0]                                    m_axi4_rlast, // TODO: never used
@@ -118,8 +118,8 @@ module mhdma_slave
   st_nrx nrx_state;
   st_nrx nrx_next_state;
 
-  always_ff @(posedge clk_mrmac) begin
-    if (~resetn_mrmac) nrx_state <= NRX_WAIT_REQUEST;
+  always_ff @(posedge clk_mhdma) begin
+    if (~resetn_mhdma) nrx_state <= NRX_WAIT_REQUEST;
     else nrx_state <= nrx_next_state;
   end
 
@@ -164,8 +164,8 @@ module mhdma_slave
     .DEPTH      (NRX_DEPTH),
     .RAM_LATENCY(NRX_RAM_LATENCY)
   ) fifo_nrx_commands (
-    .clk         (clk_mrmac),
-    .s_rst_n     (resetn_mrmac),
+    .clk         (clk_mhdma),
+    .s_rst_n     (resetn_mhdma),
 
     .in_data     (nrx_cmd_in),
     .in_vld      (nrx_cmd_in_vld),
@@ -180,8 +180,8 @@ module mhdma_slave
 
   logic error_fifo_nrx_commands_ovf;
 
-  always_ff @(posedge clk_mrmac) begin
-    if (~resetn_mrmac) begin
+  always_ff @(posedge clk_mhdma) begin
+    if (~resetn_mhdma) begin
       error_fifo_nrx_commands_ovf <= 1'b0;
     end else begin
       if (rst_errors) begin
@@ -215,15 +215,15 @@ module mhdma_slave
     .FIFO_MEMORY_TYPE(REQ_MEMORY_TYPE)
   ) fifo_nrx_regf (
     // Write Domain ports: MRMAC domain
-    .in_clk      (clk_mrmac),
-    .in_rstn     (resetn_mrmac),
+    .in_clk      (clk_mhdma),
+    .in_rstn     (resetn_mhdma),
     .in_data     ({nrx_cmd_fifo.iop_id, REQ_ID_NOTIFY, nrx_cmd_fifo.hpu_id, nrx_cmd_fifo.mode, nrx_cmd_fifo.flag, nrx_cmd_fifo.rsvd, nrx_cmd_fifo.dst_addr, nrx_cmd_fifo.src_addr}),
     .in_rdy      (nrx_regf_in_rdy),
     .in_vld      (nrx_regf_write_enable),
     .almost_full (/* UNUSED */),
     // Read Domain ports: CFG domain
-    .out_clk     (clk_cfg),
-    .out_rstn    (resetn_cfg),
+    .out_clk     (clk_mhdma_cfg),
+    .out_rstn    (resetn_mhdma_cfg),
     .out_data    (nrx_regf_out_data),
     .out_rdy     (nrx_regf_out_rdy),
     .out_vld     (nrx_regf_out_vld)
@@ -251,8 +251,8 @@ module mhdma_slave
   st_cem cem_state;
   st_cem cem_next_state;
 
-  always_ff @(posedge clk_mrmac) begin
-    if (~resetn_mrmac) cem_state <= CEM_WAIT_REQUEST;
+  always_ff @(posedge clk_mhdma) begin
+    if (~resetn_mhdma) cem_state <= CEM_WAIT_REQUEST;
     else cem_state <= cem_next_state;
   end
 
@@ -295,8 +295,8 @@ module mhdma_slave
     .DEPTH      (RREQ_CMD_DEPTH),
     .RAM_LATENCY(RREQ_CMD_RAM_LATENCY)
   ) rreq_command_queue (
-    .clk         (clk_mrmac),
-    .s_rst_n     (resetn_mrmac),
+    .clk         (clk_mhdma),
+    .s_rst_n     (resetn_mhdma),
 
     .in_data     (rreq_cmd_in),
     .in_vld      (rreq_cmd_in_vld),
@@ -317,16 +317,16 @@ module mhdma_slave
   // We are ready when receiving a command while waiting for it, as long as fifo in_rdy is ready as well.
   // Added a self clearing condition to have a pulse
 
-  always_ff @(posedge clk_mrmac) begin
-    if (~resetn_mrmac) begin
+  always_ff @(posedge clk_mhdma) begin
+    if (~resetn_mhdma) begin
       slave_rdy_notify <= 1'b0;
     end else begin
       slave_rdy_notify <= decoded_command_vld & st_wait_notify & received_notify & nrx_cmd_in_rdy & ~slave_rdy_notify;
     end
   end
 
-  always_ff @(posedge clk_mrmac) begin
-    if (~resetn_mrmac) begin
+  always_ff @(posedge clk_mhdma) begin
+    if (~resetn_mhdma) begin
       slave_rdy_read <= 1'b0;
     end else begin
       slave_rdy_read <= decoded_command_vld & st_wait_rr & received_read_request & rreq_cmd_in_rdy & ~slave_rdy_read;
@@ -349,7 +349,7 @@ module mhdma_slave
   logic [ETH_PC-1:0] [AXI4_ADD_W-1:0] phy_addr;
   generate
     for (genvar gen_p=0; gen_p<ETH_PC; gen_p=gen_p+1) begin : gen_phy_addr
-      always_ff @(posedge clk_mrmac)
+      always_ff @(posedge clk_mhdma)
         if (rreq_cmd_out_rdy & rreq_cmd_out_vld)
           phy_addr[gen_p] <= regf_ct_mem_addr[gen_p] + (rr_ct_src_addr * CT_MEM_BYTES);
     end
@@ -361,16 +361,16 @@ module mhdma_slave
   logic rreq_ready_tmp;
   logic rreq_ready_pulse;
 
-  always_ff @(posedge clk_mrmac) begin
-    if (~resetn_mrmac) begin
+  always_ff @(posedge clk_mhdma) begin
+    if (~resetn_mhdma) begin
       rreq_ready <= 1'b0;
     end else begin
       rreq_ready <= rreq_cmd_out_vld & rreq_cmd_out_rdy;
     end
   end
 
-  always_ff @(posedge clk_mrmac) begin
-    if (~resetn_mrmac) begin
+  always_ff @(posedge clk_mhdma) begin
+    if (~resetn_mhdma) begin
       rreq_ready_tmp <= 1'b0;
     end else begin
       rreq_ready_tmp <= rreq_ready;
@@ -416,8 +416,8 @@ module mhdma_slave
       assign req_axi_word_remain_init = AXI4_WORD_PER_PATH;
       assign req_pbs_first_burstD     = req_send_axi_cmd ? req_last_axi_word_remain ? 1'b1 : 1'b0 : req_pbs_first_burst;
 
-      always_ff @(posedge clk_mrmac)
-        if (~resetn_mrmac) begin
+      always_ff @(posedge clk_mhdma)
+        if (~resetn_mhdma) begin
           req_axi_word_remain <= AXI4_WORD_PER_PATH;
           req_pbs_first_burst <= 1'b1;
         end
@@ -435,8 +435,8 @@ module mhdma_slave
       assign req_add_start = req_pbs_first_burst ? phy_addr[gen_rd] : req_add;
       assign req_addD      = req_send_axi_cmd ? req_add_start + req_axi_word_nb*AXI4_DATA_BYTES : req_add;
 
-      always_ff @(posedge clk_mrmac)
-        if (~resetn_mrmac) req_add <= '0;
+      always_ff @(posedge clk_mhdma)
+        if (~resetn_mhdma) req_add <= '0;
         else               req_add <= req_addD;
 
       // Page boundary aware burst sizing
@@ -465,8 +465,8 @@ module mhdma_slave
         .DO_RESET_DATA  (1'b0),
         .RESET_DATA_VAL (0)
       ) fifo_element_address_read (
-        .clk     (clk_mrmac   ),
-        .s_rst_n (resetn_mrmac),
+        .clk     (clk_mhdma   ),
+        .s_rst_n (resetn_mhdma),
 
         .in_data (axi_ar),
         .in_vld  (axi_arvalid),
@@ -518,8 +518,8 @@ module mhdma_slave
         .DEPTH      (FIFO_PC_DEPTH),
         .RAM_LATENCY(FIFO_PC_RAM_LATENCY)
       ) fifo_pc_read (
-        .clk         (clk_mrmac),
-        .s_rst_n     (resetn_mrmac),
+        .clk         (clk_mhdma),
+        .s_rst_n     (resetn_mhdma),
 
         .in_data     (m_axi4_rdata[gen_rd]),
         .in_vld      (read_fifo_we),
@@ -537,8 +537,8 @@ module mhdma_slave
       logic [AXI4_WORD_PER_PATH_WW-1:0]            read_fifo_out_cnt;
       logic                                        pc_read_finished;
 
-      always_ff @(posedge clk_mrmac) begin
-        if (~resetn_mrmac) begin
+      always_ff @(posedge clk_mhdma) begin
+        if (~resetn_mhdma) begin
           slow_pace_count <= 'h0;
         end else begin
           // If we want to read to this PC & the fifo is not empty
@@ -552,8 +552,8 @@ module mhdma_slave
         end
       end
 
-      always_ff @(posedge clk_mrmac) begin
-        if(~resetn_mrmac) begin
+      always_ff @(posedge clk_mhdma) begin
+        if(~resetn_mhdma) begin
           read_fifo_out_cnt <= 'h0;
         end else begin
           if (read_fifo_out_ready & read_fifo_out_valid) begin
@@ -567,11 +567,11 @@ module mhdma_slave
       // because in one read we have NB_MRMRAC_WORDS_PER_READ, we must delay the signal pc_read_finished
       logic [NB_MRMRAC_WORDS_PER_READ-1:0] temp_finished_flag;
 
-      always_ff @(posedge clk_mrmac)
+      always_ff @(posedge clk_mhdma)
         temp_finished_flag[0] <= (read_fifo_out_cnt == AXI4_WORD_PER_PATH);
 
       for (genvar gen_i = 1; gen_i<NB_MRMRAC_WORDS_PER_READ; gen_i++) begin : gen_temp_finished_flag
-        always_ff @(posedge clk_mrmac)
+        always_ff @(posedge clk_mhdma)
           temp_finished_flag[gen_i] <= temp_finished_flag[gen_i-1];
       end
 
@@ -586,7 +586,7 @@ module mhdma_slave
       logic [NB_MRMRAC_WORDS_PER_READ-1:0][MRMAC_AXIS_W-1:0] ce_data_out;
 
       for (genvar gen_i=0; gen_i<NB_MRMRAC_WORDS_PER_READ; gen_i++) begin : gen_ce_data_out
-        always_ff @(posedge clk_mrmac) begin
+        always_ff @(posedge clk_mhdma) begin
           if(read_fifo_out_ready & read_fifo_out_valid) begin
             ce_data_out[gen_i] <= read_fifo_out_data[(gen_i+1)*MRMAC_AXIS_W-1:gen_i*MRMAC_AXIS_W];
           end
@@ -595,19 +595,19 @@ module mhdma_slave
 
       logic [NB_MRMRAC_WORDS_PER_READ-1:0] temp_rdy_vld;
 
-      always_ff @(posedge clk_mrmac)
+      always_ff @(posedge clk_mhdma)
         temp_rdy_vld[0] <= read_fifo_out_ready & read_fifo_out_valid;
 
       for (genvar gen_i = 1; gen_i<NB_MRMRAC_WORDS_PER_READ; gen_i++) begin : gen_temp_rdy_vld
-        always_ff @(posedge clk_mrmac)
+        always_ff @(posedge clk_mhdma)
           temp_rdy_vld[gen_i] <= temp_rdy_vld[gen_i-1];
       end
 
       logic [$clog2(NB_MRMRAC_WORDS_PER_READ)-1:0] realign_cnt;
       logic                                        start_deserialize;
 
-      always_ff @(posedge clk_mrmac) begin
-        if(~resetn_mrmac)begin
+      always_ff @(posedge clk_mhdma) begin
+        if(~resetn_mhdma)begin
           start_deserialize <= 1'b0;
         end else begin
           if (reading_which_pc[gen_rd] & (read_fifo_out_valid & read_fifo_out_ready)) begin
@@ -618,8 +618,8 @@ module mhdma_slave
         end
       end
 
-      always_ff @(posedge clk_mrmac) begin
-        if(~resetn_mrmac) begin
+      always_ff @(posedge clk_mhdma) begin
+        if(~resetn_mhdma) begin
           realign_cnt <= 'h0;
         end else begin
           if (start_deserialize) begin
@@ -639,8 +639,8 @@ module mhdma_slave
   endgenerate
 
   // launch reads over PCs sequentially
-  always_ff @(posedge clk_mrmac) begin : prc_read_one_at_a_time
-    if (~resetn_mrmac) begin
+  always_ff @(posedge clk_mhdma) begin : prc_read_one_at_a_time
+    if (~resetn_mhdma) begin
       axi4_read_pc <= 'h0;
     end else begin
       if (rreq_ready_pulse) begin
@@ -665,8 +665,8 @@ module mhdma_slave
 
   assign any_pc_read_finished = |pc_read_finished;
 
-  always_ff @(posedge clk_mrmac) begin
-    if (~resetn_mrmac) begin
+  always_ff @(posedge clk_mhdma) begin
+    if (~resetn_mhdma) begin
       reading_which_pc <= 'h0;
     end else begin
       if (rreq_ready_pulse) begin
@@ -707,8 +707,8 @@ module mhdma_slave
     .RAM_LATENCY(CE_RAM_LATENCY ),
     .ALMOST_FULL_REMAIN (0)
   ) fifo_ce (
-    .clk         (clk_mrmac),
-    .s_rst_n     (resetn_mrmac),
+    .clk         (clk_mhdma),
+    .s_rst_n     (resetn_mhdma),
 
     .in_data     (fifo_ce_in_data),
     .in_vld      (fifo_ce_in_vld),
@@ -725,7 +725,7 @@ module mhdma_slave
   // =========================================================================================== //
   // acks takes precedence in front of read request
   // we don't need dst_addr, flag & mode for ack
-  always_ff @(posedge clk_mrmac) begin
+  always_ff @(posedge clk_mhdma) begin
     if (nrx_cmd_out_vld)  begin
       slave_command          <= nrx_cmd_fifo;
       slave_command.rsvd     <= 'h0;
@@ -741,8 +741,8 @@ module mhdma_slave
 
   // Slave_command_vld is taking valid from vld output FIFOs fifo_nrx_commands & rreq_command_queue
   // Theses fifos have their data consumed when slave_command_rdy and correct fsm state is current
-  always_ff @(posedge clk_mrmac) begin
-    if (~resetn_mrmac) begin
+  always_ff @(posedge clk_mhdma) begin
+    if (~resetn_mhdma) begin
       slave_command_vld   <= 1'b0;
     end else begin
       if (nrx_cmd_out_vld)  begin
@@ -767,8 +767,8 @@ module mhdma_slave
   assign stat.fsm_cem        = cem_state;
 
   logic [REG_DATA_W-1:0] nb_read_to_hbm;
-  always_ff @(posedge clk_mrmac) begin
-    if (~resetn_mrmac) begin
+  always_ff @(posedge clk_mhdma) begin
+    if (~resetn_mhdma) begin
       nb_read_to_hbm <= 'h0;
     end else begin
       if (stat_rst.nb_read_to_hbm) begin
@@ -784,8 +784,8 @@ module mhdma_slave
   logic [ETH_PC-1:0][REG_DATA_W-1:0] nb_words_received_pc;
   generate
     for (genvar gen_i=0; gen_i<ETH_PC; gen_i++) begin : gen_i_nb_words_received
-      always_ff @(posedge clk_mrmac) begin
-        if (~resetn_mrmac) begin
+      always_ff @(posedge clk_mhdma) begin
+        if (~resetn_mhdma) begin
           nb_words_received_pc[gen_i] <= 'h0;
         end else begin
           if (stat_rst.nb_words_received_pc[gen_i]) begin
@@ -807,8 +807,8 @@ module mhdma_slave
     for (genvar gen_i=0; gen_i<ETH_PC; gen_i++) begin : gen_i_t_wait_for_words_pc
 
       // note that if we read several times we will include it in the counter
-      always_ff @(posedge clk_mrmac) begin
-        if (~resetn_mrmac) begin
+      always_ff @(posedge clk_mhdma) begin
+        if (~resetn_mhdma) begin
           t_wait_words_en[gen_i] <= 1'b0;
         end else begin
           if (m_axi4_arvalid[gen_i]) begin
@@ -820,8 +820,8 @@ module mhdma_slave
       end
 
 
-      always_ff @(posedge clk_mrmac) begin
-        if (~resetn_mrmac) begin
+      always_ff @(posedge clk_mhdma) begin
+        if (~resetn_mhdma) begin
           t_rr_wait_words_pc[gen_i] <= 'h0;
         end else begin
           if(t_wait_words_en[gen_i]) begin

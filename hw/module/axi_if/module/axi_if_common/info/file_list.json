@@ -84,7 +84,7 @@
             "is_include_file": false
         },
         {
-            "name": "hw/module/axi_if/module/axi_if_common/rtl/axi_if_eth_axi_pkg.sv",
+            "name": "hw/module/axi_if/module/axi_if_common/rtl/axi_if_mhdma_axi_pkg.sv",
             "library": "work",
             "env": ["all"],
             "target": ["all"],

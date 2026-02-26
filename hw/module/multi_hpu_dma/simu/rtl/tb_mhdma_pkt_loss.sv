@@ -25,8 +25,8 @@ module tb_mhdma_pkt_loss;
   import mhdma_pkg::*;                    // multi-hpu-dma
   import axi_if_shell_axil_pkg::*;        // axi4-lite + REG_DATA_W
   import axi_if_common_param_pkg::*;      // general axi4
-  import hpu_regif_core_eth_2in3_pkg::*;  // ethernet regif
-  import axi_if_eth_axi_pkg::*;           // AXI ethernet
+  import hpu_regif_core_mhdma_2in3_pkg::*;  // ethernet regif
+  import axi_if_mhdma_axi_pkg::*;           // AXI ethernet
   import pem_common_param_pkg::*;         // CT_MEM_BYTES, AXI4_WORD_PER_PC*
 
   `include "tb_mhdma_tasks.sv"
@@ -69,23 +69,23 @@ module tb_mhdma_pkt_loss;
 // clock, reset
 // ============================================================================================== --
   bit clk_control;
-  bit clk_mrmac;
+  bit clk_mhdma;
 
   initial begin
     clk_control = 1'b0;
-    clk_mrmac = 1'b0;
+    clk_mhdma = 1'b0;
   end
 
   always begin
     #CLK_HALF_PERIOD_A clk_control = ~clk_control;
   end
   always begin
-    #CLK_HALF_PERIOD_B clk_mrmac = ~clk_mrmac;
+    #CLK_HALF_PERIOD_B clk_mhdma = ~clk_mhdma;
   end
 
   bit a_rst_n; // asynchronous reset
   bit s_rstn_control; // synchronous reset
-  bit s_rstn_mrmac; // synchronous reset
+  bit s_rstn_mhdma; // synchronous reset
 
   initial begin
     a_rst_n = 1'b0;                  // active reset
@@ -95,8 +95,8 @@ module tb_mhdma_pkt_loss;
   always_ff @(posedge clk_control) begin
     s_rstn_control <= a_rst_n;
   end
-  always_ff @(posedge clk_mrmac) begin
-    s_rstn_mrmac <= a_rst_n;
+  always_ff @(posedge clk_mhdma) begin
+    s_rstn_mhdma <= a_rst_n;
   end
 
 // ============================================================================================== --
@@ -134,23 +134,23 @@ module tb_mhdma_pkt_loss;
 // ============================================================================================== --
   logic [MRMAC_AXIS_W-1:0]    unused_payload [$];
 
-  logic [AXIL_ADD_W-1:0]      s_axil_dma_awaddr;
-  logic                       s_axil_dma_awvalid;
-  logic                       s_axil_dma_awready;
-  logic [AXIL_DATA_W-1:0]     s_axil_dma_wdata;
-  logic [AXIL_DATA_BYTES-1:0] s_axil_dma_wstrb; /* UNUSED */
-  logic                       s_axil_dma_wvalid;
-  logic                       s_axil_dma_wready;
-  logic [1:0]                 s_axil_dma_bresp;
-  logic                       s_axil_dma_bvalid;
-  logic                       s_axil_dma_bready;
-  logic [AXIL_ADD_W-1:0]      s_axil_dma_araddr;
-  logic                       s_axil_dma_arvalid;
-  logic                       s_axil_dma_arready;
-  logic [AXIL_DATA_W-1:0]     s_axil_dma_rdata;
-  logic [1:0]                 s_axil_dma_rresp;
-  logic                       s_axil_dma_rvalid;
-  logic                       s_axil_dma_rready;
+  logic [AXIL_ADD_W-1:0]      s_axil_mhdma_awaddr;
+  logic                       s_axil_mhdma_awvalid;
+  logic                       s_axil_mhdma_awready;
+  logic [AXIL_DATA_W-1:0]     s_axil_mhdma_wdata;
+  logic [AXIL_DATA_BYTES-1:0] s_axil_mhdma_wstrb; /* UNUSED */
+  logic                       s_axil_mhdma_wvalid;
+  logic                       s_axil_mhdma_wready;
+  logic [1:0]                 s_axil_mhdma_bresp;
+  logic                       s_axil_mhdma_bvalid;
+  logic                       s_axil_mhdma_bready;
+  logic [AXIL_ADD_W-1:0]      s_axil_mhdma_araddr;
+  logic                       s_axil_mhdma_arvalid;
+  logic                       s_axil_mhdma_arready;
+  logic [AXIL_DATA_W-1:0]     s_axil_mhdma_rdata;
+  logic [1:0]                 s_axil_mhdma_rresp;
+  logic                       s_axil_mhdma_rvalid;
+  logic                       s_axil_mhdma_rready;
 
   // Interrupt interface
   logic                       interrupt_notify;
@@ -246,7 +246,7 @@ module tb_mhdma_pkt_loss;
   // ============================================================================================== --
   // QSFP interface
   // ============================================================================================== --
-    qsfp_if qsfp_rx_vif[QSFP_LANE_NB] (clk_mrmac);
+    qsfp_if qsfp_rx_vif[QSFP_LANE_NB] (clk_mhdma);
 
     // == TX
     logic [QSFP_LANE_NB-1:0][MRMAC_AXIS_W-1:0 ] qsfp_tx_tdata;
@@ -285,59 +285,59 @@ module tb_mhdma_pkt_loss;
   // DUT
   // ============================================================================================== --
   multi_hpu_dma hpu_a (
-    .clk_eth_cfg            (clk_control    ),
-    .resetn_eth_cfg         (s_rstn_control ),
+    .clk_mhdma_cfg            (clk_control    ),
+    .resetn_mhdma_cfg         (s_rstn_control ),
 
-    .clk_eth_mrmac          (clk_mrmac    ),
-    .resetn_eth_mrmac       (s_rstn_mrmac ),
+    .clk_mhdma          (clk_mhdma    ),
+    .resetn_mhdma       (s_rstn_mhdma ),
 
-    .s_axil_dma_awaddr      (s_axil_dma_awaddr ),
-    .s_axil_dma_awvalid     (s_axil_dma_awvalid),
-    .s_axil_dma_awready     (s_axil_dma_awready),
-    .s_axil_dma_wdata       (s_axil_dma_wdata  ),
-    .s_axil_dma_wstrb       (s_axil_dma_wstrb  ),
-    .s_axil_dma_wvalid      (s_axil_dma_wvalid ),
-    .s_axil_dma_wready      (s_axil_dma_wready ),
-    .s_axil_dma_bresp       (s_axil_dma_bresp  ),
-    .s_axil_dma_bvalid      (s_axil_dma_bvalid ),
-    .s_axil_dma_bready      (s_axil_dma_bready ),
-    .s_axil_dma_araddr      (s_axil_dma_araddr ),
-    .s_axil_dma_arvalid     (s_axil_dma_arvalid),
-    .s_axil_dma_arready     (s_axil_dma_arready),
-    .s_axil_dma_rdata       (s_axil_dma_rdata  ),
-    .s_axil_dma_rresp       (s_axil_dma_rresp  ),
-    .s_axil_dma_rvalid      (s_axil_dma_rvalid ),
-    .s_axil_dma_rready      (s_axil_dma_rready ),
+    .s_axil_mhdma_awaddr      (s_axil_mhdma_awaddr ),
+    .s_axil_mhdma_awvalid     (s_axil_mhdma_awvalid),
+    .s_axil_mhdma_awready     (s_axil_mhdma_awready),
+    .s_axil_mhdma_wdata       (s_axil_mhdma_wdata  ),
+    .s_axil_mhdma_wstrb       (s_axil_mhdma_wstrb  ),
+    .s_axil_mhdma_wvalid      (s_axil_mhdma_wvalid ),
+    .s_axil_mhdma_wready      (s_axil_mhdma_wready ),
+    .s_axil_mhdma_bresp       (s_axil_mhdma_bresp  ),
+    .s_axil_mhdma_bvalid      (s_axil_mhdma_bvalid ),
+    .s_axil_mhdma_bready      (s_axil_mhdma_bready ),
+    .s_axil_mhdma_araddr      (s_axil_mhdma_araddr ),
+    .s_axil_mhdma_arvalid     (s_axil_mhdma_arvalid),
+    .s_axil_mhdma_arready     (s_axil_mhdma_arready),
+    .s_axil_mhdma_rdata       (s_axil_mhdma_rdata  ),
+    .s_axil_mhdma_rresp       (s_axil_mhdma_rresp  ),
+    .s_axil_mhdma_rvalid      (s_axil_mhdma_rvalid ),
+    .s_axil_mhdma_rready      (s_axil_mhdma_rready ),
 
-    .m_axi4_eth_hbm_arid    (axi4_ct_arid         ),
-    .m_axi4_eth_hbm_araddr  (axi4_ct_araddr       ),
-    .m_axi4_eth_hbm_arlen   (axi4_ct_arlen        ),
-    .m_axi4_eth_hbm_arsize  (axi4_ct_arsize       ),
-    .m_axi4_eth_hbm_arburst (axi4_ct_arburst      ),
-    .m_axi4_eth_hbm_arvalid (axi4_ct_arvalid      ),
-    .m_axi4_eth_hbm_arready (axi4_ct_arready      ),
-    .m_axi4_eth_hbm_rid     (axi4_ct_rid          ),
-    .m_axi4_eth_hbm_rdata   (axi4_ct_rdata        ),
-    .m_axi4_eth_hbm_rresp   (axi4_ct_rresp        ),
-    .m_axi4_eth_hbm_rlast   (axi4_ct_rlast        ),
-    .m_axi4_eth_hbm_rvalid  (axi4_ct_rvalid       ),
-    .m_axi4_eth_hbm_rready  (axi4_ct_rready       ),
-    .m_axi4_eth_hbm_awid    (axi4_ct_awid         ),
-    .m_axi4_eth_hbm_awaddr  (axi4_ct_awaddr       ),
-    .m_axi4_eth_hbm_awlen   (axi4_ct_awlen        ),
-    .m_axi4_eth_hbm_awsize  (axi4_ct_awsize       ),
-    .m_axi4_eth_hbm_awburst (axi4_ct_awburst      ),
-    .m_axi4_eth_hbm_awvalid (axi4_ct_awvalid      ),
-    .m_axi4_eth_hbm_awready (axi4_ct_awready      ),
-    .m_axi4_eth_hbm_wdata   (axi4_ct_wdata        ),
-    .m_axi4_eth_hbm_wstrb   (axi4_ct_wstrb        ),
-    .m_axi4_eth_hbm_wlast   (axi4_ct_wlast        ),
-    .m_axi4_eth_hbm_wvalid  (axi4_ct_wvalid       ),
-    .m_axi4_eth_hbm_wready  (axi4_ct_wready       ),
-    .m_axi4_eth_hbm_bid     (axi4_ct_bid          ),
-    .m_axi4_eth_hbm_bresp   (axi4_ct_bresp        ),
-    .m_axi4_eth_hbm_bvalid  (axi4_ct_bvalid       ),
-    .m_axi4_eth_hbm_bready  (axi4_ct_bready       ),
+    .m_axi4_mhdma_hbm_arid    (axi4_ct_arid         ),
+    .m_axi4_mhdma_hbm_araddr  (axi4_ct_araddr       ),
+    .m_axi4_mhdma_hbm_arlen   (axi4_ct_arlen        ),
+    .m_axi4_mhdma_hbm_arsize  (axi4_ct_arsize       ),
+    .m_axi4_mhdma_hbm_arburst (axi4_ct_arburst      ),
+    .m_axi4_mhdma_hbm_arvalid (axi4_ct_arvalid      ),
+    .m_axi4_mhdma_hbm_arready (axi4_ct_arready      ),
+    .m_axi4_mhdma_hbm_rid     (axi4_ct_rid          ),
+    .m_axi4_mhdma_hbm_rdata   (axi4_ct_rdata        ),
+    .m_axi4_mhdma_hbm_rresp   (axi4_ct_rresp        ),
+    .m_axi4_mhdma_hbm_rlast   (axi4_ct_rlast        ),
+    .m_axi4_mhdma_hbm_rvalid  (axi4_ct_rvalid       ),
+    .m_axi4_mhdma_hbm_rready  (axi4_ct_rready       ),
+    .m_axi4_mhdma_hbm_awid    (axi4_ct_awid         ),
+    .m_axi4_mhdma_hbm_awaddr  (axi4_ct_awaddr       ),
+    .m_axi4_mhdma_hbm_awlen   (axi4_ct_awlen        ),
+    .m_axi4_mhdma_hbm_awsize  (axi4_ct_awsize       ),
+    .m_axi4_mhdma_hbm_awburst (axi4_ct_awburst      ),
+    .m_axi4_mhdma_hbm_awvalid (axi4_ct_awvalid      ),
+    .m_axi4_mhdma_hbm_awready (axi4_ct_awready      ),
+    .m_axi4_mhdma_hbm_wdata   (axi4_ct_wdata        ),
+    .m_axi4_mhdma_hbm_wstrb   (axi4_ct_wstrb        ),
+    .m_axi4_mhdma_hbm_wlast   (axi4_ct_wlast        ),
+    .m_axi4_mhdma_hbm_wvalid  (axi4_ct_wvalid       ),
+    .m_axi4_mhdma_hbm_wready  (axi4_ct_wready       ),
+    .m_axi4_mhdma_hbm_bid     (axi4_ct_bid          ),
+    .m_axi4_mhdma_hbm_bresp   (axi4_ct_bresp        ),
+    .m_axi4_mhdma_hbm_bvalid  (axi4_ct_bvalid       ),
+    .m_axi4_mhdma_hbm_bready  (axi4_ct_bready       ),
 
     .qsfp_tx_tdata          (qsfp_tx_tdata           ),
     .qsfp_tx_tkeep_user     (qsfp_tx_tkeep_user      ),
@@ -404,24 +404,24 @@ logic [DST_ADDR_W-1:0] dst_addr;
   ) maxil_drv_if ( .clk(clk_control), .rst_n(s_rstn_control));
 
   // Connect interface on testbench signals
-  assign s_axil_dma_awaddr  = maxil_drv_if.awaddr;
-  assign s_axil_dma_awvalid = maxil_drv_if.awvalid;
-  assign s_axil_dma_wdata   = maxil_drv_if.wdata;
-  assign s_axil_dma_wstrb   = maxil_drv_if.wstrb;
-  assign s_axil_dma_wvalid  = maxil_drv_if.wvalid;
-  assign s_axil_dma_bready  = maxil_drv_if.bready;
-  assign s_axil_dma_araddr  = maxil_drv_if.araddr;
-  assign s_axil_dma_arvalid = maxil_drv_if.arvalid;
-  assign s_axil_dma_rready  = maxil_drv_if.rready;
+  assign s_axil_mhdma_awaddr  = maxil_drv_if.awaddr;
+  assign s_axil_mhdma_awvalid = maxil_drv_if.awvalid;
+  assign s_axil_mhdma_wdata   = maxil_drv_if.wdata;
+  assign s_axil_mhdma_wstrb   = maxil_drv_if.wstrb;
+  assign s_axil_mhdma_wvalid  = maxil_drv_if.wvalid;
+  assign s_axil_mhdma_bready  = maxil_drv_if.bready;
+  assign s_axil_mhdma_araddr  = maxil_drv_if.araddr;
+  assign s_axil_mhdma_arvalid = maxil_drv_if.arvalid;
+  assign s_axil_mhdma_rready  = maxil_drv_if.rready;
 
-  assign maxil_drv_if.awready = s_axil_dma_awready;
-  assign maxil_drv_if.wready  = s_axil_dma_wready;
-  assign maxil_drv_if.bresp   = s_axil_dma_bresp;
-  assign maxil_drv_if.bvalid  = s_axil_dma_bvalid;
-  assign maxil_drv_if.arready = s_axil_dma_arready;
-  assign maxil_drv_if.rdata   = s_axil_dma_rdata;
-  assign maxil_drv_if.rresp   = s_axil_dma_rresp;
-  assign maxil_drv_if.rvalid  = s_axil_dma_rvalid;
+  assign maxil_drv_if.awready = s_axil_mhdma_awready;
+  assign maxil_drv_if.wready  = s_axil_mhdma_wready;
+  assign maxil_drv_if.bresp   = s_axil_mhdma_bresp;
+  assign maxil_drv_if.bvalid  = s_axil_mhdma_bvalid;
+  assign maxil_drv_if.arready = s_axil_mhdma_arready;
+  assign maxil_drv_if.rdata   = s_axil_mhdma_rdata;
+  assign maxil_drv_if.rresp   = s_axil_mhdma_rresp;
+  assign maxil_drv_if.rvalid  = s_axil_mhdma_rvalid;
 
   generate
       for (genvar gen_pc=0; gen_pc<ETH_PC; gen_pc=gen_pc+1) begin : gen_mem_pc
@@ -436,8 +436,8 @@ logic [DST_ADDR_W-1:0] dst_addr;
           .USE_WR_RANDOM   (MEM_USE_WR_RANDOM               ),
           .USE_RD_RANDOM   (MEM_USE_RD_RANDOM               )
         ) axi4_mem_ct (
-          .clk           (clk_mrmac                         ),
-          .rst           (~s_rstn_mrmac                     ),
+          .clk           (clk_mhdma                         ),
+          .rst           (~s_rstn_mhdma                     ),
           .s_axi4_awid   (axi4_ct_awid[gen_pc]     ),
           .s_axi4_awaddr (axi4_ct_awaddr[gen_pc][MEM_SIM_SIZE-1:0]),
           .s_axi4_awlen  (axi4_ct_awlen[gen_pc]    ),
@@ -504,8 +504,8 @@ logic [DST_ADDR_W-1:0] dst_addr;
 
   // this is supposed to be HPU_B decoder
   mhdma_decoder mhdma_decoder (
-    .clk_mrmac           (clk_mrmac               ),
-    .resetn_mrmac        (s_rstn_mrmac            ),
+    .clk_mhdma           (clk_mhdma               ),
+    .resetn_mhdma        (s_rstn_mhdma            ),
 
     .notify_ack_received (/*    unused          */),
     .current_hpu_mac     (src_mac_addr            ),
@@ -531,7 +531,7 @@ logic [DST_ADDR_W-1:0] dst_addr;
     .qsfp_rx_tvalid      (qsfp_tx_tvalid[lane]    )
   );
 
-  always_ff @(posedge clk_mrmac)
+  always_ff @(posedge clk_mhdma)
    rx_header_rdy <= ($urandom() % 100 < 50);
 
   assign req_rfm = 'h0;
@@ -568,7 +568,7 @@ logic [DST_ADDR_W-1:0] dst_addr;
 
     notify_request(src_hpu_id, dst_hpu_id, iop_id, iop_src_addr);
 
-    repeat(2) @(posedge clk_mrmac);
+    repeat(2) @(posedge clk_mhdma);
 
     send_notify_ack_packet(qsfp_rx_vif[0], dst_mac_addr, src_mac_addr, dst_hpu_id, iop_id, src_addr, 16'h0);
 
@@ -595,7 +595,7 @@ logic [DST_ADDR_W-1:0] dst_addr;
     iop_src_addr = $urandom_range(0, 1<<SRC_ADDR_W);
     notify_request(src_hpu_id, dst_hpu_id, iop_id, iop_src_addr);
 
-    repeat(2*TIMEOUT_DUR_NOTIFY+5) @(posedge clk_mrmac);
+    repeat(2*TIMEOUT_DUR_NOTIFY+5) @(posedge clk_mhdma);
 
     send_notify_ack_packet(qsfp_rx_vif[0], dst_mac_addr, src_mac_addr, dst_hpu_id, iop_id, src_addr, 16'h0);
 
@@ -623,10 +623,10 @@ logic [DST_ADDR_W-1:0] dst_addr;
     iop_src_addr = $urandom_range(0, 1<<SRC_ADDR_W);
     notify_request(src_hpu_id, dst_hpu_id, iop_id, iop_src_addr);
 
-    repeat(2*TIMEOUT_DUR_NOTIFY + 5) @(posedge clk_mrmac);
+    repeat(2*TIMEOUT_DUR_NOTIFY + 5) @(posedge clk_mhdma);
     send_notify_ack_packet(qsfp_rx_vif[0], 24'b0, src_mac_addr, dst_hpu_id, iop_id, src_addr, 16'h0);
 
-    repeat(2*TIMEOUT_DUR_NOTIFY + 5 ) @(posedge clk_mrmac);
+    repeat(2*TIMEOUT_DUR_NOTIFY + 5 ) @(posedge clk_mhdma);
     send_notify_ack_packet(qsfp_rx_vif[0], dst_mac_addr, src_mac_addr, dst_hpu_id, iop_id, src_addr, 16'h0);
 
     repeat (50) @(posedge clk_control);
@@ -692,7 +692,7 @@ logic [DST_ADDR_W-1:0] dst_addr;
     // Send ciphertext emission packets as if we're the remote HPU responding
     for (int pkt = 0; pkt < NB_PACKETS_FULL+1; pkt++) begin
       send_ciphertext_emission_packet(qsfp_rx_vif[0], dst_mac_addr, src_mac_addr, dst_hpu_id, iop_id, iop_src_addr, iop_dst_addr, pkt[7:0], unused_payload);
-      repeat(10) @(posedge clk_mrmac);
+      repeat(10) @(posedge clk_mhdma);
     end
 
     repeat(50) @(posedge clk_control);
@@ -739,14 +739,14 @@ logic [DST_ADDR_W-1:0] dst_addr;
     iop_dst_addr = $urandom_range(0, 1<<DST_ADDR_W);
     read_request(dst_hpu_id, iop_id, iop_src_addr, iop_dst_addr);
 
-    repeat(2*TIMEOUT_DUR_READ_REQ + 10 ) @(posedge clk_mrmac);
+    repeat(2*TIMEOUT_DUR_READ_REQ + 10 ) @(posedge clk_mhdma);
 
     $display("%t > [INFO]: answering only after %0d clock cycles", $time, 2*TIMEOUT_DUR_READ_REQ + 10 );
 
   // Send ciphertext emission packets as if we're the remote HPU responding
     for (int pkt = 0; pkt < NB_PACKETS_FULL+1; pkt++) begin
       send_ciphertext_emission_packet(qsfp_rx_vif[0], dst_mac_addr, src_mac_addr, dst_hpu_id, iop_id, iop_src_addr, iop_dst_addr, pkt[7:0], unused_payload);
-      repeat(10) @(posedge clk_mrmac);
+      repeat(10) @(posedge clk_mhdma);
     end
 
     maxil_drv_if.read_trans(MHDMA_REQUEST_STAT_READ_REQ_TIMEOUT_RETRY_OFS, stat_read_req_timeout_retry);
@@ -807,7 +807,7 @@ logic [DST_ADDR_W-1:0] dst_addr;
       end else begin
         send_ciphertext_emission_packet(qsfp_rx_vif[0], dst_mac_addr, src_mac_addr, dst_hpu_id, iop_id, iop_src_addr, iop_dst_addr, pkt[7:0], unused_payload);
       end
-      repeat(10) @(posedge clk_mrmac);
+      repeat(10) @(posedge clk_mhdma);
     end
 
     // Wait for DUT to detect mismatch (sticky flag)
@@ -903,7 +903,7 @@ logic [DST_ADDR_W-1:0] dst_addr;
         // DUT is in wait_for_seq0 mode and will ignore stale CEs until seq_num == 0
         for (int pkt = 0; pkt < NB_PACKETS_FULL+1; pkt++) begin
           send_ciphertext_emission_packet(qsfp_rx_vif[0], dst_mac_addr, src_mac_addr, dst_hpu_id, iop_id, iop_src_addr, iop_dst_addr, pkt[7:0], unused_payload);
-          repeat(10) @(posedge clk_mrmac);
+          repeat(10) @(posedge clk_mhdma);
         end
       end
     join
@@ -951,7 +951,7 @@ logic [DST_ADDR_W-1:0] dst_addr;
       end else begin
         send_ciphertext_emission_packet(qsfp_rx_vif[0], dst_mac_addr, src_mac_addr, dst_hpu_id, iop_id, iop_src_addr, iop_dst_addr, pkt[7:0], unused_payload);
       end
-      repeat(2) @(posedge clk_mrmac);
+      repeat(2) @(posedge clk_mhdma);
     end
 
     // Wait for DUT to detect packet loss (sticky flag)
@@ -1027,7 +1027,7 @@ logic [DST_ADDR_W-1:0] dst_addr;
         // Respond to retry with correct ciphertext emission (all packets)
         for (int pkt = 0; pkt < NB_PACKETS_FULL+1; pkt++) begin
           send_ciphertext_emission_packet(qsfp_rx_vif[0], dst_mac_addr, src_mac_addr, dst_hpu_id, iop_id, iop_src_addr, iop_dst_addr, pkt[7:0], unused_payload);
-          repeat(10) @(posedge clk_mrmac);
+          repeat(10) @(posedge clk_mhdma);
         end
 
       end
@@ -1129,7 +1129,7 @@ logic [DST_ADDR_W-1:0] dst_addr;
       maxil_drv_if.write_trans(MHDMA_SYSTEM_HPU_ID_0_OFS, {1'b1, 7'b0, src_mac_addr});
       maxil_drv_if.write_trans(MHDMA_SYSTEM_HPU_ID_1_OFS, {1'b0, 7'b0, dst_mac_addr});
 
-      repeat(50) @(posedge clk_mrmac);
+      repeat(50) @(posedge clk_mhdma);
 
     end
   endtask
@@ -1154,7 +1154,7 @@ logic [DST_ADDR_W-1:0] dst_addr;
       maxil_drv_if.write_trans(MHDMA_REQUEST_REQ_ADDR_OFS, read_req_addr);
       maxil_drv_if.write_trans(MHDMA_REQUEST_REQ_ID_OFS, read_req_id);
 
-      repeat(50) @(posedge clk_mrmac);
+      repeat(50) @(posedge clk_mhdma);
 
     end
   endtask
@@ -1178,7 +1178,7 @@ logic [DST_ADDR_W-1:0] dst_addr;
       maxil_drv_if.write_trans(MHDMA_REQUEST_REQ_ADDR_OFS, read_req_addr);
       maxil_drv_if.write_trans(MHDMA_REQUEST_REQ_ID_OFS, read_req_id);
 
-      repeat(50) @(posedge clk_mrmac);
+      repeat(50) @(posedge clk_mhdma);
 
     end
   endtask
@@ -1206,7 +1206,7 @@ logic [DST_ADDR_W-1:0] dst_addr;
         error_fsm = 1 ;
       end
 
-      repeat(50) @(posedge clk_mrmac);
+      repeat(50) @(posedge clk_mhdma);
       $display("%t > [INFO]: all FSMs are back to IDLE", $time);
 
     end

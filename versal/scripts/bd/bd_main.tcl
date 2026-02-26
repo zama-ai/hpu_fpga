@@ -44,27 +44,27 @@ proc create_root_design { parentCell ntt_psi } {
   set CT_AXI_NB $_nsp_hpu::CT_AXI_NB
   set GLWE_AXI_NB $_nsp_hpu::GLWE_AXI_NB
   set TRC_AXI_NB $_nsp_hpu::TRC_AXI_NB
-  set ETHPC_AXI_NB $_nsp_hpu::ETHPC_AXI_NB
+  set MHDMA_PC_AXI_NB $_nsp_hpu::MHDMA_PC_AXI_NB
 
   set HPU_KSK_HBM_BURST_MAX $_nsp_hpu::HPU_KSK_HBM_BURST_MAX
   set HPU_BSK_HBM_BURST_MAX $_nsp_hpu::HPU_BSK_HBM_BURST_MAX
   set HPU_CT_HBM_BURST_MAX $_nsp_hpu::HPU_CT_HBM_BURST_MAX
   set HPU_GLWE_HBM_BURST_MAX $_nsp_hpu::HPU_GLWE_HBM_BURST_MAX
   set HPU_TRC_HBM_BURST_MAX $_nsp_hpu::HPU_TRC_HBM_BURST_MAX
-  set ETH_HBM_BURST_MAX $_nsp_hpu::ETH_HBM_BURST_MAX
+  set MHDMA_HBM_BURST_MAX $_nsp_hpu::MHDMA_HBM_BURST_MAX
 
   set HPU_BSK_HBM_DATA_W $_nsp_hpu::HPU_BSK_HBM_DATA_W
   set HPU_KSK_HBM_DATA_W $_nsp_hpu::HPU_KSK_HBM_DATA_W
   set HPU_CT_HBM_DATA_W $_nsp_hpu::HPU_CT_HBM_DATA_W
   set HPU_GLWE_HBM_DATA_W $_nsp_hpu::HPU_GLWE_HBM_DATA_W
   set HPU_TRC_HBM_DATA_W $_nsp_hpu::HPU_TRC_HBM_DATA_W
-  set ETH_HBM_DATA_W $_nsp_hpu::ETH_HBM_DATA_W
+  set MHDMA_HBM_DATA_W $_nsp_hpu::MHDMA_HBM_DATA_W
 
-  set ETH_AXI_NB $_nsp_hpu::ETH_AXI_NB
-  set ETH_MRMAC_FREQ $_nsp_hpu::ETH_MRMAC_FREQ
+  set MHDMA_AXI_NB $_nsp_hpu::MHDMA_AXI_NB
+  set MHDMA_FREQ $_nsp_hpu::MHDMA_FREQ
 
-  set AXIS_DATA_ETH_W $_nsp_hpu::AXIS_DATA_ETH_W
-  set AXIS_DATA_ETH_BYTES $_nsp_hpu::AXIS_DATA_ETH_BYTES
+  set AXIS_DATA_MHDMA_W $_nsp_hpu::AXIS_DATA_MHDMA_W
+  set AXIS_DATA_MHDMA_BYTES $_nsp_hpu::AXIS_DATA_MHDMA_BYTES
 
   ####################################
   # Create Ports
@@ -89,7 +89,7 @@ proc create_root_design { parentCell ntt_psi } {
 
   set CLK_IN_D [ create_bd_intf_port -mode Slave -vlnv xilinx.com:interface:diff_clock_rtl:1.0 CLK_IN_D ]
   set_property -dict [ list \
-   CONFIG.FREQ_HZ [expr int($ETH_MRMAC_FREQ * 10**6)] \
+   CONFIG.FREQ_HZ [expr int($MHDMA_FREQ * 10**6)] \
   ] $CLK_IN_D
 
   # System clocks
@@ -98,8 +98,8 @@ proc create_root_design { parentCell ntt_psi } {
   set clk_usr_1_0 [ create_bd_port -dir O -type clk clk_usr_1_0 ]
   set pl0_ref_clk_0 [ create_bd_port -dir O -type clk pl0_ref_clk_0 ]
   set clk_usr_0_0_ce [ create_bd_port -dir I clk_usr_0_0_ce]
-  set clk_eth_cfg_0 [ create_bd_port -dir O -type clk clk_eth_cfg_0 ]
-  set clk_axis_mrmac [ create_bd_port -dir O -type clk  clk_axis_mrmac ]
+  set clk_mhdma_cfg_0 [ create_bd_port -dir O -type clk clk_mhdma_cfg_0 ]
+  set clk_mhdma [ create_bd_port -dir O -type clk  clk_mhdma ]
 
   # Association properties
   set prop_clk(clk_usr_0_0) ""
@@ -205,25 +205,25 @@ proc create_root_design { parentCell ntt_psi } {
                           GLWE \
                           BSK \
                           KSK \
-                          ETH_HBM]
+                          MHDMA_HBM]
   set axi_nb_l [list $TRC_AXI_NB \
                      $CT_AXI_NB \
                      $GLWE_AXI_NB \
                      $BSK_AXI_NB \
                      $KSK_AXI_NB \
-                     $ETHPC_AXI_NB]
+                     $MHDMA_PC_AXI_NB]
   set data_w_l [list $HPU_TRC_HBM_DATA_W \
                      $HPU_CT_HBM_DATA_W \
                      $HPU_GLWE_HBM_DATA_W \
                      $HPU_BSK_HBM_DATA_W \
                      $HPU_KSK_HBM_DATA_W \
-                     $ETH_HBM_DATA_W]
+                     $MHDMA_HBM_DATA_W]
   set burst_length_l [list $HPU_TRC_HBM_BURST_MAX \
                            $HPU_CT_HBM_BURST_MAX \
                            $HPU_GLWE_HBM_BURST_MAX \
                            $HPU_BSK_HBM_BURST_MAX \
                            $HPU_KSK_HBM_BURST_MAX \
-                           $ETH_HBM_BURST_MAX]
+                           $MHDMA_HBM_BURST_MAX]
   set has_bresp_l [list 0 1 0 0 0 1]
   set id_w_l [list 0 0 0 0 0 8]
   set read_outstanding_l [list 1 32 32 32 32 32]
@@ -278,8 +278,8 @@ proc create_root_design { parentCell ntt_psi } {
        CONFIG.WUSER_WIDTH {0} \
       ] $port
 
-      # ethernet to HBM are not the same clock as the other signals
-      if {${prefix} ne "ETH_HBM"} {
+      # MHDMA to HBM are not the same clock as the other signals
+      if {${prefix} ne "MHDMA_HBM"} {
         if {$prop_clk(clk_usr_0_0) eq ""} {
           set prop_clk(clk_usr_0_0) "${prefix}_AXI_${i}"
         } else {
@@ -348,9 +348,9 @@ proc create_root_design { parentCell ntt_psi } {
    }
   }
 
-  # == Ethernet control via RPU
-  for { set i 0}  {$i < $ETH_AXI_NB} {incr i} {
-    set port [ create_bd_intf_port -mode Master -vlnv xilinx.com:interface:aximm_rtl:1.0 ETH_AXI_${i} ]
+  # == MHDMA control via RPU
+  for { set i 0}  {$i < $MHDMA_AXI_NB} {incr i} {
+    set port [ create_bd_intf_port -mode Master -vlnv xilinx.com:interface:aximm_rtl:1.0 MHDMA_AXI_${i} ]
     set_property -dict [ list \
       CONFIG.ADDR_WIDTH $AXI4_ADD_W \
       CONFIG.DATA_WIDTH $AXIL_DATA_W \
@@ -359,7 +359,7 @@ proc create_root_design { parentCell ntt_psi } {
     ] $port
   }
 
-  set port [ create_bd_intf_port -mode Slave -vlnv xilinx.com:interface:aximm_rtl:1.0 ETH_AXI_CFG ]
+  set port [ create_bd_intf_port -mode Slave -vlnv xilinx.com:interface:aximm_rtl:1.0 MHDMA_AXI_CFG ]
   set_property -dict [ list \
      CONFIG.ADDR_WIDTH $AXIL_ADD_W \
      CONFIG.DATA_WIDTH $AXIL_DATA_W \
@@ -381,12 +381,12 @@ proc create_root_design { parentCell ntt_psi } {
    CONFIG.ASSOCIATED_BUSIF $prop_clk(pl0_ref_clk_0) \
   ] [get_bd_ports /pl0_ref_clk_0]
 
-  # == Ethernet via MRMAC
+  # == MRMAC
   set GT_Serial [ create_bd_intf_port -mode Master -vlnv xilinx.com:interface:gt_rtl:1.0 GT_Serial ]
 
   # let's be clear on what signals are on which clock here. They will not evolve
-  set_property CONFIG.ASSOCIATED_BUSIF {ETH_AXI_CFG:ETH_AXI_0:ETH_AXI_1} [get_bd_ports /clk_eth_cfg_0]
-  set_property CONFIG.ASSOCIATED_BUSIF {ETH_HBM_AXI_0:ETH_HBM_AXI_1} [get_bd_ports /clk_axis_mrmac]
+  set_property CONFIG.ASSOCIATED_BUSIF {MHDMA_AXI_CFG} [get_bd_ports /clk_mhdma_cfg_0]
+  set_property CONFIG.ASSOCIATED_BUSIF {MHDMA_HBM_AXI_0:MHDMA_HBM_AXI_1:MHDMA_AXI_0:MHDMA_AXI_1} [get_bd_ports /clk_mhdma]
 
   set ctl_tx_port0 [ create_bd_intf_port -mode Slave -vlnv xilinx.com:display_mrmac:mrmac_ctrl_ports:2.0 ctl_tx_port0 ]
   set ctl_tx_port1 [ create_bd_intf_port -mode Slave -vlnv xilinx.com:display_mrmac:mrmac_ctrl_ports:2.0 ctl_tx_port1 ]
@@ -402,23 +402,23 @@ proc create_root_design { parentCell ntt_psi } {
   set gt_reset_all_in [ create_bd_port -dir I -from 3 -to 0 gt_reset_all_in ]
 
 
-  # == TX axi-stream intterface
-  set tx_axis_tdata_0   [ create_bd_port -dir I -from 63 -to 0 tx_axis_tdata_0 ]
+  # == TX axi-stream interface
+  set tx_axis_tdata_0   [ create_bd_port -dir I -from [expr $AXIS_DATA_MHDMA_W - 1] -to 0 tx_axis_tdata_0 ]
   set tx_axis_tready_0  [ create_bd_port -dir O tx_axis_tready_0 ]
   set tx_axis_tlast_0   [ create_bd_port -dir I tx_axis_tlast_0 ]
   set tx_axis_tvalid_0  [ create_bd_port -dir I tx_axis_tvalid_0 ]
 
-  set tx_axis_tdata_2    [ create_bd_port -dir I -from 63 -to 0 tx_axis_tdata_2 ]
+  set tx_axis_tdata_2    [ create_bd_port -dir I -from [expr $AXIS_DATA_MHDMA_W - 1] -to 0 tx_axis_tdata_2 ]
   set tx_axis_tready_2  [ create_bd_port -dir O tx_axis_tready_2 ]
   set tx_axis_tlast_2   [ create_bd_port -dir I tx_axis_tlast_2 ]
   set tx_axis_tvalid_2  [ create_bd_port -dir I tx_axis_tvalid_2 ]
 
-  set tx_axis_tdata_4    [ create_bd_port -dir I -from 63 -to 0 tx_axis_tdata_4 ]
+  set tx_axis_tdata_4    [ create_bd_port -dir I -from [expr $AXIS_DATA_MHDMA_W - 1] -to 0 tx_axis_tdata_4 ]
   set tx_axis_tready_4  [ create_bd_port -dir O tx_axis_tready_4 ]
   set tx_axis_tlast_4   [ create_bd_port -dir I tx_axis_tlast_4 ]
   set tx_axis_tvalid_4  [ create_bd_port -dir I tx_axis_tvalid_4 ]
 
-  set tx_axis_tdata_6    [ create_bd_port -dir I -from 63 -to 0 tx_axis_tdata_6 ]
+  set tx_axis_tdata_6    [ create_bd_port -dir I -from [expr $AXIS_DATA_MHDMA_W - 1] -to 0 tx_axis_tdata_6 ]
   set tx_axis_tready_6  [ create_bd_port -dir O tx_axis_tready_6 ]
   set tx_axis_tlast_6   [ create_bd_port -dir I tx_axis_tlast_6 ]
   set tx_axis_tvalid_6  [ create_bd_port -dir I tx_axis_tvalid_6 ]
@@ -429,22 +429,22 @@ proc create_root_design { parentCell ntt_psi } {
   set tx_axis_tkeep_user_6 [ create_bd_port -dir I -from 10 -to 0 tx_axis_tkeep_user_6 ]
 
   # == RX axi-stream interface
-  set rx_axis_tdata_0      [ create_bd_port -dir O -from 63 -to 0 rx_axis_tdata_0 ]
+  set rx_axis_tdata_0      [ create_bd_port -dir O -from [expr $AXIS_DATA_MHDMA_W - 1] -to 0 rx_axis_tdata_0 ]
   set rx_axis_tkeep_user_0 [ create_bd_port -dir O -from 10 -to 0 rx_axis_tkeep_user_0 ]
   set rx_axis_tlast_0      [ create_bd_port -dir O rx_axis_tlast_0 ]
   set rx_axis_tvalid_0     [ create_bd_port -dir O rx_axis_tvalid_0 ]
 
-  set rx_axis_tdata_2      [ create_bd_port -dir O -from 63 -to 0 rx_axis_tdata_2 ]
+  set rx_axis_tdata_2      [ create_bd_port -dir O -from [expr $AXIS_DATA_MHDMA_W - 1] -to 0 rx_axis_tdata_2 ]
   set rx_axis_tkeep_user_2 [ create_bd_port -dir O -from 10 -to 0 rx_axis_tkeep_user_2 ]
   set rx_axis_tlast_2      [ create_bd_port -dir O rx_axis_tlast_2 ]
   set rx_axis_tvalid_2     [ create_bd_port -dir O rx_axis_tvalid_2 ]
 
-  set rx_axis_tdata_4      [ create_bd_port -dir O -from 63 -to 0 rx_axis_tdata_4 ]
+  set rx_axis_tdata_4      [ create_bd_port -dir O -from [expr $AXIS_DATA_MHDMA_W - 1] -to 0 rx_axis_tdata_4 ]
   set rx_axis_tkeep_user_4 [ create_bd_port -dir O -from 10 -to 0 rx_axis_tkeep_user_4 ]
   set rx_axis_tlast_4      [ create_bd_port -dir O rx_axis_tlast_4 ]
   set rx_axis_tvalid_4     [ create_bd_port -dir O rx_axis_tvalid_4 ]
 
-  set rx_axis_tdata_6      [ create_bd_port -dir O -from 63 -to 0 rx_axis_tdata_6 ]
+  set rx_axis_tdata_6      [ create_bd_port -dir O -from [expr $AXIS_DATA_MHDMA_W - 1] -to 0 rx_axis_tdata_6 ]
   set rx_axis_tkeep_user_6 [ create_bd_port -dir O -from 10 -to 0 rx_axis_tkeep_user_6 ]
   set rx_axis_tlast_6      [ create_bd_port -dir O rx_axis_tlast_6 ]
   set rx_axis_tvalid_6     [ create_bd_port -dir O rx_axis_tvalid_6 ]
@@ -483,9 +483,9 @@ proc create_root_design { parentCell ntt_psi } {
   create_hier_cell_noc_wrapper [current_bd_instance .] noc_wrapper $ntt_psi
 
   ####################################
-  # Create ethernet
+  # Create MRMAC wrapper
   ####################################
-  create_hier_cell_eth_wrapper [current_bd_instance .] eth_wrapper
+  create_hier_cell_mrmac_wrapper [current_bd_instance .] mrmac_wrapper
 
   ####################################
   # Port Connections
@@ -549,96 +549,97 @@ proc create_root_design { parentCell ntt_psi } {
 
   connect_bd_intf_net -intf_net S_REGIF_AXI_0 [get_bd_intf_ports /S_REGIF_AXI_0] [get_bd_intf_pins noc_wrapper/S_REGIF_AXI_0]
 
-  # == Ethernet
-  connect_bd_intf_net -intf_net APB3_INTF                  [get_bd_intf_ports APB3_INTF] [get_bd_intf_pins eth_wrapper/APB3_INTF]
-  connect_bd_intf_net -intf_net CLK_IN_D                   [get_bd_intf_ports CLK_IN_D] [get_bd_intf_pins eth_wrapper/CLK_IN_D]
-  connect_bd_intf_net -intf_net ctl_tx_port0               [get_bd_intf_ports ctl_tx_port0] [get_bd_intf_pins eth_wrapper/ctl_tx_port0]
-  connect_bd_intf_net -intf_net ctl_tx_port1               [get_bd_intf_ports ctl_tx_port1] [get_bd_intf_pins eth_wrapper/ctl_tx_port1]
-  connect_bd_intf_net -intf_net ctl_tx_port2               [get_bd_intf_ports ctl_tx_port2] [get_bd_intf_pins eth_wrapper/ctl_tx_port2]
-  connect_bd_intf_net -intf_net ctl_tx_port3               [get_bd_intf_ports ctl_tx_port3] [get_bd_intf_pins eth_wrapper/ctl_tx_port3]
-  connect_bd_intf_net -intf_net gt_quad_base_GT_Serial     [get_bd_intf_ports GT_Serial] [get_bd_intf_pins eth_wrapper/GT_Serial]
-  connect_bd_intf_net -intf_net tx_preamblein              [get_bd_intf_ports tx_preamblein] [get_bd_intf_pins eth_wrapper/tx_preamblein]
+  # == MRMAC
+  connect_bd_intf_net -intf_net APB3_INTF                  [get_bd_intf_ports APB3_INTF] [get_bd_intf_pins mrmac_wrapper/APB3_INTF]
+  connect_bd_intf_net -intf_net CLK_IN_D                   [get_bd_intf_ports CLK_IN_D] [get_bd_intf_pins mrmac_wrapper/CLK_IN_D]
+  connect_bd_intf_net -intf_net ctl_tx_port0               [get_bd_intf_ports ctl_tx_port0] [get_bd_intf_pins mrmac_wrapper/ctl_tx_port0]
+  connect_bd_intf_net -intf_net ctl_tx_port1               [get_bd_intf_ports ctl_tx_port1] [get_bd_intf_pins mrmac_wrapper/ctl_tx_port1]
+  connect_bd_intf_net -intf_net ctl_tx_port2               [get_bd_intf_ports ctl_tx_port2] [get_bd_intf_pins mrmac_wrapper/ctl_tx_port2]
+  connect_bd_intf_net -intf_net ctl_tx_port3               [get_bd_intf_ports ctl_tx_port3] [get_bd_intf_pins mrmac_wrapper/ctl_tx_port3]
+  connect_bd_intf_net -intf_net gt_quad_base_GT_Serial     [get_bd_intf_ports GT_Serial] [get_bd_intf_pins mrmac_wrapper/GT_Serial]
+  connect_bd_intf_net -intf_net tx_preamblein              [get_bd_intf_ports tx_preamblein] [get_bd_intf_pins mrmac_wrapper/tx_preamblein]
 
-  connect_bd_net -net ch0_loopback                     [get_bd_ports ch0_loopback] [get_bd_pins eth_wrapper/ch0_loopback]
-  connect_bd_net -net ch0_rxrate                       [get_bd_ports ch0_rxrate] [get_bd_pins eth_wrapper/ch0_rxrate]
-  connect_bd_net -net ch0_txrate                       [get_bd_ports ch0_txrate] [get_bd_pins eth_wrapper/ch0_txrate]
+  connect_bd_net -net ch0_loopback                     [get_bd_ports ch0_loopback] [get_bd_pins mrmac_wrapper/ch0_loopback]
+  connect_bd_net -net ch0_rxrate                       [get_bd_ports ch0_rxrate] [get_bd_pins mrmac_wrapper/ch0_rxrate]
+  connect_bd_net -net ch0_txrate                       [get_bd_ports ch0_txrate] [get_bd_pins mrmac_wrapper/ch0_txrate]
 
-  connect_bd_net -net ch1_loopback                     [get_bd_ports ch1_loopback] [get_bd_pins eth_wrapper/ch1_loopback]
-  connect_bd_net -net ch1_rxrate                       [get_bd_ports ch1_rxrate] [get_bd_pins eth_wrapper/ch1_rxrate]
-  connect_bd_net -net ch1_txrate                       [get_bd_ports ch1_txrate] [get_bd_pins eth_wrapper/ch1_txrate]
+  connect_bd_net -net ch1_loopback                     [get_bd_ports ch1_loopback] [get_bd_pins mrmac_wrapper/ch1_loopback]
+  connect_bd_net -net ch1_rxrate                       [get_bd_ports ch1_rxrate] [get_bd_pins mrmac_wrapper/ch1_rxrate]
+  connect_bd_net -net ch1_txrate                       [get_bd_ports ch1_txrate] [get_bd_pins mrmac_wrapper/ch1_txrate]
 
-  connect_bd_net -net ch2_loopback                     [get_bd_ports ch2_loopback] [get_bd_pins eth_wrapper/ch2_loopback]
-  connect_bd_net -net ch2_rxrate                       [get_bd_ports ch2_rxrate] [get_bd_pins eth_wrapper/ch2_rxrate]
-  connect_bd_net -net ch2_txrate                       [get_bd_ports ch2_txrate] [get_bd_pins eth_wrapper/ch2_txrate]
+  connect_bd_net -net ch2_loopback                     [get_bd_ports ch2_loopback] [get_bd_pins mrmac_wrapper/ch2_loopback]
+  connect_bd_net -net ch2_rxrate                       [get_bd_ports ch2_rxrate] [get_bd_pins mrmac_wrapper/ch2_rxrate]
+  connect_bd_net -net ch2_txrate                       [get_bd_ports ch2_txrate] [get_bd_pins mrmac_wrapper/ch2_txrate]
 
-  connect_bd_net -net ch3_loopback                     [get_bd_ports ch3_loopback] [get_bd_pins eth_wrapper/ch3_loopback]
-  connect_bd_net -net ch3_rxrate                       [get_bd_ports ch3_rxrate] [get_bd_pins eth_wrapper/ch3_rxrate]
-  connect_bd_net -net ch3_txrate                       [get_bd_ports ch3_txrate] [get_bd_pins eth_wrapper/ch3_txrate]
+  connect_bd_net -net ch3_loopback                     [get_bd_ports ch3_loopback] [get_bd_pins mrmac_wrapper/ch3_loopback]
+  connect_bd_net -net ch3_rxrate                       [get_bd_ports ch3_rxrate] [get_bd_pins mrmac_wrapper/ch3_rxrate]
+  connect_bd_net -net ch3_txrate                       [get_bd_ports ch3_txrate] [get_bd_pins mrmac_wrapper/ch3_txrate]
 
-  connect_bd_net -net gt_quad_base_txn                 [get_bd_ports gt_txn_out_0] [get_bd_pins eth_wrapper/gt_txn_out_0]
-  connect_bd_net -net gt_quad_base_txp                 [get_bd_ports gt_txp_out_0] [get_bd_pins eth_wrapper/gt_txp_out_0]
-  connect_bd_net -net gt_reset_all_in                  [get_bd_ports gt_reset_all_in] [get_bd_pins eth_wrapper/gt_reset_all_in]
-  connect_bd_net -net gt_reset_rx_datapath_in          [get_bd_ports gt_reset_rx_datapath_in] [get_bd_pins eth_wrapper/gt_reset_rx_datapath_in]
-  connect_bd_net -net gt_reset_tx_datapath_in          [get_bd_ports gt_reset_tx_datapath_in] [get_bd_pins eth_wrapper/gt_reset_tx_datapath_in]
-  connect_bd_net -net gt_rxn_in_0                      [get_bd_ports gt_rxn_in_0] [get_bd_pins eth_wrapper/gt_rxn_in_0]
-  connect_bd_net -net gt_rxp_in_0                      [get_bd_ports gt_rxp_in_0] [get_bd_pins eth_wrapper/gt_rxp_in_0]
-  connect_bd_net -net eth_wrapper_gt_rx_reset_done_out [get_bd_ports gt_rx_reset_done_out] [get_bd_pins eth_wrapper/gt_rx_reset_done_out]
-  connect_bd_net -net eth_wrapper_gt_tx_reset_done_out [get_bd_ports gt_tx_reset_done_out] [get_bd_pins eth_wrapper/gt_tx_reset_done_out]
-  connect_bd_net -net eth_wrapper_pm_rdy               [get_bd_ports pm_rdy] [get_bd_pins eth_wrapper/pm_rdy]
+  connect_bd_net -net gt_quad_base_txn                 [get_bd_ports gt_txn_out_0] [get_bd_pins mrmac_wrapper/gt_txn_out_0]
+  connect_bd_net -net gt_quad_base_txp                 [get_bd_ports gt_txp_out_0] [get_bd_pins mrmac_wrapper/gt_txp_out_0]
+  connect_bd_net -net gt_reset_all_in                  [get_bd_ports gt_reset_all_in] [get_bd_pins mrmac_wrapper/gt_reset_all_in]
+  connect_bd_net -net gt_reset_rx_datapath_in          [get_bd_ports gt_reset_rx_datapath_in] [get_bd_pins mrmac_wrapper/gt_reset_rx_datapath_in]
+  connect_bd_net -net gt_reset_tx_datapath_in          [get_bd_ports gt_reset_tx_datapath_in] [get_bd_pins mrmac_wrapper/gt_reset_tx_datapath_in]
+  connect_bd_net -net gt_rxn_in_0                      [get_bd_ports gt_rxn_in_0] [get_bd_pins mrmac_wrapper/gt_rxn_in_0]
+  connect_bd_net -net gt_rxp_in_0                      [get_bd_ports gt_rxp_in_0] [get_bd_pins mrmac_wrapper/gt_rxp_in_0]
+  connect_bd_net -net mrmac_wrapper_gt_rx_reset_done_out [get_bd_ports gt_rx_reset_done_out] [get_bd_pins mrmac_wrapper/gt_rx_reset_done_out]
+  connect_bd_net -net mrmac_wrapper_gt_tx_reset_done_out [get_bd_ports gt_tx_reset_done_out] [get_bd_pins mrmac_wrapper/gt_tx_reset_done_out]
+  connect_bd_net -net mrmac_wrapper_pm_rdy               [get_bd_ports pm_rdy] [get_bd_pins mrmac_wrapper/pm_rdy]
 
-  connect_bd_net [get_bd_ports clk_axis_mrmac]    [get_bd_pins shell_wrapper/clk_eth_mrmac_0] [get_bd_pins eth_wrapper/s_axis_mrmac_aclk] [get_bd_pins noc_wrapper/mrmac_clk]
+  connect_bd_net [get_bd_ports clk_mhdma]    [get_bd_pins shell_wrapper/clk_mhdma_0] [get_bd_pins mrmac_wrapper/s_axis_mrmac_aclk] [get_bd_pins noc_wrapper/mhdma_clk]
 
   # == RX Lanes
   # 0
-  connect_bd_net [get_bd_pins eth_wrapper/rx_axis_tdata_0]      [get_bd_ports rx_axis_tdata_0]
-  connect_bd_net [get_bd_pins eth_wrapper/rx_axis_tkeep_user_0] [get_bd_ports rx_axis_tkeep_user_0]
-  connect_bd_net [get_bd_pins eth_wrapper/rx_axis_tlast_0]      [get_bd_ports rx_axis_tlast_0]
-  connect_bd_net [get_bd_pins eth_wrapper/rx_axis_tvalid_0]     [get_bd_ports rx_axis_tvalid_0]
+  connect_bd_net [get_bd_pins mrmac_wrapper/rx_axis_tdata_0]      [get_bd_ports rx_axis_tdata_0]
+  connect_bd_net [get_bd_pins mrmac_wrapper/rx_axis_tkeep_user_0] [get_bd_ports rx_axis_tkeep_user_0]
+  connect_bd_net [get_bd_pins mrmac_wrapper/rx_axis_tlast_0]      [get_bd_ports rx_axis_tlast_0]
+  connect_bd_net [get_bd_pins mrmac_wrapper/rx_axis_tvalid_0]     [get_bd_ports rx_axis_tvalid_0]
   # 1
-  connect_bd_net [get_bd_pins eth_wrapper/rx_axis_tdata_2]      [get_bd_ports rx_axis_tdata_2]
-  connect_bd_net [get_bd_pins eth_wrapper/rx_axis_tkeep_user_2] [get_bd_ports rx_axis_tkeep_user_2]
-  connect_bd_net [get_bd_pins eth_wrapper/rx_axis_tlast_2]      [get_bd_ports rx_axis_tlast_2]
-  connect_bd_net [get_bd_pins eth_wrapper/rx_axis_tvalid_2]     [get_bd_ports rx_axis_tvalid_2]
+  connect_bd_net [get_bd_pins mrmac_wrapper/rx_axis_tdata_2]      [get_bd_ports rx_axis_tdata_2]
+  connect_bd_net [get_bd_pins mrmac_wrapper/rx_axis_tkeep_user_2] [get_bd_ports rx_axis_tkeep_user_2]
+  connect_bd_net [get_bd_pins mrmac_wrapper/rx_axis_tlast_2]      [get_bd_ports rx_axis_tlast_2]
+  connect_bd_net [get_bd_pins mrmac_wrapper/rx_axis_tvalid_2]     [get_bd_ports rx_axis_tvalid_2]
   # 2
-  connect_bd_net [get_bd_pins eth_wrapper/rx_axis_tdata_4]      [get_bd_ports rx_axis_tdata_4]
-  connect_bd_net [get_bd_pins eth_wrapper/rx_axis_tkeep_user_4] [get_bd_ports rx_axis_tkeep_user_4]
-  connect_bd_net [get_bd_pins eth_wrapper/rx_axis_tlast_4]      [get_bd_ports rx_axis_tlast_4]
-  connect_bd_net [get_bd_pins eth_wrapper/rx_axis_tvalid_4]     [get_bd_ports rx_axis_tvalid_4]
+  connect_bd_net [get_bd_pins mrmac_wrapper/rx_axis_tdata_4]      [get_bd_ports rx_axis_tdata_4]
+  connect_bd_net [get_bd_pins mrmac_wrapper/rx_axis_tkeep_user_4] [get_bd_ports rx_axis_tkeep_user_4]
+  connect_bd_net [get_bd_pins mrmac_wrapper/rx_axis_tlast_4]      [get_bd_ports rx_axis_tlast_4]
+  connect_bd_net [get_bd_pins mrmac_wrapper/rx_axis_tvalid_4]     [get_bd_ports rx_axis_tvalid_4]
   # 3
-  connect_bd_net [get_bd_pins eth_wrapper/rx_axis_tdata_6]      [get_bd_ports rx_axis_tdata_6]
-  connect_bd_net [get_bd_pins eth_wrapper/rx_axis_tkeep_user_6] [get_bd_ports rx_axis_tkeep_user_6]
-  connect_bd_net [get_bd_pins eth_wrapper/rx_axis_tlast_6]      [get_bd_ports rx_axis_tlast_6]
-  connect_bd_net [get_bd_pins eth_wrapper/rx_axis_tvalid_6]     [get_bd_ports rx_axis_tvalid_6]
+  connect_bd_net [get_bd_pins mrmac_wrapper/rx_axis_tdata_6]      [get_bd_ports rx_axis_tdata_6]
+  connect_bd_net [get_bd_pins mrmac_wrapper/rx_axis_tkeep_user_6] [get_bd_ports rx_axis_tkeep_user_6]
+  connect_bd_net [get_bd_pins mrmac_wrapper/rx_axis_tlast_6]      [get_bd_ports rx_axis_tlast_6]
+  connect_bd_net [get_bd_pins mrmac_wrapper/rx_axis_tvalid_6]     [get_bd_ports rx_axis_tvalid_6]
+  # == TX Lanes
   # 0
-  connect_bd_net [get_bd_ports tx_axis_tdata_0]      [get_bd_pins eth_wrapper/tx_axis_tdata_0]
-  connect_bd_net [get_bd_ports tx_axis_tkeep_user_0] [get_bd_pins eth_wrapper/tx_axis_tkeep_user_0]
-  connect_bd_net [get_bd_ports tx_axis_tlast_0]      [get_bd_pins eth_wrapper/tx_axis_tlast_0]
-  connect_bd_net [get_bd_ports tx_axis_tvalid_0]     [get_bd_pins eth_wrapper/tx_axis_tvalid_0]
-  connect_bd_net [get_bd_ports tx_axis_tready_0]     [get_bd_pins eth_wrapper/tx_axis_tready_0]
+  connect_bd_net [get_bd_ports tx_axis_tdata_0]      [get_bd_pins mrmac_wrapper/tx_axis_tdata_0]
+  connect_bd_net [get_bd_ports tx_axis_tkeep_user_0] [get_bd_pins mrmac_wrapper/tx_axis_tkeep_user_0]
+  connect_bd_net [get_bd_ports tx_axis_tlast_0]      [get_bd_pins mrmac_wrapper/tx_axis_tlast_0]
+  connect_bd_net [get_bd_ports tx_axis_tvalid_0]     [get_bd_pins mrmac_wrapper/tx_axis_tvalid_0]
+  connect_bd_net [get_bd_ports tx_axis_tready_0]     [get_bd_pins mrmac_wrapper/tx_axis_tready_0]
   # 1
-  connect_bd_net [get_bd_ports tx_axis_tdata_2]      [get_bd_pins eth_wrapper/tx_axis_tdata_2]
-  connect_bd_net [get_bd_ports tx_axis_tkeep_user_2] [get_bd_pins eth_wrapper/tx_axis_tkeep_user_2]
-  connect_bd_net [get_bd_ports tx_axis_tlast_2]      [get_bd_pins eth_wrapper/tx_axis_tlast_2]
-  connect_bd_net [get_bd_ports tx_axis_tvalid_2]     [get_bd_pins eth_wrapper/tx_axis_tvalid_2]
-  connect_bd_net [get_bd_ports tx_axis_tready_2]     [get_bd_pins eth_wrapper/tx_axis_tready_2]
+  connect_bd_net [get_bd_ports tx_axis_tdata_2]      [get_bd_pins mrmac_wrapper/tx_axis_tdata_2]
+  connect_bd_net [get_bd_ports tx_axis_tkeep_user_2] [get_bd_pins mrmac_wrapper/tx_axis_tkeep_user_2]
+  connect_bd_net [get_bd_ports tx_axis_tlast_2]      [get_bd_pins mrmac_wrapper/tx_axis_tlast_2]
+  connect_bd_net [get_bd_ports tx_axis_tvalid_2]     [get_bd_pins mrmac_wrapper/tx_axis_tvalid_2]
+  connect_bd_net [get_bd_ports tx_axis_tready_2]     [get_bd_pins mrmac_wrapper/tx_axis_tready_2]
   # 2
-  connect_bd_net  [get_bd_ports tx_axis_tdata_4]      [get_bd_pins eth_wrapper/tx_axis_tdata_4]
-  connect_bd_net  [get_bd_ports tx_axis_tkeep_user_4] [get_bd_pins eth_wrapper/tx_axis_tkeep_user_4]
-  connect_bd_net [get_bd_ports tx_axis_tlast_4]       [get_bd_pins eth_wrapper/tx_axis_tlast_4]
-  connect_bd_net [get_bd_ports tx_axis_tvalid_4]      [get_bd_pins eth_wrapper/tx_axis_tvalid_4]
-  connect_bd_net [get_bd_ports tx_axis_tready_4]      [get_bd_pins eth_wrapper/tx_axis_tready_4]
+  connect_bd_net [get_bd_ports tx_axis_tdata_4]       [get_bd_pins mrmac_wrapper/tx_axis_tdata_4]
+  connect_bd_net [get_bd_ports tx_axis_tkeep_user_4]  [get_bd_pins mrmac_wrapper/tx_axis_tkeep_user_4]
+  connect_bd_net [get_bd_ports tx_axis_tlast_4]       [get_bd_pins mrmac_wrapper/tx_axis_tlast_4]
+  connect_bd_net [get_bd_ports tx_axis_tvalid_4]      [get_bd_pins mrmac_wrapper/tx_axis_tvalid_4]
+  connect_bd_net [get_bd_ports tx_axis_tready_4]      [get_bd_pins mrmac_wrapper/tx_axis_tready_4]
   # 3
-  connect_bd_net  [get_bd_ports tx_axis_tdata_6]      [get_bd_pins eth_wrapper/tx_axis_tdata_6]
-  connect_bd_net  [get_bd_ports tx_axis_tkeep_user_6] [get_bd_pins eth_wrapper/tx_axis_tkeep_user_6]
-  connect_bd_net [get_bd_ports tx_axis_tlast_6]       [get_bd_pins eth_wrapper/tx_axis_tlast_6]
-  connect_bd_net [get_bd_ports tx_axis_tvalid_6]      [get_bd_pins eth_wrapper/tx_axis_tvalid_6]
-  connect_bd_net [get_bd_ports tx_axis_tready_6]      [get_bd_pins eth_wrapper/tx_axis_tready_6]
+  connect_bd_net [get_bd_ports tx_axis_tdata_6]       [get_bd_pins mrmac_wrapper/tx_axis_tdata_6]
+  connect_bd_net [get_bd_ports tx_axis_tkeep_user_6]  [get_bd_pins mrmac_wrapper/tx_axis_tkeep_user_6]
+  connect_bd_net [get_bd_ports tx_axis_tlast_6]       [get_bd_pins mrmac_wrapper/tx_axis_tlast_6]
+  connect_bd_net [get_bd_ports tx_axis_tvalid_6]      [get_bd_pins mrmac_wrapper/tx_axis_tvalid_6]
+  connect_bd_net [get_bd_ports tx_axis_tready_6]      [get_bd_pins mrmac_wrapper/tx_axis_tready_6]
 
-  # Ethernet configuration and debug ports
-  connect_bd_intf_net [get_bd_intf_ports /ETH_AXI_CFG] [get_bd_intf_pins eth_wrapper/s_axil_mrmac]
+  # MHDMA configuration and debug ports
+  connect_bd_intf_net [get_bd_intf_ports /MHDMA_AXI_CFG] [get_bd_intf_pins mrmac_wrapper/s_axil_mrmac]
 
-  for {set i 0}  {$i < $ETH_AXI_NB} {incr i} {
-    connect_bd_intf_net [get_bd_intf_ports /ETH_AXI_${i}] [get_bd_intf_pins noc_wrapper/ETH_AXI_${i}]
+  for {set i 0}  {$i < $MHDMA_AXI_NB} {incr i} {
+    connect_bd_intf_net [get_bd_intf_ports /MHDMA_AXI_${i}] [get_bd_intf_pins noc_wrapper/MHDMA_AXI_${i}]
   }
 
   ####################################
@@ -657,10 +658,10 @@ proc create_root_design { parentCell ntt_psi } {
   connect_bd_net [get_bd_pins noc_wrapper/mregif_1_rst_n] \
                                         [get_bd_pins shell_wrapper/resetn_usr_1_ic_0] -boundary_type upper
 
-  connect_bd_net [get_bd_pins noc_wrapper/eth_clk]   [get_bd_pins shell_wrapper/clk_eth_cfg_0] [get_bd_ports clk_eth_cfg_0] -boundary_type upper
+  connect_bd_net [get_bd_pins noc_wrapper/mhdma_cfg_clk]   [get_bd_pins shell_wrapper/clk_mhdma_cfg_0] [get_bd_ports clk_mhdma_cfg_0] -boundary_type upper
 
-  connect_bd_net [get_bd_pins eth_wrapper/apb3clk_quad] [get_bd_pins shell_wrapper/clk_gt_freerun_0]
-  connect_bd_net [get_bd_pins eth_wrapper/apb3presetn]  [get_bd_pins shell_wrapper/resetn_gt_freerun_ic_0]
+  connect_bd_net [get_bd_pins mrmac_wrapper/apb3clk_quad] [get_bd_pins shell_wrapper/clk_gt_freerun_0]
+  connect_bd_net [get_bd_pins mrmac_wrapper/apb3presetn]  [get_bd_pins shell_wrapper/resetn_gt_freerun_ic_0]
 
 
   # MGMT
@@ -682,9 +683,12 @@ proc create_root_design { parentCell ntt_psi } {
   connect_bd_intf_net -intf_net lpd_axi_noc_0 [get_bd_intf_pins shell_wrapper/lpd_axi_noc_0] [get_bd_intf_pins noc_wrapper/lpd_axi_noc_0]
   connect_bd_net -net lpd_axi_noc_clk [get_bd_pins noc_wrapper/lpd_axi_noc_clk] [get_bd_pins shell_wrapper/lpd_axi_noc_clk]
 
-  # Ethernet
-  connect_bd_net      [get_bd_pins eth_wrapper/s_axi_aclk]    [get_bd_pins shell_wrapper/clk_eth_cfg_0]
-  connect_bd_net      [get_bd_pins eth_wrapper/s_axi_aresetn] [get_bd_pins shell_wrapper/resetn_eth_cfg_ic_0]
+  # MRMAC
+  connect_bd_net [get_bd_pins mrmac_wrapper/s_axi_aclk]    [get_bd_pins shell_wrapper/clk_mhdma_cfg_0]
+  connect_bd_net [get_bd_pins mrmac_wrapper/s_axi_aresetn] [get_bd_pins shell_wrapper/resetn_mhdma_cfg_ic_0]
+
+  # MHDMA SmartConnect reset (390.625 MHz domain)
+  connect_bd_net [get_bd_pins noc_wrapper/mhdma_rst_n] [get_bd_pins shell_wrapper/resetn_mhdma_ic_0]
 
   ####################################
   # Address
@@ -727,7 +731,7 @@ proc create_root_design { parentCell ntt_psi } {
   set regif_add 0x80000000
   set regif_add_noc [expr 0x20100000000 + $regif_add]
   set regif_range 0x00010000
-  assign_bd_address -offset $regif_add -range  [expr ($ETH_AXI_NB  + $REGIF_NB * $REGIF_CLK_NB) * $regif_range] -target_address_space [get_bd_addr_spaces shell_wrapper/cips/M_AXI_LPD] [get_bd_addr_segs /axi_lpd/Reg] -force
+  assign_bd_address -offset $regif_add -range  [expr ($MHDMA_AXI_NB  + $REGIF_NB * $REGIF_CLK_NB) * $regif_range] -target_address_space [get_bd_addr_spaces shell_wrapper/cips/M_AXI_LPD] [get_bd_addr_segs /axi_lpd/Reg] -force
   for { set i 0}  {$i < $REGIF_NB} {incr i} {
     for { set j 0}  {$j < $REGIF_CLK_NB} {incr j} {
       # Address order : first 2nd clock, then second clock
@@ -735,17 +739,17 @@ proc create_root_design { parentCell ntt_psi } {
       assign_bd_address -offset [expr $regif_add_noc + $n * $regif_range] -range $regif_range -target_address_space [get_bd_addr_spaces /S_REGIF_AXI_0 ] [get_bd_addr_segs /REGIF_AXI_${i}_${j}/Reg] -force
     }
   }
-  # == Ethernet configuration
-  set ethernet_start_addr [expr $regif_add_noc + ($REGIF_NB * $REGIF_CLK_NB) * 0x10000]
-  for { set i 0}  {$i < $ETH_AXI_NB} {incr i} {
-    assign_bd_address -offset [expr $ethernet_start_addr + $i * 0x10000] -range $regif_range -target_address_space [get_bd_addr_spaces /S_REGIF_AXI_0] [get_bd_addr_segs /ETH_AXI_${i}/Reg]
+  # == MHDMA configuration
+  set mhdma_start_addr [expr $regif_add_noc + ($REGIF_NB * $REGIF_CLK_NB) * 0x10000]
+  for { set i 0}  {$i < $MHDMA_AXI_NB} {incr i} {
+    assign_bd_address -offset [expr $mhdma_start_addr + $i * 0x10000] -range $regif_range -target_address_space [get_bd_addr_spaces /S_REGIF_AXI_0] [get_bd_addr_segs /MHDMA_AXI_${i}/Reg]
   }
 
-  # Ethernet
-  assign_bd_address -offset 0x00000000 -range 0x00010000 -target_address_space [get_bd_addr_spaces ETH_AXI_CFG] [get_bd_addr_segs eth_wrapper/mrmac_0_core/s_axi/Reg] -force
+  # MRMAC
+  assign_bd_address -offset 0x00000000 -range 0x00010000 -target_address_space [get_bd_addr_spaces MHDMA_AXI_CFG] [get_bd_addr_segs mrmac_wrapper/mrmac_0_core/s_axi/Reg] -force
 
   # APB3 not meant to be used
-  assign_bd_address -offset 0xA4080000 -range 0x00010000 -target_address_space [get_bd_addr_spaces APB3_INTF] [get_bd_addr_segs eth_wrapper/mrmac_0_gt_wrapper/gt_quad_base/APB3_INTF/Reg] -force
+  assign_bd_address -offset 0xA4080000 -range 0x00010000 -target_address_space [get_bd_addr_spaces APB3_INTF] [get_bd_addr_segs mrmac_wrapper/mrmac_0_gt_wrapper/gt_quad_base/APB3_INTF/Reg] -force
 
   # PMC
   assign_bd_address -offset 0x050080000000 -range 0x80000000 -target_address_space [get_bd_addr_spaces shell_wrapper/cips/PMC_NOC_AXI_0] [get_bd_addr_segs noc_wrapper/ddr_noc/axi_noc_mc_ddr4_0/S00_INI/C0_DDR_CH1] -force
@@ -786,16 +790,16 @@ proc create_root_design { parentCell ntt_psi } {
 
     assign_bd_address -offset $add_ofs -range $_nsp_hpu::HBM_PORT_RANGE -target_address_space [get_bd_addr_spaces CT_AXI_${i}] [get_bd_addr_segs noc_wrapper/axi_noc_cips/$noc_pin/$hbm_pc_name] -force
   }
-  puts "ETH HBM"
-  for { set i 0}  {$i < $_nsp_hpu::ETHPC_AXI_NB} {incr i} {
-    set hbm_port_idx [lindex $_nsp_hpu::ETH_HBM_PORTS_L $i]
+  puts "MHDMA HBM"
+  for { set i 0}  {$i < $_nsp_hpu::MHDMA_PC_AXI_NB} {incr i} {
+    set hbm_port_idx [lindex $_nsp_hpu::MHDMA_HBM_PORTS_L $i]
     set hbm_pc_idx [expr int($hbm_port_idx/2)]
     set hbm_pc_name [format "HBM%0d_PC%0d" [expr int($hbm_pc_idx/2)] [expr $hbm_pc_idx%2]]
 
     set add_ofs [expr $_nsp_hpu::HBM_ADD_OFS + $hbm_port_idx * $_nsp_hpu::HBM_PORT_RANGE]
-    set noc_pin [lindex $_nsp_hpu::ETH_NOC_PINS_L $i]
+    set noc_pin [lindex $_nsp_hpu::MHDMA_NOC_PINS_L $i]
 
-    assign_bd_address -offset $add_ofs -range $_nsp_hpu::HBM_PORT_RANGE -target_address_space [get_bd_addr_spaces ETH_HBM_AXI_${i}] [get_bd_addr_segs noc_wrapper/axi_noc_cips/$noc_pin/$hbm_pc_name] -force
+    assign_bd_address -offset $add_ofs -range $_nsp_hpu::HBM_PORT_RANGE -target_address_space [get_bd_addr_spaces MHDMA_HBM_AXI_${i}] [get_bd_addr_segs noc_wrapper/axi_noc_cips/$noc_pin/$hbm_pc_name] -force
   }
   puts "TRC"
   for { set i 0}  {$i < $_nsp_hpu::TRC_AXI_NB} {incr i} {

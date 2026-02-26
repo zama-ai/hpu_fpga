@@ -32,7 +32,7 @@
             "is_include_file": false
         },
         {
-            "name": "hw/module/hpu/module/hpu_regif/rtl/hpu_regif_core_eth_2in3_pkg.sv",
+            "name": "hw/module/hpu/module/hpu_regif/rtl/hpu_regif_core_mhdma_2in3_pkg.sv",
             "library": "work",
             "env": ["all"],
             "target": ["all"],
@@ -123,7 +123,7 @@
             "is_include_file": false
         },
         {
-            "name": "hw/module/hpu/module/hpu_regif/rtl/hpu_regif_core_eth_2in3.sv",
+            "name": "hw/module/hpu/module/hpu_regif/rtl/hpu_regif_core_mhdma_2in3.sv",
             "library": "work",
             "env": ["all"],
             "target": ["all"],

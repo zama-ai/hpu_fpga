@@ -11,8 +11,8 @@ module tb_mhdma_parallel_notify;
   import mhdma_pkg::*;                    // multi-hpu-dma
   import axi_if_shell_axil_pkg::*;        // axi4-lite + REG_DATA_W
   import axi_if_common_param_pkg::*;      // general axi4
-  import hpu_regif_core_eth_2in3_pkg::*;  // ethernet regif
-  import axi_if_eth_axi_pkg::*;           // AXI ethernet
+  import hpu_regif_core_mhdma_2in3_pkg::*;  // ethernet regif
+  import axi_if_mhdma_axi_pkg::*;           // AXI ethernet
   import pem_common_param_pkg::*;         // CT_MEM_BYTES, AXI4_WORD_PER_PC*
 
 // ============================================================================================== --
@@ -47,23 +47,23 @@ module tb_mhdma_parallel_notify;
 // clock, reset
 // ============================================================================================== --
   bit clk_control;
-  bit clk_mrmac;
+  bit clk_mhdma;
 
   initial begin
     clk_control = 1'b0;
-    clk_mrmac = 1'b0;
+    clk_mhdma = 1'b0;
   end
 
   always begin
     #CLK_HALF_PERIOD_A clk_control = ~clk_control;
   end
   always begin
-    #CLK_HALF_PERIOD_B clk_mrmac = ~clk_mrmac;
+    #CLK_HALF_PERIOD_B clk_mhdma = ~clk_mhdma;
   end
 
   bit a_rst_n; // asynchronous reset
   bit s_rstn_control; // synchronous reset
-  bit s_rstn_mrmac; // synchronous reset
+  bit s_rstn_mhdma; // synchronous reset
 
   initial begin
     a_rst_n = 1'b0;                  // active reset
@@ -73,8 +73,8 @@ module tb_mhdma_parallel_notify;
   always_ff @(posedge clk_control) begin
     s_rstn_control <= a_rst_n;
   end
-  always_ff @(posedge clk_mrmac) begin
-    s_rstn_mrmac <= a_rst_n;
+  always_ff @(posedge clk_mhdma) begin
+    s_rstn_mhdma <= a_rst_n;
   end
 
 // ============================================================================================== --
@@ -111,23 +111,23 @@ module tb_mhdma_parallel_notify;
 // input / output signals
 // ============================================================================================== --
 // AXI4-Lite slave interface
-logic [HPU_NB-1:0][AXIL_ADD_W-1:0]      s_axil_dma_awaddr;
-logic [HPU_NB-1:0]                      s_axil_dma_awvalid;
-logic [HPU_NB-1:0]                      s_axil_dma_awready;
-logic [HPU_NB-1:0][AXIL_DATA_W-1:0]     s_axil_dma_wdata;
-logic [HPU_NB-1:0][AXIL_DATA_BYTES-1:0] s_axil_dma_wstrb; /* UNUSED */
-logic [HPU_NB-1:0]                      s_axil_dma_wvalid;
-logic [HPU_NB-1:0]                      s_axil_dma_wready;
-logic [HPU_NB-1:0][1:0]                 s_axil_dma_bresp;
-logic [HPU_NB-1:0]                      s_axil_dma_bvalid;
-logic [HPU_NB-1:0]                      s_axil_dma_bready;
-logic [HPU_NB-1:0][AXIL_ADD_W-1:0]      s_axil_dma_araddr;
-logic [HPU_NB-1:0]                      s_axil_dma_arvalid;
-logic [HPU_NB-1:0]                      s_axil_dma_arready;
-logic [HPU_NB-1:0][AXIL_DATA_W-1:0]     s_axil_dma_rdata;
-logic [HPU_NB-1:0][1:0]                 s_axil_dma_rresp;
-logic [HPU_NB-1:0]                      s_axil_dma_rvalid;
-logic [HPU_NB-1:0]                      s_axil_dma_rready;
+logic [HPU_NB-1:0][AXIL_ADD_W-1:0]      s_axil_mhdma_awaddr;
+logic [HPU_NB-1:0]                      s_axil_mhdma_awvalid;
+logic [HPU_NB-1:0]                      s_axil_mhdma_awready;
+logic [HPU_NB-1:0][AXIL_DATA_W-1:0]     s_axil_mhdma_wdata;
+logic [HPU_NB-1:0][AXIL_DATA_BYTES-1:0] s_axil_mhdma_wstrb; /* UNUSED */
+logic [HPU_NB-1:0]                      s_axil_mhdma_wvalid;
+logic [HPU_NB-1:0]                      s_axil_mhdma_wready;
+logic [HPU_NB-1:0][1:0]                 s_axil_mhdma_bresp;
+logic [HPU_NB-1:0]                      s_axil_mhdma_bvalid;
+logic [HPU_NB-1:0]                      s_axil_mhdma_bready;
+logic [HPU_NB-1:0][AXIL_ADD_W-1:0]      s_axil_mhdma_araddr;
+logic [HPU_NB-1:0]                      s_axil_mhdma_arvalid;
+logic [HPU_NB-1:0]                      s_axil_mhdma_arready;
+logic [HPU_NB-1:0][AXIL_DATA_W-1:0]     s_axil_mhdma_rdata;
+logic [HPU_NB-1:0][1:0]                 s_axil_mhdma_rresp;
+logic [HPU_NB-1:0]                      s_axil_mhdma_rvalid;
+logic [HPU_NB-1:0]                      s_axil_mhdma_rready;
 // QSFP system interface
 // == TX
 logic [HPU_NB-1:0][QSFP_LANE_NB-1:0][MRMAC_AXIS_W-1:0 ] qsfp_tx_tdata;
@@ -230,59 +230,59 @@ logic [HPU_NB-1:0][ETH_PC-1:0]                          axi4_ct_rready;
   generate
     for (genvar gen_hpu = 0; gen_hpu < HPU_NB; gen_hpu++) begin : gen_multi_hpu_dma
       multi_hpu_dma multi_hpu_dma (
-        .clk_eth_cfg            (clk_control                        ),
-        .resetn_eth_cfg         (s_rstn_control                     ),
+        .clk_mhdma_cfg            (clk_control                        ),
+        .resetn_mhdma_cfg         (s_rstn_control                     ),
 
-        .clk_eth_mrmac          (clk_mrmac                          ),
-        .resetn_eth_mrmac       (s_rstn_mrmac                       ),
+        .clk_mhdma          (clk_mhdma                          ),
+        .resetn_mhdma       (s_rstn_mhdma                       ),
 
-        .s_axil_dma_awaddr      (s_axil_dma_awaddr         [gen_hpu]),
-        .s_axil_dma_awvalid     (s_axil_dma_awvalid        [gen_hpu]),
-        .s_axil_dma_awready     (s_axil_dma_awready        [gen_hpu]),
-        .s_axil_dma_wdata       (s_axil_dma_wdata          [gen_hpu]),
-        .s_axil_dma_wstrb       (s_axil_dma_wstrb          [gen_hpu]),
-        .s_axil_dma_wvalid      (s_axil_dma_wvalid         [gen_hpu]),
-        .s_axil_dma_wready      (s_axil_dma_wready         [gen_hpu]),
-        .s_axil_dma_bresp       (s_axil_dma_bresp          [gen_hpu]),
-        .s_axil_dma_bvalid      (s_axil_dma_bvalid         [gen_hpu]),
-        .s_axil_dma_bready      (s_axil_dma_bready         [gen_hpu]),
-        .s_axil_dma_araddr      (s_axil_dma_araddr         [gen_hpu]),
-        .s_axil_dma_arvalid     (s_axil_dma_arvalid        [gen_hpu]),
-        .s_axil_dma_arready     (s_axil_dma_arready        [gen_hpu]),
-        .s_axil_dma_rdata       (s_axil_dma_rdata          [gen_hpu]),
-        .s_axil_dma_rresp       (s_axil_dma_rresp          [gen_hpu]),
-        .s_axil_dma_rvalid      (s_axil_dma_rvalid         [gen_hpu]),
-        .s_axil_dma_rready      (s_axil_dma_rready         [gen_hpu]),
+        .s_axil_mhdma_awaddr      (s_axil_mhdma_awaddr         [gen_hpu]),
+        .s_axil_mhdma_awvalid     (s_axil_mhdma_awvalid        [gen_hpu]),
+        .s_axil_mhdma_awready     (s_axil_mhdma_awready        [gen_hpu]),
+        .s_axil_mhdma_wdata       (s_axil_mhdma_wdata          [gen_hpu]),
+        .s_axil_mhdma_wstrb       (s_axil_mhdma_wstrb          [gen_hpu]),
+        .s_axil_mhdma_wvalid      (s_axil_mhdma_wvalid         [gen_hpu]),
+        .s_axil_mhdma_wready      (s_axil_mhdma_wready         [gen_hpu]),
+        .s_axil_mhdma_bresp       (s_axil_mhdma_bresp          [gen_hpu]),
+        .s_axil_mhdma_bvalid      (s_axil_mhdma_bvalid         [gen_hpu]),
+        .s_axil_mhdma_bready      (s_axil_mhdma_bready         [gen_hpu]),
+        .s_axil_mhdma_araddr      (s_axil_mhdma_araddr         [gen_hpu]),
+        .s_axil_mhdma_arvalid     (s_axil_mhdma_arvalid        [gen_hpu]),
+        .s_axil_mhdma_arready     (s_axil_mhdma_arready        [gen_hpu]),
+        .s_axil_mhdma_rdata       (s_axil_mhdma_rdata          [gen_hpu]),
+        .s_axil_mhdma_rresp       (s_axil_mhdma_rresp          [gen_hpu]),
+        .s_axil_mhdma_rvalid      (s_axil_mhdma_rvalid         [gen_hpu]),
+        .s_axil_mhdma_rready      (s_axil_mhdma_rready         [gen_hpu]),
 
-        .m_axi4_eth_hbm_arid    (axi4_ct_arid              [gen_hpu]),
-        .m_axi4_eth_hbm_araddr  (axi4_ct_araddr            [gen_hpu]),
-        .m_axi4_eth_hbm_arlen   (axi4_ct_arlen             [gen_hpu]),
-        .m_axi4_eth_hbm_arsize  (axi4_ct_arsize            [gen_hpu]),
-        .m_axi4_eth_hbm_arburst (axi4_ct_arburst           [gen_hpu]),
-        .m_axi4_eth_hbm_arvalid (axi4_ct_arvalid           [gen_hpu]),
-        .m_axi4_eth_hbm_arready (axi4_ct_arready           [gen_hpu]),
-        .m_axi4_eth_hbm_rid     (axi4_ct_rid               [gen_hpu]),
-        .m_axi4_eth_hbm_rdata   (axi4_ct_rdata             [gen_hpu]),
-        .m_axi4_eth_hbm_rresp   (axi4_ct_rresp             [gen_hpu]),
-        .m_axi4_eth_hbm_rlast   (axi4_ct_rlast             [gen_hpu]),
-        .m_axi4_eth_hbm_rvalid  (axi4_ct_rvalid            [gen_hpu]),
-        .m_axi4_eth_hbm_rready  (axi4_ct_rready            [gen_hpu]),
-        .m_axi4_eth_hbm_awid    (axi4_ct_awid              [gen_hpu]),
-        .m_axi4_eth_hbm_awaddr  (axi4_ct_awaddr            [gen_hpu]),
-        .m_axi4_eth_hbm_awlen   (axi4_ct_awlen             [gen_hpu]),
-        .m_axi4_eth_hbm_awsize  (axi4_ct_awsize            [gen_hpu]),
-        .m_axi4_eth_hbm_awburst (axi4_ct_awburst           [gen_hpu]),
-        .m_axi4_eth_hbm_awvalid (axi4_ct_awvalid           [gen_hpu]),
-        .m_axi4_eth_hbm_awready (axi4_ct_awready           [gen_hpu]),
-        .m_axi4_eth_hbm_wdata   (axi4_ct_wdata             [gen_hpu]),
-        .m_axi4_eth_hbm_wstrb   (axi4_ct_wstrb             [gen_hpu]),
-        .m_axi4_eth_hbm_wlast   (axi4_ct_wlast             [gen_hpu]),
-        .m_axi4_eth_hbm_wvalid  (axi4_ct_wvalid            [gen_hpu]),
-        .m_axi4_eth_hbm_wready  (axi4_ct_wready            [gen_hpu]),
-        .m_axi4_eth_hbm_bid     (axi4_ct_bid               [gen_hpu]),
-        .m_axi4_eth_hbm_bresp   (axi4_ct_bresp             [gen_hpu]),
-        .m_axi4_eth_hbm_bvalid  (axi4_ct_bvalid            [gen_hpu]),
-        .m_axi4_eth_hbm_bready  (axi4_ct_bready            [gen_hpu]),
+        .m_axi4_mhdma_hbm_arid    (axi4_ct_arid              [gen_hpu]),
+        .m_axi4_mhdma_hbm_araddr  (axi4_ct_araddr            [gen_hpu]),
+        .m_axi4_mhdma_hbm_arlen   (axi4_ct_arlen             [gen_hpu]),
+        .m_axi4_mhdma_hbm_arsize  (axi4_ct_arsize            [gen_hpu]),
+        .m_axi4_mhdma_hbm_arburst (axi4_ct_arburst           [gen_hpu]),
+        .m_axi4_mhdma_hbm_arvalid (axi4_ct_arvalid           [gen_hpu]),
+        .m_axi4_mhdma_hbm_arready (axi4_ct_arready           [gen_hpu]),
+        .m_axi4_mhdma_hbm_rid     (axi4_ct_rid               [gen_hpu]),
+        .m_axi4_mhdma_hbm_rdata   (axi4_ct_rdata             [gen_hpu]),
+        .m_axi4_mhdma_hbm_rresp   (axi4_ct_rresp             [gen_hpu]),
+        .m_axi4_mhdma_hbm_rlast   (axi4_ct_rlast             [gen_hpu]),
+        .m_axi4_mhdma_hbm_rvalid  (axi4_ct_rvalid            [gen_hpu]),
+        .m_axi4_mhdma_hbm_rready  (axi4_ct_rready            [gen_hpu]),
+        .m_axi4_mhdma_hbm_awid    (axi4_ct_awid              [gen_hpu]),
+        .m_axi4_mhdma_hbm_awaddr  (axi4_ct_awaddr            [gen_hpu]),
+        .m_axi4_mhdma_hbm_awlen   (axi4_ct_awlen             [gen_hpu]),
+        .m_axi4_mhdma_hbm_awsize  (axi4_ct_awsize            [gen_hpu]),
+        .m_axi4_mhdma_hbm_awburst (axi4_ct_awburst           [gen_hpu]),
+        .m_axi4_mhdma_hbm_awvalid (axi4_ct_awvalid           [gen_hpu]),
+        .m_axi4_mhdma_hbm_awready (axi4_ct_awready           [gen_hpu]),
+        .m_axi4_mhdma_hbm_wdata   (axi4_ct_wdata             [gen_hpu]),
+        .m_axi4_mhdma_hbm_wstrb   (axi4_ct_wstrb             [gen_hpu]),
+        .m_axi4_mhdma_hbm_wlast   (axi4_ct_wlast             [gen_hpu]),
+        .m_axi4_mhdma_hbm_wvalid  (axi4_ct_wvalid            [gen_hpu]),
+        .m_axi4_mhdma_hbm_wready  (axi4_ct_wready            [gen_hpu]),
+        .m_axi4_mhdma_hbm_bid     (axi4_ct_bid               [gen_hpu]),
+        .m_axi4_mhdma_hbm_bresp   (axi4_ct_bresp             [gen_hpu]),
+        .m_axi4_mhdma_hbm_bvalid  (axi4_ct_bvalid            [gen_hpu]),
+        .m_axi4_mhdma_hbm_bready  (axi4_ct_bready            [gen_hpu]),
 
         .qsfp_tx_tdata          (qsfp_tx_tdata             [gen_hpu]),
         .qsfp_tx_tkeep_user     (qsfp_tx_tkeep_user        [gen_hpu]),
@@ -316,8 +316,8 @@ logic [HPU_NB-1:0][ETH_PC-1:0]                          axi4_ct_rready;
     for (genvar gen_hpu = 0; gen_hpu < HPU_NB; gen_hpu++) begin : gen_rdyvld_ctrl
       for (genvar gen_i = 0; gen_i < QSFP_LANE_NB; gen_i++) begin : gen_lane
         tb_model_backpressure #(.ENABLE(BREAK_RDY_VLD)) bp_tx (
-          .clk         (clk_mrmac),
-          .rstn        (s_rstn_mrmac),
+          .clk         (clk_mhdma),
+          .rstn        (s_rstn_mhdma),
 
           .s_tdata     (qsfp_tx_tdata            [gen_hpu][gen_i]),
           .s_tkeep_user(qsfp_tx_tkeep_user       [gen_hpu][gen_i]),
@@ -346,24 +346,24 @@ logic [HPU_NB-1:0][ETH_PC-1:0]                          axi4_ct_rready;
         .AXIL_ADD_W (AXIL_ADD_W)
       ) maxil_if ( .clk(clk_control), .rst_n(s_rstn_control));
 
-      assign s_axil_dma_awaddr [gen_hpu] = maxil_if.awaddr;
-      assign s_axil_dma_awvalid[gen_hpu] = maxil_if.awvalid;
-      assign s_axil_dma_wdata  [gen_hpu] = maxil_if.wdata;
-      assign s_axil_dma_wstrb  [gen_hpu] = maxil_if.wstrb;
-      assign s_axil_dma_wvalid [gen_hpu] = maxil_if.wvalid;
-      assign s_axil_dma_bready [gen_hpu] = maxil_if.bready;
-      assign s_axil_dma_araddr [gen_hpu] = maxil_if.araddr;
-      assign s_axil_dma_arvalid[gen_hpu] = maxil_if.arvalid;
-      assign s_axil_dma_rready [gen_hpu] = maxil_if.rready;
+      assign s_axil_mhdma_awaddr [gen_hpu] = maxil_if.awaddr;
+      assign s_axil_mhdma_awvalid[gen_hpu] = maxil_if.awvalid;
+      assign s_axil_mhdma_wdata  [gen_hpu] = maxil_if.wdata;
+      assign s_axil_mhdma_wstrb  [gen_hpu] = maxil_if.wstrb;
+      assign s_axil_mhdma_wvalid [gen_hpu] = maxil_if.wvalid;
+      assign s_axil_mhdma_bready [gen_hpu] = maxil_if.bready;
+      assign s_axil_mhdma_araddr [gen_hpu] = maxil_if.araddr;
+      assign s_axil_mhdma_arvalid[gen_hpu] = maxil_if.arvalid;
+      assign s_axil_mhdma_rready [gen_hpu] = maxil_if.rready;
 
-      assign maxil_if.awready = s_axil_dma_awready[gen_hpu];
-      assign maxil_if.wready  = s_axil_dma_wready [gen_hpu];
-      assign maxil_if.bresp   = s_axil_dma_bresp  [gen_hpu];
-      assign maxil_if.bvalid  = s_axil_dma_bvalid [gen_hpu];
-      assign maxil_if.arready = s_axil_dma_arready[gen_hpu];
-      assign maxil_if.rdata   = s_axil_dma_rdata  [gen_hpu];
-      assign maxil_if.rresp   = s_axil_dma_rresp  [gen_hpu];
-      assign maxil_if.rvalid  = s_axil_dma_rvalid [gen_hpu];
+      assign maxil_if.awready = s_axil_mhdma_awready[gen_hpu];
+      assign maxil_if.wready  = s_axil_mhdma_wready [gen_hpu];
+      assign maxil_if.bresp   = s_axil_mhdma_bresp  [gen_hpu];
+      assign maxil_if.bvalid  = s_axil_mhdma_bvalid [gen_hpu];
+      assign maxil_if.arready = s_axil_mhdma_arready[gen_hpu];
+      assign maxil_if.rdata   = s_axil_mhdma_rdata  [gen_hpu];
+      assign maxil_if.rresp   = s_axil_mhdma_rresp  [gen_hpu];
+      assign maxil_if.rvalid  = s_axil_mhdma_rvalid [gen_hpu];
     end
   endgenerate
 
@@ -381,8 +381,8 @@ logic [HPU_NB-1:0][ETH_PC-1:0]                          axi4_ct_rready;
           .USE_WR_RANDOM   (MEM_USE_WR_RANDOM               ),
           .USE_RD_RANDOM   (MEM_USE_RD_RANDOM               )
         ) axi4_mem_ct (
-          .clk           (clk_mrmac                         ),
-          .rst           (~s_rstn_mrmac                     ),
+          .clk           (clk_mhdma                         ),
+          .rst           (~s_rstn_mhdma                     ),
           .s_axi4_awid   (axi4_ct_awid[gen_hpu][gen_pc]     ),
           .s_axi4_awaddr (axi4_ct_awaddr[gen_hpu][gen_pc][MEM_SIM_SIZE-1:0]),
           .s_axi4_awlen  (axi4_ct_awlen[gen_hpu][gen_pc]    ),
@@ -873,26 +873,26 @@ logic [HPU_NB-1:0][ETH_PC-1:0]                          axi4_ct_rready;
   `ifndef XSIM
     // After TLAST, not TVALID
     property no_valid_after_last(int lane);
-      @(posedge clk_mrmac) disable iff (~s_rstn_mrmac)
+      @(posedge clk_mhdma) disable iff (~s_rstn_mhdma)
       (qsfp_tx_tvalid[0][lane] && qsfp_tx_tready[0][lane] && qsfp_tx_tlast[0][lane]) |=> ~qsfp_tx_tvalid[0][lane];
     endproperty
 
     // TLAST requires TVALID
     property mrmac_tlast_valid(int lane);
-      @(posedge clk_mrmac) disable iff (~s_rstn_mrmac)
+      @(posedge clk_mhdma) disable iff (~s_rstn_mhdma)
       qsfp_tx_tlast[0][lane] |-> qsfp_tx_tvalid[0][lane];
     endproperty
 
     // TX/RX AXIS valid must stay stable until ready
     property axis_stable(int lane);
-      @(posedge clk_mrmac) disable iff (!s_rstn_mrmac)
+      @(posedge clk_mhdma) disable iff (!s_rstn_mhdma)
       (qsfp_tx_tvalid[0][lane] && ~qsfp_tx_tready[0][lane]) |=> $stable(qsfp_tx_tvalid[0][lane]) && $stable(qsfp_tx_tdata[0][lane]) && $stable(qsfp_tx_tkeep_user[0][lane]);
     endproperty
 
     // Minimum Ethernet frame size (64 bytes) on valid frames - MRMAC inserts 4 bytes so we check for 60
     property mrmac_min_frame_size(int lane);
       int byte_count;
-      @(posedge clk_mrmac) disable iff (~s_rstn_mrmac)
+      @(posedge clk_mhdma) disable iff (~s_rstn_mhdma)
       (!$past(qsfp_tx_tvalid[0][lane]) && qsfp_tx_tvalid[0][lane], byte_count=0) |->
         first_match(
           (qsfp_tx_tvalid[0][lane], byte_count += (qsfp_tx_tready[0][lane] ? $countones(qsfp_tx_tkeep_user[0][lane]) : 0))[*1:$] ##0

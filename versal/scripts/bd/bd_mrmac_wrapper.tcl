@@ -2,7 +2,7 @@
 # BSD 3-Clause Clear License
 # Copyright © 2025 ZAMA. All rights reserved.
 # ----------------------------------------------------------------------------------------------
-# Contains procedure to generate block designs that handle ethernet connexion.
+# Contains procedure to generate block designs that handle MRMAC wrapper.
 # Part of it is derived from the example design and adapted to our needs.
 #
 # We needed an MRMAC MAC + PCS driving GTM for QSFPs.
@@ -253,7 +253,7 @@ proc create_hier_cell_mrmac_0_gt_wrapper { parentCell nameHier } {
   current_bd_instance $oldCurInst
 }
 
-proc create_hier_cell_eth_wrapper  { parentCell nameHier } {
+proc create_hier_cell_mrmac_wrapper  { parentCell nameHier } {
 
   set parentObj [check_parent_hier $parentCell $nameHier]
   if { $parentObj == "" } { return }
@@ -273,8 +273,8 @@ proc create_hier_cell_eth_wrapper  { parentCell nameHier } {
   ####################################
   set AXIL_DATA_W $_nsp_hpu::AXIL_DATA_W
   set AXIS_DATA_W   $_nsp_hpu::AXIS_DATA_W
-  set AXIS_DATA_ETH_W $_nsp_hpu::AXIS_DATA_ETH_W
-  set AXIS_DATA_ETH_BYTES $_nsp_hpu::AXIS_DATA_ETH_BYTES
+  set AXIS_DATA_MHDMA_W $_nsp_hpu::AXIS_DATA_MHDMA_W
+  set AXIS_DATA_MHDMA_BYTES $_nsp_hpu::AXIS_DATA_MHDMA_BYTES
 
   ####################################
   # Create pins
@@ -301,29 +301,28 @@ proc create_hier_cell_eth_wrapper  { parentCell nameHier } {
   set s_axi_aresetn [ create_bd_pin -dir I -type rst s_axi_aresetn ]
 
   set s_axis_mrmac_aclk [ create_bd_pin -dir I -type clk s_axis_mrmac_aclk ]
-  set s_axis_mrmac_aresetn [ create_bd_pin -dir I -type rst s_axis_mrmac_aresetn ]
 
   set gt_tx_reset_done_out [ create_bd_pin -dir O -from 3 -to 0 gt_tx_reset_done_out ]
   set gt_rx_reset_done_out [ create_bd_pin -dir O -from 3 -to 0 gt_rx_reset_done_out ]
   set gt_reset_all_in [ create_bd_pin -dir I -from 3 -to 0 gt_reset_all_in ]
 
-  # == TX axi-stream intterface
-  set tx_axis_tdata_0   [ create_bd_pin -dir I -from 63 -to 0 tx_axis_tdata_0 ]
+  # == TX axi-stream interface
+  set tx_axis_tdata_0   [ create_bd_pin -dir I -from [expr $AXIS_DATA_MHDMA_W - 1] -to 0 tx_axis_tdata_0 ]
   set tx_axis_tready_0  [ create_bd_pin -dir O tx_axis_tready_0 ]
   set tx_axis_tlast_0   [ create_bd_pin -dir I tx_axis_tlast_0 ]
   set tx_axis_tvalid_0  [ create_bd_pin -dir I tx_axis_tvalid_0 ]
 
-  set tx_axis_tdata_2   [ create_bd_pin -dir I -from 63 -to 0 tx_axis_tdata_2 ]
+  set tx_axis_tdata_2   [ create_bd_pin -dir I -from [expr $AXIS_DATA_MHDMA_W - 1] -to 0 tx_axis_tdata_2 ]
   set tx_axis_tready_2  [ create_bd_pin -dir O tx_axis_tready_2 ]
   set tx_axis_tlast_2   [ create_bd_pin -dir I tx_axis_tlast_2 ]
   set tx_axis_tvalid_2  [ create_bd_pin -dir I tx_axis_tvalid_2 ]
 
-  set tx_axis_tdata_4   [ create_bd_pin -dir I -from 63 -to 0 tx_axis_tdata_4 ]
+  set tx_axis_tdata_4   [ create_bd_pin -dir I -from [expr $AXIS_DATA_MHDMA_W - 1] -to 0 tx_axis_tdata_4 ]
   set tx_axis_tready_4  [ create_bd_pin -dir O tx_axis_tready_4 ]
   set tx_axis_tlast_4   [ create_bd_pin -dir I tx_axis_tlast_4 ]
   set tx_axis_tvalid_4  [ create_bd_pin -dir I tx_axis_tvalid_4 ]
 
-  set tx_axis_tdata_6   [ create_bd_pin -dir I -from 63 -to 0 tx_axis_tdata_6 ]
+  set tx_axis_tdata_6   [ create_bd_pin -dir I -from [expr $AXIS_DATA_MHDMA_W - 1] -to 0 tx_axis_tdata_6 ]
   set tx_axis_tready_6  [ create_bd_pin -dir O tx_axis_tready_6 ]
   set tx_axis_tlast_6   [ create_bd_pin -dir I tx_axis_tlast_6 ]
   set tx_axis_tvalid_6  [ create_bd_pin -dir I tx_axis_tvalid_6 ]
@@ -333,23 +332,23 @@ proc create_hier_cell_eth_wrapper  { parentCell nameHier } {
   set tx_axis_tkeep_user_4 [ create_bd_pin -dir I -from 10 -to 0 tx_axis_tkeep_user_4 ]
   set tx_axis_tkeep_user_6 [ create_bd_pin -dir I -from 10 -to 0 tx_axis_tkeep_user_6 ]
 
-  # == RX axi-stream intterface
-  set rx_axis_tdata_0      [ create_bd_pin -dir O -from 63 -to 0 rx_axis_tdata_0 ]
+  # == RX axi-stream interface
+  set rx_axis_tdata_0      [ create_bd_pin -dir O -from [expr $AXIS_DATA_MHDMA_W - 1] -to 0 rx_axis_tdata_0 ]
   set rx_axis_tkeep_user_0 [ create_bd_pin -dir O -from 10 -to 0 rx_axis_tkeep_user_0 ]
   set rx_axis_tlast_0     [ create_bd_pin -dir O rx_axis_tlast_0 ]
   set rx_axis_tvalid_0    [ create_bd_pin -dir O rx_axis_tvalid_0 ]
 
-  set rx_axis_tdata_2      [ create_bd_pin -dir O -from 63 -to 0 rx_axis_tdata_2 ]
+  set rx_axis_tdata_2      [ create_bd_pin -dir O -from [expr $AXIS_DATA_MHDMA_W - 1] -to 0 rx_axis_tdata_2 ]
   set rx_axis_tkeep_user_2 [ create_bd_pin -dir O -from 10 -to 0 rx_axis_tkeep_user_2 ]
   set rx_axis_tlast_2     [ create_bd_pin -dir O rx_axis_tlast_2 ]
   set rx_axis_tvalid_2    [ create_bd_pin -dir O rx_axis_tvalid_2 ]
 
-  set rx_axis_tdata_4      [ create_bd_pin -dir O -from 63 -to 0 rx_axis_tdata_4 ]
+  set rx_axis_tdata_4      [ create_bd_pin -dir O -from [expr $AXIS_DATA_MHDMA_W - 1] -to 0 rx_axis_tdata_4 ]
   set rx_axis_tkeep_user_4 [ create_bd_pin -dir O -from 10 -to 0 rx_axis_tkeep_user_4 ]
   set rx_axis_tlast_4     [ create_bd_pin -dir O rx_axis_tlast_4 ]
   set rx_axis_tvalid_4    [ create_bd_pin -dir O rx_axis_tvalid_4 ]
 
-  set rx_axis_tdata_6      [ create_bd_pin -dir O -from 63 -to 0 rx_axis_tdata_6 ]
+  set rx_axis_tdata_6      [ create_bd_pin -dir O -from [expr $AXIS_DATA_MHDMA_W - 1] -to 0 rx_axis_tdata_6 ]
   set rx_axis_tkeep_user_6 [ create_bd_pin -dir O -from 10 -to 0 rx_axis_tkeep_user_6 ]
   set rx_axis_tlast_6     [ create_bd_pin -dir O rx_axis_tlast_6 ]
   set rx_axis_tvalid_6    [ create_bd_pin -dir O rx_axis_tvalid_6 ]
@@ -444,7 +443,7 @@ proc create_hier_cell_eth_wrapper  { parentCell nameHier } {
 
   # clocks
   set concat_4_clk_axis_mrmac  [create_bd_cell -type inline_hdl -vlnv xilinx.com:inline_hdl:ilconcat:1.0 concat_4_clk_axis_mrmac]
-  set concat_4_clk_eth_control [create_bd_cell -type inline_hdl -vlnv xilinx.com:inline_hdl:ilconcat:1.0 concat_4_clk_eth_control]
+  set concat_4_clk_mhdma_control [create_bd_cell -type inline_hdl -vlnv xilinx.com:inline_hdl:ilconcat:1.0 concat_4_clk_mhdma_control]
 
   set concat_4_rx_usr_clock  [create_bd_cell -type inline_hdl -vlnv xilinx.com:inline_hdl:ilconcat:1.0 concat_4_rx_usr_clock]
   set concat_4_rx_usr_clock2 [create_bd_cell -type inline_hdl -vlnv xilinx.com:inline_hdl:ilconcat:1.0 concat_4_rx_usr_clock2]
@@ -460,14 +459,12 @@ proc create_hier_cell_eth_wrapper  { parentCell nameHier } {
   # Connection
   ####################################
   # clocks and resets
-  connect_bd_net -net config_aresetn [get_bd_pins s_axi_aresetn] [get_bd_pins mrmac_0_core/s_axi_aresetn] \
-                                     [get_bd_pins sc_axil2axi/aresetn]
-
+  connect_bd_net -net config_aresetn [get_bd_pins s_axi_aresetn] [get_bd_pins mrmac_0_core/s_axi_aresetn]
 
   connect_bd_net -net config_aclk [get_bd_pins s_axi_aclk] [get_bd_pins mrmac_0_core/s_axi_aclk]
 
   # GT <-> MRMAC connections ----------------------------------------------------------------------
-  # ~eth_cfg_srst_n to rx_flexif_reset
+  # ~mhdma_cfg_srst_n to rx_flexif_reset
   connect_bd_net [get_bd_pins s_axi_aresetn] [get_bd_pins ilvector_not_flexif_reset/Op1]
 
   for {set i 0} {$i < 4} {incr i} {
@@ -506,10 +503,10 @@ proc create_hier_cell_eth_wrapper  { parentCell nameHier } {
 
   # s_axi_aclk to (rx_flexif_clk & tx_flexif_clk)
   for {set i 0} {$i < 4} {incr i} {
-    connect_bd_net [get_bd_pins s_axi_aclk] [get_bd_pins concat_4_clk_eth_control/In${i}]
+    connect_bd_net [get_bd_pins s_axi_aclk] [get_bd_pins concat_4_clk_mhdma_control/In${i}]
   }
 
-  connect_bd_net [get_bd_pins concat_4_clk_eth_control/Dout] \
+  connect_bd_net [get_bd_pins concat_4_clk_mhdma_control/Dout] \
                   [get_bd_pins mrmac_0_core/rx_flexif_clk] \
                   [get_bd_pins mrmac_0_core/tx_flexif_clk]
 

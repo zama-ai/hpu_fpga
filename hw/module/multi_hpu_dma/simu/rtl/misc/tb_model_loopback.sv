@@ -13,8 +13,8 @@ module tb_model_loopback
   import mhdma_pkg::*;
 #() (
   // Ethernet fast clock interface --------------------------------------------
-  input logic clk_eth_mrmac,
-  input logic resetn_eth_mrmac,
+  input logic clk_mhdma,
+  input logic resetn_mhdma,
   // QSFP system interface ----------------------------------------------------
   // == TX
   input  [QSFP_LANE_NB-1:0][MRMAC_AXIS_W-1:0  ] qsfp_tx_tdata,
@@ -49,7 +49,7 @@ module tb_model_loopback
 
   generate
     for (genvar gen_l = 0; gen_l < QSFP_LANE_NB ; gen_l = gen_l + 1) begin
-      always_ff @(posedge clk_eth_mrmac) begin
+      always_ff @(posedge clk_mhdma) begin
         if ((loopback == 3'b000) || (loopback == 3'b010)) begin
           rx_tdata_d[gen_l][0]      <= qsfp_tx_tdata[gen_l];
           rx_tkeep_user_d[gen_l][0] <= qsfp_tx_tkeep_user[gen_l];
@@ -68,7 +68,7 @@ module tb_model_loopback
   generate
     for (genvar gen_l = 0; gen_l < QSFP_LANE_NB ; gen_l = gen_l + 1) begin
       for (genvar gen_i = 1; gen_i < TOTAL_LAT ; gen_i = gen_i + 1) begin
-        always_ff @(posedge clk_eth_mrmac) begin
+        always_ff @(posedge clk_mhdma) begin
           rx_tdata_d[gen_l][gen_i]      <= rx_tdata_d[gen_l][gen_i-1];
           rx_tkeep_user_d[gen_l][gen_i] <= rx_tkeep_user_d[gen_l][gen_i-1];
           rx_tlast_d[gen_l][gen_i]      <= rx_tlast_d[gen_l][gen_i-1];
@@ -81,7 +81,7 @@ module tb_model_loopback
 
   generate
     for (genvar gen_l = 0; gen_l < QSFP_LANE_NB ; gen_l = gen_l + 1) begin
-      always_ff @(posedge clk_eth_mrmac) begin
+      always_ff @(posedge clk_mhdma) begin
         qsfp_rx_tdata[gen_l]      <= rx_tdata_d[gen_l][TOTAL_LAT-1];
         qsfp_rx_tkeep_user[gen_l] <= rx_tkeep_user_d[gen_l][TOTAL_LAT-1];
         qsfp_rx_tlast[gen_l]      <= rx_tlast_d[gen_l][TOTAL_LAT-1];

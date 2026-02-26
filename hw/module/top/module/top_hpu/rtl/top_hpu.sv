@@ -82,6 +82,10 @@ module top_hpu #(
   import axi_if_ksk_axi_pkg::*;
   import axi_if_shell_axil_pkg::*;
 
+  import mhdma_pkg::ETH_PC;
+  import mhdma_pkg::MRMAC_AXIS_W;
+  import mhdma_pkg::MRMAC_TKEEP_W;
+
   localparam int AXI4_TRC_ADD_W       = axi_if_trc_axi_pkg::AXI4_ADD_W;
   localparam int AXI4_TRC_DATA_W      = axi_if_trc_axi_pkg::AXI4_DATA_W;
   localparam int AXI4_TRC_DATA_BYTES  = axi_if_trc_axi_pkg::AXI4_DATA_BYTES;
@@ -102,24 +106,22 @@ module top_hpu #(
   localparam int AXI4_KSK_DATA_W      = axi_if_ksk_axi_pkg::AXI4_DATA_W;
   localparam int AXI4_KSK_DATA_BYTES  = axi_if_ksk_axi_pkg::AXI4_DATA_BYTES;
   localparam int AXI4_KSK_ID_W        = axi_if_ksk_axi_pkg::AXI4_ID_W;
-  localparam int AXI4_ETH_ADD_W       = axi_if_eth_axi_pkg::AXI4_ADD_W;
-  localparam int AXI4_ETH_ID_W        = axi_if_eth_axi_pkg::AXI4_ID_W;
-  localparam int AXI4_ETH_DATA_W      = axi_if_eth_axi_pkg::AXI4_DATA_W;
-  localparam int AXI4_ETH_DATA_BYTES  = axi_if_eth_axi_pkg::AXI4_DATA_BYTES;
+  localparam int AXI4_MHDMA_ADD_W      = axi_if_mhdma_axi_pkg::AXI4_ADD_W;
+  localparam int AXI4_MHDMA_ID_W       = axi_if_mhdma_axi_pkg::AXI4_ID_W;
+  localparam int AXI4_MHDMA_DATA_W     = axi_if_mhdma_axi_pkg::AXI4_DATA_W;
+  localparam int AXI4_MHDMA_DATA_BYTES = axi_if_mhdma_axi_pkg::AXI4_DATA_BYTES;
 
   // Ethernet: Do not modify ----------------------------------------------------------------------
   // number of QSFP lines: do not modify
   localparam int QSFP_LANE_NB = 4;
-  // Number of PCs
-  localparam int ETH_PC       = 2;
   // Ethernet preamble
   localparam [7:0]  START_FRAME_DELIMITER = 'hD5;
   localparam [47:0] PREAMBLE = 'h555555555555;
   // tx preamble is only 56 bits: we are in  custom mode due to non-segmented configuration
   localparam [55:0] TX_PREAMBLE = {PREAMBLE, START_FRAME_DELIMITER};
   // axi4-stream ethernet
-  localparam int AXIS_TDATA_W = 64;
-  localparam int AXIS_TKEEP_W = 11;
+  localparam int AXIS_TDATA_W = MRMAC_AXIS_W;
+  localparam int AXIS_TKEEP_W = MRMAC_TKEEP_W;
   // ------------------------------------------------------------------------------------------- //
 
   // ----------------------------------------------------------------------------------------- //
@@ -172,8 +174,11 @@ module top_hpu #(
   logic cfg_clk;
   logic cfg_srst_n;
 
-  // Ethernet configuration clock
-  logic eth_cfg_clk;
+  // MHDMA clock (fast) using same freq as AXI stream from MRMAC IP
+  logic clk_mhdma;
+
+  // MHDMA configuration clock (slow)
+  logic mhdma_cfg_clk;
 
   /* AXI4 ---------------------------------------------------------------------
   * in direction to RTL register interface, size is fixed.
@@ -259,91 +264,91 @@ module top_hpu #(
 
   // == Ethernet
   // axi4-lite direct access to mrmac registers
-  logic [31:0]                                      axi_eth_mrmac_awaddr;
-  logic                                             axi_eth_mrmac_awvalid;
-  logic                                             axi_eth_mrmac_awready;
-  logic [31:0]                                      axi_eth_mrmac_wdata;
-  logic                                             axi_eth_mrmac_wvalid;
-  logic                                             axi_eth_mrmac_wready;
-  logic [3:0]                                       axi_eth_mrmac_wstrb;
-  logic [1:0]                                       axi_eth_mrmac_bresp;
-  logic                                             axi_eth_mrmac_bvalid;
-  logic                                             axi_eth_mrmac_bready;
-  logic [31:0]                                      axi_eth_mrmac_araddr;
-  logic                                             axi_eth_mrmac_arvalid;
-  logic                                             axi_eth_mrmac_arready;
-  logic [31:0]                                      axi_eth_mrmac_rdata;
-  logic [1:0]                                       axi_eth_mrmac_rresp;
-  logic                                             axi_eth_mrmac_rvalid;
-  logic                                             axi_eth_mrmac_rready;
+  logic [31:0]                                      axi_mhdma_mrmac_awaddr;
+  logic                                             axi_mhdma_mrmac_awvalid;
+  logic                                             axi_mhdma_mrmac_awready;
+  logic [31:0]                                      axi_mhdma_mrmac_wdata;
+  logic                                             axi_mhdma_mrmac_wvalid;
+  logic                                             axi_mhdma_mrmac_wready;
+  logic [3:0]                                       axi_mhdma_mrmac_wstrb;
+  logic [1:0]                                       axi_mhdma_mrmac_bresp;
+  logic                                             axi_mhdma_mrmac_bvalid;
+  logic                                             axi_mhdma_mrmac_bready;
+  logic [31:0]                                      axi_mhdma_mrmac_araddr;
+  logic                                             axi_mhdma_mrmac_arvalid;
+  logic                                             axi_mhdma_mrmac_arready;
+  logic [31:0]                                      axi_mhdma_mrmac_rdata;
+  logic [1:0]                                       axi_mhdma_mrmac_rresp;
+  logic                                             axi_mhdma_mrmac_rvalid;
+  logic                                             axi_mhdma_mrmac_rready;
   // unused for axi lite
-  logic [2:0]                                       axi_eth_mrmac_arprot;
-  logic [2:0]                                       axi_eth_mrmac_awprot;
+  logic [2:0]                                       axi_mhdma_mrmac_arprot;
+  logic [2:0]                                       axi_mhdma_mrmac_awprot;
 
   // axi4-lite direct access to axi-stream FIFO
-  logic [31:0]                                      axi_eth_dbg_awaddr;
-  logic                                             axi_eth_dbg_awvalid;
-  logic                                             axi_eth_dbg_awready;
-  logic [31:0]                                      axi_eth_dbg_wdata;
-  logic                                             axi_eth_dbg_wvalid;
-  logic                                             axi_eth_dbg_wready;
-  logic [3:0]                                       axi_eth_dbg_wstrb;
-  logic [1:0]                                       axi_eth_dbg_bresp;
-  logic                                             axi_eth_dbg_bvalid;
-  logic                                             axi_eth_dbg_bready;
-  logic [31:0]                                      axi_eth_dbg_araddr;
-  logic                                             axi_eth_dbg_arvalid;
-  logic                                             axi_eth_dbg_arready;
-  logic [31:0]                                      axi_eth_dbg_rdata;
-  logic [1:0]                                       axi_eth_dbg_rresp;
-  logic                                             axi_eth_dbg_rvalid;
-  logic                                             axi_eth_dbg_rready;
+  logic [31:0]                                      axi_mhdma_dbg_awaddr;
+  logic                                             axi_mhdma_dbg_awvalid;
+  logic                                             axi_mhdma_dbg_awready;
+  logic [31:0]                                      axi_mhdma_dbg_wdata;
+  logic                                             axi_mhdma_dbg_wvalid;
+  logic                                             axi_mhdma_dbg_wready;
+  logic [3:0]                                       axi_mhdma_dbg_wstrb;
+  logic [1:0]                                       axi_mhdma_dbg_bresp;
+  logic                                             axi_mhdma_dbg_bvalid;
+  logic                                             axi_mhdma_dbg_bready;
+  logic [31:0]                                      axi_mhdma_dbg_araddr;
+  logic                                             axi_mhdma_dbg_arvalid;
+  logic                                             axi_mhdma_dbg_arready;
+  logic [31:0]                                      axi_mhdma_dbg_rdata;
+  logic [1:0]                                       axi_mhdma_dbg_rresp;
+  logic                                             axi_mhdma_dbg_rvalid;
+  logic                                             axi_mhdma_dbg_rready;
   // unused for axi lite
-  logic [2:0]                                       axi_eth_dbg_arprot;
-  logic [2:0]                                       axi_eth_dbg_awprot;
+  logic [2:0]                                       axi_mhdma_dbg_arprot;
+  logic [2:0]                                       axi_mhdma_dbg_awprot;
 
-  logic [31:0]                                      axi_eth_fifo_awaddr;
-  logic                                             axi_eth_fifo_awvalid;
-  logic                                             axi_eth_fifo_awready;
-  logic [31:0]                                      axi_eth_fifo_wdata;
-  logic                                             axi_eth_fifo_wvalid;
-  logic                                             axi_eth_fifo_wready;
-  logic [3:0]                                       axi_eth_fifo_wstrb;
-  logic [1:0]                                       axi_eth_fifo_bresp;
-  logic                                             axi_eth_fifo_bvalid;
-  logic                                             axi_eth_fifo_bready;
-  logic [31:0]                                      axi_eth_fifo_araddr;
-  logic                                             axi_eth_fifo_arvalid;
-  logic                                             axi_eth_fifo_arready;
-  logic [31:0]                                      axi_eth_fifo_rdata;
-  logic [1:0]                                       axi_eth_fifo_rresp;
-  logic                                             axi_eth_fifo_rvalid;
-  logic                                             axi_eth_fifo_rready;
+  logic [31:0]                                      axi_mhdma_fifo_awaddr;
+  logic                                             axi_mhdma_fifo_awvalid;
+  logic                                             axi_mhdma_fifo_awready;
+  logic [31:0]                                      axi_mhdma_fifo_wdata;
+  logic                                             axi_mhdma_fifo_wvalid;
+  logic                                             axi_mhdma_fifo_wready;
+  logic [3:0]                                       axi_mhdma_fifo_wstrb;
+  logic [1:0]                                       axi_mhdma_fifo_bresp;
+  logic                                             axi_mhdma_fifo_bvalid;
+  logic                                             axi_mhdma_fifo_bready;
+  logic [31:0]                                      axi_mhdma_fifo_araddr;
+  logic                                             axi_mhdma_fifo_arvalid;
+  logic                                             axi_mhdma_fifo_arready;
+  logic [31:0]                                      axi_mhdma_fifo_rdata;
+  logic [1:0]                                       axi_mhdma_fifo_rresp;
+  logic                                             axi_mhdma_fifo_rvalid;
+  logic                                             axi_mhdma_fifo_rready;
   // unused for axi lite
-  logic [2:0]                                       axi_eth_fifo_arprot;
-  logic [2:0]                                       axi_eth_fifo_awprot;
+  logic [2:0]                                       axi_mhdma_fifo_arprot;
+  logic [2:0]                                       axi_mhdma_fifo_awprot;
 
   // axi4-lite direct access to dma controller interface
-  logic [31:0]                                      axi_eth_dma_awaddr;
-  logic                                             axi_eth_dma_awvalid;
-  logic                                             axi_eth_dma_awready;
-  logic [31:0]                                      axi_eth_dma_wdata;
-  logic                                             axi_eth_dma_wvalid;
-  logic                                             axi_eth_dma_wready;
-  logic [3:0]                                       axi_eth_dma_wstrb;
-  logic [1:0]                                       axi_eth_dma_bresp;
-  logic                                             axi_eth_dma_bvalid;
-  logic                                             axi_eth_dma_bready;
-  logic [31:0]                                      axi_eth_dma_araddr;
-  logic                                             axi_eth_dma_arvalid;
-  logic                                             axi_eth_dma_arready;
-  logic [31:0]                                      axi_eth_dma_rdata;
-  logic [1:0]                                       axi_eth_dma_rresp;
-  logic                                             axi_eth_dma_rvalid;
-  logic                                             axi_eth_dma_rready;
+  logic [31:0]                                      axi_mhdma_dma_awaddr;
+  logic                                             axi_mhdma_dma_awvalid;
+  logic                                             axi_mhdma_dma_awready;
+  logic [31:0]                                      axi_mhdma_dma_wdata;
+  logic                                             axi_mhdma_dma_wvalid;
+  logic                                             axi_mhdma_dma_wready;
+  logic [3:0]                                       axi_mhdma_dma_wstrb;
+  logic [1:0]                                       axi_mhdma_dma_bresp;
+  logic                                             axi_mhdma_dma_bvalid;
+  logic                                             axi_mhdma_dma_bready;
+  logic [31:0]                                      axi_mhdma_dma_araddr;
+  logic                                             axi_mhdma_dma_arvalid;
+  logic                                             axi_mhdma_dma_arready;
+  logic [31:0]                                      axi_mhdma_dma_rdata;
+  logic [1:0]                                       axi_mhdma_dma_rresp;
+  logic                                             axi_mhdma_dma_rvalid;
+  logic                                             axi_mhdma_dma_rready;
   // unused for axi lite
-  logic [2:0]                                       axi_eth_dma_arprot;
-  logic [2:0]                                       axi_eth_dma_awprot;
+  logic [2:0]                                       axi_mhdma_dma_arprot;
+  logic [2:0]                                       axi_mhdma_dma_awprot;
 
   /* TRACE
    *
@@ -576,55 +581,52 @@ module top_hpu #(
 
   // HPU_AXI4_ETH_HBM
   /*Write channel*/
-  logic [ETH_PC-1:0][AXI4_ETH_ID_W-1:0]         m_axi4_eth_hbm_awid;
-  logic [ETH_PC-1:0][AXI4_ETH_ADD_W-1:0]        m_axi4_eth_hbm_awaddr;
-  logic [ETH_PC-1:0][AXI4_LEN_W-1:0]            m_axi4_eth_hbm_awlen;
-  logic [ETH_PC-1:0][AXI4_SIZE_W-1:0]           m_axi4_eth_hbm_awsize;
-  logic [ETH_PC-1:0][AXI4_BURST_W-1:0]          m_axi4_eth_hbm_awburst;
-  logic [ETH_PC-1:0]                            m_axi4_eth_hbm_awvalid;
-  logic [ETH_PC-1:0]                            m_axi4_eth_hbm_awready;
-  logic [ETH_PC-1:0][AXI4_ETH_DATA_W-1:0]       m_axi4_eth_hbm_wdata;
-  logic [ETH_PC-1:0][AXI4_ETH_DATA_BYTES-1:0]   m_axi4_eth_hbm_wstrb;   // unused
-  logic [ETH_PC-1:0]                            m_axi4_eth_hbm_wlast;
-  logic [ETH_PC-1:0]                            m_axi4_eth_hbm_wvalid;
-  logic [ETH_PC-1:0]                            m_axi4_eth_hbm_wready;
-  logic [ETH_PC-1:0][AXI4_ETH_ID_W-1:0]         m_axi4_eth_hbm_bid;
-  logic [ETH_PC-1:0][AXI4_RESP_W-1:0]           m_axi4_eth_hbm_bresp;
-  logic [ETH_PC-1:0]                            m_axi4_eth_hbm_bvalid;
-  logic [ETH_PC-1:0]                            m_axi4_eth_hbm_bready;
+  logic [ETH_PC-1:0][AXI4_MHDMA_ID_W-1:0]       m_axi4_mhdma_hbm_awid;
+  logic [ETH_PC-1:0][AXI4_MHDMA_ADD_W-1:0]      m_axi4_mhdma_hbm_awaddr;
+  logic [ETH_PC-1:0][AXI4_LEN_W-1:0]            m_axi4_mhdma_hbm_awlen;
+  logic [ETH_PC-1:0][AXI4_SIZE_W-1:0]           m_axi4_mhdma_hbm_awsize;
+  logic [ETH_PC-1:0][AXI4_BURST_W-1:0]          m_axi4_mhdma_hbm_awburst;
+  logic [ETH_PC-1:0]                            m_axi4_mhdma_hbm_awvalid;
+  logic [ETH_PC-1:0]                            m_axi4_mhdma_hbm_awready;
+  logic [ETH_PC-1:0][AXI4_MHDMA_DATA_W-1:0]     m_axi4_mhdma_hbm_wdata;
+  logic [ETH_PC-1:0][AXI4_MHDMA_DATA_BYTES-1:0] m_axi4_mhdma_hbm_wstrb;   // unused
+  logic [ETH_PC-1:0]                            m_axi4_mhdma_hbm_wlast;
+  logic [ETH_PC-1:0]                            m_axi4_mhdma_hbm_wvalid;
+  logic [ETH_PC-1:0]                            m_axi4_mhdma_hbm_wready;
+  logic [ETH_PC-1:0][AXI4_MHDMA_ID_W-1:0]       m_axi4_mhdma_hbm_bid;
+  logic [ETH_PC-1:0][AXI4_RESP_W-1:0]           m_axi4_mhdma_hbm_bresp;
+  logic [ETH_PC-1:0]                            m_axi4_mhdma_hbm_bvalid;
+  logic [ETH_PC-1:0]                            m_axi4_mhdma_hbm_bready;
   /*Unused signal tight to constant in the top*/
-  logic [ETH_PC-1:0][AXI4_AWLOCK_W-1:0]         m_axi4_eth_hbm_awlock;
-  logic [ETH_PC-1:0][AXI4_AWCACHE_W-1:0]        m_axi4_eth_hbm_awcache;
-  logic [ETH_PC-1:0][AXI4_AWPROT_W-1:0]         m_axi4_eth_hbm_awprot;
-  logic [ETH_PC-1:0][AXI4_AWQOS_W-1:0]          m_axi4_eth_hbm_awqos;
-  logic [ETH_PC-1:0][AXI4_AWREGION_W-1:0]       m_axi4_eth_hbm_awregion;
+  logic [ETH_PC-1:0][AXI4_AWLOCK_W-1:0]         m_axi4_mhdma_hbm_awlock;
+  logic [ETH_PC-1:0][AXI4_AWCACHE_W-1:0]        m_axi4_mhdma_hbm_awcache;
+  logic [ETH_PC-1:0][AXI4_AWPROT_W-1:0]         m_axi4_mhdma_hbm_awprot;
+  logic [ETH_PC-1:0][AXI4_AWQOS_W-1:0]          m_axi4_mhdma_hbm_awqos;
+  logic [ETH_PC-1:0][AXI4_AWREGION_W-1:0]       m_axi4_mhdma_hbm_awregion;
   /*Read channel*/
-  logic [ETH_PC-1:0][AXI4_ETH_ID_W-1:0]         m_axi4_eth_hbm_arid;
-  logic [ETH_PC-1:0][AXI4_ETH_ADD_W-1:0]        m_axi4_eth_hbm_araddr;
-  logic [ETH_PC-1:0][AXI4_LEN_W-1:0]            m_axi4_eth_hbm_arlen;
-  logic [ETH_PC-1:0][AXI4_SIZE_W-1:0]           m_axi4_eth_hbm_arsize;
-  logic [ETH_PC-1:0][AXI4_BURST_W-1:0]          m_axi4_eth_hbm_arburst;
-  logic [ETH_PC-1:0]                            m_axi4_eth_hbm_arvalid;
-  logic [ETH_PC-1:0]                            m_axi4_eth_hbm_arready;
-  logic [ETH_PC-1:0][AXI4_ETH_ID_W-1:0]         m_axi4_eth_hbm_rid;       // unused
-  logic [ETH_PC-1:0][AXI4_ETH_DATA_W-1:0]       m_axi4_eth_hbm_rdata;
-  logic [ETH_PC-1:0][AXI4_RESP_W-1:0]           m_axi4_eth_hbm_rresp;
-  logic [ETH_PC-1:0]                            m_axi4_eth_hbm_rlast;
-  logic [ETH_PC-1:0]                            m_axi4_eth_hbm_rvalid;
-  logic [ETH_PC-1:0]                            m_axi4_eth_hbm_rready;
+  logic [ETH_PC-1:0][AXI4_MHDMA_ID_W-1:0]       m_axi4_mhdma_hbm_arid;
+  logic [ETH_PC-1:0][AXI4_MHDMA_ADD_W-1:0]      m_axi4_mhdma_hbm_araddr;
+  logic [ETH_PC-1:0][AXI4_LEN_W-1:0]            m_axi4_mhdma_hbm_arlen;
+  logic [ETH_PC-1:0][AXI4_SIZE_W-1:0]           m_axi4_mhdma_hbm_arsize;
+  logic [ETH_PC-1:0][AXI4_BURST_W-1:0]          m_axi4_mhdma_hbm_arburst;
+  logic [ETH_PC-1:0]                            m_axi4_mhdma_hbm_arvalid;
+  logic [ETH_PC-1:0]                            m_axi4_mhdma_hbm_arready;
+  logic [ETH_PC-1:0][AXI4_MHDMA_ID_W-1:0]       m_axi4_mhdma_hbm_rid;       // unused
+  logic [ETH_PC-1:0][AXI4_MHDMA_DATA_W-1:0]     m_axi4_mhdma_hbm_rdata;
+  logic [ETH_PC-1:0][AXI4_RESP_W-1:0]           m_axi4_mhdma_hbm_rresp;
+  logic [ETH_PC-1:0]                            m_axi4_mhdma_hbm_rlast;
+  logic [ETH_PC-1:0]                            m_axi4_mhdma_hbm_rvalid;
+  logic [ETH_PC-1:0]                            m_axi4_mhdma_hbm_rready;
   /*Unused signal tight to constant in the top*/
-  logic [ETH_PC-1:0][AXI4_ARLOCK_W-1:0]         m_axi4_eth_hbm_arlock;
-  logic [ETH_PC-1:0][AXI4_ARCACHE_W-1:0]        m_axi4_eth_hbm_arcache;
-  logic [ETH_PC-1:0][AXI4_ARPROT_W-1:0]         m_axi4_eth_hbm_arprot;
-  logic [ETH_PC-1:0][AXI4_ARQOS_W-1:0]          m_axi4_eth_hbm_arqos;
-  logic [ETH_PC-1:0][AXI4_ARREGION_W-1:0]       m_axi4_eth_hbm_arregion;
+  logic [ETH_PC-1:0][AXI4_ARLOCK_W-1:0]         m_axi4_mhdma_hbm_arlock;
+  logic [ETH_PC-1:0][AXI4_ARCACHE_W-1:0]        m_axi4_mhdma_hbm_arcache;
+  logic [ETH_PC-1:0][AXI4_ARPROT_W-1:0]         m_axi4_mhdma_hbm_arprot;
+  logic [ETH_PC-1:0][AXI4_ARQOS_W-1:0]          m_axi4_mhdma_hbm_arqos;
+  logic [ETH_PC-1:0][AXI4_ARREGION_W-1:0]       m_axi4_mhdma_hbm_arregion;
 
   // ======================================================================= //
   // Ethernet link: MRMAC, GTM and DMA
   // ======================================================================= //
-  // mrmac axi4-stream interface
-  logic clk_axis_mrmac;
-  // ----------------------------------------------------------------------- //
   // coming from regif: dma
   // ---------------------- //
   // Line rate
@@ -2280,83 +2282,83 @@ module top_hpu #(
     .KSK_AXI_15_wstrb   (m_axi4_ksk_wstrb[15]   ),
     .KSK_AXI_15_wvalid  (m_axi4_ksk_wvalid[15]  ),
 
-    .ETH_HBM_AXI_0_araddr  (m_axi4_eth_hbm_araddr[0]  ),
-    .ETH_HBM_AXI_0_arburst (m_axi4_eth_hbm_arburst[0] ),
-    .ETH_HBM_AXI_0_arcache (m_axi4_eth_hbm_arcache[0] ),
-    // .ETH_HBM_AXI_0_arid    (m_axi4_eth_hbm_arid[0]    ),
-    .ETH_HBM_AXI_0_arlen   (m_axi4_eth_hbm_arlen[0]   ),
-    .ETH_HBM_AXI_0_arlock  (m_axi4_eth_hbm_arlock[0]  ),
-    .ETH_HBM_AXI_0_arprot  (m_axi4_eth_hbm_arprot[0]  ),
-    .ETH_HBM_AXI_0_arready (m_axi4_eth_hbm_arready[0] ),
-    .ETH_HBM_AXI_0_arsize  (m_axi4_eth_hbm_arsize[0]  ),
-    // .ETH_HBM_AXI_0_aruser  (m_axi4_eth_hbm_aruser[0]  ),//
-    .ETH_HBM_AXI_0_arvalid (m_axi4_eth_hbm_arvalid[0] ),
-    .ETH_HBM_AXI_0_awaddr  (m_axi4_eth_hbm_awaddr[0]  ),
-    .ETH_HBM_AXI_0_awburst (m_axi4_eth_hbm_awburst[0] ),
-    .ETH_HBM_AXI_0_awcache (m_axi4_eth_hbm_awcache[0] ),
-    .ETH_HBM_AXI_0_awid    (m_axi4_eth_hbm_awid[0]    ),
-    .ETH_HBM_AXI_0_awlen   (m_axi4_eth_hbm_awlen[0]   ),
-    .ETH_HBM_AXI_0_awlock  (m_axi4_eth_hbm_awlock[0]  ),
-    .ETH_HBM_AXI_0_awprot  (m_axi4_eth_hbm_awprot[0]  ),
-    .ETH_HBM_AXI_0_awready (m_axi4_eth_hbm_awready[0] ),
-    .ETH_HBM_AXI_0_awsize  (m_axi4_eth_hbm_awsize[0]  ),
-    // .ETH_HBM_AXI_0_awuser  (m_axi4_eth_hbm_awuser[0]  ),//
-    .ETH_HBM_AXI_0_awvalid (m_axi4_eth_hbm_awvalid[0] ),
-    .ETH_HBM_AXI_0_bid     (m_axi4_eth_hbm_bid[0]     ),
-    .ETH_HBM_AXI_0_bready  (m_axi4_eth_hbm_bready[0]  ),
-    .ETH_HBM_AXI_0_bresp   (m_axi4_eth_hbm_bresp[0]   ),
-    // .ETH_HBM_AXI_0_buser   (m_axi4_eth_hbm_buser[0]   ),//
-    .ETH_HBM_AXI_0_bvalid  (m_axi4_eth_hbm_bvalid[0]  ),
-    .ETH_HBM_AXI_0_rdata   (m_axi4_eth_hbm_rdata[0]   ),
-    // .ETH_HBM_AXI_0_rid     (m_axi4_eth_hbm_rid[0]     ),
-    .ETH_HBM_AXI_0_rlast   (m_axi4_eth_hbm_rlast[0]   ),
-    .ETH_HBM_AXI_0_rready  (m_axi4_eth_hbm_rready[0]  ),
-    .ETH_HBM_AXI_0_rresp   (m_axi4_eth_hbm_rresp[0]   ),
-    .ETH_HBM_AXI_0_rvalid  (m_axi4_eth_hbm_rvalid[0]  ),
-    .ETH_HBM_AXI_0_wdata   (m_axi4_eth_hbm_wdata[0]   ),
-    .ETH_HBM_AXI_0_wlast   (m_axi4_eth_hbm_wlast[0]   ),
-    .ETH_HBM_AXI_0_wready  (m_axi4_eth_hbm_wready[0]  ),
-    .ETH_HBM_AXI_0_wstrb   (m_axi4_eth_hbm_wstrb[0]   ),
-    .ETH_HBM_AXI_0_wvalid  (m_axi4_eth_hbm_wvalid[0]  ),
+    .MHDMA_HBM_AXI_0_araddr  (m_axi4_mhdma_hbm_araddr[0]  ),
+    .MHDMA_HBM_AXI_0_arburst (m_axi4_mhdma_hbm_arburst[0] ),
+    .MHDMA_HBM_AXI_0_arcache (m_axi4_mhdma_hbm_arcache[0] ),
+    // .MHDMA_HBM_AXI_0_arid    (m_axi4_mhdma_hbm_arid[0]    ),
+    .MHDMA_HBM_AXI_0_arlen   (m_axi4_mhdma_hbm_arlen[0]   ),
+    .MHDMA_HBM_AXI_0_arlock  (m_axi4_mhdma_hbm_arlock[0]  ),
+    .MHDMA_HBM_AXI_0_arprot  (m_axi4_mhdma_hbm_arprot[0]  ),
+    .MHDMA_HBM_AXI_0_arready (m_axi4_mhdma_hbm_arready[0] ),
+    .MHDMA_HBM_AXI_0_arsize  (m_axi4_mhdma_hbm_arsize[0]  ),
+    // .MHDMA_HBM_AXI_0_aruser  (m_axi4_mhdma_hbm_aruser[0]  ),//
+    .MHDMA_HBM_AXI_0_arvalid (m_axi4_mhdma_hbm_arvalid[0] ),
+    .MHDMA_HBM_AXI_0_awaddr  (m_axi4_mhdma_hbm_awaddr[0]  ),
+    .MHDMA_HBM_AXI_0_awburst (m_axi4_mhdma_hbm_awburst[0] ),
+    .MHDMA_HBM_AXI_0_awcache (m_axi4_mhdma_hbm_awcache[0] ),
+    .MHDMA_HBM_AXI_0_awid    (m_axi4_mhdma_hbm_awid[0]    ),
+    .MHDMA_HBM_AXI_0_awlen   (m_axi4_mhdma_hbm_awlen[0]   ),
+    .MHDMA_HBM_AXI_0_awlock  (m_axi4_mhdma_hbm_awlock[0]  ),
+    .MHDMA_HBM_AXI_0_awprot  (m_axi4_mhdma_hbm_awprot[0]  ),
+    .MHDMA_HBM_AXI_0_awready (m_axi4_mhdma_hbm_awready[0] ),
+    .MHDMA_HBM_AXI_0_awsize  (m_axi4_mhdma_hbm_awsize[0]  ),
+    // .MHDMA_HBM_AXI_0_awuser  (m_axi4_mhdma_hbm_awuser[0]  ),//
+    .MHDMA_HBM_AXI_0_awvalid (m_axi4_mhdma_hbm_awvalid[0] ),
+    .MHDMA_HBM_AXI_0_bid     (m_axi4_mhdma_hbm_bid[0]     ),
+    .MHDMA_HBM_AXI_0_bready  (m_axi4_mhdma_hbm_bready[0]  ),
+    .MHDMA_HBM_AXI_0_bresp   (m_axi4_mhdma_hbm_bresp[0]   ),
+    // .MHDMA_HBM_AXI_0_buser   (m_axi4_mhdma_hbm_buser[0]   ),//
+    .MHDMA_HBM_AXI_0_bvalid  (m_axi4_mhdma_hbm_bvalid[0]  ),
+    .MHDMA_HBM_AXI_0_rdata   (m_axi4_mhdma_hbm_rdata[0]   ),
+    // .MHDMA_HBM_AXI_0_rid     (m_axi4_mhdma_hbm_rid[0]     ),
+    .MHDMA_HBM_AXI_0_rlast   (m_axi4_mhdma_hbm_rlast[0]   ),
+    .MHDMA_HBM_AXI_0_rready  (m_axi4_mhdma_hbm_rready[0]  ),
+    .MHDMA_HBM_AXI_0_rresp   (m_axi4_mhdma_hbm_rresp[0]   ),
+    .MHDMA_HBM_AXI_0_rvalid  (m_axi4_mhdma_hbm_rvalid[0]  ),
+    .MHDMA_HBM_AXI_0_wdata   (m_axi4_mhdma_hbm_wdata[0]   ),
+    .MHDMA_HBM_AXI_0_wlast   (m_axi4_mhdma_hbm_wlast[0]   ),
+    .MHDMA_HBM_AXI_0_wready  (m_axi4_mhdma_hbm_wready[0]  ),
+    .MHDMA_HBM_AXI_0_wstrb   (m_axi4_mhdma_hbm_wstrb[0]   ),
+    .MHDMA_HBM_AXI_0_wvalid  (m_axi4_mhdma_hbm_wvalid[0]  ),
 
-    .ETH_HBM_AXI_1_araddr  (m_axi4_eth_hbm_araddr[1]  ),
-    .ETH_HBM_AXI_1_arburst (m_axi4_eth_hbm_arburst[1] ),
-    .ETH_HBM_AXI_1_arcache (m_axi4_eth_hbm_arcache[1] ),
-    // .ETH_HBM_AXI_1_arid    (m_axi4_eth_hbm_arid[1]    ),
-    .ETH_HBM_AXI_1_arlen   (m_axi4_eth_hbm_arlen[1]   ),
-    .ETH_HBM_AXI_1_arlock  (m_axi4_eth_hbm_arlock[1]  ),
-    .ETH_HBM_AXI_1_arprot  (m_axi4_eth_hbm_arprot[1]  ),
-    .ETH_HBM_AXI_1_arready (m_axi4_eth_hbm_arready[1] ),
-    .ETH_HBM_AXI_1_arsize  (m_axi4_eth_hbm_arsize[1]  ),
-    // .ETH_HBM_AXI_1_aruser  (m_axi4_eth_hbm_aruser[1]  ),//
-    .ETH_HBM_AXI_1_arvalid (m_axi4_eth_hbm_arvalid[1] ),
-    .ETH_HBM_AXI_1_awaddr  (m_axi4_eth_hbm_awaddr[1]  ),
-    .ETH_HBM_AXI_1_awburst (m_axi4_eth_hbm_awburst[1] ),
-    .ETH_HBM_AXI_1_awcache (m_axi4_eth_hbm_awcache[1] ),
-    .ETH_HBM_AXI_1_awid    (m_axi4_eth_hbm_awid[1]    ),
-    .ETH_HBM_AXI_1_awlen   (m_axi4_eth_hbm_awlen[1]   ),
-    .ETH_HBM_AXI_1_awlock  (m_axi4_eth_hbm_awlock[1]  ),
-    .ETH_HBM_AXI_1_awprot  (m_axi4_eth_hbm_awprot[1]  ),
-    .ETH_HBM_AXI_1_awready (m_axi4_eth_hbm_awready[1] ),
-    .ETH_HBM_AXI_1_awsize  (m_axi4_eth_hbm_awsize[1]  ),
-    // .ETH_HBM_AXI_1_awuser  (m_axi4_eth_hbm_awuser[1]  ),//
-    .ETH_HBM_AXI_1_awvalid (m_axi4_eth_hbm_awvalid[1] ),
-    .ETH_HBM_AXI_1_bid     (m_axi4_eth_hbm_bid[1]     ),
-    .ETH_HBM_AXI_1_bready  (m_axi4_eth_hbm_bready[1]  ),
-    .ETH_HBM_AXI_1_bresp   (m_axi4_eth_hbm_bresp[1]   ),
-    // .ETH_HBM_AXI_1_buser   (m_axi4_eth_hbm_buser[1]   ),//
-    .ETH_HBM_AXI_1_bvalid  (m_axi4_eth_hbm_bvalid[1]  ),
-    .ETH_HBM_AXI_1_rdata   (m_axi4_eth_hbm_rdata[1]   ),
-    // .ETH_HBM_AXI_1_rid     (m_axi4_eth_hbm_rid[1]     ),
-    .ETH_HBM_AXI_1_rlast   (m_axi4_eth_hbm_rlast[1]   ),
-    .ETH_HBM_AXI_1_rready  (m_axi4_eth_hbm_rready[1]  ),
-    .ETH_HBM_AXI_1_rresp   (m_axi4_eth_hbm_rresp[1]   ),
-    .ETH_HBM_AXI_1_rvalid  (m_axi4_eth_hbm_rvalid[1]  ),
-    .ETH_HBM_AXI_1_wdata   (m_axi4_eth_hbm_wdata[1]   ),
-    .ETH_HBM_AXI_1_wlast   (m_axi4_eth_hbm_wlast[1]   ),
-    .ETH_HBM_AXI_1_wready  (m_axi4_eth_hbm_wready[1]  ),
-    .ETH_HBM_AXI_1_wstrb   (m_axi4_eth_hbm_wstrb[1]   ),
-    .ETH_HBM_AXI_1_wvalid  (m_axi4_eth_hbm_wvalid[1]  ),
+    .MHDMA_HBM_AXI_1_araddr  (m_axi4_mhdma_hbm_araddr[1]  ),
+    .MHDMA_HBM_AXI_1_arburst (m_axi4_mhdma_hbm_arburst[1] ),
+    .MHDMA_HBM_AXI_1_arcache (m_axi4_mhdma_hbm_arcache[1] ),
+    // .MHDMA_HBM_AXI_1_arid    (m_axi4_mhdma_hbm_arid[1]    ),
+    .MHDMA_HBM_AXI_1_arlen   (m_axi4_mhdma_hbm_arlen[1]   ),
+    .MHDMA_HBM_AXI_1_arlock  (m_axi4_mhdma_hbm_arlock[1]  ),
+    .MHDMA_HBM_AXI_1_arprot  (m_axi4_mhdma_hbm_arprot[1]  ),
+    .MHDMA_HBM_AXI_1_arready (m_axi4_mhdma_hbm_arready[1] ),
+    .MHDMA_HBM_AXI_1_arsize  (m_axi4_mhdma_hbm_arsize[1]  ),
+    // .MHDMA_HBM_AXI_1_aruser  (m_axi4_mhdma_hbm_aruser[1]  ),//
+    .MHDMA_HBM_AXI_1_arvalid (m_axi4_mhdma_hbm_arvalid[1] ),
+    .MHDMA_HBM_AXI_1_awaddr  (m_axi4_mhdma_hbm_awaddr[1]  ),
+    .MHDMA_HBM_AXI_1_awburst (m_axi4_mhdma_hbm_awburst[1] ),
+    .MHDMA_HBM_AXI_1_awcache (m_axi4_mhdma_hbm_awcache[1] ),
+    .MHDMA_HBM_AXI_1_awid    (m_axi4_mhdma_hbm_awid[1]    ),
+    .MHDMA_HBM_AXI_1_awlen   (m_axi4_mhdma_hbm_awlen[1]   ),
+    .MHDMA_HBM_AXI_1_awlock  (m_axi4_mhdma_hbm_awlock[1]  ),
+    .MHDMA_HBM_AXI_1_awprot  (m_axi4_mhdma_hbm_awprot[1]  ),
+    .MHDMA_HBM_AXI_1_awready (m_axi4_mhdma_hbm_awready[1] ),
+    .MHDMA_HBM_AXI_1_awsize  (m_axi4_mhdma_hbm_awsize[1]  ),
+    // .MHDMA_HBM_AXI_1_awuser  (m_axi4_mhdma_hbm_awuser[1]  ),//
+    .MHDMA_HBM_AXI_1_awvalid (m_axi4_mhdma_hbm_awvalid[1] ),
+    .MHDMA_HBM_AXI_1_bid     (m_axi4_mhdma_hbm_bid[1]     ),
+    .MHDMA_HBM_AXI_1_bready  (m_axi4_mhdma_hbm_bready[1]  ),
+    .MHDMA_HBM_AXI_1_bresp   (m_axi4_mhdma_hbm_bresp[1]   ),
+    // .MHDMA_HBM_AXI_1_buser   (m_axi4_mhdma_hbm_buser[1]   ),//
+    .MHDMA_HBM_AXI_1_bvalid  (m_axi4_mhdma_hbm_bvalid[1]  ),
+    .MHDMA_HBM_AXI_1_rdata   (m_axi4_mhdma_hbm_rdata[1]   ),
+    // .MHDMA_HBM_AXI_1_rid     (m_axi4_mhdma_hbm_rid[1]     ),
+    .MHDMA_HBM_AXI_1_rlast   (m_axi4_mhdma_hbm_rlast[1]   ),
+    .MHDMA_HBM_AXI_1_rready  (m_axi4_mhdma_hbm_rready[1]  ),
+    .MHDMA_HBM_AXI_1_rresp   (m_axi4_mhdma_hbm_rresp[1]   ),
+    .MHDMA_HBM_AXI_1_rvalid  (m_axi4_mhdma_hbm_rvalid[1]  ),
+    .MHDMA_HBM_AXI_1_wdata   (m_axi4_mhdma_hbm_wdata[1]   ),
+    .MHDMA_HBM_AXI_1_wlast   (m_axi4_mhdma_hbm_wlast[1]   ),
+    .MHDMA_HBM_AXI_1_wready  (m_axi4_mhdma_hbm_wready[1]  ),
+    .MHDMA_HBM_AXI_1_wstrb   (m_axi4_mhdma_hbm_wstrb[1]   ),
+    .MHDMA_HBM_AXI_1_wvalid  (m_axi4_mhdma_hbm_wvalid[1]  ),
 
     /* AXI stream
      */
@@ -2411,72 +2413,72 @@ module top_hpu #(
 
     /* Axi4-lite loopback
      * in order to set correct address-space to access ethernet configuration link
-     * ETH_AXI_X_ corresponds to the X'th output of the NOC
-     * ETH_AXI_ID corresponds to "ID" block
+     * MHDMA_AXI_X_ corresponds to the X'th output of the NOC
+     * MHDMA_AXI_ID corresponds to "ID" block
       * address is x8008'0000 + offset while the two IPs are expecting for x0000'XXXX
      *
      * AXI 0 -> id=cfg (IP) mrmac configuration registers
      * AXI 1 -> direct access to dma regfile
      */
-    .ETH_AXI_0_araddr   (axi_eth_mrmac_araddr),
-    .ETH_AXI_0_arready  (axi_eth_mrmac_arready),
-    .ETH_AXI_0_arvalid  (axi_eth_mrmac_arvalid),
-    .ETH_AXI_0_awaddr   (axi_eth_mrmac_awaddr),
-    .ETH_AXI_0_awready  (axi_eth_mrmac_awready),
-    .ETH_AXI_0_awvalid  (axi_eth_mrmac_awvalid),
-    .ETH_AXI_0_bready   (axi_eth_mrmac_bready),
-    .ETH_AXI_0_bresp    (axi_eth_mrmac_bresp),
-    .ETH_AXI_0_bvalid   (axi_eth_mrmac_bvalid),
-    .ETH_AXI_0_rdata    (axi_eth_mrmac_rdata),
-    .ETH_AXI_0_rready   (axi_eth_mrmac_rready),
-    .ETH_AXI_0_rresp    (axi_eth_mrmac_rresp),
-    .ETH_AXI_0_rvalid   (axi_eth_mrmac_rvalid),
-    .ETH_AXI_0_wdata    (axi_eth_mrmac_wdata),
-    .ETH_AXI_0_wready   (axi_eth_mrmac_wready),
-    .ETH_AXI_0_wvalid   (axi_eth_mrmac_wvalid),
+    .MHDMA_AXI_0_araddr   (axi_mhdma_mrmac_araddr),
+    .MHDMA_AXI_0_arready  (axi_mhdma_mrmac_arready),
+    .MHDMA_AXI_0_arvalid  (axi_mhdma_mrmac_arvalid),
+    .MHDMA_AXI_0_awaddr   (axi_mhdma_mrmac_awaddr),
+    .MHDMA_AXI_0_awready  (axi_mhdma_mrmac_awready),
+    .MHDMA_AXI_0_awvalid  (axi_mhdma_mrmac_awvalid),
+    .MHDMA_AXI_0_bready   (axi_mhdma_mrmac_bready),
+    .MHDMA_AXI_0_bresp    (axi_mhdma_mrmac_bresp),
+    .MHDMA_AXI_0_bvalid   (axi_mhdma_mrmac_bvalid),
+    .MHDMA_AXI_0_rdata    (axi_mhdma_mrmac_rdata),
+    .MHDMA_AXI_0_rready   (axi_mhdma_mrmac_rready),
+    .MHDMA_AXI_0_rresp    (axi_mhdma_mrmac_rresp),
+    .MHDMA_AXI_0_rvalid   (axi_mhdma_mrmac_rvalid),
+    .MHDMA_AXI_0_wdata    (axi_mhdma_mrmac_wdata),
+    .MHDMA_AXI_0_wready   (axi_mhdma_mrmac_wready),
+    .MHDMA_AXI_0_wvalid   (axi_mhdma_mrmac_wvalid),
     // unused after loopback
-    .ETH_AXI_0_arprot   (axi_eth_mrmac_arprot),
-    .ETH_AXI_0_awprot   (axi_eth_mrmac_awprot),
-    .ETH_AXI_0_wstrb    (axi_eth_mrmac_wstrb),
+    .MHDMA_AXI_0_arprot   (axi_mhdma_mrmac_arprot),
+    .MHDMA_AXI_0_awprot   (axi_mhdma_mrmac_awprot),
+    .MHDMA_AXI_0_wstrb    (axi_mhdma_mrmac_wstrb),
 
-    .ETH_AXI_CFG_araddr   ({'h0000, axi_eth_mrmac_araddr[15:0]}),
-    .ETH_AXI_CFG_arready  (axi_eth_mrmac_arready),
-    .ETH_AXI_CFG_arvalid  (axi_eth_mrmac_arvalid),
-    .ETH_AXI_CFG_awaddr   ({'h0000, axi_eth_mrmac_awaddr[15:0]}),
-    .ETH_AXI_CFG_awready  (axi_eth_mrmac_awready),
-    .ETH_AXI_CFG_awvalid  (axi_eth_mrmac_awvalid),
-    .ETH_AXI_CFG_bready   (axi_eth_mrmac_bready),
-    .ETH_AXI_CFG_bresp    (axi_eth_mrmac_bresp),
-    .ETH_AXI_CFG_bvalid   (axi_eth_mrmac_bvalid),
-    .ETH_AXI_CFG_rdata    (axi_eth_mrmac_rdata),
-    .ETH_AXI_CFG_rready   (axi_eth_mrmac_rready),
-    .ETH_AXI_CFG_rresp    (axi_eth_mrmac_rresp),
-    .ETH_AXI_CFG_rvalid   (axi_eth_mrmac_rvalid),
-    .ETH_AXI_CFG_wdata    (axi_eth_mrmac_wdata),
-    .ETH_AXI_CFG_wready   (axi_eth_mrmac_wready),
-    .ETH_AXI_CFG_wvalid   (axi_eth_mrmac_wvalid),
+    .MHDMA_AXI_CFG_araddr   ({'h0000, axi_mhdma_mrmac_araddr[15:0]}),
+    .MHDMA_AXI_CFG_arready  (axi_mhdma_mrmac_arready),
+    .MHDMA_AXI_CFG_arvalid  (axi_mhdma_mrmac_arvalid),
+    .MHDMA_AXI_CFG_awaddr   ({'h0000, axi_mhdma_mrmac_awaddr[15:0]}),
+    .MHDMA_AXI_CFG_awready  (axi_mhdma_mrmac_awready),
+    .MHDMA_AXI_CFG_awvalid  (axi_mhdma_mrmac_awvalid),
+    .MHDMA_AXI_CFG_bready   (axi_mhdma_mrmac_bready),
+    .MHDMA_AXI_CFG_bresp    (axi_mhdma_mrmac_bresp),
+    .MHDMA_AXI_CFG_bvalid   (axi_mhdma_mrmac_bvalid),
+    .MHDMA_AXI_CFG_rdata    (axi_mhdma_mrmac_rdata),
+    .MHDMA_AXI_CFG_rready   (axi_mhdma_mrmac_rready),
+    .MHDMA_AXI_CFG_rresp    (axi_mhdma_mrmac_rresp),
+    .MHDMA_AXI_CFG_rvalid   (axi_mhdma_mrmac_rvalid),
+    .MHDMA_AXI_CFG_wdata    (axi_mhdma_mrmac_wdata),
+    .MHDMA_AXI_CFG_wready   (axi_mhdma_mrmac_wready),
+    .MHDMA_AXI_CFG_wvalid   (axi_mhdma_mrmac_wvalid),
 
     // access to regfile in dma
-    .ETH_AXI_1_araddr   (axi_eth_dma_araddr),
-    .ETH_AXI_1_arready  (axi_eth_dma_arready),
-    .ETH_AXI_1_arvalid  (axi_eth_dma_arvalid),
-    .ETH_AXI_1_awaddr   (axi_eth_dma_awaddr),
-    .ETH_AXI_1_awready  (axi_eth_dma_awready),
-    .ETH_AXI_1_awvalid  (axi_eth_dma_awvalid),
-    .ETH_AXI_1_bready   (axi_eth_dma_bready),
-    .ETH_AXI_1_bresp    (axi_eth_dma_bresp),
-    .ETH_AXI_1_bvalid   (axi_eth_dma_bvalid),
-    .ETH_AXI_1_rdata    (axi_eth_dma_rdata),
-    .ETH_AXI_1_rready   (axi_eth_dma_rready),
-    .ETH_AXI_1_rresp    (axi_eth_dma_rresp),
-    .ETH_AXI_1_rvalid   (axi_eth_dma_rvalid),
-    .ETH_AXI_1_wdata    (axi_eth_dma_wdata),
-    .ETH_AXI_1_wready   (axi_eth_dma_wready),
-    .ETH_AXI_1_wvalid   (axi_eth_dma_wvalid),
+    .MHDMA_AXI_1_araddr   (axi_mhdma_dma_araddr),
+    .MHDMA_AXI_1_arready  (axi_mhdma_dma_arready),
+    .MHDMA_AXI_1_arvalid  (axi_mhdma_dma_arvalid),
+    .MHDMA_AXI_1_awaddr   (axi_mhdma_dma_awaddr),
+    .MHDMA_AXI_1_awready  (axi_mhdma_dma_awready),
+    .MHDMA_AXI_1_awvalid  (axi_mhdma_dma_awvalid),
+    .MHDMA_AXI_1_bready   (axi_mhdma_dma_bready),
+    .MHDMA_AXI_1_bresp    (axi_mhdma_dma_bresp),
+    .MHDMA_AXI_1_bvalid   (axi_mhdma_dma_bvalid),
+    .MHDMA_AXI_1_rdata    (axi_mhdma_dma_rdata),
+    .MHDMA_AXI_1_rready   (axi_mhdma_dma_rready),
+    .MHDMA_AXI_1_rresp    (axi_mhdma_dma_rresp),
+    .MHDMA_AXI_1_rvalid   (axi_mhdma_dma_rvalid),
+    .MHDMA_AXI_1_wdata    (axi_mhdma_dma_wdata),
+    .MHDMA_AXI_1_wready   (axi_mhdma_dma_wready),
+    .MHDMA_AXI_1_wvalid   (axi_mhdma_dma_wvalid),
     // unused after loopback
-    .ETH_AXI_1_arprot   (axi_eth_dma_arprot),
-    .ETH_AXI_1_awprot   (axi_eth_dma_awprot),
-    .ETH_AXI_1_wstrb    (axi_eth_dma_wstrb),
+    .MHDMA_AXI_1_arprot   (axi_mhdma_dma_arprot),
+    .MHDMA_AXI_1_awprot   (axi_mhdma_dma_awprot),
+    .MHDMA_AXI_1_wstrb    (axi_mhdma_dma_wstrb),
 
     /* Transceivers ------------------------------------------------------------------- //
      * -> GTM for one QSFP port
@@ -2607,9 +2609,9 @@ module top_hpu #(
 
     // == Ethernet
     // MRMAC clock - axi4-stream
-    .clk_axis_mrmac    (clk_axis_mrmac),
+    .clk_mhdma       (clk_mhdma    ),
     // configuration clock - axi4-lite
-    .clk_eth_cfg_0      (eth_cfg_clk),
+    .clk_mhdma_cfg_0 (mhdma_cfg_clk),
 
     // == DDR
     .sys_clk0_0_clk_n(top_sys_clk0_0_clk_n),
@@ -2630,7 +2632,7 @@ module top_hpu #(
     .AXI4_BSK_ADD_W   (AXI4_BSK_ADD_W),
     .AXI4_KSK_ADD_W   (AXI4_KSK_ADD_W),
     .INTER_PART_PIPE  (INTER_PART_PIPE),
-    .QSFP_LANE_NB          (QSFP_LANE_NB),
+    .QSFP_LANE_NB     (QSFP_LANE_NB),
     .AXIS_TDATA_W     (AXIS_TDATA_W),
     .AXIS_TKEEP_W     (AXIS_TKEEP_W)
   ) hpu_3parts (
@@ -2644,9 +2646,9 @@ module top_hpu #(
     .cfg_clk                       (cfg_clk),
     .cfg_srst_n                    (cfg_srst_n),
 
-    .cfg_eth_clk                   (eth_cfg_clk),
+    .cfg_mhdma_clk                 (mhdma_cfg_clk),
 
-    .prc_mrmac_clk                 (clk_axis_mrmac),
+    .prc_mhdma_clk                 (clk_mhdma),
 
     /* AXI-LITE
      * Direct connection to the hpu regif
@@ -2723,23 +2725,23 @@ module top_hpu #(
     .s_axil_cfg_3in3_rvalid        (axi_regif_cfg_rvalid[1]),
     .s_axil_cfg_3in3_rready        (axi_regif_cfg_rready[1]),
 
-    .s_axil_dma_2in3_awaddr        (axi_eth_dma_awaddr),
-    .s_axil_dma_2in3_awvalid       (axi_eth_dma_awvalid),
-    .s_axil_dma_2in3_awready       (axi_eth_dma_awready),
-    .s_axil_dma_2in3_wdata         (axi_eth_dma_wdata),
-    .s_axil_dma_2in3_wstrb         (axi_eth_dma_wstrb),
-    .s_axil_dma_2in3_wvalid        (axi_eth_dma_wvalid),
-    .s_axil_dma_2in3_wready        (axi_eth_dma_wready),
-    .s_axil_dma_2in3_bresp         (axi_eth_dma_bresp),
-    .s_axil_dma_2in3_bvalid        (axi_eth_dma_bvalid),
-    .s_axil_dma_2in3_bready        (axi_eth_dma_bready),
-    .s_axil_dma_2in3_araddr        (axi_eth_dma_araddr),
-    .s_axil_dma_2in3_arvalid       (axi_eth_dma_arvalid),
-    .s_axil_dma_2in3_arready       (axi_eth_dma_arready),
-    .s_axil_dma_2in3_rdata         (axi_eth_dma_rdata),
-    .s_axil_dma_2in3_rresp         (axi_eth_dma_rresp),
-    .s_axil_dma_2in3_rvalid        (axi_eth_dma_rvalid),
-    .s_axil_dma_2in3_rready        (axi_eth_dma_rready),
+    .s_axil_mhdma_2in3_awaddr      (axi_mhdma_dma_awaddr),
+    .s_axil_mhdma_2in3_awvalid     (axi_mhdma_dma_awvalid),
+    .s_axil_mhdma_2in3_awready     (axi_mhdma_dma_awready),
+    .s_axil_mhdma_2in3_wdata       (axi_mhdma_dma_wdata),
+    .s_axil_mhdma_2in3_wstrb       (axi_mhdma_dma_wstrb),
+    .s_axil_mhdma_2in3_wvalid      (axi_mhdma_dma_wvalid),
+    .s_axil_mhdma_2in3_wready      (axi_mhdma_dma_wready),
+    .s_axil_mhdma_2in3_bresp       (axi_mhdma_dma_bresp),
+    .s_axil_mhdma_2in3_bvalid      (axi_mhdma_dma_bvalid),
+    .s_axil_mhdma_2in3_bready      (axi_mhdma_dma_bready),
+    .s_axil_mhdma_2in3_araddr      (axi_mhdma_dma_araddr),
+    .s_axil_mhdma_2in3_arvalid     (axi_mhdma_dma_arvalid),
+    .s_axil_mhdma_2in3_arready     (axi_mhdma_dma_arready),
+    .s_axil_mhdma_2in3_rdata       (axi_mhdma_dma_rdata),
+    .s_axil_mhdma_2in3_rresp       (axi_mhdma_dma_rresp),
+    .s_axil_mhdma_2in3_rvalid      (axi_mhdma_dma_rvalid),
+    .s_axil_mhdma_2in3_rready      (axi_mhdma_dma_rready),
 
     .m_axi4_trc_awid               (m_axi4_trc_awid),
     .m_axi4_trc_awaddr             (m_axi4_trc_awaddr),
@@ -2941,45 +2943,45 @@ module top_hpu #(
     .m_axi4_ksk_arqos              (m_axi4_ksk_arqos),
     .m_axi4_ksk_arregion           (m_axi4_ksk_arregion),
 
-    .m_axi4_eth_hbm_awid           (m_axi4_eth_hbm_awid),
-    .m_axi4_eth_hbm_awaddr         (m_axi4_eth_hbm_awaddr),
-    .m_axi4_eth_hbm_awlen          (m_axi4_eth_hbm_awlen),
-    .m_axi4_eth_hbm_awsize         (m_axi4_eth_hbm_awsize),
-    .m_axi4_eth_hbm_awburst        (m_axi4_eth_hbm_awburst),
-    .m_axi4_eth_hbm_awvalid        (m_axi4_eth_hbm_awvalid),
-    .m_axi4_eth_hbm_awready        (m_axi4_eth_hbm_awready),
-    .m_axi4_eth_hbm_wdata          (m_axi4_eth_hbm_wdata),
-    .m_axi4_eth_hbm_wstrb          (m_axi4_eth_hbm_wstrb),
-    .m_axi4_eth_hbm_wlast          (m_axi4_eth_hbm_wlast),
-    .m_axi4_eth_hbm_wvalid         (m_axi4_eth_hbm_wvalid),
-    .m_axi4_eth_hbm_wready         (m_axi4_eth_hbm_wready),
-    .m_axi4_eth_hbm_bid            (m_axi4_eth_hbm_bid),
-    .m_axi4_eth_hbm_bresp          (m_axi4_eth_hbm_bresp),
-    .m_axi4_eth_hbm_bvalid         (m_axi4_eth_hbm_bvalid),
-    .m_axi4_eth_hbm_bready         (m_axi4_eth_hbm_bready),
-    .m_axi4_eth_hbm_awlock         (m_axi4_eth_hbm_awlock),
-    .m_axi4_eth_hbm_awcache        (m_axi4_eth_hbm_awcache),
-    .m_axi4_eth_hbm_awprot         (m_axi4_eth_hbm_awprot),
-    .m_axi4_eth_hbm_awqos          (m_axi4_eth_hbm_awqos),
-    .m_axi4_eth_hbm_awregion       (m_axi4_eth_hbm_awregion),
-    .m_axi4_eth_hbm_arid           (m_axi4_eth_hbm_arid),
-    .m_axi4_eth_hbm_araddr         (m_axi4_eth_hbm_araddr),
-    .m_axi4_eth_hbm_arlen          (m_axi4_eth_hbm_arlen),
-    .m_axi4_eth_hbm_arsize         (m_axi4_eth_hbm_arsize),
-    .m_axi4_eth_hbm_arburst        (m_axi4_eth_hbm_arburst),
-    .m_axi4_eth_hbm_arvalid        (m_axi4_eth_hbm_arvalid),
-    .m_axi4_eth_hbm_arready        (m_axi4_eth_hbm_arready),
-    .m_axi4_eth_hbm_rid            (m_axi4_eth_hbm_rid),
-    .m_axi4_eth_hbm_rdata          (m_axi4_eth_hbm_rdata),
-    .m_axi4_eth_hbm_rresp          (m_axi4_eth_hbm_rresp),
-    .m_axi4_eth_hbm_rlast          (m_axi4_eth_hbm_rlast),
-    .m_axi4_eth_hbm_rvalid         (m_axi4_eth_hbm_rvalid),
-    .m_axi4_eth_hbm_rready         (m_axi4_eth_hbm_rready),
-    .m_axi4_eth_hbm_arlock         (m_axi4_eth_hbm_arlock),
-    .m_axi4_eth_hbm_arcache        (m_axi4_eth_hbm_arcache),
-    .m_axi4_eth_hbm_arprot         (m_axi4_eth_hbm_arprot),
-    .m_axi4_eth_hbm_arqos          (m_axi4_eth_hbm_arqos),
-    .m_axi4_eth_hbm_arregion       (m_axi4_eth_hbm_arregion),
+    .m_axi4_mhdma_hbm_awid         (m_axi4_mhdma_hbm_awid),
+    .m_axi4_mhdma_hbm_awaddr       (m_axi4_mhdma_hbm_awaddr),
+    .m_axi4_mhdma_hbm_awlen        (m_axi4_mhdma_hbm_awlen),
+    .m_axi4_mhdma_hbm_awsize       (m_axi4_mhdma_hbm_awsize),
+    .m_axi4_mhdma_hbm_awburst      (m_axi4_mhdma_hbm_awburst),
+    .m_axi4_mhdma_hbm_awvalid      (m_axi4_mhdma_hbm_awvalid),
+    .m_axi4_mhdma_hbm_awready      (m_axi4_mhdma_hbm_awready),
+    .m_axi4_mhdma_hbm_wdata        (m_axi4_mhdma_hbm_wdata),
+    .m_axi4_mhdma_hbm_wstrb        (m_axi4_mhdma_hbm_wstrb),
+    .m_axi4_mhdma_hbm_wlast        (m_axi4_mhdma_hbm_wlast),
+    .m_axi4_mhdma_hbm_wvalid       (m_axi4_mhdma_hbm_wvalid),
+    .m_axi4_mhdma_hbm_wready       (m_axi4_mhdma_hbm_wready),
+    .m_axi4_mhdma_hbm_bid          (m_axi4_mhdma_hbm_bid),
+    .m_axi4_mhdma_hbm_bresp        (m_axi4_mhdma_hbm_bresp),
+    .m_axi4_mhdma_hbm_bvalid       (m_axi4_mhdma_hbm_bvalid),
+    .m_axi4_mhdma_hbm_bready       (m_axi4_mhdma_hbm_bready),
+    .m_axi4_mhdma_hbm_awlock       (m_axi4_mhdma_hbm_awlock),
+    .m_axi4_mhdma_hbm_awcache      (m_axi4_mhdma_hbm_awcache),
+    .m_axi4_mhdma_hbm_awprot       (m_axi4_mhdma_hbm_awprot),
+    .m_axi4_mhdma_hbm_awqos        (m_axi4_mhdma_hbm_awqos),
+    .m_axi4_mhdma_hbm_awregion     (m_axi4_mhdma_hbm_awregion),
+    .m_axi4_mhdma_hbm_arid         (m_axi4_mhdma_hbm_arid),
+    .m_axi4_mhdma_hbm_araddr       (m_axi4_mhdma_hbm_araddr),
+    .m_axi4_mhdma_hbm_arlen        (m_axi4_mhdma_hbm_arlen),
+    .m_axi4_mhdma_hbm_arsize       (m_axi4_mhdma_hbm_arsize),
+    .m_axi4_mhdma_hbm_arburst      (m_axi4_mhdma_hbm_arburst),
+    .m_axi4_mhdma_hbm_arvalid      (m_axi4_mhdma_hbm_arvalid),
+    .m_axi4_mhdma_hbm_arready      (m_axi4_mhdma_hbm_arready),
+    .m_axi4_mhdma_hbm_rid          (m_axi4_mhdma_hbm_rid),
+    .m_axi4_mhdma_hbm_rdata        (m_axi4_mhdma_hbm_rdata),
+    .m_axi4_mhdma_hbm_rresp        (m_axi4_mhdma_hbm_rresp),
+    .m_axi4_mhdma_hbm_rlast        (m_axi4_mhdma_hbm_rlast),
+    .m_axi4_mhdma_hbm_rvalid       (m_axi4_mhdma_hbm_rvalid),
+    .m_axi4_mhdma_hbm_rready       (m_axi4_mhdma_hbm_rready),
+    .m_axi4_mhdma_hbm_arlock       (m_axi4_mhdma_hbm_arlock),
+    .m_axi4_mhdma_hbm_arcache      (m_axi4_mhdma_hbm_arcache),
+    .m_axi4_mhdma_hbm_arprot       (m_axi4_mhdma_hbm_arprot),
+    .m_axi4_mhdma_hbm_arqos        (m_axi4_mhdma_hbm_-arqos),
+    .m_axi4_mhdma_hbm_arregion     (m_axi4_mhdma_hbm_arregion),
 
     /* AXI-STREAM interface
      * Instruction scheduler

@@ -40,7 +40,7 @@ module tb_mhdma_decoder;
   import mhdma_pkg::*;
   import axi_if_shell_axil_pkg::*;
   import axi_if_common_param_pkg::*;
-  import axi_if_eth_axi_pkg::*;
+  import axi_if_mhdma_axi_pkg::*;
   import pem_common_param_pkg::*;
 
   `include "tb_mhdma_tasks.sv"
@@ -158,8 +158,8 @@ module tb_mhdma_decoder;
 
   mhdma_decoder decoder (
     // Ethernet fast clock interface
-    .clk_mrmac          (clk                  ),
-    .resetn_mrmac       (s_rstn               ),
+    .clk_mhdma          (clk                  ),
+    .resetn_mhdma       (s_rstn               ),
     // Command interface
     .notify_ack_received(notify_ack_received  ),
     .current_hpu_mac    (current_hpu_mac      ),

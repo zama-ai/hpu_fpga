@@ -1,103 +1,103 @@
-// ==============================================================================================
+// ================================================================================================
 // BSD 3-Clause Clear License
 // Copyright © 2025 ZAMA. All rights reserved.
-// ----------------------------------------------------------------------------------------------
+// ------------------------------------------------------------------------------------------------
 // Description  : multi-HPU DMA
-// ----------------------------------------------------------------------------------------------
+// ------------------------------------------------------------------------------------------------
 // phys_addr = hbm_pc_offset + ctId * ciphertext_size
-// ==============================================================================================
+// ================================================================================================
 
 module multi_hpu_dma
-  import mhdma_pkg::*;                    // multi-hpu-dma
-  import axi_if_shell_axil_pkg::*;        // axi4-lite + REG_DATA_W
-  import axi_if_common_param_pkg::*;      // general axi4
-  import hpu_regif_core_eth_2in3_pkg::*;  // ethernet regif
+  import mhdma_pkg::*;                      // multi-hpu-dma
+  import axi_if_shell_axil_pkg::*;          // axi4-lite + REG_DATA_W
+  import axi_if_common_param_pkg::*;        // general axi4
+  import hpu_regif_core_mhdma_2in3_pkg::*;  // ethernet regif
 (
-  // Ethernet configuration interface -----------------------------------------
-  input logic                                                    clk_eth_cfg,
-  input logic                                                    resetn_eth_cfg,
-  // Ethernet fast clock interface --------------------------------------------
-  input logic                                                    clk_eth_mrmac,
-  input logic                                                    resetn_eth_mrmac,
-  // Axi4-lite slave interface for regfile ------------------------------------
-  input  logic [AXIL_ADD_W-1:0]                                  s_axil_dma_awaddr,
-  input  logic                                                   s_axil_dma_awvalid,
-  output logic                                                   s_axil_dma_awready,
-  input  logic [AXIL_DATA_W-1:0]                                 s_axil_dma_wdata,
-  input  logic [AXIL_DATA_BYTES-1:0]                             s_axil_dma_wstrb,        // unused
-  input  logic                                                   s_axil_dma_wvalid,
-  output logic                                                   s_axil_dma_wready,
-  output logic [1:0]                                             s_axil_dma_bresp,
-  output logic                                                   s_axil_dma_bvalid,
-  input  logic                                                   s_axil_dma_bready,
-  input  logic [AXIL_ADD_W-1:0]                                  s_axil_dma_araddr,
-  input  logic                                                   s_axil_dma_arvalid,
-  output logic                                                   s_axil_dma_arready,
-  output logic [AXIL_DATA_W-1:0]                                 s_axil_dma_rdata,
-  output logic [1:0]                                             s_axil_dma_rresp,
-  output logic                                                   s_axil_dma_rvalid,
-  input  logic                                                   s_axil_dma_rready,
-  // Axi4-full HBM interface --------------------------------------------------
+  // Ethernet configuration interface -------------------------------------------------------------
+  input logic                                                      clk_mhdma_cfg,
+  input logic                                                      resetn_mhdma_cfg,
+  // Ethernet fast clock interface ----------------------------------------------------------------
+  input logic                                                      clk_mhdma,
+  input logic                                                      resetn_mhdma,
+  // Axi4-lite slave interface for regfile --------------------------------------------------------
+  input  logic [AXIL_ADD_W-1:0]                                    s_axil_mhdma_awaddr,
+  input  logic                                                     s_axil_mhdma_awvalid,
+  output logic                                                     s_axil_mhdma_awready,
+  input  logic [AXIL_DATA_W-1:0]                                   s_axil_mhdma_wdata,
+  input  logic [AXIL_DATA_BYTES-1:0]                               s_axil_mhdma_wstrb,        // unused
+  input  logic                                                     s_axil_mhdma_wvalid,
+  output logic                                                     s_axil_mhdma_wready,
+  output logic [1:0]                                               s_axil_mhdma_bresp,
+  output logic                                                     s_axil_mhdma_bvalid,
+  input  logic                                                     s_axil_mhdma_bready,
+  input  logic [AXIL_ADD_W-1:0]                                    s_axil_mhdma_araddr,
+  input  logic                                                     s_axil_mhdma_arvalid,
+  output logic                                                     s_axil_mhdma_arready,
+  output logic [AXIL_DATA_W-1:0]                                   s_axil_mhdma_rdata,
+  output logic [1:0]                                               s_axil_mhdma_rresp,
+  output logic                                                     s_axil_mhdma_rvalid,
+  input  logic                                                     s_axil_mhdma_rready,
+  // Axi4-full HBM interface ----------------------------------------------------------------------
   // Write channel
-  output logic [ETH_PC-1:0][axi_if_eth_axi_pkg::AXI4_ID_W-1:0]   m_axi4_eth_hbm_awid,
-  output logic [ETH_PC-1:0][axi_if_eth_axi_pkg::AXI4_ADD_W-1:0]  m_axi4_eth_hbm_awaddr,
-  output logic [ETH_PC-1:0][AXI4_LEN_W-1:0]                      m_axi4_eth_hbm_awlen,
-  output logic [ETH_PC-1:0][AXI4_SIZE_W-1:0]                     m_axi4_eth_hbm_awsize,
-  output logic [ETH_PC-1:0][AXI4_BURST_W-1:0]                    m_axi4_eth_hbm_awburst,
-  output logic [ETH_PC-1:0]                                      m_axi4_eth_hbm_awvalid,
-  input  logic [ETH_PC-1:0]                                      m_axi4_eth_hbm_awready,
-  output logic [ETH_PC-1:0][axi_if_eth_axi_pkg::AXI4_DATA_W-1:0] m_axi4_eth_hbm_wdata,
-  output logic [ETH_PC-1:0][axi_if_eth_axi_pkg::AXI4_STRB_W-1:0] m_axi4_eth_hbm_wstrb,
-  output logic [ETH_PC-1:0]                                      m_axi4_eth_hbm_wlast,
-  output logic [ETH_PC-1:0]                                      m_axi4_eth_hbm_wvalid,
-  input  logic [ETH_PC-1:0]                                      m_axi4_eth_hbm_wready,
+  output logic [ETH_PC-1:0][axi_if_mhdma_axi_pkg::AXI4_ID_W-1:0]   m_axi4_mhdma_hbm_awid,
+  output logic [ETH_PC-1:0][axi_if_mhdma_axi_pkg::AXI4_ADD_W-1:0]  m_axi4_mhdma_hbm_awaddr,
+  output logic [ETH_PC-1:0][AXI4_LEN_W-1:0]                        m_axi4_mhdma_hbm_awlen,
+  output logic [ETH_PC-1:0][AXI4_SIZE_W-1:0]                       m_axi4_mhdma_hbm_awsize,
+  output logic [ETH_PC-1:0][AXI4_BURST_W-1:0]                      m_axi4_mhdma_hbm_awburst,
+  output logic [ETH_PC-1:0]                                        m_axi4_mhdma_hbm_awvalid,
+  input  logic [ETH_PC-1:0]                                        m_axi4_mhdma_hbm_awready,
+  output logic [ETH_PC-1:0][axi_if_mhdma_axi_pkg::AXI4_DATA_W-1:0] m_axi4_mhdma_hbm_wdata,
+  output logic [ETH_PC-1:0][axi_if_mhdma_axi_pkg::AXI4_STRB_W-1:0] m_axi4_mhdma_hbm_wstrb,
+  output logic [ETH_PC-1:0]                                        m_axi4_mhdma_hbm_wlast,
+  output logic [ETH_PC-1:0]                                        m_axi4_mhdma_hbm_wvalid,
+  input  logic [ETH_PC-1:0]                                        m_axi4_mhdma_hbm_wready,
   // Write response channel
-  input  logic [ETH_PC-1:0][axi_if_eth_axi_pkg::AXI4_ID_W-1:0]   m_axi4_eth_hbm_bid,
-  input  logic [ETH_PC-1:0][AXI4_RESP_W-1:0]                     m_axi4_eth_hbm_bresp,
-  input  logic [ETH_PC-1:0]                                      m_axi4_eth_hbm_bvalid,
-  output logic [ETH_PC-1:0]                                      m_axi4_eth_hbm_bready,
+  input  logic [ETH_PC-1:0][axi_if_mhdma_axi_pkg::AXI4_ID_W-1:0]   m_axi4_mhdma_hbm_bid,
+  input  logic [ETH_PC-1:0][AXI4_RESP_W-1:0]                       m_axi4_mhdma_hbm_bresp,
+  input  logic [ETH_PC-1:0]                                        m_axi4_mhdma_hbm_bvalid,
+  output logic [ETH_PC-1:0]                                        m_axi4_mhdma_hbm_bready,
   // Read channel
-  output logic [ETH_PC-1:0][axi_if_eth_axi_pkg::AXI4_ADD_W-1:0]  m_axi4_eth_hbm_araddr,
-  output logic [ETH_PC-1:0][AXI4_LEN_W-1:0]                      m_axi4_eth_hbm_arlen,
-  output logic [ETH_PC-1:0][AXI4_SIZE_W-1:0]                     m_axi4_eth_hbm_arsize,
-  output logic [ETH_PC-1:0][AXI4_BURST_W-1:0]                    m_axi4_eth_hbm_arburst,
-  output logic [ETH_PC-1:0]                                      m_axi4_eth_hbm_arvalid,
-  input  logic [ETH_PC-1:0]                                      m_axi4_eth_hbm_arready,
-  output logic [ETH_PC-1:0][axi_if_eth_axi_pkg::AXI4_ID_W-1:0]   m_axi4_eth_hbm_arid,     // unused
-  input  logic [ETH_PC-1:0][axi_if_eth_axi_pkg::AXI4_DATA_W-1:0] m_axi4_eth_hbm_rdata,
-  input  logic [ETH_PC-1:0]                                      m_axi4_eth_hbm_rlast,
-  input  logic [ETH_PC-1:0]                                      m_axi4_eth_hbm_rvalid,
-  output logic [ETH_PC-1:0]                                      m_axi4_eth_hbm_rready,
-  input  logic [ETH_PC-1:0][axi_if_eth_axi_pkg::AXI4_ID_W-1:0]   m_axi4_eth_hbm_rid,      // unused
-  input  logic [ETH_PC-1:0][AXI4_RESP_W-1:0]                     m_axi4_eth_hbm_rresp,    // unused
-  // QSFP system interface ----------------------------------------------------
+  output logic [ETH_PC-1:0][axi_if_mhdma_axi_pkg::AXI4_ADD_W-1:0]  m_axi4_mhdma_hbm_araddr,
+  output logic [ETH_PC-1:0][AXI4_LEN_W-1:0]                        m_axi4_mhdma_hbm_arlen,
+  output logic [ETH_PC-1:0][AXI4_SIZE_W-1:0]                       m_axi4_mhdma_hbm_arsize,
+  output logic [ETH_PC-1:0][AXI4_BURST_W-1:0]                      m_axi4_mhdma_hbm_arburst,
+  output logic [ETH_PC-1:0]                                        m_axi4_mhdma_hbm_arvalid,
+  input  logic [ETH_PC-1:0]                                        m_axi4_mhdma_hbm_arready,
+  output logic [ETH_PC-1:0][axi_if_mhdma_axi_pkg::AXI4_ID_W-1:0]   m_axi4_mhdma_hbm_arid,     // unused
+  input  logic [ETH_PC-1:0][axi_if_mhdma_axi_pkg::AXI4_DATA_W-1:0] m_axi4_mhdma_hbm_rdata,
+  input  logic [ETH_PC-1:0]                                        m_axi4_mhdma_hbm_rlast,
+  input  logic [ETH_PC-1:0]                                        m_axi4_mhdma_hbm_rvalid,
+  output logic [ETH_PC-1:0]                                        m_axi4_mhdma_hbm_rready,
+  input  logic [ETH_PC-1:0][axi_if_mhdma_axi_pkg::AXI4_ID_W-1:0]   m_axi4_mhdma_hbm_rid,      // unused
+  input  logic [ETH_PC-1:0][AXI4_RESP_W-1:0]                       m_axi4_mhdma_hbm_rresp,    // unused
+  // QSFP system interface ------------------------------------------------------------------------
   // == TX
-  output logic [QSFP_LANE_NB-1:0][MRMAC_AXIS_W-1:0  ]            qsfp_tx_tdata,
-  output logic [QSFP_LANE_NB-1:0][MRMAC_TKEEP_W-1:0 ]            qsfp_tx_tkeep_user,
-  output logic [QSFP_LANE_NB-1:0]                                qsfp_tx_tlast,
-  output logic [QSFP_LANE_NB-1:0]                                qsfp_tx_tvalid,
-  input  logic [QSFP_LANE_NB-1:0]                                qsfp_tx_tready,
+  output logic [QSFP_LANE_NB-1:0][MRMAC_AXIS_W-1:0  ]              qsfp_tx_tdata,
+  output logic [QSFP_LANE_NB-1:0][MRMAC_TKEEP_W-1:0 ]              qsfp_tx_tkeep_user,
+  output logic [QSFP_LANE_NB-1:0]                                  qsfp_tx_tlast,
+  output logic [QSFP_LANE_NB-1:0]                                  qsfp_tx_tvalid,
+  input  logic [QSFP_LANE_NB-1:0]                                  qsfp_tx_tready,
   // == RX
-  input  logic [QSFP_LANE_NB-1:0][MRMAC_AXIS_W-1:0  ]            qsfp_rx_tdata,
-  input  logic [QSFP_LANE_NB-1:0][MRMAC_TKEEP_W-1:0 ]            qsfp_rx_tkeep_user,
-  input  logic [QSFP_LANE_NB-1:0]                                qsfp_rx_tlast,
-  input  logic [QSFP_LANE_NB-1:0]                                qsfp_rx_tvalid,
-  // interrupt interface ------------------------------------------------------
-  output logic                                                   interrupt_notify,
-  output logic                                                   interrupt_read_request,
-  // Giga transceivers interface ----------------------------------------------
-  output logic [QSFP_LANE_NB-1:0]                                gt_reset_rx_datapath,
-  output logic [QSFP_LANE_NB-1:0]                                gt_reset_tx_datapath,
-  output logic [QSFP_LANE_NB-1:0]                                gt_reset_all,
-  input  logic [QSFP_LANE_NB-1:0]                                gt_rx_reset_done,
-  input  logic [QSFP_LANE_NB-1:0]                                gt_tx_reset_done,
+  input  logic [QSFP_LANE_NB-1:0][MRMAC_AXIS_W-1:0  ]              qsfp_rx_tdata,
+  input  logic [QSFP_LANE_NB-1:0][MRMAC_TKEEP_W-1:0 ]              qsfp_rx_tkeep_user,
+  input  logic [QSFP_LANE_NB-1:0]                                  qsfp_rx_tlast,
+  input  logic [QSFP_LANE_NB-1:0]                                  qsfp_rx_tvalid,
+  // interrupt interface --------------------------------------------------------------------------
+  output logic                                                     interrupt_notify,
+  output logic                                                     interrupt_read_request,
+  // Giga transceivers interface ------------------------------------------------------------------
+  output logic [QSFP_LANE_NB-1:0]                                  gt_reset_rx_datapath,
+  output logic [QSFP_LANE_NB-1:0]                                  gt_reset_tx_datapath,
+  output logic [QSFP_LANE_NB-1:0]                                  gt_reset_all,
+  input  logic [QSFP_LANE_NB-1:0]                                  gt_rx_reset_done,
+  input  logic [QSFP_LANE_NB-1:0]                                  gt_tx_reset_done,
   // line rate, should be set to zero
-  output logic [7:0]                                             gt_line_rate,
+  output logic [7:0]                                               gt_line_rate,
   // loopback mode, will be applied to all channels
   //  * 000: disabled
   //  * 010: near end pma
   //  * 100: near end pcs
-  output logic [2:0]                                             gt_loopback
+  output logic [2:0]                                               gt_loopback
 );
 
   // ============================================================================================ --
@@ -131,11 +131,11 @@ module multi_hpu_dma
   logic                 [REG_DATA_W-1:0]   r_reset_monitor;
 
   // Statistics using CDC structs ------------------------------------------------------------------
-  mhdma_rst_cnt_t  rst_cnt_eth;
-  mhdma_rst_cnt_t  rst_cnt_cfg;
+  mhdma_rst_cnt_t rst_cnt_mhdma;
+  mhdma_rst_cnt_t rst_cnt_cfg;
 
-  mhdma_cnt_t      cnt_eth;
-  mhdma_cnt_t      cnt_cfg;
+  mhdma_cnt_t cnt_mhdma;
+  mhdma_cnt_t cnt_cfg;
 
   // Transceivers ---------------------------------------------------------------------------------
   assign line_sel             = r_system_line[1:0];
@@ -158,7 +158,7 @@ module multi_hpu_dma
   logic [REG_DATA_W-1:0] request_read_addr_tmp;
   logic [REG_DATA_W-1:0] reset_monitor_tmp;
 
-  always_ff @(posedge clk_eth_cfg) begin
+  always_ff @(posedge clk_mhdma_cfg) begin
     request_notify_req_id_tmp   <= r_request_notify_req_id;
     request_notify_req_addr_tmp <= r_request_notify_req_addr;
     request_read_req_id_tmp     <= r_request_read_req_id;
@@ -179,27 +179,27 @@ module multi_hpu_dma
   // ============================================================================================ //
   // Register file
   // ============================================================================================ //
-  hpu_regif_core_eth_2in3 hpu_regif_core_eth_2in3 (
+  hpu_regif_core_mhdma_2in3 hpu_regif_core_mhdma_2in3 (
     // configuration interface -----------------------------------------------------------------------------------
-    .clk                                                  (clk_eth_cfg                                           ),
-    .s_rst_n                                              (resetn_eth_cfg                                        ),
+    .clk                                                  (clk_mhdma_cfg                                         ),
+    .s_rst_n                                              (resetn_mhdma_cfg                                      ),
     // axi4-lite -------------------------------------------------------------------------------------------------
-    .s_axil_awaddr                                        (s_axil_dma_awaddr                                     ),
-    .s_axil_awvalid                                       (s_axil_dma_awvalid                                    ),
-    .s_axil_awready                                       (s_axil_dma_awready                                    ),
-    .s_axil_wdata                                         (s_axil_dma_wdata                                      ),
-    .s_axil_wvalid                                        (s_axil_dma_wvalid                                     ),
-    .s_axil_wready                                        (s_axil_dma_wready                                     ),
-    .s_axil_bresp                                         (s_axil_dma_bresp                                      ),
-    .s_axil_bvalid                                        (s_axil_dma_bvalid                                     ),
-    .s_axil_bready                                        (s_axil_dma_bready                                     ),
-    .s_axil_araddr                                        (s_axil_dma_araddr                                     ),
-    .s_axil_arvalid                                       (s_axil_dma_arvalid                                    ),
-    .s_axil_arready                                       (s_axil_dma_arready                                    ),
-    .s_axil_rdata                                         (s_axil_dma_rdata                                      ),
-    .s_axil_rresp                                         (s_axil_dma_rresp                                      ),
-    .s_axil_rvalid                                        (s_axil_dma_rvalid                                     ),
-    .s_axil_rready                                        (s_axil_dma_rready                                     ),
+    .s_axil_awaddr                                        (s_axil_mhdma_awaddr                                   ),
+    .s_axil_awvalid                                       (s_axil_mhdma_awvalid                                  ),
+    .s_axil_awready                                       (s_axil_mhdma_awready                                  ),
+    .s_axil_wdata                                         (s_axil_mhdma_wdata                                    ),
+    .s_axil_wvalid                                        (s_axil_mhdma_wvalid                                   ),
+    .s_axil_wready                                        (s_axil_mhdma_wready                                   ),
+    .s_axil_bresp                                         (s_axil_mhdma_bresp                                    ),
+    .s_axil_bvalid                                        (s_axil_mhdma_bvalid                                   ),
+    .s_axil_bready                                        (s_axil_mhdma_bready                                   ),
+    .s_axil_araddr                                        (s_axil_mhdma_araddr                                   ),
+    .s_axil_arvalid                                       (s_axil_mhdma_arvalid                                  ),
+    .s_axil_arready                                       (s_axil_mhdma_arready                                  ),
+    .s_axil_rdata                                         (s_axil_mhdma_rdata                                    ),
+    .s_axil_rresp                                         (s_axil_mhdma_rresp                                    ),
+    .s_axil_rvalid                                        (s_axil_mhdma_rvalid                                   ),
+    .s_axil_rready                                        (s_axil_mhdma_rready                                   ),
     .r_axil_wdata                                         (/* UNUSED */                                          ),
     // HPU ids ---------------------------------------------------------------------------------------------------
     .r_mhdma_system_hpu_id_0                              (r_regf_hpu_ids[0]                                     ),
@@ -317,8 +317,8 @@ module multi_hpu_dma
   logic       request_consumed;
 
   // received_req signals lower module that
-  always_ff @(posedge clk_eth_cfg) begin
-    if (~resetn_eth_cfg) begin
+  always_ff @(posedge clk_mhdma_cfg) begin
+    if (~resetn_mhdma_cfg) begin
       received_req <= '0;
     end else begin
       if (r_request_req_id_wr_en)   received_req[0] <= 1'b1;
@@ -333,20 +333,20 @@ module multi_hpu_dma
   // CDC: Reset signals (CFG -> ETH)
   localparam int RST_CNT_W = $bits(mhdma_rst_cnt_t);
   logic [RST_CNT_W-1:0] rst_cnt_cfg_flat;
-  logic [RST_CNT_W-1:0] rst_cnt_eth_flat;
+  logic [RST_CNT_W-1:0] rst_cnt_mhdma_flat;
 
   assign rst_cnt_cfg_flat = rst_cnt_cfg;
-  assign rst_cnt_eth      = mhdma_rst_cnt_t'(rst_cnt_eth_flat);
+  assign rst_cnt_mhdma      = mhdma_rst_cnt_t'(rst_cnt_mhdma_flat);
 
   for (genvar i = 0; i < RST_CNT_W; i++) begin : gen_cdc_rst_cnt
     xpm_cdc_single_wrapper #(
       .CDC_SYNC_STAGES (CDC_SYNC_STAGES),
       .SRC_INPUT_REG   (1              )
     ) cdc_rst_cnt (
-      .src_clk  (clk_eth_cfg        ),
-      .dest_clk (clk_eth_mrmac      ),
-      .src_in   (rst_cnt_cfg_flat[i] ),
-      .dest_out (rst_cnt_eth_flat[i] )
+      .src_clk  (clk_mhdma_cfg         ),
+      .dest_clk (clk_mhdma             ),
+      .src_in   (rst_cnt_cfg_flat[i]   ),
+      .dest_out (rst_cnt_mhdma_flat[i]   )
     );
   end
 
@@ -355,11 +355,11 @@ module multi_hpu_dma
     .WIDTH           ($bits(mhdma_cnt_t)),
     .CDC_SYNC_STAGES (CDC_SYNC_STAGES   )
   ) cdc_cnt (
-    .src_clk   (clk_eth_mrmac  ),
-    .src_rst_n (resetn_eth_mrmac),
-    .dest_clk  (clk_eth_cfg    ),
-    .src_in    (cnt_eth        ),
-    .dest_out  (cnt_cfg        )
+    .src_clk   (clk_mhdma     ),
+    .src_rst_n (resetn_mhdma  ),
+    .dest_clk  (clk_mhdma_cfg ),
+    .src_in    (cnt_mhdma       ),
+    .dest_out  (cnt_cfg       )
   );
 
   // ============================================================================================ //
@@ -377,40 +377,40 @@ module multi_hpu_dma
   logic                     axis_tx_tready;
 
   mhdma_bridge mhdma_bridge (
-    .clk_cfg                        (clk_eth_cfg                                                  ),
-    .resetn_cfg                     (resetn_eth_cfg                                               ),
-    .clk_mrmac                      (clk_eth_mrmac                                                ),
-    .resetn_mrmac                   (resetn_eth_mrmac                                             ),
+    .clk_mhdma_cfg                  (clk_mhdma_cfg                                                ),
+    .resetn_mhdma_cfg               (resetn_mhdma_cfg                                             ),
+    .clk_mhdma                      (clk_mhdma                                                    ),
+    .resetn_mhdma                   (resetn_mhdma                                                 ),
     // axi4-full for each ETH_PC ------------------------------------------------------------------
-    .m_axi4_arid                    (m_axi4_eth_hbm_arid                                          ),
-    .m_axi4_araddr                  (m_axi4_eth_hbm_araddr                                        ),
-    .m_axi4_arlen                   (m_axi4_eth_hbm_arlen                                         ),
-    .m_axi4_arsize                  (m_axi4_eth_hbm_arsize                                        ),
-    .m_axi4_arburst                 (m_axi4_eth_hbm_arburst                                       ),
-    .m_axi4_arvalid                 (m_axi4_eth_hbm_arvalid                                       ),
-    .m_axi4_arready                 (m_axi4_eth_hbm_arready                                       ),
-    .m_axi4_rid                     (m_axi4_eth_hbm_rid                                           ),
-    .m_axi4_rdata                   (m_axi4_eth_hbm_rdata                                         ),
-    .m_axi4_rresp                   (m_axi4_eth_hbm_rresp                                         ),
-    .m_axi4_rlast                   (m_axi4_eth_hbm_rlast                                         ),
-    .m_axi4_rvalid                  (m_axi4_eth_hbm_rvalid                                        ),
-    .m_axi4_rready                  (m_axi4_eth_hbm_rready                                        ),
-    .m_axi4_awid                    (m_axi4_eth_hbm_awid                                          ),
-    .m_axi4_awaddr                  (m_axi4_eth_hbm_awaddr                                        ),
-    .m_axi4_awlen                   (m_axi4_eth_hbm_awlen                                         ),
-    .m_axi4_awsize                  (m_axi4_eth_hbm_awsize                                        ),
-    .m_axi4_awburst                 (m_axi4_eth_hbm_awburst                                       ),
-    .m_axi4_awvalid                 (m_axi4_eth_hbm_awvalid                                       ),
-    .m_axi4_awready                 (m_axi4_eth_hbm_awready                                       ),
-    .m_axi4_wdata                   (m_axi4_eth_hbm_wdata                                         ),
-    .m_axi4_wstrb                   (m_axi4_eth_hbm_wstrb                                         ),
-    .m_axi4_wlast                   (m_axi4_eth_hbm_wlast                                         ),
-    .m_axi4_wvalid                  (m_axi4_eth_hbm_wvalid                                        ),
-    .m_axi4_wready                  (m_axi4_eth_hbm_wready                                        ),
-    .m_axi4_bid                     (m_axi4_eth_hbm_bid                                           ),
-    .m_axi4_bresp                   (m_axi4_eth_hbm_bresp                                         ),
-    .m_axi4_bvalid                  (m_axi4_eth_hbm_bvalid                                        ),
-    .m_axi4_bready                  (m_axi4_eth_hbm_bready                                        ),
+    .m_axi4_arid                    (m_axi4_mhdma_hbm_arid                                        ),
+    .m_axi4_araddr                  (m_axi4_mhdma_hbm_araddr                                      ),
+    .m_axi4_arlen                   (m_axi4_mhdma_hbm_arlen                                       ),
+    .m_axi4_arsize                  (m_axi4_mhdma_hbm_arsize                                      ),
+    .m_axi4_arburst                 (m_axi4_mhdma_hbm_arburst                                     ),
+    .m_axi4_arvalid                 (m_axi4_mhdma_hbm_arvalid                                     ),
+    .m_axi4_arready                 (m_axi4_mhdma_hbm_arready                                     ),
+    .m_axi4_rid                     (m_axi4_mhdma_hbm_rid                                         ),
+    .m_axi4_rdata                   (m_axi4_mhdma_hbm_rdata                                       ),
+    .m_axi4_rresp                   (m_axi4_mhdma_hbm_rresp                                       ),
+    .m_axi4_rlast                   (m_axi4_mhdma_hbm_rlast                                       ),
+    .m_axi4_rvalid                  (m_axi4_mhdma_hbm_rvalid                                      ),
+    .m_axi4_rready                  (m_axi4_mhdma_hbm_rready                                      ),
+    .m_axi4_awid                    (m_axi4_mhdma_hbm_awid                                        ),
+    .m_axi4_awaddr                  (m_axi4_mhdma_hbm_awaddr                                      ),
+    .m_axi4_awlen                   (m_axi4_mhdma_hbm_awlen                                       ),
+    .m_axi4_awsize                  (m_axi4_mhdma_hbm_awsize                                      ),
+    .m_axi4_awburst                 (m_axi4_mhdma_hbm_awburst                                     ),
+    .m_axi4_awvalid                 (m_axi4_mhdma_hbm_awvalid                                     ),
+    .m_axi4_awready                 (m_axi4_mhdma_hbm_awready                                     ),
+    .m_axi4_wdata                   (m_axi4_mhdma_hbm_wdata                                       ),
+    .m_axi4_wstrb                   (m_axi4_mhdma_hbm_wstrb                                       ),
+    .m_axi4_wlast                   (m_axi4_mhdma_hbm_wlast                                       ),
+    .m_axi4_wvalid                  (m_axi4_mhdma_hbm_wvalid                                      ),
+    .m_axi4_wready                  (m_axi4_mhdma_hbm_wready                                      ),
+    .m_axi4_bid                     (m_axi4_mhdma_hbm_bid                                         ),
+    .m_axi4_bresp                   (m_axi4_mhdma_hbm_bresp                                       ),
+    .m_axi4_bvalid                  (m_axi4_mhdma_hbm_bvalid                                      ),
+    .m_axi4_bready                  (m_axi4_mhdma_hbm_bready                                      ),
     // Register interface -------------------------------------------------------------------------
     .regf_hpu_ids                   (r_regf_hpu_ids                                               ),
     .regf_ct_mem_addr               (r_ct_mem_addr                                                ),
@@ -430,8 +430,8 @@ module multi_hpu_dma
     .interrupt_notify               (interrupt_notify                                             ),
     .interrupt_read_request         (interrupt_read_request                                       ),
     // statistics ---------------------------------------------------------------------------------
-    .stat_cnt                       (cnt_eth                                                      ),
-    .rst_cnt                        (rst_cnt_eth                                                  ),
+    .stat_cnt                       (cnt_mhdma                                                      ),
+    .rst_cnt                        (rst_cnt_mhdma                                                  ),
     // QSFP interface one lane --------------------------------------------------------------------
     // tx
     .qsfp_tx_tdata                  (axis_tx_tdata                                                ),
