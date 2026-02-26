@@ -84,8 +84,8 @@ module mhdma_slave
   input  logic                                                 ciphertext_sent,
   input  logic                                                 notify_ack_sent,
   // Error interface ----------------------------------------------------------
-  output slave_error_t                                         slave_error,
-  input  logic                                                 rst_errors,
+  output slave_error_t                                         slave_error, // placeholders
+  input  logic                                                 rst_errors,  // placeholders
   // statistics ---------------------------------------------------------------
   output slave_stat_t                                          stat,
   input  slave_stat_rst_t                                      stat_rst
@@ -177,22 +177,6 @@ module mhdma_slave
 
     .almost_full (/* UNUSED */)
   );
-
-  logic error_fifo_nrx_commands_ovf;
-
-  always_ff @(posedge clk_mhdma) begin
-    if (~resetn_mhdma) begin
-      error_fifo_nrx_commands_ovf <= 1'b0;
-    end else begin
-      if (rst_errors) begin
-        error_fifo_nrx_commands_ovf <= 1'b0;
-      end else begin
-        if ( nrx_cmd_in_vld & ~nrx_cmd_in_rdy) begin
-          error_fifo_nrx_commands_ovf <= 1'b1;
-        end
-      end
-    end
-  end
 
   // Notify RX regfile interface --------------------------------------------------------
   logic nrx_regf_in_rdy;
@@ -754,11 +738,6 @@ module mhdma_slave
       end
     end
   end
-
-  // =========================================================================================== //
-  // Errors
-  // =========================================================================================== //
-  assign slave_error = {error_fifo_nrx_commands_ovf};
 
   // =========================================================================================== //
   // Statistics

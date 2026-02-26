@@ -201,8 +201,9 @@ package mhdma_pkg;
     logic error_fifo_rx_ovf;
   } decoder_error_t;
 
+  // today there is no error detection in slave
   typedef struct packed {
-    logic error_fifo_nrx_commands_ovf;
+    logic slave_placeholder;
   } slave_error_t;
 
   typedef struct packed {

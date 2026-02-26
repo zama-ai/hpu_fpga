@@ -13,7 +13,7 @@
 //   error_id                      - Bridge: Multiple HPUs defined as current (not one-hot)
 //
 // Not tested (hardcoded to 0 in RTL):
-//   - formatter_error           - Formatter: Currently disabled
+//   - formatter_error             - Formatter: Currently disabled
 //
 // ==============================================================================================
 
@@ -642,34 +642,18 @@ module tb_mhdma_errors;
     logic [REG_DATA_W-1:0] read_req_id;
     logic [REG_DATA_W-1:0] read_req_addr;
     mhdma_error_t          errors_t;
+    logic [FLAG_W-1:0]     flag;
+    logic [MODE_W-1:0]     mode;
     begin
-
-      // error_fifo_rx_ovf Will overflow with this command
-      // Send many notify packets without consuming them (error_fifo_nrx_commands_ovf)
-      for (int i = 0; i < 2*RX_FIFO_DEPTH; i++) begin
-        send_notify_packet(qsfp_rx_vif[0], 24'hABCDE0, 24'hABCDE1, 4'b0, i[7:0], $urandom());
-        repeat(5) @(posedge clk_mhdma);
-      end
-
-      maxil_drv.read_trans(MHDMA_SYSTEM_ERRORS_OFS, reg_error);
-      $display("%t > Error register value :  0x%08b", $time, reg_error);
-      errors_t = mhdma_error_t'(reg_error);
-
-      assert (errors_t.slave_error.error_fifo_nrx_commands_ovf) else begin
-        $display("%t > [ERROR] error_fifo_nrx_commands_ovf not triggered", $time);
-        error_unexpected = 1'b1;
-      end
-
-      // because the system is now stuck with decoder fifo full we reset and reinit
-      reset_system();
 
       // Send many ciphertext emission packets without consuming (error_fifo_rx_ovf)
       for (int i = 0; i < 2*RX_FIFO_DEPTH; i++) begin
         iop_id = $urandom();
         src_addr = $urandom();
-        dst_addr = $urandom();
-        send_ciphertext_emission_packet(qsfp_rx_vif[0], dst_mac_addr, src_mac_addr, dst_hpu_id, iop_id, src_addr, dst_addr, i[7:0], unused_payload);
-        repeat(5) @(posedge clk_mhdma);
+        flag = $urandom();
+        mode = $urandom();
+        // using notifies here as Ciphertext emission is too slow for fifo to not be consumed
+        send_notify_packet(qsfp_rx_vif[0], dst_mac_addr, src_mac_addr, dst_hpu_id, iop_id, src_addr, flag, mode);
       end
 
       repeat(200) @(posedge clk_mhdma_cfg);
