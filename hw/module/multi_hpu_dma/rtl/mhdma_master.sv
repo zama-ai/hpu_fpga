@@ -4,18 +4,26 @@
 // ------------------------------------------------------------------------------------------------
 // Description  : Multi-HPU DMA Master module
 // ------------------------------------------------------------------------------------------------
-// Receives requests from RPU and address them
+// Sends Notify & Read-Request to the formatter, receives ciphertext packets from decoder, check
+// they are valid with seq_num and writes the payload into memory with AXI4 bus (One PC at a time).
 //
-// This module must be able to send Notify and Read Request commands to the formatter
+// Retry logic:
+//  - Notify: retried on timeout only (NTX_WAIT_ACK -> NTX_SEND_NOTIFY).
+//  - Read request: retried on timeout OR seq_num mismatch. On mismatch remaining words are
+//  zero-padded from the gap to NB_WORDS_TO_HBM into memory, then new read request is issued.
 //
-// Assumption:
+// Assumptions:
+//  - regf_timeout_duration_notify & regf_timeout_duration_read_req are quasi static signals.
+//  - rr_resp_ram_rdy_vld_2clk must not go full : REQ_FIFO_DEPTH must be enough
+//    otherwise the interrupt push is silently lost
+//
+// Note:
 //  - master_command_valid drops only one clock cycle after ready :
-//      This is not a problem since we are doing handshakes between FSMs.
-//      With this system we are using less ressource than if we have used a fifo element.
+//      acceptable because handshakes are only FSM-to-FSM
 //
-// Read request retry can happen when
-// 1) a timeout occurs
-// 2) an incorrect seq num happens: we fill the memory with zeros and ask for a new read request
+// TODO:
+//  - make only one instance of axi-write
+//  - write bursts of packets, one by one rather than preparing commands earlier.
 //
 // ================================================================================================
 
@@ -140,6 +148,7 @@ module mhdma_master
       NTX_WAIT_ACK:
         // Transmission is not instantaneous, notify_ack_received cannot arrive before axis tlast
         ntx_next_state = notify_ack_received ? NTX_WAIT_REQUEST : timeout_reached_notify ? NTX_SEND_NOTIFY : NTX_WAIT_ACK;
+      default: ntx_next_state = NTX_WAIT_REQUEST;
     endcase
   end
 
@@ -151,6 +160,7 @@ module mhdma_master
   logic ciphertext_received;
   logic valid_ciphertext_received;
   logic rr_retry;
+  logic rr_regf_in_rdy; // fifo that creates interrupts (@mhdma_clk)
 
   typedef enum logic [1:0] {
     RR_XXX          = 'x,
@@ -179,6 +189,7 @@ module mhdma_master
         rreq_next_state =  read_request_sent ? RR_WAIT_PACKETS : RR_SEND_REQUEST;
       RR_WAIT_PACKETS:
         rreq_next_state = rr_retry ? RR_SEND_REQUEST : valid_ciphertext_received ? RR_WAIT_REQUEST : RR_WAIT_PACKETS;
+      default: rreq_next_state = RR_WAIT_REQUEST;
     endcase
   end
 
@@ -191,8 +202,7 @@ module mhdma_master
   logic nack_rdy;
   logic rr_packets_rdy;
 
-  // NOTE: decoded_command_rdy is intentionally registered for timing.
-  // The decoder holds decoded_command_vld and decoded_command stable until decoded_command_rdy is 1
+  // NOTE: The decoder holds decoded_command_vld and decoded_command stable until decoded_command_rdy is 1
   always_ff @(posedge clk_mhdma) begin
     if (~resetn_mhdma) begin
       nack_rdy       <= 1'b0;
@@ -571,7 +581,7 @@ module mhdma_master
   logic                     cnt_cerx_down;
   logic                     fifo_pc_can_accept;
 
-  // First thig to do is to be sure that the current values are valid.
+  // First thing to do is to be sure that the current values are valid.
   // If we receive more data than what we expect we must invalidate it and not propagate it.
   logic [COUNTER_W-1:0] ce_valid_cnt;
   logic                 ce_valid;
@@ -772,19 +782,6 @@ module mhdma_master
   logic [ETH_PC-1:0]        axi4_write_pc;
   logic [ETH_PC-1:0]        target_fifo;
   logic [ETH_PC-1:0]        write_error;
-  logic [CE_DATA_COUNT_W:0] fifo_cerx_cnt_tx;  // Counter for 64-bit words (only for debugging)
-
-  always_ff @(posedge clk_mhdma) begin
-    if (~resetn_mhdma) begin
-      fifo_cerx_cnt_tx <= 'h0;
-    end else begin
-      if (fifo_cerx_out_vld & fifo_cerx_out_rdy) begin
-        fifo_cerx_cnt_tx <= fifo_cerx_cnt_tx +1;
-      end else if (ciphertext_received) begin
-        fifo_cerx_cnt_tx <= 'h0;
-      end
-    end
-  end
 
   // when phy_addr is computed from data received by decoder and valid or when we have done all
   // needed writes on the first PC we can shift to the next
@@ -807,7 +804,7 @@ module mhdma_master
   logic [AXI4_DATA_W-1:0]                       realigned_word;
   logic [$clog2(NB_MRMRAC_WORDS_PER_WRITE)-1:0] realign_cnt;
   logic                                         realigned_word_vld;
-  logic                                         fifo_cerx_out_rdy_vld_reg;
+  logic                                         cerx_mux_handshake_reg;
 
   // Per-target-PC word counter and one-hot target_fifo selection
   logic [AXI4_WORD_PER_PC0_WW-1:0] target_pc_word_cnt;
@@ -845,9 +842,9 @@ module mhdma_master
 
   always_ff @(posedge clk_mhdma) begin
     if (~resetn_mhdma) begin
-      fifo_cerx_out_rdy_vld_reg <= 1'b0;
+      cerx_mux_handshake_reg <= 1'b0;
     end else begin
-      fifo_cerx_out_rdy_vld_reg <= cerx_mux_handshake;
+      cerx_mux_handshake_reg <= cerx_mux_handshake;
     end
   end
 
@@ -867,7 +864,7 @@ module mhdma_master
     if (cerx_mux_handshake)
       realigned_word[realign_cnt*MRMAC_AXIS_W+:MRMAC_AXIS_W] <= cerx_mux_data;
 
-  assign realigned_word_vld = (realign_cnt == 0) & fifo_cerx_out_rdy_vld_reg;
+  assign realigned_word_vld = (realign_cnt == 0) & cerx_mux_handshake_reg;
 
   generate
     for (genvar gen_wr=0; gen_wr<ETH_PC; gen_wr++) begin : gen_ce_write
@@ -1286,7 +1283,7 @@ module mhdma_master
   logic                    rr_regf_out_vld;
   logic                    rr_regf_out_rdy;
 
-  // rr_regf_in_rdy there is no back pressure
+  // rr_regf_in_rdy there is no back pressure : REQ_FIFO_DEPTH must be correctly setup
   // upper word = req_id register, lower word = addr register
   assign rr_regf_in_data = {received_iop_id, received_req_id, received_hpu_id, received_mode, received_flag, received_rsvd, received_dst_addr, received_src_addr};
 
@@ -1457,6 +1454,20 @@ module mhdma_master
        end else begin
         t_rr_to_ce_received <= 'h0;
        end
+    end
+  end
+
+  logic [CE_DATA_COUNT_W:0] fifo_cerx_cnt_tx;
+
+  always_ff @(posedge clk_mhdma) begin
+    if (~resetn_mhdma) begin
+      fifo_cerx_cnt_tx <= 'h0;
+    end else begin
+      if (fifo_cerx_out_vld & fifo_cerx_out_rdy) begin
+        fifo_cerx_cnt_tx <= fifo_cerx_cnt_tx +1;
+      end else if (ciphertext_received) begin
+        fifo_cerx_cnt_tx <= 'h0;
+      end
     end
   end
 
