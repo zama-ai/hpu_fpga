@@ -1,9 +1,9 @@
-// ==============================================================================================
+// ================================================================================================
 // BSD 3-Clause Clear License
 // Copyright © 2025 ZAMA. All rights reserved.
-// ----------------------------------------------------------------------------------------------
+// ------------------------------------------------------------------------------------------------
 // Description  : Multi-HPU-DMA Slave module
-// ----------------------------------------------------------------------------------------------
+// ------------------------------------------------------------------------------------------------
 // Reacts to decoded commands from the decoder and drives:
 //   1) Notify-ACK path: acknowledges incoming notify requests via the formatter
 //   2) Ciphertext Emission path: reads ciphertext data from HBM and streams it to the formatter
@@ -31,7 +31,7 @@
 //  - The fifo_ce FIFO depth of CT_NB_COEF seems overly large
 //  - AXI4 response channel signals (rresp, rid) are not connected same for m_axi4_rlast
 //
-// ==============================================================================================
+// ================================================================================================
 
 module mhdma_slave
   import mhdma_pkg::*;               // for all mhdma modules
@@ -42,13 +42,13 @@ module mhdma_slave
 #(
   parameter int CDC_SYNC_STAGES = 2
 ) (
-  // Ethernet configuration interface -----------------------------------------
+  // Ethernet configuration interface -------------------------------------------------------------
   input  logic                                                 clk_mhdma_cfg,
   input  logic                                                 resetn_mhdma_cfg,
-  // Ethernet fast clock interface --------------------------------------------
+  // Ethernet fast clock interface ----------------------------------------------------------------
   input  logic                                                 clk_mhdma,
   input  logic                                                 resetn_mhdma,
-  // Axi4 interface for NMU ---------------------------------------------------
+  // Axi4 interface for NMU -----------------------------------------------------------------------
   output logic [ETH_PC-1:0][  AXI4_ADD_W-1:0]                  m_axi4_araddr,
   output logic [ETH_PC-1:0][  AXI4_LEN_W-1:0]                  m_axi4_arlen,
   output logic [ETH_PC-1:0][ AXI4_SIZE_W-1:0]                  m_axi4_arsize,
@@ -61,18 +61,18 @@ module mhdma_slave
   input  logic [ETH_PC-1:0]                                    m_axi4_rlast, // TODO: never used
   input  logic [ETH_PC-1:0]                                    m_axi4_rvalid,
   output logic [ETH_PC-1:0]                                    m_axi4_rready,
-  // regf interface -----------------------------------------------------------
+  // regf interface -------------------------------------------------------------------------------
   input  logic [ETH_PC-1:0][2*REG_DATA_W-1:0]                  regf_ct_mem_addr,
   output logic             [  REG_DATA_W-1:0]                  regf_notify_req_id,
   output logic             [  REG_DATA_W-1:0]                  regf_notify_req_addr,
-  // interrupt ----------------------------------------------------------------
+  // interrupt ------------------------------------------------------------------------------------
   input  logic                                                 clear_interrupt_notify,
   output logic                                                 interrupt_notify,
-  // decoder interface --------------------------------------------------------
+  // decoder interface ----------------------------------------------------------------------------
   input  command_t                                             decoded_command,
   input  logic                                                 decoded_command_vld,
   output logic                                                 decoded_command_rdy,
-  // format interface ---------------------------------------------------------
+  // format interface -----------------------------------------------------------------------------
   output command_t                                             slave_command,
   output logic                                                 slave_command_vld,
   input  logic                                                 slave_command_rdy,
@@ -83,10 +83,10 @@ module mhdma_slave
 
   input  logic                                                 ciphertext_sent,
   input  logic                                                 notify_ack_sent,
-  // Error interface ----------------------------------------------------------
+  // Error interface ------------------------------------------------------------------------------
   output slave_error_t                                         slave_error, // placeholders
   input  logic                                                 rst_errors,  // placeholders
-  // statistics ---------------------------------------------------------------
+  // statistics -----------------------------------------------------------------------------------
   output slave_stat_t                                          stat,
   input  slave_stat_rst_t                                      stat_rst
 );
@@ -321,20 +321,29 @@ module mhdma_slave
 
   // =========================================================================================== //
   // Read into HBM
-  // all @mrmac domain
   // =========================================================================================== //
   logic [SRC_ADDR_W-1:0] rr_ct_src_addr;
-  logic [DST_ADDR_W-1:0] rr_ct_dst_addr;
+  logic                  rreq_cmd_consumed;
 
-  assign rr_ct_dst_addr = rreq_cmd_fifo.dst_addr;
-  assign rr_ct_src_addr = rreq_cmd_fifo.src_addr;
+  // Adding pipeline stage to ease timing
+  always_ff @(posedge clk_mhdma) begin
+    if (~resetn_mhdma) begin
+      rreq_cmd_consumed <= 1'b0;
+    end else begin
+      rreq_cmd_consumed <= rreq_cmd_out_rdy & rreq_cmd_out_vld;
+    end
+  end
 
+  always_ff @(posedge clk_mhdma)
+   rr_ct_src_addr <= rreq_cmd_fifo.src_addr;
+
+  // Computing physical address
   // phys_addr = hbm_pc_offset + ctId * CT_MEM_BYTES
   logic [ETH_PC-1:0] [AXI4_ADD_W-1:0] phy_addr;
   generate
     for (genvar gen_p=0; gen_p<ETH_PC; gen_p=gen_p+1) begin : gen_phy_addr
       always_ff @(posedge clk_mhdma)
-        if (rreq_cmd_out_rdy & rreq_cmd_out_vld)
+        if (rreq_cmd_consumed)
           phy_addr[gen_p] <= regf_ct_mem_addr[gen_p] + (rr_ct_src_addr * CT_MEM_BYTES);
     end
   endgenerate
@@ -349,7 +358,7 @@ module mhdma_slave
     if (~resetn_mhdma) begin
       rreq_ready <= 1'b0;
     end else begin
-      rreq_ready <= rreq_cmd_out_vld & rreq_cmd_out_rdy;
+      rreq_ready <= rreq_cmd_consumed;
     end
   end
 
