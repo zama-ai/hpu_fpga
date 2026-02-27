@@ -1,7 +1,7 @@
-// ==============================================================================================
+// ================================================================================================
 // BSD 3-Clause Clear License
 // Copyright © 2025 ZAMA. All rights reserved.
-// ----------------------------------------------------------------------------------------------
+// ------------------------------------------------------------------------------------------------
 // Description  : Multi-HPU DMA formatter (TX module for QSFP lane)
 //
 // Builds custom Ethernet frames from slave/master commands and CE payload data.
@@ -30,7 +30,7 @@
 // - Formatter_error (sticky, cleared by rst_errors) detects tvalid gap during CE payload
 //   transmission. fifo_ce gating should prevent this under normal operation.
 //
-// ==============================================================================================
+// ================================================================================================
 
 module mhdma_formatter
   import mhdma_pkg::*;          // multi-hpu-dma

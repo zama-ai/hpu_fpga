@@ -541,7 +541,6 @@ logic [DST_ADDR_W-1:0] dst_addr;
   int random_insersion;
   int random_iterations;
 
-
   initial begin
     maxil_drv_if.init();
 

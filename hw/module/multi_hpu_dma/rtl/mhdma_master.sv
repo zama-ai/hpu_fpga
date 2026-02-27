@@ -1,9 +1,9 @@
-// ==============================================================================================
+// ================================================================================================
 // BSD 3-Clause Clear License
 // Copyright © 2025 ZAMA. All rights reserved.
-// ----------------------------------------------------------------------------------------------
+// ------------------------------------------------------------------------------------------------
 // Description  : Multi-HPU DMA Master module
-// ----------------------------------------------------------------------------------------------
+// ------------------------------------------------------------------------------------------------
 // Receives requests from RPU and address them
 //
 // This module must be able to send Notify and Read Request commands to the formatter
@@ -17,7 +17,7 @@
 // 1) a timeout occurs
 // 2) an incorrect seq num happens: we fill the memory with zeros and ask for a new read request
 //
-// ==============================================================================================
+// ================================================================================================
 
 module mhdma_master
   import mhdma_pkg::*;               // for all mhdma modules
@@ -28,13 +28,13 @@ module mhdma_master
 #(
   parameter int CDC_SYNC_STAGES = 2
 ) (
-  // Ethernet configuration interface -----------------------------------------
+  // Ethernet configuration interface -------------------------------------------------------------
   input  logic                                clk_mhdma_cfg,
   input  logic                                resetn_mhdma_cfg,
-  // Ethernet fast clock interface --------------------------------------------
+  // Ethernet fast clock interface ----------------------------------------------------------------
   input  logic                                clk_mhdma,
   input  logic                                resetn_mhdma,
-  // Axi4 interface for NMU ---------------------------------------------------
+  // Axi4 interface for NMU -----------------------------------------------------------------------
   output logic [ETH_PC-1:0][AXI4_ID_W-1:0]    m_axi4_awid,
   output logic [ETH_PC-1:0][AXI4_ADD_W-1:0]   m_axi4_awaddr,
   output logic [ETH_PC-1:0][AXI4_LEN_W-1:0]   m_axi4_awlen,
@@ -53,7 +53,7 @@ module mhdma_master
   input  logic [ETH_PC-1:0][AXI4_RESP_W-1:0]  m_axi4_bresp,
   input  logic [ETH_PC-1:0]                   m_axi4_bvalid,
   output logic [ETH_PC-1:0]                   m_axi4_bready,
-  // regf interface -----------------------------------------------------------
+  // regf interface -------------------------------------------------------------------------------
   input  logic [ETH_PC-1:0][2*REG_DATA_W-1:0] regf_ct_mem_addr,
   input  logic               [REG_DATA_W-1:0] regf_req_id,
   input  logic               [REG_DATA_W-1:0] regf_req_addr,
@@ -64,10 +64,10 @@ module mhdma_master
   // register control
   input  logic                                received_req,
   output logic                                request_consumed,
-  // interrupt ---------------------------------------------------------------
+  // interrupt ------------------------------------------------------------------------------------
   input  logic                                clear_interrupt_rr,
   output logic                                interrupt_read_request,
-  // decoder interface --------------------------------------------------------
+  // decoder interface ----------------------------------------------------------------------------
   input  command_t                            decoded_command,
   input  logic                                decoded_command_vld,
   output logic                                decoded_command_rdy,
@@ -76,7 +76,7 @@ module mhdma_master
   input  logic                                decoder_rx_tvalid,
 
   input  logic                                notify_ack_received,
-  // formatter interface ------------------------------------------------------
+  // formatter interface --------------------------------------------------------------------------
   output command_t                            master_command,
   output logic                                master_command_vld,
   input  logic                                master_command_rdy,
@@ -85,10 +85,10 @@ module mhdma_master
   input  logic                                notify_sent,
 
   output logic                                ce_reception_ready,
-  // Error interface ----------------------------------------------------------
+  // Error interface ------------------------------------------------------------------------------
   output master_error_t                       master_error,
   input  logic                                rst_errors,
-  // statistics ---------------------------------------------------------------
+  // statistics -----------------------------------------------------------------------------------
   output master_stat_t                        stat,
   input  master_stat_rst_t                    stat_rst
 );
