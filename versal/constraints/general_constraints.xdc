@@ -6,7 +6,19 @@
 # == timing constraints
 create_clock -period 3.103 -name gt_ref_clk_p -waveform {0.000 1.552} [get_ports gt_ref_clk_p]
 
-set qsfp_mmcm_pin [get_pins -hierarchical -filter {NAME =~ *hpu_plug_wrapper/hpu_plug_i/shell_wrapper/clock_reset/mhdma_clk_wiz/clk_out2*}]
+set qsfp_mmcm_pin     [get_pins -hierarchical -filter {NAME =~ *hpu_plug_wrapper/hpu_plug_i/shell_wrapper/clock_reset/mhdma_clk_wiz/clk_out2*}]
+set mhdma_cfg_mmcm_pin [get_pins -hierarchical -filter {NAME =~ *hpu_plug_wrapper/hpu_plug_i/shell_wrapper/clock_reset/mhdma_clk_wiz/clk_out1*}]
+
+# CDC between mhdma_cfg_clk (100MHz, clk_out1) and clk_mhdma (390MHz, clk_out2) from same MMCM
+set_max_delay -datapath_only -from \
+    [get_clocks -of_objects $mhdma_cfg_mmcm_pin] -to \
+    [get_clocks -of_objects $qsfp_mmcm_pin \
+] 2.8
+
+set_max_delay -datapath_only -from \
+    [get_clocks -of_objects $qsfp_mmcm_pin] -to \
+    [get_clocks -of_objects $mhdma_cfg_mmcm_pin \
+] 10.0
 
 # we are using clk_pl_1 - freerun 33Mhz - to generate qsfp_mmcm
 set_max_delay -datapath_only -from \
