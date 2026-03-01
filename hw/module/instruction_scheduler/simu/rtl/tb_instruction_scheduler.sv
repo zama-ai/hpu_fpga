@@ -30,7 +30,7 @@ module tb_instruction_scheduler;
 // localparam
 // ============================================================================================== --
   localparam int CLK_HALF_PERIOD     = 1;
-  localparam int LPD_CLK_HALF_PERIOD = 10;
+  localparam int LPD_CLK_HALF_PERIOD = 7;
   localparam int ARST_ACTIVATION     = 17;
 
   localparam int SLOT_NB=8;

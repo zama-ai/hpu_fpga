@@ -479,7 +479,7 @@ uint32_t parse_iop(
   if (iop_state[cur_iid].state >= nb_hpu) {
     iop_state[cur_iid].state  = IOP_STATE_RUNNING;
   }
-  iop_state[cur_iid].nb_hpu = number_of_hpu(*mapping);
+  iop_state[cur_iid].nb_hpu = nb_hpu;
   PLL_ERR("ucore", "[HPU%d] parse_iop starting iop %d (virt hid %d) state %d nb_hpu %d",
       phys_hpu_id,
       cur_iid,
