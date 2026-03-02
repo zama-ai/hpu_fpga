@@ -585,6 +585,10 @@ module tb_mhdma_master;
         $display("[ERROR:%0d] iop_id mismatch: expected %0h, got %0h", scenario_id, iop_id, master_command.iop_id);
         failed = 1'b1;
       end
+      assert (master_command.dst_addr == iop_dst_addr) else begin
+        $display("[ERROR:%0d] dst_addr mismatch: expected %0h, got %0h", scenario_id, iop_dst_addr, master_command.dst_addr);
+        failed = 1'b1;
+      end
 
       consume_master_command();
       simulate_pulse(notify_sent, clk_mhdma);
@@ -672,6 +676,7 @@ module tb_mhdma_master;
       assert (master_command.hpu_id   == hpu_id       ) else begin $display("[ERROR:%0d] hpu_id mismatch",   scenario_id); error_scenario = 1'b1; end
       assert (master_command.iop_id   == iop_id       ) else begin $display("[ERROR:%0d] iop_id mismatch",   scenario_id); error_scenario = 1'b1; end
       assert (master_command.src_addr == iop_src_addr ) else begin $display("[ERROR:%0d] src_addr mismatch", scenario_id); error_scenario = 1'b1; end
+      assert (master_command.dst_addr == iop_dst_addr ) else begin $display("[ERROR:%0d] dst_addr mismatch", scenario_id); error_scenario = 1'b1; end
 
       consume_master_command();
       simulate_pulse(notify_sent, clk_mhdma);
@@ -734,6 +739,10 @@ module tb_mhdma_master;
       end
       assert (master_command.req_id == REQ_ID_NOTIFY) else begin
         $display("[ERROR:%0d] Retry req_id mismatch", scenario_id);
+        error_scenario = 1'b1;
+      end
+      assert (master_command.dst_addr == iop_dst_addr) else begin
+        $display("[ERROR:%0d] Retry dst_addr mismatch: expected %0h, got %0h", scenario_id, iop_dst_addr, master_command.dst_addr);
         error_scenario = 1'b1;
       end
 

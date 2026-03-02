@@ -541,7 +541,7 @@ module mhdma_master
       master_command.mode     <= ntx_retry ? nrqq_retry_data.mode     : nrqq_cmd_data.mode;
       master_command.iop_id   <= ntx_retry ? nrqq_retry_data.iop_id   : nrqq_cmd_data.iop_id;
       master_command.src_addr <= ntx_retry ? nrqq_retry_data.src_addr : nrqq_cmd_data.src_addr;
-      master_command.dst_addr <= 'h0;
+      master_command.dst_addr <= ntx_retry ? nrqq_retry_data.dst_addr : nrqq_cmd_data.dst_addr;
       master_command.req_id   <= REQ_ID_NOTIFY;
 
       master_command_vld      <= ((st_ntx_wait_request & nrqq_cmd_vld) | (nrqq_retry_vld & ntx_retry));
