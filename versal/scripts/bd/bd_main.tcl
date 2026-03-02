@@ -381,11 +381,25 @@ proc create_root_design { parentCell ntt_psi } {
    CONFIG.ASSOCIATED_BUSIF $prop_clk(pl0_ref_clk_0) \
   ] [get_bd_ports /pl0_ref_clk_0]
 
-  # == MRMAC
+  # GT
   set GT_Serial [ create_bd_intf_port -mode Master -vlnv xilinx.com:interface:gt_rtl:1.0 GT_Serial ]
 
-  set_property CONFIG.ASSOCIATED_BUSIF {MHDMA_AXI_CFG:MHDMA_AXI_0:MHDMA_AXI_1} [get_bd_ports /clk_mhdma_cfg_0]
-  set_property CONFIG.ASSOCIATED_BUSIF {MHDMA_HBM_AXI_0:MHDMA_HBM_AXI_1} [get_bd_ports /clk_mhdma]
+  # MHDMA clocks
+  set mhdma_cfg_busif "MHDMA_AXI_CFG"
+  for { set i 0} {$i < $MHDMA_AXI_NB} {incr i} {
+    set mhdma_cfg_busif "${mhdma_cfg_busif}:MHDMA_AXI_${i}"
+  }
+  set_property CONFIG.ASSOCIATED_BUSIF $mhdma_cfg_busif [get_bd_ports /clk_mhdma_cfg_0]
+
+  set mhdma_hbm_busif ""
+  for { set i 0} {$i < $MHDMA_PC_AXI_NB} {incr i} {
+    if {$mhdma_hbm_busif eq ""} {
+      set mhdma_hbm_busif "MHDMA_HBM_AXI_${i}"
+    } else {
+      set mhdma_hbm_busif "${mhdma_hbm_busif}:MHDMA_HBM_AXI_${i}"
+    }
+  }
+  set_property CONFIG.ASSOCIATED_BUSIF $mhdma_hbm_busif [get_bd_ports /clk_mhdma]
 
   set ctl_tx_port0 [ create_bd_intf_port -mode Slave -vlnv xilinx.com:display_mrmac:mrmac_ctrl_ports:2.0 ctl_tx_port0 ]
   set ctl_tx_port1 [ create_bd_intf_port -mode Slave -vlnv xilinx.com:display_mrmac:mrmac_ctrl_ports:2.0 ctl_tx_port1 ]

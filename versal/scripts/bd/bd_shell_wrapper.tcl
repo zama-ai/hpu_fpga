@@ -73,7 +73,6 @@ proc create_hier_cell_shell_wrapper { parentCell nameHier } {
   set resetn_usr_0_ic_0_pin      [ create_bd_pin -dir O -from 0 -to 0 -type rst resetn_usr_0_ic_0 ]
   set resetn_usr_0_ic_0_pin      [ create_bd_pin -dir I -from 0 -to 0 -type rst resetn_usr_0_ic_0_gated ]
   set resetn_usr_1_ic_0_pin      [ create_bd_pin -dir O -from 0 -to 0 -type rst resetn_usr_1_ic_0 ]
-  set resetn_mhdma_ic_0_pin  [ create_bd_pin -dir O -from 0 -to 0 -type rst resetn_mhdma_ic_0 ]
   set resetn_mhdma_cfg_ic_0_pin    [ create_bd_pin -dir O -from 0 -to 0 -type rst resetn_mhdma_cfg_ic_0 ]
   set resetn_gt_freerun_ic_0_pin [ create_bd_pin -dir O -from 0 -to 0 -type rst resetn_gt_freerun_ic_0 ]
 
@@ -393,7 +392,6 @@ proc create_hier_cell_shell_wrapper { parentCell nameHier } {
   connect_bd_net -net clock_reset_resetn_usr_0_ic      [get_bd_pins clock_reset/resetn_usr_0_ic]      [get_bd_pins resetn_usr_0_ic_0]
   connect_bd_net -net clock_reset_resetn_usr_1_ic      [get_bd_pins clock_reset/resetn_usr_1_ic]      [get_bd_pins resetn_usr_1_ic_0]
   connect_bd_net -net clock_reset_resetn_mhdma_cfg_ic  [get_bd_pins clock_reset/resetn_mhdma_cfg_ic]  [get_bd_pins resetn_mhdma_cfg_ic_0]
-  connect_bd_net -net clock_reset_resetn_mhdma_ic      [get_bd_pins clock_reset/resetn_mhdma_ic]      [get_bd_pins resetn_mhdma_ic_0]
   connect_bd_net -net clock_reset_resetn_gt_freerun_ic [get_bd_pins clock_reset/resetn_gt_freerun_ic] [get_bd_pins resetn_gt_freerun_ic_0]
 
   connect_bd_net -net clock_reset_resetn_usr_0_ic_gated [get_bd_pins resetn_usr_0_ic_0_gated] [get_bd_pins axi_to_axis/s_axi_aresetn]
