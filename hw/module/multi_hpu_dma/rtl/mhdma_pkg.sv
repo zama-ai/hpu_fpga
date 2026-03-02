@@ -6,7 +6,7 @@
 package mhdma_pkg;
   import param_tfhe_pkg::*;           // TFHE parameterset
   import axi_if_common_param_pkg::*;  // HBM pages
-  import axi_if_mhdma_axi_pkg::*;       // AXI4
+  import axi_if_mhdma_axi_pkg::*;     // AXI4
   import axi_if_shell_axil_pkg::*;    // REG_DATA_W
 
   import top_common_param_pkg::*;    // PEM_PC
@@ -15,104 +15,111 @@ package mhdma_pkg;
   // =========================================================================================== //
   // Parameters
   // =========================================================================================== //
+  // TFHE parameters ------------------------------------------------------------------------------
   // BLWE_K = N * GLWE_K
   localparam int CT_NB_COEF   = BLWE_K + 1;
   localparam int CT_SIZE      = CT_NB_COEF * 64;
   localparam int CT_SIZE_BYTE = CT_SIZE / 8;
 
+  // AXI parameters -------------------------------------------------------------------------------
   localparam [AXI4_SIZE_W-1:0] MHDMA_ARSIZE = $clog2(AXI4_DATA_BYTES);
+  localparam [  AXI4_ID_W-1:0] MHDMA_AXI_ARID = '0; // Use the same ID for read/writes
 
-  localparam [AXI4_ID_W-1:0] MHDMA_AXI_ARID = '0; // Use the same ID for read/writes
-
-  // =========================================================================================== //
-  // Ethernet
-  // =========================================================================================== //
-  // beware of block design if modifying this values
-  localparam int MRMAC_AXIS_W   = 64;
-  localparam int MRMAC_TKEEP_W  = 11;
-  localparam int NB_MRMRAC_WORDS_PER_READ = AXI4_DATA_W/MRMAC_AXIS_W;
-
+  // HPU parameters -------------------------------------------------------------------------------
   localparam int ETH_PC       = PEM_PC; // MHDMA is tied to PEM module: mandatory same number of PC
+
   // beware of regfile if modifying this value
   localparam int NB_MAX_HPU   = 8;
   localparam int NB_MAX_HPU_W = $clog2(NB_MAX_HPU);
 
-  localparam int CT_NB_WORDS_MRMAC = CT_SIZE/MRMAC_AXIS_W; // because coef size is MRMAC size
-  localparam int CT_NB_WORDS_AXI4  = CT_SIZE/AXI4_DATA_W;
-
-  localparam int NB_MRMRAC_WORDS_PER_WRITE = AXI4_DATA_W/MRMAC_AXIS_W;
-
-  localparam int COUNTER_W      = 32; // this is arbitrary
-
+  // =========================================================================================== //
+  // Ethernet
+  // =========================================================================================== //
+  // *(beware of block design before modifying this segment)
   localparam int QSFP_LANE_NB   = 4;
-
-  // ETH_NB_BYTES_PAYLOAD must be divisible by MRMAC_AXIS_W. 1472 is the closest to 1518.
-  localparam int ETH_NB_BYTES_PAYLOAD = 1472;
-  localparam int ETH_NB_BYTES_MIN     = 64;
-  localparam int ETH_NB_BYTES_HEADER  = 14;
-  localparam int ETH_NB_BYTES_CRC     = 4;
-
-  localparam int NB_WORDS_CUST_HEADER_SIZE = 4;
-
-  localparam int NB_WORDS_PAYLOAD = ETH_NB_BYTES_PAYLOAD / (MRMAC_AXIS_W/8);
-  localparam int NB_WORDS_SMALL_PACKETS = ETH_NB_BYTES_MIN / (MRMAC_AXIS_W/8);
-  localparam int NB_WORDS_MAX = NB_WORDS_PAYLOAD + NB_WORDS_CUST_HEADER_SIZE;
-  localparam int NB_WORDS_MIN = NB_WORDS_SMALL_PACKETS;
-
-  localparam int NB_PACKETS_FULL = $floor(CT_SIZE_BYTE/ETH_NB_BYTES_PAYLOAD);
-  localparam int LAST_PACKET_BYTE_SIZE_USEFUL = CT_SIZE_BYTE - (NB_PACKETS_FULL*ETH_NB_BYTES_PAYLOAD);
-
-  // I have LAST_PACKET_BYTE_SIZE useful bytes. To simplify I'll send a multiple of AXI4_DATA_W
-  // it is important to have a real concatenation here to be sure to have the ceiling and not be truncated by integer
-  localparam int LAST_PACKET_BYTE_SIZE = $ceil(real'(LAST_PACKET_BYTE_SIZE_USEFUL) / AXI4_DATA_BYTES)*AXI4_DATA_BYTES;
-
-  // If ever I need to send less words and what is allowed by ethernet, we need to fill with zeros
-  localparam int NB_WORDS_LAST_PACKET_USEFUL = LAST_PACKET_BYTE_SIZE/8;
-  localparam int NB_WORDS_LAST_PACKET = (NB_WORDS_LAST_PACKET_USEFUL < NB_WORDS_SMALL_PACKETS) ? NB_WORDS_SMALL_PACKETS : NB_WORDS_LAST_PACKET_USEFUL;
-
-  localparam [15:0] ETH_LEN_MIN      = ETH_NB_BYTES_MIN - ETH_NB_BYTES_HEADER - ETH_NB_BYTES_CRC;
-  localparam [15:0] ETH_LEN_MAX      = ETH_NB_BYTES_PAYLOAD;
-  localparam [15:0] ETH_LEN_LAST_PKT = LAST_PACKET_BYTE_SIZE;
-
-  // Ethernet header: sizes ---------------------------------------------------
+  localparam int MRMAC_AXIS_W   = 64;
+  localparam int MRMAC_TKEEP_W  = 11;
+  // Ethernet header: sizes -----------------------------------------------------------------------
   localparam int MAC_ADDR_W   = 24;
   localparam int MAC_OUI_W    = 24;
-
   localparam int SEQ_NUM_W    = 8;
   localparam int HPU_ID_W     = 4;
   localparam int REQ_ID_W     = 4;
   localparam int ETHERNET_LEN = 16;
-
   localparam int RSVD_W       = 8;
   localparam int FLAG_W       = 6;
   localparam int MODE_W       = 2;
   localparam int IOP_ID_W     = 8;
   localparam int SRC_ADDR_W   = 16;
   localparam int DST_ADDR_W   = 16;
-
   localparam int LLC_W        = 8;
+  // Ethernet header: values ----------------------------------------------------------------------
+  localparam [MAC_OUI_W-1:0] MAC_OUI  = 'h000A35;
+  localparam [    LLC_W-1:0] LLC_DSAP = 'hF8;
+  localparam [    LLC_W-1:0] LLC_SSAP = 'hF8;
+  localparam [    LLC_W-1:0] LLC_CTRL = 'h03;
 
-  // Ethernet header: values --------------------------------------------------
-  localparam [MAC_OUI_W-1:0] MAC_OUI = 'h000A35;
+  // =========================================================================================== //
+  // Opcode Identifier
+  // =========================================================================================== //
+  localparam [REQ_ID_W-1:0] REQ_ID_NOTIFY     = 'h2;
+  localparam [REQ_ID_W-1:0] REQ_ID_NOTIFY_ACK = 'h3;
+  localparam [REQ_ID_W-1:0] REQ_ID_READ       = 'h6;
+  localparam [REQ_ID_W-1:0] REQ_ID_EMISSION   = 'h7;
 
-  localparam [LLC_W-1:0] LLC_DSAP = 'hF8;
-  localparam [LLC_W-1:0] LLC_SSAP = 'hF8;
-  localparam [LLC_W-1:0] LLC_CTRL = 'h03;
+  // =========================================================================================== //
+  // MHDMA : number of words & lengths
+  // =========================================================================================== //
+  // For AXI interface: how many words do we need -------------------------------------------------
+  localparam int NB_MRMRAC_WORDS_PER_READ  = AXI4_DATA_W/MRMAC_AXIS_W;
+  localparam int NB_MRMRAC_WORDS_PER_WRITE = AXI4_DATA_W/MRMAC_AXIS_W;
+
+  // Number of bytes ------------------------------------------------------------------------------
+  // ETH_NB_BYTES_PAYLOAD must be divisible by MRMAC_AXIS_W. 1472 is the closest to 1518.
+  localparam int ETH_NB_BYTES_PAYLOAD = 1472;
+  localparam int ETH_NB_BYTES_MIN     = 64;
+  localparam int ETH_NB_BYTES_HEADER  = 14;
+  localparam int ETH_NB_BYTES_CRC     = 4;
+
+  // Number of packets ----------------------------------------------------------------------------
+  localparam int NB_PACKETS_FULL              = $floor(CT_SIZE_BYTE/ETH_NB_BYTES_PAYLOAD);
+  localparam int LAST_PACKET_BYTE_SIZE_USEFUL = CT_SIZE_BYTE - (NB_PACKETS_FULL*ETH_NB_BYTES_PAYLOAD);
+  // I have LAST_PACKET_BYTE_SIZE useful bytes. To simplify I'll send a multiple of AXI4_DATA_W
+  // it is important to have a real concatenation here to be sure to have the ceiling and not be truncated by integer
+  localparam int LAST_PACKET_BYTE_SIZE = $ceil(real'(LAST_PACKET_BYTE_SIZE_USEFUL) / AXI4_DATA_BYTES)*AXI4_DATA_BYTES;
+
+  // Number of wrds -------------------------------------------------------------------------------
+  // Number of word on MRMAC IF or AXI
+  localparam int CT_NB_WORDS_MRMAC = CT_SIZE/MRMAC_AXIS_W; // because coef size is MRMAC size
+  localparam int CT_NB_WORDS_AXI4  = CT_SIZE/AXI4_DATA_W;
+
+  // Number of words in a packet
+  localparam int NB_WORDS_CUST_HEADER_SIZE   = 4;
+  localparam int NB_WORDS_PAYLOAD            = ETH_NB_BYTES_PAYLOAD / (MRMAC_AXIS_W/8);
+  localparam int NB_WORDS_SMALL_PACKETS      = ETH_NB_BYTES_MIN / (MRMAC_AXIS_W/8);
+  localparam int NB_WORDS_MAX                = NB_WORDS_PAYLOAD + NB_WORDS_CUST_HEADER_SIZE;
+  localparam int NB_WORDS_MIN                = NB_WORDS_SMALL_PACKETS;
+  // If ever I need to send less words and what is allowed by ethernet, we need to fill with zeros
+  localparam int NB_WORDS_LAST_PACKET_USEFUL = LAST_PACKET_BYTE_SIZE/8;
+  localparam int NB_WORDS_LAST_PACKET        = (NB_WORDS_LAST_PACKET_USEFUL < NB_WORDS_SMALL_PACKETS) ? NB_WORDS_SMALL_PACKETS : NB_WORDS_LAST_PACKET_USEFUL;
+
+  // Ethernet len in bytes ------------------------------------------------------------------------
+  localparam [15:0] ETH_LEN_MIN      = ETH_NB_BYTES_MIN - ETH_NB_BYTES_HEADER - ETH_NB_BYTES_CRC;
+  localparam [15:0] ETH_LEN_MAX      = ETH_NB_BYTES_PAYLOAD;
+  localparam [15:0] ETH_LEN_LAST_PKT = LAST_PACKET_BYTE_SIZE;
 
   // =========================================================================================== //
   // fifo specific parameters
   // =========================================================================================== //
-  // minimal depth for 64 using XPM fifo is 16
-  // LIMITATION: XPM_MIN_FIFO_DEPTH is the max number of command that can be sent before processed (RR & Notify)
+  // NOTE: minimal depth using XPM IPs is 16
   localparam int XPM_MIN_FIFO_DEPTH = 16;
 
-  // = Commands
-  // Request Fifo sizes
+  // => Request Fifos
   localparam int REQ_MEMORY_TYPE       = "distributed";
   localparam int REQ_FIFO_DEPTH        = XPM_MIN_FIFO_DEPTH;
   localparam int REQ_DATA_COUNT_W      =  $clog2(REQ_FIFO_DEPTH)+1;
 
-  // RX fifo : decoder reception fifo. Must be greater than Command fifos
+  // => decoder reception fifo. Must be greater than Command fifos
   localparam int RX_FIFO_DEPTH = 64;
 
   // Notify RX payload: distributed
@@ -136,14 +143,6 @@ package mhdma_pkg;
   localparam int CE_DATA_COUNT_W       = $clog2(CT_NB_COEF)+1;
 
   // =========================================================================================== //
-  // identification opcode
-  // =========================================================================================== //
-  localparam [REQ_ID_W-1:0] REQ_ID_NOTIFY     = 'h2;
-  localparam [REQ_ID_W-1:0] REQ_ID_NOTIFY_ACK = 'h3;
-  localparam [REQ_ID_W-1:0] REQ_ID_READ       = 'h6;
-  localparam [REQ_ID_W-1:0] REQ_ID_EMISSION   = 'h7;
-
-  // =========================================================================================== //
   // Packed structures
   // =========================================================================================== //
   // Command structure for MHDMA module -----------------------------------------------------------
@@ -161,7 +160,7 @@ package mhdma_pkg;
   } command_t;
 
   //  Ethernet frames, one by one -----------------------------------------------------------------
-  // some fields are placeholders and not usefull in the FPGA decoder
+  // some fields are placeholders and not useful in the FPGA decoder
   typedef struct packed {
     logic [MAC_OUI_W-1:0]  dst_mac_oui;
     logic [MAC_ADDR_W-1:0] dst_mac_addr;
@@ -222,7 +221,8 @@ package mhdma_pkg;
   // =========================================================================================== //
   // Per-submodule stat/rst structs
   // =========================================================================================== //
-  // Master stat output
+  localparam int COUNTER_W = 32; // this is arbitrary
+
   typedef struct packed {
     logic [REG_DATA_W-1:0] cnt_notify;
     logic [REG_DATA_W-1:0] cnt_notify_ack;
@@ -239,7 +239,6 @@ package mhdma_pkg;
     logic [1:0]            fsm_read_req;
   } master_stat_t;
 
-  // Master stat reset input
   typedef struct packed {
     logic cnt_notify;
     logic cnt_notify_ack;
@@ -249,7 +248,6 @@ package mhdma_pkg;
     logic nb_ce_words_received;
   } master_stat_rst_t;
 
-  // Slave stat output
   typedef struct packed {
     logic             [  REG_DATA_W-1:0] nb_read_to_hbm;
     logic [ETH_PC-1:0][  REG_DATA_W-1:0] nb_words_received_pc;
@@ -259,7 +257,6 @@ package mhdma_pkg;
     logic [ETH_PC-1:0][2*REG_DATA_W-1:0] rr_phy_addr;
   } slave_stat_t;
 
-  // Slave stat reset input
   typedef struct packed {
     logic              nb_read_to_hbm;
     logic [ETH_PC-1:0] nb_words_received_pc;
@@ -274,7 +271,6 @@ package mhdma_pkg;
     logic [REG_DATA_W-1:0] cnt_ce_received;
   } decoder_stat_t;
 
-  // Decoder stat reset input
   typedef struct packed {
     logic cnt_nack_received;
     logic cnt_notify_received;
@@ -282,7 +278,6 @@ package mhdma_pkg;
     logic cnt_ce_received;
   } decoder_stat_rst_t;
 
-  // Formatter stat output
   typedef struct packed {
     logic [2:0] fsm_formatter;
   } formatter_stat_t;
@@ -300,10 +295,10 @@ package mhdma_pkg;
 
   // All stat values (ETH -> CFG) - nests per-submodule stat structs
   typedef struct packed {
-    master_stat_t    master;
-    slave_stat_t     slave;
-    decoder_stat_t   decoder;
-    formatter_stat_t formatter;
+    master_stat_t          master;
+    slave_stat_t           slave;
+    decoder_stat_t         decoder;
+    formatter_stat_t       formatter;
     logic [REG_DATA_W-1:0] mhdma_errors;
   } mhdma_cnt_t;
 
