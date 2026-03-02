@@ -13,9 +13,10 @@
 //
 // Assumptions / Limitations:
 // - No backpressure on QSFP RX input (no tready output with our MRMAC configuration).
-//   Ciphertext Emission words have no backpressure and go to master through streaming interface
+//   This implies that Ciphertext Emission words have no backpressure and go to master with a
+//   streaming interface
 // - If the command FIFO overflows, incoming commands are silently dropped and error_fifo_rx_ovf is
-//    raised (sticky until rst_errors).
+//    raised, sticky until read (rst_errors).
 // - ETH LEN is only used for packet handling outside FPGA, we ignore it here
 // - A packet with an unrecognized req_id, registers dst_mac_addr and req_id but generates
 //    no command & increments no counter.

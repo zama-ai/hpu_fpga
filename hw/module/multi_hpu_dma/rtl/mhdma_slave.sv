@@ -11,6 +11,7 @@
 // Architecture overview:
 //   - There are two FSMs : NRX (Notify RX) & CEM (Ciphertext EMission)
 //   - A CDC FIFO (fifo_nrx_regf) bridges notify information from clk_mhdma to clk_mhdma_cfg.
+//   - If fifo_nrx_regf is full we don't consume words from decoder FIFO
 //   - Ciphertext reads are issued to HBM through per-PC AXI4 channels, one PC at a time,
 //     with page-boundary-aware burst splitting.
 //   - AXI4 read data (AXI4_DATA_W wide) is deserialized into MRMAC_AXIS_W words before

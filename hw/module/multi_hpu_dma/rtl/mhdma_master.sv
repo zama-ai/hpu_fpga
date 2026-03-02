@@ -20,6 +20,7 @@
 // Note:
 //  - master_command_valid drops only one clock cycle after ready :
 //      acceptable because handshakes are only FSM-to-FSM
+//  - If FIFO read request -> regif is full. We block FSM and cannot go to RR_SEND_REQUEST
 //
 // TODO:
 //  - make only one instance of axi-write
@@ -184,7 +185,7 @@ module mhdma_master
     rreq_next_state = RR_XXX;
     case (rreq_state)
       RR_WAIT_REQUEST:
-        rreq_next_state = start_read_request ? RR_SEND_REQUEST : RR_WAIT_REQUEST;
+        rreq_next_state = start_read_request & rr_regf_in_rdy ? RR_SEND_REQUEST : RR_WAIT_REQUEST;
       RR_SEND_REQUEST:
         rreq_next_state =  read_request_sent ? RR_WAIT_PACKETS : RR_SEND_REQUEST;
       RR_WAIT_PACKETS:
@@ -1276,14 +1277,13 @@ module mhdma_master
 
   // regf payload information ---------------------------------------------------------------------
   logic [2*REG_DATA_W-1:0] rr_regf_in_data;
-  logic                    rr_regf_in_rdy;
   logic                    rr_regf_in_vld;
 
   logic [2*REG_DATA_W-1:0] rr_regf_out_data;
   logic                    rr_regf_out_vld;
   logic                    rr_regf_out_rdy;
 
-  // rr_regf_in_rdy there is no back pressure : REQ_FIFO_DEPTH must be correctly setup
+  // TODO: rr_regf_in_rdy there is no back pressure : REQ_FIFO_DEPTH must be correctly setup
   // upper word = req_id register, lower word = addr register
   assign rr_regf_in_data = {received_iop_id, received_req_id, received_hpu_id, received_mode, received_flag, received_rsvd, received_dst_addr, received_src_addr};
 
