@@ -200,7 +200,7 @@ proc create_hier_cell_noc_wrapper { parentCell nameHier ntt_psi } {
     create_bd_pin -dir I -type CLK mregif_${j}_clk
     create_bd_pin -dir I -from 0 -to 0 -type rst mregif_${j}_rst_n
   }
-  create_bd_pin -dir I -from 0 -to 0 -type rst mhdma_rst_n
+  create_bd_pin -dir I -from 0 -to 0 -type rst mhdma_cfg_rst_n
 
   set s_axi_pcie_mgmt_slr0   [ create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:aximm_rtl:1.0 s_axi_pcie_mgmt_slr0 ]
   set s_axi_tandem_loopback [ create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:aximm_rtl:1.0 s_axi_tandem_loopback ]
@@ -946,8 +946,8 @@ proc create_hier_cell_noc_wrapper { parentCell nameHier ntt_psi } {
     set name "MHDMA_AXI_${i}"
     connect_bd_intf_net [get_bd_intf_pins mhdma_sc_${i}/S00_AXI] [get_bd_intf_pins axi_noc_cips/[lindex $mhdma_m_noc_pins_l $i]]
     connect_bd_intf_net [get_bd_intf_pins mhdma_sc_${i}/M00_AXI] [get_bd_intf_pins $name]
-    connect_bd_net [get_bd_pins mhdma_sc_${i}/aclk] [get_bd_pins mhdma_clk]
-    connect_bd_net [get_bd_pins mhdma_sc_${i}/aresetn] [get_bd_pins mhdma_rst_n]
+    connect_bd_net [get_bd_pins mhdma_sc_${i}/aclk] [get_bd_pins mhdma_cfg_clk]
+    connect_bd_net [get_bd_pins mhdma_sc_${i}/aresetn] [get_bd_pins mhdma_cfg_rst_n]
   }
 
   connect_bd_intf_net -intf_net axis_m_rx [get_bd_intf_pins axis_m_rx] [get_bd_intf_pins axis_noc/[lindex $axis_noc_rx_pins_l 0]]

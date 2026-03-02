@@ -384,9 +384,8 @@ proc create_root_design { parentCell ntt_psi } {
   # == MRMAC
   set GT_Serial [ create_bd_intf_port -mode Master -vlnv xilinx.com:interface:gt_rtl:1.0 GT_Serial ]
 
-  # let's be clear on what signals are on which clock here. They will not evolve
-  set_property CONFIG.ASSOCIATED_BUSIF {MHDMA_AXI_CFG} [get_bd_ports /clk_mhdma_cfg_0]
-  set_property CONFIG.ASSOCIATED_BUSIF {MHDMA_HBM_AXI_0:MHDMA_HBM_AXI_1:MHDMA_AXI_0:MHDMA_AXI_1} [get_bd_ports /clk_mhdma]
+  set_property CONFIG.ASSOCIATED_BUSIF {MHDMA_AXI_CFG:MHDMA_AXI_0:MHDMA_AXI_1} [get_bd_ports /clk_mhdma_cfg_0]
+  set_property CONFIG.ASSOCIATED_BUSIF {MHDMA_HBM_AXI_0:MHDMA_HBM_AXI_1} [get_bd_ports /clk_mhdma]
 
   set ctl_tx_port0 [ create_bd_intf_port -mode Slave -vlnv xilinx.com:display_mrmac:mrmac_ctrl_ports:2.0 ctl_tx_port0 ]
   set ctl_tx_port1 [ create_bd_intf_port -mode Slave -vlnv xilinx.com:display_mrmac:mrmac_ctrl_ports:2.0 ctl_tx_port1 ]
@@ -413,12 +412,12 @@ proc create_root_design { parentCell ntt_psi } {
   set tx_axis_tlast_2   [ create_bd_port -dir I tx_axis_tlast_2 ]
   set tx_axis_tvalid_2  [ create_bd_port -dir I tx_axis_tvalid_2 ]
 
-  set tx_axis_tdata_4    [ create_bd_port -dir I -from [expr $AXIS_DATA_MHDMA_W - 1] -to 0 tx_axis_tdata_4 ]
+  set tx_axis_tdata_4   [ create_bd_port -dir I -from [expr $AXIS_DATA_MHDMA_W - 1] -to 0 tx_axis_tdata_4 ]
   set tx_axis_tready_4  [ create_bd_port -dir O tx_axis_tready_4 ]
   set tx_axis_tlast_4   [ create_bd_port -dir I tx_axis_tlast_4 ]
   set tx_axis_tvalid_4  [ create_bd_port -dir I tx_axis_tvalid_4 ]
 
-  set tx_axis_tdata_6    [ create_bd_port -dir I -from [expr $AXIS_DATA_MHDMA_W - 1] -to 0 tx_axis_tdata_6 ]
+  set tx_axis_tdata_6   [ create_bd_port -dir I -from [expr $AXIS_DATA_MHDMA_W - 1] -to 0 tx_axis_tdata_6 ]
   set tx_axis_tready_6  [ create_bd_port -dir O tx_axis_tready_6 ]
   set tx_axis_tlast_6   [ create_bd_port -dir I tx_axis_tlast_6 ]
   set tx_axis_tvalid_6  [ create_bd_port -dir I tx_axis_tvalid_6 ]
@@ -687,8 +686,8 @@ proc create_root_design { parentCell ntt_psi } {
   connect_bd_net [get_bd_pins mrmac_wrapper/s_axi_aclk]    [get_bd_pins shell_wrapper/clk_mhdma_cfg_0]
   connect_bd_net [get_bd_pins mrmac_wrapper/s_axi_aresetn] [get_bd_pins shell_wrapper/resetn_mhdma_cfg_ic_0]
 
-  # MHDMA SmartConnect reset (390.625 MHz domain)
-  connect_bd_net [get_bd_pins noc_wrapper/mhdma_rst_n] [get_bd_pins shell_wrapper/resetn_mhdma_ic_0]
+  # MHDMA SmartConnect reset (cfg clock domain)
+  connect_bd_net [get_bd_pins noc_wrapper/mhdma_cfg_rst_n] [get_bd_pins shell_wrapper/resetn_mhdma_cfg_ic_0]
 
   ####################################
   # Address
