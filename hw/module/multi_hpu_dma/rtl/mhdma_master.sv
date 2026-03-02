@@ -1381,7 +1381,7 @@ module mhdma_master
     end
   endgenerate
 
-  // Timing measurments ---------------------------------------------------------------------------
+  // Timing measurements --------------------------------------------------------------------------
   // timing counter : counter between notify sent from this HPU (on tlast) and ack reception (2nd frame of the header)
   logic count_notify_ack;
   always_ff @(posedge clk_mhdma) begin

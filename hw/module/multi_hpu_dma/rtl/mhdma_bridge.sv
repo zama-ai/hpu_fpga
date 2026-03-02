@@ -222,8 +222,8 @@ module mhdma_bridge
   // Master module does the controls for sending read request and Notifies requests
   mhdma_master mhdma_master (
     // Ethernet configuration interface ---------------------------------------
-    .clk_mhdma_cfg                         (clk_mhdma_cfg                                 ),
-    .resetn_mhdma_cfg                      (resetn_mhdma_cfg                              ),
+    .clk_mhdma_cfg                   (clk_mhdma_cfg                           ),
+    .resetn_mhdma_cfg                (resetn_mhdma_cfg                        ),
     // Ethernet fast clock interface ------------------------------------------
     .clk_mhdma                       (clk_mhdma                               ),
     .resetn_mhdma                    (resetn_mhdma                            ),
@@ -289,8 +289,8 @@ module mhdma_bridge
     .CDC_SYNC_STAGES                (CDC_SYNC_STAGES                          )
   ) mhdma_slave (
     // Ethernet configuration interface ---------------------------------------
-    .clk_mhdma_cfg                        (clk_mhdma_cfg                                  ),
-    .resetn_mhdma_cfg                     (resetn_mhdma_cfg                               ),
+    .clk_mhdma_cfg                  (clk_mhdma_cfg                            ),
+    .resetn_mhdma_cfg               (resetn_mhdma_cfg                         ),
     // Ethernet fast clock interface ------------------------------------------
     .clk_mhdma                      (clk_mhdma                                ),
     .resetn_mhdma                   (resetn_mhdma                             ),

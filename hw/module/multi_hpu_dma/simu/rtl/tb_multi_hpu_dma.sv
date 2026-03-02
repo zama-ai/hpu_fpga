@@ -529,7 +529,7 @@ module tb_multi_hpu_dma;
     arbitrary_notify_nb   = XPM_MIN_FIFO_DEPTH; // if we have a full fifo on fifo_nrx_regf, we will lose notifies
     arbitrary_read_req_nb = XPM_MIN_FIFO_DEPTH;
 
-    $display("\n\n"); // sperating from xpm fifo information
+    $display("\n\n"); // separating from xpm fifo information
 
     $display("\n==================================================================================================");
     $display("  Initial register check and definition");

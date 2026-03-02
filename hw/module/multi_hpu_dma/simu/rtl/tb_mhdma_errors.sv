@@ -692,7 +692,7 @@ module tb_mhdma_errors;
       repeat(200) @(posedge clk_mhdma_cfg);
 
       // Step 2: Send ciphertext emission packets as if we're the remote HPU responding
-      // sec num value missmatch : istead of 6 we get 5
+      // sec num value mismatch : instead of 6 we get 5
       for (int pkt = 0; pkt < NB_PACKETS_FULL + 1; pkt++) begin
         iop_id = $urandom();
         src_addr = $urandom();

@@ -563,7 +563,7 @@ logic [DST_ADDR_W-1:0] dst_addr;
       $display("  Scenario %0d: During CE, at packet %0d we inset a Notify", i, random_insersion);
       $display("==================================================================================================");
       // Only one scenario here:
-      // We need to check if wether receiving a notify during a ciphertext emission breaks the system
+      // We need to check if whether receiving a notify during a ciphertext emission breaks the system
       // MHDMA must :
       //  - Respond Notify with an ack during CE reception
       //  - CE reception must end correctly after being interrupted by Notifies
