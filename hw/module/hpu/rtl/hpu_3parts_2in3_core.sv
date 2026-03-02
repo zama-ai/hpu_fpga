@@ -448,14 +448,15 @@ module hpu_3parts_2in3_core
     .pep_rif_counter_inc      (pep_modsw_rif_counter_inc)
   );
 
-
   // ==============================================================================================
   // multi HPU DMA
   // contains:
-  // * control register file for MAC+PCS & GT
-  // * axi4-stream switch in order to toggle between each line for RPU connection
-  // TODO: WIP
-  //
+  // * decoder
+  // * formatter
+  // * master module (Notify & Read-Request)
+  // * slave module (Notify-ACK & Ciphertext-Emission)
+  // ==============================================================================================
+
   // initialize axi4 signals ----------------------------------------------------------------------
   // Tie-off m_axi4 unused features
   `HPU_AXI4_TIE_GL_UNUSED(mhdma_hbm, [ETH_PC-1:0], ETH_PC)
