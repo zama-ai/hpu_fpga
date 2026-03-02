@@ -10,15 +10,17 @@ set qsfp_mmcm_pin     [get_pins -hierarchical -filter {NAME =~ *hpu_plug_wrapper
 set mhdma_cfg_mmcm_pin [get_pins -hierarchical -filter {NAME =~ *hpu_plug_wrapper/hpu_plug_i/shell_wrapper/clock_reset/mhdma_clk_wiz/clk_out1*}]
 
 # CDC between mhdma_cfg_clk (100MHz, clk_out1) and clk_mhdma (390MHz, clk_out2) from same MMCM
+# These paths cross clock domains through the MRMAC AXI-APB bridge and regif without proper synchronizers. set_max_delay tells Vivado to constrain only the datapath delay.
+# IMPORTANT: only target the unsynchronized AXI bus paths, NOT the XPM CDC primitives which have their own internal constraints.
 set_max_delay -datapath_only -from \
     [get_clocks -of_objects $mhdma_cfg_mmcm_pin] -to \
     [get_clocks -of_objects $qsfp_mmcm_pin \
-] 2.8
+] 2.558
 
 set_max_delay -datapath_only -from \
     [get_clocks -of_objects $qsfp_mmcm_pin] -to \
     [get_clocks -of_objects $mhdma_cfg_mmcm_pin \
-] 10.0
+] 2.558
 
 # we are using clk_pl_1 - freerun 33Mhz - to generate qsfp_mmcm
 set_max_delay -datapath_only -from \
