@@ -5,8 +5,8 @@
   "offset": 0,
   "range": 393216,
   "ext_pkg": [
-    "axi_if_shell_axil_pkg",
-    "axi_if_common_param_pkg"
+    "axi_if_common_param_pkg",
+    "axi_if_shell_axil_pkg"
   ],
   "section": [
     {
@@ -4491,7 +4491,7 @@
       "description": "Request registers interface",
       "offset": 327936,
       "bytes_align": 4,
-      "range": 116,
+      "range": 124,
       "register": [
         {
           "name": "req_id",
@@ -5064,12 +5064,36 @@
           "field": null
         },
         {
+          "name": "stat_t_notify_to_ack_max",
+          "description": "Longuest time between notify tlast and ack reception in decoder (in this session)",
+          "owner": "Kernel",
+          "read_access": "Read",
+          "write_access": "None",
+          "offset": 328012,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
           "name": "stat_t_rr_to_ce_received",
           "description": "time between read request tlast and all pkt received from ce",
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "None",
-          "offset": 328012,
+          "offset": 328016,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "stat_t_rr_to_ce_received_max",
+          "description": "Longuest time between read request tlast and all pkt received from ce (in this session)",
+          "owner": "Kernel",
+          "read_access": "Read",
+          "write_access": "None",
+          "offset": 328020,
           "default": {
             "Cst": 0
           },
@@ -5081,7 +5105,7 @@
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "None",
-          "offset": 328016,
+          "offset": 328024,
           "default": {
             "Cst": 0
           },
@@ -5093,7 +5117,7 @@
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "None",
-          "offset": 328020,
+          "offset": 328028,
           "default": {
             "Cst": 0
           },
@@ -5105,7 +5129,7 @@
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "None",
-          "offset": 328024,
+          "offset": 328032,
           "default": {
             "Cst": 0
           },
@@ -5117,7 +5141,7 @@
           "owner": "Kernel",
           "read_access": "ReadNotify",
           "write_access": "None",
-          "offset": 328028,
+          "offset": 328036,
           "default": {
             "Cst": 0
           },
@@ -5129,7 +5153,7 @@
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "None",
-          "offset": 328032,
+          "offset": 328040,
           "default": {
             "Cst": 0
           },
@@ -5141,7 +5165,7 @@
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "None",
-          "offset": 328036,
+          "offset": 328044,
           "default": {
             "Cst": 0
           },
@@ -5153,7 +5177,7 @@
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "None",
-          "offset": 328040,
+          "offset": 328048,
           "default": {
             "Cst": 0
           },
@@ -5165,7 +5189,7 @@
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "None",
-          "offset": 328044,
+          "offset": 328052,
           "default": {
             "Cst": 0
           },
@@ -5177,7 +5201,7 @@
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "None",
-          "offset": 328048,
+          "offset": 328056,
           "default": {
             "Cst": 0
           },

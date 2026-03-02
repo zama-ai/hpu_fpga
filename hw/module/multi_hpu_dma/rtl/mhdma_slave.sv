@@ -821,14 +821,7 @@ module mhdma_slave
     end
   endgenerate
 
-  logic [ETH_PC-1:0][2*REG_DATA_W-1:0] rr_phy_addr;
-  generate
-    for (genvar gen_i=0; gen_i<ETH_PC; gen_i++) begin : gen_i_phy_addr
-      assign rr_phy_addr[gen_i] = phy_addr[gen_i];
-    end
-  endgenerate
-
-  assign stat.rr_phy_addr           = rr_phy_addr;
+  assign stat.rr_phy_addr           = phy_addr;
   assign stat.nb_read_to_hbm        = nb_read_to_hbm;
   assign stat.nb_words_received_pc  = nb_words_received_pc;
   assign stat.t_rr_wait_words_pc    = t_rr_wait_words_pc;

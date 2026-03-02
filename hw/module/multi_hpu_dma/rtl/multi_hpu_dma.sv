@@ -286,8 +286,12 @@ module multi_hpu_dma
     // timing
     .r_mhdma_request_stat_t_notify_to_ack                 (/* UNUSED - register output, only _upd used */        ),
     .r_mhdma_request_stat_t_notify_to_ack_upd             (cnt_cfg.master.t_notify_to_ack                        ),
+    .r_mhdma_request_stat_t_notify_to_ack_max             (/* UNUSED - register output, only _upd used */        ),
+    .r_mhdma_request_stat_t_notify_to_ack_max_upd         (cnt_cfg.master.t_notify_to_ack_max                    ),
     .r_mhdma_request_stat_t_rr_to_ce_received             (/* UNUSED - register output, only _upd used */        ),
     .r_mhdma_request_stat_t_rr_to_ce_received_upd         (cnt_cfg.master.t_rr_to_ce_received                    ),
+    .r_mhdma_request_stat_t_rr_to_ce_received_max         (/* UNUSED - register output, only _upd used */        ),
+    .r_mhdma_request_stat_t_rr_to_ce_received_max_upd     (cnt_cfg.master.t_rr_to_ce_received_max                ),
     .r_mhdma_request_stat_t_ce_first_to_last_pkt          (/* UNUSED - register output, only _upd used */        ),
     .r_mhdma_request_stat_t_ce_first_to_last_pkt_upd      (cnt_cfg.decoder.t_ce_first_to_last_pkt                ),
     .r_mhdma_request_stat_t_rr_wait_words_pc_pc0          (/* UNUSED - register output, only _upd used */        ),

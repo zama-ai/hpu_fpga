@@ -1,7 +1,7 @@
 // ============================================================================================== //
 // Description  : register  map address definition package
 // This file was generated with rust regmap generator:
-//  * Date:  2026-02-26
+//  * Date:  2026-03-02
 //  * Tool_version: 27d9e880d531030160fd8749c606142942d5558d
 // ---------------------------------------------------------------------------------------------- //
 //
@@ -101,16 +101,18 @@ package hpu_regif_core_mhdma_2in3_pkg;
   localparam int MHDMA_REQUEST_STAT_NB_WORDS_RECEIVED_PC_PC1_OFS = 'h50140;
   localparam int MHDMA_REQUEST_STAT_NB_CE_WORDS_RECEIVED_OFS = 'h50144;
   localparam int MHDMA_REQUEST_STAT_T_NOTIFY_TO_ACK_OFS = 'h50148;
-  localparam int MHDMA_REQUEST_STAT_T_RR_TO_CE_RECEIVED_OFS = 'h5014c;
-  localparam int MHDMA_REQUEST_STAT_T_CE_FIRST_TO_LAST_PKT_OFS = 'h50150;
-  localparam int MHDMA_REQUEST_STAT_T_RR_WAIT_WORDS_PC_PC0_OFS = 'h50154;
-  localparam int MHDMA_REQUEST_STAT_T_RR_WAIT_WORDS_PC_PC1_OFS = 'h50158;
-  localparam int MHDMA_REQUEST_STAT_NOTIFY_TIMEOUT_OFS = 'h5015c;
-  localparam int MHDMA_REQUEST_STAT_PHYSICAL_ADDR_PC0_LSB_OFS = 'h50160;
-  localparam int MHDMA_REQUEST_STAT_PHYSICAL_ADDR_PC0_MSB_OFS = 'h50164;
-  localparam int MHDMA_REQUEST_STAT_PHYSICAL_ADDR_PC1_LSB_OFS = 'h50168;
-  localparam int MHDMA_REQUEST_STAT_PHYSICAL_ADDR_PC1_MSB_OFS = 'h5016c;
-  localparam int MHDMA_REQUEST_STAT_CNT_NB_WRITE_COMPLETE_OFS = 'h50170;
+  localparam int MHDMA_REQUEST_STAT_T_NOTIFY_TO_ACK_MAX_OFS = 'h5014c;
+  localparam int MHDMA_REQUEST_STAT_T_RR_TO_CE_RECEIVED_OFS = 'h50150;
+  localparam int MHDMA_REQUEST_STAT_T_RR_TO_CE_RECEIVED_MAX_OFS = 'h50154;
+  localparam int MHDMA_REQUEST_STAT_T_CE_FIRST_TO_LAST_PKT_OFS = 'h50158;
+  localparam int MHDMA_REQUEST_STAT_T_RR_WAIT_WORDS_PC_PC0_OFS = 'h5015c;
+  localparam int MHDMA_REQUEST_STAT_T_RR_WAIT_WORDS_PC_PC1_OFS = 'h50160;
+  localparam int MHDMA_REQUEST_STAT_NOTIFY_TIMEOUT_OFS = 'h50164;
+  localparam int MHDMA_REQUEST_STAT_PHYSICAL_ADDR_PC0_LSB_OFS = 'h50168;
+  localparam int MHDMA_REQUEST_STAT_PHYSICAL_ADDR_PC0_MSB_OFS = 'h5016c;
+  localparam int MHDMA_REQUEST_STAT_PHYSICAL_ADDR_PC1_LSB_OFS = 'h50170;
+  localparam int MHDMA_REQUEST_STAT_PHYSICAL_ADDR_PC1_MSB_OFS = 'h50174;
+  localparam int MHDMA_REQUEST_STAT_CNT_NB_WRITE_COMPLETE_OFS = 'h50178;
   typedef struct packed {
     logic [(1-1):0] reset_registers;
     logic [(1-1):0] tx_loop;

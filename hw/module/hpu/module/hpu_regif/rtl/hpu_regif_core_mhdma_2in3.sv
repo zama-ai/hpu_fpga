@@ -1,7 +1,7 @@
 // ============================================================================================== //
 // Description  : Axi4-lite register bank
 // This file was generated with rust regmap generator:
-//  * Date:  2026-02-26
+//  * Date:  2026-03-02
 //  * Tool_version: 27d9e880d531030160fd8749c606142942d5558d
 // ---------------------------------------------------------------------------------------------- //
 // xR[n]W[na]
@@ -162,9 +162,15 @@ import hpu_regif_core_mhdma_2in3_pkg::*;
   // Register IO: mhdma_request_stat_t_notify_to_ack
     , output logic [REG_DATA_W-1: 0] r_mhdma_request_stat_t_notify_to_ack
     , input  logic [REG_DATA_W-1: 0] r_mhdma_request_stat_t_notify_to_ack_upd
+  // Register IO: mhdma_request_stat_t_notify_to_ack_max
+    , output logic [REG_DATA_W-1: 0] r_mhdma_request_stat_t_notify_to_ack_max
+    , input  logic [REG_DATA_W-1: 0] r_mhdma_request_stat_t_notify_to_ack_max_upd
   // Register IO: mhdma_request_stat_t_rr_to_ce_received
     , output logic [REG_DATA_W-1: 0] r_mhdma_request_stat_t_rr_to_ce_received
     , input  logic [REG_DATA_W-1: 0] r_mhdma_request_stat_t_rr_to_ce_received_upd
+  // Register IO: mhdma_request_stat_t_rr_to_ce_received_max
+    , output logic [REG_DATA_W-1: 0] r_mhdma_request_stat_t_rr_to_ce_received_max
+    , input  logic [REG_DATA_W-1: 0] r_mhdma_request_stat_t_rr_to_ce_received_max_upd
   // Register IO: mhdma_request_stat_t_ce_first_to_last_pkt
     , output logic [REG_DATA_W-1: 0] r_mhdma_request_stat_t_ce_first_to_last_pkt
     , input  logic [REG_DATA_W-1: 0] r_mhdma_request_stat_t_ce_first_to_last_pkt_upd
@@ -490,9 +496,15 @@ import hpu_regif_core_mhdma_2in3_pkg::*;
 //-- Default mhdma_request_stat_t_notify_to_ack
   logic [REG_DATA_W-1:0]mhdma_request_stat_t_notify_to_ack_default;
   assign mhdma_request_stat_t_notify_to_ack_default = 'h0;
+//-- Default mhdma_request_stat_t_notify_to_ack_max
+  logic [REG_DATA_W-1:0]mhdma_request_stat_t_notify_to_ack_max_default;
+  assign mhdma_request_stat_t_notify_to_ack_max_default = 'h0;
 //-- Default mhdma_request_stat_t_rr_to_ce_received
   logic [REG_DATA_W-1:0]mhdma_request_stat_t_rr_to_ce_received_default;
   assign mhdma_request_stat_t_rr_to_ce_received_default = 'h0;
+//-- Default mhdma_request_stat_t_rr_to_ce_received_max
+  logic [REG_DATA_W-1:0]mhdma_request_stat_t_rr_to_ce_received_max_default;
+  assign mhdma_request_stat_t_rr_to_ce_received_max_default = 'h0;
 //-- Default mhdma_request_stat_t_ce_first_to_last_pkt
   logic [REG_DATA_W-1:0]mhdma_request_stat_t_ce_first_to_last_pkt_default;
   assign mhdma_request_stat_t_ce_first_to_last_pkt_default = 'h0;
@@ -837,6 +849,17 @@ import hpu_regif_core_mhdma_2in3_pkg::*;
       r_mhdma_request_stat_t_notify_to_ack       <= r_mhdma_request_stat_t_notify_to_ackD;
     end
   end
+// Register FF: mhdma_request_stat_t_notify_to_ack_max
+  logic [REG_DATA_W-1:0] r_mhdma_request_stat_t_notify_to_ack_maxD;
+  assign r_mhdma_request_stat_t_notify_to_ack_maxD       = r_mhdma_request_stat_t_notify_to_ack_max_upd;
+  always_ff @(posedge clk) begin
+    if (!s_rst_n) begin
+      r_mhdma_request_stat_t_notify_to_ack_max       <= mhdma_request_stat_t_notify_to_ack_max_default;
+    end
+    else begin
+      r_mhdma_request_stat_t_notify_to_ack_max       <= r_mhdma_request_stat_t_notify_to_ack_maxD;
+    end
+  end
 // Register FF: mhdma_request_stat_t_rr_to_ce_received
   logic [REG_DATA_W-1:0] r_mhdma_request_stat_t_rr_to_ce_receivedD;
   assign r_mhdma_request_stat_t_rr_to_ce_receivedD       = r_mhdma_request_stat_t_rr_to_ce_received_upd;
@@ -846,6 +869,17 @@ import hpu_regif_core_mhdma_2in3_pkg::*;
     end
     else begin
       r_mhdma_request_stat_t_rr_to_ce_received       <= r_mhdma_request_stat_t_rr_to_ce_receivedD;
+    end
+  end
+// Register FF: mhdma_request_stat_t_rr_to_ce_received_max
+  logic [REG_DATA_W-1:0] r_mhdma_request_stat_t_rr_to_ce_received_maxD;
+  assign r_mhdma_request_stat_t_rr_to_ce_received_maxD       = r_mhdma_request_stat_t_rr_to_ce_received_max_upd;
+  always_ff @(posedge clk) begin
+    if (!s_rst_n) begin
+      r_mhdma_request_stat_t_rr_to_ce_received_max       <= mhdma_request_stat_t_rr_to_ce_received_max_default;
+    end
+    else begin
+      r_mhdma_request_stat_t_rr_to_ce_received_max       <= r_mhdma_request_stat_t_rr_to_ce_received_maxD;
     end
   end
 // Register FF: mhdma_request_stat_t_ce_first_to_last_pkt
@@ -1117,8 +1151,14 @@ import hpu_regif_core_mhdma_2in3_pkg::*;
           MHDMA_REQUEST_STAT_T_NOTIFY_TO_ACK_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register mhdma_request_stat_t_notify_to_ack
             axil_rdataD = r_mhdma_request_stat_t_notify_to_ack;
           end
+          MHDMA_REQUEST_STAT_T_NOTIFY_TO_ACK_MAX_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register mhdma_request_stat_t_notify_to_ack_max
+            axil_rdataD = r_mhdma_request_stat_t_notify_to_ack_max;
+          end
           MHDMA_REQUEST_STAT_T_RR_TO_CE_RECEIVED_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register mhdma_request_stat_t_rr_to_ce_received
             axil_rdataD = r_mhdma_request_stat_t_rr_to_ce_received;
+          end
+          MHDMA_REQUEST_STAT_T_RR_TO_CE_RECEIVED_MAX_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register mhdma_request_stat_t_rr_to_ce_received_max
+            axil_rdataD = r_mhdma_request_stat_t_rr_to_ce_received_max;
           end
           MHDMA_REQUEST_STAT_T_CE_FIRST_TO_LAST_PKT_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register mhdma_request_stat_t_ce_first_to_last_pkt
             axil_rdataD = r_mhdma_request_stat_t_ce_first_to_last_pkt;

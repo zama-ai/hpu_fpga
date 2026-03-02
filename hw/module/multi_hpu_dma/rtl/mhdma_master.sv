@@ -113,6 +113,8 @@ module mhdma_master
   localparam int AXI_BURST_NB_MAX_W  = $clog2(AXI_BURST_NB_MAX) == 0 ? 1 : $clog2(AXI_BURST_NB_MAX);
   localparam int AXI_BURST_NB_MAX_WW = $clog2(AXI_BURST_NB_MAX+1) == 0 ? 1 : $clog2(AXI_BURST_NB_MAX+1);
 
+  localparam int NUM_STAT_CNTS = 4;
+
   // ==============================================================================================
   // FSM
   // ==============================================================================================
@@ -1341,70 +1343,45 @@ module mhdma_master
   // =========================================================================================== //
   // Statistics
   // =========================================================================================== //
-  logic [REG_DATA_W-1:0] retry_notify_cnt;
-  logic [REG_DATA_W-1:0] retry_read_req_cnt;
-  logic [REG_DATA_W-1:0] notify_cnt;
-  logic [REG_DATA_W-1:0] notify_ack_cnt;
+
+  // Counters -------------------------------------------------------------------------------------
+  logic [NUM_STAT_CNTS-1:0][REG_DATA_W-1:0] stat_cnt;
+  logic [NUM_STAT_CNTS-1:0]                 stat_cnt_inc;
+  logic [NUM_STAT_CNTS-1:0]                 stat_cnt_rst;
+
   logic [REG_DATA_W-1:0] t_notify_to_ack;
   logic [REG_DATA_W-1:0] t_rr_to_ce_received;
   logic [REG_DATA_W-1:0] nb_write_complete_cnt;
 
-  always_ff @(posedge clk_mhdma) begin
-    if (~resetn_mhdma) begin
-      notify_cnt <= 'h0;
-    end else begin
-      if (stat_rst.cnt_notify) begin
-        notify_cnt <= 'h0;
-      end else begin
-        if (notify_sent) begin
-          notify_cnt <= notify_cnt + 1;
+  assign stat_cnt_inc = {
+    timeout_reached_read_request | retry_seq_num,
+    timeout_reached_notify,
+    notify_ack_received,
+    notify_sent
+  };
+
+  assign stat_cnt_rst = {
+    stat_rst.cnt_read_req_retry,
+    stat_rst.cnt_notify_retry,
+    stat_rst.cnt_notify_ack,
+    stat_rst.cnt_notify
+  };
+
+  generate
+    for (genvar gen_i = 0; gen_i < NUM_STAT_CNTS; gen_i++) begin : gen_stat_cnt
+      always_ff @(posedge clk_mhdma) begin
+        if (~resetn_mhdma) begin
+          stat_cnt[gen_i] <= 'h0;
+        end else if (stat_cnt_rst[gen_i]) begin
+          stat_cnt[gen_i] <= 'h0;
+        end else if (stat_cnt_inc[gen_i]) begin
+          stat_cnt[gen_i] <= stat_cnt[gen_i] + 1;
         end
       end
     end
-  end
+  endgenerate
 
-  always_ff @(posedge clk_mhdma) begin
-    if (~resetn_mhdma) begin
-      notify_ack_cnt <= 'h0;
-    end else begin
-      if (stat_rst.cnt_notify_ack) begin
-        notify_ack_cnt <= 'h0;
-      end else begin
-        if (notify_ack_received) begin
-          notify_ack_cnt <= notify_ack_cnt + 1;
-        end
-      end
-    end
-  end
-
-  always_ff @(posedge clk_mhdma) begin
-    if (~resetn_mhdma) begin
-      retry_notify_cnt <= 'h0;
-    end else begin
-      if (stat_rst.cnt_notify_retry) begin
-        retry_notify_cnt <= 'h0;
-      end else begin
-        if (timeout_reached_notify) begin
-          retry_notify_cnt <= retry_notify_cnt + 1;
-        end
-      end
-    end
-  end
-
-  always_ff @(posedge clk_mhdma) begin
-    if (~resetn_mhdma) begin
-      retry_read_req_cnt <= 'h0;
-    end else begin
-      if (stat_rst.cnt_read_req_retry) begin
-        retry_read_req_cnt <= 'h0;
-      end else begin
-        if (timeout_reached_read_request | retry_seq_num) begin
-          retry_read_req_cnt <= retry_read_req_cnt + 1;
-        end
-      end
-    end
-  end
-
+  // Timing measurments ---------------------------------------------------------------------------
   // timing counter : counter between notify sent from this HPU (on tlast) and ack reception (2nd frame of the header)
   logic count_notify_ack;
   always_ff @(posedge clk_mhdma) begin
@@ -1415,18 +1392,6 @@ module mhdma_master
         count_notify_ack <= 1'b1;
       end else if (notify_ack_received) begin
         count_notify_ack <= 1'b0;
-      end
-    end
-  end
-
-  always_ff @(posedge clk_mhdma) begin
-    if (~resetn_mhdma) begin
-      t_notify_to_ack <= 'h0;
-    end else begin
-      if (count_notify_ack) begin
-        t_notify_to_ack <= t_notify_to_ack + 1;
-      end else begin
-        t_notify_to_ack <= 'h0;
       end
     end
   end
@@ -1447,6 +1412,18 @@ module mhdma_master
 
   always_ff @(posedge clk_mhdma) begin
     if (~resetn_mhdma) begin
+      t_notify_to_ack <= 'h0;
+    end else begin
+      if (count_notify_ack) begin
+        t_notify_to_ack <= t_notify_to_ack + 1;
+      end else begin
+        t_notify_to_ack <= 'h0;
+      end
+    end
+  end
+
+  always_ff @(posedge clk_mhdma) begin
+    if (~resetn_mhdma) begin
       t_rr_to_ce_received <= 'h0;
     end else begin
        if(count_rreq_receive) begin
@@ -1457,21 +1434,6 @@ module mhdma_master
     end
   end
 
-  logic [CE_DATA_COUNT_W:0] fifo_cerx_cnt_tx;
-
-  always_ff @(posedge clk_mhdma) begin
-    if (~resetn_mhdma) begin
-      fifo_cerx_cnt_tx <= 'h0;
-    end else begin
-      if (fifo_cerx_out_vld & fifo_cerx_out_rdy) begin
-        fifo_cerx_cnt_tx <= fifo_cerx_cnt_tx +1;
-      end else if (ciphertext_received) begin
-        fifo_cerx_cnt_tx <= 'h0;
-      end
-    end
-  end
-
-  // value assignation for timing registers -------------------------------------------------------
   logic [REG_DATA_W-1:0] stat_t_notify_to_ack_r;
   logic [REG_DATA_W-1:0] stat_t_rr_to_ce_received_r;
   logic [REG_DATA_W-1:0] stat_nb_ce_words_received_r;
@@ -1492,6 +1454,44 @@ module mhdma_master
     end else begin
       if (ciphertext_received) begin
         stat_t_rr_to_ce_received_r <= t_rr_to_ce_received;
+      end
+    end
+  end
+
+  logic [REG_DATA_W-1:0] t_notify_to_ack_max;
+  logic [REG_DATA_W-1:0] t_rr_to_ce_received_max;
+
+  always_ff @(posedge clk_mhdma) begin
+    if (~resetn_mhdma) begin
+      t_notify_to_ack_max <= 'h0;
+    end else begin
+      if (notify_ack_received) begin
+        t_notify_to_ack_max <= (t_notify_to_ack_max<t_notify_to_ack) ? t_notify_to_ack : t_notify_to_ack_max;
+      end
+    end
+  end
+
+  always_ff @(posedge clk_mhdma) begin
+    if (~resetn_mhdma) begin
+      t_rr_to_ce_received_max <= 'h0;
+    end else begin
+      if (ciphertext_received) begin
+        t_rr_to_ce_received_max <= (t_rr_to_ce_received_max<t_rr_to_ce_received) ? t_rr_to_ce_received : t_rr_to_ce_received_max;
+      end
+    end
+  end
+
+  // Debug registers ------------------------------------------------------------------------------
+  logic [CE_DATA_COUNT_W:0] fifo_cerx_cnt_tx;
+
+  always_ff @(posedge clk_mhdma) begin
+    if (~resetn_mhdma) begin
+      fifo_cerx_cnt_tx <= 'h0;
+    end else begin
+      if (fifo_cerx_out_vld & fifo_cerx_out_rdy) begin
+        fifo_cerx_cnt_tx <= fifo_cerx_cnt_tx +1;
+      end else if (ciphertext_received) begin
+        fifo_cerx_cnt_tx <= 'h0;
       end
     end
   end
@@ -1524,14 +1524,16 @@ module mhdma_master
 
   assign stat.fsm_notify            = ntx_state;
   assign stat.fsm_read_req          = rreq_state;
-  assign stat.cnt_notify_retries    = retry_notify_cnt;
-  assign stat.cnt_read_req_retries  = retry_read_req_cnt;
-  assign stat.cnt_notify            = notify_cnt;
-  assign stat.cnt_notify_ack        = notify_ack_cnt;
+  assign stat.cnt_notify            = stat_cnt[0];
+  assign stat.cnt_notify_ack        = stat_cnt[1];
+  assign stat.cnt_notify_retries    = stat_cnt[2];
+  assign stat.cnt_read_req_retries  = stat_cnt[3];
   assign stat.cnt_notify_timeout    = to_notify_cnt;
   assign stat.nb_write_complete_cnt = nb_write_complete_cnt;
-  assign stat.t_notify_to_ack       = stat_t_notify_to_ack_r;
-  assign stat.t_rr_to_ce_received   = stat_t_rr_to_ce_received_r;
+  assign stat.t_notify_to_ack           = stat_t_notify_to_ack_r;
+  assign stat.t_notify_to_ack_max       = t_notify_to_ack_max;
+  assign stat.t_rr_to_ce_received       = stat_t_rr_to_ce_received_r;
+  assign stat.t_rr_to_ce_received_max   = t_rr_to_ce_received_max;
   assign stat.nb_ce_words_received  = stat_nb_ce_words_received_r;
 
 endmodule

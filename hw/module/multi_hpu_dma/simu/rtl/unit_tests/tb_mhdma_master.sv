@@ -1359,6 +1359,10 @@ module tb_mhdma_master;
         $display("[ERROR:%0d] t_notify_to_ack is zero", scenario_id);
         error_scenario = 1'b1;
       end
+      assert (stat.t_notify_to_ack_max != 0) else begin
+        $display("[ERROR:%0d] t_notify_to_ack_max is zero", scenario_id);
+        error_scenario = 1'b1;
+      end
 
       // Perform a read request for t_rr_to_ce_received
       randomize_fields();
@@ -1382,6 +1386,10 @@ module tb_mhdma_master;
       repeat (20) @(posedge clk_mhdma);
       assert (stat.t_rr_to_ce_received != 0) else begin
         $display("[ERROR:%0d] t_rr_to_ce_received is zero", scenario_id);
+        error_scenario = 1'b1;
+      end
+      assert (stat.t_rr_to_ce_received_max != 0) else begin
+        $display("[ERROR:%0d] t_rr_to_ce_received_max is zero", scenario_id);
         error_scenario = 1'b1;
       end
       assert (stat.nb_ce_words_received != 0) else begin
