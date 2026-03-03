@@ -119,6 +119,8 @@ typedef struct {
 // A fixed size of FW_RUNTIME_MAX_WORD is reserved at the beginning of the FW memory for this structure
 typedef struct {
   uint8_t node_id;
+  uint8_t cluster_first_nid;
+  uint8_t cluster_last_nid;
   // TODO extend this with required runtime informations
   // WARN: configuration structure within backend must be updated accordingly
 } UcoreCfg_t;

@@ -26,6 +26,8 @@
 uint8_t cur_iid;
 IOpMapping_t cur_mapping;
 uint8_t phys_hpu_id;
+uint8_t cluster_first_nid;
+uint8_t cluster_last_nid;
 mhdma_element_t mhdma_table[IOP_ID_MAX_COUNT][FLAG_MAX_COUNT];
 
 // IOP state
@@ -318,10 +320,10 @@ void dst_store_print(uint8_t iid) {
   for (int i = 0; i < MAX_DST_VARS; i++) {
     if (dst_store.owner[iid][i] != 0xFF) {
       PLL_INF("ucore", "[HPU%d] dst_store: IOP %d dst %d owner %d: ", phys_hpu_id, iid, i, dst_store.owner[iid][i]);
-      for (int j = 0; j < 7; j++) {
+      for (int j = 0; j < 4; j++) {
         PLL_INF("ucore", "%d", dst_store.state[iid][i][j]);
       }
-      PLL_INF("ucore", "[HPU%d]\n", phys_hpu_id);
+      PLL_INF("ucore", "[HPU%d] end of dst %d", phys_hpu_id, i);
     }
   }
 }
@@ -343,7 +345,7 @@ void iop_teardown(uint8_t iid) {
     generate_ucore_notify(iid, remote_operand->pos, remote_operand->src_cid, remote_operand->dst_cid, remote_operand->target_cid);
     remote_operand = dst_notifyq_getdst(iid);
 #ifdef UCORE_MHDMA_SIMU
-    //sleep(3);
+    sleep(3);
 #else
     iOSAL_Task_SleepTicks(10);
 #endif
@@ -353,31 +355,34 @@ void iop_teardown(uint8_t iid) {
   PLL_ERR("ucore", "[HPU%d] iop_teardown free source slots: %d", phys_hpu_id, src_free_cnt);
 
   //wait dst owned by local hpu but produced somewhere else
-  //dst_store_print(iid);
+  dst_store_print(iid);
   uint16_t non_resolved_owned_dst = dst_store_get_owned(iid, phys_hpu_id);
   while (non_resolved_owned_dst != 0xFFFF) {
     // wait until notify or read ct is received
     //iOSAL_Task_SleepTicks(1);
     uint8_t tid = (non_resolved_owned_dst >> 8) & 0xFF;
     uint8_t bid = non_resolved_owned_dst & 0xFF;
+    uint8_t print = 1;
     while (dst_store.state[iid][tid][bid] != DST_STATE_RESOLVED) {
-      //PLL_INF("ucore", "[HPU%d] iop_teardown wait on iop %d hpu_id %d tid %d bid %d - being resolved",
-      //    phys_hpu_id,
-      //    iid,
-      //    phys_hpu_id,
-      //    tid,
-      //    bid);
+      if (print) {
+        PLL_ERR("ucore", "[HPU%d] iop_teardown wait on dst iop %d tid %d bid %d - being resolved",
+            phys_hpu_id,
+            iid,
+            tid,
+            bid);
+        print--;
+      }
 #ifdef UCORE_MHDMA_SIMU
       sleep(10);
 #else
-      iOSAL_Task_SleepTicks(10);
+      iOSAL_Task_SleepTicks(100);
 #endif
     }
     non_resolved_owned_dst = dst_store_get_owned(iid, phys_hpu_id);
   }
 
   // notify IOp locally done to all HPU but local one
-  for (int i = 0; i < MAX_HPU_IN_CLUSTER; i++) {
+  for (int i = cluster_first_nid; i <= cluster_last_nid; i++) {
     if (i != phys_hpu_id) {
       generate_iop_notify(iid, iop_state[iid].nb_hpu, i);
 #ifdef UCORE_MHDMA_SIMU
@@ -621,6 +626,14 @@ uint32_t get_lookup(IOpHeader_t header, IOpMapping_t mapping, uint8_t hid, Looku
 // NB: IOp have variable destination and source operands
 // TODO Add error handling for out_of_range patching
 void patch_mem_dop(DOpu_t *dop, OperandBundle_t *iop_dst, OperandBundle_t *iop_src) {
+  PLL_ERR("patch_mem_dop", "[HPU%d] dop %08X opcode %d dop->mem.mode %d dop->mem.slot %04X tid %d bid %d",
+          phys_hpu_id,
+          dop->raw,
+          dop->mem.opcode,
+          dop->mem.mode,
+          dop->mem.slot,
+          (dop->mem.slot >> 8) & 0xff,
+          dop->mem.slot & 0xff);
 
   switch (dop->mem.mode) {
     case MEM_ADDR: { // Already an explicit ADDR -> No need to patch
@@ -654,26 +667,20 @@ void patch_mem_dop(DOpu_t *dop, OperandBundle_t *iop_dst, OperandBundle_t *iop_s
         remote_src->src_cid = src_cid;
         remote_src->state = OPERAND_STATE_NONE;
 
-        // if state is anything else than NONE it means
-        // b2b_pool slot was already allocated and that
-        // iop is not done or DMA read is already pending
-        // => doing something here only if state is None
-        if (remote_src->state == OPERAND_STATE_NONE) {
-          uint16_t dst_cid = b2b_pool_pop(cur_iid);
-          if (dst_cid == 0xFFFF) {
-            PLL_ERR("patch_mem_dop", "Could not get a free slot in b2b_pool (%04x,%04x,%d)", b2b_pool_head, b2b_pool_tail, b2b_pool_free_cnt);
-            break;
-          }
-          remote_src->dst_cid = dst_cid;
-          // issue read immediately if src comes from a done iop or if iid = 0 which means src is coming from Host
-          if (iop_state[src_iid].state == IOP_STATE_DONE || src_iid == 0) {
-            remote_src->state = OPERAND_STATE_DMA_PENDING;
-            generate_operand_read_req(src_iid, CMD_SRC, remote_src->pos, remote_src->src_cid, remote_src->dst_cid, 0);
-          } else {
-            remote_src->state = OPERAND_STATE_READ_PENDING;
-          }
-          src_notifyq_print(src_iid);
+        uint16_t dst_cid = b2b_pool_pop(cur_iid);
+        if (dst_cid == 0xFFFF) {
+          PLL_ERR("patch_mem_dop", "Could not get a free slot in b2b_pool (%04x,%04x,%d)", b2b_pool_head, b2b_pool_tail, b2b_pool_free_cnt);
+          break;
         }
+        remote_src->dst_cid = dst_cid;
+        // issue read immediately if src comes from a done iop or if iid = 0 which means src is coming from Host
+        if (iop_state[src_iid].state == IOP_STATE_DONE || src_iid == 0) {
+          remote_src->state = OPERAND_STATE_DMA_PENDING;
+          generate_operand_read_req(src_iid, CMD_SRC, remote_src->pos, remote_src->src_cid, remote_src->dst_cid, 0);
+        } else {
+          remote_src->state = OPERAND_STATE_READ_PENDING;
+        }
+        src_notifyq_print(src_iid);
 
         while (remote_src->state != OPERAND_STATE_RESOLVED) {
           // wait until notify or read ct is received
@@ -720,8 +727,19 @@ void patch_mem_dop(DOpu_t *dop, OperandBundle_t *iop_dst, OperandBundle_t *iop_s
         remote_dst->src_cid = local_cid;
         remote_dst->state = OPERAND_STATE_NONE;
         remote_dst->target_cid = dst_cid;
+
+        PLL_ERR("patch_mem_dop", "[HPU%d] dst store iid %d pos %d src(b2b) %d dst %d(%d/%d) target %d",
+                phys_hpu_id,
+                cur_iid,
+                dst_hpu_id,
+                remote_dst->src_cid,
+                remote_dst->dst_cid,
+                tid,
+                bid,
+                remote_dst->target_cid);
+
         dop->mem.slot = local_cid;
-        dst_notifyq_print(cur_iid);
+        //dst_notifyq_print(cur_iid);
       }
       dop->mem.mode = MEM_ADDR;
       break;

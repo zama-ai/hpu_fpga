@@ -294,6 +294,8 @@ extern XScuGic xInterruptController;
 // HPU global variables
 extern uint8_t cur_iid;
 extern uint8_t phys_hpu_id;
+extern uint8_t cluster_first_nid;
+extern uint8_t cluster_last_nid;
 extern iop_state_t iop_state[IOP_ID_MAX_COUNT];
 extern dst_store_t dst_store;
 extern mhdma_element_t mhdma_table[IOP_ID_MAX_COUNT][FLAG_MAX_COUNT];
@@ -409,7 +411,7 @@ void vInterruptHandler_mhdma_notify( void* pvCallBackRef ) {
         uint8_t tid = (notify.fields.flag);
         uint8_t bid = (notify.fields._pad & 0xFF);
         // if dst is None it is probably an error
-        //if dst is reading or resolved then there is nothing to do here
+        // if dst is reading or resolved then there is nothing to do here
         if (dst_store.state[iid][tid][bid] == DST_STATE_WAIT_NOTIFY) {
           uint16_t target_cid = (tid << 8) | bid;
           generate_operand_read_req(iid, mode, slave_hpu_id, notify.fields.src_cid, notify.fields.dst_cid, target_cid);
@@ -445,9 +447,9 @@ void vInterruptHandler_mhdma_read_complete( void* pvCallBackRef ) {
   uint32_t rc_tmp_req_id = 0;
   uint32_t rc_tmp_req_addr = 0;
   // read request::rc 0x50108
-  HAL_INVALIDATE_CACHE_DATA( (uintptr_t)(XPAR_AXI_LPD_BASEADDR + MHDMA_NOTIFY_DATA_REQ_ID) , sizeof(uint32_t) );
+  HAL_INVALIDATE_CACHE_DATA( (uintptr_t)(XPAR_AXI_LPD_BASEADDR + MHDMA_READ_DONE_DATA_REQ_ID) , sizeof(uint32_t) );
   rc_tmp_req_id = * (volatile uint32_t *) (XPAR_AXI_LPD_BASEADDR + MHDMA_READ_DONE_DATA_REQ_ID);
-  HAL_INVALIDATE_CACHE_DATA( (uintptr_t)(XPAR_AXI_LPD_BASEADDR + MHDMA_NOTIFY_DATA_REQ_ADDR) , sizeof(uint32_t) );
+  HAL_INVALIDATE_CACHE_DATA( (uintptr_t)(XPAR_AXI_LPD_BASEADDR + MHDMA_READ_DONE_DATA_REQ_ADDR) , sizeof(uint32_t) );
   rc_tmp_req_addr = * (volatile uint32_t *) (XPAR_AXI_LPD_BASEADDR + MHDMA_READ_DONE_DATA_REQ_ADDR);
   rc_data = (((uint64_t)rc_tmp_req_addr) << 32) | rc_tmp_req_id;
   // read register
@@ -460,6 +462,9 @@ void vInterruptHandler_mhdma_read_complete( void* pvCallBackRef ) {
   uint8_t mode = rc.fields.mode;
   // is also the nb_hpu in CMD_SRC
   uint8_t flag = rc.fields.flag;
+
+  // to remove
+  // mode = 1;
 
   MhdmaCommand_t cmd;
   cmd.cmdID = MHDMA_CMD_PRINT_ERR;
@@ -789,6 +794,8 @@ static void vTaskFuncMain( void )
             updt_ucore_cfg(&ucore_cfg);
             PLL_ERR("AMC", "Current core config: node_id %d", ucore_cfg.node_id);
             phys_hpu_id = ucore_cfg.node_id;
+            cluster_first_nid = ucore_cfg.cluster_first_nid;
+            cluster_last_nid = ucore_cfg.cluster_last_nid;
             PLL_ERR("AMC", "Current core config: phys_hpu_id %d", phys_hpu_id);
 
             // 1. Compute bytes to read from queue
@@ -850,7 +857,7 @@ static void vTaskFuncMain( void )
                     iOSAL_Task_SleepTicks(2000);
                 }
 
-                PLL_DBG("UCORE", "Translation will patch and push %d dops @0x%x", dop_entry.len, dop_entry.ptr);
+                PLL_ERR("UCORE", "[HPU%d] translation will patch and push %d dops @0x%x", phys_hpu_id, dop_entry.len, dop_entry.ptr);
                 // Patch and stream DOps to HW
                 for (int i=0; i< dop_entry.len; i++) {
                   dop.raw = *(dop_entry.ptr + i);
