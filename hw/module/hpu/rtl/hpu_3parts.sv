@@ -78,24 +78,7 @@ module hpu_3parts
   `HPU_AXIL_IO(cfg_1in3,axi_if_shell_axil_pkg)
   `HPU_AXIL_IO(prc_3in3,axi_if_shell_axil_pkg)
   `HPU_AXIL_IO(cfg_3in3,axi_if_shell_axil_pkg)
-  // `HPU_AXIL_IO(dma_2in3,axi_if_shell_axil_pkg) //TODO
-  input  logic [AXIL_ADD_W-1:0]              s_axil_mhdma_2in3_awaddr,
-  input  logic                               s_axil_mhdma_2in3_awvalid,
-  output logic                               s_axil_mhdma_2in3_awready,
-  input  logic [AXIL_DATA_W-1:0]             s_axil_mhdma_2in3_wdata,
-  input  logic [AXIL_DATA_BYTES-1:0]         s_axil_mhdma_2in3_wstrb, /* UNUSED */
-  input  logic                               s_axil_mhdma_2in3_wvalid,
-  output logic                               s_axil_mhdma_2in3_wready,
-  output logic [1:0]                         s_axil_mhdma_2in3_bresp,
-  output logic                               s_axil_mhdma_2in3_bvalid,
-  input  logic                               s_axil_mhdma_2in3_bready,
-  input  logic [AXIL_ADD_W-1:0]              s_axil_mhdma_2in3_araddr,
-  input  logic                               s_axil_mhdma_2in3_arvalid,
-  output logic                               s_axil_mhdma_2in3_arready,
-  output logic [AXIL_DATA_W-1:0]             s_axil_mhdma_2in3_rdata,
-  output logic [1:0]                         s_axil_mhdma_2in3_rresp,
-  output logic                               s_axil_mhdma_2in3_rvalid,
-  input  logic                               s_axil_mhdma_2in3_rready,
+  `HPU_AXIL_IO(mhdma_2in3,axi_if_shell_axil_pkg)
 
   //== Axi4 trace interface
   `HPU_AXI4_IO(trc, TRC, axi_if_trc_axi_pkg,)
