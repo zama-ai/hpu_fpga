@@ -98,7 +98,7 @@ uint16_t b2b_pool_free(uint8_t iid) {
 }
 
 void b2b_pool_print(void) {
-  PLL_INF("ucore", "[HPU%d] b2b_pool head %d (iid %d) tail %d (iid %d)free %d",
+  PLL_ERR("ucore", "[HPU%d] b2b_pool head %d (iid %d) tail %d (iid %d) free %d",
       phys_hpu_id,
       b2b_pool_head,
       b2b_pool[b2b_pool_head],
@@ -406,7 +406,7 @@ void iop_teardown(uint8_t iid) {
   //src_notifyq_print(iid);
   //src_notifyq_print(0);
   //dst_notifyq_print(iid);
-  //b2b_pool_print();
+  b2b_pool_print();
 }
 
 // Ops functions body

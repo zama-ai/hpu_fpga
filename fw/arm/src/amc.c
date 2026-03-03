@@ -463,9 +463,6 @@ void vInterruptHandler_mhdma_read_complete( void* pvCallBackRef ) {
   // is also the nb_hpu in CMD_SRC
   uint8_t flag = rc.fields.flag;
 
-  // to remove
-  // mode = 1;
-
   MhdmaCommand_t cmd;
   cmd.cmdID = MHDMA_CMD_PRINT_ERR;
   cmd.payload = (iid << 24 | slave_hpu_id << 16 | mode << 8 | flag) | 0x80000000;
