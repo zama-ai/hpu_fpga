@@ -118,9 +118,11 @@ typedef struct {
 // Runtime configuration for Ucore
 // A fixed size of FW_RUNTIME_MAX_WORD is reserved at the beginning of the FW memory for this structure
 typedef struct {
-  uint8_t node_id;
-  uint8_t cluster_first_nid;
-  uint8_t cluster_last_nid;
+  uint8_t  node_id;
+  uint8_t  cluster_first_nid;
+  uint8_t  cluster_last_nid;
+  uint16_t ct_user_size;
+  uint16_t b2b_size;
   // TODO extend this with required runtime informations
   // WARN: configuration structure within backend must be updated accordingly
 } UcoreCfg_t;
@@ -141,6 +143,7 @@ typedef struct {
 
 // Hpu functions prototypes
 // ============================================================================================= //
+void mhdma_table_reset(void);
 void iop_state_init(void);
 void iop_state_node_ack(uint8_t iid, uint8_t nb_hpu);
 void b2b_pool_init(void);

@@ -296,6 +296,8 @@ extern uint8_t cur_iid;
 extern uint8_t phys_hpu_id;
 extern uint8_t cluster_first_nid;
 extern uint8_t cluster_last_nid;
+extern uint16_t b2b_pool_start_addr;
+extern uint16_t b2b_pool_size;
 extern iop_state_t iop_state[IOP_ID_MAX_COUNT];
 extern dst_store_t dst_store;
 extern mhdma_element_t mhdma_table[IOP_ID_MAX_COUNT][FLAG_MAX_COUNT];
@@ -332,6 +334,13 @@ void vInterruptHandler_isc_ack( void* pvCallBackRef ) {
             //    dop_ack.sync.iid,
             //    dop_ack.sync.flag,
             //    dop_ack.sync.is_inner);
+            MhdmaCommand_t cmd;
+            cmd.cmdID = MHDMA_CMD_PRINT_ERR;
+            cmd.payload = popped_iop_ack;
+            if (xMhdmaCommandMbox) {
+                iOSAL_MBox_PostFromISR(xMhdmaCommandMbox,
+                                      (void*)&cmd);
+            }
 
             if (dop_ack.sync.opcode == SYNC_OPCODE) {
               if (dop_ack.sync.is_inner == 1) {
@@ -397,6 +406,7 @@ void vInterruptHandler_mhdma_notify( void* pvCallBackRef ) {
     switch (mode) {
       case CMD_USER: {
         mhdma_element_t *current_elt = &mhdma_table[iid][flag];
+        current_elt->src_ct_id = notify.fields.src_cid;
         //printf("notify user before: iid %d flag %d state %d\n", iid, flag, current_elt->state);
         uint8_t current_state = current_elt->state;
         current_elt->state = MHDMA_STATE_RECEIVED;
@@ -716,6 +726,7 @@ static void vTaskFuncMain( void )
     {
       iop_state_init();
       b2b_pool_init();
+      mhdma_table_reset();
       dst_notifyq_init();
       src_notifyq_init();
       dst_store_init();
@@ -793,6 +804,8 @@ static void vTaskFuncMain( void )
             phys_hpu_id = ucore_cfg.node_id;
             cluster_first_nid = ucore_cfg.cluster_first_nid;
             cluster_last_nid = ucore_cfg.cluster_last_nid;
+            b2b_pool_start_addr = ucore_cfg.ct_user_size;
+            b2b_pool_size = ucore_cfg.b2b_size;
             PLL_ERR("AMC", "Current core config: phys_hpu_id %d", phys_hpu_id);
 
             // 1. Compute bytes to read from queue
@@ -828,10 +841,19 @@ static void vTaskFuncMain( void )
 
             // Parse IOp and store in lookup for ack
             // uint32_t iop_complete_len = 0x10;
+            uint8_t last_iid = cur_iid;
             PLL_INF("ParseIOp", "@slot[%d] header 0x%x [len_bytes %d]", chunk_idx, iop_buffer[0], read_bytes);
             uint32_t iop_complete_len = parse_iop(iop_buffer, read_bytes, &header, &mapping, &operand_prop, &operand_addr, &imm_header, &dst_bundle, &src_bundle, &imm_bundle);
             PLL_INF("ParseIOp", "IOp [0x%x] [map %x] [dst %d] [src %d] [imm %d] [stream_len %d]", header.header.opcode, mapping.raw, dst_bundle.len, src_bundle.len, imm_bundle.len, iop_complete_len);
             PLL_ERR("AMC", "Current iid: %d", cur_iid);
+            if (last_iid >= cur_iid) { // this means user SW (tfhe-rs) has been restarted
+                PLL_ERR("AMC", "last iid: %d >= %d => reset inter-HPU struct", last_iid, cur_iid);
+                mhdma_table_reset();
+                b2b_pool_init();
+                dst_notifyq_init();
+                src_notifyq_init();
+                dst_store_init();
+            }
 
             if (iop_complete_len != 0) {
                 // Update tail of IOp queue

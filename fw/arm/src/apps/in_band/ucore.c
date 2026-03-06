@@ -23,12 +23,23 @@
 #include "mhdma_driver/mhdma_driver.h"
 #include <stdbool.h>
 
-uint8_t cur_iid;
+uint8_t cur_iid = 1;
 IOpMapping_t cur_mapping;
 uint8_t phys_hpu_id;
 uint8_t cluster_first_nid;
 uint8_t cluster_last_nid;
+uint16_t b2b_pool_start_addr = 12288;
+uint16_t b2b_pool_size = 4096;
 mhdma_element_t mhdma_table[IOP_ID_MAX_COUNT][FLAG_MAX_COUNT];
+
+// mhdma_table (User data)
+void mhdma_table_reset(void) {
+  for (int i = 0; i < IOP_ID_MAX_COUNT; i++) {
+    for (int j = 0; j < FLAG_MAX_COUNT; j++) {
+      mhdma_table[i][j].state = MHDMA_STATE_EMPTY;
+    }
+  }
+}
 
 // IOP state
 iop_state_t iop_state[IOP_ID_MAX_COUNT];
@@ -58,6 +69,9 @@ uint16_t b2b_pool_tail;
 uint16_t b2b_pool_free_cnt;
 
 void b2b_pool_init(void) {
+  if (b2b_pool_size != B2B_POOL_SIZE) {
+    PLL_ERR("ucore", "[HPU%d] b2b_pool size is incorrect (fw %d, sw %d)", B2B_POOL_SIZE, b2b_pool_size);
+  }
   for (int i = 0; i < B2B_POOL_SIZE; i++) {
     b2b_pool[i] = 0xFF;
   }
@@ -74,7 +88,7 @@ uint16_t b2b_pool_pop(uint8_t iid) {
   b2b_pool_free_cnt--;
   b2b_pool_head = (b2b_pool_head + 1) % B2B_POOL_SIZE;
   b2b_pool[alloc_slot] = iid;
-  return alloc_slot;
+  return (alloc_slot + b2b_pool_start_addr);
 }
 
 uint16_t b2b_pool_free(uint8_t iid) {
@@ -626,7 +640,7 @@ uint32_t get_lookup(IOpHeader_t header, IOpMapping_t mapping, uint8_t hid, Looku
 // NB: IOp have variable destination and source operands
 // TODO Add error handling for out_of_range patching
 void patch_mem_dop(DOpu_t *dop, OperandBundle_t *iop_dst, OperandBundle_t *iop_src) {
-  PLL_ERR("patch_mem_dop", "[HPU%d] dop %08X opcode %d dop->mem.mode %d dop->mem.slot %04X tid %d bid %d",
+  PLL_INF("patch_mem_dop", "[HPU%d] dop %08X opcode %d dop->mem.mode %d dop->mem.slot %04X tid %d bid %d",
           phys_hpu_id,
           dop->raw,
           dop->mem.opcode,
@@ -791,31 +805,37 @@ uint16_t get_raw_ct_id(DOpu_t *dop) {
 
 // Process ucore instructions
 int process_ucore_dop(DOpu_t *dop) {
+  PLL_DBG("process_ucore_dop", "[HPU%d] %08x", phys_hpu_id, dop->raw);
   switch (dop->ucore.opcode & 0xF) {
     case DOPS_NOTIFY: {
       uint16_t raw_ct_id = get_raw_ct_id(dop);
-      mhdma_element_t *current_elt = &mhdma_table[cur_iid][dop->ucore.flag];
+      uint8_t current_flag = dop->ucore.flag;
+      mhdma_element_t *current_elt = &mhdma_table[cur_iid][current_flag];
       current_elt->state = MHDMA_STATE_NOTIFY_PENDING;
       current_elt->src_ct_id = raw_ct_id;
       current_elt->slave_hpu_id = phys_hpu_id;
       current_elt->master_hpu_id = get_phys_of(dop->ucore.hid, cur_mapping);
 
       //replace notify by sync DOp
-      dop->sync.flag = dop->ucore.flag;
+      dop->sync.flag = current_flag;
       dop->sync.opcode = SYNC_OPCODE;
       dop->sync.is_inner = 1;
       dop->sync.iid = cur_iid;
+      dop->sync._pad = 0;
 
       break;
     }
     case DOPS_WAIT: {
       mhdma_element_t *current_elt = &mhdma_table[cur_iid][dop->ucore.flag];
       bool data_required = (dop->ucore.hid != 0);
-
+      uint8_t print_one = 0;
       while (  (data_required && current_elt->state < MHDMA_STATE_RESOLVED)
             || (!data_required && current_elt->state < MHDMA_STATE_RECEIVED) ) {
         // wait until notify or read ct is received
-        PLL_INF("ucore", "[HPU%d] wait on iop_id %d flag %d state %d\n", phys_hpu_id, cur_iid, dop->ucore.flag, current_elt->state);
+        if (print_one == 0) {
+            PLL_ERR("ucore", "[HPU%d] dop wait on iop_id %d flag %d state %d", phys_hpu_id, cur_iid, dop->ucore.flag, current_elt->state);
+            print_one++;
+        }
 #ifdef UCORE_MHDMA_SIMU
         sleep(10);
 #else
