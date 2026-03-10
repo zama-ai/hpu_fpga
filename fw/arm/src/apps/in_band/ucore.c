@@ -62,6 +62,21 @@ void iop_state_node_ack(uint8_t iid, uint8_t nb_hpu) {
   //PLL_INF("ucore", "[HPU%d] iop_state_node_ack iid %d state %d nb_hpu %d", phys_hpu_id, iid, iop_state[iid].state, iop_state[iid].nb_hpu);
 }
 
+void print_iop_state(void) {
+    PLL_ERR("ucore", "[HPU%d] cur_iid %d state %d (-2 %d:%d -1 %d:%d +1 %d:%d +2 %d:%d)",
+            phys_hpu_id,
+            cur_iid,
+            iop_state[cur_iid].state,
+            (cur_iid-2)%IOP_ID_MAX_COUNT,
+            iop_state[(cur_iid-2)%IOP_ID_MAX_COUNT].state,
+            (cur_iid-1)%IOP_ID_MAX_COUNT,
+            iop_state[(cur_iid-2)%IOP_ID_MAX_COUNT].state,
+            (cur_iid+1)%IOP_ID_MAX_COUNT,
+            iop_state[(cur_iid+1)%IOP_ID_MAX_COUNT].state,
+            (cur_iid+2)%IOP_ID_MAX_COUNT,
+            iop_state[(cur_iid+2)%IOP_ID_MAX_COUNT].state);
+}
+
 // B2B Pool
 uint8_t b2b_pool[B2B_POOL_SIZE];
 uint16_t b2b_pool_head;
@@ -199,86 +214,153 @@ RemoteOperand_t *dst_notifyq_find(uint8_t iid, uint8_t dst_hpu_id, uint16_t dst_
   return &dst_notifyq[index];
 }
 
-// src notify queue
-RemoteOperand_t src_notifyq[SRC_NOTIFYQ_SIZE];
-uint16_t src_notifyq_head;
-uint16_t src_notifyq_tail;
-uint16_t src_notifyq_free_cnt;
+// src store
+src_store_t src_store;
 
-void src_notifyq_init(void) {
-  for (int i = 0; i < SRC_NOTIFYQ_SIZE; i++) {
-    src_notifyq[i].state = OPERAND_STATE_NONE;
-    src_notifyq[i].iid = 0;
-  }
-  src_notifyq_head = 0;
-  src_notifyq_tail = 0;
-  src_notifyq_free_cnt = SRC_NOTIFYQ_SIZE;
-}
-
-RemoteOperand_t *src_notifyq_pop(uint8_t iid) {
-  if (src_notifyq_free_cnt == 0) {
-    return NULL; // this means no more empty slot
-  }
-  uint16_t alloc_slot = src_notifyq_head;
-  src_notifyq_free_cnt--;
-  src_notifyq_head = (src_notifyq_head + 1) % SRC_NOTIFYQ_SIZE;
-  src_notifyq[alloc_slot].iid = iid;
-  return &src_notifyq[alloc_slot];
-}
-
-uint16_t src_notifyq_free(uint8_t iid) {
-  if (src_notifyq_free_cnt == SRC_NOTIFYQ_SIZE) {
-    return 0; // this means there is nothing to free
-  }
-  uint16_t free_cnt = 0;
-  while ((src_notifyq[src_notifyq_tail].iid == iid
-        || src_notifyq[src_notifyq_tail].iid == 0)
-      && src_notifyq_free_cnt < SRC_NOTIFYQ_SIZE) {
-    src_notifyq[src_notifyq_tail].state = OPERAND_STATE_NONE;
-    src_notifyq[src_notifyq_tail].iid = 0;
-    src_notifyq_tail = (src_notifyq_tail + 1) % SRC_NOTIFYQ_SIZE;
-    src_notifyq_free_cnt++;
-    free_cnt++;
-  }
-  return free_cnt;
-}
-
-RemoteOperand_t *src_notifyq_find_by_state(uint8_t iid, uint8_t state) {
-  if (src_notifyq_free_cnt == SRC_NOTIFYQ_SIZE) {
-    return NULL; // there is no src in the queue
-  }
-  uint16_t index = (src_notifyq_head - 1) % SRC_NOTIFYQ_SIZE;
-  while ((src_notifyq[index].iid != iid)
-      && (src_notifyq[index].state != state)) {
-    if (index == src_notifyq_tail) {
-      return NULL;
+void src_store_init(void) {
+  for (int k = 0; k < IOP_ID_MAX_COUNT; k++) {
+    for (int i = 0; i < MAX_DST_VARS; i++) {
+      for (int j = 0; j < MAX_VAR_BLKS; j++) {
+        src_store.state[k][i][j] = OPERAND_STATE_READ_PENDING;
+      }
     }
-    index = (index - 1) % SRC_NOTIFYQ_SIZE;
   }
-  return &src_notifyq[index];
 }
 
-void src_notifyq_print(uint8_t iid) {
-  PLL_INF("ucore", "[HPU%d] src_notifyq head %d tail %d free %d",
-      phys_hpu_id,
-      src_notifyq_head,
-      src_notifyq_tail,
-      src_notifyq_free_cnt);
-  uint16_t index = (src_notifyq_head - 1) % SRC_NOTIFYQ_SIZE;
-  while (src_notifyq[index].iid == iid) {
-    PLL_INF("ucore", "[HPU%d] src_notifyq iid %d pos %d state %d src %d dst %d",
-        phys_hpu_id,
-        iid,
-        src_notifyq[index].pos,
-        src_notifyq[index].state,
-        src_notifyq[index].src_cid,
-        src_notifyq[index].dst_cid);
-    if (index == src_notifyq_tail) {
-      break;
+void src_store_reset_iop(uint8_t iid) {
+  for (int i = 0; i < MAX_DST_VARS; i++) {
+    for (int j = 0; j < MAX_VAR_BLKS; j++) {
+      src_store.state[iid][i][j] = OPERAND_STATE_NONE;
     }
-    index = (index - 1) % SRC_NOTIFYQ_SIZE;
   }
 }
+
+void src_store_inits(uint8_t iid, OperandBundle_t *iop_src) {
+  for (int i = 0; i < MAX_DST_VARS; i++) {
+    uint8_t blk_start = 0;
+    if (i < iop_src->len) { // used src
+      src_store.cid_offset[iid][i] = iop_src->operand[i].cid_ofst;
+      src_store.owner[iid][i] = iop_src->operand[i].pos;
+      src_store.src_iid[iid][i] = iop_src->operand[i].iid;
+      blk_start = iop_src->operand[i].block;
+    }
+    // useless but ... to remove
+    for (int j = blk_start; j < MAX_VAR_BLKS; j++) {
+      src_store.state[iid][i][j] = OPERAND_STATE_NONE;
+    }
+  }
+}
+
+uint16_t src_store_get_waiting(uint8_t iid, uint8_t src_iid) {
+  for (int i = 0; i < MAX_DST_VARS; i++) {
+    for (int j = 0; j < MAX_VAR_BLKS; j++) {
+      if (src_store.state[iid][i][j] == OPERAND_STATE_READ_PENDING
+        && src_store.src_iid[iid][i] == src_iid) {
+        return ((i << 8) + j);
+      }
+    }
+  }
+  return 0xFFFF;
+}
+
+uint8_t src_store_get_waiting_cnt(uint8_t iid) {
+  uint8_t cnt = 0;
+  for (int i = 0; i < MAX_DST_VARS; i++) {
+    for (int j = 0; j < MAX_VAR_BLKS; j++) {
+      if (src_store.state[iid][i][j] == OPERAND_STATE_READ_PENDING
+        || src_store.state[iid][i][j] == OPERAND_STATE_DMA_PENDING) {
+        cnt++;
+      }
+    }
+  }
+  return cnt;
+}
+
+void src_store_print(uint8_t iid) {
+  for (int i = 0; i < MAX_DST_VARS; i++) {
+    for (int j = 0; j < MAX_VAR_BLKS; j++) {
+      if (src_store.state[iid][i][j] != OPERAND_STATE_NONE) {
+        PLL_INF("ucore", "[HPU%d] src_store: IOP %d tid %d bid %d state: %d", phys_hpu_id, iid, i, src_store.state[iid][i][j]);
+      }
+    }
+  }
+  PLL_INF("ucore", "[HPU%d] end of src_store", phys_hpu_id);
+}
+
+//void src_notifyq_init(void) {
+//  for (int i = 0; i < SRC_NOTIFYQ_SIZE; i++) {
+//    src_notifyq[i].state = OPERAND_STATE_NONE;
+//    src_notifyq[i].iid = 0;
+//  }
+//  src_notifyq_head = 0;
+//  src_notifyq_tail = 0;
+//  src_notifyq_free_cnt = SRC_NOTIFYQ_SIZE;
+//}
+//
+//RemoteOperand_t *src_notifyq_pop(uint8_t iid) {
+//  if (src_notifyq_free_cnt == 0) {
+//    return NULL; // this means no more empty slot
+//  }
+//  uint16_t alloc_slot = src_notifyq_head;
+//  src_notifyq_free_cnt--;
+//  src_notifyq_head = (src_notifyq_head + 1) % SRC_NOTIFYQ_SIZE;
+//  src_notifyq[alloc_slot].iid = iid;
+//  return &src_notifyq[alloc_slot];
+//}
+//
+//uint16_t src_notifyq_free(uint8_t iid) {
+//  if (src_notifyq_free_cnt == SRC_NOTIFYQ_SIZE) {
+//    return 0; // this means there is nothing to free
+//  }
+//  uint16_t free_cnt = 0;
+//  while ((src_notifyq[src_notifyq_tail].iid == iid
+//        || src_notifyq[src_notifyq_tail].iid == 0)
+//      && src_notifyq_free_cnt < SRC_NOTIFYQ_SIZE) {
+//    src_notifyq[src_notifyq_tail].state = OPERAND_STATE_NONE;
+//    src_notifyq[src_notifyq_tail].iid = 0;
+//    src_notifyq_tail = (src_notifyq_tail + 1) % SRC_NOTIFYQ_SIZE;
+//    src_notifyq_free_cnt++;
+//    free_cnt++;
+//  }
+//  return free_cnt;
+//}
+//
+//RemoteOperand_t *src_notifyq_find_by_state(uint8_t iid, uint8_t state) {
+//  if (src_notifyq_free_cnt == SRC_NOTIFYQ_SIZE) {
+//    return NULL; // there is no src in the queue
+//  }
+//  uint16_t index = (src_notifyq_head - 1) % SRC_NOTIFYQ_SIZE;
+//  while ((src_notifyq[index].iid != iid)
+//      && (src_notifyq[index].state != state)) {
+//    if (index == src_notifyq_tail) {
+//      return NULL;
+//    }
+//    index = (index - 1) % SRC_NOTIFYQ_SIZE;
+//  }
+//  return &src_notifyq[index];
+//}
+//
+//void src_notifyq_print(uint8_t iid) {
+//  PLL_INF("ucore", "[HPU%d] src_notifyq head %d tail %d free %d",
+//      phys_hpu_id,
+//      src_notifyq_head,
+//      src_notifyq_tail,
+//      src_notifyq_free_cnt);
+//  uint16_t index = (src_notifyq_head - 1) % SRC_NOTIFYQ_SIZE;
+//  while (src_notifyq[index].iid == iid) {
+//    PLL_INF("ucore", "[HPU%d] src_notifyq iid %d pos %d state %d src %d dst %d",
+//        phys_hpu_id,
+//        iid,
+//        src_notifyq[index].pos,
+//        src_notifyq[index].state,
+//        src_notifyq[index].src_cid,
+//        src_notifyq[index].dst_cid);
+//    if (index == src_notifyq_tail) {
+//      break;
+//    }
+//    index = (index - 1) % SRC_NOTIFYQ_SIZE;
+//  }
+//}
 
 // dst_store tracking all dst block to know when IOp is really done
 dst_store_t dst_store;
@@ -330,14 +412,33 @@ uint16_t dst_store_get_owned(uint8_t iid, uint8_t hid) {
   return 0xFFFF;
 }
 
-void dst_store_print(uint8_t iid) {
+uint16_t dst_store_get_owned_cnt(uint8_t iid, uint8_t hid) {
+  uint8_t cnt_owned = 0;
+  uint8_t cnt_waiting = 0;
   for (int i = 0; i < MAX_DST_VARS; i++) {
-    if (dst_store.owner[iid][i] != 0xFF) {
-      PLL_INF("ucore", "[HPU%d] dst_store: IOP %d dst %d owner %d: ", phys_hpu_id, iid, i, dst_store.owner[iid][i]);
-      for (int j = 0; j < 4; j++) {
-        PLL_INF("ucore", "%d", dst_store.state[iid][i][j]);
+    if (dst_store.owner[iid][i] == hid) {
+      cnt_owned+=1;
+      for (int j = 0; j < MAX_VAR_BLKS; j++) {
+        if (dst_store.state[iid][i][j] == DST_STATE_WAIT_NOTIFY
+          || dst_store.state[iid][i][j] == DST_STATE_READING) {
+          cnt_waiting+=1;
+        }
       }
-      PLL_INF("ucore", "[HPU%d] end of dst %d", phys_hpu_id, i);
+    }
+  }
+  return (cnt_owned << 8 | cnt_waiting);
+}
+
+void dst_store_print(uint8_t iid) {
+  for (int i = 0; i < 2; i++) {
+    if (phys_hpu_id == 1) {
+      char msg[10];
+      for (int j = 0; j < 4; j++) {
+        msg[j] = dst_store.state[iid][i][j] + '0';
+      }
+      msg[4] = '\0';
+      PLL_ERR("dst_store_print", "[HPU%d] iop %d dst %d owner %d: %s", phys_hpu_id, iid, i, dst_store.owner[iid][i], msg);
+      iOSAL_Task_SleepTicks(10);
     }
   }
 }
@@ -347,7 +448,7 @@ void iop_teardown(uint8_t iid) {
   //flush dst_notifyq
   RemoteOperand_t *remote_operand = dst_notifyq_getdst(iid);
   while (remote_operand != NULL) {
-    PLL_ERR("ucore", "[HPU%d] iop_teardown remote_operand iid %d pos %d state %d src %d dst %04x target %d",
+    PLL_DBG("ucore", "[HPU%d] iop_teardown remote_operand iid %d pos %d state %d src %d dst %04x target %d",
         phys_hpu_id,
         iid,
         remote_operand->pos,
@@ -361,12 +462,17 @@ void iop_teardown(uint8_t iid) {
 #ifdef UCORE_MHDMA_SIMU
     sleep(3);
 #else
-    iOSAL_Task_SleepTicks(10);
+    //iOSAL_Task_SleepTicks(10);
 #endif
   }
   //flush remote source queue
-  uint16_t src_free_cnt = src_notifyq_free(iid);
-  PLL_ERR("ucore", "[HPU%d] iop_teardown free source slots: %d", phys_hpu_id, src_free_cnt);
+  src_store_reset_iop(iid);
+  //cnt remote dst to be sent
+  uint16_t dst_cnts = dst_store_get_owned_cnt(iid, phys_hpu_id);
+  uint8_t dst_cnt_owned = (dst_cnts >> 8) & 0XFF;
+  uint8_t dst_cnt_waiting = (dst_cnts & 0XFF);
+  PLL_DBG("ucore", "[HPU%d] iop_teardown iid %d dst waiting: %d/%d iop_state %d/%d", phys_hpu_id, iid, dst_cnt_owned, dst_cnt_waiting, iop_state[iid].state, iop_state[iid].nb_hpu);
+  //iOSAL_Task_SleepTicks(10);
 
   //wait dst owned by local hpu but produced somewhere else
   dst_store_print(iid);
@@ -376,16 +482,23 @@ void iop_teardown(uint8_t iid) {
     //iOSAL_Task_SleepTicks(1);
     uint8_t tid = (non_resolved_owned_dst >> 8) & 0xFF;
     uint8_t bid = non_resolved_owned_dst & 0xFF;
-    uint8_t print = 1;
+    uint8_t print = 0;
+
+    //    phys_hpu_id,
+    //    iid,
+    //    tid,
+    //    bid,
+    //    dst_store.state[iid][tid][bid]);
     while (dst_store.state[iid][tid][bid] != DST_STATE_RESOLVED) {
-      if (print) {
+      if (print%20 == 0) {
         PLL_ERR("ucore", "[HPU%d] iop_teardown wait on dst iop %d tid %d bid %d - being resolved",
             phys_hpu_id,
             iid,
             tid,
             bid);
-        print--;
+        iOSAL_Task_SleepTicks(10);
       }
+      print++;
 #ifdef UCORE_MHDMA_SIMU
       sleep(10);
 #else
@@ -401,6 +514,8 @@ void iop_teardown(uint8_t iid) {
       generate_iop_notify(iid, iop_state[iid].nb_hpu, i);
 #ifdef UCORE_MHDMA_SIMU
       sleep(1);
+#else
+      //iOSAL_Task_SleepTicks(100);
 #endif
     }
   }
@@ -410,7 +525,7 @@ void iop_teardown(uint8_t iid) {
   // release b2b pool slot for this IOp
   if (iop_state[iid].state == IOP_STATE_DONE) {
     uint16_t b2b_free_cnt = b2b_pool_free(iid);
-    PLL_ERR("ucore", "[HPU%d] iop_teardown free b2b_pool slots: %d", phys_hpu_id, b2b_free_cnt);
+    PLL_ERR("ucore", "[HPU%d] iop_teardown iid %d free b2b_pool slots: %d", phys_hpu_id, iid, b2b_free_cnt);
   }
 
   // reset all dst of iop for next execution of this iid
@@ -420,7 +535,7 @@ void iop_teardown(uint8_t iid) {
   //src_notifyq_print(iid);
   //src_notifyq_print(0);
   //dst_notifyq_print(iid);
-  b2b_pool_print();
+  //b2b_pool_print();
 }
 
 // Ops functions body
@@ -492,6 +607,7 @@ uint32_t parse_iop(
   } while (!operand_prop->operand_prop.is_last);
 
 
+  uint8_t last_iid = cur_iid;
   cur_iid = dst->operand[0].iid;
   cur_mapping.raw = mapping->raw;
   uint8_t nb_hpu = number_of_hpu(*mapping);
@@ -499,15 +615,34 @@ uint32_t parse_iop(
     iop_state[cur_iid].state  = IOP_STATE_RUNNING;
   }
   iop_state[cur_iid].nb_hpu = nb_hpu;
-  PLL_ERR("ucore", "[HPU%d] parse_iop starting iop %d (virt hid %d) state %d nb_hpu %d",
+  PLL_ERR("parse_iop", "[HPU%d] parse_iop starting iop %d (virt hid %d) state %d nb_hpu %d",
       phys_hpu_id,
       cur_iid,
       get_virt_of(phys_hpu_id, *mapping),
       iop_state[cur_iid].state,
       iop_state[cur_iid].nb_hpu);
+  iOSAL_Task_SleepTicks(100);
+  if (last_iid >= cur_iid) { // this means user SW (tfhe-rs) has been restarted
+      PLL_ERR("parse_iop", "last iid: %d >= %d => reset inter-HPU struct", last_iid, cur_iid);
+      mhdma_table_reset();
+      b2b_pool_init();
+      dst_notifyq_init();
+      src_store_init();
+      dst_store_init();
+  }
   // Fill bundle length
   dst->len = dst_pos;
   dst_store_initd(cur_iid, dst);
+  //    dst->len,
+  uint16_t dst_cnts = dst_store_get_owned_cnt(cur_iid, phys_hpu_id);
+  uint8_t dst_cnt_owned = (dst_cnts >> 8) & 0XFF;
+  uint8_t dst_cnt_waiting = (dst_cnts & 0XFF);
+  PLL_ERR("parse_iop", "[HPU%d] parse_iop iop %d dst ct owned %d/%d",
+          phys_hpu_id,
+          cur_iid,
+          dst_cnt_owned,
+          dst_cnt_waiting);
+  dst_store_print(cur_iid);
 
   //4. Get list of source operands
   uint32_t src_pos = 0;
@@ -530,7 +665,7 @@ uint32_t parse_iop(
     src->operand[src_pos].pos = operand_prop->operand_prop.pos;
     src->operand[src_pos].len = operand_prop->operand_prop.vec_size +1;
     src->operand[src_pos].block = operand_prop->operand_prop.block +1;
-    PLL_ERR("ucore", "[HPU%d] parse_iop src %d.%d pos %d",
+    PLL_INF("ucore", "[HPU%d] parse_iop src %d.%d pos %d",
         phys_hpu_id,
         src_pos,
         src->operand[src_pos].block,
@@ -540,6 +675,7 @@ uint32_t parse_iop(
 
   // Fill bundle length
   src->len = src_pos;
+  src_store_inits(cur_iid, src);
 
   //5. Get list of immediat operands (if needed)
   if (header->header.has_imm) {
@@ -666,51 +802,61 @@ void patch_mem_dop(DOpu_t *dop, OperandBundle_t *iop_dst, OperandBundle_t *iop_s
       if (iop_src->operand[tid].pos == phys_hpu_id) {
         // local access
         dop->mem.slot = iop_src->operand[tid].cid_ofst + bid;
+        src_store.state[cur_iid][tid][bid] = OPERAND_STATE_RESOLVED;
       } else {
         // remote source
         uint8_t src_iid = iop_src->operand[tid].iid;
         uint8_t src_hpu_id = iop_src->operand[tid].pos;
         uint8_t src_cid = iop_src->operand[tid].cid_ofst + bid;
-        RemoteOperand_t *remote_src = src_notifyq_pop(src_iid);
-        if (remote_src == NULL) {
-          PLL_ERR("patch_mem_dop", "Could not get a free slot in src_notifyq (%04x,%04x,%d)", src_notifyq_head, src_notifyq_tail, src_notifyq_free_cnt);
-          break;
-        }
-        remote_src->iid = src_iid;
-        remote_src->pos = src_hpu_id;
-        remote_src->src_cid = src_cid;
-        remote_src->state = OPERAND_STATE_NONE;
 
         uint16_t dst_cid = b2b_pool_pop(cur_iid);
         if (dst_cid == 0xFFFF) {
           PLL_ERR("patch_mem_dop", "Could not get a free slot in b2b_pool (%04x,%04x,%d)", b2b_pool_head, b2b_pool_tail, b2b_pool_free_cnt);
           break;
         }
-        remote_src->dst_cid = dst_cid;
+        src_store.dst_cid[cur_iid][tid][bid] = dst_cid;
+        uint16_t target_cid = (tid << 8) | bid;
+        PLL_INF("ucore", "[HPU%d] iop %d need remote src - src_iid %d src_hpu_id %d src_cid %d dst_cid %d",
+            phys_hpu_id,
+            cur_iid,
+            src_iid,
+            src_hpu_id,
+            src_cid,
+            dst_cid);
         // issue read immediately if src comes from a done iop or if iid = 0 which means src is coming from Host
         if (iop_state[src_iid].state == IOP_STATE_DONE || src_iid == 0) {
-          remote_src->state = OPERAND_STATE_DMA_PENDING;
-          generate_operand_read_req(src_iid, CMD_SRC, remote_src->pos, remote_src->src_cid, remote_src->dst_cid, 0);
+          src_store.state[cur_iid][tid][bid] = OPERAND_STATE_DMA_PENDING;
+          generate_operand_read_req(
+                  src_iid,
+                  CMD_SRC,
+                  src_hpu_id,
+                  src_cid,
+                  src_store.dst_cid[cur_iid][tid][bid],
+                  target_cid);
         } else {
-          remote_src->state = OPERAND_STATE_READ_PENDING;
+          src_store.state[cur_iid][tid][bid] = OPERAND_STATE_READ_PENDING;
         }
-        src_notifyq_print(src_iid);
+        uint8_t print = 0;
 
-        while (remote_src->state != OPERAND_STATE_RESOLVED) {
+        while (src_store.state[cur_iid][tid][bid] != OPERAND_STATE_RESOLVED) {
           // wait until notify or read ct is received
-          PLL_INF("ucore", "[HPU%d] iop %d wait on remote src - src_iid %d src_hpu_id %d src_cid %d\n",
-              phys_hpu_id,
-              cur_iid,
-              src_iid,
-              src_hpu_id,
-              src_cid);
+          if (print%20 == 0) {
+            PLL_ERR("ucore", "[HPU%d] iop %d wait on remote src - src_iid %d src_hpu_id %d src_cid %d tg %d",
+                phys_hpu_id,
+                cur_iid,
+                src_iid,
+                src_hpu_id,
+                src_cid,
+                target_cid);
+          }
+          print++;
 #ifdef UCORE_MHDMA_SIMU
           sleep(10);
 #else
-          iOSAL_Task_SleepTicks(10);
+          iOSAL_Task_SleepTicks(100);
 #endif
         }
-        dop->mem.slot = remote_src->dst_cid;
+        dop->mem.slot = src_store.dst_cid[cur_iid][tid][bid];
       }
       break;
     }
@@ -732,7 +878,7 @@ void patch_mem_dop(DOpu_t *dop, OperandBundle_t *iop_dst, OperandBundle_t *iop_s
         uint8_t dst_cid = iop_dst->operand[tid].cid_ofst + bid;
         RemoteOperand_t *remote_dst = dst_notifyq_pop(cur_iid);
         if (remote_dst == NULL) {
-          PLL_ERR("patch_mem_dop", "Could not get a free slot in dst_notifyq (%04x,%04x,%d)", src_notifyq_head, src_notifyq_tail, src_notifyq_free_cnt);
+          PLL_ERR("patch_mem_dop", "Could not get a free slot in dst_notifyq (%04x,%04x,%d)", dst_notifyq_head, dst_notifyq_tail, dst_notifyq_free_cnt);
           break;
         }
         remote_dst->iid = cur_iid;
@@ -742,7 +888,7 @@ void patch_mem_dop(DOpu_t *dop, OperandBundle_t *iop_dst, OperandBundle_t *iop_s
         remote_dst->state = OPERAND_STATE_NONE;
         remote_dst->target_cid = dst_cid;
 
-        PLL_ERR("patch_mem_dop", "[HPU%d] dst store iid %d pos %d src(b2b) %d dst %d(%d/%d) target %d",
+        PLL_DBG("patch_mem_dop", "[HPU%d] dst store iid %d pos %d src(b2b) %d dst %d(%d/%d) target %d",
                 phys_hpu_id,
                 cur_iid,
                 dst_hpu_id,

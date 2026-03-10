@@ -103,6 +103,14 @@ typedef struct {
   uint8_t state[IOP_ID_MAX_COUNT][MAX_DST_VARS][MAX_VAR_BLKS];
 } dst_store_t;
 
+typedef struct {
+  uint8_t owner[IOP_ID_MAX_COUNT][MAX_DST_VARS];
+  uint8_t src_iid[IOP_ID_MAX_COUNT][MAX_DST_VARS];
+  uint16_t cid_offset[IOP_ID_MAX_COUNT][MAX_DST_VARS];
+  uint16_t dst_cid[IOP_ID_MAX_COUNT][MAX_DST_VARS][MAX_VAR_BLKS];
+  uint8_t state[IOP_ID_MAX_COUNT][MAX_DST_VARS][MAX_VAR_BLKS];
+} src_store_t;
+
 // master HPU is read initiator
 // slave HPU is notified master, is receiving read and sending ct to master
 typedef struct {
@@ -150,9 +158,12 @@ void b2b_pool_init(void);
 uint16_t b2b_pool_pop(uint8_t iid);
 uint16_t b2b_pool_free(uint8_t iid);
 void dst_notifyq_init(void);
-void src_notifyq_init(void);
-RemoteOperand_t *src_notifyq_find_by_state(uint8_t iid, uint8_t state);
-uint16_t src_notifyq_free(uint8_t iid);
+void src_store_init(void);
+void src_store_reset_iop(uint8_t iid);
+void src_store_inits(uint8_t iid, OperandBundle_t *iop_src);
+void src_store_print(uint8_t iid);
+uint16_t src_store_get_waiting(uint8_t iid, uint8_t src_iid);
+uint8_t src_store_get_waiting_cnt(uint8_t iid);
 void src_notifyq_print(uint8_t iid);
 void dst_store_reset_iop(uint8_t iid);
 void dst_store_init(void);

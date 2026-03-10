@@ -85,9 +85,10 @@ int read_isc_ack_cnt(void) {
  */
 uint32_t pop_isc_ack() {
     uint32_t iop_ack = 0;
+    int available_word = read_isc_ack_cnt();
 
-    if (read_isc_ack_cnt() > 0) {
+    if (available_word > 0) {
         iop_ack = * (volatile uint32_t *) (XPAR_AXI_FIFO_0_BASEADDR + 0x20);
     }
-    return iop_ack;
+    return (iop_ack | (available_word & 0xFF));
 }

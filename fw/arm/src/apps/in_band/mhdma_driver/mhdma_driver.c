@@ -126,7 +126,7 @@ void generate_user_notify(uint8_t iop_id, uint8_t flag) {
 }
 
 void generate_iop_notify(uint8_t iop_id, uint8_t nb_hpus, uint8_t master_hpu_id) {
-  PLL_ERR("mhdma", "[HPU%d] iop notify iid %d mode %d from hpu %d to hpu %d nb_hpu %d",
+  PLL_DBG("mhdma", "[HPU%d] iop notify iid %d mode %d from hpu %d to hpu %d nb_hpu %d",
       phys_hpu_id,
       iop_id,
       CMD_SRC,
