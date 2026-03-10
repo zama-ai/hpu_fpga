@@ -807,7 +807,7 @@ void patch_mem_dop(DOpu_t *dop, OperandBundle_t *iop_dst, OperandBundle_t *iop_s
         // remote source
         uint8_t src_iid = iop_src->operand[tid].iid;
         uint8_t src_hpu_id = iop_src->operand[tid].pos;
-        uint8_t src_cid = iop_src->operand[tid].cid_ofst + bid;
+        uint16_t src_cid = iop_src->operand[tid].cid_ofst + bid;
 
         uint16_t dst_cid = b2b_pool_pop(cur_iid);
         if (dst_cid == 0xFFFF) {
@@ -875,7 +875,7 @@ void patch_mem_dop(DOpu_t *dop, OperandBundle_t *iop_dst, OperandBundle_t *iop_s
           break;
         }
         uint8_t dst_hpu_id = iop_dst->operand[tid].pos;
-        uint8_t dst_cid = iop_dst->operand[tid].cid_ofst + bid;
+        uint16_t dst_cid = iop_dst->operand[tid].cid_ofst + bid;
         RemoteOperand_t *remote_dst = dst_notifyq_pop(cur_iid);
         if (remote_dst == NULL) {
           PLL_ERR("patch_mem_dop", "Could not get a free slot in dst_notifyq (%04x,%04x,%d)", dst_notifyq_head, dst_notifyq_tail, dst_notifyq_free_cnt);
