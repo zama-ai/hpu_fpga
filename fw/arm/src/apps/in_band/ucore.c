@@ -475,7 +475,7 @@ void iop_teardown(uint8_t iid) {
   //iOSAL_Task_SleepTicks(10);
 
   //wait dst owned by local hpu but produced somewhere else
-  dst_store_print(iid);
+  //dst_store_print(iid);
   uint16_t non_resolved_owned_dst = dst_store_get_owned(iid, phys_hpu_id);
   while (non_resolved_owned_dst != 0xFFFF) {
     // wait until notify or read ct is received
@@ -491,18 +491,17 @@ void iop_teardown(uint8_t iid) {
     //    dst_store.state[iid][tid][bid]);
     while (dst_store.state[iid][tid][bid] != DST_STATE_RESOLVED) {
       if (print%20 == 0) {
-        PLL_ERR("ucore", "[HPU%d] iop_teardown wait on dst iop %d tid %d bid %d - being resolved",
+        PLL_INF("ucore", "[HPU%d] iop_teardown wait on dst iop %d tid %d bid %d - being resolved",
             phys_hpu_id,
             iid,
             tid,
             bid);
-        iOSAL_Task_SleepTicks(10);
       }
       print++;
 #ifdef UCORE_MHDMA_SIMU
       sleep(10);
 #else
-      iOSAL_Task_SleepTicks(100);
+      iOSAL_Task_SleepTicks(10);
 #endif
     }
     non_resolved_owned_dst = dst_store_get_owned(iid, phys_hpu_id);
@@ -525,7 +524,7 @@ void iop_teardown(uint8_t iid) {
   // release b2b pool slot for this IOp
   if (iop_state[iid].state == IOP_STATE_DONE) {
     uint16_t b2b_free_cnt = b2b_pool_free(iid);
-    PLL_ERR("ucore", "[HPU%d] iop_teardown iid %d free b2b_pool slots: %d", phys_hpu_id, iid, b2b_free_cnt);
+    //PLL_ERR("ucore", "[HPU%d] iop_teardown iid %d free b2b_pool slots: %d", phys_hpu_id, iid, b2b_free_cnt);
   }
 
   // reset all dst of iop for next execution of this iid
@@ -615,15 +614,15 @@ uint32_t parse_iop(
     iop_state[cur_iid].state  = IOP_STATE_RUNNING;
   }
   iop_state[cur_iid].nb_hpu = nb_hpu;
-  PLL_ERR("parse_iop", "[HPU%d] parse_iop starting iop %d (virt hid %d) state %d nb_hpu %d",
+  PLL_INF("parse_iop", "[HPU%d] parse_iop starting iop %d (virt hid %d) state %d nb_hpu %d",
       phys_hpu_id,
       cur_iid,
       get_virt_of(phys_hpu_id, *mapping),
       iop_state[cur_iid].state,
       iop_state[cur_iid].nb_hpu);
-  iOSAL_Task_SleepTicks(100);
+  //iOSAL_Task_SleepTicks(100);
   if (last_iid >= cur_iid) { // this means user SW (tfhe-rs) has been restarted
-      PLL_ERR("parse_iop", "last iid: %d >= %d => reset inter-HPU struct", last_iid, cur_iid);
+      PLL_DBG("parse_iop", "last iid: %d >= %d => reset inter-HPU struct", last_iid, cur_iid);
       mhdma_table_reset();
       b2b_pool_init();
       dst_notifyq_init();
@@ -634,15 +633,15 @@ uint32_t parse_iop(
   dst->len = dst_pos;
   dst_store_initd(cur_iid, dst);
   //    dst->len,
-  uint16_t dst_cnts = dst_store_get_owned_cnt(cur_iid, phys_hpu_id);
-  uint8_t dst_cnt_owned = (dst_cnts >> 8) & 0XFF;
-  uint8_t dst_cnt_waiting = (dst_cnts & 0XFF);
-  PLL_ERR("parse_iop", "[HPU%d] parse_iop iop %d dst ct owned %d/%d",
-          phys_hpu_id,
-          cur_iid,
-          dst_cnt_owned,
-          dst_cnt_waiting);
-  dst_store_print(cur_iid);
+  //uint16_t dst_cnts = dst_store_get_owned_cnt(cur_iid, phys_hpu_id);
+  //uint8_t dst_cnt_owned = (dst_cnts >> 8) & 0XFF;
+  //uint8_t dst_cnt_waiting = (dst_cnts & 0XFF);
+  //PLL_ERR("parse_iop", "[HPU%d] parse_iop iop %d dst ct owned %d/%d",
+  //        phys_hpu_id,
+  //        cur_iid,
+  //        dst_cnt_owned,
+  //        dst_cnt_waiting);
+  //dst_store_print(cur_iid);
 
   //4. Get list of source operands
   uint32_t src_pos = 0;
@@ -816,13 +815,13 @@ void patch_mem_dop(DOpu_t *dop, OperandBundle_t *iop_dst, OperandBundle_t *iop_s
         }
         src_store.dst_cid[cur_iid][tid][bid] = dst_cid;
         uint16_t target_cid = (tid << 8) | bid;
-        PLL_INF("ucore", "[HPU%d] iop %d need remote src - src_iid %d src_hpu_id %d src_cid %d dst_cid %d",
-            phys_hpu_id,
-            cur_iid,
-            src_iid,
-            src_hpu_id,
-            src_cid,
-            dst_cid);
+        //PLL_INF("ucore", "[HPU%d] iop %d need remote src - src_iid %d src_hpu_id %d src_cid %d dst_cid %d",
+        //    phys_hpu_id,
+        //    cur_iid,
+        //    src_iid,
+        //    src_hpu_id,
+        //    src_cid,
+        //    dst_cid);
         // issue read immediately if src comes from a done iop or if iid = 0 which means src is coming from Host
         if (iop_state[src_iid].state == IOP_STATE_DONE || src_iid == 0) {
           src_store.state[cur_iid][tid][bid] = OPERAND_STATE_DMA_PENDING;
@@ -841,7 +840,7 @@ void patch_mem_dop(DOpu_t *dop, OperandBundle_t *iop_dst, OperandBundle_t *iop_s
         while (src_store.state[cur_iid][tid][bid] != OPERAND_STATE_RESOLVED) {
           // wait until notify or read ct is received
           if (print%20 == 0) {
-            PLL_ERR("ucore", "[HPU%d] iop %d wait on remote src - src_iid %d src_hpu_id %d src_cid %d tg %d",
+            PLL_INF("ucore", "[HPU%d] iop %d wait on remote src - src_iid %d src_hpu_id %d src_cid %d tg %d",
                 phys_hpu_id,
                 cur_iid,
                 src_iid,
@@ -853,7 +852,7 @@ void patch_mem_dop(DOpu_t *dop, OperandBundle_t *iop_dst, OperandBundle_t *iop_s
 #ifdef UCORE_MHDMA_SIMU
           sleep(10);
 #else
-          iOSAL_Task_SleepTicks(100);
+          iOSAL_Task_SleepTicks(10);
 #endif
         }
         dop->mem.slot = src_store.dst_cid[cur_iid][tid][bid];
@@ -978,10 +977,10 @@ int process_ucore_dop(DOpu_t *dop) {
       while (  (data_required && current_elt->state < MHDMA_STATE_RESOLVED)
             || (!data_required && current_elt->state < MHDMA_STATE_RECEIVED) ) {
         // wait until notify or read ct is received
-        if (print_one == 0) {
-            PLL_ERR("ucore", "[HPU%d] dop wait on iop_id %d flag %d state %d", phys_hpu_id, cur_iid, dop->ucore.flag, current_elt->state);
-            print_one++;
+        if (print_one%20 == 0) {
+          PLL_INF("ucore", "[HPU%d] dop wait on iop_id %d flag %d state %d", phys_hpu_id, cur_iid, dop->ucore.flag, current_elt->state);
         }
+        print_one++;
 #ifdef UCORE_MHDMA_SIMU
         sleep(10);
 #else
