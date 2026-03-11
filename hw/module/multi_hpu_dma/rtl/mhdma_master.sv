@@ -13,8 +13,8 @@
 //    burst completes (AXI protocol), then transfer stops; retry overwrites from offset 0.
 //
 // Write path: stream-through with reactive page-aligned bursts.
-//  - Data flows: decoder -> fifo_ce_rx -> deserialization -> elastic buffer -> burst FSM -> AXI4
-//  - One burst state machine per PC (BURST_IDLE -> BURST_AW -> BURST_W_DATA -> BURST_DONE)
+//  - Dataflow: decoder > fifo_ce_rx > deserialization > fifo > burst FSM > AXI4 > fifo
+//  - One burst state machine per PC (BURST_IDLE > BURST_AW > BURST_W_DATA > BURST_DONE)
 //
 // Assumptions:
 //  - regf_timeout_duration_notify & regf_timeout_duration_read_req are quasi static signals.
@@ -282,19 +282,19 @@ module mhdma_master
   logic [SEQ_NUM_W-1:0] expected_seq_num;
   logic [SEQ_NUM_W-1:0] received_seq_num; // registered copy of decoded_command.seq_num for mismatch check
   logic                 seq_num_valid;
-  logic                 rr_packets_rdyQ;
+  logic                 rr_packets_rdy_r;
   logic                 seq0_detected;
   logic                 frontedge_rr_packets_rdy;
 
   always_ff @(posedge clk_mhdma) begin
     if (~resetn_mhdma) begin
-      rr_packets_rdyQ <= 1'b0;
+      rr_packets_rdy_r <= 1'b0;
     end else begin
-      rr_packets_rdyQ <= rr_packets_rdy;
+      rr_packets_rdy_r <= rr_packets_rdy;
     end
   end
 
-  assign frontedge_rr_packets_rdy = (rr_packets_rdy & ~rr_packets_rdyQ);
+  assign frontedge_rr_packets_rdy = (rr_packets_rdy & ~rr_packets_rdy_r);
 
   // Register seq0 detection alongside rr_packets_rdy so we only compare decoded_command.seq_num while decoded_command_vld guaranteed valid data.
   always_ff @(posedge clk_mhdma) begin
@@ -305,19 +305,10 @@ module mhdma_master
     end
   end
 
-  // Register decoded seq_num aligned with seq0_detected / frontedge_rr_packets_rdy timing.
-  // Avoids sampling stale decoded_command.seq_num 2 cycles after decoded_command_vld.
-  always_ff @(posedge clk_mhdma) begin
-    if (~resetn_mhdma) begin
-      received_seq_num <= 'h0;
-    end else begin
-      received_seq_num <= decoded_command.seq_num;
-    end
-  end
+  // Register decoded seq_num (aligned with seq0_detected / frontedge_rr_packets_rdy timing).
+  always_ff @(posedge clk_mhdma)
+    received_seq_num <= decoded_command.seq_num;
 
-  // seq num valid over frontedge of rr_packets_rdy & there is no seq num errors
-  // Gated on st_wait_packets to prevent stale emissions from triggering mismatches
-  // when no transfer is in progress (e.g. FSM in RR_WAIT_REQUEST or RR_SEND_REQUEST).
   assign seq_num_valid = st_wait_packets & frontedge_rr_packets_rdy & (~wait_for_seq0 | seq0_detected);
 
   always_ff @(posedge clk_mhdma) begin
@@ -345,8 +336,8 @@ module mhdma_master
     end
   end
 
-  // Any seq_num != expected is a mismatch: drop remaining packets, zero-pad, retry
-  // Uses registered received_seq_num (aligned with frontedge_rr_packets_rdy timing)
+  // Any seq_num != expected is a mismatch: drop remaining packets, zero-pad (if needed) then retry
+  // Uses registered received_seq_num to be aligned with frontedge_rr_packets_rdy/seq_num_valid timing
   assign seq_num_mismatch = seq_num_valid & (received_seq_num != expected_seq_num);
 
   // =========================================================================================== //
@@ -376,7 +367,7 @@ module mhdma_master
     end
   end
 
-  assign timeout_reached_notify = (to_notify_cnt >= to_dur_notify);
+  assign timeout_reached_notify = (to_notify_cnt == to_dur_notify);
 
   // timeout read request -------------------------------------------------------------------------
   logic [REG_DATA_W-1:0] to_read_request_cnt;
@@ -397,7 +388,7 @@ module mhdma_master
     end
   end
 
-  assign timeout_reached_read_request = (to_read_request_cnt >= to_dur_read_req);
+  assign timeout_reached_read_request = (to_read_request_cnt == to_dur_read_req);
 
   // =========================================================================================== //
   // CDC from regf to mrmac clock
@@ -620,10 +611,11 @@ module mhdma_master
     if (~resetn_mhdma | start_read_request) begin
       authorized_axi4_words <= '0;
     end else if (seq_num_valid & ~seq_num_mismatch) begin
-      if (expected_seq_num < NB_PACKETS_FULL)
+      if (expected_seq_num < NB_PACKETS_FULL) begin
         authorized_axi4_words <= authorized_axi4_words + NB_WORDS_TOTAL_WW'(AXI4_WORDS_PER_FULL_PKT);
-      else
+      end else begin
         authorized_axi4_words <= authorized_axi4_words + NB_WORDS_TOTAL_WW'(AXI4_WORDS_PER_LAST_PKT);
+      end
     end
   end
 
@@ -689,22 +681,22 @@ module mhdma_master
 
   // Register decoder payload to align with rr_packets_rdy / seq_num_mismatch timing.
   // Without this, payload data arrives one cycle before the seq_num check can gate ce_valid.
-  logic                    decoder_rx_tvalid_Q;
-  logic [MRMAC_AXIS_W-1:0] decoder_rx_tdata_Q;
+  logic                    decoder_rx_tvalid_r;
+  logic [MRMAC_AXIS_W-1:0] decoder_rx_tdata_r;
 
   always_ff @(posedge clk_mhdma) begin
     if (~resetn_mhdma) begin
-      decoder_rx_tvalid_Q <= 1'b0;
+      decoder_rx_tvalid_r <= 1'b0;
     end else begin
-      decoder_rx_tvalid_Q <= decoder_rx_tvalid;
+      decoder_rx_tvalid_r <= decoder_rx_tvalid;
     end
   end
 
   always_ff @(posedge clk_mhdma)
-    decoder_rx_tdata_Q <= decoder_rx_tdata;
+    decoder_rx_tdata_r <= decoder_rx_tdata;
 
-  assign fifo_cerx_in_vld  = decoder_rx_tvalid_Q & ce_valid;
-  assign fifo_cerx_in_data = decoder_rx_tdata_Q;
+  assign fifo_cerx_in_vld  = decoder_rx_tvalid_r & ce_valid;
+  assign fifo_cerx_in_data = decoder_rx_tdata_r;
 
   fifo_ram_rdy_vld # (
     .WIDTH      (MRMAC_AXIS_W      ),
@@ -769,24 +761,21 @@ module mhdma_master
   endgenerate
 
   // word distribution per PC ---------------------------------------------------------------------
-  logic [ETH_PC-1:0] pc_transfer_done;  // pulse when all B responses received (for ciphertext_received)
-  logic [ETH_PC-1:0] pc_w_complete;     // pulse when all W data sent (for PC shift, no B-response wait)
+  logic [ETH_PC-1:0] pc_transfer_done;  // level: per-PC B responses all received
+  logic              pc_w_complete;     // pulse: single FSM W-data done for current PC
   logic [ETH_PC-1:0] write_error;
 
-  // when phy_addr is computed from data received by decoder and valid or when we have done all
-  // needed writes on the first PC we can shift to the next
-  // when all writes on the second pc is done we can reset the signal
-  // NOTE: shift on pc_w_complete (W-data done) not pc_transfer_done (B-response done)
-  //       so that the next PC can start while B responses for the previous PC are still in flight
+  // Shift to next PC when all W-data sent. B responses are tracked per-port independently.
+  // axi4_write_pc is basically a one hot that initialises when address is valid and shifts when pc is write complete
   always_ff @(posedge clk_mhdma) begin : prc_write_pc_one_at_a_time
     if (~resetn_mhdma) begin
       axi4_write_pc <= 'h0;
     end else begin
       if (phy_addr_valid) begin
         axi4_write_pc <= {{(ETH_PC-1){1'b0}}, 1'b1};
-      end else if (pc_w_complete[ETH_PC-1]) begin
+      end else if (pc_w_complete & axi4_write_pc[ETH_PC-1]) begin
         axi4_write_pc <= 'h0;
-      end else if (|pc_w_complete) begin
+      end else if (pc_w_complete) begin
         axi4_write_pc <= axi4_write_pc << 1;
       end
     end
@@ -822,11 +811,9 @@ module mhdma_master
     end
   end
 
-  always_ff @(posedge clk_mhdma) begin
-    if (cerx_handshake) begin
+  always_ff @(posedge clk_mhdma)
+    if (cerx_handshake)
       deser_word[deser_cnt*MRMAC_AXIS_W+:MRMAC_AXIS_W] <= fifo_cerx_out_data;
-    end
-  end
 
   // deser_word_next is only here to avoid one clock cycle bubble :
   // It takes combinationally the register "deser_word" but updates previous word space (deser_cnt*MRMAC_AXIS_W +: MRMAC_AXIS_W).
@@ -862,9 +849,7 @@ module mhdma_master
   logic [AXI4_DATA_W-1:0] w_buf_data;
   logic                   w_buf_vld;
   logic                   w_buf_rdy;
-  logic [ETH_PC-1:0]      w_buf_rdy_pc; // per-PC ready, OR'd to share w_buf_rdy
-
-  assign w_buf_rdy = |w_buf_rdy_pc | abort_transfer;
+  // w_buf_rdy assigned after burst FSM declarations (see Data channel section)
 
   fifo_element #(
     .WIDTH         (AXI4_DATA_W ),
@@ -886,346 +871,378 @@ module mhdma_master
   );
 
   // =========================================================================================== //
-  // Per-PC burst state machine
+  // Burst state machine (single instance, PCs processed sequentially)
   // =========================================================================================== //
+
+  // Active PC index: one-hot to binary (generate-based OR reduction)
+  logic [$clog2(ETH_PC)-1:0] active_pc_idx;
   generate
-    for (genvar gen_wr=0; gen_wr<ETH_PC; gen_wr++) begin : gen_ce_write
+    for (genvar gen_b = 0; gen_b < $clog2(ETH_PC); gen_b++) begin : gen_oh2bin
+      logic [ETH_PC-1:0] oh_sel;
+      for (genvar gen_j = 0; gen_j < ETH_PC; gen_j++) begin : gen_oh_sel
+        assign oh_sel[gen_j] = axi4_write_pc[gen_j] & gen_j[gen_b];
+      end
+      assign active_pc_idx[gen_b] = |oh_sel;
+    end
+  endgenerate
 
-      // PC-specific word count
-      localparam int AXI4_WORD_PER_PC_L    = (gen_wr == 0) ? AXI4_WORD_PER_PC0 : AXI4_WORD_PER_PC;
-      localparam int AXI4_WORD_PER_PC_WW_L = (gen_wr == 0) ? AXI4_WORD_PER_PC0_WW : AXI4_WORD_PER_PC_WW;
+  // PC-specific word count (PC0 has +1 header word)
+  logic [AXI4_WORD_PER_PC0_WW-1:0] active_words_per_pc;
+  assign active_words_per_pc = (active_pc_idx == 0) ? AXI4_WORD_PER_PC0_WW'(AXI4_WORD_PER_PC0) : AXI4_WORD_PER_PC0_WW'(AXI4_WORD_PER_PC);
 
-      // ======================================================================================= //
-      // Burst FSM
-      // ======================================================================================= //
-      logic axi_bvalid_int;
-      logic axi_bready_int;
+  // PC base offset for credit computation
+  logic [NB_WORDS_TOTAL_WW-1:0] active_pc_base_offset;
 
-      typedef enum logic [1:0] {
-        BURST_XXX    = 'x,
-        BURST_IDLE   = 2'b00,
-        BURST_AW     = 2'b01,
-        BURST_W_DATA = 2'b10,
-        BURST_DONE   = 2'b11
-      } st_burst;
+  always_ff @(posedge clk_mhdma) begin
+    if (~resetn_mhdma) begin
+      active_pc_base_offset <= '0;
+    end else if (phy_addr_valid) begin
+      active_pc_base_offset <= '0;
+    end else if (pc_w_complete) begin
+      active_pc_base_offset <= active_pc_base_offset + NB_WORDS_TOTAL_WW'(active_words_per_pc);
+    end
+  end
 
-      st_burst burst_state;
-      st_burst burst_next_state;
+  // ======================================================================================= //
+  // Burst FSM
+  // ======================================================================================= //
+  typedef enum logic [1:0] {
+    BURST_XXX    = 'x,
+    BURST_IDLE   = 2'b00,
+    BURST_AW     = 2'b01,
+    BURST_W_DATA = 2'b10,
+    BURST_DONE   = 2'b11
+  } st_burst;
 
-      // Key registers
-      logic [AXI4_ADD_W-1:0]            burst_addr;
-      logic [AXI4_LEN_W:0]              burst_len; // current burst length (1..PAGE_AXI4_DATA)
-      logic [AXI4_WORD_PER_PC_WW_L-1:0] words_remain;
-      logic [AXI4_LEN_W:0]              burst_beat_cnt;
-      logic [AXI_BURST_NB_MAX_WW-1:0]   bursts_issued;
-      logic [AXI_BURST_NB_MAX_WW-1:0]   brsp_received_cnt;
-      logic                             abort_draining;
+  st_burst burst_state;
+  st_burst burst_next_state;
 
-      // Burst length computation (page-aligned, same formula as before)
-      logic [PAGE_BYTES_WW-1:0] page_word_remain;
-      logic [AXI4_LEN_W:0]      computed_burst_len;
+  // Key registers
+  logic [AXI4_ADD_W-1:0]           burst_addr;
+  logic [AXI4_LEN_W:0]             burst_word_cnt; // number of words in current burst (NOT awlen)
+  logic [AXI4_WORD_PER_PC0_WW-1:0] words_remain;
+  logic [AXI4_LEN_W:0]             burst_beat_cnt;
+  logic [AXI_BURST_NB_MAX_WW-1:0]  bursts_issued;
+  logic                            abort_draining;
 
-      assign page_word_remain   = PAGE_AXI4_DATA - burst_addr[PAGE_BYTES_W-1:AXI4_DATA_BYTES_W];
-      assign computed_burst_len = (page_word_remain < words_remain) ? page_word_remain : words_remain;
+  // Burst length computation (page-aligned)
+  logic [PAGE_BYTES_WW-1:0] page_word_remain;
+  logic [AXI4_LEN_W:0]      computed_burst_len;
 
-      // Credit-based burst clamping
-      localparam int PC_BASE_OFFSET = (gen_wr == 0) ? 0 : AXI4_WORD_PER_PC0 + (gen_wr - 1) * AXI4_WORD_PER_PC;
+  assign page_word_remain   = PAGE_AXI4_DATA - burst_addr[PAGE_BYTES_W-1:AXI4_DATA_BYTES_W];
+  assign computed_burst_len = (page_word_remain < words_remain) ? page_word_remain : words_remain;
 
-      logic [NB_WORDS_TOTAL_WW-1:0] words_committed;
-      logic [NB_WORDS_TOTAL_WW-1:0] pc_consumed_total;
-      logic [NB_WORDS_TOTAL_WW-1:0] pc_credits;
-      logic [AXI4_LEN_W:0]          clamped_burst_len;
+  // Credit-based burst clamping
+  logic [NB_WORDS_TOTAL_WW-1:0] words_committed;
+  logic [NB_WORDS_TOTAL_WW-1:0] pc_consumed_total;
+  logic [NB_WORDS_TOTAL_WW-1:0] pc_credits;
+  logic [AXI4_LEN_W:0]          clamped_burst_len;
+  logic [AXI4_LEN_W:0]          clamped_burst_len_r; // registered to break timing
 
-      assign words_committed   = NB_WORDS_TOTAL_WW'(AXI4_WORD_PER_PC_L) - NB_WORDS_TOTAL_WW'(words_remain);
-      assign pc_consumed_total = NB_WORDS_TOTAL_WW'(PC_BASE_OFFSET) + words_committed;
-      assign pc_credits        = (authorized_axi4_words > pc_consumed_total) ? (authorized_axi4_words - pc_consumed_total) : '0;
+  assign words_committed   = NB_WORDS_TOTAL_WW'(active_words_per_pc) - NB_WORDS_TOTAL_WW'(words_remain);
+  assign pc_consumed_total = active_pc_base_offset + words_committed;
+  assign pc_credits        = (authorized_axi4_words > pc_consumed_total) ? (authorized_axi4_words - pc_consumed_total) : '0;
 
-      assign clamped_burst_len = (NB_WORDS_TOTAL_WW'(computed_burst_len) <= pc_credits)
-                               ? computed_burst_len
-                               : pc_credits[AXI4_LEN_W:0];
+  assign clamped_burst_len = (NB_WORDS_TOTAL_WW'(computed_burst_len) <= pc_credits) ? computed_burst_len : pc_credits[AXI4_LEN_W:0];
 
-      // AXI AW channel signals
-      axi4_aw_if_t axi_a;
-      logic        axi_a_awvalid;
-      logic        axi_a_awready;
-      axi4_aw_if_t m_axi4_aw;
+  // Register clamped_burst_len to break the 4-deep arithmetic chain
+  // (sub -> add -> sub+cmp+mux -> cmp+mux) before AW channel.
+  // Cost: 1 extra cycle of latency when credits arrive in BURST_AW.
+  always_ff @(posedge clk_mhdma) begin
+    if (~resetn_mhdma) begin
+      clamped_burst_len_r <= 'h0;
+    end else begin
+      clamped_burst_len_r <= clamped_burst_len;
+    end
+  end
 
-      // W channel signals
-      axi4_w_if_t  axi_w;
-      logic        axi_wvalid;
-      logic        axi_wready;
-      axi4_w_if_t  m_axi4_w;
+  // AXI channel signals
+  axi4_aw_if_t axi_a;
+  logic        axi_a_awvalid;
+  logic        axi_a_awready;
 
-      logic        w_send_data;
-      logic        wlast;
+  axi4_w_if_t  axi_w;
+  logic        axi_wvalid;
+  logic        axi_wready;
 
-      assign w_send_data = axi_wvalid & axi_wready;
-      assign wlast       = (burst_beat_cnt == burst_len - 1);
+  logic        w_send_data;
+  logic        wlast;
 
-      // Rising-edge detection for pc_transfer_done pulse
-      logic pc_done;
-      logic pc_done_r;
+  assign w_send_data = axi_wvalid & axi_wready;
+  assign wlast       = (burst_word_cnt != 0) & (burst_beat_cnt == burst_word_cnt - 1);
 
-      assign pc_done = (burst_state == BURST_DONE) & ((bursts_issued == brsp_received_cnt & bursts_issued > 0) | (bursts_issued == 0));
+  // W-data completion: rising edge on BURST_DONE entry
+  logic in_burst_done;
+  logic in_burst_done_r;
 
-      always_ff @(posedge clk_mhdma) begin
-        if (~resetn_mhdma) begin
-          pc_done_r <= 1'b0;
-        end else begin
-          pc_done_r <= pc_done;
+  assign in_burst_done = (burst_state == BURST_DONE);
+
+  always_ff @(posedge clk_mhdma) begin
+    if (~resetn_mhdma) begin
+      in_burst_done_r <= 1'b0;
+    end else begin
+      in_burst_done_r <= in_burst_done;
+    end
+  end
+
+  // Falling edge: fires when leaving BURST_DONE (W FIFO guaranteed drained)
+  assign pc_w_complete = ~in_burst_done & in_burst_done_r;
+
+  // ----- FSM state register -----
+  always_ff @(posedge clk_mhdma) begin
+    if (~resetn_mhdma) begin
+      burst_state <= BURST_IDLE;
+    end else begin
+      burst_state <= burst_next_state;
+    end
+  end
+
+  logic m_axi4_wvalid_single;
+
+  always_comb begin
+    burst_next_state = BURST_XXX;
+    case (burst_state)
+      BURST_IDLE:
+        // Gate with ~pc_w_complete: on the cycle pc_w_complete fires, axi4_write_pc is shifting.
+        // Wait one cycle for the new PC index to settle before capturing parameters.
+        burst_next_state = (|axi4_write_pc & ~pc_w_complete) ? (abort_transfer ? BURST_DONE : BURST_AW) : BURST_IDLE;
+      BURST_AW:
+        if (axi_a_awvalid & axi_a_awready)
+          burst_next_state = BURST_W_DATA;
+        else if (abort_transfer)
+          burst_next_state = BURST_DONE;
+        else
+          burst_next_state = BURST_AW;
+      BURST_W_DATA:
+        burst_next_state = (w_send_data & wlast) ? ((abort_draining | words_remain == 0) ? BURST_DONE : BURST_AW) : BURST_W_DATA;
+      BURST_DONE:
+        // Wait for W FIFO to drain before shifting PC (prevents stale data on next port)
+        burst_next_state = ~m_axi4_wvalid_single ? BURST_IDLE : BURST_DONE;
+      default : burst_next_state = BURST_IDLE;
+    endcase
+  end
+
+  always_ff @(posedge clk_mhdma) begin
+    if (~resetn_mhdma) begin
+      burst_addr     <= 'h0;
+      burst_word_cnt <= 'h0;
+      words_remain   <= 'h0;
+      burst_beat_cnt <= 'h0;
+      bursts_issued  <= 'h0;
+      abort_draining <= 1'b0;
+    end else begin
+      case (burst_state)
+        BURST_IDLE: begin
+          abort_draining <= 1'b0;
+          if (|axi4_write_pc & ~pc_w_complete) begin
+            burst_addr    <= phy_addr[active_pc_idx];
+            words_remain  <= AXI4_WORD_PER_PC0_WW'(active_words_per_pc);
+            bursts_issued <= 'h0;
+          end
         end
-      end
 
-      assign pc_transfer_done[gen_wr] = pc_done & ~pc_done_r;
-
-      // W-data completion: fires when burst FSM enters BURST_DONE (all W beats sent)
-      // Used for PC shift to allow overlapped B-response tracking between PCs
-      logic in_burst_done;
-      logic in_burst_done_r;
-
-      assign in_burst_done = (burst_state == BURST_DONE);
-
-      always_ff @(posedge clk_mhdma) begin
-        if (~resetn_mhdma) begin
-          in_burst_done_r <= 1'b0;
-        end else begin
-          in_burst_done_r <= in_burst_done;
+        BURST_AW: begin
+          if (axi_a_awvalid & axi_a_awready) begin
+            burst_word_cnt <= clamped_burst_len_r;
+            burst_beat_cnt <= 'h0;
+            bursts_issued  <= bursts_issued + 1;
+            words_remain   <= words_remain - clamped_burst_len_r;
+          end
         end
-      end
 
-      assign pc_w_complete[gen_wr] = in_burst_done & ~in_burst_done_r;
+        BURST_W_DATA: begin
+          if (abort_transfer & ~abort_draining) begin
+            abort_draining <= 1'b1;
+          end
 
-      // ----- FSM state register -----
-      always_ff @(posedge clk_mhdma) begin
-        if (~resetn_mhdma) begin
-         burst_state <= BURST_IDLE;
-        end else begin
-          burst_state <= burst_next_state;
-        end
-      end
-
-      always_comb begin
-        burst_next_state = BURST_XXX;
-        case (burst_state)
-          BURST_IDLE:
-            burst_next_state = axi4_write_pc[gen_wr] ? (abort_transfer ? BURST_DONE : BURST_AW) : BURST_IDLE;
-          BURST_AW:
-            if (axi_a_awvalid & axi_a_awready)
-              burst_next_state = BURST_W_DATA;
-            else if (abort_transfer)
-              burst_next_state = BURST_DONE;
-            else
-              burst_next_state = BURST_AW;
-          BURST_W_DATA:
-            burst_next_state = (w_send_data & wlast) ? ((abort_draining | words_remain == 0) ? BURST_DONE : BURST_AW) : BURST_W_DATA;
-          BURST_DONE:
-            burst_next_state = pc_done ? BURST_IDLE : BURST_DONE;
-          default : burst_next_state = BURST_IDLE;
-        endcase
-      end
-
-      always_ff @(posedge clk_mhdma) begin
-        if (~resetn_mhdma) begin
-          burst_addr        <= 'h0;
-          burst_len         <= 'h0;
-          words_remain      <= 'h0;
-          burst_beat_cnt    <= 'h0;
-          bursts_issued     <= 'h0;
-          brsp_received_cnt <= 'h0;
-          abort_draining    <= 1'b0;
-        end else begin
-          case (burst_state)
-            BURST_IDLE: begin
-              abort_draining <= 1'b0;
-              if (axi4_write_pc[gen_wr]) begin
-                burst_addr      <= phy_addr[gen_wr];
-                words_remain    <= AXI4_WORD_PER_PC_WW_L'(AXI4_WORD_PER_PC_L);
-                bursts_issued   <= 'h0;
-                brsp_received_cnt <= 'h0;
-              end
-            end
-
-            BURST_AW: begin
-              if (axi_a_awvalid & axi_a_awready) begin
-                burst_len      <= clamped_burst_len;
-                burst_beat_cnt <= 'h0;
-                bursts_issued  <= bursts_issued + 1;
-                words_remain   <= words_remain - clamped_burst_len;
-              end
-            end
-
-            BURST_W_DATA: begin
-              // Enter abort_draining on mismatch mid-burst
-              if (abort_transfer & ~abort_draining) begin
-                abort_draining <= 1'b1;
-              end
-
-              if (w_send_data) begin
-                burst_beat_cnt <= burst_beat_cnt + 1;
-                if (wlast & ~abort_draining & words_remain > 0) begin
-                  burst_addr <= burst_addr + AXI4_ADD_W'(burst_len) * AXI4_DATA_BYTES;
-                end
-              end
-            end
-            BURST_DONE: begin
-              // nothing: wait for pc_done. All registers are held
-            end
-          endcase
-
-          // B response counting (independent of state)
-          if (burst_state != BURST_IDLE) begin
-            if (axi_bready_int & axi_bvalid_int) begin
-              brsp_received_cnt <= brsp_received_cnt + 1;
+          if (w_send_data) begin
+            burst_beat_cnt <= burst_beat_cnt + 1;
+            if (wlast & ~abort_draining & words_remain > 0) begin
+              burst_addr <= burst_addr + (AXI4_ADD_W'(burst_word_cnt) << AXI4_DATA_BYTES_W);
             end
           end
         end
-      end
 
-      // ======================================================================================= //
-      // Address channel output
-      // ======================================================================================= //
-      assign axi_a_awvalid = (burst_state == BURST_AW) & (clamped_burst_len > 0) & ~abort_transfer;
-      assign axi_a.awid    = MHDMA_AXI_ARID;
-      assign axi_a.awaddr  = burst_addr;
-      assign axi_a.awsize  = MHDMA_ARSIZE;
-      assign axi_a.awburst = AXI4B_INCR;
-      assign axi_a.awlen   = clamped_burst_len - 1;
+        BURST_DONE: begin
+          // nothing: single-cycle, transitions to BURST_IDLE next
+        end
+      endcase
+    end
+  end
 
-      assign m_axi4_awid[gen_wr]    = m_axi4_aw.awid;
-      assign m_axi4_awaddr[gen_wr]  = m_axi4_aw.awaddr;
-      assign m_axi4_awlen[gen_wr]   = m_axi4_aw.awlen;
-      assign m_axi4_awsize[gen_wr]  = m_axi4_aw.awsize;
-      assign m_axi4_awburst[gen_wr] = m_axi4_aw.awburst;
+  // ======================================================================================= //
+  // Save bursts_issued per PC on W-data completion (for per-port B-response tracking)
+  // ======================================================================================= //
+  logic [ETH_PC-1:0][AXI_BURST_NB_MAX_WW-1:0] saved_bursts_issued;
 
-      fifo_element #(
-        .WIDTH          ($bits(axi4_aw_if_t)   ),
-        .DEPTH          (1                     ),
-        .TYPE_ARRAY     (4'h3                  ),
-        .DO_RESET_DATA  (1'b0                  ),
-        .RESET_DATA_VAL (0                     )
-      ) fifo_element_awrite_temp (
-        .clk            (clk_mhdma             ),
-        .s_rst_n        (resetn_mhdma          ),
+  always_ff @(posedge clk_mhdma) begin
+    if (~resetn_mhdma) begin
+      saved_bursts_issued <= '0;
+    end else if (start_read_request) begin
+      saved_bursts_issued <= '0;
+    end else if (pc_w_complete) begin
+      saved_bursts_issued[active_pc_idx] <= bursts_issued;
+    end
+  end
 
-        .in_data        (axi_a                 ),
-        .in_vld         (axi_a_awvalid         ),
-        .in_rdy         (axi_a_awready         ),
+  // ======================================================================================= //
+  // Address channel (single instance, demuxed to active port)
+  // ======================================================================================= //
+  assign axi_a_awvalid = (burst_state == BURST_AW) & (clamped_burst_len_r > 0) & ~abort_transfer;
+  assign axi_a.awid    = MHDMA_AXI_ARID;
+  assign axi_a.awaddr  = burst_addr;
+  assign axi_a.awsize  = MHDMA_ARSIZE;
+  assign axi_a.awburst = AXI4B_INCR;
+  assign axi_a.awlen   = clamped_burst_len_r - 1;
 
-        .out_data       (m_axi4_aw             ),
-        .out_vld        (m_axi4_awvalid[gen_wr]),
-        .out_rdy        (m_axi4_awready[gen_wr])
-      );
+  axi4_aw_if_t m_axi4_aw_single;
+  logic        m_axi4_awvalid_single;
 
-      // ======================================================================================= //
-      // Data channel
-      // ======================================================================================= //
-      assign axi_wvalid  = (burst_state == BURST_W_DATA) & (abort_draining | (w_buf_vld & axi4_write_pc[gen_wr]));
-      assign axi_w.wdata = abort_draining ? 'h0 : w_buf_data;
-      assign axi_w.wlast = wlast;
-      assign axi_w.wstrb = abort_draining ? 'h0 : {AXI4_STRB_W{1'b1}};
+  fifo_element #(
+    .WIDTH          ($bits(axi4_aw_if_t)),
+    .DEPTH          (1                  ),
+    .TYPE_ARRAY     (4'h3               ),
+    .DO_RESET_DATA  (1'b0               ),
+    .RESET_DATA_VAL (0                  )
+  ) fifo_element_awrite (
+    .clk     (clk_mhdma                        ),
+    .s_rst_n (resetn_mhdma                     ),
 
-      // Only consume from elastic buffer when not draining zeros
-      assign w_buf_rdy_pc[gen_wr] = axi_wready & (burst_state == BURST_W_DATA) & axi4_write_pc[gen_wr] & ~abort_draining;
+    .in_data (axi_a                            ),
+    .in_vld  (axi_a_awvalid                    ),
+    .in_rdy  (axi_a_awready                    ),
 
-      assign m_axi4_wdata[gen_wr] = m_axi4_w.wdata;
-      assign m_axi4_wstrb[gen_wr] = m_axi4_w.wstrb;
-      assign m_axi4_wlast[gen_wr] = m_axi4_w.wlast;
+    .out_data(m_axi4_aw_single                 ),
+    .out_vld (m_axi4_awvalid_single            ),
+    .out_rdy (|(m_axi4_awready & axi4_write_pc))
+  );
 
-      fifo_element #(
-        .WIDTH         (AXI4_W_IF_W    ),
-        .DEPTH         (2              ),
-        .TYPE_ARRAY    ({4'h1,4'h2}    ),
-        .DO_RESET_DATA (0              ),
-        .RESET_DATA_VAL(0              )
-      ) fifo_element_write_temp (
-        .clk     (clk_mhdma            ),
-        .s_rst_n (resetn_mhdma         ),
+  // Demux AW to active port
+  generate
+    for (genvar gen_i=0; gen_i<ETH_PC; gen_i++) begin : gen_aw_demux
+      assign m_axi4_awid[gen_i]    = m_axi4_aw_single.awid;
+      assign m_axi4_awaddr[gen_i]  = m_axi4_aw_single.awaddr;
+      assign m_axi4_awlen[gen_i]   = m_axi4_aw_single.awlen;
+      assign m_axi4_awsize[gen_i]  = m_axi4_aw_single.awsize;
+      assign m_axi4_awburst[gen_i] = m_axi4_aw_single.awburst;
+      assign m_axi4_awvalid[gen_i] = m_axi4_awvalid_single & axi4_write_pc[gen_i];
+    end
+  endgenerate
 
-        .in_data (axi_w                ),
-        .in_vld  (axi_wvalid           ),
-        .in_rdy  (axi_wready           ),
+  // ======================================================================================= //
+  // Data channel (single instance, demuxed to active port)
+  // ======================================================================================= //
+  // Elastic buffer consumption: driven by single burst FSM
+  assign w_buf_rdy   = (axi_wready & (burst_state == BURST_W_DATA) & |axi4_write_pc & ~abort_draining) | abort_transfer;
+  assign axi_wvalid  = (burst_state == BURST_W_DATA) & (abort_draining | (w_buf_vld & |axi4_write_pc));
+  assign axi_w.wdata = abort_draining ? 'h0 : w_buf_data;
+  assign axi_w.wlast = wlast;
+  assign axi_w.wstrb = abort_draining ? 'h0 : {AXI4_STRB_W{1'b1}};
 
-        .out_data(m_axi4_w             ),
-        .out_vld (m_axi4_wvalid[gen_wr]),
-        .out_rdy (m_axi4_wready[gen_wr])
-      );
+  axi4_w_if_t m_axi4_w_single;
 
-      // ======================================================================================= //
-      // Write response channel
-      // ======================================================================================= //
-      axi4_b_if_t  axi_b;
-      axi4_b_if_t  m_axi4_b;
+  fifo_element #(
+    .WIDTH         (AXI4_W_IF_W ),
+    .DEPTH         (2            ),
+    .TYPE_ARRAY    ({4'h1, 4'h2} ),
+    .DO_RESET_DATA (0            ),
+    .RESET_DATA_VAL(0            )
+  ) fifo_element_write (
+    .clk     (clk_mhdma                       ),
+    .s_rst_n (resetn_mhdma                    ),
 
-      assign axi_bready_int = 1'b1; // always accept B responses
+    .in_data (axi_w                           ),
+    .in_vld  (axi_wvalid                      ),
+    .in_rdy  (axi_wready                      ),
 
-      // Handle write errors (sticky: only clearable by rst_errors)
+    .out_data(m_axi4_w_single                 ),
+    .out_vld (m_axi4_wvalid_single            ),
+    .out_rdy (|(m_axi4_wready & axi4_write_pc))
+  );
+
+  // Demux W to active port
+  generate
+    for (genvar gen_i=0; gen_i<ETH_PC; gen_i++) begin : gen_w_demux
+      assign m_axi4_wdata[gen_i]  = m_axi4_w_single.wdata;
+      assign m_axi4_wstrb[gen_i]  = m_axi4_w_single.wstrb;
+      assign m_axi4_wlast[gen_i]  = m_axi4_w_single.wlast;
+      assign m_axi4_wvalid[gen_i] = m_axi4_wvalid_single & axi4_write_pc[gen_i];
+    end
+  endgenerate
+
+  // ======================================================================================= //
+  // Per-port B-response tracking (no FIFO, always accept)
+  // * we do this in order to not wait for each B response before sending next write
+  // ======================================================================================= //
+  logic [ETH_PC-1:0]                           pc_w_done;
+  logic [ETH_PC-1:0][AXI_BURST_NB_MAX_WW-1:0]  brsp_cnt;
+
+  generate
+    for (genvar gen_i=0; gen_i<ETH_PC; gen_i++) begin : gen_b_track
+      // Always accept B responses (no backpressure)
+      assign m_axi4_bready[gen_i] = 1'b1;
+
+      // Per-port B-response counter
       always_ff @(posedge clk_mhdma) begin
         if (~resetn_mhdma) begin
-          write_error[gen_wr] <= 1'b0;
+          brsp_cnt[gen_i] <= '0;
+        end else if (start_read_request) begin
+          brsp_cnt[gen_i] <= '0;
+        end else if (m_axi4_bvalid[gen_i]) begin
+          brsp_cnt[gen_i] <= brsp_cnt[gen_i] + 1;
+        end
+      end
+
+      // Sticky flag: W-data sent for this PC
+      always_ff @(posedge clk_mhdma) begin
+        if (~resetn_mhdma) begin
+          pc_w_done[gen_i] <= 1'b0;
+        end else if (start_read_request) begin
+          pc_w_done[gen_i] <= 1'b0;
+        end else if (pc_w_complete & axi4_write_pc[gen_i]) begin
+          pc_w_done[gen_i] <= 1'b1;
+        end
+      end
+
+      // Per-PC transfer done: all W beats sent AND all B responses received
+      assign pc_transfer_done[gen_i] = pc_w_done[gen_i] & (saved_bursts_issued[gen_i] == brsp_cnt[gen_i]);
+
+      // Write error tracking (sticky per-PC, clearable by rst_errors)
+      always_ff @(posedge clk_mhdma) begin
+        if (~resetn_mhdma) begin
+          write_error[gen_i] <= 1'b0;
         end else begin
           if (rst_errors) begin
-            write_error[gen_wr] <= 1'b0;
-          end else if (axi_bready_int & axi_bvalid_int) begin
-            case (axi_b.bresp)
-              AXI4_SLVERR: write_error[gen_wr] <= 1'b1;
-              AXI4_DECERR: write_error[gen_wr] <= 1'b1;
-              default:; // OKAY/EXOKAY: no action, error stays sticky
+            write_error[gen_i] <= 1'b0;
+          end else if (m_axi4_bvalid[gen_i]) begin
+            case (m_axi4_bresp[gen_i])
+              AXI4_SLVERR: write_error[gen_i] <= 1'b1;
+              AXI4_DECERR: write_error[gen_i] <= 1'b1;
+              default:; // two others are ignored : we want sticky errors
             endcase
           end
         end
       end
-
-      assign m_axi4_b.bid   = m_axi4_bid[gen_wr];
-      assign m_axi4_b.bresp = m_axi4_bresp[gen_wr];
-
-      fifo_element #(
-        .WIDTH          ($bits(axi4_b_if_t)),
-        .DEPTH          (2),
-        .TYPE_ARRAY     ({4'h1,4'h2}),
-        .DO_RESET_DATA  (0),
-        .RESET_DATA_VAL (0)
-      ) fifo_element_bresp_temp (
-        .clk     (clk_mhdma),
-        .s_rst_n (resetn_mhdma),
-
-        .in_data (m_axi4_b),
-        .in_vld  (m_axi4_bvalid[gen_wr]),
-        .in_rdy  (m_axi4_bready[gen_wr]),
-
-        .out_data(axi_b),
-        .out_vld (axi_bvalid_int),
-        .out_rdy (axi_bready_int)
-      );
     end
   endgenerate
 
   // Interrupt generation -------------------------------------------------------------------------
-  // Ciphertext received when both PCs have completed their transfers (= all B responses received)
-  logic [ETH_PC-1:0] pc_transfer_done_seen;
+  // pc_transfer_done[i] is a level (stays high once B responses match).
+  // Rising-edge detect to produce a single-cycle pulse for ciphertext_received.
+  logic all_pc_done;
+  logic all_pc_done_r;
 
-  generate
-    for (genvar gen_i=0; gen_i<ETH_PC; gen_i++) begin : gen_transfer_done_seen
-      // Track if pc_transfer_done was seen (sticky until ciphertext_received)
-      always_ff @(posedge clk_mhdma) begin
-        if (~resetn_mhdma) begin
-          pc_transfer_done_seen[gen_i] <= 1'b0;
-        end else begin
-          if (ciphertext_received) begin
-            pc_transfer_done_seen[gen_i] <= 1'b0;
-          end else if (pc_transfer_done[gen_i]) begin
-            pc_transfer_done_seen[gen_i] <= 1'b1;
-          end
-        end
-      end
+  assign all_pc_done = &pc_transfer_done & (~abort_transfer | fifo_cerx_cnt == 0);
+
+  always_ff @(posedge clk_mhdma) begin
+    if (~resetn_mhdma) begin
+      all_pc_done_r <= 1'b0;
+    end else begin
+      all_pc_done_r <= all_pc_done;
     end
-  endgenerate
+  end
 
-  // ciphertext_received is a pulse when both PCs have received all B responses.
-  // During abort, also wait for the CE-RX FIFO to drain: the BURST_AW abort shortcut
-  // completes PCs in a few cycles, but fifo_cerx_out_rdy_flush needs abort_transfer
-  // to stay high until the FIFO is empty.
-  assign ciphertext_received = &(pc_transfer_done | pc_transfer_done_seen)
-                             & (~abort_transfer | fifo_cerx_cnt == 0);
+  assign ciphertext_received = all_pc_done & ~all_pc_done_r;
 
   // regf payload information ---------------------------------------------------------------------
   logic [2*REG_DATA_W-1:0] rr_regf_in_data;
@@ -1458,14 +1475,23 @@ module mhdma_master
     end
   end
 
+  // Rising-edge detect: pc_transfer_done is a level, count only once per transfer
+  logic [ETH_PC-1:0] pc_transfer_done_r;
+
   always_ff @(posedge clk_mhdma) begin
-    if (~resetn_mhdma)begin
+    if (~resetn_mhdma) begin
+      pc_transfer_done_r <= '0;
+    end else begin
+      pc_transfer_done_r <= pc_transfer_done;
+    end
+  end
+
+  always_ff @(posedge clk_mhdma) begin
+    if (~resetn_mhdma) begin
       nb_write_complete_cnt <= 'h0;
     end else begin
-      // Count completed transfers (all B responses received)
-      // Since PCs are written one by one cannot have the two PCs ack =1
-      if (|pc_transfer_done) begin
-        nb_write_complete_cnt <= nb_write_complete_cnt +1;
+      if (|(pc_transfer_done & ~pc_transfer_done_r)) begin
+        nb_write_complete_cnt <= nb_write_complete_cnt + 1;
       end
     end
   end
