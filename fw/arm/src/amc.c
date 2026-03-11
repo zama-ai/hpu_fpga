@@ -416,6 +416,7 @@ void vInterruptHandler_mhdma_notify( void* pvCallBackRef ) {
         current_elt->state = MHDMA_STATE_RECEIVED;
         if (current_state == MHDMA_STATE_LB2B_WAITING) {
           current_elt->state = MHDMA_STATE_READING;
+          current_elt->slave_hpu_id = slave_hpu_id;
           generate_read_req(iid, flag);
         }
         break;

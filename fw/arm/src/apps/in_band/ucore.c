@@ -996,8 +996,6 @@ int process_ucore_dop(DOpu_t *dop) {
       uint16_t raw_ct_id = get_raw_ct_id(dop);
       current_elt->dst_ct_id = raw_ct_id;
       current_elt->master_hpu_id = phys_hpu_id;
-      // todo: check if DOp really contains from HPU id
-      current_elt->slave_hpu_id = dop->ucore.hid;
       switch (current_elt->state) {
         case MHDMA_STATE_RESOLVED: break; // nothing to do
         case MHDMA_STATE_RECEIVED: { // must read asap
@@ -1073,18 +1071,18 @@ DOpSync_t get_sync_opcode(DOpu_t *dop) {
 uint8_t get_virt_of(uint8_t pid, IOpMapping_t mapping) {
   return (mapping.raw >>((4*pid)+1)) & 0x7;
 }
+// Get used bit for a given phys_id
+uint8_t get_used_of(uint8_t pid, IOpMapping_t mapping) {
+  return (mapping.raw >>(4*pid)) & 0x1;
+}
 // Get phys_id for a given virt_id
 uint8_t get_phys_of(uint8_t vid, IOpMapping_t mapping) {
   for (int i = 0; i < 8; i++) {
-    if ( ((mapping.raw >>((4*i)+1)) & 0x7) == vid ) {
+    if ( ((mapping.raw >>((4*i)+1)) & 0x7) == vid && get_used_of(i, mapping) == 1) {
       return i;
     }
   }
   return 0xFF;
-}
-// Get used bit for a given phys_id
-uint8_t get_used_of(uint8_t pid, IOpMapping_t mapping) {
-  return (mapping.raw >>(4*pid)) & 0x1;
 }
 uint8_t number_of_hpu(IOpMapping_t mapping) {
   uint8_t hpu_cnt = 0;
