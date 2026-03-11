@@ -23,7 +23,6 @@
 // > FIFO starvation resilience (frame-level gating)
 // > Header field correctness
 // > tkeep_user correctness
-// > ce_reception_ready = 0 blocks READ_REQ
 // > Back-to-back small packets (NOTIFY -> NACK)
 // > Back-to-back CE emissions
 // > Mid-frame backpressure for CE
@@ -116,7 +115,7 @@ module tb_mhdma_formatter;
   bit error_tkeep;
   bit error_starvation;
   bit error_assert;
-  bit error_ce_ready;
+
   bit error_b2b;
   bit error_mid_bp;
   bit error_reset_mid_tx;
@@ -131,7 +130,7 @@ module tb_mhdma_formatter;
                | error_tkeep
                | error_starvation
                | error_assert
-               | error_ce_ready
+
                | error_b2b
                | error_mid_bp
                | error_reset_mid_tx
@@ -165,7 +164,6 @@ module tb_mhdma_formatter;
   command_t                              master_command;
   logic                                  master_command_vld;
   logic                                  master_command_rdy;
-  logic                                  ce_reception_ready;
   logic                                  notify_sent;
   logic                                  read_request_sent;
 
@@ -203,7 +201,6 @@ module tb_mhdma_formatter;
     .master_command     (master_command    ),
     .master_command_vld (master_command_vld),
     .master_command_rdy (master_command_rdy),
-    .ce_reception_ready (ce_reception_ready),
     .notify_sent        (notify_sent       ),
     .read_request_sent  (read_request_sent ),
     .format_error       (format_error      ),
@@ -258,7 +255,6 @@ module tb_mhdma_formatter;
       master_command_vld = 1'b0;
       ce_payload         = '0;
       ce_vld             = 1'b0;
-      ce_reception_ready = 1'b1;
       rst_errors         = 1'b0;
       force_tready       = 1'b0;
       force_tready_val   = 1'b1;
@@ -658,7 +654,6 @@ module tb_mhdma_formatter;
   task automatic run_scenario_read_req();
     clear_tx_capture();
     scenario_start(scenario_id, "Send a Read Request packet");
-    ce_reception_ready = 1'b1;
     randomize_command_fields(4'h1, hpu_id, iop_id, iop_src_addr, iop_dst_addr, req_flag, req_mode);
 
     drive_master_command(
@@ -834,7 +829,6 @@ module tb_mhdma_formatter;
 
     clear_tx_capture();
     scenario_start(scenario_id, "FSM priority NACK > READ_REQ > NOTIFY");
-    ce_reception_ready = 1'b1;
 
     nack_done_time = 0;
     read_done_time = 0;
@@ -1127,7 +1121,6 @@ module tb_mhdma_formatter;
 
     // --- READ_REQ with specific fields ---
     clear_tx_capture();
-    ce_reception_ready = 1'b1;
     randomize_command_fields(4'h2, hpu_id, iop_id, iop_src_addr, iop_dst_addr, req_flag, req_mode);
 
     drive_master_command(
@@ -1306,70 +1299,6 @@ module tb_mhdma_formatter;
     end
 
     $display("%t > %0d: CE tkeep verified across all frames", $time, scenario_id);
-
-    check_fsm_idle();
-    scenario_end(scenario_id, clk);
-  endtask
-
-  // ---------------------------------------------------------------------------
-  // SCENARIO: ce_reception_ready = 0 blocks READ_REQ
-  // ---------------------------------------------------------------------------
-  task automatic run_scenario_ce_ready_blocks_read();
-    clear_tx_capture();
-    scenario_start(scenario_id, "ce_reception_ready = 0 blocks READ_REQ");
-    ce_reception_ready = 1'b0;
-    randomize_command_fields(4'h1, hpu_id, iop_id, iop_src_addr, iop_dst_addr, req_flag, req_mode);
-
-    // Present READ command on master interface
-    @(posedge clk);
-    master_command.req_id       <= REQ_ID_READ;
-    master_command.hpu_id       <= hpu_id;
-    master_command.iop_id       <= iop_id;
-    master_command.src_addr     <= iop_src_addr;
-    master_command.dst_addr     <= iop_dst_addr;
-    master_command.rsvd         <= 'h0;
-    master_command.flag         <= req_flag;
-    master_command.mode         <= req_mode;
-    master_command.seq_num      <= '0;
-    master_command.src_mac_addr <= '0;
-    master_command_vld          <= 1'b1;
-
-    // Verify command is NOT consumed for 50 cycles
-    for (int i = 0; i < 50; i++) begin
-      @(posedge clk);
-      if (master_command_rdy) begin
-        $display("%t > [ERROR:%0d] master_command_rdy asserted while ce_reception_ready=0", $time, scenario_id);
-        error_ce_ready = 1'b1;
-      end
-    end
-
-    // Verify FSM stayed in IDLE
-    assert (stat.fsm_formatter == 3'b000) else begin
-      $display("%t > [ERROR:%0d] FSM left IDLE while ce_reception_ready=0 (state=%0b)", $time, scenario_id, stat.fsm_formatter);
-      error_ce_ready = 1'b1;
-    end
-
-    // Unblock
-    ce_reception_ready = 1'b1;
-
-    // Wait for command to be consumed
-    do @(posedge clk); while (!master_command_rdy);
-    @(posedge clk);
-    master_command_vld <= 1'b0;
-
-    // Wait for completion
-    wait(read_request_sent);
-    flush_tx_output(1);
-
-    assert (tx_frame_q.size() == NB_WORDS_MIN) else begin
-      $display("[ERROR:%0d] expected %0d words, got %0d", scenario_id, NB_WORDS_MIN, tx_frame_q.size());
-      error_ce_ready = 1'b1;
-    end
-
-    assert (tx_frame_count == 1) else begin
-      $display("[ERROR:%0d] expected 1 frame, got %0d", scenario_id, tx_frame_count);
-      error_ce_ready = 1'b1;
-    end
 
     check_fsm_idle();
     scenario_end(scenario_id, clk);
@@ -1788,7 +1717,6 @@ module tb_mhdma_formatter;
     run_scenario_fifo_starvation();
     run_scenario_header_fields();
     run_scenario_tkeep_correctness();
-    run_scenario_ce_ready_blocks_read();
     run_scenario_b2b_small();
     run_scenario_b2b_ce();
     run_scenario_mid_frame_backpressure();

@@ -933,7 +933,7 @@ module tb_mhdma_slave;
       error_assert = 1'b1;
     end
 
-    // Stall: with slave_command_rdy=0, RREQ FIFO not popped → no new AXI4 reads
+    // Stall: with slave_command_rdy=0, RREQ FIFO not popped : no new AXI4 reads
     begin : stall_check
       int ar_count_before [ETH_PC];
       for (int pc = 0; pc < ETH_PC; pc++)
