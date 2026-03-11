@@ -181,7 +181,6 @@ module mhdma_bridge
   logic     master_command_vld;
   logic     master_command_rdy;
 
-  logic     ce_reception_ready;
   logic     notify_sent;
   logic     read_request_sent;
 
@@ -273,7 +272,6 @@ module mhdma_bridge
     .master_command                  (master_command                          ),
     .master_command_vld              (master_command_vld                      ),
     .master_command_rdy              (master_command_rdy                      ),
-    .ce_reception_ready              (ce_reception_ready                      ),
     .read_request_sent               (read_request_sent                       ),
     .notify_sent                     (notify_sent                             ),
     // errors -----------------------------------------------------------------
@@ -389,8 +387,6 @@ module mhdma_bridge
     .master_command                  (master_command                          ),
     .master_command_vld              (master_command_vld                      ),
     .master_command_rdy              (master_command_rdy                      ),
-
-    .ce_reception_ready              (ce_reception_ready                      ),
 
     .notify_sent                     (notify_sent                             ),
     .read_request_sent               (read_request_sent                       ),

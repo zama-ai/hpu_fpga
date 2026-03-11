@@ -103,6 +103,9 @@ package mhdma_pkg;
   localparam int NB_WORDS_LAST_PACKET_USEFUL = LAST_PACKET_BYTE_SIZE/8;
   localparam int NB_WORDS_LAST_PACKET        = (NB_WORDS_LAST_PACKET_USEFUL < NB_WORDS_SMALL_PACKETS) ? NB_WORDS_SMALL_PACKETS : NB_WORDS_LAST_PACKET_USEFUL;
 
+  localparam int AXI4_WORDS_PER_FULL_PKT = NB_WORDS_PAYLOAD / NB_MRMRAC_WORDS_PER_WRITE;
+  localparam int AXI4_WORDS_PER_LAST_PKT = NB_WORDS_LAST_PACKET_USEFUL / NB_MRMRAC_WORDS_PER_WRITE;
+
   // Ethernet len in bytes ------------------------------------------------------------------------
   localparam [15:0] ETH_LEN_MIN      = ETH_NB_BYTES_MIN - ETH_NB_BYTES_HEADER - ETH_NB_BYTES_CRC;
   localparam [15:0] ETH_LEN_MAX      = ETH_NB_BYTES_PAYLOAD;
@@ -132,11 +135,9 @@ package mhdma_pkg;
   localparam int RREQ_CMD_RAM_LATENCY  = 1;
   localparam int RQQ_CMD_DATA_COUNT_W  = $clog2(RREQ_CMD_DEPTH)+1;
 
-  // = Ciphertext Emission: URAMs
-  // reading/ writing to each PC
+  // => Ciphertext Emission: URAMs (used by mhdma_slave)
   localparam int FIFO_PC_DEPTH         = CT_NB_WORDS_AXI4/2;
   localparam int FIFO_PC_RAM_LATENCY   = 1;
-  localparam int FIFO_PC_DATA_COUNT_W  = $clog2(FIFO_PC_DEPTH)+1;
 
   // QSFP TX fifo: FIFO CE
   localparam int CE_RAM_LATENCY        = 1;

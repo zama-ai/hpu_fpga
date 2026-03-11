@@ -10,7 +10,7 @@
 // Packet types (FSM priority, highest first):
 //   CT_EMISSION  (slave)  - multi-frame: NB_PACKETS_FULL (full) + 1 (partial), payload from CE FIFO
 //   NOTIFY_ACK   (slave)  - single small packet (NB_WORDS_MIN words)
-//   READ_REQ     (master) - single small packet, gated by ce_reception_ready
+//   READ_REQ     (master) - single small packet
 //   NOTIFY       (master) - single small packet
 //
 // Completion signals (*_sent) are a registered pulse.
@@ -33,7 +33,7 @@
 // ================================================================================================
 
 module mhdma_formatter
-  import mhdma_pkg::*;          // multi-hpu-dma
+  import mhdma_pkg::*;            // multi-hpu-dma
   import axi_if_mhdma_axi_pkg::*; // AXI4
 (
   // Ethernet fast clock interface --------------------------------------------
@@ -58,8 +58,6 @@ module mhdma_formatter
   input  command_t                                  master_command,
   input  logic                                      master_command_vld,
   output logic                                      master_command_rdy,
-
-  input  logic                                      ce_reception_ready,
 
   output logic                                      notify_sent,
   output logic                                      read_request_sent,
@@ -233,7 +231,7 @@ module mhdma_formatter
   // ----------------------------------------------------------------------------------------------
   assign ct_emission_pending    = slave_command_vld  & (slave_command.req_id  == REQ_ID_EMISSION);
   assign notify_ack_pending     = slave_command_vld  & (slave_command.req_id  == REQ_ID_NOTIFY_ACK);
-  assign read_request_pending   = master_command_vld & (master_command.req_id == REQ_ID_READ) & ce_reception_ready;
+  assign read_request_pending   = master_command_vld & (master_command.req_id == REQ_ID_READ);
   assign notify_request_pending = master_command_vld & (master_command.req_id == REQ_ID_NOTIFY);
 
   // ----------------------------------------------------------------------------------------------

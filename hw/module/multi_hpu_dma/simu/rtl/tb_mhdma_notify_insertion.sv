@@ -603,6 +603,9 @@ logic [DST_ADDR_W-1:0] dst_addr;
       begin
         wait(multi_hpu_dma.mhdma_bridge.mhdma_master.ciphertext_received);
         $display("[INFO]: Ciphertext correctly processed on module!");
+        // Drain fifo_rr_regf: read the Read Request register to clear the interrupt
+        wait(interrupt_read_request);
+        maxil_drv_if.read_trans(MHDMA_REQUEST_READ_REQUEST_REQ_ID_OFS, rdata);
       end
 
       join
@@ -623,6 +626,9 @@ logic [DST_ADDR_W-1:0] dst_addr;
         begin
           wait(multi_hpu_dma.mhdma_bridge.mhdma_master.ciphertext_received);
           $display("[INFO]: Ciphertext correctly processed on module!");
+          // Drain fifo_rr_regf: read the Read Request register to clear the interrupt
+          wait(interrupt_read_request);
+          maxil_drv_if.read_trans(MHDMA_REQUEST_READ_REQUEST_REQ_ID_OFS, rdata);
         end
       join
 

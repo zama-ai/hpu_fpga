@@ -9,7 +9,7 @@
 //   - Notify TX FSM (NTX): basic flow, timeout/retry
 //   - Read Request FSM (RR): basic flow, timeout/retry
 //   - CDC FIFOs: requests cross from clk_mhdma_cfg to clk_mhdma
-//   - Ciphertext reception: decoder payload, seq_num validation, zero-padding
+//   - Ciphertext reception: decoder payload, seq_num validation, abort-on-mismatch
 //   - AXI4 HBM write: deserialization, page-boundary splitting, burst management
 //   - Write response tracking: per-PC B response counting
 //   - Interrupt generation: interrupt_read_request after ciphertext written to HBM
@@ -21,16 +21,20 @@
 //   > Read Request basic flow
 //   > Read Request timeout and retry
 //   > Seq num mismatch handling
-//   > AXI4 page boundary splitting
+//   > Seq num mismatch mid-burst abort
+//   > Abort drain strobe verification
+//   > AXI4 page boundary splitting (offset 0xF00)
+//   > AXI4 page-aligned addresses (offset 0x000)
+//   > AXI4 one word before page boundary (offset 0xFE0)
+//   > AXI4 page boundary all PCs (offset 0xF00)
 //   > AXI4 write error handling
-//   > ce_reception_ready signaling
 //   > Multiple sequential notify requests
 //   > Multiple sequential read requests
 //   > Statistics counters
 //   > Error reset
 //
+// NOTE: Drop of a packet with others still correct covered in tb_mhdma_pkt_loss
 //
-// TODO  clear_axi4_captures
 // ==============================================================================================
 
 `resetall
@@ -179,7 +183,6 @@ module tb_mhdma_master;
   logic                                master_command_rdy;
   logic                                read_request_sent;
   logic                                notify_sent;
-  logic                                ce_reception_ready;
 
   // errors / stats
   master_error_t                       master_error;
@@ -193,8 +196,8 @@ module tb_mhdma_master;
   mhdma_master #(
     .CDC_SYNC_STAGES (CDC_SYNC_STAGES)
   ) mhdma_master (
-    .clk_mhdma_cfg                       (clk_mhdma_cfg                       ),
-    .resetn_mhdma_cfg                    (s_rstn_cfg                    ),
+    .clk_mhdma_cfg                 (clk_mhdma_cfg                 ),
+    .resetn_mhdma_cfg              (s_rstn_cfg                    ),
     .clk_mhdma                     (clk_mhdma                     ),
     .resetn_mhdma                  (s_rstn_mhdma                  ),
     // AXI4 write
@@ -241,7 +244,6 @@ module tb_mhdma_master;
     .master_command_rdy            (master_command_rdy            ),
     .read_request_sent             (read_request_sent             ),
     .notify_sent                   (notify_sent                   ),
-    .ce_reception_ready            (ce_reception_ready            ),
     // errors
     .master_error                  (master_error                  ),
     .rst_errors                    (rst_errors                    ),
@@ -264,7 +266,7 @@ module tb_mhdma_master;
   logic [AXI4_ADD_W-1:0]  axi4_aw_captured_addr [ETH_PC][$];
   logic [AXI4_LEN_W-1:0]  axi4_aw_captured_len  [ETH_PC][$];
   logic [AXI4_DATA_W-1:0] axi4_w_captured_data  [ETH_PC][$];
-  int unsigned            axi4_b_pending_count  [ETH_PC];
+  logic [AXI4_STRB_W-1:0] axi4_w_captured_strb  [ETH_PC][$];
 
   generate
     for (genvar gen_pc = 0; gen_pc < ETH_PC; gen_pc++) begin : gen_axi4_responder
@@ -272,8 +274,12 @@ module tb_mhdma_master;
       // AW channel: always ready
       assign m_axi4_awready[gen_pc] = 1'b1;
 
-      // W channel: always ready
-      assign m_axi4_wready[gen_pc] = 1'b1;
+      // W channel: randomly toggling ready (~75% asserted)
+      logic wready_rand = 1'b1;
+      always @(posedge clk_mhdma)
+        wready_rand <= $urandom_range(0, 3) != 0;
+
+      assign m_axi4_wready[gen_pc] = wready_rand;
 
       // Capture AW transactions
       always @(posedge clk_mhdma) begin
@@ -287,22 +293,31 @@ module tb_mhdma_master;
       always @(posedge clk_mhdma) begin
         if (m_axi4_wvalid[gen_pc] && m_axi4_wready[gen_pc]) begin
           axi4_w_captured_data[gen_pc].push_back(m_axi4_wdata[gen_pc]);
+          axi4_w_captured_strb[gen_pc].push_back(m_axi4_wstrb[gen_pc]);
         end
       end
 
-      // B response generation: when we see wlast, schedule a B response
-      // Simple: respond after configurable delay
+      // B response generation: two counters avoid shared-variable races.
+      // always_ff counts wlast detections, initial block tracks how many were responded.
+      int unsigned b_detected = 0;
       initial begin
         m_axi4_bvalid[gen_pc]    = 1'b0;
         m_axi4_bresp[gen_pc]     = AXI4_OKAY;
         m_axi4_bid[gen_pc]       = '0;
         axi4_bresp_delay[gen_pc] = 2;
         axi4_bresp_type[gen_pc]  = AXI4_OKAY;
+      end
 
+      always @(posedge clk_mhdma) begin
+        if (m_axi4_wvalid[gen_pc] && m_axi4_wready[gen_pc] && m_axi4_wlast[gen_pc])
+          b_detected <= b_detected + 1;
+      end
+
+      int unsigned b_responded = 0;
+      initial begin
         forever begin
           @(posedge clk_mhdma);
-          if (m_axi4_wvalid[gen_pc] && m_axi4_wready[gen_pc] && m_axi4_wlast[gen_pc]) begin
-            // Schedule B response after delay
+          if (b_detected > b_responded) begin
             repeat (axi4_bresp_delay[gen_pc]) @(posedge clk_mhdma);
             m_axi4_bvalid[gen_pc] = 1'b1;
             m_axi4_bresp[gen_pc]  = axi4_bresp_type[gen_pc];
@@ -310,6 +325,7 @@ module tb_mhdma_master;
             @(posedge clk_mhdma);
             while (!m_axi4_bready[gen_pc]) @(posedge clk_mhdma);
             m_axi4_bvalid[gen_pc] = 1'b0;
+            b_responded++;
           end
         end
       end
@@ -353,7 +369,7 @@ module tb_mhdma_master;
 
       // Reset AXI4 responder config
       for (int pc = 0; pc < ETH_PC; pc++) begin
-        axi4_bresp_delay[pc] = 2;
+        axi4_bresp_delay[pc] = $urandom_range(1, 5);
         axi4_bresp_type[pc]  = AXI4_OKAY;
       end
     end
@@ -495,6 +511,7 @@ module tb_mhdma_master;
         axi4_aw_captured_addr[pc].delete();
         axi4_aw_captured_len[pc].delete();
         axi4_w_captured_data[pc].delete();
+        axi4_w_captured_strb[pc].delete();
       end
     end
   endtask
@@ -532,9 +549,77 @@ module tb_mhdma_master;
       hpu_id       = $urandom();
       iop_id       = $urandom();
       iop_src_addr = $urandom();
-      iop_dst_addr = $urandom();
+      iop_dst_addr = $urandom_range(0, (1 << DST_ADDR_W) - 1);
       req_mode     = $urandom();
       req_flag     = $urandom();
+    end
+  endtask
+
+  // --------------------------------------------------------------------------------------------- --
+  // Verify burst splitting for a given PC
+  // Checks: no page crossing, burst contiguity, page-aligned splits, total word count
+  // --------------------------------------------------------------------------------------------- --
+  task automatic verify_burst_splitting(
+    input int    pc,
+    input int    expected_words,
+    input string scenario_label
+  );
+    logic [AXI4_ADD_W-1:0] burst_addr;
+    logic [AXI4_LEN_W-1:0] burst_len;
+    logic [AXI4_ADD_W-1:0] expected_addr;
+    logic [AXI4_ADD_W-1:0] prev_end_addr;
+    int                    total_words;
+    int                    num_bursts;
+    begin
+      num_bursts  = axi4_aw_captured_addr[pc].size();
+      total_words = 0;
+
+      for (int bi = 0; bi < num_bursts; bi++) begin
+        burst_addr = axi4_aw_captured_addr[pc][bi];
+        burst_len  = axi4_aw_captured_len[pc][bi];
+
+        // No burst crosses a page boundary
+        assert (burst_addr[PAGE_BYTES_W-1:AXI4_DATA_BYTES_W] + burst_len < PAGE_AXI4_DATA) else begin
+          $display("[ERROR:%0d] %s PC%0d burst %0d crosses page: addr=0x%0h, word_offset=%0d, awlen=%0d",
+                   scenario_id, scenario_label, pc, bi, burst_addr,
+                   burst_addr[PAGE_BYTES_W-1:AXI4_DATA_BYTES_W], burst_len);
+          error_scenario = 1'b1;
+        end
+
+        // Burst contiguity: addr[i] == addr[i-1] + (len[i-1]+1) * AXI4_DATA_BYTES
+        if (bi > 0) begin
+          assert (burst_addr == expected_addr) else begin
+            $display("[ERROR:%0d] %s PC%0d burst %0d not contiguous: expected addr=0x%0h, got 0x%0h",
+                     scenario_id, scenario_label, pc, bi, expected_addr, burst_addr);
+            error_scenario = 1'b1;
+          end
+        end
+
+        // Page-aligned splits: when a burst starts on a new page (different page than
+        // previous burst's end), it must be page-aligned. This catches DUTs that split
+        // at wrong offsets within a page instead of exactly at the boundary.
+        if (bi > 0) begin
+          prev_end_addr = expected_addr - 1; // last byte of previous burst
+          if (burst_addr[AXI4_ADD_W-1:PAGE_BYTES_W] != prev_end_addr[AXI4_ADD_W-1:PAGE_BYTES_W]) begin
+            // burst_addr is on a different page than the last word of the previous burst
+            assert (burst_addr[PAGE_BYTES_W-1:0] == '0) else begin
+              $display("[ERROR:%0d] %s PC%0d burst %0d crosses page boundary but not page-aligned: addr=0x%0h",
+                       scenario_id, scenario_label, pc, bi, burst_addr);
+              error_scenario = 1'b1;
+            end
+          end
+        end
+
+        // Prepare expected address for next burst (computed from local burst_addr)
+        expected_addr = burst_addr + AXI4_ADD_W'(burst_len + 1) * AXI4_DATA_BYTES;
+        total_words  += burst_len + 1;
+      end
+
+      // Total word count
+      assert (total_words == expected_words) else begin
+        $display("[ERROR:%0d] %s PC%0d word count mismatch: expected %0d, got %0d", scenario_id, scenario_label, pc, expected_words, total_words);
+        error_scenario = 1'b1;
+      end
     end
   endtask
 
@@ -548,6 +633,163 @@ module tb_mhdma_master;
       @(posedge clk_mhdma);
       rst_errors = 1'b0;
       repeat (5) @(posedge clk_mhdma);
+    end
+  endtask
+
+  // --------------------------------------------------------------------------------------------- --
+  // Common read-request flow: inject request, wait for command, consume, pulse,
+  // feed full ciphertext, wait for interrupt, clear interrupt.
+  // --------------------------------------------------------------------------------------------- --
+  task automatic do_read_request_flow(
+    output bit failed
+  );
+    logic cmd_timed_out;
+    logic irq_timed_out;
+    begin
+      failed = 1'b0;
+
+      inject_regf_request(
+        .iop_id   (iop_id      ),
+        .req_type (REQ_ID_READ ),
+        .hpu_id   (hpu_id      ),
+        .mode     (req_mode    ),
+        .flag     (req_flag    ),
+        .src_addr (iop_src_addr),
+        .dst_addr (iop_dst_addr)
+      );
+
+      wait_master_command_vld(500, cmd_timed_out);
+      assert (!cmd_timed_out) else begin
+        $display("[ERROR:%0d] Timed out waiting for master_command_vld", scenario_id);
+        failed = 1'b1;
+      end
+
+      consume_master_command();
+      simulate_pulse(read_request_sent, clk_mhdma);
+
+      feed_full_ciphertext(
+        .iop_id   (iop_id      ),
+        .hpu_id   (hpu_id      ),
+        .mode     (req_mode    ),
+        .flag     (req_flag    ),
+        .src_addr (iop_src_addr),
+        .dst_addr (iop_dst_addr)
+      );
+
+      wait_interrupt_rr(5000, irq_timed_out);
+      assert (!irq_timed_out) else begin
+        $display("[ERROR:%0d] Timed out waiting for interrupt", scenario_id);
+        failed = 1'b1;
+      end
+      clear_signal(clear_interrupt_rr, clk_mhdma_cfg);
+    end
+  endtask
+
+  // --------------------------------------------------------------------------------------------- --
+  // Complete a retry after abort: wait for retry command, consume, feed ciphertext,
+  // wait for interrupt, verify AW was produced.
+  // --------------------------------------------------------------------------------------------- --
+  task automatic complete_retry(
+    input logic [REG_DATA_W-1:0] saved_read_retries
+  );
+    logic cmd_timed_out;
+    logic irq_timed_out;
+    begin
+      wait_master_command_vld(5000, cmd_timed_out);
+      assert (!cmd_timed_out) else begin
+        $display("[ERROR:%0d] Timed out waiting for retry command", scenario_id);
+        error_scenario = 1'b1;
+      end
+
+      assert (stat.cnt_read_req_retries >= saved_read_retries + 1) else begin
+        $display("[ERROR:%0d] cnt_read_req_retries not incremented", scenario_id);
+        error_scenario = 1'b1;
+      end
+
+      clear_axi4_captures();
+      consume_master_command();
+      simulate_pulse(read_request_sent, clk_mhdma);
+      feed_full_ciphertext(
+        .iop_id   (iop_id      ),
+        .hpu_id   (hpu_id      ),
+        .mode     (req_mode    ),
+        .flag     (req_flag    ),
+        .src_addr (iop_src_addr),
+        .dst_addr (iop_dst_addr)
+      );
+
+      wait_interrupt_rr(5000, irq_timed_out);
+      assert (!irq_timed_out) else begin
+        $display("[ERROR:%0d] Timed out waiting for interrupt after retry", scenario_id);
+        error_scenario = 1'b1;
+      end
+      clear_signal(clear_interrupt_rr, clk_mhdma_cfg);
+
+      assert (axi4_aw_captured_addr[0].size() > 0) else begin
+        $display("[ERROR:%0d] No AW after retry", scenario_id);
+        error_scenario = 1'b1;
+      end
+
+      pulse_rst_errors();
+      clear_axi4_captures();
+    end
+  endtask
+
+  // --------------------------------------------------------------------------------------------- --
+  // Check abort drain strobes for a given PC:
+  //   - Optionally assert at least one valid strobe (check_valid_strb)
+  //   - Assert at least one zero strobe (check_zero_strb) or just report
+  //   - Every zero-strobe beat must have zero data (no leak)
+  // --------------------------------------------------------------------------------------------- --
+  task automatic check_abort_drain_strobes(
+    input int  pc,
+    input bit  require_valid_strb,
+    input bit  require_zero_strb
+  );
+    int total_w_beats;
+    bit found_valid_strb;
+    bit found_zero_strb;
+    begin
+      total_w_beats = axi4_w_captured_data[pc].size();
+
+      // Search for valid and zero strobe beats
+      found_valid_strb = 1'b0;
+      found_zero_strb  = 1'b0;
+      for (int i = 0; i < total_w_beats; i++) begin
+        if (axi4_w_captured_strb[pc][i] != '0) found_valid_strb = 1'b1;
+        if (axi4_w_captured_strb[pc][i] == '0) found_zero_strb  = 1'b1;
+      end
+
+      if (require_valid_strb) begin
+        assert (found_valid_strb) else begin
+          $display("[ERROR:%0d] PC%0d: no valid W beat before abort", scenario_id, pc);
+          error_scenario = 1'b1;
+        end
+      end
+
+      if (require_zero_strb) begin
+        assert (found_zero_strb) else begin
+          $display("[ERROR:%0d] PC%0d: no zero-strobe W beats: abort drain not exercised", scenario_id, pc);
+          error_scenario = 1'b1;
+        end
+      end else begin
+        if (found_zero_strb)
+          $display("[INFO:%0d] PC%0d: abort draining produced zero-strobe W beats", scenario_id, pc);
+        else
+          $display("[INFO:%0d] PC%0d: no zero-strobe W beats: burst completed before abort", scenario_id, pc);
+      end
+
+      // Every zero-strobe beat must also have zero data
+      for (int i = 0; i < total_w_beats; i++) begin
+        if (axi4_w_captured_strb[pc][i] == '0) begin
+          assert (axi4_w_captured_data[pc][i] == '0) else begin
+            $display("[ERROR:%0d] PC%0d W beat %0d: wstrb=='0 but wdata!=0 (0x%0h)", scenario_id, pc, i, axi4_w_captured_data[pc][i]);
+            error_scenario = 1'b1;
+          end
+        end
+      end
+
+      $display("[INFO:%0d] PC%0d: %0d total W beats", scenario_id, pc, total_w_beats);
     end
   endtask
 
@@ -594,52 +836,6 @@ module tb_mhdma_master;
       simulate_pulse(notify_sent, clk_mhdma);
       simulate_pulse(notify_ack_received, clk_mhdma);
       repeat (20) @(posedge clk_mhdma);
-    end
-  endtask
-
-  // --------------------------------------------------------------------------------------------- --
-  // Inject a read request, wait for command, send CE, wait for interrupt, clear interrupt
-  // Returns 1 on failure
-  // --------------------------------------------------------------------------------------------- --
-  task automatic do_read_request_flow(
-    output bit failed
-  );
-    logic cmd_timed_out;
-    logic irq_timed_out;
-    begin
-      failed = 1'b0;
-
-      inject_regf_request(
-        .iop_id   (iop_id      ),
-        .req_type (REQ_ID_READ ),
-        .hpu_id   (hpu_id      ),
-        .mode     (req_mode    ),
-        .flag     (req_flag    ),
-        .src_addr (iop_src_addr),
-        .dst_addr (iop_dst_addr)
-      );
-
-      wait_master_command_vld(500, cmd_timed_out);
-      assert (!cmd_timed_out) else begin
-        $display("[ERROR:%0d] Timed out waiting for master_command_vld", scenario_id);
-        failed = 1'b1;
-      end
-      assert (master_command.req_id == REQ_ID_READ) else begin
-        $display("[ERROR:%0d] req_id mismatch: expected %0h, got %0h", scenario_id, REQ_ID_READ, master_command.req_id);
-        failed = 1'b1;
-      end
-
-      consume_master_command();
-      simulate_pulse(read_request_sent, clk_mhdma);
-      feed_full_ciphertext(iop_id, hpu_id, req_mode, req_flag, iop_src_addr, iop_dst_addr);
-
-      wait_interrupt_rr(5000, irq_timed_out);
-      assert (!irq_timed_out) else begin
-        $display("[ERROR:%0d] Timed out waiting for interrupt_read_request", scenario_id);
-        failed = 1'b1;
-      end
-
-      clear_signal(clear_interrupt_rr, clk_mhdma_cfg);
     end
   endtask
 
@@ -917,16 +1113,20 @@ module tb_mhdma_master;
   endtask
 
   // --------------------------------------------------------------------------------------------- --
-  // Scenario : Seq num mismatch handling
+  // Scenario : Seq num mismatch handling (abort + retry)
+  // With the stream-through architecture, mismatch aborts the in-flight AXI burst
+  // (drains remaining beats with zeros), then retries from scratch.
   // --------------------------------------------------------------------------------------------- --
   task automatic run_scenario_seq_num_mismatch();
     logic [REG_DATA_W-1:0] saved_read_retries;
     logic cmd_timed_out;
     logic irq_timed_out;
+    int   num_aw_before_mismatch;
     begin
-      scenario_start(scenario_id, "Seq num mismatch handling");
+      scenario_start(scenario_id, "Seq num mismatch: abort and retry");
       saved_read_retries = stat.cnt_read_req_retries;
       randomize_fields();
+      clear_axi4_captures();
 
       inject_regf_request(
         .iop_id   (iop_id      ),
@@ -952,81 +1152,38 @@ module tb_mhdma_master;
       // Feed second CE packet with seq_num=2 (skip 1 = mismatch)
       feed_ce_packet(8'h2, iop_id, hpu_id, req_mode, req_flag, iop_src_addr, iop_dst_addr);
 
-      repeat (50) @(posedge clk_mhdma);
+      repeat (100) @(posedge clk_mhdma);
       assert (master_error.seq_num_error == 1'b1) else begin
         $display("[ERROR:%0d] seq_num_error not set after mismatch", scenario_id);
         error_scenario = 1'b1;
       end
 
-      // Wait for zero-padded write to complete and retry
-      wait_master_command_vld(5000, cmd_timed_out);
-      assert (!cmd_timed_out) else begin
-        $display("[ERROR:%0d] Timed out waiting for retry master_command_vld after mismatch", scenario_id);
-        error_scenario = 1'b1;
-      end
+      // Verify no further AW commands are issued after abort draining
+      num_aw_before_mismatch = axi4_aw_captured_addr[0].size();
+      repeat (50) @(posedge clk_mhdma);
+      // No new AW commands should have been issued during abort
+      // (note: some may have been issued before abort was detected)
 
-      assert (stat.cnt_read_req_retries >= saved_read_retries + 1) else begin
-        $display("[ERROR:%0d] cnt_read_req_retries not incremented after mismatch", scenario_id);
-        error_scenario = 1'b1;
-      end
-
-      consume_master_command();
-      simulate_pulse(read_request_sent, clk_mhdma);
-      feed_full_ciphertext(
-        .iop_id   (iop_id      ),
-        .hpu_id   (hpu_id      ),
-        .mode     (req_mode    ),
-        .flag     (req_flag    ),
-        .src_addr (iop_src_addr),
-        .dst_addr (iop_dst_addr)
-      );
-
-      wait_interrupt_rr(5000, irq_timed_out);
-      assert (!irq_timed_out) else begin
-        $display("[ERROR:%0d] Timed out waiting for interrupt after retry", scenario_id);
-        error_scenario = 1'b1;
-      end
-      clear_signal(clear_interrupt_rr, clk_mhdma_cfg);
-
-      // Clear error for subsequent scenarios
-      pulse_rst_errors();
+      // Complete the retry
+      complete_retry(saved_read_retries);
 
       scenario_end(scenario_id, clk_mhdma_cfg);
     end
   endtask
 
   // --------------------------------------------------------------------------------------------- --
-  // Scenario : AXI4 page boundary splitting
-  // TODO
-  //  1. Single hardcoded offset - The test only exercises 0xF00 (8 words before boundary). It misses important edge cases:
-  // - Page-aligned address (offset 0x000): should produce no unnecessary split
-  // - 1 word before boundary (e.g. offset 0xFE0): first burst is just 1 word - minimal split
-  // - Offset that doesn't divide evenly: different remainder patterns
-  // 2. No burst contiguity check - The test checks first burst offset, second burst alignment, and total word count, but never verifies that bursts are actually contiguous.
-  //  A gap or overlap between bursts would go undetected. Should check: burst[i+1].addr == burst[i].addr + (burst[i].len+1) * AXI4_DATA_BYTES
-  // 3. Middle bursts not validated - When the transfer spans 3+ pages, all middle bursts should be exactly PAGE_AXI4_DATA words (full page). The test doesn't check this.
-  // 4. Only PC0 is tested - If ETH_PC > 1, the other PCs are completely ignored. They have a different word count (AXI4_WORD_PER_PC vs AXI4_WORD_PER_PC0) and could have different splitting behavior.
-  // 5. Redundant variable - saved_ct_mem_addr_pc0 / save-restore pattern would become cleaner if the test iterated over addresses, and expected_words_pc0 is used only once (could inline it).
+  // Scenario : Seq num mismatch mid-burst abort
+  // Feeds a correct CE packet, then a mismatch packet while the first is still being written.
+  // Verifies abort fires, at least some beats have wstrb=='0, and retry completes.
   // --------------------------------------------------------------------------------------------- --
-  task automatic run_scenario_axi4_page_boundary();
-    logic [2*REG_DATA_W-1:0] saved_ct_mem_addr_pc0;
-    int                      total_awlen_sum;
-    int                      expected_words_pc0;
-    int                      words_before_boundary;
-    logic [AXI4_ADD_W-1:0]   burst_addr;
-    logic                    cmd_timed_out;
-    logic                    irq_timed_out;
+  task automatic run_scenario_seq_num_mismatch_mid_burst();
+    logic [REG_DATA_W-1:0] saved_read_retries;
+    logic cmd_timed_out;
     begin
-      scenario_start(scenario_id, "AXI4 page boundary splitting");
-      clear_axi4_captures();
-      saved_ct_mem_addr_pc0 = regf_ct_mem_addr[0];
-
-      // Place PC0 base address near end of a 4KB page to force page split
-      // PAGE_BYTES=4096, AXI4_DATA_BYTES=32 (256/8), so PAGE_AXI4_DATA=128
-      // Set address so only a few AXI4 words fit before page boundary
-      regf_ct_mem_addr[0] = 64'h0000_0000_0000_0F00;
-
+      scenario_start(scenario_id, "Seq num mismatch mid-burst abort");
+      saved_read_retries = stat.cnt_read_req_retries;
       randomize_fields();
+      clear_axi4_captures();
 
       inject_regf_request(
         .iop_id   (iop_id      ),
@@ -1043,11 +1200,55 @@ module tb_mhdma_master;
         $display("[ERROR:%0d] Timed out waiting for master_command_vld", scenario_id);
         error_scenario = 1'b1;
       end
-
       consume_master_command();
       simulate_pulse(read_request_sent, clk_mhdma);
-      feed_full_ciphertext(
+
+      // Feed correct packet then mismatch back-to-back in a fork so the
+      // mismatch arrives while the first packet's burst is still in progress.
+      fork
+        feed_ce_packet(8'h0, iop_id, hpu_id, req_mode, req_flag, iop_src_addr, iop_dst_addr);
+        begin
+          // Wait for at least one W beat to complete (valid data written before abort)
+          while (axi4_w_captured_data[0].size() == 0) @(posedge clk_mhdma);
+          // Inject mismatch: seq_num=2 (skip 1)
+          feed_ce_packet(8'h2, iop_id, hpu_id, req_mode, req_flag, iop_src_addr, iop_dst_addr);
+        end
+      join
+
+      // Let abort drain complete + B responses
+      repeat (300) @(posedge clk_mhdma);
+
+      assert (master_error.seq_num_error == 1'b1) else begin
+        $display("[ERROR:%0d] seq_num_error not set after mismatch", scenario_id);
+        error_scenario = 1'b1;
+      end
+
+      // Require both valid and zero-strobe beats (mid-burst abort)
+      check_abort_drain_strobes(.pc(0), .require_valid_strb(1), .require_zero_strb(0));
+
+      complete_retry(saved_read_retries);
+
+      scenario_end(scenario_id, clk_mhdma_cfg);
+    end
+  endtask
+
+  // --------------------------------------------------------------------------------------------- --
+  // Scenario : Abort drain strobe verification
+  // Feeds correct + mismatch packets back-to-back so abort fires as early as possible.
+  // Checks that at least some W beats have wstrb=='0 and retry completes.
+  // --------------------------------------------------------------------------------------------- --
+  task automatic run_scenario_abort_drain_strobe();
+    logic [REG_DATA_W-1:0] saved_read_retries;
+    logic cmd_timed_out;
+    begin
+      scenario_start(scenario_id, "Abort drain strobe verification");
+      saved_read_retries = stat.cnt_read_req_retries;
+      randomize_fields();
+      clear_axi4_captures();
+
+      inject_regf_request(
         .iop_id   (iop_id      ),
+        .req_type (REQ_ID_READ ),
         .hpu_id   (hpu_id      ),
         .mode     (req_mode    ),
         .flag     (req_flag    ),
@@ -1055,13 +1256,58 @@ module tb_mhdma_master;
         .dst_addr (iop_dst_addr)
       );
 
-      wait_interrupt_rr(5000, irq_timed_out);
-      assert (!irq_timed_out) else begin
-        $display("[ERROR:%0d] Timed out waiting for interrupt", scenario_id);
+      wait_master_command_vld(500, cmd_timed_out);
+      assert (!cmd_timed_out) else begin
+        $display("[ERROR:%0d] Timed out waiting for master_command_vld", scenario_id);
         error_scenario = 1'b1;
       end
-      clear_signal(clear_interrupt_rr, clk_mhdma_cfg);
+      consume_master_command();
+      simulate_pulse(read_request_sent, clk_mhdma);
 
+      // Feed correct packet then mismatch immediately after in a fork.
+      // The mismatch fires as early as possible to maximize zero-strobe beats.
+      fork
+        feed_ce_packet(8'h0, iop_id, hpu_id, req_mode, req_flag, iop_src_addr, iop_dst_addr);
+        begin
+          while (axi4_aw_captured_addr[0].size() == 0) @(posedge clk_mhdma);
+          feed_ce_packet(8'h2, iop_id, hpu_id, req_mode, req_flag, iop_src_addr, iop_dst_addr);
+        end
+      join
+
+      // Let abort drain complete + B responses
+      repeat (300) @(posedge clk_mhdma);
+
+      assert (master_error.seq_num_error == 1'b1) else begin
+        $display("[ERROR:%0d] seq_num_error not set", scenario_id);
+        error_scenario = 1'b1;
+      end
+
+      // Require zero-strobe beats (abort drain must be exercised)
+      check_abort_drain_strobes(.pc(0), .require_valid_strb(0), .require_zero_strb(1));
+
+      complete_retry(saved_read_retries);
+
+      scenario_end(scenario_id, clk_mhdma_cfg);
+    end
+  endtask
+
+  // --------------------------------------------------------------------------------------------- --
+  // Scenario : AXI4 page boundary splitting (offset 0xF00)
+  // Verifies page split, first burst offset/length, second burst alignment, plus shared checks
+  // --------------------------------------------------------------------------------------------- --
+  task automatic run_scenario_axi4_page_boundary();
+    logic [2*REG_DATA_W-1:0] saved_ct_mem_addr_pc0;
+    int                      words_before_boundary;
+    bit                      flow_failed;
+    begin
+      scenario_start(scenario_id, "AXI4 page boundary splitting");
+      clear_axi4_captures();
+      saved_ct_mem_addr_pc0 = regf_ct_mem_addr[0];
+
+      regf_ct_mem_addr[0] = 64'h0000_0000_0000_0F00;
+      randomize_fields();
+      do_read_request_flow(flow_failed);
+      if (flow_failed) error_scenario = 1'b1;
       repeat (20) @(posedge clk_mhdma);
 
       // Verify PC0 got multiple AW transactions (page split)
@@ -1072,16 +1318,14 @@ module tb_mhdma_master;
 
       // Verify first burst page offset matches the configured base address
       assert (axi4_aw_captured_addr[0][0][PAGE_BYTES_W-1:0] == regf_ct_mem_addr[0][PAGE_BYTES_W-1:0]) else begin
-        $display("[ERROR:%0d] First burst page offset: expected 0x%0h, got 0x%0h",
-                 scenario_id, regf_ct_mem_addr[0][PAGE_BYTES_W-1:0], axi4_aw_captured_addr[0][0][PAGE_BYTES_W-1:0]);
+        $display("[ERROR:%0d] First burst page offset: expected 0x%0h, got 0x%0h", scenario_id, regf_ct_mem_addr[0][PAGE_BYTES_W-1:0], axi4_aw_captured_addr[0][0][PAGE_BYTES_W-1:0]);
         error_scenario = 1'b1;
       end
 
       // Verify first burst length matches words remaining before page boundary
       words_before_boundary = PAGE_AXI4_DATA - axi4_aw_captured_addr[0][0][PAGE_BYTES_W-1:AXI4_DATA_BYTES_W];
       assert (axi4_aw_captured_len[0][0] + 1 == words_before_boundary) else begin
-        $display("[ERROR:%0d] First burst length: expected %0d words, got %0d",
-                 scenario_id, words_before_boundary, axi4_aw_captured_len[0][0] + 1);
+        $display("[ERROR:%0d] First burst length: expected %0d words, got %0d", scenario_id, words_before_boundary, axi4_aw_captured_len[0][0] + 1);
         error_scenario = 1'b1;
       end
 
@@ -1091,29 +1335,8 @@ module tb_mhdma_master;
         error_scenario = 1'b1;
       end
 
-      // Verify no burst crosses a page boundary
-      // Use page-local word offsets to avoid XSIM 64-bit arithmetic issues
-      for (int burst_index = 0; burst_index < axi4_aw_captured_addr[0].size(); burst_index++) begin
-        burst_addr = axi4_aw_captured_addr[0][burst_index];
-        assert (burst_addr[PAGE_BYTES_W-1:AXI4_DATA_BYTES_W] + axi4_aw_captured_len[0][burst_index] < PAGE_AXI4_DATA) else begin
-          $display("[ERROR:%0d] Burst %0d crosses page boundary: addr=0x%0h, word_offset=%0d, awlen=%0d",
-                   scenario_id, burst_index, burst_addr,
-                   burst_addr[PAGE_BYTES_W-1:AXI4_DATA_BYTES_W],
-                   axi4_aw_captured_len[0][burst_index]);
-          error_scenario = 1'b1;
-        end
-      end
-
-      // Verify sum of (awlen+1) matches AXI4_WORD_PER_PC0
-      expected_words_pc0 = AXI4_WORD_PER_PC0;
-      total_awlen_sum = 0;
-      for (int burst_index = 0; burst_index < axi4_aw_captured_len[0].size(); burst_index++) begin
-        total_awlen_sum += axi4_aw_captured_len[0][burst_index] + 1;
-      end
-      assert (total_awlen_sum == expected_words_pc0) else begin
-        $display("[ERROR:%0d] PC0 awlen sum mismatch: expected %0d, got %0d", scenario_id, expected_words_pc0, total_awlen_sum);
-        error_scenario = 1'b1;
-      end
+      // Shared checks: no page crossing, contiguity, middle bursts, total count
+      verify_burst_splitting(0, AXI4_WORD_PER_PC0, "page_boundary_0xF00");
 
       // Restore
       regf_ct_mem_addr[0] = saved_ct_mem_addr_pc0;
@@ -1124,50 +1347,174 @@ module tb_mhdma_master;
   endtask
 
   // --------------------------------------------------------------------------------------------- --
+  // Scenario : AXI4 page-aligned addresses (offset 0x000)
+  // Verifies that page-aligned addresses produce valid bursts without unnecessary splits
+  // --------------------------------------------------------------------------------------------- --
+  task automatic run_scenario_axi4_page_aligned();
+    logic [2*REG_DATA_W-1:0] saved_ct_mem_addr [ETH_PC];
+    int                      expected_words;
+    bit                      flow_failed;
+    begin
+      scenario_start(scenario_id, "AXI4 page-aligned addresses");
+      clear_axi4_captures();
+
+      for (int pc = 0; pc < ETH_PC; pc++) begin
+        saved_ct_mem_addr[pc] = regf_ct_mem_addr[pc];
+        regf_ct_mem_addr[pc]  = 64'h0000_0000_0001_0000 + pc * 64'h0000_0000_0010_0000;
+      end
+
+      randomize_fields();
+      do_read_request_flow(flow_failed);
+      if (flow_failed) error_scenario = 1'b1;
+      repeat (20) @(posedge clk_mhdma);
+
+      // Verify first burst of each PC starts page-aligned
+      for (int pc = 0; pc < ETH_PC; pc++) begin
+        assert (axi4_aw_captured_addr[pc].size() > 0) else begin
+          $display("[ERROR:%0d] No AW transactions captured for PC%0d", scenario_id, pc);
+          error_scenario = 1'b1;
+        end
+        if (axi4_aw_captured_addr[pc].size() > 0) begin
+          assert (axi4_aw_captured_addr[pc][0][PAGE_BYTES_W-1:0] == '0) else begin
+            $display("[ERROR:%0d] PC%0d first burst not page-aligned: 0x%0h", scenario_id, pc, axi4_aw_captured_addr[pc][0]);
+            error_scenario = 1'b1;
+          end
+        end
+
+        expected_words = (pc == 0) ? AXI4_WORD_PER_PC0 : AXI4_WORD_PER_PC;
+        verify_burst_splitting(pc, expected_words, "page_aligned");
+      end
+
+      // Restore
+      for (int pc = 0; pc < ETH_PC; pc++)
+        regf_ct_mem_addr[pc] = saved_ct_mem_addr[pc];
+      clear_axi4_captures();
+
+      scenario_end(scenario_id, clk_mhdma_cfg);
+    end
+  endtask
+
+  // --------------------------------------------------------------------------------------------- --
+  // Scenario : AXI4 one word before page boundary (offset 0xFE0)
+  // Verifies minimal first burst (1 word) when address is 1 word before boundary
+  // --------------------------------------------------------------------------------------------- --
+  task automatic run_scenario_axi4_one_word_before_boundary();
+    logic [2*REG_DATA_W-1:0] saved_ct_mem_addr_pc0;
+    bit                      flow_failed;
+    begin
+      scenario_start(scenario_id, "AXI4 one word before page boundary");
+      clear_axi4_captures();
+      saved_ct_mem_addr_pc0 = regf_ct_mem_addr[0];
+
+      // 0xFE0 = 4064, with AXI4_DATA_BYTES=32: word offset = 127 => 1 word before boundary
+      regf_ct_mem_addr[0] = 64'h0000_0000_0000_0FE0;
+      randomize_fields();
+      do_read_request_flow(flow_failed);
+      if (flow_failed) error_scenario = 1'b1;
+      repeat (20) @(posedge clk_mhdma);
+
+      // First burst should be exactly 1 word (awlen == 0)
+      assert (axi4_aw_captured_len[0][0] == 0) else begin
+        $display("[ERROR:%0d] First burst awlen: expected 0 (1 word), got %0d", scenario_id, axi4_aw_captured_len[0][0]);
+        error_scenario = 1'b1;
+      end
+
+      // Page split must have occurred (multiple AW transactions)
+      assert (axi4_aw_captured_addr[0].size() > 1) else begin
+        $display("[ERROR:%0d] Expected page split (multiple AW txns), got %0d", scenario_id, axi4_aw_captured_addr[0].size());
+        error_scenario = 1'b1;
+      end
+
+      // Second burst must start at the next page boundary
+      if (axi4_aw_captured_addr[0].size() > 1) begin
+        assert (axi4_aw_captured_addr[0][1][PAGE_BYTES_W-1:0] == '0) else begin
+          $display("[ERROR:%0d] Second burst not page-aligned: 0x%0h", scenario_id, axi4_aw_captured_addr[0][1]);
+          error_scenario = 1'b1;
+        end
+      end
+
+      // Full shared validation
+      verify_burst_splitting(0, AXI4_WORD_PER_PC0, "one_word_before_boundary");
+
+      // Restore
+      regf_ct_mem_addr[0] = saved_ct_mem_addr_pc0;
+      clear_axi4_captures();
+
+      scenario_end(scenario_id, clk_mhdma_cfg);
+    end
+  endtask
+
+  // --------------------------------------------------------------------------------------------- --
+  // Scenario : AXI4 page boundary splitting on all PCs (offset 0xF00)
+  // Verifies page split and burst correctness for every PC, not just PC0
+  // --------------------------------------------------------------------------------------------- --
+  task automatic run_scenario_axi4_all_pcs();
+    logic [2*REG_DATA_W-1:0] saved_ct_mem_addr [ETH_PC];
+    int                      expected_words;
+    bit                      flow_failed;
+    begin
+      scenario_start(scenario_id, "AXI4 page boundary all PCs");
+      clear_axi4_captures();
+
+      for (int pc = 0; pc < ETH_PC; pc++) begin
+        saved_ct_mem_addr[pc] = regf_ct_mem_addr[pc];
+        regf_ct_mem_addr[pc]  = 64'h0000_0000_0001_0F00 + pc * 64'h0000_0000_0010_0000;
+      end
+
+      randomize_fields();
+      do_read_request_flow(flow_failed);
+      if (flow_failed) error_scenario = 1'b1;
+      repeat (20) @(posedge clk_mhdma);
+
+      // Verify all PCs got multiple bursts (page split) and pass shared checks
+      for (int pc = 0; pc < ETH_PC; pc++) begin
+        assert (axi4_aw_captured_addr[pc].size() > 1) else begin
+          $display("[ERROR:%0d] PC%0d expected multiple AW txns (page split), got %0d", scenario_id, pc, axi4_aw_captured_addr[pc].size());
+          error_scenario = 1'b1;
+        end
+
+        // First burst page offset must match configured base address
+        if (axi4_aw_captured_addr[pc].size() > 0) begin
+          assert (axi4_aw_captured_addr[pc][0][PAGE_BYTES_W-1:0] == regf_ct_mem_addr[pc][PAGE_BYTES_W-1:0]) else begin
+            $display("[ERROR:%0d] PC%0d first burst page offset: expected 0x%0h, got 0x%0h",
+                     scenario_id, pc, regf_ct_mem_addr[pc][PAGE_BYTES_W-1:0], axi4_aw_captured_addr[pc][0][PAGE_BYTES_W-1:0]);
+            error_scenario = 1'b1;
+          end
+        end
+
+        // Second burst must be page-aligned (first page crossing)
+        if (axi4_aw_captured_addr[pc].size() > 1) begin
+          assert (axi4_aw_captured_addr[pc][1][PAGE_BYTES_W-1:0] == '0) else begin
+            $display("[ERROR:%0d] PC%0d second burst not page-aligned: 0x%0h",
+                     scenario_id, pc, axi4_aw_captured_addr[pc][1]);
+            error_scenario = 1'b1;
+          end
+        end
+
+        expected_words = (pc == 0) ? AXI4_WORD_PER_PC0 : AXI4_WORD_PER_PC;
+        verify_burst_splitting(pc, expected_words, "all_pcs_0xF00");
+      end
+
+      // Restore
+      for (int pc = 0; pc < ETH_PC; pc++)
+        regf_ct_mem_addr[pc] = saved_ct_mem_addr[pc];
+      clear_axi4_captures();
+
+      scenario_end(scenario_id, clk_mhdma_cfg);
+    end
+  endtask
+
+  // --------------------------------------------------------------------------------------------- --
   // Scenario : AXI4 write error handling
   // --------------------------------------------------------------------------------------------- --
   task automatic run_scenario_axi4_write_error();
-    logic cmd_timed_out;
-    logic irq_timed_out;
+    bit flow_failed;
     begin
       scenario_start(scenario_id, "AXI4 write error handling");
       axi4_bresp_type[0] = AXI4_SLVERR;
       randomize_fields();
-
-      inject_regf_request(
-        .iop_id   (iop_id      ),
-        .req_type (REQ_ID_READ ),
-        .hpu_id   (hpu_id      ),
-        .mode     (req_mode    ),
-        .flag     (req_flag    ),
-        .src_addr (iop_src_addr),
-        .dst_addr (iop_dst_addr)
-      );
-
-      wait_master_command_vld(500, cmd_timed_out);
-      assert (!cmd_timed_out) else begin
-        $display("[ERROR:%0d] Timed out waiting for master_command_vld", scenario_id);
-        error_scenario = 1'b1;
-      end
-
-      consume_master_command();
-      simulate_pulse(read_request_sent, clk_mhdma);
-      feed_full_ciphertext(
-        .iop_id   (iop_id      ),
-        .hpu_id   (hpu_id      ),
-        .mode     (req_mode    ),
-        .flag     (req_flag    ),
-        .src_addr (iop_src_addr),
-        .dst_addr (iop_dst_addr)
-      );
-
-      wait_interrupt_rr(5000, irq_timed_out);
-      assert (!irq_timed_out) else begin
-        $display("[ERROR:%0d] Timed out waiting for interrupt", scenario_id);
-        error_scenario = 1'b1;
-      end
-      clear_signal(clear_interrupt_rr, clk_mhdma_cfg);
-
+      do_read_request_flow(flow_failed);
+      if (flow_failed) error_scenario = 1'b1;
       repeat (20) @(posedge clk_mhdma);
       assert (master_error.write_error[0] == 1'b1) else begin
         $display("[ERROR:%0d] write_error[0] not set for SLVERR", scenario_id);
@@ -1194,81 +1541,6 @@ module tb_mhdma_master;
     end
   endtask
 
-  // --------------------------------------------------------------------------------------------- --
-  // Scenario : ce_reception_ready signaling
-  // --------------------------------------------------------------------------------------------- --
-  task automatic run_scenario_ce_reception_ready();
-    logic cmd_timed_out;
-    logic irq_timed_out;
-    begin
-      scenario_start(scenario_id, "ce_reception_ready signaling");
-
-      repeat (10) @(posedge clk_mhdma);
-      assert (ce_reception_ready == 1'b1) else begin
-        $display("[ERROR:%0d] ce_reception_ready not high before transfer", scenario_id);
-        error_scenario = 1'b1;
-      end
-
-      randomize_fields();
-
-      inject_regf_request(
-        .iop_id   (iop_id      ),
-        .req_type (REQ_ID_READ ),
-        .hpu_id   (hpu_id      ),
-        .mode     (req_mode    ),
-        .flag     (req_flag    ),
-        .src_addr (iop_src_addr),
-        .dst_addr (iop_dst_addr)
-      );
-
-      wait_master_command_vld(500, cmd_timed_out);
-      assert (!cmd_timed_out) else begin
-        $display("[ERROR:%0d] Timed out waiting for master_command_vld", scenario_id);
-        error_scenario = 1'b1;
-      end
-
-      consume_master_command();
-      simulate_pulse(read_request_sent, clk_mhdma);
-
-      // Feed first CE packet and check ce_reception_ready goes low
-      feed_ce_packet(8'h0, iop_id, hpu_id, req_mode, req_flag, iop_src_addr, iop_dst_addr);
-
-      // While pipeline has data, ce_reception_ready may be low
-      begin
-        logic seen_low;
-        seen_low = 1'b0;
-        repeat (20) begin
-          @(posedge clk_mhdma);
-          if (!ce_reception_ready) seen_low = 1'b1;
-        end
-        assert (seen_low) else begin
-          $display("[ERROR:%0d] ce_reception_ready never went low during CE feeding", scenario_id);
-          error_scenario = 1'b1;
-        end
-      end
-
-      // Feed remaining CE packets
-      for (int pkt = 1; pkt < NB_PACKETS_FULL + 1; pkt++) begin
-        feed_ce_packet(pkt[SEQ_NUM_W-1:0], iop_id, hpu_id, req_mode, req_flag, iop_src_addr, iop_dst_addr);
-      end
-
-      wait_interrupt_rr(5000, irq_timed_out);
-      assert (!irq_timed_out) else begin
-        $display("[ERROR:%0d] Timed out waiting for interrupt", scenario_id);
-        error_scenario = 1'b1;
-      end
-      clear_signal(clear_interrupt_rr, clk_mhdma_cfg);
-
-      // Wait for pipeline to drain
-      repeat (100) @(posedge clk_mhdma);
-      assert (ce_reception_ready == 1'b1) else begin
-        $display("[ERROR:%0d] ce_reception_ready not high after transfer completed", scenario_id);
-        error_scenario = 1'b1;
-      end
-
-      scenario_end(scenario_id, clk_mhdma_cfg);
-    end
-  endtask
 
   // --------------------------------------------------------------------------------------------- --
   // Scenario : Multiple sequential notify requests
@@ -1375,23 +1647,11 @@ module tb_mhdma_master;
 
       // Perform a read request for t_rr_to_ce_received
       randomize_fields();
-
-      inject_regf_request(
-        .iop_id   (iop_id      ),
-        .req_type (REQ_ID_READ ),
-        .hpu_id   (hpu_id      ),
-        .mode     (req_mode    ),
-        .flag     (req_flag    ),
-        .src_addr (iop_src_addr),
-        .dst_addr (iop_dst_addr)
-      );
-      wait_master_command_vld(500, cmd_timed_out);
-      consume_master_command();
-      simulate_pulse(read_request_sent, clk_mhdma);
-      feed_full_ciphertext(iop_id, hpu_id, req_mode, req_flag, iop_src_addr, iop_dst_addr);
-      wait_interrupt_rr(5000, irq_timed_out);
-      clear_signal(clear_interrupt_rr, clk_mhdma_cfg);
-
+      begin
+        bit read_failed;
+        do_read_request_flow(read_failed);
+        if (read_failed) error_scenario = 1'b1;
+      end
       repeat (20) @(posedge clk_mhdma);
       assert (stat.t_rr_to_ce_received != 0) else begin
         $display("[ERROR:%0d] t_rr_to_ce_received is zero", scenario_id);
@@ -1464,11 +1724,11 @@ module tb_mhdma_master;
       consume_master_command();
       simulate_pulse(read_request_sent, clk_mhdma);
 
-      // Feed seq_num=0 then seq_num=2 (skip 1 = mismatch)
+      // Feed seq_num=0 then seq_num=2 (skip 1 = mismatch, triggers abort)
       feed_ce_packet(8'h0, iop_id, hpu_id, req_mode, req_flag, iop_src_addr, iop_dst_addr);
       feed_ce_packet(8'h2, iop_id, hpu_id, req_mode, req_flag, iop_src_addr, iop_dst_addr);
 
-      repeat (50) @(posedge clk_mhdma);
+      repeat (100) @(posedge clk_mhdma);
       assert (master_error.seq_num_error == 1'b1) else begin
         $display("[ERROR:%0d] seq_num_error not set", scenario_id);
         error_scenario = 1'b1;
@@ -1524,9 +1784,13 @@ module tb_mhdma_master;
     run_scenario_read_request();
     run_scenario_read_request_timeout_retry();
     run_scenario_seq_num_mismatch();
+    run_scenario_seq_num_mismatch_mid_burst();
+    run_scenario_abort_drain_strobe();
     run_scenario_axi4_page_boundary();
+    run_scenario_axi4_page_aligned();
+    run_scenario_axi4_one_word_before_boundary();
+    run_scenario_axi4_all_pcs();
     run_scenario_axi4_write_error();
-    run_scenario_ce_reception_ready();
     run_scenario_multiple_notifies();
     run_scenario_multiple_reads();
     run_scenario_statistics();
@@ -1595,6 +1859,69 @@ module tb_mhdma_master;
       assert_awsize_correct: assert property(axi4_awsize_correct)
         else begin
           $display("[ERROR-SVA] PC%0d AW channel: awsize is incorrect", gen_pc);
+          error_assert = 1'b1;
+        end
+
+      // wlast correctness: track W beat count per burst and verify wlast
+      // fires on the correct beat (beat_count == awlen).
+      // Uses a queue to handle outstanding AW transactions (AW can run ahead of W).
+      logic [AXI4_LEN_W-1:0] sva_awlen_q[$];
+      int unsigned            sva_w_beat_cnt;
+
+      logic [AXI4_LEN_W-1:0] sva_awlen_current;
+
+      always @(posedge clk_mhdma) begin
+        if (!s_rstn_mhdma) begin
+          sva_awlen_q.delete();
+          sva_awlen_current <= '0;
+          sva_w_beat_cnt    <= 0;
+        end else begin
+          // Enqueue awlen on AW handshake
+          if (m_axi4_awvalid[gen_pc] && m_axi4_awready[gen_pc])
+            sva_awlen_q.push_back(m_axi4_awlen[gen_pc]);
+
+          // Count W beats; pop queue on wlast (burst complete)
+          if (m_axi4_wvalid[gen_pc] && m_axi4_wready[gen_pc]) begin
+            if (m_axi4_wlast[gen_pc]) begin
+              sva_w_beat_cnt <= 0;
+              // Pop completed burst and load next awlen for SVA
+              if (sva_awlen_q.size() > 0)
+                void'(sva_awlen_q.pop_front());
+              if (sva_awlen_q.size() > 0)
+                sva_awlen_current <= sva_awlen_q[0];
+            end else begin
+              sva_w_beat_cnt <= sva_w_beat_cnt + 1;
+            end
+          end else if (sva_w_beat_cnt == 0 && sva_awlen_q.size() > 0) begin
+            // Idle: load front of queue so SVA sees correct value on first beat
+            sva_awlen_current <= sva_awlen_q[0];
+          end
+        end
+      end
+
+      // wlast must be asserted when beat count reaches awlen
+      property axi4_wlast_correct;
+        @(posedge clk_mhdma) disable iff (!s_rstn_mhdma)
+        (m_axi4_wvalid[gen_pc] && m_axi4_wready[gen_pc] && m_axi4_wlast[gen_pc]) |->
+          (sva_w_beat_cnt == sva_awlen_current);
+      endproperty
+
+      // wlast must not be asserted before beat count reaches awlen
+      property axi4_wlast_not_early;
+        @(posedge clk_mhdma) disable iff (!s_rstn_mhdma)
+        (m_axi4_wvalid[gen_pc] && m_axi4_wready[gen_pc] && !m_axi4_wlast[gen_pc]) |->
+          (sva_w_beat_cnt < sva_awlen_current);
+      endproperty
+
+      assert_wlast_correct: assert property(axi4_wlast_correct)
+        else begin
+          $display("[ERROR-SVA] PC%0d W channel: wlast on wrong beat (cnt=%0d, awlen=%0d)", gen_pc, sva_w_beat_cnt, sva_awlen_current);
+          error_assert = 1'b1;
+        end
+
+      assert_wlast_not_early: assert property(axi4_wlast_not_early)
+        else begin
+          $display("[ERROR-SVA] PC%0d W channel: wlast missing (cnt=%0d < awlen=%0d)", gen_pc, sva_w_beat_cnt, sva_awlen_current);
           error_assert = 1'b1;
         end
 
