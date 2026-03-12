@@ -22,12 +22,12 @@
 `resetall
 `timescale 1ns/10ps
 module tb_mhdma_pkt_loss;
-  import mhdma_pkg::*;                    // multi-hpu-dma
-  import axi_if_shell_axil_pkg::*;        // axi4-lite + REG_DATA_W
-  import axi_if_common_param_pkg::*;      // general axi4
+  import mhdma_pkg::*;                      // multi-hpu-dma
+  import axi_if_shell_axil_pkg::*;          // axi4-lite + REG_DATA_W
+  import axi_if_common_param_pkg::*;        // general axi4
   import hpu_regif_core_mhdma_2in3_pkg::*;  // ethernet regif
   import axi_if_mhdma_axi_pkg::*;           // AXI ethernet
-  import pem_common_param_pkg::*;         // CT_MEM_BYTES, AXI4_WORD_PER_PC*
+  import pem_common_param_pkg::*;           // CT_MEM_BYTES, AXI4_WORD_PER_PC*
 
   `include "tb_mhdma_tasks.sv"
 
@@ -490,9 +490,9 @@ logic [DST_ADDR_W-1:0] dst_addr;
         // Each generated instance initializes its own memory
         initial begin
           for (int k = 0; k < 2**MEM_SIM_SIZE; k++) begin
-            logic [255:0] value;
+            logic [AXI4_DATA_W-1:0] value;
             value = '0;
-            for (int j = 0; j < 4; j++) begin
+            for (int j = 0; j < AXI4_DATA_W/64; j++) begin
               logic [63:0] w;
               w[63:32] = $urandom();
               w[31:0]  = $urandom();
@@ -546,6 +546,7 @@ logic [DST_ADDR_W-1:0] dst_addr;
 
   // scenario -------------------------------------------------------------------------------------
   int scenario_id;
+  int drop_idx;
 
   initial begin
     maxil_drv_if.init();
@@ -797,7 +798,7 @@ logic [DST_ADDR_W-1:0] dst_addr;
       begin
         // Send CE packets: packet 8 has wrong seq_num (backward: 3 < expected 8)
         for (int pkt = 0; pkt < NB_PACKETS_FULL+1; pkt++) begin
-          if (pkt == 8) begin
+          if (pkt == 1) begin
             send_ciphertext_emission_packet(qsfp_rx_vif[0], dst_mac_addr, src_mac_addr, dst_hpu_id, iop_id, iop_src_addr, iop_dst_addr, 3, unused_payload);
           end else begin
             send_ciphertext_emission_packet(qsfp_rx_vif[0], dst_mac_addr, src_mac_addr, dst_hpu_id, iop_id, iop_src_addr, iop_dst_addr, pkt[7:0], unused_payload);
@@ -819,6 +820,9 @@ logic [DST_ADDR_W-1:0] dst_addr;
       $display("%t > [ERROR]: interrupt_read_request should not have been raised during abort", $time);
       error_interrupt = 1'b1;
     end
+
+    // Allow CDC propagation of stat counters (mhdma -> cfg clock domain)
+    repeat(10) @(posedge clk_control);
 
     // Verify retry stat was incremented (mismatch-triggered, not timeout)
     maxil_drv_if.read_trans(MHDMA_REQUEST_STAT_READ_REQ_TIMEOUT_RETRY_OFS, stat_read_req_timeout_retry);
@@ -859,6 +863,14 @@ logic [DST_ADDR_W-1:0] dst_addr;
 
     scenario_id = scenario_id + 1;
 
+    // Forward-skip mismatch requires at least 3 packets (drop one in the middle).
+    // NB_PACKETS_FULL < 2 means only 2 packets exist (seq_num 0..1), not enough.
+    if (NB_PACKETS_FULL < 2) begin
+      $display("\n==================================================================================================");
+      $display("  SCENARIO %0d: a real drop of packet - SKIPPED (NB_PACKETS_FULL=%0d < 2)", scenario_id, NB_PACKETS_FULL);
+      $display("==================================================================================================");
+    end else begin
+
     $display("\n==================================================================================================");
     $display("  SCENARIO %0d: a real drop of packet - abort then retry", scenario_id);
     $display("==================================================================================================");
@@ -870,6 +882,10 @@ logic [DST_ADDR_W-1:0] dst_addr;
     iop_id       = scenario_id;
     iop_src_addr = $urandom_range(0, (1 << MEM_SIM_SIZE) / CT_MEM_BYTES - 1);
     iop_dst_addr = $urandom_range(0, (1 << MEM_SIM_SIZE) / CT_MEM_BYTES - 1);
+
+    // Drop a packet in the middle: must be >= 1 (pkt 0 sets up address) and
+    // < NB_PACKETS_FULL (a later packet must arrive to trigger forward-skip mismatch).
+    drop_idx = 1;
 
     fork
       read_request(dst_hpu_id, iop_id, iop_src_addr, iop_dst_addr);
@@ -884,10 +900,10 @@ logic [DST_ADDR_W-1:0] dst_addr;
     // so the retry monitor must run concurrently to avoid missing it.
     fork
       begin
-        // Send CE packets: drop packet 8 entirely (forward skip: DUT expects 8, gets 9)
+        // Send CE packets: drop one packet entirely (forward skip: DUT expects drop_idx, gets drop_idx+1)
         for (int pkt = 0; pkt < NB_PACKETS_FULL+1; pkt++) begin
-          if (pkt == 8) begin
-            $display("%t > [INFO]: Dropping packet 8 (simulating network loss)", $time);
+          if (pkt == drop_idx) begin
+            $display("%t > [INFO]: Dropping packet %0d (simulating network loss)", $time, drop_idx);
           end else begin
             send_ciphertext_emission_packet(qsfp_rx_vif[0], dst_mac_addr, src_mac_addr, dst_hpu_id, iop_id, iop_src_addr, iop_dst_addr, pkt[7:0], unused_payload);
           end
@@ -908,6 +924,9 @@ logic [DST_ADDR_W-1:0] dst_addr;
       $display("%t > [ERROR]: interrupt_read_request should not have been raised during abort", $time);
       error_interrupt = 1'b1;
     end
+
+    // Allow CDC propagation of stat counters (mhdma -> cfg clock domain)
+    repeat(10) @(posedge clk_control);
 
     // Verify retry stat was incremented
     maxil_drv_if.read_trans(MHDMA_REQUEST_STAT_READ_REQ_TIMEOUT_RETRY_OFS, stat_read_req_timeout_retry);
@@ -945,6 +964,8 @@ logic [DST_ADDR_W-1:0] dst_addr;
 
     // Restore timeout for subsequent scenarios
     maxil_drv_if.write_trans(MHDMA_SYSTEM_TIMEOUT_READ_REQ_OFS, TIMEOUT_DUR_READ_REQ);
+
+    end // if NB_PACKETS_FULL >= 2
 
     $display("\n ----------------- HPU_A Final Summary -----------------------");
     maxil_drv_if.read_trans(MHDMA_REQUEST_STAT_NOTIFY_OFS, stat_notify);

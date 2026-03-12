@@ -1,9 +1,23 @@
 #! /usr/bin/bash
+# =============================================================================================== #
 # BSD 3-Clause Clear License
 # Copyright © 2025 ZAMA. All rights reserved.
 #
-# aliases are not expanded when the shell is not interactive.
-# Redefine here for more clarity
+# Goal of this script is to test some parameters and launch testbenches for the MHDMA module.
+#
+# Parameter sweep:
+#   - AXI_DATA_W : 128, 256, 512
+#   - GLWE_K     : 1, 2 (drives BLWE_K = GLWE_K * N)
+#   - PEM_PC     : 1, 2 for unit tests ; 2 only for top-level & scenario tests
+#
+# Top module of MHDMA supports only PEM_PC=2
+#   - Main reason is that regfile must be re generated for the address
+#   - For PEM_PC >= 4: CDC FIFO are overflowing and we will need to split them
+#
+# -> AXI data size could be 128; 256 or 512 (even though in FPGA it's fixed to 256)
+#
+# All unit testbenches must be launched as well as specific and the main one
+# =============================================================================================== #
 
 run_edalize=${PROJECT_DIR}/hw/scripts/edalize/run_edalize.py
 
@@ -11,6 +25,13 @@ RED='\033[1;31m'
 GREEN='\033[1;32m'
 NC='\033[0m'
 
+# Unit test modules (not constrained by regfile: can vary PEM_PC)
+UNIT_TESTS=("tb_mhdma_decoder" "tb_mhdma_formatter" "tb_mhdma_master" "tb_mhdma_slave")
+
+# Scenario tests (use top-level, PEM_PC=2 only)
+SCENARIO_TESTS=("tb_mhdma_errors" "tb_mhdma_notify_insertion" "tb_mhdma_parallel_read" "tb_mhdma_parallel_notify" "tb_mhdma_pkt_loss")
+
+# top module scenario
 module="tb_multi_hpu_dma"
 
 ###################################################################################################
@@ -23,7 +44,6 @@ echo "Options are:"
 echo "-h                       : print this help."
 echo "-- <run_edalize options> : run_edalize options."
 }
-
 
 ###################################################################################################
 # input arguments
@@ -45,57 +65,106 @@ done
 shift $((OPTIND-1))
 
 [ "${1:-}" = "--" ] && shift
-args=$@
-
+args="$@"
 
 ###################################################################################################
 # Run simulation
 ###################################################################################################
-# Write simulation command lines here
 SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" &> /dev/null && pwd)
 mkdir -p ${PROJECT_DIR}/hw/output
 SEED_FILE="${PROJECT_DIR}/hw/output/${module}.seed"
-TMP_FILE="${PROJECT_DIR}/hw/output/${RANDOM}${RANDOM}._tmp"
 echo -n "" > $SEED_FILE
-echo -n "" > $TMP_FILE
 
-R=2
-AXI_DATA_W_L=("256")
+###################################################################################################
+# Helper: run one test, exit on failure
+###################################################################################################
+function run_test () {
+  local cmd="$1"
+  local TMP_FILE="${PROJECT_DIR}/hw/output/${RANDOM}${RANDOM}._tmp"
+  echo -n "" > $TMP_FILE
 
-echo " In Module MHDMA word sizes are fixed as well as AXI_DATA_W_L"
+  echo "==========================================================="
+  echo "INFO> Running : $cmd"
+  echo "==========================================================="
+  $cmd | tee >(grep "Seed" | head -1 >> $SEED_FILE) | grep -c "> SUCCEED !" > $TMP_FILE
+  local cmd_exit=${PIPESTATUS[0]}
+  # In case of post processing, presence of several SUCCEED is necessary to be a real success
+  local succeed_cnt=$(cat $TMP_FILE)
+  rm -f $TMP_FILE
+  if [ $cmd_exit -gt 0 ] || [ $succeed_cnt -ne 1 ] ; then
+    echo -e "${RED}FAILURE>${NC} $cmd" 1>&2
+    exit $cmd_exit
+  else
+    echo -e "${GREEN}SUCCEED>${NC} $cmd" 1>&2
+  fi
+}
 
-for i in `seq 1 5`; do
-    GLWE_K=$((1+$RANDOM % 3))
-    S=$((6+$RANDOM % 5))
+###################################################################################################
+# Parameter sweep definitions
+###################################################################################################
+AXI_DATA_W_LIST=("128" "256" "512")
+GLWE_K_LIST=("1" "2")
 
-    PEM_PC=$(($RANDOM % 2))
-    PEM_PC=$((2**$PEM_PC))
+# PEM_PC values for unit tests (top-level & scenarios are locked to PEM_PC=2)
+PEM_PC_LIST_UNIT=("1" "2")
 
-    # Choose AXI_DATA_W
-    size=${#AXI_DATA_W_L[@]}
-    index=$(($RANDOM % $size))
-    AXI_DATA_W=${AXI_DATA_W_L[$index]}
+###################################################################################################
+# 1) Unit tests: sweep PEM_PC x GLWE_K x AXI_DATA_W
+###################################################################################################
+echo "================================================================"
+echo "INFO> Running unit tests with parameter sweep"
+echo "================================================================"
 
-    cmd="${SCRIPT_DIR}/run.sh \
+for PEM_PC in "${PEM_PC_LIST_UNIT[@]}"; do
+  for GLWE_K in "${GLWE_K_LIST[@]}"; do
+    for AXI_DATA_W in "${AXI_DATA_W_LIST[@]}"; do
+      for TB in "${UNIT_TESTS[@]}"; do
+        run_test "${SCRIPT_DIR}/run.sh \
           -g $GLWE_K \
-          -R $R \
-          -S $S \
           -E $PEM_PC \
           -- $args \
+          -m $TB \
           -F AXI_DATA_W AXI_DATA_W_${AXI_DATA_W}"
-
-    echo "==========================================================="
-    echo "INFO> Running : $cmd"
-    echo "==========================================================="
-    $cmd | tee >(grep "Seed" | head -1 >> $SEED_FILE) |  grep -c "> SUCCEED !" > $TMP_FILE
-    exit_status=$?
-    # In case of post processing, presence of several SUCCEED is necessary to be a real success
-    succeed_cnt=$(cat $TMP_FILE)
-    rm -f $TMP_FILE
-    if [ $exit_status -gt 0 ] || [ $succeed_cnt -ne 1 ] ; then
-      echo -e "${RED}FAILURE>${NC} $cmd" 1>&2
-      exit $exit_status
-    else
-      echo -e "${GREEN}SUCCEED>${NC} $cmd" 1>&2
-    fi
+      done
+    done
+  done
 done
+
+###################################################################################################
+# 2) Top-level test: PEM_PC=2 (regfile constraint), sweep GLWE_K x AXI_DATA_W
+###################################################################################################
+echo "================================================================"
+echo "INFO> Running top-level ${module} with parameter sweep"
+echo "================================================================"
+
+for GLWE_K in "${GLWE_K_LIST[@]}"; do
+  for AXI_DATA_W in "${AXI_DATA_W_LIST[@]}"; do
+    run_test "${SCRIPT_DIR}/run.sh \
+      -g $GLWE_K \
+      -E 2 \
+      -- $args \
+      -F AXI_DATA_W AXI_DATA_W_${AXI_DATA_W}"
+  done
+done
+
+###################################################################################################
+# 3) Scenario tests: PEM_PC=2, sweep GLWE_K x AXI_DATA_W
+###################################################################################################
+echo "================================================================"
+echo "INFO> Running scenario tests with parameter sweep"
+echo "================================================================"
+
+for GLWE_K in "${GLWE_K_LIST[@]}"; do
+  for AXI_DATA_W in "${AXI_DATA_W_LIST[@]}"; do
+    for TB in "${SCENARIO_TESTS[@]}"; do
+      run_test "${SCRIPT_DIR}/run.sh \
+        -g $GLWE_K \
+        -E 2 \
+        -- $args \
+        -m $TB \
+        -F AXI_DATA_W AXI_DATA_W_${AXI_DATA_W}"
+    done
+  done
+done
+
+echo -e "${GREEN}ALL TESTS PASSED${NC}" 1>&2

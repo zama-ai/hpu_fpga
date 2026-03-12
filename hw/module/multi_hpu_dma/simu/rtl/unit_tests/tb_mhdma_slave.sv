@@ -1186,7 +1186,7 @@ module tb_mhdma_slave;
     // Place all PCs near a page boundary so each needs multiple AR bursts
     for (int pc = 0; pc < ETH_PC; pc++) begin
       saved_addr[pc] = regf_ct_mem_addr[pc];
-      regf_ct_mem_addr[pc] = 64'h0000_0000_0000_0800 + pc * 64'h0000_0000_0010_0000;
+      regf_ct_mem_addr[pc] = 64'(PAGE_BYTES - AXI4_DATA_BYTES) + pc * 64'h0000_0000_0010_0000;
     end
 
     // Compute expected phy_addr per PC

@@ -28,6 +28,8 @@ package mhdma_pkg;
   // HPU parameters -------------------------------------------------------------------------------
   localparam int ETH_PC       = PEM_PC; // MHDMA is tied to PEM module: mandatory same number of PC
 
+  localparam int ETH_PC_W = $clog2(ETH_PC) == 0 ? 1 : $clog2(ETH_PC);
+
   // beware of regfile if modifying this value
   localparam int NB_MAX_HPU   = 8;
   localparam int NB_MAX_HPU_W = $clog2(NB_MAX_HPU);

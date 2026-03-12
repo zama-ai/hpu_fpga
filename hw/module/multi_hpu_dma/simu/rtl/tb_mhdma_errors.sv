@@ -71,7 +71,7 @@ module tb_mhdma_errors;
 
   initial begin
     wait (end_of_test);
-    @(posedge clk_mhdma_cfg) $display("%t > SUCCEED - All error tests completed!", $time);
+    @(posedge clk_mhdma_cfg) $display("%t > SUCCEED ! All error tests completed", $time);
     $finish;
   end
 
@@ -313,13 +313,13 @@ module tb_mhdma_errors;
 // Simple AXI4 Memory Model with Error Injection
 // ============================================================================================== --
   // Memory for read data
-  logic [255:0] axi_mem [2**MEM_SIM_SIZE];
+  logic [AXI4_DATA_W-1:0] axi_mem [2**MEM_SIM_SIZE];
 
   // Initialize memory
   initial begin
     for (int i = 0; i < 2**MEM_SIM_SIZE; i++) begin
-      axi_mem[i] = {$urandom(), $urandom(), $urandom(), $urandom(),
-                    $urandom(), $urandom(), $urandom(), $urandom()};
+      for (int w = 0; w < AXI4_DATA_W; w += 32)
+        axi_mem[i][w +: 32] = $urandom();
     end
   end
 
@@ -692,13 +692,13 @@ module tb_mhdma_errors;
       repeat(200) @(posedge clk_mhdma_cfg);
 
       // Step 2: Send ciphertext emission packets as if we're the remote HPU responding
-      // sec num value mismatch : instead of 6 we get 5
+      // Inject seq_num mismatch on packet NB_PACKETS_FULL-1: send (NB_PACKETS_FULL-2) instead
       for (int pkt = 0; pkt < NB_PACKETS_FULL + 1; pkt++) begin
         iop_id = $urandom();
         src_addr = $urandom();
         dst_addr = $urandom();
-        if (pkt == 6) begin
-          send_ciphertext_emission_packet(qsfp_rx_vif[0], dst_mac_addr, src_mac_addr, dst_hpu_id, iop_id, src_addr, dst_addr, 5, unused_payload);
+        if (pkt == NB_PACKETS_FULL - 1) begin
+          send_ciphertext_emission_packet(qsfp_rx_vif[0], dst_mac_addr, src_mac_addr, dst_hpu_id, iop_id, src_addr, dst_addr, (NB_PACKETS_FULL-2), unused_payload);
         end else begin
           send_ciphertext_emission_packet(qsfp_rx_vif[0], dst_mac_addr, src_mac_addr, dst_hpu_id, iop_id, src_addr, dst_addr, pkt[7:0], unused_payload);
         end

@@ -1414,8 +1414,9 @@ module tb_mhdma_master;
       clear_axi4_captures();
       saved_ct_mem_addr_pc0 = regf_ct_mem_addr[0];
 
-      // 0xFE0 = 4064, with AXI4_DATA_BYTES=32: word offset = 127 => 1 word before boundary
-      regf_ct_mem_addr[0] = 64'h0000_0000_0000_0FE0;
+      // Place address 1 AXI word before the page boundary (works for any AXI4_DATA_W)
+      regf_ct_mem_addr[0] = 64'(PAGE_BYTES - AXI4_DATA_BYTES);
+
       randomize_fields();
       do_read_request_flow(flow_failed);
       if (flow_failed) error_scenario = 1'b1;
@@ -1889,96 +1890,37 @@ module tb_mhdma_master;
           error_assert = 1'b1;
         end
 
-      // NOTE: This part was added for testing wready as random
-      // wlast correctness: track W beat count per burst and verify wlast
-      // fires on the correct beat (beat_count == awlen).
-      // Uses a queue to handle outstanding AW transactions.
-      // NOTE: AXI4 allows W data before AW (separate channels). With AW backpressure,
-      // W beats can arrive at the port before the corresponding AW handshake. The
-      // sva_awlen_valid flag gates assertions until we have a reliable awlen to compare.
-      // When a W burst completes (wlast) before its AW arrives, we track it as an
-      // "unmatched wlast". Late-arriving AWs are consumed against unmatched wlasts
-      // instead of being enqueued, preventing queue misalignment.
-      logic [AXI4_LEN_W-1:0] sva_awlen_q[$];
-      int unsigned            sva_w_beat_cnt;
-      int unsigned            sva_unmatched_wlast;
+      // wlast correctness: check at the INTERNAL handshake point (before the
+      // fifo_element_write pipeline register), where wlast and burst_beat_cnt
+      // are synchronous.
+      // DUT defines: wlast = (burst_word_cnt != 0) & (burst_beat_cnt == burst_word_cnt - 1)
+      //              w_send_data = axi_wvalid & axi_wready  (internal handshake)
 
-      logic [AXI4_LEN_W-1:0] sva_awlen_current;
-      logic                   sva_awlen_valid;
-
-      always @(posedge clk_mhdma) begin
-        if (!s_rstn_mhdma) begin
-          sva_awlen_q.delete();
-          sva_awlen_current   <= '0;
-          sva_awlen_valid     <= 1'b0;
-          sva_w_beat_cnt      <= 0;
-          sva_unmatched_wlast <= 0;
-        end else begin : sva_wlast_tracker
-          int unsigned next_unmatched;
-          next_unmatched = sva_unmatched_wlast;
-
-          // Enqueue awlen on AW handshake, or consume against unmatched wlast
-          if (m_axi4_awvalid[gen_pc] && m_axi4_awready[gen_pc]) begin
-            if (next_unmatched > 0)
-              next_unmatched = next_unmatched - 1;
-            else
-              sva_awlen_q.push_back(m_axi4_awlen[gen_pc]);
-          end
-
-          // Count W beats; pop queue on wlast (burst complete)
-          if (m_axi4_wvalid[gen_pc] && m_axi4_wready[gen_pc]) begin
-            if (m_axi4_wlast[gen_pc]) begin
-              sva_w_beat_cnt <= 0;
-              // Pop completed burst and load next awlen for SVA
-              if (sva_awlen_q.size() > 0) begin
-                void'(sva_awlen_q.pop_front());
-                if (sva_awlen_q.size() > 0) begin
-                  sva_awlen_current <= sva_awlen_q[0];
-                  sva_awlen_valid   <= 1'b1;
-                end else begin
-                  sva_awlen_valid   <= 1'b0;
-                end
-              end else begin
-                // W burst completed before its AW arrived at port
-                sva_awlen_valid <= 1'b0;
-                next_unmatched  = next_unmatched + 1;
-              end
-            end else begin
-              sva_w_beat_cnt <= sva_w_beat_cnt + 1;
-            end
-          end else if (sva_w_beat_cnt == 0 && sva_awlen_q.size() > 0) begin
-            // Idle: load front of queue so SVA sees correct value on first beat
-            sva_awlen_current <= sva_awlen_q[0];
-            sva_awlen_valid   <= 1'b1;
-          end
-
-          sva_unmatched_wlast <= next_unmatched;
-        end
-      end
-
-      // wlast must be asserted when beat count reaches awlen
+      // wlast must assert on the final beat
       property axi4_wlast_correct;
-        @(posedge clk_mhdma) disable iff (!s_rstn_mhdma || !sva_awlen_valid)
-        (m_axi4_wvalid[gen_pc] && m_axi4_wready[gen_pc] && m_axi4_wlast[gen_pc]) |->
-          (sva_w_beat_cnt == sva_awlen_current);
+        @(posedge clk_mhdma) disable iff (!s_rstn_mhdma)
+        (mhdma_master.w_send_data && mhdma_master.wlast) |->
+          (mhdma_master.burst_beat_cnt == mhdma_master.burst_word_cnt - 1);
       endproperty
 
-      // wlast must not be asserted before beat count reaches awlen
+      // wlast must not assert before the final beat
       property axi4_wlast_not_early;
-        @(posedge clk_mhdma) disable iff (!s_rstn_mhdma || !sva_awlen_valid)
-        (m_axi4_wvalid[gen_pc] && m_axi4_wready[gen_pc] && !m_axi4_wlast[gen_pc]) |->
-          (sva_w_beat_cnt < sva_awlen_current);
+        @(posedge clk_mhdma) disable iff (!s_rstn_mhdma)
+        (mhdma_master.w_send_data && !mhdma_master.wlast) |->
+          (mhdma_master.burst_beat_cnt < mhdma_master.burst_word_cnt - 1);
       endproperty
 
       assert_wlast_correct: assert property(axi4_wlast_correct)
         else begin
-          $display("[ERROR-SVA] PC%0d W channel: wlast on wrong beat (cnt=%0d, awlen=%0d)", gen_pc, sva_w_beat_cnt, sva_awlen_current);
+          $display("[ERROR-SVA] W channel: wlast on wrong beat (beat=%0d, word_cnt=%0d)",
+                   mhdma_master.burst_beat_cnt, mhdma_master.burst_word_cnt);
           error_assert = 1'b1;
         end
 
       assert_wlast_not_early: assert property(axi4_wlast_not_early)
         else begin
-          $display("[ERROR-SVA] PC%0d W channel: wlast missing (cnt=%0d < awlen=%0d)", gen_pc, sva_w_beat_cnt, sva_awlen_current);
+          $display("[ERROR-SVA] W channel: wlast missing (beat=%0d < word_cnt-1=%0d)",
+                   mhdma_master.burst_beat_cnt, mhdma_master.burst_word_cnt - 1);
           error_assert = 1'b1;
         end
 

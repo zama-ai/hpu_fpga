@@ -35,11 +35,11 @@
 // ================================================================================================
 
 module mhdma_slave
-  import mhdma_pkg::*;               // for all mhdma modules
-  import axi_if_mhdma_axi_pkg::*;      // AXI4
-  import axi_if_shell_axil_pkg::*;   // REG_DATA_W
-  import axi_if_common_param_pkg::*; // HBM page
-  import pem_common_param_pkg::*;    // CT_MEM_BYTES, AXI4_WORD_PER_PC*
+  import mhdma_pkg::*;                                         // for all mhdma modules
+  import axi_if_mhdma_axi_pkg::*;                              // AXI4
+  import axi_if_shell_axil_pkg::*;                             // REG_DATA_W
+  import axi_if_common_param_pkg::*;                           // HBM page
+  import pem_common_param_pkg::*;                              // CT_MEM_BYTES, AXI4_WORD_PER_PC*
 #(
   parameter int CDC_SYNC_STAGES = 2
 ) (

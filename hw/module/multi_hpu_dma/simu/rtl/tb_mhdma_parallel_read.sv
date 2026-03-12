@@ -427,9 +427,9 @@ logic [HPU_NB-1:0][ETH_PC-1:0]                          axi4_ct_rready;
         // Each generated instance initializes its own memory
         initial begin
           for (int k = 0; k < 2**MEM_SIM_SIZE; k++) begin
-            logic [255:0] value;
+            logic [AXI4_DATA_W-1:0] value;
             value = '0;
-            for (int j = 0; j < 4; j++) begin
+            for (int j = 0; j < AXI4_DATA_W/64; j++) begin
               logic [63:0] w;
               w[63:32] = $urandom();
               w[31:0]  = $urandom();
@@ -803,9 +803,9 @@ logic [HPU_NB-1:0][ETH_PC-1:0]                          axi4_ct_rready;
 
     mismatch_found = 1'b0;
 
-    // Use CT_MEM_BYTES for address calculation (cid * CT_MEM_BYTES), divide by 32 for word address
-    addr_recv = (regf_start_addr_ofs + (dst_addr * CT_MEM_BYTES)) / 32;
-    addr_src  = (regf_start_addr_ofs + (src_addr * CT_MEM_BYTES)) / 32;
+    // Use CT_MEM_BYTES for address calculation (cid * CT_MEM_BYTES), divide by AXI word size for word address
+    addr_recv = (regf_start_addr_ofs + (dst_addr * CT_MEM_BYTES)) / (AXI4_DATA_W / 8);
+    addr_src  = (regf_start_addr_ofs + (src_addr * CT_MEM_BYTES)) / (AXI4_DATA_W / 8);
 
     // Check both PCs
     for (int pc = 0; pc < ETH_PC; pc++) begin

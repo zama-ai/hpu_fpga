@@ -50,7 +50,6 @@ S=8
 MOD_Q_W=64
 LWE_K=4 # UNUSED
 PEM_PC=1
-PEM_PC_MAX=4
 # Initialize your own variables here:
 while getopts "hzg:R:S:W:E:" opt; do
   case "$opt" in
@@ -90,9 +89,11 @@ done
 
 shift $((OPTIND-1))
 
+PEM_PC_MAX=$PEM_PC
+
 # run_edalize additional arguments
 [ "${1:-}" = "--" ] && shift
-args=$@
+args="$@"
 
 N=$((R**S))
 MOD_Q=$((2**$MOD_Q_W))
@@ -142,8 +143,8 @@ if [ $GEN_STIMULI -eq 1 ] ; then
                 -R top_common_pcmax_definition_pkg.sv simu 0 1 \
                 -R top_common_pc_definition_pkg.sv simu 0 1 \
                 -F param_tfhe_definition_pkg.sv APPLICATION APPLI_simu \
-                -F top_common_pcmax_definition_pkg.sv TOP_PCMAX TOP_PCMAX_pem${PEM_PC_MAX} \
-                -F top_common_pc_definition_pkg.sv TOP_PC TOP_PC_pem${PEM_PC}"
+                -F top_common_pcmax_definition_pkg.sv TOP_PCMAX TOP_PCMAX_pem${PEM_PC_MAX}_glwe${GLWE_K}_bsk8_ksk8 \
+                -F top_common_pc_definition_pkg.sv TOP_PC TOP_PC_pem${PEM_PC}_glwe${GLWE_K}_bsk8_ksk8"
 
   echo "INFO> Running : $file_list_cmd"
   $file_list_cmd || exit 1
@@ -159,8 +160,8 @@ eda_args=""
 eda_args="$eda_args \
             -F APPLICATION APPLI_simu \
             -F REGF_STRUCT REGF_STRUCT_reg64_coef32_seq4 \
-            -F TOP_PC TOP_PC_pem${PEM_PC} \
-            -F TOP_PCMAX TOP_PCMAX_pem${PEM_PC_MAX} \
+            -F TOP_PC TOP_PC_pem${PEM_PC}_glwe${GLWE_K}_bsk8_ksk8 \
+            -F TOP_PCMAX TOP_PCMAX_pem${PEM_PC_MAX}_glwe${GLWE_K}_bsk8_ksk8 \
             -sva ${dut}"
 
 

@@ -869,11 +869,11 @@ module mhdma_master
   // =========================================================================================== //
   // Burst state machine (single instance, PCs processed sequentially)
   // =========================================================================================== //
-
   // Active PC index: one-hot to binary (generate-based OR reduction)
-  logic [$clog2(ETH_PC)-1:0] active_pc_idx;
+  logic [ETH_PC_W-1:0] active_pc_idx;
+
   generate
-    for (genvar gen_b = 0; gen_b < $clog2(ETH_PC); gen_b++) begin : gen_oh2bin
+    for (genvar gen_b = 0; gen_b < ETH_PC_W; gen_b++) begin : gen_oh2bin
       logic [ETH_PC-1:0] oh_sel;
       for (genvar gen_j = 0; gen_j < ETH_PC; gen_j++) begin : gen_oh_sel
         assign oh_sel[gen_j] = axi4_write_pc[gen_j] & gen_j[gen_b];
