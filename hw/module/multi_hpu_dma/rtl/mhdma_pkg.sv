@@ -238,6 +238,7 @@ package mhdma_pkg;
     logic [REG_DATA_W-1:0] t_rr_to_ce_received_max;
     logic [1:0]            fsm_notify;
     logic [1:0]            fsm_read_req;
+    logic [1:0]            fsm_burst;
   } master_stat_t;
 
   typedef struct packed {

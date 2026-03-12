@@ -271,8 +271,12 @@ module tb_mhdma_master;
   generate
     for (genvar gen_pc = 0; gen_pc < ETH_PC; gen_pc++) begin : gen_axi4_responder
 
-      // AW channel: always ready
-      assign m_axi4_awready[gen_pc] = 1'b1;
+      // AW channel: randomly toggling ready (~75% asserted)
+      logic awready_rand = 1'b1;
+      always @(posedge clk_mhdma)
+        awready_rand <= $urandom_range(0, 3) != 0;
+
+      assign m_axi4_awready[gen_pc] = awready_rand;
 
       // W channel: randomly toggling ready (~75% asserted)
       logic wready_rand = 1'b1;
@@ -883,6 +887,7 @@ module tb_mhdma_master;
         $display("[ERROR:%0d] NTX FSM not in WAIT_REQUEST: %0b", scenario_id, stat.fsm_notify);
         error_scenario = 1'b1;
       end
+      assert (stat.fsm_burst == 2'b00) else begin $display("[ERROR:%0d] fsm_burst not BURST_IDLE", scenario_id); error_scenario = 1'b1; end
 
       assert (stat.cnt_notify     >= 1) else begin $display("[ERROR:%0d] cnt_notify not incremented",     scenario_id); error_scenario = 1'b1; end
       assert (stat.cnt_notify_ack >= 1) else begin $display("[ERROR:%0d] cnt_notify_ack not incremented", scenario_id); error_scenario = 1'b1; end
@@ -951,6 +956,7 @@ module tb_mhdma_master;
         $display("[ERROR:%0d] NTX FSM not back to WAIT_REQUEST after retry", scenario_id);
         error_scenario = 1'b1;
       end
+      assert (stat.fsm_burst == 2'b00) else begin $display("[ERROR:%0d] fsm_burst not BURST_IDLE", scenario_id); error_scenario = 1'b1; end
 
       scenario_end(scenario_id, clk_mhdma_cfg);
     end
@@ -1027,6 +1033,7 @@ module tb_mhdma_master;
         $display("[ERROR:%0d] RR FSM not in WAIT_REQUEST: %0b", scenario_id, stat.fsm_read_req);
         error_scenario = 1'b1;
       end
+      assert (stat.fsm_burst == 2'b00) else begin $display("[ERROR:%0d] fsm_burst not BURST_IDLE", scenario_id); error_scenario = 1'b1; end
 
       scenario_end(scenario_id, clk_mhdma_cfg);
     end
@@ -1107,6 +1114,7 @@ module tb_mhdma_master;
         $display("[ERROR:%0d] RR FSM not back to WAIT_REQUEST", scenario_id);
         error_scenario = 1'b1;
       end
+      assert (stat.fsm_burst == 2'b00) else begin $display("[ERROR:%0d] fsm_burst not BURST_IDLE", scenario_id); error_scenario = 1'b1; end
 
       scenario_end(scenario_id, clk_mhdma_cfg);
     end
@@ -1584,7 +1592,7 @@ module tb_mhdma_master;
     bit read_failed;
     begin
       scenario_start(scenario_id, "Multiple sequential read requests");
-      read_count = 3;
+      read_count = 20;
 
       for (int read_index = 0; read_index < read_count; read_index++) begin
         randomize_fields();
@@ -1601,6 +1609,7 @@ module tb_mhdma_master;
         $display("[ERROR:%0d] RR FSM not in WAIT_REQUEST after all reads", scenario_id);
         error_scenario = 1'b1;
       end
+      assert (stat.fsm_burst == 2'b00) else begin $display("[ERROR:%0d] fsm_burst not BURST_IDLE", scenario_id); error_scenario = 1'b1; end
 
       scenario_end(scenario_id, clk_mhdma_cfg);
     end
@@ -1689,6 +1698,7 @@ module tb_mhdma_master;
 
       assert (stat.fsm_notify   == 2'b00) else begin $display("[ERROR:%0d] fsm_notify not WAIT_REQUEST",   scenario_id); error_scenario = 1'b1; end
       assert (stat.fsm_read_req == 2'b00) else begin $display("[ERROR:%0d] fsm_read_req not WAIT_REQUEST", scenario_id); error_scenario = 1'b1; end
+      assert (stat.fsm_burst    == 2'b00) else begin $display("[ERROR:%0d] fsm_burst not BURST_IDLE",      scenario_id); error_scenario = 1'b1; end
 
       scenario_end(scenario_id, clk_mhdma_cfg);
     end
@@ -1808,7 +1818,7 @@ module tb_mhdma_master;
 // XSIM is fast enough for SVA in this test
 // ============================================================================================== --
 
-  // AXI4 protocol: awvalid must remain stable until awready
+  // AXI4 write-channel protocol checks (per PC): handshake stability, burst type/size, 4KB boundary, wlast
   generate
     for (genvar gen_pc = 0; gen_pc < ETH_PC; gen_pc++) begin : gen_sva_axi4
 
@@ -1816,14 +1826,16 @@ module tb_mhdma_master;
       property axi4_awvalid_stable;
         @(posedge clk_mhdma) disable iff (!s_rstn_mhdma)
         (m_axi4_awvalid[gen_pc] && !m_axi4_awready[gen_pc]) |=>
-          $stable(m_axi4_awvalid[gen_pc]) && $stable(m_axi4_awaddr[gen_pc]) && $stable(m_axi4_awlen[gen_pc]);
+          $stable(m_axi4_awvalid[gen_pc]) && $stable(m_axi4_awaddr[gen_pc]) && $stable(m_axi4_awlen[gen_pc])
+          && $stable(m_axi4_awburst[gen_pc]) && $stable(m_axi4_awsize[gen_pc]) && $stable(m_axi4_awid[gen_pc]);
       endproperty
 
       // wvalid must not deassert without wready handshake
       property axi4_wvalid_stable;
         @(posedge clk_mhdma) disable iff (!s_rstn_mhdma)
         (m_axi4_wvalid[gen_pc] && !m_axi4_wready[gen_pc]) |=>
-          $stable(m_axi4_wvalid[gen_pc]) && $stable(m_axi4_wdata[gen_pc]) && $stable(m_axi4_wlast[gen_pc]);
+          $stable(m_axi4_wvalid[gen_pc]) && $stable(m_axi4_wdata[gen_pc]) && $stable(m_axi4_wlast[gen_pc])
+          && $stable(m_axi4_wstrb[gen_pc]);
       endproperty
 
       // awburst must always be INCR
@@ -1862,53 +1874,98 @@ module tb_mhdma_master;
           error_assert = 1'b1;
         end
 
+      // burst must not cross a 4KB page boundary (AXI4 spec A3.4.1)
+      property axi4_no_4k_cross;
+        @(posedge clk_mhdma) disable iff (!s_rstn_mhdma)
+        (m_axi4_awvalid[gen_pc] && m_axi4_awready[gen_pc]) |->
+          (m_axi4_awaddr[gen_pc][PAGE_BYTES_W-1:0]
+           + ((m_axi4_awlen[gen_pc] + 1) * AXI4_DATA_BYTES)) <= PAGE_BYTES;
+      endproperty
+
+      assert_no_4k_cross: assert property(axi4_no_4k_cross)
+        else begin
+          $display("[ERROR-SVA] PC%0d AW channel: burst crosses 4KB page boundary (addr=0x%0h, len=%0d)",
+                   gen_pc, m_axi4_awaddr[gen_pc], m_axi4_awlen[gen_pc]);
+          error_assert = 1'b1;
+        end
+
+      // NOTE: This part was added for testing wready as random
       // wlast correctness: track W beat count per burst and verify wlast
       // fires on the correct beat (beat_count == awlen).
-      // Uses a queue to handle outstanding AW transactions (AW can run ahead of W).
+      // Uses a queue to handle outstanding AW transactions.
+      // NOTE: AXI4 allows W data before AW (separate channels). With AW backpressure,
+      // W beats can arrive at the port before the corresponding AW handshake. The
+      // sva_awlen_valid flag gates assertions until we have a reliable awlen to compare.
+      // When a W burst completes (wlast) before its AW arrives, we track it as an
+      // "unmatched wlast". Late-arriving AWs are consumed against unmatched wlasts
+      // instead of being enqueued, preventing queue misalignment.
       logic [AXI4_LEN_W-1:0] sva_awlen_q[$];
       int unsigned            sva_w_beat_cnt;
+      int unsigned            sva_unmatched_wlast;
 
       logic [AXI4_LEN_W-1:0] sva_awlen_current;
+      logic                   sva_awlen_valid;
 
       always @(posedge clk_mhdma) begin
         if (!s_rstn_mhdma) begin
           sva_awlen_q.delete();
-          sva_awlen_current <= '0;
-          sva_w_beat_cnt    <= 0;
-        end else begin
-          // Enqueue awlen on AW handshake
-          if (m_axi4_awvalid[gen_pc] && m_axi4_awready[gen_pc])
-            sva_awlen_q.push_back(m_axi4_awlen[gen_pc]);
+          sva_awlen_current   <= '0;
+          sva_awlen_valid     <= 1'b0;
+          sva_w_beat_cnt      <= 0;
+          sva_unmatched_wlast <= 0;
+        end else begin : sva_wlast_tracker
+          int unsigned next_unmatched;
+          next_unmatched = sva_unmatched_wlast;
+
+          // Enqueue awlen on AW handshake, or consume against unmatched wlast
+          if (m_axi4_awvalid[gen_pc] && m_axi4_awready[gen_pc]) begin
+            if (next_unmatched > 0)
+              next_unmatched = next_unmatched - 1;
+            else
+              sva_awlen_q.push_back(m_axi4_awlen[gen_pc]);
+          end
 
           // Count W beats; pop queue on wlast (burst complete)
           if (m_axi4_wvalid[gen_pc] && m_axi4_wready[gen_pc]) begin
             if (m_axi4_wlast[gen_pc]) begin
               sva_w_beat_cnt <= 0;
               // Pop completed burst and load next awlen for SVA
-              if (sva_awlen_q.size() > 0)
+              if (sva_awlen_q.size() > 0) begin
                 void'(sva_awlen_q.pop_front());
-              if (sva_awlen_q.size() > 0)
-                sva_awlen_current <= sva_awlen_q[0];
+                if (sva_awlen_q.size() > 0) begin
+                  sva_awlen_current <= sva_awlen_q[0];
+                  sva_awlen_valid   <= 1'b1;
+                end else begin
+                  sva_awlen_valid   <= 1'b0;
+                end
+              end else begin
+                // W burst completed before its AW arrived at port
+                sva_awlen_valid <= 1'b0;
+                next_unmatched  = next_unmatched + 1;
+              end
             end else begin
               sva_w_beat_cnt <= sva_w_beat_cnt + 1;
             end
           end else if (sva_w_beat_cnt == 0 && sva_awlen_q.size() > 0) begin
             // Idle: load front of queue so SVA sees correct value on first beat
             sva_awlen_current <= sva_awlen_q[0];
+            sva_awlen_valid   <= 1'b1;
           end
+
+          sva_unmatched_wlast <= next_unmatched;
         end
       end
 
       // wlast must be asserted when beat count reaches awlen
       property axi4_wlast_correct;
-        @(posedge clk_mhdma) disable iff (!s_rstn_mhdma)
+        @(posedge clk_mhdma) disable iff (!s_rstn_mhdma || !sva_awlen_valid)
         (m_axi4_wvalid[gen_pc] && m_axi4_wready[gen_pc] && m_axi4_wlast[gen_pc]) |->
           (sva_w_beat_cnt == sva_awlen_current);
       endproperty
 
       // wlast must not be asserted before beat count reaches awlen
       property axi4_wlast_not_early;
-        @(posedge clk_mhdma) disable iff (!s_rstn_mhdma)
+        @(posedge clk_mhdma) disable iff (!s_rstn_mhdma || !sva_awlen_valid)
         (m_axi4_wvalid[gen_pc] && m_axi4_wready[gen_pc] && !m_axi4_wlast[gen_pc]) |->
           (sva_w_beat_cnt < sva_awlen_current);
       endproperty

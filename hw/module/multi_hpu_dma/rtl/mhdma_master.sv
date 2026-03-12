@@ -9,8 +9,9 @@
 //
 // Retry logic:
 //  - Notify: retried on timeout only (NTX_WAIT_ACK -> NTX_SEND_NOTIFY).
-//  - Read request: retried on timeout OR seq_num mismatch. On mismatch the in-flight AXI
-//    burst completes (AXI protocol), then transfer stops; retry overwrites from offset 0.
+//  - Read request: retried on timeout OR seq_num mismatch. On mismatch or timeout
+//    (while writing), the in-flight AXI burst completes (AXI protocol), then transfer
+//    stops; retry overwrites from offset 0.
 //
 // Write path: stream-through with reactive page-aligned bursts.
 //  - Dataflow: decoder > fifo_ce_rx > deserialization > fifo > burst FSM > AXI4 > fifo
@@ -249,8 +250,9 @@ module mhdma_master
   logic retry_seq_num;
   logic seq_num_mismatch;
   logic wait_for_seq0;
+  logic timeout_retry_pending;
 
-  assign valid_ciphertext_received = ciphertext_received & ~mismatch_retry_pending;
+  assign valid_ciphertext_received = ciphertext_received & ~mismatch_retry_pending & ~timeout_retry_pending;
 
   // building read request retry signal
   always_ff @(posedge clk_mhdma) begin
@@ -591,14 +593,26 @@ module mhdma_master
   // Abort transfer on seq_num mismatch
   // =========================================================================================== //
   logic abort_transfer;
+  logic [ETH_PC-1:0]        axi4_write_pc;
 
   always_ff @(posedge clk_mhdma) begin
     if (~resetn_mhdma) begin
       abort_transfer <= 1'b0;
-    end else if (seq_num_mismatch) begin
+    end else if (seq_num_mismatch | (timeout_reached_read_request & |axi4_write_pc)) begin
       abort_transfer <= 1'b1;
     end else if (ciphertext_received) begin
       abort_transfer <= 1'b0;
+    end
+  end
+
+  // Track timeout-driven aborts to suppress spurious interrupt on abort completion
+  always_ff @(posedge clk_mhdma) begin
+    if (~resetn_mhdma) begin
+      timeout_retry_pending <= 1'b0;
+    end else if (ciphertext_received) begin
+      timeout_retry_pending <= 1'b0;
+    end else if (timeout_reached_read_request & |axi4_write_pc) begin
+      timeout_retry_pending <= 1'b1;
     end
   end
 
@@ -608,7 +622,6 @@ module mhdma_master
   // Assumptions:
   // We had previously guaranteed to launch a Read request only and only if fifo is empty and ready
   // =========================================================================================== //
-  logic [ETH_PC-1:0]        axi4_write_pc;
   // ce-rx input interface
   logic [MRMAC_AXIS_W-1:0]  fifo_cerx_in_data;
   logic                     fifo_cerx_in_vld;
@@ -1019,6 +1032,7 @@ module mhdma_master
   end
 
   logic m_axi4_wvalid_single;
+  logic m_axi4_awvalid_single;
 
   always_comb begin
     burst_next_state = BURST_XXX;
@@ -1032,8 +1046,8 @@ module mhdma_master
       BURST_W_DATA:
         burst_next_state = (w_send_data & wlast) ? ((abort_draining | words_remain == 0) ? BURST_DONE : BURST_AW) : BURST_W_DATA;
       BURST_DONE:
-        // Wait for W FIFO to drain before shifting PC (prevents stale data on next port)
-        burst_next_state = ~m_axi4_wvalid_single ? BURST_IDLE : BURST_DONE;
+        // Wait for both AW and W FIFOs to drain before shifting PC (prevents stale AW on next port)
+        burst_next_state = (~m_axi4_wvalid_single & ~m_axi4_awvalid_single) ? BURST_IDLE : BURST_DONE;
       default : burst_next_state = BURST_IDLE;
     endcase
   end
@@ -1104,15 +1118,25 @@ module mhdma_master
   // ======================================================================================= //
   // Address channel (single instance, demuxed to active port)
   // ======================================================================================= //
-  assign axi_a_awvalid = (burst_state == BURST_AW) & (effective_burst_len_r > 0) & ~abort_transfer;
+  axi4_aw_if_t m_axi4_aw_single;
+
+  // Suppress awvalid on the first cycle of BURST_AW: effective_burst_len_r is registered and lags by one cycle.
+  logic burst_aw_entry;
+
+  always_ff @(posedge clk_mhdma) begin
+    if (~resetn_mhdma) begin
+      burst_aw_entry <= 1'b0;
+    end else begin
+      burst_aw_entry <= (burst_state != BURST_AW) & (burst_next_state == BURST_AW);
+    end
+  end
+
+  assign axi_a_awvalid = (burst_state == BURST_AW) & (effective_burst_len_r > 0) & ~abort_transfer & ~burst_aw_entry;
   assign axi_a.awid    = MHDMA_AXI_ARID;
   assign axi_a.awaddr  = burst_addr;
   assign axi_a.awsize  = MHDMA_ARSIZE;
   assign axi_a.awburst = AXI4B_INCR;
   assign axi_a.awlen   = effective_burst_len_r - 1;
-
-  axi4_aw_if_t m_axi4_aw_single;
-  logic        m_axi4_awvalid_single;
 
   fifo_element #(
     .WIDTH          ($bits(axi4_aw_if_t)),
@@ -1514,6 +1538,7 @@ module mhdma_master
 
   assign stat.fsm_notify            = ntx_state;
   assign stat.fsm_read_req          = rreq_state;
+  assign stat.fsm_burst             = burst_state;
   assign stat.cnt_notify            = stat_cnt[0];
   assign stat.cnt_notify_ack        = stat_cnt[1];
   assign stat.cnt_notify_retries    = stat_cnt[2];

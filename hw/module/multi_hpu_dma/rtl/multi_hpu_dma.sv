@@ -192,11 +192,12 @@ module multi_hpu_dma
   // FSM value composition (from nested submodule stats after CDC)
   // ============================================================================================ //
   logic [REG_DATA_W-1:0] fsm_value_composed;
-  assign fsm_value_composed = {11'b0, 2'b0, cnt_cfg.formatter.fsm_formatter,
-                                      2'b0, cnt_cfg.master.fsm_read_req,
-                                      2'b0, cnt_cfg.slave.fsm_cem,
-                                      2'b0, cnt_cfg.slave.fsm_notify_rx,
-                                      2'b0, cnt_cfg.master.fsm_notify};
+  assign fsm_value_composed = {7'b0, 2'b0, cnt_cfg.formatter.fsm_formatter,
+                                     2'b0, cnt_cfg.slave.fsm_cem,
+                                     2'b0, cnt_cfg.slave.fsm_notify_rx,
+                                     2'b0, cnt_cfg.master.fsm_burst,
+                                     2'b0, cnt_cfg.master.fsm_read_req,
+                                     2'b0, cnt_cfg.master.fsm_notify};
 
   // ============================================================================================ //
   // Register file
