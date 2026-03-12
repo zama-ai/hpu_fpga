@@ -2,16 +2,36 @@
 // BSD 3-Clause Clear License
 // Copyright © 2025 ZAMA. All rights reserved.
 // ------------------------------------------------------------------------------------------------
-// Description  : Bridge between HBM and MRMAC IP
-// ------------------------------------------------------------------------------------------------
-// includes other module for all the control for notify, read request and ciphertext emission
+// Description  : MHDMA Bridge between HBM and QSFP
+//
+// Instantiates and interconnects the four core sub-modules of the MHDMA datapath:
+//   - mhdma_decoder   : QSFP RX frame parsing, sends decoded commands & ciphertext stream
+//   - mhdma_master    : notify / read-request FSM, ciphertex- write to HBM
+//   - mhdma_slave     : notify-ack / ciphertext-read from HBM
+//   - mhdma_formatter : takes commands and sends custom ethernet header & payload
+//
+// Additionally handles:
+//   - HPU identification: CDC of hpu_ids from cfg_clock to one-hot lookup & current_hpu_mac/id
+//   - Decoded-command arbitration: decoder output is shared between master and slave via
+//     OR'd ready (decoded_command_rdy = rdy_slave | rdy_master)
+//   - Error aggregation: per-submodule errors are packed into mhdma_error_t for regfile readback
+//   - Stat multiplexing: per-submodule stat structs are mapped into the CDC-ready mhdma_cnt_t
+//
+// Assumptions / Limitations:
+//   - Exactly one hpu_ids entry must have bit [31] set (one-hot). multiple bits set raises
+//     error_id. All-zeros is treated as "no HPU selected" (current_hpu_mac = 0).
+//   - Decoded command dispatch relies on req_id partitioning: master consumes NOTIFY_ACK and
+//     CT EMISSION commands, slave consumes NOTIFY and READ commands.
+//     Bridge OR's their ready signals : correctness depends on these req_id sets being disjoint.
+//   - regf_ct_mem_addr, regf_req_id/addr cross from cfg to eth domain inside sub-modules.
+//
 // ================================================================================================
 
 module mhdma_bridge
   import mhdma_pkg::*;                            // multi-hpu-dma
   import axi_if_shell_axil_pkg::*;                // REG_DATA_W
   import axi_if_common_param_pkg::*;              // general axi4
-  import axi_if_mhdma_axi_pkg::*;                   // AXI ethernet
+  import axi_if_mhdma_axi_pkg::*;                 // AXI ethernet
 #() (
   // Ethernet configuration interface -----------------------------------------
   input  logic                                    clk_mhdma_cfg,
@@ -425,6 +445,5 @@ module mhdma_bridge
   assign master_stat_rst  = rst_cnt.master;
   assign slave_stat_rst   = rst_cnt.slave;
   assign decoder_stat_rst = rst_cnt.decoder;
-
 
 endmodule

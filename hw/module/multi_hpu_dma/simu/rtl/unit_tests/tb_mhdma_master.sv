@@ -33,7 +33,7 @@
 //   > Statistics counters
 //   > Error reset
 //
-// NOTE: Drop of a packet with others still correct covered in tb_mhdma_pkt_loss
+// NOTE: Drop of a packet (with others packets still correct) covered in tb_mhdma_pkt_loss
 //
 // ==============================================================================================
 

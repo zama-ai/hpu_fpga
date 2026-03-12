@@ -12,12 +12,12 @@
 `resetall
 `timescale 1ns/10ps
 module tb_multi_hpu_dma;
-  import mhdma_pkg::*;                    // multi-hpu-dma
-  import axi_if_shell_axil_pkg::*;        // axi4-lite + REG_DATA_W
-  import axi_if_common_param_pkg::*;      // general axi4
+  import mhdma_pkg::*;                      // multi-hpu-dma
+  import axi_if_shell_axil_pkg::*;          // axi4-lite + REG_DATA_W
+  import axi_if_common_param_pkg::*;        // general axi4
   import hpu_regif_core_mhdma_2in3_pkg::*;  // ethernet regif
   import axi_if_mhdma_axi_pkg::*;           // AXI ethernet
-  import pem_common_param_pkg::*;         // CT_MEM_BYTES, AXI4_WORD_PER_PC*
+  import pem_common_param_pkg::*;           // CT_MEM_BYTES, AXI4_WORD_PER_PC*
 
   `include "tb_mhdma_tasks.sv"
 
@@ -1065,7 +1065,7 @@ module tb_multi_hpu_dma;
 // ============================================================================================== --
 // Checker
 // ============================================================================================== --
-// TODO: VCS cannot dynamically index generate arrays in cross-module references.
+// NOTE: VCS cannot dynamically index generate arrays in cross-module references.
 // This does not work for ETH_PC != 2
 
   /* Checker
@@ -1084,9 +1084,9 @@ module tb_multi_hpu_dma;
 
     mismatch_found = 1'b0;
 
-    // Use CT_MEM_BYTES for address calculation (cid * CT_MEM_BYTES), divide by 32 for word address
-    addr_hpu_0 = (regf_start_addr_ofs + (dst_addr * CT_MEM_BYTES)) / 32;
-    addr_hpu_1 = (regf_start_addr_ofs + (src_addr * CT_MEM_BYTES)) / 32;
+    // Use CT_MEM_BYTES for address calculation (cid * CT_MEM_BYTES), divide by AXI4_DATA_BYTES for word address
+    addr_hpu_0 = (regf_start_addr_ofs + (dst_addr * CT_MEM_BYTES)) / AXI4_DATA_BYTES;
+    addr_hpu_1 = (regf_start_addr_ofs + (src_addr * CT_MEM_BYTES)) / AXI4_DATA_BYTES;
 
     $display("addr_hpu_0 = %x, addr_hpu_1 = %x", addr_hpu_0, addr_hpu_1);
 

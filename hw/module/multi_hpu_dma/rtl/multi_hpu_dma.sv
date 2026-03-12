@@ -2,16 +2,38 @@
 // BSD 3-Clause Clear License
 // Copyright © 2025 ZAMA. All rights reserved.
 // ------------------------------------------------------------------------------------------------
-// Description  : multi-HPU DMA
-// ------------------------------------------------------------------------------------------------
-// phys_addr = hbm_pc_offset + ctId * ciphertext_size
+// Description  : Multi-HPU DMA (MHDMA) top-level module
+//
+// Orchestrates data movement between multiple HPUs over Ethernet (QSFP) and HBM memory.
+// Integrates the register file, the bridge (decoder + master + formatter + slave),
+// clock-domain crossing (CFG <-> ETH), and a QSFP lane multiplexer.
+//
+// Clock domains:
+//   - clk_mhdma_cfg : slow configuration clock (AXI4-Lite, register file, request handling)
+//   - clk_mhdma     : fast Ethernet clock (QSFP datapath & HBM AXI4 interfaces)
+// clk_mhdma's frequency depends on MRMAC axi interface. Here we chose to be in "independent
+// Non-Segmented 25GE 64 bit". AXI4 stream size (64) is arbitrary, the rest is mandatory.
+//
+// Interfaces:
+//   - AXI4-Lite slave  : register file access from host / RPU
+//   - AXI4-Full master : per-PC HBM read/write channels (ETH_PC ports)
+//   - AXI-Stream       : QSFP TX/RX per lane (QSFP_LANE_NB lanes, one selected via line_sel)
+//   - Interrupts       : notify and read_request to host
+//   - GT control       : transceiver reset and loopback configuration
+//
+// Assumptions / Limitations:
+//  - Only one QSFP lane is active at a time, selected by r_system_line[1:0] (regfile)
+//  - Request from host requires two consecutive register writes (req_id then req_addr)
+//  - CDC for stat counters uses handshake; counters may lag by a few cfg-clock cycles
+//  - Top module cannot use ETH_PC != 2 because of regfile. for => 4 XPM CDC fifos will overflow
+//
 // ================================================================================================
 
 module multi_hpu_dma
-  import mhdma_pkg::*;                      // multi-hpu-dma
-  import axi_if_shell_axil_pkg::*;          // axi4-lite + REG_DATA_W
-  import axi_if_common_param_pkg::*;        // general axi4
-  import hpu_regif_core_mhdma_2in3_pkg::*;  // ethernet regif
+  import mhdma_pkg::*;                                             // multi-hpu-dma
+  import axi_if_shell_axil_pkg::*;                                 // axi4-lite + REG_DATA_W
+  import axi_if_common_param_pkg::*;                               // general axi4
+  import hpu_regif_core_mhdma_2in3_pkg::*;                         // ethernet regif
 (
   // Ethernet configuration interface -------------------------------------------------------------
   input logic                                                      clk_mhdma_cfg,
@@ -325,9 +347,13 @@ module multi_hpu_dma
     if (~resetn_mhdma_cfg) begin
       received_req <= '0;
     end else begin
-      if (r_request_req_id_wr_en)   received_req[0] <= 1'b1;
-      if (r_request_req_addr_wr_en) received_req[1] <= 1'b1;
-      if (request_consumed)         received_req    <= '0;
+      if (r_request_req_id_wr_en) begin
+        received_req[0] <= 1'b1;
+      end else if (r_request_req_addr_wr_en) begin
+        received_req[1] <= 1'b1;
+      end else if (request_consumed) begin
+        received_req    <= '0;
+      end
     end
   end
 
