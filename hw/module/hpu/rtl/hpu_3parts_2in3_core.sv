@@ -456,6 +456,9 @@ module hpu_3parts_2in3_core
   // * master module (Notify & Read-Request)
   // * slave module (Notify-ACK & Ciphertext-Emission)
   // ==============================================================================================
+  // reset for mrmac resyncronized for the two clock frequencies
+  logic cfg_mhdma_srst_n; // ethernet configuration slow clock
+  logic prc_mhdma_srst_n; // mrmac clock at axis speed
 
   // initialize axi4 signals ----------------------------------------------------------------------
   // Tie-off m_axi4 unused features
@@ -508,10 +511,6 @@ module hpu_3parts_2in3_core
     end
 // pragma translate_on
   // ==============================================================================================
-
-  // reset for mrmac resyncronized for the two clock frequencies
-  logic cfg_mhdma_srst_n; // ethernet configuration slow clock
-  logic prc_mhdma_srst_n; // mrmac clock at axis speed
 
   xpm_cdc_single_wrapper #(
     // The frequency of the input signal is extremely low, this should be enough
