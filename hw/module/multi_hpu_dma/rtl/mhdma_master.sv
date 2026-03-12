@@ -603,23 +603,6 @@ module mhdma_master
   end
 
   // =========================================================================================== //
-  // Credit-based burst authorization
-  // =========================================================================================== //
-  logic [NB_WORDS_TOTAL_WW-1:0] authorized_axi4_words;
-
-  always_ff @(posedge clk_mhdma) begin
-    if (~resetn_mhdma | start_read_request) begin
-      authorized_axi4_words <= '0;
-    end else if (seq_num_valid & ~seq_num_mismatch) begin
-      if (expected_seq_num < NB_PACKETS_FULL) begin
-        authorized_axi4_words <= authorized_axi4_words + NB_WORDS_TOTAL_WW'(AXI4_WORDS_PER_FULL_PKT);
-      end else begin
-        authorized_axi4_words <= authorized_axi4_words + NB_WORDS_TOTAL_WW'(AXI4_WORDS_PER_LAST_PKT);
-      end
-    end
-  end
-
-  // =========================================================================================== //
   // Ciphertext reception
   //
   // Assumptions:
@@ -904,8 +887,87 @@ module mhdma_master
   end
 
   // ======================================================================================= //
+  // Credit-based burst length computation
+  // ======================================================================================= //
+  // Burst FSM state (next section)
+  logic [AXI4_ADD_W-1:0]           burst_addr;
+  logic [AXI4_WORD_PER_PC0_WW-1:0] words_remain;
+  // Burst FSM must not issue AXI writes for data that has not yet been received from the
+  // network. To enforce this, a credit counter tracks how many AXI words are "authorized" to
+  // be written, based on validated packet arrivals:
+
+  // Credit accumulator ---------------------------------------------------------------------------
+  //  authorized_axi4_words: running total AXI words we are allowed to write (across all PCs).
+  //    Incremented each time a packet's sequence number is validated.
+  logic [NB_WORDS_TOTAL_WW-1:0]    authorized_axi4_words;
+
+  always_ff @(posedge clk_mhdma) begin
+    if (~resetn_mhdma) begin
+      authorized_axi4_words <= '0;
+    end else begin
+      if (start_read_request) begin
+        authorized_axi4_words <= '0;
+      end else if (seq_num_valid & ~seq_num_mismatch) begin
+        if (expected_seq_num < NB_PACKETS_FULL) begin
+          authorized_axi4_words <= authorized_axi4_words + NB_WORDS_TOTAL_WW'(AXI4_WORDS_PER_FULL_PKT);
+        end else begin
+          authorized_axi4_words <= authorized_axi4_words + NB_WORDS_TOTAL_WW'(AXI4_WORDS_PER_LAST_PKT);
+        end
+      end
+    end
+  end
+
+  // Credit computation ---------------------------------------------------------------------------
+  //  pc_consumed_total: how many of those authorized words, burst FSM has already consumed
+  logic [NB_WORDS_TOTAL_WW-1:0] pc_consumed_total;
+  logic [NB_WORDS_TOTAL_WW-1:0] words_committed;
+
+  assign words_committed   = NB_WORDS_TOTAL_WW'(active_words_per_pc) - NB_WORDS_TOTAL_WW'(words_remain);
+
+  // active_pc_base_offset (words for all completed PCs) + words_committed (words issued so far within the active PC)
+  assign pc_consumed_total = active_pc_base_offset + words_committed;
+
+  //  pc_credits : The number of additional words the FSM is allowed to burst right now.
+  logic [NB_WORDS_TOTAL_WW-1:0] pc_credits;
+
+  assign pc_credits = (authorized_axi4_words > pc_consumed_total) ? (authorized_axi4_words - pc_consumed_total) : '0;
+
+  // Page-aligned burst length --------------------------------------------------------------------
+  //  computed_burst_len: the burst length limited to the current 4 KB page boundary.
+  logic [AXI4_LEN_W:0]      computed_burst_len;
+  logic [PAGE_BYTES_WW-1:0] page_word_remain;
+
+  assign page_word_remain   = PAGE_AXI4_DATA - burst_addr[PAGE_BYTES_W-1:AXI4_DATA_BYTES_W];
+  assign computed_burst_len = (page_word_remain < words_remain) ? page_word_remain : words_remain;
+
+  // Credit-clamped burst length ------------------------------------------------------------------
+  //  Final burst length = min(computed_burst_len, pc_credits).
+  //  Ensures we never issue a burst larger than the data currently received from the network.
+  //  If pc_credits == 0 (no data available yet), effective_burst_len_r == 0, which deasserts
+  //  awvalid and stalls the burst FSM in BURST_AW until more packets arrive.
+  logic [AXI4_LEN_W:0] effective_burst_len;
+  logic [AXI4_LEN_W:0] effective_burst_len_r;
+
+  assign effective_burst_len = (NB_WORDS_TOTAL_WW'(computed_burst_len) <= pc_credits) ? computed_burst_len : (AXI4_LEN_W+1)'(pc_credits);
+
+  // Pipeline register: breaks the combinational chain before FSM
+  //   burst_addr -> page_word_remain -> computed_burst_len -> effective_burst_len
+  always_ff @(posedge clk_mhdma) begin
+    if (~resetn_mhdma) begin
+      effective_burst_len_r <= 'h0;
+    end else begin
+      effective_burst_len_r <= effective_burst_len;
+    end
+  end
+
+  // ======================================================================================= //
   // Burst FSM
   // ======================================================================================= //
+  logic [AXI4_LEN_W:0]            burst_word_cnt; // number of words in current burst
+  logic [AXI4_LEN_W:0]            burst_beat_cnt;
+  logic [AXI_BURST_NB_MAX_WW-1:0] bursts_issued;
+  logic                           abort_draining;
+
   typedef enum logic [1:0] {
     BURST_XXX    = 'x,
     BURST_IDLE   = 2'b00,
@@ -916,45 +978,6 @@ module mhdma_master
 
   st_burst burst_state;
   st_burst burst_next_state;
-
-  // Key registers
-  logic [AXI4_ADD_W-1:0]           burst_addr;
-  logic [AXI4_LEN_W:0]             burst_word_cnt; // number of words in current burst (NOT awlen)
-  logic [AXI4_WORD_PER_PC0_WW-1:0] words_remain;
-  logic [AXI4_LEN_W:0]             burst_beat_cnt;
-  logic [AXI_BURST_NB_MAX_WW-1:0]  bursts_issued;
-  logic                            abort_draining;
-
-  // Burst length computation (page-aligned)
-  logic [PAGE_BYTES_WW-1:0] page_word_remain;
-  logic [AXI4_LEN_W:0]      computed_burst_len;
-
-  assign page_word_remain   = PAGE_AXI4_DATA - burst_addr[PAGE_BYTES_W-1:AXI4_DATA_BYTES_W];
-  assign computed_burst_len = (page_word_remain < words_remain) ? page_word_remain : words_remain;
-
-  // Credit-based burst clamping
-  logic [NB_WORDS_TOTAL_WW-1:0] words_committed;
-  logic [NB_WORDS_TOTAL_WW-1:0] pc_consumed_total;
-  logic [NB_WORDS_TOTAL_WW-1:0] pc_credits;
-  logic [AXI4_LEN_W:0]          clamped_burst_len;
-  logic [AXI4_LEN_W:0]          clamped_burst_len_r; // registered to break timing
-
-  assign words_committed   = NB_WORDS_TOTAL_WW'(active_words_per_pc) - NB_WORDS_TOTAL_WW'(words_remain);
-  assign pc_consumed_total = active_pc_base_offset + words_committed;
-  assign pc_credits        = (authorized_axi4_words > pc_consumed_total) ? (authorized_axi4_words - pc_consumed_total) : '0;
-
-  assign clamped_burst_len = (NB_WORDS_TOTAL_WW'(computed_burst_len) <= pc_credits) ? computed_burst_len : pc_credits[AXI4_LEN_W:0];
-
-  // Register clamped_burst_len to break the 4-deep arithmetic chain
-  // (sub -> add -> sub+cmp+mux -> cmp+mux) before AW channel.
-  // Cost: 1 extra cycle of latency when credits arrive in BURST_AW.
-  always_ff @(posedge clk_mhdma) begin
-    if (~resetn_mhdma) begin
-      clamped_burst_len_r <= 'h0;
-    end else begin
-      clamped_burst_len_r <= clamped_burst_len;
-    end
-  end
 
   // AXI channel signals
   axi4_aw_if_t axi_a;
@@ -971,7 +994,7 @@ module mhdma_master
   assign w_send_data = axi_wvalid & axi_wready;
   assign wlast       = (burst_word_cnt != 0) & (burst_beat_cnt == burst_word_cnt - 1);
 
-  // W-data completion: rising edge on BURST_DONE entry
+  // pc_w_complete: when we are leaving BURST_DONE state (W FIFO is guaranteed to be drained)
   logic in_burst_done;
   logic in_burst_done_r;
 
@@ -985,10 +1008,8 @@ module mhdma_master
     end
   end
 
-  // Falling edge: fires when leaving BURST_DONE (W FIFO guaranteed drained)
   assign pc_w_complete = ~in_burst_done & in_burst_done_r;
 
-  // ----- FSM state register -----
   always_ff @(posedge clk_mhdma) begin
     if (~resetn_mhdma) begin
       burst_state <= BURST_IDLE;
@@ -1007,12 +1028,7 @@ module mhdma_master
         // Wait one cycle for the new PC index to settle before capturing parameters.
         burst_next_state = (|axi4_write_pc & ~pc_w_complete) ? (abort_transfer ? BURST_DONE : BURST_AW) : BURST_IDLE;
       BURST_AW:
-        if (axi_a_awvalid & axi_a_awready)
-          burst_next_state = BURST_W_DATA;
-        else if (abort_transfer)
-          burst_next_state = BURST_DONE;
-        else
-          burst_next_state = BURST_AW;
+        burst_next_state = (axi_a_awvalid & axi_a_awready) ? BURST_W_DATA : abort_transfer ? BURST_DONE : BURST_AW;
       BURST_W_DATA:
         burst_next_state = (w_send_data & wlast) ? ((abort_draining | words_remain == 0) ? BURST_DONE : BURST_AW) : BURST_W_DATA;
       BURST_DONE:
@@ -1043,10 +1059,10 @@ module mhdma_master
 
         BURST_AW: begin
           if (axi_a_awvalid & axi_a_awready) begin
-            burst_word_cnt <= clamped_burst_len_r;
+            burst_word_cnt <= effective_burst_len_r;
             burst_beat_cnt <= 'h0;
             bursts_issued  <= bursts_issued + 1;
-            words_remain   <= words_remain - clamped_burst_len_r;
+            words_remain   <= words_remain - effective_burst_len_r;
           end
         end
 
@@ -1088,12 +1104,12 @@ module mhdma_master
   // ======================================================================================= //
   // Address channel (single instance, demuxed to active port)
   // ======================================================================================= //
-  assign axi_a_awvalid = (burst_state == BURST_AW) & (clamped_burst_len_r > 0) & ~abort_transfer;
+  assign axi_a_awvalid = (burst_state == BURST_AW) & (effective_burst_len_r > 0) & ~abort_transfer;
   assign axi_a.awid    = MHDMA_AXI_ARID;
   assign axi_a.awaddr  = burst_addr;
   assign axi_a.awsize  = MHDMA_ARSIZE;
   assign axi_a.awburst = AXI4B_INCR;
-  assign axi_a.awlen   = clamped_burst_len_r - 1;
+  assign axi_a.awlen   = effective_burst_len_r - 1;
 
   axi4_aw_if_t m_axi4_aw_single;
   logic        m_axi4_awvalid_single;
