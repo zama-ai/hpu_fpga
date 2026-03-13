@@ -1775,6 +1775,149 @@ module tb_mhdma_master;
     end
   endtask
 
+  // --------------------------------------------------------------------------------------------- --
+  // Scenario : IRQ FIFO backpressure and recovery
+  //
+  // Verifies that the master correctly backpressures when the interrupt FIFO
+  // (rr_resp_ram_rdy_vld_2clk, depth=REQ_FIFO_DEPTH) is full, and resumes after clearing.
+  //
+  // Steps:
+  //   1. Issue REQ_FIFO_DEPTH reads WITHOUT clearing interrupts -> fills the FIFO
+  //   2. Inject one more read request and verify master_command_vld does NOT assert (backpressure)
+  //   3. Clear one interrupt -> verify the blocked read request is now issued
+  //   4. Complete that last read, clear remaining interrupts
+  //   5. Read back regf_read_req_id and check it matches the last completed read
+  // --------------------------------------------------------------------------------------------- --
+  task automatic run_scenario_irq_fifo_backpressure();
+    localparam int NB_FILL_READS = REQ_FIFO_DEPTH+1; // exactly fill the FIFO
+    bit                    read_failed;
+    logic                  cmd_timed_out;
+    logic                  irq_timed_out;
+    // Save last read fields for regfile check
+    logic [IOP_ID_W-1:0]   last_iop_id;
+    logic [HPU_ID_W-1:0]   last_hpu_id;
+    logic [MODE_W-1:0]     last_req_mode;
+    logic [FLAG_W-1:0]     last_req_flag;
+    logic [SRC_ADDR_W-1:0] last_iop_src_addr;
+    logic [DST_ADDR_W-1:0] last_iop_dst_addr;
+    logic [REG_DATA_W-1:0] exp_read_req_id;
+    logic [REG_DATA_W-1:0] exp_read_addr;
+    begin
+      scenario_start(scenario_id, "IRQ FIFO backpressure and recovery");
+
+      // Phase 1: fill the interrupt FIFO (no clearing)
+      for (int i = 0; i < NB_FILL_READS; i++) begin
+        randomize_fields();
+
+        inject_regf_request(iop_id, REQ_ID_READ, hpu_id, req_mode, req_flag, iop_src_addr, iop_dst_addr);
+
+        wait_master_command_vld(2000, cmd_timed_out);
+        assert (!cmd_timed_out) else begin
+          $display("[ERROR:%0d] Phase1: Read %0d/%0d timed out waiting for master_command_vld", scenario_id, i, NB_FILL_READS);
+          error_scenario = 1'b1;
+        end
+        if (error_scenario) break;
+
+        consume_master_command();
+        simulate_pulse(read_request_sent, clk_mhdma);
+        feed_full_ciphertext(iop_id, hpu_id, req_mode, req_flag, iop_src_addr, iop_dst_addr);
+
+        wait_interrupt_rr(5000, irq_timed_out);
+        assert (!irq_timed_out) else begin
+          $display("[ERROR:%0d] Phase1: Read %0d/%0d timed out waiting for interrupt", scenario_id, i, NB_FILL_READS);
+          error_scenario = 1'b1;
+        end
+        if (error_scenario) break;
+
+        // DO NOT clear the interrupt — accumulate in the FIFO
+      end
+      if (error_scenario) begin
+        scenario_end(scenario_id, clk_mhdma_cfg);
+        return;
+      end
+
+      // Phase 2: inject one more read, verify backpressure (master_command_vld must NOT assert)
+      randomize_fields();
+      last_iop_id       = iop_id;
+      last_hpu_id       = hpu_id;
+      last_req_mode     = req_mode;
+      last_req_flag     = req_flag;
+      last_iop_src_addr = iop_src_addr;
+      last_iop_dst_addr = iop_dst_addr;
+
+      inject_regf_request(iop_id, REQ_ID_READ, hpu_id, req_mode, req_flag, iop_src_addr, iop_dst_addr);
+
+      // Wait a reasonable time: master_command_vld should NOT assert
+      wait_master_command_vld(500, cmd_timed_out);
+      assert (cmd_timed_out) else begin
+        $display("[ERROR:%0d] Phase2: master_command_vld asserted despite full IRQ FIFO (rr_regf_in_rdy=%0b)", scenario_id, mhdma_master.rr_regf_in_rdy);
+        error_scenario = 1'b1;
+      end
+      if (error_scenario) begin
+        scenario_end(scenario_id, clk_mhdma_cfg);
+        return;
+      end
+
+      // Phase 3: clear one interrupt -> blocked read should now be issued
+      clear_signal(clear_interrupt_rr, clk_mhdma_cfg);
+      repeat (10) @(posedge clk_mhdma_cfg);
+
+      wait_master_command_vld(2000, cmd_timed_out);
+      assert (!cmd_timed_out) else begin
+        $display("[ERROR:%0d] Phase3: master_command_vld did not assert after clearing one interrupt (rr_regf_in_rdy=%0b)", scenario_id, mhdma_master.rr_regf_in_rdy);
+        error_scenario = 1'b1;
+      end
+      if (error_scenario) begin
+        scenario_end(scenario_id, clk_mhdma_cfg);
+        return;
+      end
+
+      // Phase 4: complete the last read
+      consume_master_command();
+      simulate_pulse(read_request_sent, clk_mhdma);
+      feed_full_ciphertext(last_iop_id, last_hpu_id, last_req_mode, last_req_flag, last_iop_src_addr, last_iop_dst_addr);
+
+      wait_interrupt_rr(5000, irq_timed_out);
+      assert (!irq_timed_out) else begin
+        $display("[ERROR:%0d] Phase4: timed out waiting for interrupt on last read", scenario_id);
+        error_scenario = 1'b1;
+      end
+      if (error_scenario) begin
+        scenario_end(scenario_id, clk_mhdma_cfg);
+        return;
+      end
+
+      // Phase 5: drain all interrupts, then verify regf_read_req_id matches the last read
+      // The FIFO is FIFO-ordered: drain NB_FILL_READS Phase1 entries + the Phase3 clear already popped one
+      // so we need to clear NB_FILL_READS remaining entries (NB_FILL_READS-1 from Phase1 + 1 from Phase4)
+      repeat (NB_FILL_READS) begin
+        clear_signal(clear_interrupt_rr, clk_mhdma_cfg);
+        repeat (10) @(posedge clk_mhdma_cfg);
+      end
+      repeat (100) @(posedge clk_mhdma);
+
+      // The last entry popped should be the Phase 4 completion
+      exp_read_req_id = {last_iop_id, REQ_ID_EMISSION, last_hpu_id, last_req_mode, last_req_flag, 8'h0};
+      exp_read_addr   = {last_iop_dst_addr, last_iop_src_addr};
+
+      assert (regf_read_req_id == exp_read_req_id) else begin
+        $display("[ERROR:%0d] Phase5: regf_read_req_id mismatch | exp %08h got %08h", scenario_id, exp_read_req_id, regf_read_req_id);
+        error_scenario = 1'b1;
+      end
+      assert (regf_read_addr == exp_read_addr) else begin
+        $display("[ERROR:%0d] Phase5: regf_read_addr mismatch | exp %08h got %08h", scenario_id, exp_read_addr, regf_read_addr);
+        error_scenario = 1'b1;
+      end
+
+      // Verify FSMs idle
+      assert (stat.fsm_read_req == 2'b00) else begin $display("[ERROR:%0d] fsm_read_req not idle", scenario_id); error_scenario = 1'b1; end
+      assert (stat.fsm_burst    == 2'b00) else begin $display("[ERROR:%0d] fsm_burst not idle",    scenario_id); error_scenario = 1'b1; end
+      assert (stat.fsm_notify   == 2'b00) else begin $display("[ERROR:%0d] fsm_notify not idle",   scenario_id); error_scenario = 1'b1; end
+
+      scenario_end(scenario_id, clk_mhdma_cfg);
+    end
+  endtask
+
 // ============================================================================================== --
 // Main test sequence
 // ============================================================================================== --
@@ -1804,6 +1947,7 @@ module tb_mhdma_master;
     run_scenario_axi4_write_error();
     run_scenario_multiple_notifies();
     run_scenario_multiple_reads();
+    run_scenario_irq_fifo_backpressure();
     run_scenario_statistics();
     run_scenario_error_reset();
 

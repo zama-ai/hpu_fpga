@@ -581,7 +581,7 @@ module mhdma_master
       master_command.dst_addr <= rrqq_cmd.dst_addr;
       master_command.req_id   <= REQ_ID_READ;
 
-      master_command_vld      <= ((st_rr_wait_request & rrqq_cmd_vld & ce_reception_ready) | rr_retry);
+      master_command_vld      <= ((st_rr_wait_request & rrqq_cmd_vld & ce_reception_ready & rr_regf_in_rdy) | rr_retry);
 
     end else begin
       master_command_vld <= 1'b0;
