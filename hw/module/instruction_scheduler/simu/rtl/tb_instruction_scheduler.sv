@@ -489,10 +489,13 @@ endtask
   insert_idx = $urandom % (insn_cnt/3);
 
   repeat($urandom() % 5) begin
-    $display("%t > INFO: introduced inner sync %08x at index", $time, 32'hBC07F800, insert_idx);
-    insn_q.insert(insert_idx, 32'hBC07F800);
+    $display("%t > INFO: introduced x4 inner sync %08x at index", $time, 32'hBC060000, insert_idx);
+    insn_q.insert(insert_idx, 32'hBC061800);
+    insn_q.insert(insert_idx, 32'hBC061000);
+    insn_q.insert(insert_idx, 32'hBC060800);
+    insn_q.insert(insert_idx, 32'hBC060000);
     insert_idx+= ($urandom() % 10) + 10;
-    insn_cnt++;
+    insn_cnt+=4;
     if (insert_idx > insn_cnt) begin
       break;
     end

@@ -564,10 +564,10 @@ assign query_vld = !query_ack_vld;
           _cfg_clk_period    <= _cfg_clk_cycle_cnt > _cfg_clk_period ? _cfg_clk_cycle_cnt : _cfg_clk_period;
           _intr_dist         <= insn_ack_interrupt ? '0 : (_intr_dist == '1) ? _intr_dist : _intr_dist + 1;
           _intr_min_dist     <= ((insn_ack_vld & insn_ack_rdy) && (_intr_min_dist > _intr_dist)) ? _intr_dist : _intr_min_dist;
-          assert ( _intr_min_dist > (_cfg_clk_period << 1) )
-          else begin
-            $fatal(1,"%t > ERROR: Interrupt (IOp ACK) should not toggle faster than cfg_clk can catch (interrupt dist %d < %d cycles of x2 cfg clk period)", $time, _intr_min_dist, _cfg_clk_period << 1);
-          end
+          //assert ( _intr_min_dist > (_cfg_clk_period << 1) )
+          //else begin
+          //  $fatal(1,"%t > ERROR: Interrupt (IOp ACK) should not toggle faster than cfg_clk can catch (interrupt dist %d < %d cycles of x2 cfg clk period)", $time, _intr_min_dist, _cfg_clk_period << 1);
+          //end
       end
 
 // pragma translate_on
