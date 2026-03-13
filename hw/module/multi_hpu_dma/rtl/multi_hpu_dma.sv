@@ -147,6 +147,7 @@ module multi_hpu_dma
   logic                 [REG_DATA_W-1:0]   r_system_timeout_notify;
   logic                 [REG_DATA_W-1:0]   r_system_timeout_read_req;
   logic [    ETH_PC-1:0][2*REG_DATA_W-1:0] r_ct_mem_addr;
+  logic [          1:0][2*REG_DATA_W-1:0] r_ct_mem_addr_regf;
   // lane control
   logic                 [REG_DATA_W-1:0]   r_system_line;
   logic                 [REG_DATA_W-1:0]   r_reset_datapath;
@@ -200,6 +201,30 @@ module multi_hpu_dma
                                      2'b0, cnt_cfg.master.fsm_notify};
 
   // ============================================================================================ //
+  // Regfile PC1 intermediates (regfile always has PC0+PC1 ports; tie off when ETH_PC==1)
+  // ============================================================================================ //
+  for (genvar i = 0; i < ETH_PC; i++) begin : gen_ct_mem_addr
+    assign r_ct_mem_addr[i] = r_ct_mem_addr_regf[i];
+  end
+
+  logic [REG_DATA_W-1:0]   regf_nb_words_rx_pc1;
+  logic                    regf_rst_nb_words_rx_pc1;
+  logic [REG_DATA_W-1:0]   regf_t_rr_wait_pc1;
+  logic [2*REG_DATA_W-1:0] regf_rr_phy_addr_pc1;
+
+  generate if (ETH_PC > 1) begin : gen_pc1_regf
+    assign regf_nb_words_rx_pc1     = cnt_cfg.slave.nb_words_received_pc[1];
+    assign rst_cnt_cfg.slave.nb_words_received_pc[1] = regf_rst_nb_words_rx_pc1;
+    assign regf_t_rr_wait_pc1       = cnt_cfg.slave.t_rr_wait_words_pc[1];
+    assign regf_rr_phy_addr_pc1     = cnt_cfg.slave.rr_phy_addr[1];
+  end else begin : gen_pc1_regf_tieoff
+    assign regf_nb_words_rx_pc1     = 'h0;
+    // regf_rst_nb_words_rx_pc1 driven by regfile _rd_en output, unused when ETH_PC==1
+    assign regf_t_rr_wait_pc1       = 'h0;
+    assign regf_rr_phy_addr_pc1     = 'h0;
+  end endgenerate
+
+  // ============================================================================================ //
   // Register file
   // ============================================================================================ //
   hpu_regif_core_mhdma_2in3 hpu_regif_core_mhdma_2in3 (
@@ -234,10 +259,10 @@ module multi_hpu_dma
     .r_mhdma_system_hpu_id_6                              (r_regf_hpu_ids[6]                                     ),
     .r_mhdma_system_hpu_id_7                              (r_regf_hpu_ids[7]                                     ),
     // HBM -------------------------------------------------------------------------------------------------------
-    .r_mhdma_hbm_axi4_addr_2in3_ct_pc0_lsb                (r_ct_mem_addr[0][0*REG_DATA_W+:REG_DATA_W]            ),
-    .r_mhdma_hbm_axi4_addr_2in3_ct_pc0_msb                (r_ct_mem_addr[0][1*REG_DATA_W+:REG_DATA_W]            ),
-    .r_mhdma_hbm_axi4_addr_2in3_ct_pc1_lsb                (r_ct_mem_addr[1][0*REG_DATA_W+:REG_DATA_W]            ),
-    .r_mhdma_hbm_axi4_addr_2in3_ct_pc1_msb                (r_ct_mem_addr[1][1*REG_DATA_W+:REG_DATA_W]            ),
+    .r_mhdma_hbm_axi4_addr_2in3_ct_pc0_lsb                (r_ct_mem_addr_regf[0][0*REG_DATA_W+:REG_DATA_W]       ),
+    .r_mhdma_hbm_axi4_addr_2in3_ct_pc0_msb                (r_ct_mem_addr_regf[0][1*REG_DATA_W+:REG_DATA_W]       ),
+    .r_mhdma_hbm_axi4_addr_2in3_ct_pc1_lsb                (r_ct_mem_addr_regf[1][0*REG_DATA_W+:REG_DATA_W]       ),
+    .r_mhdma_hbm_axi4_addr_2in3_ct_pc1_msb                (r_ct_mem_addr_regf[1][1*REG_DATA_W+:REG_DATA_W]       ),
     // RPU requests ----------------------------------------------------------------------------------------------
     .r_mhdma_request_req_id_wr_en                         (r_request_req_id_wr_en                                ),
     .r_mhdma_request_req_id                               (r_request_req_id                                      ),
@@ -302,8 +327,8 @@ module multi_hpu_dma
     .r_mhdma_request_stat_nb_words_received_pc_pc0_upd    (cnt_cfg.slave.nb_words_received_pc[0]                 ),
     .r_mhdma_request_stat_nb_words_received_pc_pc0_rd_en  (rst_cnt_cfg.slave.nb_words_received_pc[0]             ),
     .r_mhdma_request_stat_nb_words_received_pc_pc1        (/* UNUSED - register output, only _upd/_rd_en used */ ),
-    .r_mhdma_request_stat_nb_words_received_pc_pc1_upd    (cnt_cfg.slave.nb_words_received_pc[1]                 ),
-    .r_mhdma_request_stat_nb_words_received_pc_pc1_rd_en  (rst_cnt_cfg.slave.nb_words_received_pc[1]             ),
+    .r_mhdma_request_stat_nb_words_received_pc_pc1_upd    (regf_nb_words_rx_pc1                                  ),
+    .r_mhdma_request_stat_nb_words_received_pc_pc1_rd_en  (regf_rst_nb_words_rx_pc1                              ),
     .r_mhdma_request_stat_cnt_nb_write_complete           (/* UNUSED - register output, only _upd used */        ),
     .r_mhdma_request_stat_cnt_nb_write_complete_upd       (cnt_cfg.master.nb_write_complete_cnt                  ),
     // timing
@@ -320,7 +345,7 @@ module multi_hpu_dma
     .r_mhdma_request_stat_t_rr_wait_words_pc_pc0          (/* UNUSED - register output, only _upd used */        ),
     .r_mhdma_request_stat_t_rr_wait_words_pc_pc0_upd      (cnt_cfg.slave.t_rr_wait_words_pc[0]                   ),
     .r_mhdma_request_stat_t_rr_wait_words_pc_pc1          (/* UNUSED - register output, only _upd used */        ),
-    .r_mhdma_request_stat_t_rr_wait_words_pc_pc1_upd      (cnt_cfg.slave.t_rr_wait_words_pc[1]                   ),
+    .r_mhdma_request_stat_t_rr_wait_words_pc_pc1_upd      (regf_t_rr_wait_pc1                                    ),
     // registers
     .r_mhdma_system_fsm_value                             (/* UNUSED - register output, only _upd used */        ),
     .r_mhdma_system_fsm_value_upd                         (fsm_value_composed                                    ),
@@ -329,9 +354,9 @@ module multi_hpu_dma
     .r_mhdma_request_stat_physical_addr_pc0_msb           (/* UNUSED - register output, only _upd used */        ),
     .r_mhdma_request_stat_physical_addr_pc0_msb_upd       (cnt_cfg.slave.rr_phy_addr[0][2*REG_DATA_W-1:REG_DATA_W]),
     .r_mhdma_request_stat_physical_addr_pc1_lsb           (/* UNUSED - register output, only _upd used */        ),
-    .r_mhdma_request_stat_physical_addr_pc1_lsb_upd       (cnt_cfg.slave.rr_phy_addr[1][REG_DATA_W-1:0]          ),
+    .r_mhdma_request_stat_physical_addr_pc1_lsb_upd       (regf_rr_phy_addr_pc1[REG_DATA_W-1:0]                  ),
     .r_mhdma_request_stat_physical_addr_pc1_msb           (/* UNUSED - register output, only _upd used */        ),
-    .r_mhdma_request_stat_physical_addr_pc1_msb_upd       (cnt_cfg.slave.rr_phy_addr[1][2*REG_DATA_W-1:REG_DATA_W]),
+    .r_mhdma_request_stat_physical_addr_pc1_msb_upd       (regf_rr_phy_addr_pc1[2*REG_DATA_W-1:REG_DATA_W]      ),
     .r_mhdma_system_errors                                (/* UNUSED - register output, only _upd/_rd_en used */ ),
     .r_mhdma_system_errors_upd                            (cnt_cfg.mhdma_errors                                  ),
     .r_mhdma_system_errors_rd_en                          (rst_cnt_cfg.mhdma_errors                              )

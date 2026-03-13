@@ -603,7 +603,7 @@ module tb_multi_hpu_dma;
         error_rr_payload = 1'b1;
       end
 
-      check_memories(iop_src_addr, iop_dst_addr);
+      gen_check_mem.check_memories(iop_src_addr, iop_dst_addr);
     end
 
     scenario_id = scenario_id + 1;
@@ -737,7 +737,7 @@ module tb_multi_hpu_dma;
       exp_src_addr = rr_src_addr_ref_q.pop_back();
       exp_dst_addr = rr_dst_addr_ref_q.pop_back();
 
-      check_memories(exp_src_addr, exp_dst_addr);
+      gen_check_mem.check_memories(exp_src_addr, exp_dst_addr);
     end
 
     $display("%t > INFO : All %0d read request have been sent  and memory models checked\n",$time, arbitrary_read_req_nb);
@@ -1073,62 +1073,93 @@ module tb_multi_hpu_dma;
   * assumption: we chose in this test to do read request from HPU A to B
   * anything can be in HPU B memory. on HPU A we have only the copied values of hpu B
   */
-  task automatic check_memories(
-    input logic [SRC_ADDR_W-1:0] src_addr,
-    input logic [DST_ADDR_W-1:0] dst_addr
-  );
-    int addr_hpu_0, addr_hpu_1;
-    logic mismatch_found;
-    logic [AXI4_DATA_W-1:0] val_hpu0, val_hpu1;
-    int nb_words;
+  // check_memories must live inside a generate so that PC1 hierarchical refs
+  // are only elaborated when gen_mem_pc[1] actually exists.
+  generate if (ETH_PC > 1) begin : gen_check_mem
+    task automatic check_memories(
+      input logic [SRC_ADDR_W-1:0] src_addr,
+      input logic [DST_ADDR_W-1:0] dst_addr
+    );
+      int addr_hpu_0, addr_hpu_1;
+      logic mismatch_found;
+      logic [AXI4_DATA_W-1:0] val_hpu0, val_hpu1;
+      int nb_words;
 
-    mismatch_found = 1'b0;
+      mismatch_found = 1'b0;
+      addr_hpu_0 = (regf_start_addr_ofs + (dst_addr * CT_MEM_BYTES)) / AXI4_DATA_BYTES;
+      addr_hpu_1 = (regf_start_addr_ofs + (src_addr * CT_MEM_BYTES)) / AXI4_DATA_BYTES;
+      $display("addr_hpu_0 = %x, addr_hpu_1 = %x", addr_hpu_0, addr_hpu_1);
 
-    // Use CT_MEM_BYTES for address calculation (cid * CT_MEM_BYTES), divide by AXI4_DATA_BYTES for word address
-    addr_hpu_0 = (regf_start_addr_ofs + (dst_addr * CT_MEM_BYTES)) / AXI4_DATA_BYTES;
-    addr_hpu_1 = (regf_start_addr_ofs + (src_addr * CT_MEM_BYTES)) / AXI4_DATA_BYTES;
+      for (int pc = 0; pc < ETH_PC; pc++) begin
+        nb_words = (pc == 0) ? AXI4_WORD_PER_PC0 : AXI4_WORD_PER_PC;
+        for (int k = 0; k < nb_words; k++) begin
+          if (pc == 0) begin
+            val_hpu0 = gen_mem_hpu[0].gen_mem_pc[0].axi4_mem_ct.axi4_ram_ct_wr.mem[addr_hpu_0 + k];
+            val_hpu1 = gen_mem_hpu[1].gen_mem_pc[0].axi4_mem_ct.axi4_ram_ct_wr.mem[addr_hpu_1 + k];
+          end else begin
+            val_hpu0 = gen_mem_hpu[0].gen_mem_pc[1].axi4_mem_ct.axi4_ram_ct_wr.mem[addr_hpu_0 + k];
+            val_hpu1 = gen_mem_hpu[1].gen_mem_pc[1].axi4_mem_ct.axi4_ram_ct_wr.mem[addr_hpu_1 + k];
+          end
 
-    $display("addr_hpu_0 = %x, addr_hpu_1 = %x", addr_hpu_0, addr_hpu_1);
-
-    // Check both PCs
-    for (int pc = 0; pc < ETH_PC; pc++) begin
-      nb_words = (pc == 0) ? AXI4_WORD_PER_PC0 : AXI4_WORD_PER_PC;
-
-      for (int k = 0; k < nb_words; k++) begin
-        // Get values based on PC index (cannot dynamically index generate blocks)
-        if (pc == 0) begin
-          val_hpu0 = gen_mem_hpu[0].gen_mem_pc[0].axi4_mem_ct.axi4_ram_ct_wr.mem[addr_hpu_0 + k];
-          val_hpu1 = gen_mem_hpu[1].gen_mem_pc[0].axi4_mem_ct.axi4_ram_ct_wr.mem[addr_hpu_1 + k];
-        end else begin
-          val_hpu0 = gen_mem_hpu[0].gen_mem_pc[1].axi4_mem_ct.axi4_ram_ct_wr.mem[addr_hpu_0 + k];
-          val_hpu1 = gen_mem_hpu[1].gen_mem_pc[1].axi4_mem_ct.axi4_ram_ct_wr.mem[addr_hpu_1 + k];
+          if ($isunknown(val_hpu0)) begin
+            $display("ERROR: X/Z in HPU_0 at PC=%0d, offset=%0d, addr=%0d, val=%h", pc, k, addr_hpu_0 + k, val_hpu0);
+            mismatch_found = 1;
+            error_write_mismatch = 1'b1;
+          end else if ($isunknown(val_hpu1)) begin
+            $display("ERROR: X/Z in HPU_1 at PC=%0d, offset=%0d, addr=%0d, val=%h", pc, k, addr_hpu_1 + k, val_hpu1);
+            mismatch_found = 1;
+            error_write_mismatch = 1'b1;
+          end else if (val_hpu0 !== val_hpu1) begin
+            $display("ERROR: Mismatch at PC=%0d, offset=%0d: HPU_0[%0d]=%h != HPU_1[%0d]=%h",
+                     pc, k, addr_hpu_0 + k, val_hpu0, addr_hpu_1 + k, val_hpu1);
+            mismatch_found = 1;
+            error_write_mismatch = 1'b1;
+          end
         end
+      end
 
-        // Check for X/Z in HPU_0
+      if (~mismatch_found)
+        $display("[INFO]: Memory check PASSED: HPU_A and HPU_B contents match");
+    endtask
+  end else begin : gen_check_mem
+    task automatic check_memories(
+      input logic [SRC_ADDR_W-1:0] src_addr,
+      input logic [DST_ADDR_W-1:0] dst_addr
+    );
+      int addr_hpu_0, addr_hpu_1;
+      logic mismatch_found;
+      logic [AXI4_DATA_W-1:0] val_hpu0, val_hpu1;
+
+      mismatch_found = 1'b0;
+      addr_hpu_0 = (regf_start_addr_ofs + (dst_addr * CT_MEM_BYTES)) / AXI4_DATA_BYTES;
+      addr_hpu_1 = (regf_start_addr_ofs + (src_addr * CT_MEM_BYTES)) / AXI4_DATA_BYTES;
+      $display("addr_hpu_0 = %x, addr_hpu_1 = %x", addr_hpu_0, addr_hpu_1);
+
+      // Only PC0 exists when ETH_PC==1
+      for (int k = 0; k < AXI4_WORD_PER_PC0; k++) begin
+        val_hpu0 = gen_mem_hpu[0].gen_mem_pc[0].axi4_mem_ct.axi4_ram_ct_wr.mem[addr_hpu_0 + k];
+        val_hpu1 = gen_mem_hpu[1].gen_mem_pc[0].axi4_mem_ct.axi4_ram_ct_wr.mem[addr_hpu_1 + k];
+
         if ($isunknown(val_hpu0)) begin
-          $display("ERROR: X/Z in HPU_0 at PC=%0d, offset=%0d, addr=%0d, val=%h", pc, k, addr_hpu_0 + k, val_hpu0);
+          $display("ERROR: X/Z in HPU_0 at PC=0, offset=%0d, addr=%0d, val=%h", k, addr_hpu_0 + k, val_hpu0);
           mismatch_found = 1;
           error_write_mismatch = 1'b1;
-        end
-        // Check for X/Z in HPU_1
-        else if ($isunknown(val_hpu1)) begin
-          $display("ERROR: X/Z in HPU_1 at PC=%0d, offset=%0d, addr=%0d, val=%h", pc, k, addr_hpu_1 + k, val_hpu1);
+        end else if ($isunknown(val_hpu1)) begin
+          $display("ERROR: X/Z in HPU_1 at PC=0, offset=%0d, addr=%0d, val=%h", k, addr_hpu_1 + k, val_hpu1);
           mismatch_found = 1;
           error_write_mismatch = 1'b1;
-        end
-        // Check for mismatch
-        else if (val_hpu0 !== val_hpu1) begin
-          $display("ERROR: Mismatch at PC=%0d, offset=%0d: HPU_0[%0d]=%h != HPU_1[%0d]=%h",
-                   pc, k, addr_hpu_0 + k, val_hpu0, addr_hpu_1 + k, val_hpu1);
+        end else if (val_hpu0 !== val_hpu1) begin
+          $display("ERROR: Mismatch at PC=0, offset=%0d: HPU_0[%0d]=%h != HPU_1[%0d]=%h",
+                   k, addr_hpu_0 + k, val_hpu0, addr_hpu_1 + k, val_hpu1);
           mismatch_found = 1;
           error_write_mismatch = 1'b1;
         end
       end
-    end
 
-    if (~mismatch_found)
-      $display("[INFO]: Memory check PASSED: HPU_A and HPU_B contents match");
-  endtask
+      if (~mismatch_found)
+        $display("[INFO]: Memory check PASSED: HPU_A and HPU_B contents match");
+    endtask
+  end endgenerate
 
 
   // ============================================================================================== --

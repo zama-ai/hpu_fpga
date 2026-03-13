@@ -10,9 +10,10 @@
 #   - GLWE_K     : 1, 2 (drives BLWE_K = GLWE_K * N)
 #   - PEM_PC     : 1, 2 for unit tests ; 2 only for top-level & scenario tests
 #
-# Top module of MHDMA supports only PEM_PC=2
+# Top module of MHDMA supports only PEM_PC=1 & 2
 #   - Main reason is that regfile must be re generated for the address
 #   - For PEM_PC >= 4: CDC FIFO are overflowing and we will need to split them
+#   - Efforts has been put to try top testbench with PEM_PC = 1 not with other top-scenarios
 #
 # -> AXI data size could be 128; 256 or 512 (even though in FPGA it's fixed to 256)
 #
@@ -131,19 +132,21 @@ for PEM_PC in "${PEM_PC_LIST_UNIT[@]}"; do
 done
 
 ###################################################################################################
-# 2) Top-level test: PEM_PC=2 (regfile constraint), sweep GLWE_K x AXI_DATA_W
+# 2) Top-level test: sweep PEM_PC x GLWE_K x AXI_DATA_W
 ###################################################################################################
 echo "================================================================"
 echo "INFO> Running top-level ${module} with parameter sweep"
 echo "================================================================"
 
-for GLWE_K in "${GLWE_K_LIST[@]}"; do
-  for AXI_DATA_W in "${AXI_DATA_W_LIST[@]}"; do
-    run_test "${SCRIPT_DIR}/run.sh \
-      -g $GLWE_K \
-      -E 2 \
-      -- $args \
-      -F AXI_DATA_W AXI_DATA_W_${AXI_DATA_W}"
+for PEM_PC in "${PEM_PC_LIST_UNIT[@]}"; do
+  for GLWE_K in "${GLWE_K_LIST[@]}"; do
+    for AXI_DATA_W in "${AXI_DATA_W_LIST[@]}"; do
+      run_test "${SCRIPT_DIR}/run.sh \
+        -g $GLWE_K \
+        -E $PEM_PC \
+        -- $args \
+        -F AXI_DATA_W AXI_DATA_W_${AXI_DATA_W}"
+    done
   done
 done
 
