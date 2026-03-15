@@ -31,14 +31,11 @@ uint8_t cluster_last_nid;
 uint16_t b2b_pool_start_addr = 12288;
 uint16_t b2b_pool_size = 4096;
 mhdma_element_t mhdma_table[IOP_ID_MAX_COUNT][FLAG_MAX_COUNT];
+uint8_t mhdma_table_state[IOP_ID_MAX_COUNT][FLAG_MAX_COUNT];
 
 // mhdma_table (User data)
 void mhdma_table_reset(void) {
-  for (int i = 0; i < IOP_ID_MAX_COUNT; i++) {
-    for (int j = 0; j < FLAG_MAX_COUNT; j++) {
-      mhdma_table[i][j].state = MHDMA_STATE_EMPTY;
-    }
-  }
+  memset(mhdma_table_state, MHDMA_STATE_EMPTY, sizeof(mhdma_table_state));
 }
 
 // IOP state
@@ -59,7 +56,6 @@ void iop_state_node_ack(uint8_t iid, uint8_t nb_hpu) {
   } else {
     iop_state[iid].state -= 1;
   }
-  //PLL_INF("ucore", "[HPU%d] iop_state_node_ack iid %d state %d nb_hpu %d", phys_hpu_id, iid, iop_state[iid].state, iop_state[iid].nb_hpu);
 }
 
 void print_iop_state(void) {
@@ -87,9 +83,7 @@ void b2b_pool_init(void) {
   if (b2b_pool_size != B2B_POOL_SIZE) {
     PLL_ERR("ucore", "[HPU%d] b2b_pool size is incorrect (fw %d, sw %d)", B2B_POOL_SIZE, b2b_pool_size);
   }
-  for (int i = 0; i < B2B_POOL_SIZE; i++) {
-    b2b_pool[i] = 0xFF;
-  }
+  memset(b2b_pool, 0xFF, sizeof(b2b_pool));
   b2b_pool_head = 0;
   b2b_pool_tail = 0;
   b2b_pool_free_cnt = B2B_POOL_SIZE;
@@ -218,21 +212,11 @@ RemoteOperand_t *dst_notifyq_find(uint8_t iid, uint8_t dst_hpu_id, uint16_t dst_
 src_store_t src_store;
 
 void src_store_init(void) {
-  for (int k = 0; k < IOP_ID_MAX_COUNT; k++) {
-    for (int i = 0; i < MAX_DST_VARS; i++) {
-      for (int j = 0; j < MAX_VAR_BLKS; j++) {
-        src_store.state[k][i][j] = OPERAND_STATE_READ_PENDING;
-      }
-    }
-  }
+  memset(src_store.state, OPERAND_STATE_READ_PENDING, sizeof(src_store.state));
 }
 
 void src_store_reset_iop(uint8_t iid) {
-  for (int i = 0; i < MAX_DST_VARS; i++) {
-    for (int j = 0; j < MAX_VAR_BLKS; j++) {
-      src_store.state[iid][i][j] = OPERAND_STATE_NONE;
-    }
-  }
+  memset(src_store.state[iid], OPERAND_STATE_READ_PENDING, sizeof(src_store.state[iid]));
 }
 
 void src_store_inits(uint8_t iid, OperandBundle_t *iop_src) {
@@ -287,102 +271,19 @@ void src_store_print(uint8_t iid) {
   PLL_INF("ucore", "[HPU%d] end of src_store", phys_hpu_id);
 }
 
-//void src_notifyq_init(void) {
-//  for (int i = 0; i < SRC_NOTIFYQ_SIZE; i++) {
-//    src_notifyq[i].state = OPERAND_STATE_NONE;
-//    src_notifyq[i].iid = 0;
-//  }
-//  src_notifyq_head = 0;
-//  src_notifyq_tail = 0;
-//  src_notifyq_free_cnt = SRC_NOTIFYQ_SIZE;
-//}
-//
-//RemoteOperand_t *src_notifyq_pop(uint8_t iid) {
-//  if (src_notifyq_free_cnt == 0) {
-//    return NULL; // this means no more empty slot
-//  }
-//  uint16_t alloc_slot = src_notifyq_head;
-//  src_notifyq_free_cnt--;
-//  src_notifyq_head = (src_notifyq_head + 1) % SRC_NOTIFYQ_SIZE;
-//  src_notifyq[alloc_slot].iid = iid;
-//  return &src_notifyq[alloc_slot];
-//}
-//
-//uint16_t src_notifyq_free(uint8_t iid) {
-//  if (src_notifyq_free_cnt == SRC_NOTIFYQ_SIZE) {
-//    return 0; // this means there is nothing to free
-//  }
-//  uint16_t free_cnt = 0;
-//  while ((src_notifyq[src_notifyq_tail].iid == iid
-//        || src_notifyq[src_notifyq_tail].iid == 0)
-//      && src_notifyq_free_cnt < SRC_NOTIFYQ_SIZE) {
-//    src_notifyq[src_notifyq_tail].state = OPERAND_STATE_NONE;
-//    src_notifyq[src_notifyq_tail].iid = 0;
-//    src_notifyq_tail = (src_notifyq_tail + 1) % SRC_NOTIFYQ_SIZE;
-//    src_notifyq_free_cnt++;
-//    free_cnt++;
-//  }
-//  return free_cnt;
-//}
-//
-//RemoteOperand_t *src_notifyq_find_by_state(uint8_t iid, uint8_t state) {
-//  if (src_notifyq_free_cnt == SRC_NOTIFYQ_SIZE) {
-//    return NULL; // there is no src in the queue
-//  }
-//  uint16_t index = (src_notifyq_head - 1) % SRC_NOTIFYQ_SIZE;
-//  while ((src_notifyq[index].iid != iid)
-//      && (src_notifyq[index].state != state)) {
-//    if (index == src_notifyq_tail) {
-//      return NULL;
-//    }
-//    index = (index - 1) % SRC_NOTIFYQ_SIZE;
-//  }
-//  return &src_notifyq[index];
-//}
-//
-//void src_notifyq_print(uint8_t iid) {
-//  PLL_INF("ucore", "[HPU%d] src_notifyq head %d tail %d free %d",
-//      phys_hpu_id,
-//      src_notifyq_head,
-//      src_notifyq_tail,
-//      src_notifyq_free_cnt);
-//  uint16_t index = (src_notifyq_head - 1) % SRC_NOTIFYQ_SIZE;
-//  while (src_notifyq[index].iid == iid) {
-//    PLL_INF("ucore", "[HPU%d] src_notifyq iid %d pos %d state %d src %d dst %d",
-//        phys_hpu_id,
-//        iid,
-//        src_notifyq[index].pos,
-//        src_notifyq[index].state,
-//        src_notifyq[index].src_cid,
-//        src_notifyq[index].dst_cid);
-//    if (index == src_notifyq_tail) {
-//      break;
-//    }
-//    index = (index - 1) % SRC_NOTIFYQ_SIZE;
-//  }
-//}
-
 // dst_store tracking all dst block to know when IOp is really done
 dst_store_t dst_store;
 
 void dst_store_init(void) {
-  for (int k = 0; k < IOP_ID_MAX_COUNT; k++) {
-    for (int i = 0; i < MAX_DST_VARS; i++) {
-      dst_store.owner[k][i] = 0xFF;
-      for (int j = 0; j < MAX_VAR_BLKS; j++) {
-        dst_store.state[k][i][j] = DST_STATE_WAIT_NOTIFY;
-      }
-    }
-  }
+  // not sure we need to reset owner
+  memset(dst_store.owner, 0xFF, sizeof(dst_store.owner));
+  memset(dst_store.state, DST_STATE_WAIT_NOTIFY, sizeof(dst_store.state));
 }
 
 void dst_store_reset_iop(uint8_t iid) {
-  for (int i = 0; i < MAX_DST_VARS; i++) {
-    dst_store.owner[iid][i] = 0xFF;
-    for (int j = 0; j < MAX_VAR_BLKS; j++) {
-      dst_store.state[iid][i][j] = DST_STATE_WAIT_NOTIFY;
-    }
-  }
+  // not sure we need to reset owner
+  memset(dst_store.owner[iid], 0xFF, sizeof(dst_store.owner[iid]));
+  memset(dst_store.state[iid], DST_STATE_WAIT_NOTIFY, sizeof(dst_store.state[iid]));
 }
 
 void dst_store_initd(uint8_t iid, OperandBundle_t *iop_dst) {
@@ -484,11 +385,6 @@ void iop_teardown(uint8_t iid) {
     uint8_t bid = non_resolved_owned_dst & 0xFF;
     uint8_t print = 0;
 
-    //    phys_hpu_id,
-    //    iid,
-    //    tid,
-    //    bid,
-    //    dst_store.state[iid][tid][bid]);
     while (dst_store.state[iid][tid][bid] != DST_STATE_RESOLVED) {
       if (print%20 == 0) {
         PLL_INF("ucore", "[HPU%d] iop_teardown wait on dst iop %d tid %d bid %d - being resolved",
@@ -632,16 +528,15 @@ uint32_t parse_iop(
   // Fill bundle length
   dst->len = dst_pos;
   dst_store_initd(cur_iid, dst);
-  //    dst->len,
-  //uint16_t dst_cnts = dst_store_get_owned_cnt(cur_iid, phys_hpu_id);
-  //uint8_t dst_cnt_owned = (dst_cnts >> 8) & 0XFF;
-  //uint8_t dst_cnt_waiting = (dst_cnts & 0XFF);
-  //PLL_ERR("parse_iop", "[HPU%d] parse_iop iop %d dst ct owned %d/%d",
-  //        phys_hpu_id,
-  //        cur_iid,
-  //        dst_cnt_owned,
-  //        dst_cnt_waiting);
-  //dst_store_print(cur_iid);
+  uint16_t dst_cnts = dst_store_get_owned_cnt(cur_iid, phys_hpu_id);
+  uint8_t dst_cnt_owned = (dst_cnts >> 8) & 0XFF;
+  uint8_t dst_cnt_waiting = (dst_cnts & 0XFF);
+  PLL_ERR("parse_iop", "[HPU%d] parse_iop iop %d dst ct owned %d/%d",
+          phys_hpu_id,
+          cur_iid,
+          dst_cnt_owned,
+          dst_cnt_waiting);
+  dst_store_print(cur_iid);
 
   //4. Get list of source operands
   uint32_t src_pos = 0;
@@ -951,12 +846,12 @@ uint16_t get_raw_ct_id(DOpu_t *dop) {
 // Process ucore instructions
 int process_ucore_dop(DOpu_t *dop) {
   PLL_DBG("process_ucore_dop", "[HPU%d] %08x", phys_hpu_id, dop->raw);
+  uint8_t current_flag = dop->ucore.flag;
   switch (dop->ucore.opcode & 0xF) {
     case DOPS_NOTIFY: {
       uint16_t raw_ct_id = get_raw_ct_id(dop);
-      uint8_t current_flag = dop->ucore.flag;
       mhdma_element_t *current_elt = &mhdma_table[cur_iid][current_flag];
-      current_elt->state = MHDMA_STATE_NOTIFY_PENDING;
+      mhdma_table_state[cur_iid][current_flag] = MHDMA_STATE_NOTIFY_PENDING;
       current_elt->src_ct_id = raw_ct_id;
       current_elt->slave_hpu_id = phys_hpu_id;
       current_elt->master_hpu_id = get_phys_of(dop->ucore.hid, cur_mapping);
@@ -971,14 +866,13 @@ int process_ucore_dop(DOpu_t *dop) {
       break;
     }
     case DOPS_WAIT: {
-      mhdma_element_t *current_elt = &mhdma_table[cur_iid][dop->ucore.flag];
       bool data_required = (dop->ucore.hid != 0);
       uint8_t print_one = 0;
-      while (  (data_required && current_elt->state < MHDMA_STATE_RESOLVED)
-            || (!data_required && current_elt->state < MHDMA_STATE_RECEIVED) ) {
+      while (  (data_required && mhdma_table_state[cur_iid][current_flag] < MHDMA_STATE_RESOLVED)
+            || (!data_required && mhdma_table_state[cur_iid][current_flag] < MHDMA_STATE_RECEIVED) ) {
         // wait until notify or read ct is received
         if (print_one%20 == 0) {
-          PLL_INF("ucore", "[HPU%d] dop wait on iop_id %d flag %d state %d", phys_hpu_id, cur_iid, dop->ucore.flag, current_elt->state);
+          PLL_INF("ucore", "[HPU%d] dop wait on iop_id %d flag %d state %d", phys_hpu_id, cur_iid, dop->ucore.flag, mhdma_table_state[cur_iid][current_flag]);
         }
         print_one++;
 #ifdef UCORE_MHDMA_SIMU
@@ -992,19 +886,19 @@ int process_ucore_dop(DOpu_t *dop) {
       break;
     }
     case DOPS_LD_B2B: {
-      mhdma_element_t *current_elt = &mhdma_table[cur_iid][dop->ucore.flag];
+      mhdma_element_t *current_elt = &mhdma_table[cur_iid][current_flag];
       uint16_t raw_ct_id = get_raw_ct_id(dop);
       current_elt->dst_ct_id = raw_ct_id;
       current_elt->master_hpu_id = phys_hpu_id;
-      switch (current_elt->state) {
+      switch (mhdma_table_state[cur_iid][current_flag]) {
         case MHDMA_STATE_RESOLVED: break; // nothing to do
         case MHDMA_STATE_RECEIVED: { // must read asap
-          current_elt->state = MHDMA_STATE_READING;
+          mhdma_table_state[cur_iid][current_flag] = MHDMA_STATE_READING;
           generate_read_req(cur_iid, dop->ucore.flag);
           break;
         }
         default: { // must wait for notify
-          current_elt->state = MHDMA_STATE_LB2B_WAITING;
+          mhdma_table_state[cur_iid][current_flag] = MHDMA_STATE_LB2B_WAITING;
           break;
         }
       }

@@ -12,6 +12,7 @@
 /* Includes                                                                   */
 /******************************************************************************/
 
+#include "FreeRTOS.h"
 /* common includes */
 #include "standard.h"
 #include "util.h"
@@ -305,6 +306,7 @@ extern iop_state_t iop_state[IOP_ID_MAX_COUNT];
 extern src_store_t src_store;
 extern dst_store_t dst_store;
 extern mhdma_element_t mhdma_table[IOP_ID_MAX_COUNT][FLAG_MAX_COUNT];
+extern uint8_t  mhdma_table_state[IOP_ID_MAX_COUNT][FLAG_MAX_COUNT];
 
 /******************************************************************************/
 /* Function implementations                                                   */
@@ -345,6 +347,14 @@ void vInterruptHandler_isc_ack( void* pvCallBackRef ) {
                 // internal ack
                 generate_user_notify(dop_ack.sync.iid, dop_ack.sync.flag);
               } else {
+                // Write ack value in queue body
+                //volatile uint32_t* ackq_idx = toAmiIopAckqData + (ackq_head % AMI_IOPACKQ_MAX_WORDS);
+                //*ackq_idx = popped_iop_ack;
+                //HAL_FLUSH_CACHE_DATA( (uintptr_t)ackq_idx, sizeof(uint32_t));
+                //// Update queue head
+                //ackq_head += 1;
+                //*toAmiIopAckqHead = ackq_head;
+                //HAL_FLUSH_CACHE_DATA( (uintptr_t)toAmiIopAckqHead, sizeof(uint32_t));
                 MhdmaCommand_t cmd;
                 cmd.cmdID = MHDMA_CMD_IOP_TEARDOWN;
                 cmd.payload = popped_iop_ack;
@@ -357,6 +367,9 @@ void vInterruptHandler_isc_ack( void* pvCallBackRef ) {
             popped_iop_ack = pop_isc_ack();
         }
     }
+    // not clear this changes anything
+    //BaseType_t xHigherPriorityTaskWoken = pdTRUE;
+    //portYIELD_FROM_ISR( xHigherPriorityTaskWoken );
 }
 
 /*
@@ -412,10 +425,10 @@ void vInterruptHandler_mhdma_notify( void* pvCallBackRef ) {
       case CMD_USER: {
         mhdma_element_t *current_elt = &mhdma_table[iid][flag];
         current_elt->src_ct_id = notify.fields.src_cid;
-        uint8_t current_state = current_elt->state;
-        current_elt->state = MHDMA_STATE_RECEIVED;
+        uint8_t current_state = mhdma_table_state[iid][flag];
+        mhdma_table_state[iid][flag] = MHDMA_STATE_RECEIVED;
         if (current_state == MHDMA_STATE_LB2B_WAITING) {
-          current_elt->state = MHDMA_STATE_READING;
+          mhdma_table_state[iid][flag] = MHDMA_STATE_READING;
           current_elt->slave_hpu_id = slave_hpu_id;
           generate_read_req(iid, flag);
         }
@@ -490,10 +503,10 @@ void vInterruptHandler_mhdma_read_complete( void* pvCallBackRef ) {
 
   switch (mode) {
     case CMD_USER: {
-      mhdma_element_t *current_elt = &mhdma_table[iid][flag];
+      uint8_t *current_elt_state = &mhdma_table_state[iid][flag];
       // state should be MHDMA_STATE_READING
-      if (current_elt->state == MHDMA_STATE_READING) {
-        current_elt->state = MHDMA_STATE_RESOLVED;
+      if (*current_elt_state == MHDMA_STATE_READING) {
+        *current_elt_state = MHDMA_STATE_RESOLVED;
       }
       break;
     }
@@ -533,7 +546,7 @@ void vMhdmaWorkerTask(void *pvParameters) {
           //PLL_ERR("MhdmaWorker", "[HPU%d] iop_teardown starting on iid %d (state %d)", phys_hpu_id, ack_iid, iop_state[ack_iid].state);
           //iOSAL_Task_SleepTicks(100);
           iop_teardown(ack_iid);
-          PLL_DBG("MhdmaWorker", "[HPU%d] iop_teardown on iid %d done", phys_hpu_id, ack_iid);
+          PLL_ERR("MhdmaWorker", "[HPU%d] iop_teardown on iid %d done", phys_hpu_id, ack_iid);
           //iOSAL_Task_SleepTicks(100);
           //print_iop_state();
 
@@ -589,12 +602,12 @@ void vMhdmaWorkerTask(void *pvParameters) {
         case MHDMA_CMD_PRINT_ERR:
           PLL_ERR("MhdmaWorker", "info: %08x msg cnt: %d lost: %d", rxCmd.payload, mbox_msg_cnt, mbox_msg_lost_cnt);
           //print_iop_state();
-          //iOSAL_Task_SleepTicks(100);
+          iOSAL_Task_SleepTicks(100);
           break;
 
         case MHDMA_CMD_PRINT_ACK:
           PLL_ERR("MhdmaWorker", "ack: %08x", rxCmd.payload);
-          //iOSAL_Task_SleepTicks(100);
+          iOSAL_Task_SleepTicks(100);
           break;
 
         default:

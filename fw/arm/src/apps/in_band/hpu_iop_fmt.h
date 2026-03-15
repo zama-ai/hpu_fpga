@@ -132,11 +132,11 @@ typedef union {
 
 // src/dst ct
 typedef struct {
+  uint8_t state;
   uint16_t src_cid;
   uint16_t dst_cid;
   uint8_t iid;
   uint8_t pos;
-  uint8_t state;
   uint16_t target_cid;
 } RemoteOperand_t;
 

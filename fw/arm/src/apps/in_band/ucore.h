@@ -68,9 +68,7 @@
 #define HPU_MAX_COUNT     7
 #define FLAG_MAX_COUNT    64
 #define B2B_POOL_SIZE     4096
-#define SRC_NOTIFYQ_SIZE  1024
-#define DST_NOTIFYQ_SIZE  1024
-#define DST_QUEUE_SIZE    1024
+#define DST_NOTIFYQ_SIZE  256
 
 #define MHDMA_STATE_EMPTY          0 // no info
 #define MHDMA_STATE_NOTIFY_PENDING 1 // sync has been added, waiting on ISC before notify
@@ -114,7 +112,6 @@ typedef struct {
 // master HPU is read initiator
 // slave HPU is notified master, is receiving read and sending ct to master
 typedef struct {
-  uint8_t  state;
   uint8_t  slave_hpu_id;
   uint8_t  master_hpu_id;
   uint16_t src_ct_id;
