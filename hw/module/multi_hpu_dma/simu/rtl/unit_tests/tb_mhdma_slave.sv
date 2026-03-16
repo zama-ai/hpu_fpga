@@ -10,12 +10,10 @@
 // Assumptions:
 //   - ETH_PC >= 2 in scenario 4/7 (with conditional "if (ETH_PC > 1)")
 //   - AXI4_DATA_W is a multiple of MRMAC_AXIS_W
-//   - AXI4 responder generates read data with zero latency (no configurable delay model)
-//   - AXI4 responder never generates error responses (SLVERR / DECERR)
+//   - AXI4 responder generates read data with configurable latency (AXI4_MEM_RD_DATA_LATENCY = 256)
 //
 // Not covered by this testbench:
 //   - CE payload data integrity (see tb_multi_hpu_dma)
-//   - TODO ? AXI4 error response handling (SLVERR / DECERR)
 //
 // Scenarios exercised:
 //   > Notify RX flow
@@ -131,6 +129,8 @@ module tb_mhdma_slave;
   logic [ETH_PC-1:0][axi_if_mhdma_axi_pkg::AXI4_ID_W-1:0] m_axi4_arid;
 
   logic [ETH_PC-1:0][AXI4_DATA_W-1:0]                   m_axi4_rdata;
+  logic [ETH_PC-1:0][AXI4_RESP_W-1:0]                   m_axi4_rresp;
+  logic [ETH_PC-1:0][axi_if_mhdma_axi_pkg::AXI4_ID_W-1:0] m_axi4_rid;
   logic [ETH_PC-1:0]                                    m_axi4_rlast;
   logic [ETH_PC-1:0]                                    m_axi4_rvalid;
   logic [ETH_PC-1:0]                                    m_axi4_rready;
@@ -189,6 +189,8 @@ module tb_mhdma_slave;
     .m_axi4_arid            (m_axi4_arid           ),
 
     .m_axi4_rdata           (m_axi4_rdata          ),
+    .m_axi4_rresp           (m_axi4_rresp          ),
+    .m_axi4_rid             (m_axi4_rid            ),
     .m_axi4_rlast           (m_axi4_rlast          ),
     .m_axi4_rvalid          (m_axi4_rvalid         ),
     .m_axi4_rready          (m_axi4_rready         ),
@@ -278,9 +280,9 @@ module tb_mhdma_slave;
         .s_axi4_arregion  (4'h0),
         .s_axi4_arvalid   (m_axi4_arvalid[gen_pc]),
         .s_axi4_arready   (m_axi4_arready[gen_pc]),
-        .s_axi4_rid       (/* UNUSED */),
+        .s_axi4_rid       (m_axi4_rid[gen_pc]),
         .s_axi4_rdata     (m_axi4_rdata[gen_pc]),
-        .s_axi4_rresp     (/* UNUSED */),
+        .s_axi4_rresp     (m_axi4_rresp[gen_pc]),
         .s_axi4_rlast     (m_axi4_rlast[gen_pc]),
         .s_axi4_rvalid    (m_axi4_rvalid[gen_pc]),
         .s_axi4_rready    (m_axi4_rready[gen_pc])
@@ -1010,7 +1012,7 @@ module tb_mhdma_slave;
       error_assert = 1'b1;
     end
 
-    // 5. Consume -> pops NRX (combinational) + schedules RREQ pop (registered)
+    // 5. Consume NRX command (RREQ stays in FIFO due to priority guard)
     consume_slave_command();
     simulate_pulse(notify_ack_sent, clk_mhdma);
 
@@ -1019,7 +1021,16 @@ module tb_mhdma_slave;
     check_no_timeout(timed_out, scenario_id, "interrupt_notify timeout");
     clear_signal(clear_interrupt_notify, clk_mhdma_cfg);
 
-    // 7. Complete CEM: RREQ already popped via registered rdy -> AXI4 reads -> CE data
+    // 7. Consume RREQ command (now presented on slave_command after NRX drained)
+    wait_slave_command_vld(500, timed_out);
+    check_no_timeout(timed_out, scenario_id, "EMISSION slave_command_vld timeout");
+    assert (slave_command.req_id == REQ_ID_EMISSION) else begin
+      $display("[ERROR:%0d] expected EMISSION after NRX drain, got %0h", scenario_id, slave_command.req_id);
+      error_assert = 1'b1;
+    end
+    consume_slave_command();
+
+    // 8. Complete CEM: AXI4 reads -> CE data
     wait_ce_vld(TIMEOUT_CYCLES, timed_out);
     check_no_timeout(timed_out, scenario_id, "ce_vld timeout");
     repeat (CT_NB_WORDS_MRMAC + 200) @(posedge clk_mhdma);
@@ -1063,7 +1074,7 @@ module tb_mhdma_slave;
     // 3. Send READ while NRX is busy
     send_decoded_command(REQ_ID_READ, hpu_id_r, iop_id_r, src_r, dst_r, flag_r, mode_r, '0);
 
-    // 4. Consume -> pops NRX (combinational) + schedules RREQ pop (registered)
+    // 4. Consume NRX command (RREQ stays in FIFO due to priority guard)
     consume_slave_command();
     simulate_pulse(notify_ack_sent, clk_mhdma);
 
@@ -1072,12 +1083,96 @@ module tb_mhdma_slave;
     check_no_timeout(timed_out, scenario_id, "interrupt_notify timeout");
     clear_signal(clear_interrupt_notify, clk_mhdma_cfg);
 
-    // 6. Complete CEM: RREQ already popped via registered rdy -> AXI4 reads -> CE data
+    // 6. Consume RREQ command (now presented on slave_command after NRX drained)
+    wait_slave_command_vld(500, timed_out);
+    check_no_timeout(timed_out, scenario_id, "EMISSION slave_command_vld timeout");
+    assert (slave_command.req_id == REQ_ID_EMISSION) else begin
+      $display("[ERROR:%0d] expected EMISSION after NRX drain, got %0h", scenario_id, slave_command.req_id);
+      error_assert = 1'b1;
+    end
+    consume_slave_command();
+
+    // 7. Complete CEM: AXI4 reads -> CE data
     wait_ce_vld(TIMEOUT_CYCLES, timed_out);
     check_no_timeout(timed_out, scenario_id, "ce_vld timeout");
     repeat (CT_NB_WORDS_MRMAC + 200) @(posedge clk_mhdma);
     simulate_pulse(ciphertext_sent, clk_mhdma);
     repeat (50) @(posedge clk_mhdma);
+
+    check_fsm_idle(scenario_id);
+    scenario_end(scenario_id, clk_mhdma_cfg);
+  endtask
+
+  // -------------------------------------------------------------------------
+  // Scenario : Dual-pop guard (regression for concurrent NRX+RREQ pop)
+  // Verifies that when both NRX and RREQ FIFOs have valid output,
+  // a single slave_command_rdy pulse only pops the NRX FIFO (priority),
+  // and the RREQ command is still presented on the next cycle.
+  // -------------------------------------------------------------------------
+  task automatic run_scenario_dual_pop_guard();
+    scenario_start(scenario_id, "Dual-pop guard (NRX+RREQ concurrent valid)");
+    randomize_command_fields($urandom(), hpu_id, iop_id, iop_src_addr, iop_dst_addr, req_flag, req_mode);
+
+    // 1. Send NOTIFY -> NRX enters TRANSMIT_ACK
+    send_decoded_command(REQ_ID_NOTIFY, hpu_id, iop_id, iop_src_addr, iop_dst_addr, req_flag, req_mode, '0);
+    assert (stat.fsm_notify_rx == 2'b10) else begin
+      $display("[ERROR:%0d] NRX FSM not in TRANSMIT_ACK", scenario_id);
+      error_assert = 1'b1;
+    end
+
+    // 2. Send READ -> CEM enters READ_N_SEND (both FSMs now active)
+    randomize_command_fields($urandom(), hpu_id, iop_id, iop_src_addr, iop_dst_addr, req_flag, req_mode);
+    send_decoded_command(REQ_ID_READ, hpu_id, iop_id, iop_src_addr, iop_dst_addr, req_flag, req_mode, '0);
+    assert (stat.fsm_cem == 2'b10) else begin
+      $display("[ERROR:%0d] CEM FSM not in READ_N_SEND", scenario_id);
+      error_assert = 1'b1;
+    end
+
+    // 3. Wait for slave_command_vld with NOTIFY_ACK (NRX priority)
+    wait_slave_command_vld(500, timed_out);
+    check_no_timeout(timed_out, scenario_id, "slave_command_vld timeout");
+    assert (slave_command.req_id == REQ_ID_NOTIFY_ACK) else begin
+      $display("[ERROR:%0d] expected NOTIFY_ACK (NRX priority), got %0h", scenario_id, slave_command.req_id);
+      error_assert = 1'b1;
+    end
+
+    // 4. Single pulse: consume the NOTIFY_ACK
+    consume_slave_command();
+    simulate_pulse(notify_ack_sent, clk_mhdma);
+
+    // 5. KEY CHECK: EMISSION command must still appear (RREQ FIFO not drained)
+    wait_slave_command_vld(500, timed_out);
+    check_no_timeout(timed_out, scenario_id, "EMISSION slave_command_vld never arrived (dual-pop bug)");
+    assert (slave_command.req_id == REQ_ID_EMISSION) else begin
+      $display("[ERROR:%0d] expected EMISSION after NOTIFY_ACK, got %0h -- RREQ was silently dropped",
+               scenario_id, slave_command.req_id);
+      error_assert = 1'b1;
+    end
+
+    // 6. Complete CEM flow normally
+    consume_slave_command();
+    wait_ce_vld(TIMEOUT_CYCLES, timed_out);
+    check_no_timeout(timed_out, scenario_id, "ce_vld timeout");
+
+    begin
+      int ce_count, cycle_count;
+      ce_count = 0;
+      cycle_count = 0;
+      while ((ce_count < CT_NB_WORDS_MRMAC) & (cycle_count < TIMEOUT_CYCLES)) begin
+        @(posedge clk_mhdma);
+        if (ce_vld & ce_rdy) ce_count++;
+        cycle_count++;
+      end
+      check_no_timeout(cycle_count >= TIMEOUT_CYCLES, scenario_id, "CE drain timeout");
+    end
+
+    simulate_pulse(ciphertext_sent, clk_mhdma);
+    repeat (50) @(posedge clk_mhdma);
+
+    // 7. Drain interrupt
+    wait_interrupt_notify(500, timed_out);
+    if (~timed_out) clear_signal(clear_interrupt_notify, clk_mhdma_cfg);
+    repeat (10) @(posedge clk_mhdma_cfg);
 
     check_fsm_idle(scenario_id);
     scenario_end(scenario_id, clk_mhdma_cfg);
@@ -1145,13 +1240,22 @@ module tb_mhdma_slave;
       error_assert = 1'b1;
     end
 
-    // Consume -> pops NRX (combinational) + schedules RREQ pop (registered)
+    // Consume NRX command (RREQ stays in FIFO due to priority guard)
     consume_slave_command();
     simulate_pulse(notify_ack_sent, clk_mhdma);
 
     wait_interrupt_notify(500, timed_out);
     check_no_timeout(timed_out, scenario_id, "interrupt_notify timeout");
     clear_signal(clear_interrupt_notify, clk_mhdma_cfg);
+
+    // Consume RREQ command (now presented on slave_command after NRX drained)
+    wait_slave_command_vld(500, timed_out);
+    check_no_timeout(timed_out, scenario_id, "EMISSION slave_command_vld timeout");
+    assert (slave_command.req_id == REQ_ID_EMISSION) else begin
+      $display("[ERROR:%0d] expected EMISSION after NRX drain, got %0h", scenario_id, slave_command.req_id);
+      error_assert = 1'b1;
+    end
+    consume_slave_command();
 
     // Complete CEM flow
     wait_ce_vld(TIMEOUT_CYCLES, timed_out);
@@ -1169,7 +1273,7 @@ module tb_mhdma_slave;
   // Verifies:
   //   - m_axi4_araddr matches expected phy_addr = regf_ct_mem_addr + src_addr * CT_MEM_BYTES
   //   - page boundary splitting produces multiple AR bursts on every PC (not just PC0)
-  // with standard parameters we should see instead of 3 -2 AR trans 3 - 3
+  // Starting near a page boundary forces each PC to split the transfer into multiple AR bursts
   // -------------------------------------------------------------------------
   task automatic run_scenario_phy_addr_and_page_boundary_all_pcs();
     logic [2*REG_DATA_W-1:0] saved_addr [ETH_PC];
@@ -1278,7 +1382,7 @@ module tb_mhdma_slave;
     wait (s_rstn_mhdma == 1'b1);
     repeat (20) @(posedge clk_mhdma_cfg);
 
-    // waiting a bit more time that CDC fifo are not reset busy..
+    // Wait for CDC FIFOs to exit reset-busy state
     repeat (50) @(posedge clk_mhdma_cfg);
 
     run_scenario_notify_rx_flow();
@@ -1291,8 +1395,10 @@ module tb_mhdma_slave;
     run_scenario_interleaved_notify_and_read();
     run_scenario_notify_during_cem();
     run_scenario_read_during_nrx();
+    run_scenario_dual_pop_guard();
     run_scenario_back_to_back();
     run_scenario_phy_addr_and_page_boundary_all_pcs();
+    // run_scenario_error_injection();
 
     $display("\n==================================================================================================");
     $display("  All scenarios completed");

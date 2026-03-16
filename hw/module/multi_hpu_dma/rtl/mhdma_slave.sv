@@ -156,7 +156,7 @@ module mhdma_slave
   assign nrx_cmd_in_vld = start_notify_ack;
 
   // command fifo for notify RX, received from decoder
-  // Note: it is important to be in always_comb to avoid having multiple concurrent drivers
+  // Note: avoiding having multiple concurrent drivers by override req_id in combinational block
   always_comb begin
     nrx_cmd_in        = decoded_command;
     nrx_cmd_in.req_id = REQ_ID_NOTIFY_ACK;
@@ -185,7 +185,7 @@ module mhdma_slave
   logic nrx_regf_in_rdy;
   logic nrx_regf_write_enable;
 
-  assign nrx_cmd_out_rdy = st_transmit_ack & slave_command_rdy & nrx_regf_in_rdy;
+  assign nrx_cmd_out_rdy = st_transmit_ack & slave_command_rdy & nrx_regf_in_rdy & (slave_command.req_id == REQ_ID_NOTIFY_ACK);
   assign nrx_regf_write_enable = nrx_cmd_out_vld & nrx_cmd_out_rdy;
 
   // CFG domain ----------------------------------------------------------------------------------
@@ -196,7 +196,6 @@ module mhdma_slave
   // this fifo transforms rx commands into two 32 bit readable words for regfile
   fifo_ram_rdy_vld_2clk # (
     .CDC_SYNC_STAGES (CDC_SYNC_STAGES),
-    // tweak theses parameters in package
     .WIDTH           (2*REG_DATA_W),
     .DEPTH           (REQ_FIFO_DEPTH),
     .FIFO_MEMORY_TYPE(REQ_MEMORY_TYPE)
@@ -299,13 +298,15 @@ module mhdma_slave
     .almost_full (/* UNUSED */)
   );
 
-  assign rreq_cmd_out_rdy = st_read_send & slave_command_rdy;
+  assign rreq_cmd_out_rdy = st_read_send & slave_command_rdy & (slave_command.req_id == REQ_ID_EMISSION);
 
   // ==============================================================================================
   // Consuming Decoded commands
   // ==============================================================================================
   // We are ready when receiving a command while waiting for it, as long as fifo in_rdy is ready as well.
   // Added a self clearing condition to have a pulse
+  // slave_rdy_notify : notify_accepted
+  // slave_rdy_read   : read_accepted
 
   always_ff @(posedge clk_mhdma) begin
     if (~resetn_mhdma) begin
@@ -326,7 +327,7 @@ module mhdma_slave
   assign decoded_command_rdy = slave_rdy_notify | slave_rdy_read;
 
   // =========================================================================================== //
-  // Read into HBM
+  // Read from HBM
   // =========================================================================================== //
   logic [SRC_ADDR_W-1:0] rr_ct_src_addr;
   logic                  rreq_cmd_consumed;
@@ -414,31 +415,31 @@ module mhdma_slave
   logic                            req_last_axi_word_remain;
   logic [AXI4_WORD_PER_PC0_WW-1:0] req_axi_word_remain_init;
 
-  logic                            req_pbs_first_burst;
-  logic                            req_pbs_first_burstD;
+  logic                            req_first_burst;
+  logic                            req_first_burstD;
 
   logic                            req_send_axi_cmd;
 
-  logic                            req_blwe_done;
+  logic                            req_pc_ar_done;
 
   assign req_axi_word_remain_init = axi4_word_per_path;
 
-  // req_axi_word_remainD is the same than pem_load but req_pbs_first_burst condition has been added
+  // req_axi_word_remainD is the same than pem_load but req_first_burst condition has been added
   assign req_axi_word_remainD = req_send_axi_cmd ?
                                 req_last_axi_word_remain ? req_axi_word_remain_init : req_axi_word_remain - req_axi_word_nb :
-                                req_pbs_first_burst ? req_axi_word_remain_init :
+                                req_first_burst ? req_axi_word_remain_init :
                                 req_axi_word_remain;
 
   assign req_last_axi_word_remain = req_axi_word_remain == req_axi_word_nb;
-  assign req_pbs_first_burstD     = req_send_axi_cmd ? req_last_axi_word_remain ? 1'b1 : 1'b0 : req_pbs_first_burst;
+  assign req_first_burstD     = req_send_axi_cmd ? req_last_axi_word_remain ? 1'b1 : 1'b0 : req_first_burst;
 
   always_ff @(posedge clk_mhdma) begin
     if (~resetn_mhdma) begin
       req_axi_word_remain <= AXI4_WORD_PER_PC0_WW'(AXI4_WORD_PER_PC0);
-      req_pbs_first_burst <= 1'b1;
+      req_first_burst <= 1'b1;
     end else begin
       req_axi_word_remain <= req_axi_word_remainD;
-      req_pbs_first_burst <= req_pbs_first_burstD;
+      req_first_burst <= req_first_burstD;
     end
   end
 
@@ -448,7 +449,7 @@ module mhdma_slave
   logic [AXI4_ADD_W-1:0]    req_add_start;
   logic [PAGE_BYTES_WW-1:0] req_page_word_remain;
 
-  assign req_add_start = req_pbs_first_burst ? phy_addr[ar_pc_idx] : req_add;
+  assign req_add_start = req_first_burst ? phy_addr[ar_pc_idx] : req_add;
   assign req_addD      = req_send_axi_cmd ? req_add_start + req_axi_word_nb*AXI4_DATA_BYTES : req_add;
 
   always_ff @(posedge clk_mhdma) begin
@@ -473,8 +474,8 @@ module mhdma_slave
   assign s0_axi_arvalid  = |ar_pc_onehot;
   assign req_send_axi_cmd = s0_axi_arvalid & s0_axi_arready;
 
-  assign req_blwe_done    = req_send_axi_cmd & req_last_axi_word_remain;
-  assign pc_transfer_done = req_blwe_done;
+  assign req_pc_ar_done    = req_send_axi_cmd & req_last_axi_word_remain;
+  assign pc_transfer_done = req_pc_ar_done;
 
   // Single fifo_element for AR pipeline register
   axi4_ar_if_t m_axi4_a;
@@ -704,7 +705,7 @@ module mhdma_slave
   // =========================================================================================== //
   // Interface to formatter
   // =========================================================================================== //
-  // acks takes precedence in front of read request
+  // ACKs take precedence over read requests
   // we don't need dst_addr, flag & mode for ack
   always_ff @(posedge clk_mhdma) begin
     if (nrx_cmd_out_vld)  begin
@@ -721,7 +722,7 @@ module mhdma_slave
   end
 
   // Slave_command_vld: set when either FIFO has data
-  // Theses fifos have their data consumed when slave_command_rdy and correct fsm state is current
+  // These fifos have their data consumed when slave_command_rdy and correct fsm state is current
   always_ff @(posedge clk_mhdma) begin
     if (~resetn_mhdma) begin
       slave_command_vld <= 1'b0;
