@@ -77,6 +77,7 @@ module isc_query
     REFILL_XXX = 'x,
     REFILL_IDLE = 0,
     REFILL_SYNC_LOCK,
+    REFILL_SYNC_WINDOW,
     REFILL_RD_LOCK,
     REFILL_WR_LOCK,
     REFILL_INSERT,
@@ -87,10 +88,11 @@ module isc_query
   logic [POOL_SLOT_W: 0] r_refill_wr_lock, nxt_refill_wr_lock;
   logic [POOL_SLOT_W: 0] r_refill_flush_lock, nxt_refill_flush_lock;
 
-  logic refill_idle, refill_sync_lock, refill_rd_lock, refill_wr_lock, refill_insert,
+  logic refill_idle, refill_sync_lock, refill_sync_window, refill_rd_lock, refill_wr_lock, refill_insert,
         refill_issue_lock;
   assign refill_idle = (r_refill == REFILL_IDLE);
   assign refill_sync_lock = (r_refill == REFILL_SYNC_LOCK);
+  assign refill_sync_window = (r_refill == REFILL_SYNC_WINDOW);
   assign refill_rd_lock = (r_refill == REFILL_RD_LOCK);
   assign refill_wr_lock = (r_refill == REFILL_WR_LOCK);
   assign refill_issue_lock = (r_refill == REFILL_ISSUE_LOCK);
@@ -133,6 +135,14 @@ always_comb begin
 
     // ------------------------------------------------------------------------
     REFILL_SYNC_LOCK: begin
+    if (pool_ack_vld)
+      nxt_refill = REFILL_SYNC_WINDOW;
+    else
+      nxt_refill = r_refill;
+    end
+
+    // ------------------------------------------------------------------------
+    REFILL_SYNC_WINDOW: begin
     if (pool_ack_vld)
       nxt_refill = REFILL_INSERT;
     else
@@ -201,6 +211,19 @@ always_comb begin
       nxt_refill_flush_lock = pool_ack.nb_match;
   end
   if (refill_sync_lock) begin
+    // Build a request that count vld pool entries of SYNC kind
+    // Enable to serialiaze all sync windows and enforce global ordering
+    refill_req_info.state.vld = 1'b1;
+    refill_req_info.insn.kind = SYNC;
+    refill_req_filter.match_vld = 1'b1;
+    refill_req_filter.match_insn_kind = 1'b1;
+
+    refill_req_vld = 1'b1;
+    if (pool_ack_vld) begin
+      nxt_refill_rd_lock = pool_ack.nb_match;
+    end
+  end
+  if (refill_sync_window) begin
     // Build a request that count vld pool entries where sync_id match current one
     refill_req_info.state.vld = 1'b1;
     refill_req_filter.match_vld = 1'b1;
@@ -208,7 +231,6 @@ always_comb begin
 
     refill_req_vld = 1'b1;
     if (pool_ack_vld) begin
-      nxt_refill_rd_lock = '0; // rd_lock unused for sync
       nxt_refill_wr_lock = pool_ack.nb_match;
     end
   end
@@ -385,16 +407,16 @@ assign rdunlock_query_ack.info = r_rdunlock_info;
     RETIRE_IDLE = '0,
     RETIRE_SLOT,
     RETIRE_WR_LOCK,
-    RETIRE_SYNC_LOCK
+    RETIRE_SYNC_WINDOW
   } retire_fsm_e;
   retire_fsm_e r_retire, nxt_retire;
   isc_pool_info_t r_retire_info, nxt_retire_info;
   isc_ack_status_e r_retire_status, nxt_retire_status;
-  logic retire_idle, retire_slot, retire_wr_lock, retire_sync_lock;
+  logic retire_idle, retire_slot, retire_wr_lock, retire_sync_window;
   assign retire_idle = (r_retire == RETIRE_IDLE);
   assign retire_slot = (r_retire == RETIRE_SLOT);
   assign retire_wr_lock = (r_retire == RETIRE_WR_LOCK);
-  assign retire_sync_lock = (r_retire == RETIRE_SYNC_LOCK);
+  assign retire_sync_window = (r_retire == RETIRE_SYNC_WINDOW);
 
 // FSM structure =============================================================================== //
   always_ff @(posedge clk)
@@ -430,13 +452,13 @@ always_comb begin
     // ------------------------------------------------------------------------
     RETIRE_WR_LOCK: begin
     if (pool_ack_vld)
-      nxt_retire = RETIRE_SYNC_LOCK;
+      nxt_retire = RETIRE_SYNC_WINDOW;
     else
       nxt_retire = r_retire;
     end
 
     // ------------------------------------------------------------------------
-    RETIRE_SYNC_LOCK: begin
+    RETIRE_SYNC_WINDOW: begin
     if (pool_ack_vld)
       nxt_retire = RETIRE_IDLE;
     else
@@ -501,9 +523,10 @@ always_comb begin
 
     retire_req_vld = 1'b1;
   end
-  else if (retire_sync_lock) begin
+  else if (retire_sync_window) begin
     // Build a request that match all SYNC with matching sync_id
     // And required an wr_lock cnt update
+    // Track instruction in sync window
     retire_req_info = r_retire_info;
     retire_req_info.state.vld = 1'b1;
     retire_req_info.insn.kind = SYNC;
@@ -626,18 +649,33 @@ always_comb begin
   end
 
   if (issue_unlock) begin
-    issue_req_info.state.vld = 1'b1;
-    issue_req_info.state.rd_pdg = 1'b1;
-    issue_req_info.state.pdg = 1'b0;
-    // Match on the same kind with a different flush flavour. This will make flush issuing
-    // decrement non flush PBS locks and vice versa.
-    issue_req_info.insn.flush = !r_issue_info.insn.flush;
-    issue_req_info.insn.kind = r_issue_status == SUCCESS ? r_issue_info.insn.kind : NULL_KIND;
+    if ((r_issue_status == SUCCESS) && (r_issue_info.insn.kind == SYNC)) begin
+      // Issue a sync => decrease counter of all other sync
+      issue_req_info.state.vld = 1'b1;
+      issue_req_info.insn.kind = SYNC;
 
-    issue_req_filter.match_insn_kind = 1'b1;
-    issue_req_filter.match_flush = 1'b1;
-    issue_req_updt.dec_issue_lock = 1'b1;
+      issue_req_filter.match_vld = 1'b1;
+      issue_req_filter.match_insn_kind = 1'b1;
 
+      issue_req_updt.dec_rd_lock = 1'b1;
+    end
+    else begin
+      // Match on the same kind with a different flush flavour. This will make flush issuing
+      // decrement non flush PBS locks and vice versa.
+      issue_req_info.state.vld = 1'b1;
+      issue_req_info.state.rd_pdg = 1'b1;
+      issue_req_info.state.pdg = 1'b0;
+      // Match on the same kind with a different flush flavour. This will make flush issuing
+      // decrement non flush PBS locks and vice versa.
+      issue_req_info.insn.flush = !r_issue_info.insn.flush;
+      issue_req_info.insn.kind = r_issue_status == SUCCESS ? r_issue_info.insn.kind : NULL_KIND;
+
+      issue_req_filter.match_vld = 1'b1;
+      issue_req_filter.match_insn_kind = 1'b1;
+      issue_req_filter.match_flush = 1'b1;
+
+      issue_req_updt.dec_issue_lock = 1'b1;
+    end
     issue_req_vld = 1'b1;
   end
 end
@@ -680,7 +718,7 @@ assign query_ack =  (!refill_idle) ? refill_query_ack
                      : (!retire_idle) ? retire_query_ack
                      : issue_query_ack;
 assign query_rdy = refill_idle && rdunlock_idle && retire_idle && issue_idle;
-assign query_ack_vld = pool_ack_vld && (refill_insert || rdunlock_rd_lock || retire_sync_lock || issue_unlock);
+assign query_ack_vld = pool_ack_vld && (refill_insert || rdunlock_rd_lock || retire_sync_window || issue_unlock);
 
 // ============================================================================================== //
 // SyncId counter
