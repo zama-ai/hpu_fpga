@@ -12,6 +12,7 @@
 # Clock domains:
 #    - clk_mhdma_cfg : configuration (AXI4-Lite, regfile)
 #    - clk_mhdma     : axi stream clock from MRMAC if (same as QSFP, HBM AXI4)
+# both are synchronous, from the same MMCM
 #
 # ==============================================================================================
 
