@@ -204,8 +204,8 @@ package mhdma_pkg;
   } decoder_error_t;
 
   typedef struct packed {
-    logic read_rresp_error;  // AXI4 rresp != OKAY during read
-    logic read_rlast_error;  // rlast mismatch with internal word counter
+    logic rreq_cmd_ovf_error;
+    logic read_rresp_error;
   } slave_error_t;
 
   typedef struct packed {

@@ -26,10 +26,6 @@
 //   - regf_ct_mem_addr is stable for the entire duration of a read operation
 //   - ETH_PC >= 1
 //
-// TODO ?
-//  - overflow error detection for rreq_command_queue
-//  - The fifo_ce FIFO depth of CT_NB_COEF seems overly large
-//
 // ================================================================================================
 
 module mhdma_slave
@@ -528,12 +524,10 @@ module mhdma_slave
   // Single shared read data path (R channel) ----------------------------------------------------
   logic [AXI4_DATA_W-1:0] rdata_muxed;
   logic [AXI4_RESP_W-1:0] rresp_muxed;
-  logic                   rlast_muxed;
   logic                   rvalid_muxed;
 
   assign rdata_muxed  = m_axi4_rdata[rd_pc_idx];
   assign rresp_muxed  = m_axi4_rresp[rd_pc_idx];
-  assign rlast_muxed  = m_axi4_rlast[rd_pc_idx];
   assign rvalid_muxed = m_axi4_rvalid[rd_pc_idx];
 
   // Demux rready: only assert for the active PC
@@ -685,7 +679,7 @@ module mhdma_slave
 
   fifo_ram_rdy_vld # (
     .WIDTH      (MRMAC_AXIS_W   ),
-    .DEPTH      (CT_NB_COEF     ),
+    .DEPTH      (PAGE_AXI4_DATA * NB_MRMAC_WORDS_PER_READ),
     .RAM_LATENCY(CE_RAM_LATENCY ),
     .ALMOST_FULL_REMAIN (0)
   ) fifo_ce (
@@ -734,6 +728,19 @@ module mhdma_slave
   // =========================================================================================== //
   // Error detection
   // =========================================================================================== //
+  // rreq_cmd_ovf_error: sticky flag, set when rreq_command_queue overflows
+  always_ff @(posedge clk_mhdma) begin
+    if (~resetn_mhdma) begin
+      slave_error.rreq_cmd_ovf_error <= 1'b0;
+    end else begin
+      if (rst_errors) begin
+        slave_error.rreq_cmd_ovf_error <= 1'b0;
+      end else if (rreq_cmd_in_vld & ~rreq_cmd_in_rdy) begin
+        slave_error.rreq_cmd_ovf_error <= 1'b1;
+      end
+    end
+  end
+
   // read_rresp_error: sticky flag, set when rresp != OKAY during valid read transfer
   always_ff @(posedge clk_mhdma) begin
     if (~resetn_mhdma) begin
@@ -743,55 +750,6 @@ module mhdma_slave
         slave_error.read_rresp_error <= 1'b0;
       end else if (rvalid_muxed & rready_shared & (rresp_muxed != AXI4_OKAY)) begin
         slave_error.read_rresp_error <= 1'b1;
-      end
-    end
-  end
-
-  // read_rlast_error: sticky flag, set when rlast doesn't coincide with last word of a burst
-  // Track expected burst length from AR channel through a counter on the R channel.
-  // Note: this uses a single register, not a FIFO — correct when R data for burst N completes
-  // before AR for burst N+1 is accepted. This holds because fifo_element depth=1 and the AXI
-  // interconnect won't accept the next AR until the current burst's R data has started flowing.
-  logic [AXI4_LEN_W:0] r_burst_cnt;
-  logic [AXI4_LEN_W:0] r_burst_len;  // expected burst length (arlen+1) for current R burst
-  logic                r_burst_active;
-
-  always_ff @(posedge clk_mhdma) begin
-    if (~resetn_mhdma) begin
-      r_burst_cnt    <= '0;
-      r_burst_active <= 1'b0;
-      r_burst_len    <= '0;
-    end else begin
-      if (rvalid_muxed & rready_shared) begin
-        if (r_burst_cnt == r_burst_len - 1) begin
-          r_burst_cnt    <= '0;
-          r_burst_active <= 1'b0;
-        end else begin
-          r_burst_cnt <= r_burst_cnt + 1;
-        end
-      end
-      // Load new burst length when AR handshake (use the muxed arready/arvalid)
-      if (fifo_ar_out_vld & fifo_ar_out_rdy) begin
-        r_burst_len    <= {1'b0, m_axi4_a.arlen} + 1;
-        r_burst_active <= 1'b1;
-        r_burst_cnt    <= '0;
-      end
-    end
-  end
-
-  logic rlast_expected;
-  assign rlast_expected = r_burst_active & (r_burst_cnt == r_burst_len - 1);
-
-  always_ff @(posedge clk_mhdma) begin
-    if (~resetn_mhdma) begin
-      slave_error.read_rlast_error <= 1'b0;
-    end else begin
-      if (rst_errors) begin
-        slave_error.read_rlast_error <= 1'b0;
-      end else if (rvalid_muxed & rready_shared) begin
-        if (rlast_muxed != rlast_expected) begin
-          slave_error.read_rlast_error <= 1'b1;
-        end
       end
     end
   end

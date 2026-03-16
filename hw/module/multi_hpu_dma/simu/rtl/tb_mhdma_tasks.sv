@@ -158,7 +158,8 @@ function automatic void display_errors(
   $display(" Raw error register                      : 0x%08b", stat_errors);
   $display(" format_error.formatter_error            : %b", errors_struct.format_error.formatter_error);
   $display(" decoder_error.error_fifo_rx_ovf         : %b", errors_struct.decoder_error.error_fifo_rx_ovf);
-  // $display(" slave_error.placeholder : %b", errors_struct.slave_error.placeholder);
+  $display(" slave_error.rreq_cmd_ovf_error          : %b", errors_struct.slave_error.rreq_cmd_ovf_error);
+  $display(" slave_error.read_rresp_error            : %b", errors_struct.slave_error.read_rresp_error);
   $display(" master_error.seq_num_error              : %b", errors_struct.master_error.seq_num_error);
   $display(" master_error.write_error                : %b", errors_struct.master_error.write_error);
   $display(" error_id                                : %b", errors_struct.error_id);

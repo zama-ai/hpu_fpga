@@ -666,8 +666,19 @@ module tb_mhdma_slave;
     wait_ce_vld(TIMEOUT_CYCLES, timed_out);
     check_no_timeout(timed_out, scenario_id, "ce_vld timeout");
 
-    // Consume CE data
-    repeat (CT_NB_WORDS_MRMAC + 200) @(posedge clk_mhdma);
+    // Consume CE data by counting actual handshakes (not cycles)
+    begin : drain_ce_cem_flow
+      int ce_count;
+      int cycle_count;
+      ce_count = 0;
+      cycle_count = 0;
+      while ((ce_count < CT_NB_WORDS_MRMAC) & (cycle_count < TIMEOUT_CYCLES)) begin
+        @(posedge clk_mhdma);
+        if (ce_vld & ce_rdy) ce_count++;
+        cycle_count++;
+      end
+      check_no_timeout(cycle_count >= TIMEOUT_CYCLES, scenario_id, "CE drain timeout");
+    end
 
     simulate_pulse(ciphertext_sent, clk_mhdma);
     repeat (50) @(posedge clk_mhdma);
@@ -961,7 +972,20 @@ module tb_mhdma_slave;
     wait_ce_vld(TIMEOUT_CYCLES, timed_out);
     check_no_timeout(timed_out, scenario_id, "ce_vld timeout after consume");
 
-    repeat (CT_NB_WORDS_MRMAC + 200) @(posedge clk_mhdma);
+    // Consume CE data by counting actual handshakes (not cycles)
+    begin : drain_ce_backpressure
+      int ce_count;
+      int cycle_count;
+      ce_count = 0;
+      cycle_count = 0;
+      while ((ce_count < CT_NB_WORDS_MRMAC) & (cycle_count < TIMEOUT_CYCLES)) begin
+        @(posedge clk_mhdma);
+        if (ce_vld & ce_rdy) ce_count++;
+        cycle_count++;
+      end
+      check_no_timeout(cycle_count >= TIMEOUT_CYCLES, scenario_id, "CE drain timeout");
+    end
+
     simulate_pulse(ciphertext_sent, clk_mhdma);
     repeat (50) @(posedge clk_mhdma);
     assert (stat.fsm_cem == 2'b00) else begin
