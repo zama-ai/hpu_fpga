@@ -48,9 +48,9 @@ module mhdma_bridge
   output logic [ETH_PC-1:0][AXI4_BURST_W-1:0]     m_axi4_arburst,
   output logic [ETH_PC-1:0]                       m_axi4_arvalid,
   input  logic [ETH_PC-1:0]                       m_axi4_arready,
-  input  logic [ETH_PC-1:0][  AXI4_ID_W-1:0]      m_axi4_rid,       // unused
+  input  logic [ETH_PC-1:0][  AXI4_ID_W-1:0]      m_axi4_rid,
   input  logic [ETH_PC-1:0][AXI4_DATA_W-1:0]      m_axi4_rdata,
-  input  logic [ETH_PC-1:0][AXI4_RESP_W-1:0]      m_axi4_rresp,     // unused
+  input  logic [ETH_PC-1:0][AXI4_RESP_W-1:0]      m_axi4_rresp,
   input  logic [ETH_PC-1:0]                       m_axi4_rlast,
   input  logic [ETH_PC-1:0]                       m_axi4_rvalid,
   output logic [ETH_PC-1:0]                       m_axi4_rready,
@@ -322,6 +322,8 @@ module mhdma_bridge
     .m_axi4_arid                    (m_axi4_arid                              ),
 
     .m_axi4_rdata                   (m_axi4_rdata                             ),
+    .m_axi4_rresp                   (m_axi4_rresp                             ),
+    .m_axi4_rid                     (m_axi4_rid                               ),
     .m_axi4_rlast                   (m_axi4_rlast                             ),
     .m_axi4_rvalid                  (m_axi4_rvalid                            ),
     .m_axi4_rready                  (m_axi4_rready                            ),

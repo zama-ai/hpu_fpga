@@ -12,11 +12,11 @@
 //   - There are two FSMs : NRX (Notify RX) & CEM (Ciphertext EMission)
 //   - A CDC FIFO (fifo_nrx_regf) bridges notify information from clk_mhdma to clk_mhdma_cfg.
 //   - If fifo_nrx_regf is full we don't consume words from decoder FIFO
-//   - Ciphertext reads are issued to HBM through per-PC AXI4 channels, one PC at a time,
-//     with page-boundary-aware burst splitting.
-//   - AXI4 read data (AXI4_DATA_W wide) is deserialized into MRMAC_AXIS_W words before
+//   - PCs are processed sequentially (ar_pc_onehot / rd_pc_onehot), so a single
+//     shared burst FSM, fifo_element, fifo_ram_rdy_vld and serialization pipeline is used.
+//     Per-PC AXI4 IO is muxed/demuxed based on the active PC index.
+//   - AXI4 read data (AXI4_DATA_W wide) is serialized into MRMAC_AXIS_W words before
 //     being pushed into the CE FIFO for the formatter.
-//
 //
 // Assumptions:
 //   - CT_MEM_BYTES is page-aligned (used in phy_addr = base + ctId * CT_MEM_BYTES)
@@ -27,10 +27,8 @@
 //   - ETH_PC >= 1
 //
 // TODO ?
-//  - use only one instance of axi4 read and not PEM_PC
 //  - overflow error detection for rreq_command_queue
 //  - The fifo_ce FIFO depth of CT_NB_COEF seems overly large
-//  - AXI4 response channel signals (rresp, rid) are not connected same for m_axi4_rlast
 //
 // ================================================================================================
 
@@ -44,62 +42,63 @@ module mhdma_slave
   parameter int CDC_SYNC_STAGES = 2
 ) (
   // Ethernet configuration interface -------------------------------------------------------------
-  input  logic                                                 clk_mhdma_cfg,
-  input  logic                                                 resetn_mhdma_cfg,
+  input  logic                                                   clk_mhdma_cfg,
+  input  logic                                                   resetn_mhdma_cfg,
   // Ethernet fast clock interface ----------------------------------------------------------------
-  input  logic                                                 clk_mhdma,
-  input  logic                                                 resetn_mhdma,
+  input  logic                                                   clk_mhdma,
+  input  logic                                                   resetn_mhdma,
   // Axi4 interface for NMU -----------------------------------------------------------------------
-  output logic [ETH_PC-1:0][  AXI4_ADD_W-1:0]                  m_axi4_araddr,
-  output logic [ETH_PC-1:0][  AXI4_LEN_W-1:0]                  m_axi4_arlen,
-  output logic [ETH_PC-1:0][ AXI4_SIZE_W-1:0]                  m_axi4_arsize,
-  output logic [ETH_PC-1:0][AXI4_BURST_W-1:0]                  m_axi4_arburst,
-  output logic [ETH_PC-1:0]                                    m_axi4_arvalid,
-  input  logic [ETH_PC-1:0]                                    m_axi4_arready,
+  output logic [ETH_PC-1:0][  AXI4_ADD_W-1:0]                    m_axi4_araddr,
+  output logic [ETH_PC-1:0][  AXI4_LEN_W-1:0]                    m_axi4_arlen,
+  output logic [ETH_PC-1:0][ AXI4_SIZE_W-1:0]                    m_axi4_arsize,
+  output logic [ETH_PC-1:0][AXI4_BURST_W-1:0]                    m_axi4_arburst,
+  output logic [ETH_PC-1:0]                                      m_axi4_arvalid,
+  input  logic [ETH_PC-1:0]                                      m_axi4_arready,
   output logic [ETH_PC-1:0][axi_if_mhdma_axi_pkg::AXI4_ID_W-1:0] m_axi4_arid,
 
-  input  logic [ETH_PC-1:0][AXI4_DATA_W-1:0]                   m_axi4_rdata,
-  input  logic [ETH_PC-1:0]                                    m_axi4_rlast, // TODO: never used
-  input  logic [ETH_PC-1:0]                                    m_axi4_rvalid,
-  output logic [ETH_PC-1:0]                                    m_axi4_rready,
+  input  logic [ETH_PC-1:0][AXI4_DATA_W-1:0]                     m_axi4_rdata,
+  input  logic [ETH_PC-1:0][AXI4_RESP_W-1:0]                     m_axi4_rresp,
+  input  logic [ETH_PC-1:0][axi_if_mhdma_axi_pkg::AXI4_ID_W-1:0] m_axi4_rid,
+  input  logic [ETH_PC-1:0]                                      m_axi4_rlast,
+  input  logic [ETH_PC-1:0]                                      m_axi4_rvalid,
+  output logic [ETH_PC-1:0]                                      m_axi4_rready,
   // regf interface -------------------------------------------------------------------------------
-  input  logic [ETH_PC-1:0][2*REG_DATA_W-1:0]                  regf_ct_mem_addr,
-  output logic             [  REG_DATA_W-1:0]                  regf_notify_req_id,
-  output logic             [  REG_DATA_W-1:0]                  regf_notify_req_addr,
+  input  logic [ETH_PC-1:0][2*REG_DATA_W-1:0]                    regf_ct_mem_addr,
+  output logic             [  REG_DATA_W-1:0]                    regf_notify_req_id,
+  output logic             [  REG_DATA_W-1:0]                    regf_notify_req_addr,
   // interrupt ------------------------------------------------------------------------------------
-  input  logic                                                 clear_interrupt_notify,
-  output logic                                                 interrupt_notify,
+  input  logic                                                   clear_interrupt_notify,
+  output logic                                                   interrupt_notify,
   // decoder interface ----------------------------------------------------------------------------
-  input  command_t                                             decoded_command,
-  input  logic                                                 decoded_command_vld,
-  output logic                                                 decoded_command_rdy,
+  input  command_t                                               decoded_command,
+  input  logic                                                   decoded_command_vld,
+  output logic                                                   decoded_command_rdy,
   // format interface -----------------------------------------------------------------------------
-  output command_t                                             slave_command,
-  output logic                                                 slave_command_vld,
-  input  logic                                                 slave_command_rdy,
+  output command_t                                               slave_command,
+  output logic                                                   slave_command_vld,
+  input  logic                                                   slave_command_rdy,
 
-  output logic             [MRMAC_AXIS_W-1:0]                  ce_payload,
-  output logic                                                 ce_vld,
-  input  logic                                                 ce_rdy,
+  output logic             [MRMAC_AXIS_W-1:0]                    ce_payload,
+  output logic                                                   ce_vld,
+  input  logic                                                   ce_rdy,
 
-  input  logic                                                 ciphertext_sent,
-  input  logic                                                 notify_ack_sent,
+  input  logic                                                   ciphertext_sent,
+  input  logic                                                   notify_ack_sent,
   // Error interface ------------------------------------------------------------------------------
-  output slave_error_t                                         slave_error, // placeholders
-  input  logic                                                 rst_errors,  // placeholders
+  output slave_error_t                                           slave_error,
+  input  logic                                                   rst_errors,
   // statistics -----------------------------------------------------------------------------------
-  output slave_stat_t                                          stat,
-  input  slave_stat_rst_t                                      stat_rst
+  output slave_stat_t                                            stat,
+  input  slave_stat_rst_t                                        stat_rst
 );
-
-  logic slave_rdy_notify;
-  logic slave_rdy_read;
 
   // =========================================================================================== //
   // Received
   // =========================================================================================== //
   logic received_notify;
   logic received_read_request;
+  logic slave_rdy_notify;
+  logic slave_rdy_read;
 
   assign received_notify       = (decoded_command.req_id == REQ_ID_NOTIFY);
   assign received_read_request = (decoded_command.req_id == REQ_ID_READ);
@@ -120,8 +119,11 @@ module mhdma_slave
   st_nrx nrx_next_state;
 
   always_ff @(posedge clk_mhdma) begin
-    if (~resetn_mhdma) nrx_state <= NRX_WAIT_REQUEST;
-    else nrx_state <= nrx_next_state;
+    if (~resetn_mhdma) begin
+      nrx_state <= NRX_WAIT_REQUEST;
+    end else begin
+      nrx_state <= nrx_next_state;
+    end
   end
 
   assign start_notify_ack = decoded_command_vld & slave_rdy_notify;
@@ -186,7 +188,7 @@ module mhdma_slave
   assign nrx_cmd_out_rdy = st_transmit_ack & slave_command_rdy & nrx_regf_in_rdy;
   assign nrx_regf_write_enable = nrx_cmd_out_vld & nrx_cmd_out_rdy;
 
-  // === CFG domain
+  // CFG domain ----------------------------------------------------------------------------------
   logic [2*REG_DATA_W-1:0] nrx_regf_out_data;
   logic                    nrx_regf_out_rdy;
   logic                    nrx_regf_out_vld;
@@ -237,8 +239,11 @@ module mhdma_slave
   st_cem cem_next_state;
 
   always_ff @(posedge clk_mhdma) begin
-    if (~resetn_mhdma) cem_state <= CEM_WAIT_REQUEST;
-    else cem_state <= cem_next_state;
+    if (~resetn_mhdma)  begin
+      cem_state <= CEM_WAIT_REQUEST;
+    end else begin
+      cem_state <= cem_next_state;
+    end
   end
 
   assign start_of_ct_emission  = decoded_command_vld & slave_rdy_read;
@@ -338,7 +343,7 @@ module mhdma_slave
   always_ff @(posedge clk_mhdma)
    rr_ct_src_addr <= rreq_cmd_fifo.src_addr;
 
-  // Computing physical address
+  // - Computing physical address
   // phys_addr = hbm_pc_offset + ctId * CT_MEM_BYTES
   logic [ETH_PC-1:0] [AXI4_ADD_W-1:0] phy_addr;
   generate
@@ -349,8 +354,7 @@ module mhdma_slave
     end
   endgenerate
 
-  // Is read request ready ------------------------------------------------------------------------
-  // flag that states that read request is ready
+  // - Is read request ready
   logic rreq_ready;
   logic rreq_ready_tmp;
   logic rreq_ready_pulse;
@@ -373,331 +377,314 @@ module mhdma_slave
 
   assign rreq_ready_pulse = rreq_ready & ~rreq_ready_tmp;
 
-  // process an axi4-read on each PC --------------------------------------------------------------
-  // We must read each PC one by one
-  logic [ETH_PC-1:0] axi4_read_pc;        // this signal is a one hot selecting PC that we want to use
-  logic [ETH_PC-1:0] pc_transfer_done;    // signal when PC transfer is complete
-  logic [ETH_PC-1:0] read_fifo_ready;     // ready from receiving FIFO
+  // - How much words are there per PC to read
+  logic [AXI4_WORD_PER_PC0_WW-1:0] axi4_word_per_path;
+  logic                pc_transfer_done;
+  logic                read_fifo_ready;
+  logic [ETH_PC-1:0]   ar_pc_onehot;
+  logic [ETH_PC-1:0]   rd_pc_onehot;
+  logic [ETH_PC_W-1:0] ar_pc_idx;
+  logic [ETH_PC_W-1:0] rd_pc_idx;
+
+  always_comb begin
+    ar_pc_idx = '0;
+    for (int i = 0; i < ETH_PC; i++)
+      if (ar_pc_onehot[i])
+        ar_pc_idx = ETH_PC_W'(i);
+  end
+
+  always_comb begin
+    rd_pc_idx = '0;
+    for (int i = 0; i < ETH_PC; i++)
+      if (rd_pc_onehot[i])
+        rd_pc_idx = ETH_PC_W'(i);
+  end
+
+  assign axi4_word_per_path = (ar_pc_idx == 0) ? AXI4_WORD_PER_PC0_WW'(AXI4_WORD_PER_PC0) : AXI4_WORD_PER_PC0_WW'(AXI4_WORD_PER_PC);
+
+  // Single shared burst FSM (AR channel) --------------------------------------------------------
+  // Very similar to module pem_load burst generation.
+  axi4_ar_if_t                     s0_axi;
+  logic                            s0_axi_arvalid;
+  logic                            s0_axi_arready;
+  logic [AXI4_LEN_W:0]             req_axi_word_nb;
+
+  logic [AXI4_WORD_PER_PC0_WW-1:0] req_axi_word_remain;
+  logic [AXI4_WORD_PER_PC0_WW-1:0] req_axi_word_remainD;
+  logic                            req_last_axi_word_remain;
+  logic [AXI4_WORD_PER_PC0_WW-1:0] req_axi_word_remain_init;
+
+  logic                            req_pbs_first_burst;
+  logic                            req_pbs_first_burstD;
+
+  logic                            req_send_axi_cmd;
+
+  logic                            req_blwe_done;
+
+  assign req_axi_word_remain_init = axi4_word_per_path;
+
+  // req_axi_word_remainD is the same than pem_load but req_pbs_first_burst condition has been added
+  assign req_axi_word_remainD = req_send_axi_cmd ?
+                                req_last_axi_word_remain ? req_axi_word_remain_init : req_axi_word_remain - req_axi_word_nb :
+                                req_pbs_first_burst ? req_axi_word_remain_init :
+                                req_axi_word_remain;
+
+  assign req_last_axi_word_remain = req_axi_word_remain == req_axi_word_nb;
+  assign req_pbs_first_burstD     = req_send_axi_cmd ? req_last_axi_word_remain ? 1'b1 : 1'b0 : req_pbs_first_burst;
+
+  always_ff @(posedge clk_mhdma) begin
+    if (~resetn_mhdma) begin
+      req_axi_word_remain <= AXI4_WORD_PER_PC0_WW'(AXI4_WORD_PER_PC0);
+      req_pbs_first_burst <= 1'b1;
+    end else begin
+      req_axi_word_remain <= req_axi_word_remainD;
+      req_pbs_first_burst <= req_pbs_first_burstD;
+    end
+  end
+
+  // Address calculation
+  logic [AXI4_ADD_W-1:0]    req_add;
+  logic [AXI4_ADD_W-1:0]    req_addD;
+  logic [AXI4_ADD_W-1:0]    req_add_start;
+  logic [PAGE_BYTES_WW-1:0] req_page_word_remain;
+
+  assign req_add_start = req_pbs_first_burst ? phy_addr[ar_pc_idx] : req_add;
+  assign req_addD      = req_send_axi_cmd ? req_add_start + req_axi_word_nb*AXI4_DATA_BYTES : req_add;
+
+  always_ff @(posedge clk_mhdma) begin
+    if (~resetn_mhdma) begin
+      req_add <= '0;
+    end else begin
+      req_add <= req_addD;
+    end
+  end
+
+  // Page boundary aware burst sizing
+  assign req_page_word_remain = PAGE_AXI4_DATA - req_add_start[PAGE_BYTES_W-1:AXI4_DATA_BYTES_W];
+  assign req_axi_word_nb      = req_page_word_remain < req_axi_word_remain ? req_page_word_remain : req_axi_word_remain;
+
+  // AXI AR channel
+  assign s0_axi.arid    = MHDMA_AXI_ARID;
+  assign s0_axi.arsize  = AXI4_DATA_BYTES_W;
+  assign s0_axi.arburst = AXI4B_INCR;
+  assign s0_axi.araddr  = req_add_start;
+  assign s0_axi.arlen   = req_axi_word_nb - 1;
+
+  assign s0_axi_arvalid  = |ar_pc_onehot;
+  assign req_send_axi_cmd = s0_axi_arvalid & s0_axi_arready;
+
+  assign req_blwe_done    = req_send_axi_cmd & req_last_axi_word_remain;
+  assign pc_transfer_done = req_blwe_done;
+
+  // Single fifo_element for AR pipeline register
+  axi4_ar_if_t m_axi4_a;
+  logic        fifo_ar_out_vld;
+  logic        fifo_ar_out_rdy;
+
+  fifo_element #(
+    .WIDTH          ($bits(axi4_ar_if_t)),
+    .DEPTH          (1),
+    .TYPE_ARRAY     (4'h3),
+    .DO_RESET_DATA  (1'b0),
+    .RESET_DATA_VAL (0)
+  ) fifo_element_ar (
+    .clk     (clk_mhdma),
+    .s_rst_n (resetn_mhdma),
+
+    .in_data (s0_axi),
+    .in_vld  (s0_axi_arvalid),
+    .in_rdy  (s0_axi_arready),
+
+    .out_data(m_axi4_a),
+    .out_vld (fifo_ar_out_vld),
+    .out_rdy (fifo_ar_out_rdy)
+  );
+
+  // Demux AR outputs to per-PC AXI4 ports: drive active PC, tie others to 0/inactive
+  // We register ar_pc_idx through the fifo_element latency using a shadow register
+  logic [ETH_PC_W-1:0] ar_pc_idx_pipe;
+  always_ff @(posedge clk_mhdma) begin
+    if (~resetn_mhdma) begin
+      ar_pc_idx_pipe <= '0;
+    end else if (s0_axi_arvalid & s0_axi_arready) begin
+      ar_pc_idx_pipe <= ar_pc_idx;
+    end
+  end
+
+  assign fifo_ar_out_rdy = m_axi4_arready[ar_pc_idx_pipe];
 
   generate
-    for (genvar gen_rd=0; gen_rd<ETH_PC; gen_rd++) begin : gen_ce_reads
-      // Per-PC parameters
-      localparam int AXI4_WORD_PER_PATH    = (gen_rd == 0) ? AXI4_WORD_PER_PC0 : AXI4_WORD_PER_PC;
-      localparam int AXI4_WORD_PER_PATH_W  = (gen_rd == 0) ? AXI4_WORD_PER_PC0_W : AXI4_WORD_PER_PC_W;
-      localparam int AXI4_WORD_PER_PATH_WW = (gen_rd == 0) ? AXI4_WORD_PER_PC0_WW : AXI4_WORD_PER_PC_WW;
-
-      // AXI interface
-      axi4_ar_if_t                       axi_ar;
-      logic                              axi_arvalid;
-      logic                              axi_arready;
-      logic [AXI4_LEN_W:0]               req_axi_word_nb; // = axi_len + 1
-
-      // Counters for dynamic burst sizing
-      logic [AXI4_WORD_PER_PATH_WW-1:0]  req_axi_word_remain;
-      logic [AXI4_WORD_PER_PATH_WW-1:0]  req_axi_word_remainD;
-      logic                              req_last_axi_word_remain;
-      logic [AXI4_WORD_PER_PATH_WW-1:0]  req_axi_word_remain_init;
-
-      logic                              req_pbs_first_burst;
-      logic                              req_pbs_first_burstD;
-
-      logic                              req_send_axi_cmd;
-
-      assign req_axi_word_remainD     = req_send_axi_cmd ?
-                                            req_last_axi_word_remain ? req_axi_word_remain_init : req_axi_word_remain - req_axi_word_nb :
-                                            req_axi_word_remain;
-      assign req_last_axi_word_remain = req_axi_word_remain == req_axi_word_nb;
-      assign req_axi_word_remain_init = AXI4_WORD_PER_PATH;
-      assign req_pbs_first_burstD     = req_send_axi_cmd ? req_last_axi_word_remain ? 1'b1 : 1'b0 : req_pbs_first_burst;
-
-      always_ff @(posedge clk_mhdma)
-        if (~resetn_mhdma) begin
-          req_axi_word_remain <= AXI4_WORD_PER_PATH;
-          req_pbs_first_burst <= 1'b1;
-        end
-        else begin
-          req_axi_word_remain <= req_axi_word_remainD;
-          req_pbs_first_burst <= req_pbs_first_burstD;
-        end
-
-      // Address calculation
-      logic [AXI4_ADD_W-1:0]    req_add;
-      logic [AXI4_ADD_W-1:0]    req_addD;
-      logic [AXI4_ADD_W-1:0]    req_add_start;
-      logic [PAGE_BYTES_WW-1:0] req_page_word_remain;
-
-      assign req_add_start = req_pbs_first_burst ? phy_addr[gen_rd] : req_add;
-      assign req_addD      = req_send_axi_cmd ? req_add_start + req_axi_word_nb*AXI4_DATA_BYTES : req_add;
-
-      always_ff @(posedge clk_mhdma)
-        if (~resetn_mhdma) req_add <= '0;
-        else               req_add <= req_addD;
-
-      // Page boundary aware burst sizing
-      assign req_page_word_remain = PAGE_AXI4_DATA - req_add_start[PAGE_BYTES_W-1:AXI4_DATA_BYTES_W];
-      assign req_axi_word_nb      = req_page_word_remain < req_axi_word_remain ? req_page_word_remain : req_axi_word_remain;
-
-      // AXI AR channel
-      assign axi_ar.arid    = MHDMA_AXI_ARID;
-      assign axi_ar.arsize  = AXI4_DATA_BYTES_W;
-      assign axi_ar.arburst = AXI4B_INCR;
-      assign axi_ar.araddr  = req_add_start;
-      assign axi_ar.arlen   = req_axi_word_nb - 1;
-
-      assign axi_arvalid    = axi4_read_pc[gen_rd] & (req_axi_word_remain > 0);
-      assign req_send_axi_cmd = axi_arvalid & axi_arready;
-
-      // PC transfer done when last address command sent
-      assign pc_transfer_done[gen_rd] = req_send_axi_cmd & req_last_axi_word_remain;
-
-      axi4_ar_if_t m_axi4_a;
-
-      fifo_element #(
-        .WIDTH          ($bits(axi4_ar_if_t)),
-        .DEPTH          (1),
-        .TYPE_ARRAY     (4'h3),
-        .DO_RESET_DATA  (1'b0),
-        .RESET_DATA_VAL (0)
-      ) fifo_element_address_read (
-        .clk     (clk_mhdma   ),
-        .s_rst_n (resetn_mhdma),
-
-        .in_data (axi_ar),
-        .in_vld  (axi_arvalid),
-        .in_rdy  (axi_arready),
-
-        .out_data(m_axi4_a),
-        .out_vld (m_axi4_arvalid[gen_rd]),
-        .out_rdy (m_axi4_arready[gen_rd])
-      );
-
+    for (genvar gen_rd = 0; gen_rd < ETH_PC; gen_rd++) begin : gen_ar_demux
+      assign m_axi4_arvalid[gen_rd] = fifo_ar_out_vld & (ar_pc_idx_pipe == ETH_PC_W'(gen_rd));
       assign m_axi4_arid[gen_rd]    = m_axi4_a.arid;
       assign m_axi4_araddr[gen_rd]  = m_axi4_a.araddr;
       assign m_axi4_arlen[gen_rd]   = m_axi4_a.arlen;
       assign m_axi4_arsize[gen_rd]  = m_axi4_a.arsize;
       assign m_axi4_arburst[gen_rd] = m_axi4_a.arburst;
-
     end
   endgenerate
 
-  // Reception FIFOs for both PC ports ------------------------------------------------------------
-  // one hot value that selects which PC is selected to be read and sent to QSFP lane
-  // always start with PC0
-  logic [ETH_PC-1:0]                   reading_which_pc;
-  logic [ETH_PC-1:0]                   fifo_ce_pc_in_rdy;
-  logic [ETH_PC-1:0][MRMAC_AXIS_W-1:0] fifo_ce_pc_in_data;
-  logic [ETH_PC-1:0]                   fifo_ce_pc_in_vld;
+  // Single shared read data path (R channel) ----------------------------------------------------
+  logic [AXI4_DATA_W-1:0] rdata_muxed;
+  logic [AXI4_RESP_W-1:0] rresp_muxed;
+  logic                   rlast_muxed;
+  logic                   rvalid_muxed;
+
+  assign rdata_muxed  = m_axi4_rdata[rd_pc_idx];
+  assign rresp_muxed  = m_axi4_rresp[rd_pc_idx];
+  assign rlast_muxed  = m_axi4_rlast[rd_pc_idx];
+  assign rvalid_muxed = m_axi4_rvalid[rd_pc_idx];
+
+  // Demux rready: only assert for the active PC
+  logic rready_shared;
 
   generate
-    for (genvar gen_rd=0; gen_rd<ETH_PC; gen_rd++) begin : gen_read_fifo
-      // Since PEM_PC | AXI4_WORD_PER_BLWE, the body is processed by PC0
-      localparam int AXI4_WORD_PER_PATH    = (gen_rd == 0) ? AXI4_WORD_PER_PC0 : AXI4_WORD_PER_PC;
-      localparam int AXI4_WORD_PER_PATH_W  = (gen_rd == 0) ? AXI4_WORD_PER_PC0_W : AXI4_WORD_PER_PC_W;
-      localparam int AXI4_WORD_PER_PATH_WW = (gen_rd == 0) ? AXI4_WORD_PER_PC0_WW : AXI4_WORD_PER_PC_WW;
-
-      // input part
-      logic                   read_fifo_we;
-      // output part
-      logic [AXI4_DATA_W-1:0] read_fifo_out_data;
-      logic                   read_fifo_out_valid;
-      logic                   read_fifo_out_ready;
-
-      // we read if and only if we are in ciphertext emission mode
-      assign m_axi4_rready[gen_rd] = read_fifo_ready[gen_rd] & st_read_send;
-
-      assign read_fifo_we = m_axi4_rvalid[gen_rd] & m_axi4_rready[gen_rd];
-
-      fifo_ram_rdy_vld # (
-        .WIDTH      (AXI4_DATA_W),
-        .DEPTH      (FIFO_PC_DEPTH),
-        .RAM_LATENCY(FIFO_PC_RAM_LATENCY)
-      ) fifo_pc_read (
-        .clk         (clk_mhdma),
-        .s_rst_n     (resetn_mhdma),
-
-        .in_data     (m_axi4_rdata[gen_rd]),
-        .in_vld      (read_fifo_we),
-        .in_rdy      (read_fifo_ready[gen_rd]),
-
-        .out_data    (read_fifo_out_data),
-        .out_vld     (read_fifo_out_valid),
-        .out_rdy     (read_fifo_out_ready),
-
-        .almost_full (/* UNUSED */)
-      );
-
-      // we are going to read (AXI4_DATA_W/MRMAC_AXIS_W) times slower the fifo than we are feeding it
-      logic [$clog2(NB_MRMRAC_WORDS_PER_READ)-1:0] slow_pace_count;
-      logic [AXI4_WORD_PER_PATH_WW-1:0]            read_fifo_out_cnt;
-      logic                                        pc_read_finished;
-
-      always_ff @(posedge clk_mhdma) begin
-        if (~resetn_mhdma) begin
-          slow_pace_count <= 'h0;
-        end else begin
-          // If we want to read to this PC & the fifo is not empty
-          if (reading_which_pc[gen_rd]) begin
-            if (read_fifo_out_valid) begin
-              slow_pace_count <= slow_pace_count + 1;
-            end
-          end else begin
-            slow_pace_count <= 'h0;
-          end
-        end
-      end
-
-      always_ff @(posedge clk_mhdma) begin
-        if(~resetn_mhdma) begin
-          read_fifo_out_cnt <= 'h0;
-        end else begin
-          if (read_fifo_out_ready & read_fifo_out_valid) begin
-            read_fifo_out_cnt <= read_fifo_out_cnt + 1;
-          end else if (read_fifo_out_cnt == AXI4_WORD_PER_PATH) begin
-            read_fifo_out_cnt <= 'h0;
-          end
-        end
-      end
-
-      // because in one read we have NB_MRMRAC_WORDS_PER_READ, we must delay the signal pc_read_finished
-      logic [NB_MRMRAC_WORDS_PER_READ-1:0] temp_finished_flag;
-
-      always_ff @(posedge clk_mhdma)
-        temp_finished_flag[0] <= (read_fifo_out_cnt == AXI4_WORD_PER_PATH);
-
-      for (genvar gen_i = 1; gen_i<NB_MRMRAC_WORDS_PER_READ; gen_i++) begin : gen_temp_finished_flag
-        always_ff @(posedge clk_mhdma)
-          temp_finished_flag[gen_i] <= temp_finished_flag[gen_i-1];
-      end
-
-      assign pc_read_finished = temp_finished_flag[NB_MRMRAC_WORDS_PER_READ-1];
-
-      // read_fifo_out_ready checks fifo_ce_pc_in_rdy before triggering a deserialization burst.
-      // Once triggered, the burst produces NB_MRMRAC_WORDS_PER_READ words without re-checking rdy.
-      // This is safe because fifo_ce depth (CT_NB_COEF) >> NB_MRMRAC_WORDS_PER_READ, and only
-      // one PC deserializes at a time, so the in-flight words cannot overflow fifo_ce.
-      assign read_fifo_out_ready = (slow_pace_count == 1) && reading_which_pc[gen_rd] & fifo_ce_pc_in_rdy[gen_rd];
-
-      logic [NB_MRMRAC_WORDS_PER_READ-1:0][MRMAC_AXIS_W-1:0] ce_data_out;
-
-      for (genvar gen_i=0; gen_i<NB_MRMRAC_WORDS_PER_READ; gen_i++) begin : gen_ce_data_out
-        always_ff @(posedge clk_mhdma) begin
-          if(read_fifo_out_ready & read_fifo_out_valid) begin
-            ce_data_out[gen_i] <= read_fifo_out_data[(gen_i+1)*MRMAC_AXIS_W-1:gen_i*MRMAC_AXIS_W];
-          end
-        end
-      end
-
-      logic [NB_MRMRAC_WORDS_PER_READ-1:0] temp_rdy_vld;
-
-      always_ff @(posedge clk_mhdma)
-        temp_rdy_vld[0] <= read_fifo_out_ready & read_fifo_out_valid;
-
-      for (genvar gen_i = 1; gen_i<NB_MRMRAC_WORDS_PER_READ; gen_i++) begin : gen_temp_rdy_vld
-        always_ff @(posedge clk_mhdma)
-          temp_rdy_vld[gen_i] <= temp_rdy_vld[gen_i-1];
-      end
-
-      logic [$clog2(NB_MRMRAC_WORDS_PER_READ)-1:0] realign_cnt;
-      logic                                        start_deserialize;
-
-      always_ff @(posedge clk_mhdma) begin
-        if(~resetn_mhdma)begin
-          start_deserialize <= 1'b0;
-        end else begin
-          if (reading_which_pc[gen_rd] & (read_fifo_out_valid & read_fifo_out_ready)) begin
-            start_deserialize <= 1'b1;
-          end else if (temp_rdy_vld[NB_MRMRAC_WORDS_PER_READ-1]) begin
-            start_deserialize <= 1'b0;
-          end
-        end
-      end
-
-      always_ff @(posedge clk_mhdma) begin
-        if(~resetn_mhdma) begin
-          realign_cnt <= 'h0;
-        end else begin
-          if (start_deserialize) begin
-            realign_cnt <= realign_cnt + 1;
-            // we need to take into account that ce_data_out arrives one cc later
-          end else begin
-            realign_cnt <= 'h0;
-          end
-        end
-      end
-
-      assign fifo_ce_pc_in_data[gen_rd] = ce_data_out[realign_cnt];
-
-      assign fifo_ce_pc_in_vld[gen_rd] = start_deserialize;
-
+    for (genvar gen_rd = 0; gen_rd < ETH_PC; gen_rd++) begin : gen_rready_demux
+      assign m_axi4_rready[gen_rd] = rd_pc_onehot[gen_rd] ? rready_shared : 1'b0;
     end
   endgenerate
 
+  // rready: we read if and only if we are in ciphertext emission mode
+  assign rready_shared = read_fifo_ready & st_read_send;
+
+  logic read_fifo_we;
+  assign read_fifo_we = rvalid_muxed & rready_shared;
+
+  // Single fifo_ram_rdy_vld for read data
+  logic [AXI4_DATA_W-1:0] read_fifo_out_data;
+  logic                   read_fifo_out_valid;
+  logic                   read_fifo_out_ready;
+
+  fifo_ram_rdy_vld # (
+    .WIDTH      (AXI4_DATA_W),
+    .DEPTH      (FIFO_PC_DEPTH),
+    .RAM_LATENCY(FIFO_PC_RAM_LATENCY)
+  ) fifo_pc_read (
+    .clk        (clk_mhdma),
+    .s_rst_n    (resetn_mhdma),
+
+    .in_data    (rdata_muxed),
+    .in_vld     (read_fifo_we),
+    .in_rdy     (read_fifo_ready),
+
+    .out_data   (read_fifo_out_data),
+    .out_vld    (read_fifo_out_valid),
+    .out_rdy    (read_fifo_out_ready),
+
+    .almost_full(/* UNUSED */)
+  );
+
+  // Single serialization pipeline (AXI4_DATA_W -> MRMAC_AXIS_W) -------------------------------
+  // Dynamic word count for current read PC
+  logic [AXI4_WORD_PER_PC0_WW-1:0] rd_word_per_path;
+
+  assign rd_word_per_path = (rd_pc_idx == 0) ? AXI4_WORD_PER_PC0_WW'(AXI4_WORD_PER_PC0) : AXI4_WORD_PER_PC0_WW'(AXI4_WORD_PER_PC);
+
+  // --- Serialization: AXI4_DATA_W -> MRMAC_AXIS_W, one narrow word per cycle with backpressure ---
+  // Mirrors master deserialization pattern (deser_*) but in reverse direction (ser_*).
+  logic [$clog2(NB_MRMAC_WORDS_PER_READ)-1:0] ser_cnt;            // emitted narrow-word index
+  logic [AXI4_DATA_W-1:0]                       ser_word;         // registered wide word being serialized
+  logic                                         ser_vld;          // wide word loaded, emission in progress
+  logic                                         ser_last_beat;    // last narrow word being consumed
+  logic                                         ser_handshake;    // narrow-word accepted by fifo_ce
+  logic [AXI4_WORD_PER_PC0_WW-1:0]              ser_word_cnt;     // counts fully-serialized wide words per PC
+  logic                                         pc_read_finished; // current PC fully serialized
+
+  // Fifo CE input ready
+  logic fifo_ce_in_rdy;
+
+  // Handshake & last-beat (mirrors master's cerx_handshake / deser_last_beat)
+  assign ser_handshake = ser_vld & fifo_ce_in_rdy;
+  assign ser_last_beat = ser_handshake & (ser_cnt == NB_MRMAC_WORDS_PER_READ - 1);
+
+  // ser_cnt: narrow word index 0..N-1 (mirrors deser_cnt)
+  always_ff @(posedge clk_mhdma) begin
+    if (~resetn_mhdma) begin
+      ser_cnt <= '0;
+    end else begin
+      if (ser_last_beat) begin
+        ser_cnt <= '0;
+      end else if (ser_handshake) begin
+        ser_cnt <= ser_cnt + 1;
+      end
+    end
+  end
+
+  // ser_word: capture wide word from read FIFO (mirrors deser_word, but loads whole word at once)
+  always_ff @(posedge clk_mhdma)
+    if (read_fifo_out_ready & read_fifo_out_valid)
+      ser_word <= read_fifo_out_data;
+
+  // ser_vld: asserted when wide word loaded, cleared after last narrow beat (mirrors deser_vld)
+  always_ff @(posedge clk_mhdma) begin
+    if (~resetn_mhdma) begin
+      ser_vld <= 1'b0;
+    end else if (ser_last_beat) begin
+      ser_vld <= read_fifo_out_ready & read_fifo_out_valid;
+    end else if (~ser_vld & read_fifo_out_ready & read_fifo_out_valid) begin
+      ser_vld <= 1'b1;
+    end
+  end
+
+  // Backpressure to upstream read FIFO (mirrors master's fifo_cerx_out_rdy)
+  // Accept new wide word when serializer is idle or finishing last beat with downstream ready
+  assign read_fifo_out_ready = (~ser_vld | (ser_last_beat & fifo_ce_in_rdy)) & (|rd_pc_onehot);
+
+  // ser_word_cnt: counts fully-serialized wide words per PC (replaces read_fifo_out_cnt)
+  always_ff @(posedge clk_mhdma) begin
+    if (~resetn_mhdma) begin
+      ser_word_cnt <= '0;
+    end else begin
+      if (pc_read_finished) begin
+        ser_word_cnt <= '0;
+      end else if (ser_last_beat) begin
+        ser_word_cnt <= ser_word_cnt + 1;
+      end
+    end
+  end
+
+  // pc_read_finished: last narrow word of last wide word consumed (replaces temp_finished_flag chain)
+  assign pc_read_finished = ser_last_beat & (ser_word_cnt == rd_word_per_path - 1);
+
+  // PC sequencing logic -------------------------------------------------------------------------
   // launch reads over PCs sequentially
   always_ff @(posedge clk_mhdma) begin : prc_read_one_at_a_time
     if (~resetn_mhdma) begin
-      axi4_read_pc <= 'h0;
+      ar_pc_onehot <= 'h0;
     end else begin
       if (rreq_ready_pulse) begin
-        axi4_read_pc <= {{(ETH_PC-1){1'b0}}, 1'b1};
-      end else if (pc_transfer_done[ETH_PC-1]) begin
-        axi4_read_pc <= 'h0;
-      end else if (|pc_transfer_done) begin
-        axi4_read_pc <= axi4_read_pc << 1;
+        ar_pc_onehot <= {{(ETH_PC-1){1'b0}}, 1'b1};
+      end else if (ar_pc_onehot[ETH_PC-1] & pc_transfer_done) begin
+        ar_pc_onehot <= 'h0;
+      end else if (pc_transfer_done) begin
+        ar_pc_onehot <= ar_pc_onehot << 1;
       end
     end
   end
 
-  // we only have one QSFP lane interface, we will read each PC FIFO independently, one at a time
-  logic [ETH_PC-1:0] pc_read_finished;
-  logic              any_pc_read_finished;
-
-  generate
-    for (genvar gen_i = 0; gen_i < ETH_PC; gen_i++) begin : gen_pc_rd_fin
-      assign pc_read_finished[gen_i] = gen_read_fifo[gen_i].pc_read_finished;
-    end
-  endgenerate
-
-  assign any_pc_read_finished = |pc_read_finished;
-
+  // we only have one QSFP lane interface, we will read each PC independently, one at a time
   always_ff @(posedge clk_mhdma) begin
     if (~resetn_mhdma) begin
-      reading_which_pc <= 'h0;
+      rd_pc_onehot <= 'h0;
     end else begin
       if (rreq_ready_pulse) begin
-        reading_which_pc <= {{(ETH_PC-1){1'b0}}, 1'b1};
-      end else if (any_pc_read_finished) begin
-        reading_which_pc <= reading_which_pc << 1;
+        rd_pc_onehot <= {{(ETH_PC-1){1'b0}}, 1'b1};
+      end else if (pc_read_finished) begin
+        rd_pc_onehot <= rd_pc_onehot << 1;
       end
     end
   end
 
-  // Fifo Ciphertext Emission ---------------------------------------------------------------------
-  logic [MRMAC_AXIS_W-1:0]  fifo_ce_in_data;
-  logic                     fifo_ce_in_vld;
-  logic                     fifo_ce_in_rdy;
+  // Fifo Ciphertext Emission --------------------------------------------------------------------
+  logic [MRMAC_AXIS_W-1:0] fifo_ce_in_data;
+  logic                    fifo_ce_in_vld;
 
-  // data in input are already in the correct form for sending directly to the lane
-  always_comb begin
-    fifo_ce_in_vld  = 1'b0;
-    fifo_ce_in_data = 'h0;
-    for (int i = 0; i < ETH_PC; i++) begin
-      if (reading_which_pc[i]) begin
-        fifo_ce_in_vld  = fifo_ce_pc_in_vld[i];
-        fifo_ce_in_data = fifo_ce_pc_in_data[i];
-      end
-    end
-  end
-
-  // backpressure over ready for each fifo
-  generate
-    for (genvar gen_i = 0; gen_i < ETH_PC; gen_i++) begin : gen_ce_pc_rdy
-      assign fifo_ce_pc_in_rdy[gen_i] = reading_which_pc[gen_i] ? fifo_ce_in_rdy : 1'b0;
-    end
-  endgenerate
+  assign fifo_ce_in_data = ser_word[ser_cnt * MRMAC_AXIS_W +: MRMAC_AXIS_W];
+  assign fifo_ce_in_vld  = ser_vld;
 
   fifo_ram_rdy_vld # (
     .WIDTH      (MRMAC_AXIS_W   ),
-    .DEPTH      (CT_NB_COEF     ), // TODO: check value
+    .DEPTH      (CT_NB_COEF     ),
     .RAM_LATENCY(CE_RAM_LATENCY ),
     .ALMOST_FULL_REMAIN (0)
   ) fifo_ce (
@@ -733,18 +720,77 @@ module mhdma_slave
     end
   end
 
-  // Slave_command_vld is taking valid from vld output FIFOs fifo_nrx_commands & rreq_command_queue
+  // Slave_command_vld: set when either FIFO has data
   // Theses fifos have their data consumed when slave_command_rdy and correct fsm state is current
   always_ff @(posedge clk_mhdma) begin
     if (~resetn_mhdma) begin
-      slave_command_vld   <= 1'b0;
+      slave_command_vld <= 1'b0;
     end else begin
-      if (nrx_cmd_out_vld)  begin
-        slave_command_vld <= nrx_cmd_out_vld;
-      end else if (rreq_cmd_out_vld) begin
-        slave_command_vld <= rreq_cmd_out_vld;
-      end else begin
-        slave_command_vld <= 'h0;
+      slave_command_vld <= nrx_cmd_out_vld | rreq_cmd_out_vld;
+    end
+  end
+
+  // =========================================================================================== //
+  // Error detection
+  // =========================================================================================== //
+  // read_rresp_error: sticky flag, set when rresp != OKAY during valid read transfer
+  always_ff @(posedge clk_mhdma) begin
+    if (~resetn_mhdma) begin
+      slave_error.read_rresp_error <= 1'b0;
+    end else begin
+      if (rst_errors) begin
+        slave_error.read_rresp_error <= 1'b0;
+      end else if (rvalid_muxed & rready_shared & (rresp_muxed != AXI4_OKAY)) begin
+        slave_error.read_rresp_error <= 1'b1;
+      end
+    end
+  end
+
+  // read_rlast_error: sticky flag, set when rlast doesn't coincide with last word of a burst
+  // Track expected burst length from AR channel through a counter on the R channel.
+  // Note: this uses a single register, not a FIFO — correct when R data for burst N completes
+  // before AR for burst N+1 is accepted. This holds because fifo_element depth=1 and the AXI
+  // interconnect won't accept the next AR until the current burst's R data has started flowing.
+  logic [AXI4_LEN_W:0] r_burst_cnt;
+  logic [AXI4_LEN_W:0] r_burst_len;  // expected burst length (arlen+1) for current R burst
+  logic                r_burst_active;
+
+  always_ff @(posedge clk_mhdma) begin
+    if (~resetn_mhdma) begin
+      r_burst_cnt    <= '0;
+      r_burst_active <= 1'b0;
+      r_burst_len    <= '0;
+    end else begin
+      if (rvalid_muxed & rready_shared) begin
+        if (r_burst_cnt == r_burst_len - 1) begin
+          r_burst_cnt    <= '0;
+          r_burst_active <= 1'b0;
+        end else begin
+          r_burst_cnt <= r_burst_cnt + 1;
+        end
+      end
+      // Load new burst length when AR handshake (use the muxed arready/arvalid)
+      if (fifo_ar_out_vld & fifo_ar_out_rdy) begin
+        r_burst_len    <= {1'b0, m_axi4_a.arlen} + 1;
+        r_burst_active <= 1'b1;
+        r_burst_cnt    <= '0;
+      end
+    end
+  end
+
+  logic rlast_expected;
+  assign rlast_expected = r_burst_active & (r_burst_cnt == r_burst_len - 1);
+
+  always_ff @(posedge clk_mhdma) begin
+    if (~resetn_mhdma) begin
+      slave_error.read_rlast_error <= 1'b0;
+    end else begin
+      if (rst_errors) begin
+        slave_error.read_rlast_error <= 1'b0;
+      end else if (rvalid_muxed & rready_shared) begin
+        if (rlast_muxed != rlast_expected) begin
+          slave_error.read_rlast_error <= 1'b1;
+        end
       end
     end
   end
@@ -780,7 +826,7 @@ module mhdma_slave
           if (stat_rst.nb_words_received_pc[gen_i]) begin
             nb_words_received_pc[gen_i] <= 'h0;
           end else begin
-            if (m_axi4_rready[gen_i] & m_axi4_rvalid[gen_i]) begin
+            if (rd_pc_onehot[gen_i] & rvalid_muxed & rready_shared) begin
               nb_words_received_pc[gen_i] <= nb_words_received_pc[gen_i] + 1;
             end
           end
@@ -802,12 +848,11 @@ module mhdma_slave
         end else begin
           if (m_axi4_arvalid[gen_i]) begin
             t_wait_words_en[gen_i] <= 1'b1;
-          end else if (m_axi4_rvalid[gen_i]) begin
+          end else if (rd_pc_onehot[gen_i] & rvalid_muxed) begin
             t_wait_words_en[gen_i] <= 1'b0;
           end
         end
       end
-
 
       always_ff @(posedge clk_mhdma) begin
         if (~resetn_mhdma) begin

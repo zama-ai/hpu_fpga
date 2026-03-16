@@ -780,7 +780,7 @@ module mhdma_master
   // =========================================================================================== //
   // Deserialization of MRMAC_AXIS_W words to AXI4_DATA_W with backpressure
   // =========================================================================================== //
-  logic [$clog2(NB_MRMRAC_WORDS_PER_WRITE)-1:0] deser_cnt;
+  logic [$clog2(NB_MRMAC_WORDS_PER_WRITE)-1:0] deser_cnt;
   logic [AXI4_DATA_W-1:0]                       deser_word;
   logic                                         deser_vld;
   logic [AXI4_DATA_W-1:0]                       deser_data;
@@ -791,7 +791,7 @@ module mhdma_master
   logic                   deser_last_beat;
   logic [AXI4_DATA_W-1:0] deser_word_next;
 
-  assign deser_last_beat = cerx_handshake & (deser_cnt == NB_MRMRAC_WORDS_PER_WRITE - 1);
+  assign deser_last_beat = cerx_handshake & (deser_cnt == NB_MRMAC_WORDS_PER_WRITE - 1);
 
   always_ff @(posedge clk_mhdma) begin
     if (~resetn_mhdma) begin
@@ -799,7 +799,7 @@ module mhdma_master
     end else begin
       if (abort_transfer) begin
         deser_cnt <= 'h0;
-      end else if (cerx_handshake & (deser_cnt == NB_MRMRAC_WORDS_PER_WRITE - 1)) begin
+      end else if (cerx_handshake & (deser_cnt == NB_MRMAC_WORDS_PER_WRITE - 1)) begin
         deser_cnt <= 'h0;
       end else if (cerx_handshake) begin
         deser_cnt <= deser_cnt + 1;

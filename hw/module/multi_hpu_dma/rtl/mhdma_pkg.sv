@@ -73,8 +73,8 @@ package mhdma_pkg;
   // MHDMA : number of words & lengths
   // =========================================================================================== //
   // For AXI interface: how many words do we need -------------------------------------------------
-  localparam int NB_MRMRAC_WORDS_PER_READ  = AXI4_DATA_W/MRMAC_AXIS_W;
-  localparam int NB_MRMRAC_WORDS_PER_WRITE = AXI4_DATA_W/MRMAC_AXIS_W;
+  localparam int NB_MRMAC_WORDS_PER_READ  = AXI4_DATA_W/MRMAC_AXIS_W;
+  localparam int NB_MRMAC_WORDS_PER_WRITE = AXI4_DATA_W/MRMAC_AXIS_W;
 
   // Number of bytes ------------------------------------------------------------------------------
   // ETH_NB_BYTES_PAYLOAD must be divisible by MRMAC_AXIS_W. 1472 is the closest to 1518.
@@ -105,8 +105,8 @@ package mhdma_pkg;
   localparam int NB_WORDS_LAST_PACKET_USEFUL = LAST_PACKET_BYTE_SIZE/8;
   localparam int NB_WORDS_LAST_PACKET        = (NB_WORDS_LAST_PACKET_USEFUL < NB_WORDS_SMALL_PACKETS) ? NB_WORDS_SMALL_PACKETS : NB_WORDS_LAST_PACKET_USEFUL;
 
-  localparam int AXI4_WORDS_PER_FULL_PKT = NB_WORDS_PAYLOAD / NB_MRMRAC_WORDS_PER_WRITE;
-  localparam int AXI4_WORDS_PER_LAST_PKT = NB_WORDS_LAST_PACKET_USEFUL / NB_MRMRAC_WORDS_PER_WRITE;
+  localparam int AXI4_WORDS_PER_FULL_PKT = NB_WORDS_PAYLOAD / NB_MRMAC_WORDS_PER_WRITE;
+  localparam int AXI4_WORDS_PER_LAST_PKT = NB_WORDS_LAST_PACKET_USEFUL / NB_MRMAC_WORDS_PER_WRITE;
 
   // Ethernet len in bytes ------------------------------------------------------------------------
   localparam [15:0] ETH_LEN_MIN      = ETH_NB_BYTES_MIN - ETH_NB_BYTES_HEADER - ETH_NB_BYTES_CRC;
@@ -203,9 +203,9 @@ package mhdma_pkg;
     logic error_fifo_rx_ovf;
   } decoder_error_t;
 
-  // today there is no error detection in slave
   typedef struct packed {
-    logic slave_placeholder;
+    logic read_rresp_error;  // AXI4 rresp != OKAY during read
+    logic read_rlast_error;  // rlast mismatch with internal word counter
   } slave_error_t;
 
   typedef struct packed {
