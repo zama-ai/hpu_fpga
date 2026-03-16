@@ -2,8 +2,16 @@
 # BSD 3-Clause Clear License
 # Copyright © 2025 ZAMA. All rights reserved.
 # ----------------------------------------------------------------------------------------------
-# Description  : Timing & general constraints for FPGA
+# Description  : Hierarchical constraints for multi_hpu_dma
 # ----------------------------------------------------------------------------------------------
+#
+# This file contains:
+#    - false_path for quasi-static CDC signals (CFG <-> ETH)
+#    - ram_style constraints for FIFO instances (distributed / block / ultra)
+#
+# Clock domains:
+#    - clk_mhdma_cfg : configuration (AXI4-Lite, regfile)
+#    - clk_mhdma     : axi stream clock from MRMAC if (same as QSFP, HBM AXI4)
 #
 # ==============================================================================================
 
@@ -29,7 +37,6 @@ set_false_path -to [get_cells -hierarchical -filter {NAME =~ *mhdma_master/*phy_
 
 # ------------------------------------------------------------------------------
 # Distributed RAM (LUTRAM) - small control & command FIFOs
-# Override the global "block" constraint from common_lib for these shallow FIFOs
 # ------------------------------------------------------------------------------
 
 # Master: notify retry buffer (depth=REQ_FIFO_DEPTH=16, ~56b)
