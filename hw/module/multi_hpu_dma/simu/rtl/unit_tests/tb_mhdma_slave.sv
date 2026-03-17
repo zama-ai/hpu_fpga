@@ -1489,4 +1489,17 @@ module tb_mhdma_slave;
       error_assert = 1'b1;
     end
 
+  // AR must never be issued (s0_axi_arvalid) to a PC that rd_pc_onehot doesn't serve
+  property ar_issued_only_on_active_rd_pc;
+    @(posedge clk_mhdma) disable iff (~s_rstn_mhdma)
+    (mhdma_slave.s0_axi_arvalid) |-> (mhdma_slave.ar_pc_onehot == mhdma_slave.rd_pc_onehot);
+  endproperty
+
+  assert_ar_issued_only_on_active_rd_pc: assert property(ar_issued_only_on_active_rd_pc)
+    else begin
+      $display("[ERROR-SVA] AR issued while ar_pc_onehot (0x%0h) != rd_pc_onehot (0x%0h)",
+               mhdma_slave.ar_pc_onehot, mhdma_slave.rd_pc_onehot);
+      error_assert = 1'b1;
+    end
+
 endmodule

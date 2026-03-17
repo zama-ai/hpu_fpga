@@ -467,7 +467,9 @@ module mhdma_slave
   assign s0_axi.araddr  = req_add_start;
   assign s0_axi.arlen   = req_axi_word_nb - 1;
 
-  assign s0_axi_arvalid  = |ar_pc_onehot;
+  // Gate AR when ar_pc_onehot has advanced ahead of rd_pc_onehot: prevents issuing
+  // AR to a HBM port whose rready is blocked (rready is demuxed by rd_pc_onehot).
+  assign s0_axi_arvalid  = |ar_pc_onehot & (ar_pc_onehot == rd_pc_onehot);
   assign req_send_axi_cmd = s0_axi_arvalid & s0_axi_arready;
 
   assign req_pc_ar_done    = req_send_axi_cmd & req_last_axi_word_remain;
@@ -642,7 +644,7 @@ module mhdma_slave
   assign pc_read_finished = ser_last_beat & (ser_word_cnt == rd_word_per_path - 1);
 
   // PC sequencing logic -------------------------------------------------------------------------
-  // launch reads over PCs sequentially
+  // launch AR reads over PCs sequentially
   always_ff @(posedge clk_mhdma) begin : prc_read_one_at_a_time
     if (~resetn_mhdma) begin
       ar_pc_onehot <= 'h0;
@@ -664,6 +666,8 @@ module mhdma_slave
     end else begin
       if (rreq_ready_pulse) begin
         rd_pc_onehot <= {{(ETH_PC-1){1'b0}}, 1'b1};
+      end else if (rd_pc_onehot[ETH_PC-1] & pc_read_finished) begin
+        rd_pc_onehot <= 'h0;
       end else if (pc_read_finished) begin
         rd_pc_onehot <= rd_pc_onehot << 1;
       end
@@ -679,7 +683,7 @@ module mhdma_slave
 
   fifo_ram_rdy_vld # (
     .WIDTH      (MRMAC_AXIS_W   ),
-    .DEPTH      (PAGE_AXI4_DATA * NB_MRMAC_WORDS_PER_READ),
+    .DEPTH      (CT_NB_COEF     ),
     .RAM_LATENCY(CE_RAM_LATENCY ),
     .ALMOST_FULL_REMAIN (0)
   ) fifo_ce (
