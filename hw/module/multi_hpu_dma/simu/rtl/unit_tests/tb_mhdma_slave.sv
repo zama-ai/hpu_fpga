@@ -1497,8 +1497,7 @@ module tb_mhdma_slave;
 
   assert_ar_issued_only_on_active_rd_pc: assert property(ar_issued_only_on_active_rd_pc)
     else begin
-      $display("[ERROR-SVA] AR issued while ar_pc_onehot (0x%0h) != rd_pc_onehot (0x%0h)",
-               mhdma_slave.ar_pc_onehot, mhdma_slave.rd_pc_onehot);
+      $display("[ERROR-SVA] AR issued while ar_pc_onehot (0x%0h) != rd_pc_onehot (0x%0h)", mhdma_slave.ar_pc_onehot, mhdma_slave.rd_pc_onehot);
       error_assert = 1'b1;
     end
 

@@ -9,7 +9,7 @@ export SHELL_VER=hpu_plug
 
 # Tool version
 export XILINX_TOOL_VERSION=2025.1
-export SNPS_TOOL_VERSION=V-2023.12-SP2
+export SNPS_TOOL_VERSION=X-2025.06-SP2
 
 echo "#################################################"
 echo "# setup_base.sh"
