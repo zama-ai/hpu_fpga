@@ -60,6 +60,14 @@ module tb_mhdma_slave;
   // USE_RD_RANDOM: enables random toggling of arready/rvalid for backpressure coverage
   localparam bit AXI4_MEM_USE_RD_RANDOM    = 1;
 
+  // CE drain wait: must account for AXI pipeline latency (per-PC) + serialization + backpressure margin
+  // - CT_NB_WORDS_MRMAC: total narrow words to serialize (scales with CT, not AXI width)
+  // - ETH_PC * AXI4_MEM_RD_DATA_LATENCY: pipeline fill latency, paid once per PC
+  // - CT_NB_WORDS_AXI4: extra margin covering AXI beat count (scales inversely with AXI width)
+  localparam int CE_DRAIN_WAIT_CYCLES = CT_NB_WORDS_MRMAC
+                                      + ETH_PC * AXI4_MEM_RD_DATA_LATENCY
+                                      + CT_NB_WORDS_AXI4;
+
 // ============================================================================================== --
 // clock, reset
 // ============================================================================================== --
@@ -911,7 +919,7 @@ module tb_mhdma_slave;
           consume_slave_command();
           wait_ce_vld(TIMEOUT_CYCLES, timed_out);
           if (~timed_out) begin
-            repeat (CT_NB_WORDS_MRMAC + 200) @(posedge clk_mhdma);
+            repeat (CE_DRAIN_WAIT_CYCLES) @(posedge clk_mhdma);
             simulate_pulse(ciphertext_sent, clk_mhdma);
             read_flow_complete = 1'b1;
           end
@@ -1057,7 +1065,7 @@ module tb_mhdma_slave;
     // 8. Complete CEM: AXI4 reads -> CE data
     wait_ce_vld(TIMEOUT_CYCLES, timed_out);
     check_no_timeout(timed_out, scenario_id, "ce_vld timeout");
-    repeat (CT_NB_WORDS_MRMAC + 200) @(posedge clk_mhdma);
+    repeat (CE_DRAIN_WAIT_CYCLES) @(posedge clk_mhdma);
     simulate_pulse(ciphertext_sent, clk_mhdma);
     repeat (50) @(posedge clk_mhdma);
 
@@ -1119,7 +1127,7 @@ module tb_mhdma_slave;
     // 7. Complete CEM: AXI4 reads -> CE data
     wait_ce_vld(TIMEOUT_CYCLES, timed_out);
     check_no_timeout(timed_out, scenario_id, "ce_vld timeout");
-    repeat (CT_NB_WORDS_MRMAC + 200) @(posedge clk_mhdma);
+    repeat (CE_DRAIN_WAIT_CYCLES) @(posedge clk_mhdma);
     simulate_pulse(ciphertext_sent, clk_mhdma);
     repeat (50) @(posedge clk_mhdma);
 
@@ -1284,7 +1292,7 @@ module tb_mhdma_slave;
     // Complete CEM flow
     wait_ce_vld(TIMEOUT_CYCLES, timed_out);
     check_no_timeout(timed_out, scenario_id, "ce_vld timeout");
-    repeat (CT_NB_WORDS_MRMAC + 200) @(posedge clk_mhdma);
+    repeat (CE_DRAIN_WAIT_CYCLES) @(posedge clk_mhdma);
     simulate_pulse(ciphertext_sent, clk_mhdma);
     repeat (50) @(posedge clk_mhdma);
 
@@ -1360,7 +1368,7 @@ module tb_mhdma_slave;
     // Now drain CE data and complete the CEM flow
     wait_ce_vld(TIMEOUT_CYCLES, timed_out);
     check_no_timeout(timed_out, scenario_id, "ce_vld timeout");
-    repeat (2 * CT_NB_WORDS_MRMAC + 500) @(posedge clk_mhdma);
+    repeat (2 * CE_DRAIN_WAIT_CYCLES) @(posedge clk_mhdma);
     simulate_pulse(ciphertext_sent, clk_mhdma);
     repeat (50) @(posedge clk_mhdma);
 

@@ -632,7 +632,7 @@ module mhdma_slave
     if (~resetn_mhdma) begin
       ser_word_cnt <= '0;
     end else begin
-      if (pc_read_finished) begin
+      if (pc_read_finished | rreq_ready_pulse) begin
         ser_word_cnt <= '0;
       end else if (ser_last_beat) begin
         ser_word_cnt <= ser_word_cnt + 1;
