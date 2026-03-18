@@ -445,7 +445,13 @@ module mhdma_slave
   logic [AXI4_ADD_W-1:0]    req_add_start;
   logic [PAGE_BYTES_WW-1:0] req_page_word_remain;
 
-  assign req_add_start = req_first_burst ? phy_addr[ar_pc_idx] : req_add;
+  // req_phy_addr is only here to break logic level & ease timings
+  logic [AXI4_ADD_W-1:0] req_phy_addr;
+
+  always_ff @(posedge clk_mhdma)
+    req_phy_addr <= phy_addr[ar_pc_idx];
+
+  assign req_add_start = req_first_burst ? req_phy_addr : req_add;
   assign req_addD      = req_send_axi_cmd ? req_add_start + req_axi_word_nb*AXI4_DATA_BYTES : req_add;
 
   always_ff @(posedge clk_mhdma) begin
