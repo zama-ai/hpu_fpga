@@ -306,7 +306,7 @@ extern iop_state_t iop_state[IOP_ID_MAX_COUNT];
 extern src_store_t src_store;
 extern dst_store_t dst_store;
 extern mhdma_element_t mhdma_table[IOP_ID_MAX_COUNT][FLAG_MAX_COUNT];
-extern uint8_t  mhdma_table_state[IOP_ID_MAX_COUNT][FLAG_MAX_COUNT];
+extern uint8_t mhdma_table_state[IOP_ID_MAX_COUNT][FLAG_MAX_COUNT];
 
 /******************************************************************************/
 /* Function implementations                                                   */
@@ -391,10 +391,10 @@ void vInterruptHandler_mhdma_notify( void* pvCallBackRef ) {
     uint32_t notify_tmp_req_id = 0;
     uint32_t notify_tmp_req_addr = 0;
     // read request::notify 0x50108
-    HAL_INVALIDATE_CACHE_DATA( (uintptr_t)(XPAR_AXI_LPD_BASEADDR + MHDMA_NOTIFY_DATA_REQ_ID) , sizeof(uint32_t) );
-    notify_tmp_req_id = * (volatile uint32_t *) (XPAR_AXI_LPD_BASEADDR + MHDMA_NOTIFY_DATA_REQ_ID);
     HAL_INVALIDATE_CACHE_DATA( (uintptr_t)(XPAR_AXI_LPD_BASEADDR + MHDMA_NOTIFY_DATA_REQ_ADDR) , sizeof(uint32_t) );
     notify_tmp_req_addr = * (volatile uint32_t *) (XPAR_AXI_LPD_BASEADDR + MHDMA_NOTIFY_DATA_REQ_ADDR);
+    HAL_INVALIDATE_CACHE_DATA( (uintptr_t)(XPAR_AXI_LPD_BASEADDR + MHDMA_NOTIFY_DATA_REQ_ID) , sizeof(uint32_t) );
+    notify_tmp_req_id = * (volatile uint32_t *) (XPAR_AXI_LPD_BASEADDR + MHDMA_NOTIFY_DATA_REQ_ID);
     notify_data = (((uint64_t)notify_tmp_req_addr) << 32) | notify_tmp_req_id;
     // read register
     mhdma_cmd_t notify;
@@ -413,7 +413,7 @@ void vInterruptHandler_mhdma_notify( void* pvCallBackRef ) {
       // This is a debug msg to print received notify
       MhdmaCommand_t cmd;
       cmd.cmdID = MHDMA_CMD_PRINT_ERR;
-      cmd.payload = (iid << 24 | (current_ack_cnt & 0xF) << 20 | slave_hpu_id << 16 | mode << 8 | flag);
+      cmd.payload = (iid << 24 | (notify.fields.src_cid & 0xF) << 20 | slave_hpu_id << 16 | mode << 8 | flag);
       if (xMhdmaCommandMbox) {
         if (iOSAL_MBox_PostFromISR(xMhdmaCommandMbox, (void*)&cmd) != 0) {
           mbox_msg_lost_cnt+=1;
@@ -425,11 +425,11 @@ void vInterruptHandler_mhdma_notify( void* pvCallBackRef ) {
       case CMD_USER: {
         mhdma_element_t *current_elt = &mhdma_table[iid][flag];
         current_elt->src_ct_id = notify.fields.src_cid;
+        current_elt->slave_hpu_id = slave_hpu_id;
         uint8_t current_state = mhdma_table_state[iid][flag];
         mhdma_table_state[iid][flag] = MHDMA_STATE_RECEIVED;
         if (current_state == MHDMA_STATE_LB2B_WAITING) {
           mhdma_table_state[iid][flag] = MHDMA_STATE_READING;
-          current_elt->slave_hpu_id = slave_hpu_id;
           generate_read_req(iid, flag);
         }
         break;
@@ -473,10 +473,10 @@ void vInterruptHandler_mhdma_read_complete( void* pvCallBackRef ) {
   uint32_t rc_tmp_req_id = 0;
   uint32_t rc_tmp_req_addr = 0;
   // read request::rc 0x50108
-  HAL_INVALIDATE_CACHE_DATA( (uintptr_t)(XPAR_AXI_LPD_BASEADDR + MHDMA_READ_DONE_DATA_REQ_ID) , sizeof(uint32_t) );
-  rc_tmp_req_id = * (volatile uint32_t *) (XPAR_AXI_LPD_BASEADDR + MHDMA_READ_DONE_DATA_REQ_ID);
   HAL_INVALIDATE_CACHE_DATA( (uintptr_t)(XPAR_AXI_LPD_BASEADDR + MHDMA_READ_DONE_DATA_REQ_ADDR) , sizeof(uint32_t) );
   rc_tmp_req_addr = * (volatile uint32_t *) (XPAR_AXI_LPD_BASEADDR + MHDMA_READ_DONE_DATA_REQ_ADDR);
+  HAL_INVALIDATE_CACHE_DATA( (uintptr_t)(XPAR_AXI_LPD_BASEADDR + MHDMA_READ_DONE_DATA_REQ_ID) , sizeof(uint32_t) );
+  rc_tmp_req_id = * (volatile uint32_t *) (XPAR_AXI_LPD_BASEADDR + MHDMA_READ_DONE_DATA_REQ_ID);
   rc_data = (((uint64_t)rc_tmp_req_addr) << 32) | rc_tmp_req_id;
   // read register
   mhdma_cmd_t rc;
@@ -546,7 +546,7 @@ void vMhdmaWorkerTask(void *pvParameters) {
           //PLL_ERR("MhdmaWorker", "[HPU%d] iop_teardown starting on iid %d (state %d)", phys_hpu_id, ack_iid, iop_state[ack_iid].state);
           //iOSAL_Task_SleepTicks(100);
           iop_teardown(ack_iid);
-          PLL_ERR("MhdmaWorker", "[HPU%d] iop_teardown on iid %d done", phys_hpu_id, ack_iid);
+          PLL_DBG("MhdmaWorker", "[HPU%d] iop_teardown on iid %d done", phys_hpu_id, ack_iid);
           //iOSAL_Task_SleepTicks(100);
           //print_iop_state();
 
@@ -908,22 +908,24 @@ static void vTaskFuncMain( void )
                 }
 
                 PLL_DBG("UCORE", "[HPU%d] translation will patch and push %d dops @0x%x", phys_hpu_id, dop_entry.len, dop_entry.ptr);
+                int skip = 0;
                 // Patch and stream DOps to HW
                 for (int i=0; i< dop_entry.len; i++) {
                   dop.raw = *(dop_entry.ptr + i);
                   if (patch_dop(&dop, &dst_bundle, &src_bundle, &imm_bundle)) {
                     // it means current DOp was a UCORE DOp that got processed and removed from stream
+                    skip+=1;
                     continue;
                   }
-                  dop_buffer[i%DOP_BUFFER_SIZE] = dop.raw;
+                  dop_buffer[(i-skip)%DOP_BUFFER_SIZE] = dop.raw;
 
                   // Flush buffer if full
-                  if (((i+1) % DOP_BUFFER_SIZE) == 0) {
-                    PLL_INF("UCORE", "flush %d value to isc (i %d, len %d)", DOP_BUFFER_SIZE, i, dop_entry.len);
+                  if ((((i-skip)+1) % DOP_BUFFER_SIZE) == 0) {
+                    PLL_DBG("UCORE", "flush %d value to isc (i %d, skip %d,len %d)", DOP_BUFFER_SIZE, i, skip, dop_entry.len);
                     PLL_DBG("UCORE", "dop_buffer %x %x %x",dop_buffer[0], dop_buffer[1], dop_buffer[2]);
                     write_isc_rv = write_isc(dop_buffer, (uint32_t) (DOP_BUFFER_SIZE * sizeof(uint32_t)));
                     while (write_isc_rv == RETRY) {
-                        PLL_INF("UCORE", "retry flush %d value to isc (i %d, len %d)", DOP_BUFFER_SIZE, i, dop_entry.len);
+                        PLL_INF("UCORE", "retry flush %d value to isc (i %d, len %d)", DOP_BUFFER_SIZE, i-skip, dop_entry.len);
                         iOSAL_Task_SleepTicks(20);
                         write_isc_rv = write_isc(dop_buffer, (uint32_t) (DOP_BUFFER_SIZE * sizeof(uint32_t)));
                     }
@@ -937,10 +939,11 @@ static void vTaskFuncMain( void )
                 dop_sync.sync.is_inner = 0;
                 dop_sync.sync.flag = 0;
                 dop_sync.sync._pad = 0;
-                dop_buffer[dop_entry.len % DOP_BUFFER_SIZE] = dop_sync.raw;
+                dop_buffer[(dop_entry.len-skip) % DOP_BUFFER_SIZE] = dop_sync.raw;
                 // Correctly handle full buffer flush
-                uint32_t remaining_dop = (((dop_entry.len+1)%DOP_BUFFER_SIZE) == 0)? DOP_BUFFER_SIZE:(dop_entry.len+1)%DOP_BUFFER_SIZE;
-                PLL_INF("UCORE", "flush %d remaining value to isc", remaining_dop);
+                uint32_t remaining_dop = (((dop_entry.len-skip+1)%DOP_BUFFER_SIZE) == 0) ? DOP_BUFFER_SIZE : (dop_entry.len-skip+1)%DOP_BUFFER_SIZE;
+                PLL_DBG("UCORE", "flush %d remaining value to isc (len %d skip %d)", remaining_dop, dop_entry.len, skip);
+                //PLL_DBG("UCORE", "dop_buffer %08x %08x %08x ... %08x %08x %08x",dop_buffer[0], dop_buffer[1], dop_buffer[2], dop_buffer[remaining_dop-2], dop_buffer[remaining_dop-1], dop_buffer[remaining_dop]);
                 write_isc_rv = write_isc(dop_buffer, (uint32_t) (remaining_dop * sizeof(uint32_t)));
                 while (write_isc_rv == RETRY) {
                     PLL_INF("UCORE", "retry flush %d remaining value to isc", remaining_dop);

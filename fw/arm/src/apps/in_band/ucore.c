@@ -531,12 +531,12 @@ uint32_t parse_iop(
   uint16_t dst_cnts = dst_store_get_owned_cnt(cur_iid, phys_hpu_id);
   uint8_t dst_cnt_owned = (dst_cnts >> 8) & 0XFF;
   uint8_t dst_cnt_waiting = (dst_cnts & 0XFF);
-  PLL_ERR("parse_iop", "[HPU%d] parse_iop iop %d dst ct owned %d/%d",
+  PLL_DBG("parse_iop", "[HPU%d] parse_iop iop %d dst ct owned %d/%d",
           phys_hpu_id,
           cur_iid,
           dst_cnt_owned,
           dst_cnt_waiting);
-  dst_store_print(cur_iid);
+  //dst_store_print(cur_iid);
 
   //4. Get list of source operands
   uint32_t src_pos = 0;
@@ -894,11 +894,22 @@ int process_ucore_dop(DOpu_t *dop) {
         case MHDMA_STATE_RESOLVED: break; // nothing to do
         case MHDMA_STATE_RECEIVED: { // must read asap
           mhdma_table_state[cur_iid][current_flag] = MHDMA_STATE_READING;
-          generate_read_req(cur_iid, dop->ucore.flag);
+          PLL_DBG("process_ucore_dop", "[HPU%d] generate user read on iid %d flag %d (%04x -> %04x)",
+                  phys_hpu_id,
+                  cur_iid,
+                  current_flag,
+                  current_elt->src_ct_id,
+                  current_elt->dst_ct_id);
+          generate_read_req(cur_iid, current_flag);
           break;
         }
         default: { // must wait for notify
           mhdma_table_state[cur_iid][current_flag] = MHDMA_STATE_LB2B_WAITING;
+          PLL_DBG("process_ucore_dop", "[HPU%d] ld b2b waiting on iid %d flag %d (?? -> %04x)",
+                  phys_hpu_id,
+                  cur_iid,
+                  current_flag,
+                  current_elt->dst_ct_id);
           break;
         }
       }
