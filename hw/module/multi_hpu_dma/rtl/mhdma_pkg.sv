@@ -127,22 +127,22 @@ package mhdma_pkg;
   // => decoder reception fifo. Must be greater than Command fifos
   localparam int RX_FIFO_DEPTH = 64;
 
-  // Notify RX payload: distributed
+  // Notify RX payload: (distributed)
   localparam int NRX_DEPTH             = 4; //TOREVIEW
   localparam int NRX_RAM_LATENCY       = 1;
   localparam int NRX_DATA_COUNT_W      = $clog2(NRX_DEPTH)+1;
 
-  // read request command queue: URAM fifo
+  // read request command queue: (distributed)
   localparam int RREQ_CMD_DEPTH        = XPM_MIN_FIFO_DEPTH;
   localparam int RREQ_CMD_RAM_LATENCY  = 1;
   localparam int RQQ_CMD_DATA_COUNT_W  = $clog2(RREQ_CMD_DEPTH)+1;
 
-  // => Ciphertext Emission: URAMs (used by mhdma_slave)
+  // => Ciphertext Emission: (Block RAM)
   localparam int FIFO_PC_DEPTH         = CT_NB_WORDS_AXI4/2;
   localparam int FIFO_PC_RAM_LATENCY   = 1;
 
-  // QSFP TX fifo: FIFO CE
-  localparam int CE_RAM_LATENCY        = 1;
+  // QSFP TX fifo: FIFO CE (Block RAM)
+  localparam int CE_RAM_LATENCY        = 2;
   localparam int CE_DATA_COUNT_W       = $clog2(CT_NB_COEF)+1;
 
   // =========================================================================================== //
