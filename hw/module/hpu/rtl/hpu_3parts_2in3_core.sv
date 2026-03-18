@@ -463,6 +463,9 @@ module hpu_3parts_2in3_core
   // initialize axi4 signals ----------------------------------------------------------------------
   // Tie-off m_axi4 unused features
   `HPU_AXI4_TIE_GL_UNUSED(mhdma_hbm, [ETH_PC-1:0], ETH_PC)
+  // reset for mrmac resyncronized for the two clock frequencies
+  logic cfg_eth_srst_n;   // ethernet configuration slow clock
+  logic prc_mrmac_srst_n; // mrmac clock at axis speed
 
   // /!\ Workaround : simulation AXI4_MHDMA_HBM_ADD_W may be different from
   // the AXI4_MHDMA_HBM_ADD_W of the package (= the synthesized value).

@@ -924,7 +924,7 @@ int iAMI_SetEepromReadWriteCompleteResponse( EVL_SIGNAL *pxSignal, AMI_PROXY_RES
 int iAMI_SetPeekPokeReadWriteCompleteResponse( EVL_SIGNAL *pxSignal, AMI_PROXY_RESULT xResult ) {
     int iStatus = ERROR;
 
-    PLL_INF("AMC", "iAMI_SetPeekPokeReadWriteCompleteResponse");
+    //PLL_INF("AMC", "iAMI_SetPeekPokeReadWriteCompleteResponse");
 
     if( NULL != pxSignal ) {
         AMI_MBOX_MSG xMsg = { 0 };

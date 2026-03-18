@@ -13,8 +13,6 @@
 // Headers
 // ============================================================================================= //
 #include <stdint.h>
-// Retrived Hpu IOp fmt header for use of Operands/Immediats
-#include "hpu_iop_fmt.h"
 
 // Constants
 // ============================================================================================= //
@@ -43,6 +41,8 @@
 #define CT_MEM_SLOT 32768
 #define HEAP_START_SLOT ((CT_MEM_SLOT) -1)
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpacked-bitfield-compat"
 // Type
 // NB: Gcc packed struct are defined from LSB field to MSB one.
 // ============================================================================================= //
@@ -99,7 +99,18 @@ struct dop_pbs_t {
 } __attribute__((packed));
 
 struct dop_sync_t {
-  uint32_t sid: 26;
+  uint32_t _pad: 11;
+  uint8_t flag: 6;
+  uint8_t is_inner: 1;
+  uint8_t iid: 8;
+  uint8_t opcode:6;
+} __attribute__((packed));
+
+struct dop_ucore_t {
+  uint16_t slot: 16;
+  uint8_t mode: 1;
+  uint8_t flag: 6;
+  uint8_t hid: 3;
   uint8_t opcode:6;
 } __attribute__((packed));
 
@@ -113,6 +124,7 @@ typedef union {
   struct dop_mem_t mem;
   struct dop_pbs_t pbs;
   struct dop_sync_t sync;
+  struct dop_ucore_t ucore;
 } DOpu_t;
 
 
@@ -120,10 +132,18 @@ typedef union {
 // ============================================================================================= //
 typedef enum {
   DOPK_ARITH = 0b00,
-  DOPK_SYNC = 0b01,
+  DOPK_UCORE = 0b01,
   DOPK_MEM = 0b10,
   DOPK_PBS = 0b11,
-}DOpKind_t ;
+} DOpKind_t ;
+
+#define SYNC_OPCODE 0b101111
+
+typedef enum {
+  DOPS_NOTIFY = 0b0000,
+  DOPS_WAIT   = 0b0001,
+  DOPS_LD_B2B = 0b1000,
+} DOpSync_t ;
 
 // Multibit enum to extract some DOp properties
 enum DOpArithFlag {
@@ -133,5 +153,5 @@ enum DOpArithFlag {
   ADD_FLAG = 0b0001,
 };
 
-
+#pragma GCC diagnostic pop
 #endif //__HPU_DOP_FMT_H__

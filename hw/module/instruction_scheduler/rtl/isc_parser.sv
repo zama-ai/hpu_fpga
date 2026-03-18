@@ -53,8 +53,8 @@ assign kind_id = insn[PE_INST_W-1: PE_INST_W-KIND_W];
 always_comb begin
   case (kind_id)
      2'b00:  kind_e = ARITH;
-     2'b01:  kind_e = SYNC;
-     2'b10:  kind_e = insn_as_pea_mac.dop[0]? MEM_ST: MEM_LD;
+     2'b01:  kind_e = NULL_KIND;
+     2'b10:  kind_e = insn_as_pea_mac.dop[0] ? (insn_as_pea_mac.dop[1] ? SYNC : MEM_ST) : MEM_LD;
      2'b11:  kind_e = PBS;
   endcase
 end

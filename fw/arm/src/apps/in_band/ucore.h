@@ -5,7 +5,7 @@
 // Header and constants used by ucore firmware
 // ==============================================================================================
 
-#include "pll.h"
+//#include "pll.h"
 #include "hpu_dop_fmt.h"
 #include "hpu_iop_fmt.h"
 
@@ -13,9 +13,23 @@
 // ============================================================================================= //
 #include <stdio.h>
 
+#ifndef __UCORE_H__
+#define __UCORE_H__
+
+#ifdef UCORE_MHDMA_SIMU
+#define PLL_INF( t, m, ... ) printf( m "\n", ##__VA_ARGS__ )  /* used for syst info (stats) */
+#define PLL_ERR( t, m, ... ) printf( m "\n", ##__VA_ARGS__ )  /* used for errors            */
+#define PLL_WRN( t, m, ... ) printf( m "\n", ##__VA_ARGS__ )  /* used for warnings          */
+#define PLL_LOG( t, m, ... ) printf( m "\n", ##__VA_ARGS__ )  /* used for general printing  */
+#define PLL_DBG( t, m, ... ) printf( m "\n", ##__VA_ARGS__ )  /* used for debug prints      */
+
+#define HAL_INVALIDATE_CACHE_DATA(a,b) printf("invalidate cache\n")
+#endif
+
+
 // Constants
 // ============================================================================================= //
-#define UCORE_VERSION_MAJOR              (2)
+#define UCORE_VERSION_MAJOR              (3)
 #define UCORE_VERSION_MINOR              (0)
 
 #define OFFSET_TO_AMI_IOPACKQ_HEAD       (0x200000)
@@ -28,10 +42,18 @@
 #define OFFSET_FROM_AMI_IOPQ_TAIL        (0x7020000)
 #define AMI_IOPQ_MAX_BYTES               (0x10000)
 
-#define DOP_LUT_ADDR  ((size_t) 0x39000000)
+// Begin of DOP_FW_ADDR is reserved for runtime configuration structure
+#define DOP_FW_ADDR  ((size_t) 0x39000000)
+#define FW_RUNTIME_MAX_WORD ((size_t) 0x40)
+
+#define DOP_LUT_ADDR  ((size_t) DOP_FW_ADDR + FW_RUNTIME_MAX_WORD*sizeof(uint32_t))
 // Opcode is 8bit -> 256 words entry per blk_w
-#define DOP_LUT_RANGE ((size_t) 0x100)
-#define SYNC_DOP_WORD 0x4000ffff
+#define IOP_NUMBER ((size_t) 0x100)
+#define MAX_HPU_IN_CLUSTER 8
+#define FW_TABLE_ENTRY 128
+#define MAX_FW_TABLE_ENTRY_OFST ((IOP_NUMBER*MAX_HPU_IN_CLUSTER*FW_TABLE_ENTRY)*sizeof(uint32_t))
+#define MAX_FW_SIZE 0x2000000
+#define SYNC_DOP_WORD 0xBC000000
 
 // WARN seems to have limitation on isc_write
 #define DOP_BUFFER_LOG2_SIZE 8
@@ -40,10 +62,76 @@
 // Local Ack -> IOp lookup
 #define ACK_IOP_DEPTH 256
 
+#define IOP_ID_MAX_COUNT  256
+#define MAX_DST_VARS      64
+#define MAX_VAR_BLKS      128
+#define HPU_MAX_COUNT     7
+#define FLAG_MAX_COUNT    64
+#define B2B_POOL_SIZE     4096
+#define DST_NOTIFYQ_SIZE  256
 
+#define MHDMA_STATE_EMPTY          0 // no info
+#define MHDMA_STATE_NOTIFY_PENDING 1 // sync has been added, waiting on ISC before notify
+#define MHDMA_STATE_LB2B_WAITING   2 // load b2b has been seen, waiting on notify to trigger read
+#define MHDMA_STATE_RECEIVED       3 // notify received
+#define MHDMA_STATE_READING        4 // DMA request sent, waiting for data
+#define MHDMA_STATE_RESOLVED       5 // data has been received
+
+#define DST_STATE_NONE        0 // it means this dst is not needed for this iop
+#define DST_STATE_WAIT_NOTIFY 1 // reset value of dst store elt, it means dst is expecting data (local or remote)
+#define DST_STATE_READING     2 // dst remove read triggered but not done yet
+#define DST_STATE_RESOLVED    3 // dst locally available
+
+#define OPERAND_STATE_NONE         0 // no info on this operand
+#define OPERAND_STATE_READ_PENDING 1 // source/dst is needed and should be read as soon as IOp producing it is done or notify is received
+#define OPERAND_STATE_DMA_PENDING  2 // read request sent, waiting for data
+#define OPERAND_STATE_RESOLVED     3 // source/dst is ready locally
+
+#define IOP_STATE_UNKNOWN  0xFF // iop unknown
+#define IOP_STATE_RUNNING  0xFE // iop running
+#define IOP_STATE_DONE     0    // iop finished
+
+typedef struct {
+  uint8_t state;
+  uint8_t nb_hpu;
+} iop_state_t;
+
+typedef struct {
+  uint8_t owner[IOP_ID_MAX_COUNT][MAX_DST_VARS];
+  uint8_t state[IOP_ID_MAX_COUNT][MAX_DST_VARS][MAX_VAR_BLKS];
+} dst_store_t;
+
+typedef struct {
+  uint8_t owner[IOP_ID_MAX_COUNT][MAX_DST_VARS];
+  uint8_t src_iid[IOP_ID_MAX_COUNT][MAX_DST_VARS];
+  uint16_t cid_offset[IOP_ID_MAX_COUNT][MAX_DST_VARS];
+  uint16_t dst_cid[IOP_ID_MAX_COUNT][MAX_DST_VARS][MAX_VAR_BLKS];
+  uint8_t state[IOP_ID_MAX_COUNT][MAX_DST_VARS][MAX_VAR_BLKS];
+} src_store_t;
+
+// master HPU is read initiator
+// slave HPU is notified master, is receiving read and sending ct to master
+typedef struct {
+  uint8_t  slave_hpu_id;
+  uint8_t  master_hpu_id;
+  uint16_t src_ct_id;
+  uint16_t dst_ct_id;
+} mhdma_element_t;
 
 // Type
 // ============================================================================================= //
+// Runtime configuration for Ucore
+// A fixed size of FW_RUNTIME_MAX_WORD is reserved at the beginning of the FW memory for this structure
+typedef struct {
+  uint8_t  node_id;
+  uint8_t  cluster_first_nid;
+  uint8_t  cluster_last_nid;
+  uint16_t ct_user_size;
+  uint16_t b2b_size;
+  // TODO extend this with required runtime informations
+  // WARN: configuration structure within backend must be updated accordingly
+} UcoreCfg_t;
+
 // Lookup entry
 typedef struct {
   volatile uint32_t* ptr;
@@ -60,23 +148,53 @@ typedef struct {
 
 // Hpu functions prototypes
 // ============================================================================================= //
+void mhdma_table_reset(void);
+void iop_state_init(void);
+void iop_state_node_ack(uint8_t iid, uint8_t nb_hpu);
+void b2b_pool_init(void);
+uint16_t b2b_pool_pop(uint8_t iid);
+uint16_t b2b_pool_free(uint8_t iid);
+void dst_notifyq_init(void);
+void src_store_init(void);
+void src_store_reset_iop(uint8_t iid);
+void src_store_inits(uint8_t iid, OperandBundle_t *iop_src);
+void src_store_print(uint8_t iid);
+uint16_t src_store_get_waiting(uint8_t iid, uint8_t src_iid);
+uint8_t src_store_get_waiting_cnt(uint8_t iid);
+void src_notifyq_print(uint8_t iid);
+void dst_store_reset_iop(uint8_t iid);
+void dst_store_init(void);
+void dst_store_initd(uint8_t iid, OperandBundle_t *iop_dst);
+void dst_store_print(uint8_t iid);
+void iop_teardown(uint8_t iid);
 uint32_t parse_iop(
      uint32_t *stream,
      uint32_t iop_pending_bytes,
      // Static allocated buffer used during IOp parsing
      IOpHeader_t *header,
-     IOpOperand_t *operand,
+     IOpMapping_t *mapping,
+     IOpOperandProp_t *operand_prop,
+     IOpOperandAddr_t *operand_addr,
      IOpImmHeader_t *imm_header,
      // Operand/Immediat bundle generated by the parser
      OperandBundle_t* dst,
      OperandBundle_t* src,
      ImmediatBundle_t* imm);
-uint32_t get_lookup(IOpHeader_t header, Lookup_t* lookup);
+uint32_t get_lookup(IOpHeader_t header, IOpMapping_t mapping, uint8_t hid, Lookup_t* lookup);
 void patch_mem_dop(DOpu_t *dop, OperandBundle_t *iop_dst, OperandBundle_t *iop_src);
 void patch_imm_dop(DOpu_t *dop, ImmediatBundle_t *iop_imm);
-void patch_dop(DOpu_t *dop,
+int patch_dop(DOpu_t *dop,
                OperandBundle_t *dst,
                OperandBundle_t *src,
                ImmediatBundle_t *imm);
 DOpKind_t get_kind(DOpu_t *dop);
+DOpSync_t get_sync_opcode(DOpu_t *dop);
 
+// Utilities function to get used/virt_id for a given phys_id
+// NB: easier to stay generic on `raw` format
+uint8_t get_virt_of(uint8_t phys, IOpMapping_t mapping);
+uint8_t get_phys_of(uint8_t vid, IOpMapping_t mapping);
+uint8_t get_used_of(uint8_t vid, IOpMapping_t mapping);
+uint8_t number_of_hpu(IOpMapping_t mapping);
+
+#endif //__UCORE_H__

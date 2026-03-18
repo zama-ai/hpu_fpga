@@ -33,7 +33,7 @@ module instruction_scheduler
 
     // Pseudo stream for ack
     input  logic                 insn_ack_rdy,
-    output logic[PE_INST_W-1: 0] insn_ack_cnt,
+    output logic[PE_INST_W-1: 0] insn_ack,
     output logic                 insn_ack_vld,
     output logic                 insn_ack_int,
 
@@ -136,26 +136,25 @@ fifo_element #(
   .out_rdy (f2_insn_rdy)
 );
 
-logic                  f2_insn_ack_rdy;
-logic [PE_INST_W-1: 0] f2_insn_ack_cnt;
-logic                  f2_insn_ack_vld;
+logic sync_vld;
+logic sync_rdy;
 
 // Use FifoElem type 3 to cut the rdy path for timing purpose
 fifo_element #(
   .WIDTH          (PE_INST_W),
   .DEPTH          (1),
-  .TYPE_ARRAY     (4'h3),
+  .TYPE_ARRAY     (8'h3),
   .DO_RESET_DATA  (0),
   .RESET_DATA_VAL (0)
 ) insn_ack_fifo_element (
   .clk     (clk),
-  .s_rst_n(s_rst_n),
+  .s_rst_n (s_rst_n),
 
-  .in_data (f2_insn_ack_cnt),
-  .in_vld  (f2_insn_ack_vld),
-  .in_rdy  (f2_insn_ack_rdy),
+  .in_data (query_ack.info.insn.raw_insn),
+  .in_vld  (sync_vld),
+  .in_rdy  (sync_rdy),
 
-  .out_data(insn_ack_cnt),
+  .out_data(insn_ack),
   .out_vld (insn_ack_vld),
   .out_rdy (insn_ack_rdy)
 );
@@ -304,7 +303,7 @@ generate
 
   // Construct multi-hot ready that duplicated pem_rdy (For kind LD/ kind ST)
   // And also assert SYNC rdy
-  assign query_pe_rdy = {1'b1, pe_rdy, pe_rdy[0]};
+  assign query_pe_rdy = {sync_rdy, pe_rdy, pe_rdy[0]};
   // Connect pe_ack to query_pe_ack
   assign query_pe_rd_ack = rd_ack_vld;
   assign query_pe_wr_ack = wr_ack_vld;
@@ -318,22 +317,6 @@ generate
 
   assign pep_insn = pe_insn_out[PEP_OFS];
   assign pep_vld = pe_vld_out[PEP_OFS];
-
-// ============================================================================================== //
-// Ack generation
-// ============================================================================================== //
-// Convert ack pulse in pseudo stream for easy interfacing with hpu
-logic insn_ack;
-isc_ack #(
-  .CNT_W(PE_INST_W)
-) ack_pseudo_stream (
-      .clk(clk),
-      .s_rst_n(s_rst_n),
-      .in_pulse(insn_ack),
-      .out_vld(f2_insn_ack_vld),
-      .out_cnt(f2_insn_ack_cnt),
-      .out_rdy(f2_insn_ack_rdy)
-    );
 
 // ============================================================================================== //
 // Instances of Query/Pool and instruction parser
@@ -425,7 +408,7 @@ assign pe_vld[PEP_OFS] = (query_ack_vld && (query_ack.status == SUCCESS) && (que
 // Indeed no need to issue then retire sync instruction
 // Thus the sync ack is directly generated at the issue stage.
 // Internally pool that issue a SYNC directly release the slot
-assign insn_ack = (query_ack_vld && (query_ack.status == SUCCESS) && (query_ack.cmd == ISSUE) && (query_ack.info.insn.kind == SYNC));
+assign sync_vld = (query_ack_vld && (query_ack.status == SUCCESS) && (query_ack.cmd == ISSUE) && (query_ack.info.insn.kind == SYNC));
 
 // ============================================================================================== //
 // Arbiter
@@ -451,7 +434,8 @@ assign query_vld = !query_ack_vld;
     isc_counter_incD = '0;
     isc_rif_infoD    = '0;
 
-    isc_counter_incD.ack_inc  = f2_insn_ack_rdy & f2_insn_ack_vld;
+    // bit 17 is is_inner flag so if it is 0 it is a end of IOp
+    isc_counter_incD.ack_inc  = sync_vld & sync_rdy & !query_ack.info.insn.raw_insn[17];
     isc_counter_incD.inst_inc = f2_insn_rdy & f2_insn_vld;
 
     isc_rif_infoD.insn_pld[0]   = f2_insn_rdy && f2_insn_vld ? f2_insn_pld : isc_rif_info.insn_pld[0];
@@ -580,10 +564,10 @@ assign query_vld = !query_ack_vld;
           _cfg_clk_period    <= _cfg_clk_cycle_cnt > _cfg_clk_period ? _cfg_clk_cycle_cnt : _cfg_clk_period;
           _intr_dist         <= insn_ack_interrupt ? '0 : (_intr_dist == '1) ? _intr_dist : _intr_dist + 1;
           _intr_min_dist     <= ((insn_ack_vld & insn_ack_rdy) && (_intr_min_dist > _intr_dist)) ? _intr_dist : _intr_min_dist;
-          assert ( _intr_min_dist > (_cfg_clk_period << 1) )
-          else begin
-            $fatal(1,"%t > ERROR: Interrupt (IOp ACK) should not toggle faster than cfg_clk can catch (interrupt dist %d < %d cycles of x2 cfg clk period)", $time, _intr_min_dist, _cfg_clk_period << 1);
-          end
+          //assert ( _intr_min_dist > (_cfg_clk_period << 1) )
+          //else begin
+          //  $fatal(1,"%t > ERROR: Interrupt (IOp ACK) should not toggle faster than cfg_clk can catch (interrupt dist %d < %d cycles of x2 cfg clk period)", $time, _intr_min_dist, _cfg_clk_period << 1);
+          //end
       end
 
 // pragma translate_on

@@ -118,6 +118,7 @@ else()
     include_directories(src/proxy_drivers/bmc/pldm)
     include_directories(src/apps/asdm)
     include_directories(src/apps/in_band)
+    include_directories(src/apps/in_band/mhdma_driver)
     include_directories(src/apps/out_of_band)
     include_directories(src/apps/bim)
 
@@ -159,11 +160,13 @@ else()
                 src/apps/asdm/asdm.c
                 src/apps/in_band/in_band_telemetry.c
                 src/apps/in_band/ucore.c
+                src/apps/in_band/mhdma_driver/mhdma_driver.c
                 src/apps/out_of_band/out_of_band_telemetry.c
                 src/apps/bim/bim.c
                 ${LINUX_HAL_MEM_BASE}
                 ${PROFILE_FAL_PATH}
                 )
+                target_compile_options(${NAME} PRIVATE -Wall -Wno-packed-bitfield-compat)
 
     #linking libraries with executable
     if(OS MATCHES "^(FreeRTOS)$")
