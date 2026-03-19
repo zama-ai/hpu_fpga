@@ -376,7 +376,6 @@ module mhdma_slave
 
   // - How much words are there per PC to read
   logic [AXI4_WORD_PER_PC0_WW-1:0] axi4_word_per_path;
-  logic                pc_transfer_done;
   logic                read_fifo_ready;
   logic [ETH_PC-1:0]   ar_pc_onehot;
   logic [ETH_PC-1:0]   rd_pc_onehot;
@@ -416,7 +415,7 @@ module mhdma_slave
 
   logic                            req_send_axi_cmd;
 
-  logic                            req_pc_ar_done;
+  logic                            pc_transfer_done;
 
   assign req_axi_word_remain_init = axi4_word_per_path;
 
@@ -478,8 +477,7 @@ module mhdma_slave
   assign s0_axi_arvalid  = |ar_pc_onehot & (ar_pc_onehot == rd_pc_onehot);
   assign req_send_axi_cmd = s0_axi_arvalid & s0_axi_arready;
 
-  assign req_pc_ar_done    = req_send_axi_cmd & req_last_axi_word_remain;
-  assign pc_transfer_done = req_pc_ar_done;
+  assign pc_transfer_done = req_send_axi_cmd & req_last_axi_word_remain;
 
   // Single fifo_element for AR pipeline register
   axi4_ar_if_t m_axi4_a;

@@ -14,7 +14,7 @@
 //    stops; retry overwrites from offset 0.
 //
 // Write path: stream-through with reactive page-aligned bursts.
-//  - Dataflow: decoder > fifo_ce_rx > deserialization > fifo > burst FSM > AXI4 > fifo
+//  - Dataflow: decoder > fifo_ce_rx > deserialization > fifo > burst FSM > fifo > AXI4
 //  - One burst state machine per PC (BURST_IDLE > BURST_AW > BURST_W_DATA > BURST_DONE)
 //
 // Assumptions:
@@ -400,7 +400,7 @@ module mhdma_master
   logic                    rrqq_in_rdy;
   logic                    rrqq_in_vld;
   logic [2*REG_DATA_W-1:0] rrqq_in_data;
-  // tmp
+
   logic [2*REG_DATA_W-1:0] rrqq_data_kept;
   logic                    rrqq_data_kept_avail;
   logic                    rrqq_data_vld;
@@ -461,7 +461,7 @@ module mhdma_master
   logic                    nrqq_in_rdy;
   logic                    nrqq_in_vld;
   logic [2*REG_DATA_W-1:0] nrqq_in_data;
-  // tmp
+
   logic [2*REG_DATA_W-1:0] nrqq_data_kept;
   logic                    nrqq_data_kept_avail;
   logic                    nrqq_data_vld;
@@ -883,8 +883,8 @@ module mhdma_master
   endgenerate
 
   // PC-specific word count (PC0 has +1 header word)
-  logic [AXI4_WORD_PER_PC0_WW-1:0] active_words_per_pc;
-  assign active_words_per_pc = (active_pc_idx == 0) ? AXI4_WORD_PER_PC0_WW'(AXI4_WORD_PER_PC0) : AXI4_WORD_PER_PC0_WW'(AXI4_WORD_PER_PC);
+  logic [AXI4_WORD_PER_PC0_WW-1:0] target_words_per_pc;
+  assign target_words_per_pc = (active_pc_idx == 0) ? AXI4_WORD_PER_PC0_WW'(AXI4_WORD_PER_PC0) : AXI4_WORD_PER_PC0_WW'(AXI4_WORD_PER_PC);
 
   // PC base offset for credit computation
   logic [NB_WORDS_TOTAL_WW-1:0] active_pc_base_offset;
@@ -895,7 +895,7 @@ module mhdma_master
     end else if (phy_addr_valid) begin
       active_pc_base_offset <= '0;
     end else if (pc_w_complete) begin
-      active_pc_base_offset <= active_pc_base_offset + NB_WORDS_TOTAL_WW'(active_words_per_pc);
+      active_pc_base_offset <= active_pc_base_offset + NB_WORDS_TOTAL_WW'(target_words_per_pc);
     end
   end
 
@@ -935,7 +935,7 @@ module mhdma_master
   logic [NB_WORDS_TOTAL_WW-1:0] pc_consumed_total;
   logic [NB_WORDS_TOTAL_WW-1:0] words_committed;
 
-  assign words_committed   = NB_WORDS_TOTAL_WW'(active_words_per_pc) - NB_WORDS_TOTAL_WW'(words_remain);
+  assign words_committed   = NB_WORDS_TOTAL_WW'(target_words_per_pc) - NB_WORDS_TOTAL_WW'(words_remain);
 
   // active_pc_base_offset (words for all completed PCs) + words_committed (words issued so far within the active PC)
   assign pc_consumed_total = active_pc_base_offset + words_committed;
@@ -1066,7 +1066,7 @@ module mhdma_master
           abort_draining <= 1'b0;
           if (|axi4_write_pc & ~pc_w_complete) begin
             burst_addr    <= phy_addr[active_pc_idx];
-            words_remain  <= AXI4_WORD_PER_PC0_WW'(active_words_per_pc);
+            words_remain  <= AXI4_WORD_PER_PC0_WW'(target_words_per_pc);
             bursts_issued <= 'h0;
           end
         end
@@ -1094,7 +1094,7 @@ module mhdma_master
         end
 
         BURST_DONE: begin
-          // nothing: single-cycle, transitions to BURST_IDLE next
+          // nothing: wait drain
         end
       endcase
     end
@@ -1431,7 +1431,7 @@ module mhdma_master
     if (~resetn_mhdma) begin
       t_rr_to_ce_received <= 'h0;
     end else begin
-       if(count_rreq_receive) begin
+       if (count_rreq_receive) begin
         t_rr_to_ce_received <= t_rr_to_ce_received + 1;
        end else begin
         t_rr_to_ce_received <= 'h0;
@@ -1487,16 +1487,16 @@ module mhdma_master
   end
 
   // Debug registers ------------------------------------------------------------------------------
-  logic [CE_DATA_COUNT_W:0] fifo_cerx_cnt_tx;
+  logic [CE_DATA_COUNT_W:0] fifo_cerx_out_cnt;
 
   always_ff @(posedge clk_mhdma) begin
     if (~resetn_mhdma) begin
-      fifo_cerx_cnt_tx <= 'h0;
+      fifo_cerx_out_cnt <= 'h0;
     end else begin
       if (fifo_cerx_out_vld & fifo_cerx_out_rdy) begin
-        fifo_cerx_cnt_tx <= fifo_cerx_cnt_tx +1;
+        fifo_cerx_out_cnt <= fifo_cerx_out_cnt +1;
       end else if (ciphertext_received) begin
-        fifo_cerx_cnt_tx <= 'h0;
+        fifo_cerx_out_cnt <= 'h0;
       end
     end
   end
@@ -1509,7 +1509,7 @@ module mhdma_master
         stat_nb_ce_words_received_r <= 'h0;
       end else begin
         if (ciphertext_received) begin
-          stat_nb_ce_words_received_r <= { {(REG_DATA_W-CE_DATA_COUNT_W){1'b0}}, fifo_cerx_cnt_tx};
+          stat_nb_ce_words_received_r <= { {(REG_DATA_W-CE_DATA_COUNT_W){1'b0}}, fifo_cerx_out_cnt};
         end
       end
     end

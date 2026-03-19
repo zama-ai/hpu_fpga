@@ -1430,7 +1430,6 @@ module tb_mhdma_slave;
     run_scenario_dual_pop_guard();
     run_scenario_back_to_back();
     run_scenario_phy_addr_and_page_boundary_all_pcs();
-    // run_scenario_error_injection();
 
     $display("\n==================================================================================================");
     $display("  All scenarios completed");
