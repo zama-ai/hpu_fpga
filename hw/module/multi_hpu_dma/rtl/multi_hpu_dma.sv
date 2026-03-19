@@ -22,10 +22,11 @@
 //   - GT control       : transceiver reset and loopback configuration
 //
 // Assumptions / Limitations:
-//  - Only one QSFP lane is active at a time, selected by r_system_line[1:0] (regfile)
-//  - Request from host requires two consecutive register writes (req_id then req_addr)
+//  - Only one QSFP lane is active at a time, selected by r_system_lane[1:0] (regfile)
+//  - Request from host requires two consecutive register writes (any order)
+//  - Interrupt will be cleared on *_req_id register read
 //  - CDC for stat counters uses handshake; counters may lag by a few cfg-clock cycles
-//  - Top module cannot use ETH_PC != 2 because of regfile. for => 4 XPM CDC fifos will overflow
+//  - Top module cannot use ETH_PC != 2 because of regfile. for >= 4 XPM CDC fifos will overflow
 //
 // ================================================================================================
 
@@ -122,14 +123,14 @@ module multi_hpu_dma
   output logic [2:0]                                               gt_loopback
 );
 
-  // ============================================================================================ --
+  // ============================================================================================ //
   // Localparams
-  // ============================================================================================ --
+  // ============================================================================================ //
   localparam int CDC_SYNC_STAGES = 4;
 
-  // ============================================================================================ --
+  // ============================================================================================ //
   // Signals
-  // ============================================================================================ --
+  // ============================================================================================ //
   logic [$clog2(QSFP_LANE_NB)-1:0] line_sel;
   logic                            clear_interrupt_notify;
   logic                            clear_interrupt_rr;
@@ -147,9 +148,9 @@ module multi_hpu_dma
   logic                 [REG_DATA_W-1:0]   r_system_timeout_notify;
   logic                 [REG_DATA_W-1:0]   r_system_timeout_read_req;
   logic [    ETH_PC-1:0][2*REG_DATA_W-1:0] r_ct_mem_addr;
-  logic [          1:0][2*REG_DATA_W-1:0] r_ct_mem_addr_regf;
+  logic [    ETH_PC-1:0][2*REG_DATA_W-1:0] r_ct_mem_addr_regf;
   // lane control
-  logic                 [REG_DATA_W-1:0]   r_system_line;
+  logic                 [REG_DATA_W-1:0]   r_system_lane;
   logic                 [REG_DATA_W-1:0]   r_reset_datapath;
   logic                 [REG_DATA_W-1:0]   r_reset_monitor;
 
@@ -161,9 +162,9 @@ module multi_hpu_dma
   mhdma_cnt_t cnt_cfg;
 
   // Transceivers ---------------------------------------------------------------------------------
-  assign line_sel             = r_system_line[1:0];
-  assign gt_loopback          = r_system_line[4:2];
-  assign gt_line_rate         = r_system_line[13:5];
+  assign line_sel             = r_system_lane[1:0];
+  assign gt_loopback          = r_system_lane[4:2];
+  assign gt_line_rate         = r_system_lane[13:5];
 
   assign gt_reset_all         = r_reset_datapath[3:0];
   assign gt_reset_tx_datapath = r_reset_datapath[7:4];
@@ -227,6 +228,9 @@ module multi_hpu_dma
   // ============================================================================================ //
   // Register file
   // ============================================================================================ //
+  logic r_request_req_id_wr_en;
+  logic r_request_req_addr_wr_en;
+
   hpu_regif_core_mhdma_2in3 hpu_regif_core_mhdma_2in3 (
     // configuration interface -----------------------------------------------------------------------------------
     .clk                                                  (clk_mhdma_cfg                                         ),
@@ -282,7 +286,7 @@ module multi_hpu_dma
     .r_mhdma_request_read_request_upd                     (request_read_addr_tmp                                 ),
     .r_mhdma_request_read_request_rd_en                   (/* UNUSED */                                          ),
     // control ---------------------------------------------------------------------------------------------------
-    .r_mhdma_system_lane                                  (r_system_line                                         ),
+    .r_mhdma_system_lane                                  (r_system_lane                                         ),
     .r_mhdma_reset_datapath                               (r_reset_datapath                                      ),
     .r_mhdma_reset_monitor                                (/* UNUSED - register output, only _upd used */        ),
     .r_mhdma_reset_monitor_upd                            (reset_monitor_tmp                                     ),
@@ -368,7 +372,7 @@ module multi_hpu_dma
   logic [1:0] received_req;
   logic       request_consumed;
 
-  // received_req signals lower module that
+  // received_req signals lower module that we have received a command from regfile
   always_ff @(posedge clk_mhdma_cfg) begin
     if (~resetn_mhdma_cfg) begin
       received_req <= '0;
