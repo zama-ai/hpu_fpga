@@ -32,6 +32,8 @@
 //   > CE timing statistics
 //   > Mixed packet types
 //
+// Simulation timeout: SIM_TIMEOUT (100_000 ns).
+//
 // ==============================================================================================
 
 `resetall
@@ -50,6 +52,7 @@ module tb_mhdma_decoder;
 // ============================================================================================== --
   localparam int CLK_HALF_PERIOD = 1;
   localparam int ARST_ACTIVATION = 17;
+  localparam int SIM_TIMEOUT  = 100_000;
 
   // Test MAC address for this HPU (only lower MAC_ADDR_W bits matter for matching)
   localparam [MAC_ADDR_W-1:0] TB_DUT_MAC_ADDR   = 24'hA1B2C3;
@@ -59,6 +62,7 @@ module tb_mhdma_decoder;
 
   // FIFO total capacity = DEPTH + RAM_LATENCY + 1.
   localparam int TOTAL_RX_FIFO_DEPTH = RX_FIFO_DEPTH + 1 + 1;
+
 
 // ============================================================================================== --
 // clock, reset
@@ -96,6 +100,13 @@ module tb_mhdma_decoder;
     $finish;
   end
 
+  // Global simulation timeout -- prevents indefinite hangs
+  initial begin
+    #SIM_TIMEOUT;
+    $display("%t > TIMEOUT: simulation did not complete in time!", $time);
+    $finish;
+  end
+
 // ============================================================================================== --
 // Error
 // ============================================================================================== --
@@ -104,7 +115,6 @@ module tb_mhdma_decoder;
   bit error_notify_pulse;
   bit error_nack_pulse;
   bit error_read_req_pulse;
-  bit error_ce_pulse;
   bit error_payload;
   bit error_stat;
   bit error_mac_filter;
@@ -115,7 +125,6 @@ module tb_mhdma_decoder;
                | error_notify_pulse
                | error_nack_pulse
                | error_read_req_pulse
-               | error_ce_pulse
                | error_payload
                | error_stat
                | error_mac_filter
@@ -512,8 +521,8 @@ module tb_mhdma_decoder;
     end
 
     for (int i = 0; i < received_payload.size() && i < expected_payload.size(); i++) begin
-      assert (received_payload[i] == byte_swap(expected_payload[i])) else begin
-        $display("[ERROR:%0d]: payload word %0d mismatch: got 0x%016h, expected 0x%016h", scenario_id,  i, received_payload[i], byte_swap(expected_payload[i]));
+      assert (received_payload[i] == expected_payload[i]) else begin
+        $display("[ERROR:%0d]: payload word %0d mismatch: got 0x%016h, expected 0x%016h", scenario_id,  i, received_payload[i], expected_payload[i]);
         error_payload = 1'b1;
       end
     end
@@ -524,8 +533,8 @@ module tb_mhdma_decoder;
     end
 
     $display("%t > SCENARIO %0d: PASSED (received payload %0d)", $time, scenario_id, received_payload.size());
-    scenario_id++;
-    repeat (20) @(posedge clk);
+
+    scenario_end(scenario_id, clk);
   endtask
 
   // -------------------------------------------------------------------------
@@ -1020,7 +1029,7 @@ module tb_mhdma_decoder;
   task automatic run_scenario_error_reset();
     scenario_start(scenario_id, "Error reset (rst_errors)");
 
-    // Error should still be sticky from scenario 10
+    // Error should still be sticky from FIFO backpressure scenario
     assert (decoder_error == 1'b1) else begin
       $display("[ERROR:%0d]: error not sticky from previous scenario", scenario_id);
       error_fifo_overflow = 1'b1;
@@ -1062,6 +1071,7 @@ module tb_mhdma_decoder;
         .seq_num          (seq[SEQ_NUM_W-1:0]),
         .payload_data_out (unused_payload)
       );
+      unused_payload.delete();
 
       // Consume the decoded command
       begin
@@ -1171,6 +1181,7 @@ module tb_mhdma_decoder;
             .src_addr(random_src_addr), .dst_addr(16'h0),
             .seq_num(8'h0), .payload_data_out(unused_payload)
           );
+          unused_payload.delete();
         end
       endcase
     end

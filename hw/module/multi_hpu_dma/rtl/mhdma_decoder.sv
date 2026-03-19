@@ -10,11 +10,12 @@
 //
 // Latency: QSFP input to decoded command =
 //  > input stage (1) + frame parsing (4) + fifo_rx_cmd (1) = 6 cycles
+//  > streaming interface has two clock cycles latency
 //
 // Assumptions / Limitations:
 // - No backpressure on QSFP RX input (no tready output with our MRMAC configuration).
 //   This implies that Ciphertext Emission words have no backpressure and go to master with a
-//   streaming interface
+//    streaming interface
 // - If the command FIFO overflows, incoming commands are silently dropped and error_fifo_rx_ovf is
 //    raised, sticky until read (rst_errors).
 // - ETH LEN is only used for packet handling outside FPGA, we ignore it here
@@ -118,7 +119,7 @@ module mhdma_decoder
   // =========================================================================================== //
   // Word counter: tracks current frame position within a packet.
   // Increments on each valid beat, resets on tlast.
-  logic [$clog2(NB_WORDS_MAX):0] rx_counter;
+  logic [$clog2(NB_WORDS_MAX)-1:0] rx_counter;
 
   always_ff @(posedge clk_mhdma) begin
     if (~resetn_mhdma) begin

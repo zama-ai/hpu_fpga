@@ -345,7 +345,7 @@ task automatic send_ciphertext_emission_packet(
     for (int i = 0; i < nwords - 1; i++) begin
       @(posedge vif.clk);
       word = {$urandom(), $urandom()};
-      payload_data_out.push_back(byte_swap(word));
+      payload_data_out.push_back(word);
       vif.tdata      = byte_swap(word);
       vif.tkeep_user = 11'h0FF;
       vif.tlast      = 1'b0;
@@ -354,7 +354,9 @@ task automatic send_ciphertext_emission_packet(
 
     // Last payload word
     @(posedge vif.clk);
-    vif.tdata      = {$urandom(), $urandom()};
+    word           = {$urandom(), $urandom()};
+    payload_data_out.push_back(word);
+    vif.tdata      = byte_swap(word);
     vif.tkeep_user = 11'h00F;
     vif.tlast      = 1'b1;
     vif.tvalid     = 1'b1;

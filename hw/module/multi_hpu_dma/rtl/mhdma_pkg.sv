@@ -39,8 +39,9 @@ package mhdma_pkg;
   // =========================================================================================== //
   // *(beware of block design before modifying this segment)
   localparam int QSFP_LANE_NB   = 4;
-  localparam int MRMAC_AXIS_W   = 64;
-  localparam int MRMAC_TKEEP_W  = 11;
+  localparam int MRMAC_AXIS_W     = 64;
+  localparam int MRMAC_AXIS_BYTES = MRMAC_AXIS_W / 8;
+  localparam int MRMAC_TKEEP_W   = 11;
   // Ethernet header: sizes -----------------------------------------------------------------------
   localparam int MAC_ADDR_W   = 24;
   localparam int MAC_OUI_W    = 24;
@@ -97,8 +98,8 @@ package mhdma_pkg;
 
   // Number of words in a packet
   localparam int NB_WORDS_CUST_HEADER_SIZE   = 4;
-  localparam int NB_WORDS_PAYLOAD            = ETH_NB_BYTES_PAYLOAD / (MRMAC_AXIS_W/8);
-  localparam int NB_WORDS_SMALL_PACKETS      = ETH_NB_BYTES_MIN / (MRMAC_AXIS_W/8);
+  localparam int NB_WORDS_PAYLOAD            = ETH_NB_BYTES_PAYLOAD / MRMAC_AXIS_BYTES;
+  localparam int NB_WORDS_SMALL_PACKETS      = ETH_NB_BYTES_MIN / MRMAC_AXIS_BYTES;
   localparam int NB_WORDS_MAX                = NB_WORDS_PAYLOAD + NB_WORDS_CUST_HEADER_SIZE;
   localparam int NB_WORDS_MIN                = NB_WORDS_SMALL_PACKETS;
   // If ever I need to send less words and what is allowed by ethernet, we need to fill with zeros
