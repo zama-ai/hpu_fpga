@@ -5,7 +5,7 @@
 // Description  : Multi-HPU DMA formatter (TX module for QSFP lane)
 //
 // Builds custom Ethernet frames from slave/master commands and CE payload data.
-// Output Data is byte swapped
+// Output Data (qsfp_tx_tdata) is byte swapped
 //
 // Packet types (FSM priority, highest first):
 //   CT_EMISSION  (slave)  - multi-frame: NB_PACKETS_FULL (full) + 1 (partial), payload from CE FIFO
@@ -17,12 +17,12 @@
 //
 // Notes :
 //  > slave_command_rdy & master_command_rdy are single-cycle pulses (from consume_* edge detectors),
-// not levels. The upstream slave/master hold command_vld high until theses pulse arrives.
+// not levels. The upstream slave/master hold command_vld high until these pulse arrives.
 //  > Ciphertext is put into a store & forward FIFO:
 // This guarantees continuous tvalid mid-frame depending on packet size (MRMAC drops frames on gap).
 //
 // Assumptions :
-// - The upstream slave/master hold command_vld high until theses pulse arrives.
+// - The upstream slave/master hold command_vld high until these pulse arrives.
 // - command.hpu_id must be < NB_MAX_HPU. No bounds check on MAC table index;
 // - NB_PACKETS_FULL >= 1. The stalling / threshold logic assumes at least one full frame.
 // - LAST_PACKET_BYTE_SIZE >= ETH_NB_BYTES_MIN (64).
@@ -81,7 +81,7 @@ module mhdma_formatter
   end
 // pragma translate_on
 
-// =========================================================================================== //
+  // =========================================================================================== //
   // Localparam
   // =========================================================================================== //
   localparam int NB_WORDS_FULL    = NB_WORDS_CUST_HEADER_SIZE+NB_WORDS_PAYLOAD;
@@ -95,9 +95,8 @@ module mhdma_formatter
   // this register is needed to ease timing
   logic [NB_MAX_HPU-1:0][MAC_ADDR_W-1:0] hpu_mac_table_tmp;
 
-  always_ff @(posedge clk_mhdma) begin
+  always_ff @(posedge clk_mhdma)
     hpu_mac_table_tmp <= hpu_mac_table;
-  end
 
   // =========================================================================================== //
   // Ciphertext Emission FIFO
@@ -311,7 +310,7 @@ module mhdma_formatter
   logic [        MRMAC_AXIS_W-1:0] tx_header;
   logic                            ce_header_valid;
 
-  // ce -------------------------------------------------------------------------------------------
+  // Ciphertext Emission control ------------------------------------------------------------------
   // During CE we increment seq_num for each frame sent.
   // Used to detect the last frame (ce_seq_num == NB_PACKETS_FULL) and to populate the header.
   logic [SEQ_NUM_W-1:0] ce_seq_num;
@@ -514,11 +513,11 @@ module mhdma_formatter
   end
 
   // tkeep ----------------------------------------------------------------------------------------
-  logic [$clog2(MRMAC_AXIS_W/8)-1:0] last_word_bytes;
-  logic [        MRMAC_AXIS_W/8-1:0] tx_byte_enable;
-  logic [        MRMAC_AXIS_W/8-1:0] tx_byte_enable_d;
+  logic [$clog2(MRMAC_AXIS_BYTES)-1:0] last_word_bytes;
+  logic [        MRMAC_AXIS_BYTES-1:0] tx_byte_enable;
+  logic [        MRMAC_AXIS_BYTES-1:0] tx_byte_enable_d;
 
-  assign tx_byte_enable_d = (last_word_bytes == 0) ? 8'hFF : 8'(1 << last_word_bytes) - 1;
+  assign tx_byte_enable_d = (last_word_bytes == 0) ? {MRMAC_AXIS_BYTES{1'b1}} : 8'(1 << last_word_bytes) - 1;
 
   always_ff @(posedge clk_mhdma) begin
     if (~resetn_mhdma) begin
@@ -526,7 +525,7 @@ module mhdma_formatter
     end else begin
       if (okay_to_send_request & tx_tready) begin
         if ((tx_cnt == 0) | ~small_packet) begin
-          tx_byte_enable <= 8'hFF;
+          tx_byte_enable <= {(MRMAC_AXIS_W/8){1'b1}};
         end else if (small_packet & (tx_cnt == (NB_WORDS_MIN-1))) begin
           tx_byte_enable <= tx_byte_enable_d;
         end else if (ce_last_packet & (tx_cnt == (NB_WORDS_PARTIAL-1))) begin
@@ -536,7 +535,7 @@ module mhdma_formatter
     end
   end
 
-  assign last_word_bytes = (ETH_NB_BYTES_HEADER + header_eth_len) & {$clog2(MRMAC_AXIS_W/8){1'b1}};
+  assign last_word_bytes = (ETH_NB_BYTES_HEADER + header_eth_len) & {$clog2(MRMAC_AXIS_BYTES){1'b1}};
 
   // =========================================================================================== //
   // Building packets

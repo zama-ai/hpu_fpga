@@ -35,7 +35,7 @@ module tb_mhdma_errors;
   localparam int CLK_HALF_PERIOD_MRMAC = 1;
   localparam int ARST_ACTIVATION = 17;
 
-  localparam int MEM_SIM_SIZE = 16;
+  localparam int MEM_SIM_SIZE = 8;
 
 // ============================================================================================== --
 // clock, reset

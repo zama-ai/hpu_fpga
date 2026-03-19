@@ -145,7 +145,7 @@ module tb_mhdma_formatter;
 // ============================================================================================== --
 // DUT signals
 // ============================================================================================== --
-  // Bridge configurationfrst_errors
+  // Bridge configuration / rst_errors
   logic [NB_MAX_HPU-1:0][MAC_ADDR_W-1:0] hpu_mac_table;
   logic                 [HPU_ID_W-1:0]   current_hpu_id;
   logic                 [MAC_ADDR_W-1:0] current_hpu_mac;
@@ -260,8 +260,13 @@ module tb_mhdma_formatter;
       force_tready_val   = 1'b1;
 
 
-      // always the same in this testbench, fixed. (Used only for ciphertext emissions)
-      expected_last_tkeep = 'h0F;
+      // Derived from parameters, mirroring RTL last_word_bytes / tx_byte_enable_d logic
+      begin
+        automatic logic [$clog2(MRMAC_AXIS_BYTES)-1:0] last_bytes;
+        last_bytes = (ETH_NB_BYTES_HEADER + ETH_LEN_MIN) & {$clog2(MRMAC_AXIS_BYTES){1'b1}};
+        expected_last_tkeep = (last_bytes == 0) ? MRMAC_TKEEP_W'({MRMAC_AXIS_BYTES{1'b1}})
+                                                : MRMAC_TKEEP_W'((1 << last_bytes) - 1);
+      end
 
       // Populate MAC table with known addresses
       hpu_mac_table[0]   = MAC_ADDR_HPU0;
@@ -1006,7 +1011,7 @@ module tb_mhdma_formatter;
   // SCENARIO: FIFO starvation resilience (frame-level gating)
   // ---------------------------------------------------------------------------
   task automatic run_scenario_fifo_starvation();
-    // Frame-level gating buffers a full frame before alloword_ing TX, so random gaps
+    // Frame-level gating buffers a full frame before allowing TX, so random gaps
     // in the CE payload stream must NOT cause tvalid drops mid-frame.
     clear_tx_capture();
     scenario_start(scenario_id, "FIFO starvation resilience");
@@ -1771,15 +1776,6 @@ module tb_mhdma_formatter;
     qsfp_tx_tlast |-> qsfp_tx_tvalid;
   endproperty
 
-  // // -----------------------------------------------------------------------------------------
-  // // After tlast is accepted (tvalid & tready & tlast), tvalid must drop the next cycle
-  // // in our case this is true, there is never back to back frames
-  // // -----------------------------------------------------------------------------------------
-  // property no_valid_after_last;
-  //   @(posedge clk) disable iff (~s_rstn)
-  //   (qsfp_tx_tvalid && qsfp_tx_tready && qsfp_tx_tlast) |=> !qsfp_tx_tvalid;
-  // endproperty
-
   // -----------------------------------------------------------------------------------------
   // tvalid must NOT drop mid-frame: after a successful transfer that is not
   // the last word, tvalid must remain high on the next cycle.
@@ -1806,9 +1802,6 @@ module tb_mhdma_formatter;
 
   assert_tlast_implies_tvalid : assert property (tlast_implies_tvalid)
     else begin $error("%t > [ERROR:SVA] tlast without tvalid", $time); error_assert = 1'b1; end
-
-  // assert_no_valid_after_last : assert property (no_valid_after_last)
-  //   else begin $error("%t > [ERROR:SVA] tvalid still asserted after tlast accepted", $time); error_assert = 1'b1; end
 
   assert_tvalid_no_drop_before_tlast : assert property (tvalid_no_drop_before_tlast)
     else begin $error("%t > [ERROR:SVA] tvalid dropped before tlast (FIFO starvation)", $time); error_assert = 1'b1; end
