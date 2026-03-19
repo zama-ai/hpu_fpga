@@ -6,7 +6,7 @@
 //
 // Instantiates and interconnects the four core sub-modules of the MHDMA datapath:
 //   - mhdma_decoder   : QSFP RX frame parsing, sends decoded commands & ciphertext stream
-//   - mhdma_master    : notify / read-request FSM, ciphertex- write to HBM
+//   - mhdma_master    : notify / read-request FSM, ciphertext write to HBM
 //   - mhdma_slave     : notify-ack / ciphertext-read from HBM
 //   - mhdma_formatter : takes commands and sends custom ethernet header & payload
 //
@@ -89,7 +89,7 @@ module mhdma_bridge
   // statistics ---------------------------------------------------------------
   output mhdma_cnt_t                              stat_cnt,
   input  mhdma_rst_cnt_t                          rst_cnt,
-  // statistics ---------------------------------------------------------------
+  // interrupts ---------------------------------------------------------------
   input  logic                                    clear_interrupt_notify,
   output logic                                    interrupt_notify,
   input  logic                                    clear_interrupt_rr,
@@ -125,7 +125,7 @@ module mhdma_bridge
   // =========================================================================================== //
   // CDC from regf to mrmac clock
   // =========================================================================================== //
-  // theses signals are quasi static: they should move rarely
+  // these signals are quasi static: they should move rarely
   logic [CDC_SYNC_STAGES-1:0][NB_MAX_HPU-1:0][REG_DATA_W-1:0] hpu_ids_cdc;
   logic                      [NB_MAX_HPU-1:0][REG_DATA_W-1:0] hpu_ids; // just for naming
 
@@ -159,13 +159,12 @@ module mhdma_bridge
 
   // if ever two hpu ids are set as "current", raise an error
   // when one_hot_id is all zeros, we cannot conclude if there is an error or not
-  // TODO: if half is ones and the rest are zeros, error not raised
   logic error_id;
   always_ff @(posedge clk_mhdma) begin : error_on_hpu_id
     if (~resetn_mhdma) begin
       error_id <= 1'b0;
     end else begin
-      error_id <= (one_hot_id==0) ? 'b0: ~ (^one_hot_id);
+      error_id <= (one_hot_id != '0) && !$onehot(one_hot_id);
     end
   end
 
