@@ -37,13 +37,13 @@ int write_isc(uint32_t *pucData, uint32_t writeSize) {
     int nb_words = writeSize/4;
     uint32_t tdfv_val = 0;
 
-    PLL_LOG("AMC:write_isc", "nb_words  %d, writeSize %d", nb_words, writeSize);
+    //PLL_LOG("AMC:write_isc", "nb_words  %d, writeSize %d", nb_words, writeSize);
 
     *( ( volatile uint32_t * )(XPAR_AXI_FIFO_0_BASEADDR + 0x0) ) = 0xFFFFFFFF;
     *( ( volatile uint32_t * )(XPAR_AXI_FIFO_0_BASEADDR + 0x2C) ) = 0x2;
     // read available words
     tdfv_val = * (volatile uint32_t *) (XPAR_AXI_FIFO_0_BASEADDR + 0xC);
-    PLL_LOG("AMC:write_isc", "tdfv %d", tdfv_val);
+    //PLL_LOG("AMC:write_isc", "tdfv %d", tdfv_val);
     if (tdfv_val < nb_words) {
         PLL_WRN("AMC:write_isc", "cannot write %d words, only %d available in axis fifo", nb_words, tdfv_val);
         iStatus = RETRY;
@@ -55,8 +55,8 @@ int write_isc(uint32_t *pucData, uint32_t writeSize) {
         *( ( volatile uint32_t * )(XPAR_AXI_FIFO_0_BASEADDR + 0x10) ) = *pucData;
     } else {
         for (int i=0; i < nb_words; i++) {
-            if (i%128==0)
-                PLL_LOG("AMC:write_isc", "i=%d writing %x", i, *(pucData+i));
+            //if (i%128==0)
+            //    PLL_LOG("AMC:write_isc", "i=%d writing %x", i, *(pucData+i));
             *( ( volatile uint32_t * )(XPAR_AXI_FIFO_0_BASEADDR + 0x10) ) = *(pucData+i);
         }
     }
@@ -65,6 +65,17 @@ int write_isc(uint32_t *pucData, uint32_t writeSize) {
     *( ( volatile uint32_t * )(XPAR_AXI_FIFO_0_BASEADDR + 0x14) ) = 4*nb_words;
 
     return iStatus;
+}
+
+void flush_dop_buffer_to_isc(uint32_t *dop_buffer, int number_of_dop) {
+    uint32_t write_isc_rv = OK;
+    PLL_DBG("UCORE", "trying to flush %d dop to isc", number_of_dop);
+    write_isc_rv = write_isc(dop_buffer, (uint32_t) (number_of_dop * sizeof(uint32_t)));
+    while (write_isc_rv == RETRY) {
+        PLL_DBG("UCORE", "retry flush %d value to isc", number_of_dop);
+        iOSAL_Task_SleepTicks(20);
+        write_isc_rv = write_isc(dop_buffer, (uint32_t) (number_of_dop * sizeof(uint32_t)));
+    }
 }
 
 /* Checking if acknowledge AXIS is not empty ------------------------------------------------------
@@ -90,5 +101,7 @@ uint32_t pop_isc_ack() {
     if (available_word > 0) {
         iop_ack = * (volatile uint32_t *) (XPAR_AXI_FIFO_0_BASEADDR + 0x20);
     }
+    // available_word is here only for debug and has no fct consequences
+    // the LSB of the SYNC DOp are used so it is ok to use the lower 8b for debug
     return (iop_ack | (available_word & 0xFF));
 }

@@ -544,10 +544,8 @@ void vMhdmaWorkerTask(void *pvParameters) {
           dop.raw = rxCmd.payload;
           uint8_t ack_iid = dop.sync.iid;
           //PLL_ERR("MhdmaWorker", "[HPU%d] iop_teardown starting on iid %d (state %d)", phys_hpu_id, ack_iid, iop_state[ack_iid].state);
-          //iOSAL_Task_SleepTicks(100);
           iop_teardown(ack_iid);
           PLL_DBG("MhdmaWorker", "[HPU%d] iop_teardown on iid %d done", phys_hpu_id, ack_iid);
-          //iOSAL_Task_SleepTicks(100);
           //print_iop_state();
 
           // Write ack value in queue body
@@ -579,7 +577,6 @@ void vMhdmaWorkerTask(void *pvParameters) {
             //        src_store.owner[cur_iid][tid],
             //        src_store.cid_offset[cur_iid][tid] + bid,
             //        src_store.dst_cid[cur_iid][tid][bid]);
-            //iOSAL_Task_SleepTicks(100);
             generate_operand_read_req(
                     cur_iid,
                     mode,
@@ -602,12 +599,12 @@ void vMhdmaWorkerTask(void *pvParameters) {
         case MHDMA_CMD_PRINT_ERR:
           PLL_ERR("MhdmaWorker", "info: %08x msg cnt: %d lost: %d", rxCmd.payload, mbox_msg_cnt, mbox_msg_lost_cnt);
           //print_iop_state();
-          iOSAL_Task_SleepTicks(100);
+          iOSAL_Task_SleepTicks(10);
           break;
 
         case MHDMA_CMD_PRINT_ACK:
           PLL_ERR("MhdmaWorker", "ack: %08x", rxCmd.payload);
-          iOSAL_Task_SleepTicks(100);
+          iOSAL_Task_SleepTicks(10);
           break;
 
         default:
@@ -812,7 +809,6 @@ static void vTaskFuncMain( void )
     bool stop_consuming_iop = false;
 
     FOREVER {
-        uint32_t write_isc_rv = OK;
         // ----------------------------------------------------------------------------------------
         // Second handle IOp queue containing IOp pushed by AMI driver
         // Update queue pointer
@@ -909,26 +905,32 @@ static void vTaskFuncMain( void )
 
                 PLL_DBG("UCORE", "[HPU%d] translation will patch and push %d dops @0x%x", phys_hpu_id, dop_entry.len, dop_entry.ptr);
                 int skip = 0;
+                int dop_buffer_pos = 0;
                 // Patch and stream DOps to HW
                 for (int i=0; i< dop_entry.len; i++) {
                   dop.raw = *(dop_entry.ptr + i);
-                  if (patch_dop(&dop, &dst_bundle, &src_bundle, &imm_bundle)) {
-                    // it means current DOp was a UCORE DOp that got processed and removed from stream
-                    skip+=1;
-                    continue;
+                  uint32_t patch_rc = patch_dop(&dop, &dst_bundle, &src_bundle, &imm_bundle, dop_buffer, dop_buffer_pos);
+
+                  if (patch_rc == 0) { // classic case the DOp translated needs to go to the dop_buffer
+                    dop_buffer[(dop_buffer_pos)%DOP_BUFFER_SIZE] = dop.raw;
+                    dop_buffer_pos += 1;
+                  } else {
+                    if ((patch_rc & 0x7FFF) > 0) { // DOp has been processed and pre-translated DOp have been flushed to ISC (before wait)
+                      PLL_DBG("UCORE", "[HPU%d] translation of Dop %d done (skip %d), %d flushed so reset dop_buffer", phys_hpu_id, i, skip, patch_rc);
+                      dop_buffer_pos=0;
+                    }
+                    if ((patch_rc & 0x8000) == 0) { // DOp processed that does go to ISC
+                      dop_buffer[(dop_buffer_pos)%DOP_BUFFER_SIZE] = dop.raw;
+                      dop_buffer_pos += 1;
+                    } else {
+                      skip += 1;
+                      continue;
+                    }
                   }
-                  dop_buffer[(i-skip)%DOP_BUFFER_SIZE] = dop.raw;
 
                   // Flush buffer if full
-                  if ((((i-skip)+1) % DOP_BUFFER_SIZE) == 0) {
-                    PLL_DBG("UCORE", "flush %d value to isc (i %d, skip %d,len %d)", DOP_BUFFER_SIZE, i, skip, dop_entry.len);
-                    PLL_DBG("UCORE", "dop_buffer %x %x %x",dop_buffer[0], dop_buffer[1], dop_buffer[2]);
-                    write_isc_rv = write_isc(dop_buffer, (uint32_t) (DOP_BUFFER_SIZE * sizeof(uint32_t)));
-                    while (write_isc_rv == RETRY) {
-                        PLL_INF("UCORE", "retry flush %d value to isc (i %d, len %d)", DOP_BUFFER_SIZE, i-skip, dop_entry.len);
-                        iOSAL_Task_SleepTicks(20);
-                        write_isc_rv = write_isc(dop_buffer, (uint32_t) (DOP_BUFFER_SIZE * sizeof(uint32_t)));
-                    }
+                  if ((dop_buffer_pos % DOP_BUFFER_SIZE) == 0) {
+                    flush_dop_buffer_to_isc(dop_buffer, DOP_BUFFER_SIZE);
                   }
                 }
 
@@ -939,17 +941,12 @@ static void vTaskFuncMain( void )
                 dop_sync.sync.is_inner = 0;
                 dop_sync.sync.flag = 0;
                 dop_sync.sync._pad = 0;
-                dop_buffer[(dop_entry.len-skip) % DOP_BUFFER_SIZE] = dop_sync.raw;
+                dop_buffer[(dop_buffer_pos) % DOP_BUFFER_SIZE] = dop_sync.raw;
                 // Correctly handle full buffer flush
-                uint32_t remaining_dop = (((dop_entry.len-skip+1)%DOP_BUFFER_SIZE) == 0) ? DOP_BUFFER_SIZE : (dop_entry.len-skip+1)%DOP_BUFFER_SIZE;
+                uint32_t remaining_dop = (((dop_buffer_pos+1)%DOP_BUFFER_SIZE) == 0) ? DOP_BUFFER_SIZE : (dop_buffer_pos+1)%DOP_BUFFER_SIZE;
                 PLL_DBG("UCORE", "flush %d remaining value to isc (len %d skip %d)", remaining_dop, dop_entry.len, skip);
                 //PLL_DBG("UCORE", "dop_buffer %08x %08x %08x ... %08x %08x %08x",dop_buffer[0], dop_buffer[1], dop_buffer[2], dop_buffer[remaining_dop-2], dop_buffer[remaining_dop-1], dop_buffer[remaining_dop]);
-                write_isc_rv = write_isc(dop_buffer, (uint32_t) (remaining_dop * sizeof(uint32_t)));
-                while (write_isc_rv == RETRY) {
-                    PLL_INF("UCORE", "retry flush %d remaining value to isc", remaining_dop);
-                    iOSAL_Task_SleepTicks(20);
-                    write_isc_rv = write_isc(dop_buffer, (uint32_t) (remaining_dop * sizeof(uint32_t)));
-                }
+                flush_dop_buffer_to_isc(dop_buffer, remaining_dop);
             } else {
                 PLL_ERR("IOpQ", "Invalid IOp at %x stream ABORT dequeue (%d, %d, tail %x, head %x))", chunk_idx, chunk_size, wrap_chunk_size, iopq_tail, iopq_head);
                 for (int i =0; i < 7; i++) {
