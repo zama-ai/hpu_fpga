@@ -21,6 +21,7 @@
 #endif
 #include "ucore.h"
 #include "mhdma_driver/mhdma_driver.h"
+#include "stream_isc.h"
 #include <stdbool.h>
 
 uint8_t cur_iid = 1;
@@ -362,8 +363,6 @@ void iop_teardown(uint8_t iid) {
     remote_operand = dst_notifyq_getdst(iid);
 #ifdef UCORE_MHDMA_SIMU
     sleep(3);
-#else
-    //iOSAL_Task_SleepTicks(10);
 #endif
   }
   //flush remote source queue
@@ -373,32 +372,32 @@ void iop_teardown(uint8_t iid) {
   uint8_t dst_cnt_owned = (dst_cnts >> 8) & 0XFF;
   uint8_t dst_cnt_waiting = (dst_cnts & 0XFF);
   PLL_DBG("ucore", "[HPU%d] iop_teardown iid %d dst waiting: %d/%d iop_state %d/%d", phys_hpu_id, iid, dst_cnt_owned, dst_cnt_waiting, iop_state[iid].state, iop_state[iid].nb_hpu);
-  //iOSAL_Task_SleepTicks(10);
 
   //wait dst owned by local hpu but produced somewhere else
   //dst_store_print(iid);
   uint16_t non_resolved_owned_dst = dst_store_get_owned(iid, phys_hpu_id);
   while (non_resolved_owned_dst != 0xFFFF) {
     // wait until notify or read ct is received
-    //iOSAL_Task_SleepTicks(1);
     uint8_t tid = (non_resolved_owned_dst >> 8) & 0xFF;
     uint8_t bid = non_resolved_owned_dst & 0xFF;
-    uint8_t print = 0;
 
+    uint32_t wait_cnt = 0;
     while (dst_store.state[iid][tid][bid] != DST_STATE_RESOLVED) {
-      if (print%20 == 0) {
-        PLL_INF("ucore", "[HPU%d] iop_teardown wait on dst iop %d tid %d bid %d - being resolved",
-            phys_hpu_id,
-            iid,
-            tid,
-            bid);
-      }
-      print++;
+      //if ((wait_cnt+1)%1000 == 0) {
+      //  PLL_INF("ucore", "[HPU%d] iop_teardown wait on dst iop %d tid %d bid %d - being resolved",
+      //      phys_hpu_id,
+      //      iid,
+      //      tid,
+      //      bid);
+      //}
+      wait_cnt++;
+      if (wait_cnt > 10000) {
 #ifdef UCORE_MHDMA_SIMU
-      sleep(10);
+        sleep(10);
 #else
-      iOSAL_Task_SleepTicks(10);
+        iOSAL_Task_SleepTicks(1);
 #endif
+      }
     }
     non_resolved_owned_dst = dst_store_get_owned(iid, phys_hpu_id);
   }
@@ -409,8 +408,6 @@ void iop_teardown(uint8_t iid) {
       generate_iop_notify(iid, iop_state[iid].nb_hpu, i);
 #ifdef UCORE_MHDMA_SIMU
       sleep(1);
-#else
-      //iOSAL_Task_SleepTicks(100);
 #endif
     }
   }
@@ -516,7 +513,6 @@ uint32_t parse_iop(
       get_virt_of(phys_hpu_id, *mapping),
       iop_state[cur_iid].state,
       iop_state[cur_iid].nb_hpu);
-  //iOSAL_Task_SleepTicks(100);
   if (last_iid >= cur_iid) { // this means user SW (tfhe-rs) has been restarted
       PLL_DBG("parse_iop", "last iid: %d >= %d => reset inter-HPU struct", last_iid, cur_iid);
       mhdma_table_reset();
@@ -531,12 +527,12 @@ uint32_t parse_iop(
   uint16_t dst_cnts = dst_store_get_owned_cnt(cur_iid, phys_hpu_id);
   uint8_t dst_cnt_owned = (dst_cnts >> 8) & 0XFF;
   uint8_t dst_cnt_waiting = (dst_cnts & 0XFF);
-  PLL_ERR("parse_iop", "[HPU%d] parse_iop iop %d dst ct owned %d/%d",
+  PLL_DBG("parse_iop", "[HPU%d] parse_iop iop %d dst ct owned %d/%d",
           phys_hpu_id,
           cur_iid,
           dst_cnt_owned,
           dst_cnt_waiting);
-  dst_store_print(cur_iid);
+  //dst_store_print(cur_iid);
 
   //4. Get list of source operands
   uint32_t src_pos = 0;
@@ -669,15 +665,16 @@ uint32_t get_lookup(IOpHeader_t header, IOpMapping_t mapping, uint8_t hid, Looku
 // Patch templated memory instruction
 // NB: IOp have variable destination and source operands
 // TODO Add error handling for out_of_range patching
-void patch_mem_dop(DOpu_t *dop, OperandBundle_t *iop_dst, OperandBundle_t *iop_src) {
-  PLL_INF("patch_mem_dop", "[HPU%d] dop %08X opcode %d dop->mem.mode %d dop->mem.slot %04X tid %d bid %d",
-          phys_hpu_id,
-          dop->raw,
-          dop->mem.opcode,
-          dop->mem.mode,
-          dop->mem.slot,
-          (dop->mem.slot >> 8) & 0xff,
-          dop->mem.slot & 0xff);
+int patch_mem_dop(DOpu_t *dop, OperandBundle_t *iop_dst, OperandBundle_t *iop_src, uint32_t *dop_buffer, int dop_buffer_pos) {
+  int return_value = 0;
+  //PLL_INF("patch_mem_dop", "[HPU%d] dop %08X opcode %d dop->mem.mode %d dop->mem.slot %04X tid %d bid %d",
+  //        phys_hpu_id,
+  //        dop->raw,
+  //        dop->mem.opcode,
+  //        dop->mem.mode,
+  //        dop->mem.slot,
+  //        (dop->mem.slot >> 8) & 0xff,
+  //        dop->mem.slot & 0xff);
 
   switch (dop->mem.mode) {
     case MEM_ADDR: { // Already an explicit ADDR -> No need to patch
@@ -730,25 +727,32 @@ void patch_mem_dop(DOpu_t *dop, OperandBundle_t *iop_dst, OperandBundle_t *iop_s
         } else {
           src_store.state[cur_iid][tid][bid] = OPERAND_STATE_READ_PENDING;
         }
-        uint8_t print = 0;
 
+        // if we need to wait, flush
+        if ((dop_buffer_pos%DOP_BUFFER_SIZE) > MIN_DOP_FLUSH && src_store.state[cur_iid][tid][bid] != OPERAND_STATE_RESOLVED) {
+          flush_dop_buffer_to_isc(dop_buffer, (dop_buffer_pos%DOP_BUFFER_SIZE));
+          return_value = (dop_buffer_pos%DOP_BUFFER_SIZE);
+        }
+        uint32_t wait_cnt = 0;
         while (src_store.state[cur_iid][tid][bid] != OPERAND_STATE_RESOLVED) {
           // wait until notify or read ct is received
-          if (print%20 == 0) {
-            PLL_INF("ucore", "[HPU%d] iop %d wait on remote src - src_iid %d src_hpu_id %d src_cid %d tg %d",
-                phys_hpu_id,
-                cur_iid,
-                src_iid,
-                src_hpu_id,
-                src_cid,
-                target_cid);
-          }
-          print++;
+          //if ((wait_cnt+1)%1000 == 0) {
+          //  PLL_INF("ucore", "[HPU%d] iop %d wait on remote src - src_iid %d src_hpu_id %d src_cid %d tg %d",
+          //      phys_hpu_id,
+          //      cur_iid,
+          //      src_iid,
+          //      src_hpu_id,
+          //      src_cid,
+          //      target_cid);
+          //}
+          wait_cnt++;
+          if (wait_cnt > 10000) {
 #ifdef UCORE_MHDMA_SIMU
-          sleep(10);
+            sleep(10);
 #else
-          iOSAL_Task_SleepTicks(10);
+            iOSAL_Task_SleepTicks(1);
 #endif
+          }
         }
         dop->mem.slot = src_store.dst_cid[cur_iid][tid][bid];
       }
@@ -758,7 +762,7 @@ void patch_mem_dop(DOpu_t *dop, OperandBundle_t *iop_dst, OperandBundle_t *iop_s
       // Replace mem (tid,bid) by concrete addr and toggle the mode
       uint8_t tid = (dop->mem.slot >> 8) & 0xff;
       uint8_t bid = dop->mem.slot & 0xff;
-      if (iop_src->operand[tid].pos == phys_hpu_id) {
+      if (iop_dst->operand[tid].pos == phys_hpu_id) {
         // local access
         dop->mem.slot = iop_dst->operand[tid].cid_ofst + bid;
         dst_store.state[cur_iid][tid][bid] = DST_STATE_RESOLVED;
@@ -782,16 +786,17 @@ void patch_mem_dop(DOpu_t *dop, OperandBundle_t *iop_dst, OperandBundle_t *iop_s
         remote_dst->state = OPERAND_STATE_NONE;
         remote_dst->target_cid = dst_cid;
 
-        PLL_DBG("patch_mem_dop", "[HPU%d] dst store iid %d pos %d src(b2b) %d dst %d(%d/%d) target %d",
-                phys_hpu_id,
-                cur_iid,
-                dst_hpu_id,
-                remote_dst->src_cid,
-                remote_dst->dst_cid,
-                tid,
-                bid,
-                remote_dst->target_cid);
+        //PLL_DBG("patch_mem_dop", "[HPU%d] dst store iid %d pos %d src(b2b) %d dst %d(%d/%d) target %d",
+        //        phys_hpu_id,
+        //        cur_iid,
+        //        dst_hpu_id,
+        //        remote_dst->src_cid,
+        //        remote_dst->dst_cid,
+        //        tid,
+        //        bid,
+        //        remote_dst->target_cid);
 
+        // add sync to notify DST asap !!
         dop->mem.slot = local_cid;
         //dst_notifyq_print(cur_iid);
       }
@@ -799,6 +804,7 @@ void patch_mem_dop(DOpu_t *dop, OperandBundle_t *iop_dst, OperandBundle_t *iop_s
       break;
     }
   }
+  return return_value;
 }
 
 // Patch arith message instruction
@@ -844,8 +850,9 @@ uint16_t get_raw_ct_id(DOpu_t *dop) {
 
 
 // Process ucore instructions
-int process_ucore_dop(DOpu_t *dop) {
-  PLL_DBG("process_ucore_dop", "[HPU%d] %08x", phys_hpu_id, dop->raw);
+int process_ucore_dop(DOpu_t *dop, uint32_t *dop_buffer, int dop_buffer_pos) {
+  int return_value = 0;
+  //PLL_DBG("process_ucore_dop", "[HPU%d] %08x", phys_hpu_id, dop->raw);
   uint8_t current_flag = dop->ucore.flag;
   switch (dop->ucore.opcode & 0xF) {
     case DOPS_NOTIFY: {
@@ -867,22 +874,31 @@ int process_ucore_dop(DOpu_t *dop) {
     }
     case DOPS_WAIT: {
       bool data_required = (dop->ucore.hid != 0);
-      uint8_t print_one = 0;
+      // if we need to wait, flush
+      if ((dop_buffer_pos%DOP_BUFFER_SIZE) > MIN_DOP_FLUSH
+          && ((data_required && mhdma_table_state[cur_iid][current_flag] < MHDMA_STATE_RESOLVED)
+          || (!data_required && mhdma_table_state[cur_iid][current_flag] < MHDMA_STATE_RECEIVED))) {
+        flush_dop_buffer_to_isc(dop_buffer, (dop_buffer_pos%DOP_BUFFER_SIZE));
+        return_value = (dop_buffer_pos%DOP_BUFFER_SIZE);
+      }
+      uint32_t wait_cnt = 0;
       while (  (data_required && mhdma_table_state[cur_iid][current_flag] < MHDMA_STATE_RESOLVED)
             || (!data_required && mhdma_table_state[cur_iid][current_flag] < MHDMA_STATE_RECEIVED) ) {
         // wait until notify or read ct is received
-        if (print_one%20 == 0) {
-          PLL_INF("ucore", "[HPU%d] dop wait on iop_id %d flag %d state %d", phys_hpu_id, cur_iid, dop->ucore.flag, mhdma_table_state[cur_iid][current_flag]);
-        }
-        print_one++;
+        //if ((wait_cnt+1)%1000 == 0) {
+        //  PLL_DBG("ucore", "[HPU%d] dop wait on iop_id %d flag %d state %d", phys_hpu_id, cur_iid, dop->ucore.flag, mhdma_table_state[cur_iid][current_flag]);
+        //}
+        wait_cnt++;
+        if (wait_cnt > 10000) {
 #ifdef UCORE_MHDMA_SIMU
-        sleep(10);
+          sleep(10);
 #else
-        iOSAL_Task_SleepTicks(10);
+          iOSAL_Task_SleepTicks(1);
 #endif
+        }
       }
+      return_value = 0x8000 | return_value;
       // This DOp needs to be removed from DOp stream given to ISC
-      return 1;
       break;
     }
     case DOPS_LD_B2B: {
@@ -894,20 +910,31 @@ int process_ucore_dop(DOpu_t *dop) {
         case MHDMA_STATE_RESOLVED: break; // nothing to do
         case MHDMA_STATE_RECEIVED: { // must read asap
           mhdma_table_state[cur_iid][current_flag] = MHDMA_STATE_READING;
-          generate_read_req(cur_iid, dop->ucore.flag);
+          PLL_DBG("process_ucore_dop", "[HPU%d] generate user read on iid %d flag %d (%04x -> %04x)",
+                  phys_hpu_id,
+                  cur_iid,
+                  current_flag,
+                  current_elt->src_ct_id,
+                  current_elt->dst_ct_id);
+          generate_read_req(cur_iid, current_flag);
           break;
         }
         default: { // must wait for notify
           mhdma_table_state[cur_iid][current_flag] = MHDMA_STATE_LB2B_WAITING;
+          PLL_DBG("process_ucore_dop", "[HPU%d] ld b2b waiting on iid %d flag %d (?? -> %04x)",
+                  phys_hpu_id,
+                  cur_iid,
+                  current_flag,
+                  current_elt->dst_ct_id);
           break;
         }
       }
       // This DOp needs to be removed from DOp stream given to ISC
-      return 1;
+      return_value = 0x8000;
       break;
     }
   }
-  return 0;
+  return return_value;
 }
 
 // Global template patching
@@ -917,12 +944,15 @@ int process_ucore_dop(DOpu_t *dop) {
 int patch_dop(DOpu_t *dop,
                OperandBundle_t *dst,
                OperandBundle_t *src,
-               ImmediatBundle_t *imm) {
+               ImmediatBundle_t *imm,
+               uint32_t *dop_buffer,
+               int dop_buffer_pos) {
   DOpKind_t kind = get_kind(dop);
+  int return_value = 0;
 
   switch (kind) {
     case DOPK_MEM: {
-      patch_mem_dop(dop, dst, src);
+      return_value = patch_mem_dop(dop, dst, src, dop_buffer, dop_buffer_pos);
       break;
     }
     case DOPK_ARITH: {
@@ -933,16 +963,14 @@ int patch_dop(DOpu_t *dop,
       break;
     }
     case DOPK_UCORE: {
-      if (process_ucore_dop(dop)) {
-        return 1;
-      }
+      return_value = process_ucore_dop(dop, dop_buffer, dop_buffer_pos);
       break;
     }
     case DOPK_PBS: { // Nothing to do
       break;
     }
   }
-  return 0;
+  return return_value;
 }
 
 // Utilites function

@@ -58,6 +58,7 @@
 // WARN seems to have limitation on isc_write
 #define DOP_BUFFER_LOG2_SIZE 8
 #define DOP_BUFFER_SIZE (1 << DOP_BUFFER_LOG2_SIZE)
+#define MIN_DOP_FLUSH 10
 
 // Local Ack -> IOp lookup
 #define ACK_IOP_DEPTH 256
@@ -181,12 +182,14 @@ uint32_t parse_iop(
      OperandBundle_t* src,
      ImmediatBundle_t* imm);
 uint32_t get_lookup(IOpHeader_t header, IOpMapping_t mapping, uint8_t hid, Lookup_t* lookup);
-void patch_mem_dop(DOpu_t *dop, OperandBundle_t *iop_dst, OperandBundle_t *iop_src);
+int patch_mem_dop(DOpu_t *dop, OperandBundle_t *iop_dst, OperandBundle_t *iop_src, uint32_t *dop_buffer, int dop_buffer_pos);
 void patch_imm_dop(DOpu_t *dop, ImmediatBundle_t *iop_imm);
 int patch_dop(DOpu_t *dop,
                OperandBundle_t *dst,
                OperandBundle_t *src,
-               ImmediatBundle_t *imm);
+               ImmediatBundle_t *imm,
+               uint32_t *dop_buffer,
+               int dop_buffer_pos);
 DOpKind_t get_kind(DOpu_t *dop);
 DOpSync_t get_sync_opcode(DOpu_t *dop);
 
