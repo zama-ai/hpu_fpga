@@ -911,26 +911,20 @@ static void vTaskFuncMain( void )
                   dop.raw = *(dop_entry.ptr + i);
                   uint32_t patch_rc = patch_dop(&dop, &dst_bundle, &src_bundle, &imm_bundle, dop_buffer, dop_buffer_pos);
 
-                  if (patch_rc == 0) { // classic case the DOp translated needs to go to the dop_buffer
-                    dop_buffer[(dop_buffer_pos)%DOP_BUFFER_SIZE] = dop.raw;
-                    dop_buffer_pos += 1;
-                  } else {
-                    if ((patch_rc & 0x7FFF) > 0) { // DOp has been processed and pre-translated DOp have been flushed to ISC (before wait)
-                      PLL_DBG("UCORE", "[HPU%d] translation of Dop %d done (skip %d), %d flushed so reset dop_buffer", phys_hpu_id, i, skip, patch_rc);
-                      dop_buffer_pos=0;
-                    }
-                    if ((patch_rc & 0x8000) == 0) { // DOp processed that does go to ISC
-                      dop_buffer[(dop_buffer_pos)%DOP_BUFFER_SIZE] = dop.raw;
-                      dop_buffer_pos += 1;
-                    } else {
-                      skip += 1;
-                      continue;
-                    }
+                  if ((patch_rc & 0x7FFF) > 0) { // DOp has been processed and pre-translated DOp have been flushed to ISC (before wait)
+                    PLL_DBG("UCORE", "[HPU%d] translation of Dop %d (%08x) done (skip %d), %d flushed so reset dop_buffer", phys_hpu_id, i, dop.raw, skip, patch_rc);
+                    dop_buffer_pos=0;
                   }
 
-                  // Flush buffer if full
-                  if ((dop_buffer_pos % DOP_BUFFER_SIZE) == 0) {
-                    flush_dop_buffer_to_isc(dop_buffer, DOP_BUFFER_SIZE);
+                  if ((patch_rc & 0x8000) == 0) { // classic case the DOp translated needs to go to the dop_buffer
+                    dop_buffer[(dop_buffer_pos)%DOP_BUFFER_SIZE] = dop.raw;
+                    dop_buffer_pos += 1;
+                    // Flush buffer if full
+                    if ((dop_buffer_pos % DOP_BUFFER_SIZE) == 0) {
+                      flush_dop_buffer_to_isc(dop_buffer, DOP_BUFFER_SIZE);
+                    }
+                  } else { // processed DOp needs to be dropped
+                    skip += 1;
                   }
                 }
 

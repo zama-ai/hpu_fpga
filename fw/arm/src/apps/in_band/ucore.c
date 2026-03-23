@@ -213,11 +213,11 @@ RemoteOperand_t *dst_notifyq_find(uint8_t iid, uint8_t dst_hpu_id, uint16_t dst_
 src_store_t src_store;
 
 void src_store_init(void) {
-  memset(src_store.state, OPERAND_STATE_READ_PENDING, sizeof(src_store.state));
+  memset(src_store.state, OPERAND_STATE_NONE, sizeof(src_store.state));
 }
 
 void src_store_reset_iop(uint8_t iid) {
-  memset(src_store.state[iid], OPERAND_STATE_READ_PENDING, sizeof(src_store.state[iid]));
+  memset(src_store.state[iid], OPERAND_STATE_NONE, sizeof(src_store.state[iid]));
 }
 
 void src_store_inits(uint8_t iid, OperandBundle_t *iop_src) {
@@ -350,14 +350,14 @@ void iop_teardown(uint8_t iid) {
   //flush dst_notifyq
   RemoteOperand_t *remote_operand = dst_notifyq_getdst(iid);
   while (remote_operand != NULL) {
-    PLL_DBG("ucore", "[HPU%d] iop_teardown remote_operand iid %d pos %d state %d src %d dst %04x target %d",
-        phys_hpu_id,
-        iid,
-        remote_operand->pos,
-        remote_operand->state,
-        remote_operand->src_cid,
-        remote_operand->dst_cid,
-        remote_operand->target_cid);
+    //PLL_DBG("ucore", "[HPU%d] iop_teardown remote_operand iid %d pos %d state %d src %d dst %04x target %d",
+    //    phys_hpu_id,
+    //    iid,
+    //    remote_operand->pos,
+    //    remote_operand->state,
+    //    remote_operand->src_cid,
+    //    remote_operand->dst_cid,
+    //    remote_operand->target_cid);
     remote_operand->state = OPERAND_STATE_READ_PENDING;
     generate_ucore_notify(iid, remote_operand->pos, remote_operand->src_cid, remote_operand->dst_cid, remote_operand->target_cid);
     remote_operand = dst_notifyq_getdst(iid);
@@ -658,7 +658,72 @@ uint32_t get_lookup(IOpHeader_t header, IOpMapping_t mapping, uint8_t hid, Looku
   return 0;
 }
 
+int read_remote_src(int blocking, OperandBundle_t *iop_src, uint8_t tid, uint8_t bid, uint32_t *dop_buffer, int dop_buffer_pos) {
+  int return_value = 0;
+  // remote source
+  uint8_t src_iid = iop_src->operand[tid].iid;
+  uint8_t src_hpu_id = iop_src->operand[tid].pos;
+  uint16_t src_cid = iop_src->operand[tid].cid_ofst + bid;
+  uint16_t target_cid = (tid << 8) | bid;
 
+  if (src_store.state[cur_iid][tid][bid] == OPERAND_STATE_NONE) {
+    uint16_t dst_cid = b2b_pool_pop(cur_iid);
+    if (dst_cid == 0xFFFF) {
+      PLL_ERR("patch_mem_dop", "Could not get a free slot in b2b_pool (%04x,%04x,%d)", b2b_pool_head, b2b_pool_tail, b2b_pool_free_cnt);
+    }
+    src_store.dst_cid[cur_iid][tid][bid] = dst_cid;
+    PLL_DBG("ucore", "[HPU%d] iop %d need remote src - src_iid %d src_hpu_id %d src_cid %d dst_cid %d",
+        phys_hpu_id,
+        cur_iid,
+        src_iid,
+        src_hpu_id,
+        src_cid,
+        dst_cid);
+    src_store.state[cur_iid][tid][bid] = OPERAND_STATE_READ_PENDING;
+  }
+  // issue read immediately if src comes from a done iop or if iid = 0 which means src is coming from Host
+  if ((iop_state[src_iid].state == IOP_STATE_DONE || src_iid == 0) && src_store.state[cur_iid][tid][bid] == OPERAND_STATE_READ_PENDING) {
+    src_store.state[cur_iid][tid][bid] = OPERAND_STATE_DMA_PENDING;
+    generate_operand_read_req(
+            src_iid,
+            CMD_SRC,
+            src_hpu_id,
+            src_cid,
+            src_store.dst_cid[cur_iid][tid][bid],
+            target_cid);
+  }
+
+  if (blocking == 1) {
+    // if we need to wait, flush
+    if ((dop_buffer_pos%DOP_BUFFER_SIZE) > MIN_DOP_FLUSH && src_store.state[cur_iid][tid][bid] != OPERAND_STATE_RESOLVED) {
+      flush_dop_buffer_to_isc(dop_buffer, (dop_buffer_pos%DOP_BUFFER_SIZE));
+      return_value = (dop_buffer_pos%DOP_BUFFER_SIZE);
+    }
+    uint32_t wait_cnt = 0;
+    while (src_store.state[cur_iid][tid][bid] != OPERAND_STATE_RESOLVED) {
+      // wait until notify or read ct is received
+      if ((wait_cnt+1)%1000 == 0) {
+        PLL_DBG("ucore", "[HPU%d] iop %d wait on remote src - src_iid %d src_hpu_id %d src_cid %d tg %d",
+            phys_hpu_id,
+            cur_iid,
+            src_iid,
+            src_hpu_id,
+            src_cid,
+            target_cid);
+      }
+      wait_cnt++;
+      if (wait_cnt > 10000) {
+#ifdef UCORE_MHDMA_SIMU
+        sleep(10);
+#else
+        iOSAL_Task_SleepTicks(1);
+#endif
+      }
+    }
+  }
+
+  return return_value;
+}
 
 // Patching function
 // ============================================================================================= //
@@ -695,65 +760,16 @@ int patch_mem_dop(DOpu_t *dop, OperandBundle_t *iop_dst, OperandBundle_t *iop_sr
         dop->mem.slot = iop_src->operand[tid].cid_ofst + bid;
         src_store.state[cur_iid][tid][bid] = OPERAND_STATE_RESOLVED;
       } else {
-        // remote source
-        uint8_t src_iid = iop_src->operand[tid].iid;
-        uint8_t src_hpu_id = iop_src->operand[tid].pos;
-        uint16_t src_cid = iop_src->operand[tid].cid_ofst + bid;
+        // blocking read on LD
+        return_value = read_remote_src(1, iop_src, tid, bid, dop_buffer, dop_buffer_pos);
+        //PLL_DBG("patch_mem_dop", "[HPU%d] iid %d LD SRC %d %d -> r%d (from %04x)",
+        //        phys_hpu_id,
+        //        cur_iid,
+        //        tid,
+        //        bid,
+        //        dop->mem.rid,
+        //        src_store.dst_cid[cur_iid][tid][bid]);
 
-        uint16_t dst_cid = b2b_pool_pop(cur_iid);
-        if (dst_cid == 0xFFFF) {
-          PLL_ERR("patch_mem_dop", "Could not get a free slot in b2b_pool (%04x,%04x,%d)", b2b_pool_head, b2b_pool_tail, b2b_pool_free_cnt);
-          break;
-        }
-        src_store.dst_cid[cur_iid][tid][bid] = dst_cid;
-        uint16_t target_cid = (tid << 8) | bid;
-        //PLL_INF("ucore", "[HPU%d] iop %d need remote src - src_iid %d src_hpu_id %d src_cid %d dst_cid %d",
-        //    phys_hpu_id,
-        //    cur_iid,
-        //    src_iid,
-        //    src_hpu_id,
-        //    src_cid,
-        //    dst_cid);
-        // issue read immediately if src comes from a done iop or if iid = 0 which means src is coming from Host
-        if (iop_state[src_iid].state == IOP_STATE_DONE || src_iid == 0) {
-          src_store.state[cur_iid][tid][bid] = OPERAND_STATE_DMA_PENDING;
-          generate_operand_read_req(
-                  src_iid,
-                  CMD_SRC,
-                  src_hpu_id,
-                  src_cid,
-                  src_store.dst_cid[cur_iid][tid][bid],
-                  target_cid);
-        } else {
-          src_store.state[cur_iid][tid][bid] = OPERAND_STATE_READ_PENDING;
-        }
-
-        // if we need to wait, flush
-        if ((dop_buffer_pos%DOP_BUFFER_SIZE) > MIN_DOP_FLUSH && src_store.state[cur_iid][tid][bid] != OPERAND_STATE_RESOLVED) {
-          flush_dop_buffer_to_isc(dop_buffer, (dop_buffer_pos%DOP_BUFFER_SIZE));
-          return_value = (dop_buffer_pos%DOP_BUFFER_SIZE);
-        }
-        uint32_t wait_cnt = 0;
-        while (src_store.state[cur_iid][tid][bid] != OPERAND_STATE_RESOLVED) {
-          // wait until notify or read ct is received
-          //if ((wait_cnt+1)%1000 == 0) {
-          //  PLL_INF("ucore", "[HPU%d] iop %d wait on remote src - src_iid %d src_hpu_id %d src_cid %d tg %d",
-          //      phys_hpu_id,
-          //      cur_iid,
-          //      src_iid,
-          //      src_hpu_id,
-          //      src_cid,
-          //      target_cid);
-          //}
-          wait_cnt++;
-          if (wait_cnt > 10000) {
-#ifdef UCORE_MHDMA_SIMU
-            sleep(10);
-#else
-            iOSAL_Task_SleepTicks(1);
-#endif
-          }
-        }
         dop->mem.slot = src_store.dst_cid[cur_iid][tid][bid];
       }
       break;
@@ -850,9 +866,9 @@ uint16_t get_raw_ct_id(DOpu_t *dop) {
 
 
 // Process ucore instructions
-int process_ucore_dop(DOpu_t *dop, uint32_t *dop_buffer, int dop_buffer_pos) {
+int process_ucore_dop(DOpu_t *dop, OperandBundle_t *iop_src, uint32_t *dop_buffer, int dop_buffer_pos) {
   int return_value = 0;
-  //PLL_DBG("process_ucore_dop", "[HPU%d] %08x", phys_hpu_id, dop->raw);
+  PLL_DBG("process_ucore_dop", "[HPU%d] %08x", phys_hpu_id, dop->raw);
   uint8_t current_flag = dop->ucore.flag;
   switch (dop->ucore.opcode & 0xF) {
     case DOPS_NOTIFY: {
@@ -874,6 +890,8 @@ int process_ucore_dop(DOpu_t *dop, uint32_t *dop_buffer, int dop_buffer_pos) {
     }
     case DOPS_WAIT: {
       bool data_required = (dop->ucore.hid != 0);
+      PLL_DBG("ucore", "[HPU%d] process wait %08x on iop_id %d flag %d state %d", phys_hpu_id, dop->raw, cur_iid, dop->ucore.flag, mhdma_table_state[cur_iid][current_flag]);
+      //iOSAL_Task_SleepTicks(100);
       // if we need to wait, flush
       if ((dop_buffer_pos%DOP_BUFFER_SIZE) > MIN_DOP_FLUSH
           && ((data_required && mhdma_table_state[cur_iid][current_flag] < MHDMA_STATE_RESOLVED)
@@ -885,9 +903,9 @@ int process_ucore_dop(DOpu_t *dop, uint32_t *dop_buffer, int dop_buffer_pos) {
       while (  (data_required && mhdma_table_state[cur_iid][current_flag] < MHDMA_STATE_RESOLVED)
             || (!data_required && mhdma_table_state[cur_iid][current_flag] < MHDMA_STATE_RECEIVED) ) {
         // wait until notify or read ct is received
-        //if ((wait_cnt+1)%1000 == 0) {
-        //  PLL_DBG("ucore", "[HPU%d] dop wait on iop_id %d flag %d state %d", phys_hpu_id, cur_iid, dop->ucore.flag, mhdma_table_state[cur_iid][current_flag]);
-        //}
+        if ((wait_cnt+1)%1000 == 0) {
+          PLL_DBG("ucore", "[HPU%d] dop wait on iop_id %d flag %d state %d", phys_hpu_id, cur_iid, dop->ucore.flag, mhdma_table_state[cur_iid][current_flag]);
+        }
         wait_cnt++;
         if (wait_cnt > 10000) {
 #ifdef UCORE_MHDMA_SIMU
@@ -897,40 +915,51 @@ int process_ucore_dop(DOpu_t *dop, uint32_t *dop_buffer, int dop_buffer_pos) {
 #endif
         }
       }
-      return_value = 0x8000 | return_value;
       // This DOp needs to be removed from DOp stream given to ISC
+      return_value = 0x8000 | return_value;
       break;
     }
     case DOPS_LD_B2B: {
-      mhdma_element_t *current_elt = &mhdma_table[cur_iid][current_flag];
-      uint16_t raw_ct_id = get_raw_ct_id(dop);
-      current_elt->dst_ct_id = raw_ct_id;
-      current_elt->master_hpu_id = phys_hpu_id;
-      switch (mhdma_table_state[cur_iid][current_flag]) {
-        case MHDMA_STATE_RESOLVED: break; // nothing to do
-        case MHDMA_STATE_RECEIVED: { // must read asap
-          mhdma_table_state[cur_iid][current_flag] = MHDMA_STATE_READING;
-          PLL_DBG("process_ucore_dop", "[HPU%d] generate user read on iid %d flag %d (%04x -> %04x)",
-                  phys_hpu_id,
-                  cur_iid,
-                  current_flag,
-                  current_elt->src_ct_id,
-                  current_elt->dst_ct_id);
-          generate_read_req(cur_iid, current_flag);
-          break;
+      if (current_flag > 0) { // F0 is reserved for pre-load of sources
+        mhdma_element_t *current_elt = &mhdma_table[cur_iid][current_flag];
+        uint16_t raw_ct_id = get_raw_ct_id(dop);
+        current_elt->dst_ct_id = raw_ct_id;
+        current_elt->master_hpu_id = phys_hpu_id;
+        switch (mhdma_table_state[cur_iid][current_flag]) {
+          case MHDMA_STATE_RESOLVED: break; // nothing to do
+          case MHDMA_STATE_RECEIVED: { // must read asap
+            mhdma_table_state[cur_iid][current_flag] = MHDMA_STATE_READING;
+            PLL_DBG("process_ucore_dop", "[HPU%d] generate user read on iid %d flag %d (%04x -> %04x)",
+                    phys_hpu_id,
+                    cur_iid,
+                    current_flag,
+                    current_elt->src_ct_id,
+                    current_elt->dst_ct_id);
+            generate_read_req(cur_iid, current_flag);
+            break;
+          }
+          default: { // must wait for notify
+            mhdma_table_state[cur_iid][current_flag] = MHDMA_STATE_LB2B_WAITING;
+            PLL_DBG("process_ucore_dop", "[HPU%d] ld b2b waiting on iid %d flag %d (?? -> %04x)",
+                    phys_hpu_id,
+                    cur_iid,
+                    current_flag,
+                    current_elt->dst_ct_id);
+            break;
+          }
         }
-        default: { // must wait for notify
-          mhdma_table_state[cur_iid][current_flag] = MHDMA_STATE_LB2B_WAITING;
-          PLL_DBG("process_ucore_dop", "[HPU%d] ld b2b waiting on iid %d flag %d (?? -> %04x)",
-                  phys_hpu_id,
-                  cur_iid,
-                  current_flag,
-                  current_elt->dst_ct_id);
-          break;
+      } else { // this is a remote src
+        if (dop->ucore.mode != MEM_HEAP) {
+          PLL_ERR("process_ucore_dop", "[HPU%d] ","LD_B2B with flag 0 but not about a source!! %08x", dop->raw);
+        } else {
+          uint8_t tid = (dop->ucore.slot >> 8) & 0xff;
+          uint8_t bid = dop->ucore.slot & 0xff;
+          // non-blocking read on LD_B2B
+          return_value = read_remote_src(0, iop_src, tid, bid, dop_buffer, dop_buffer_pos);
         }
       }
       // This DOp needs to be removed from DOp stream given to ISC
-      return_value = 0x8000;
+      return_value = 0x8000 | return_value;
       break;
     }
   }
@@ -963,7 +992,7 @@ int patch_dop(DOpu_t *dop,
       break;
     }
     case DOPK_UCORE: {
-      return_value = process_ucore_dop(dop, dop_buffer, dop_buffer_pos);
+      return_value = process_ucore_dop(dop, src, dop_buffer, dop_buffer_pos);
       break;
     }
     case DOPK_PBS: { // Nothing to do
