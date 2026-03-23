@@ -122,18 +122,18 @@ package mhdma_pkg;
 
   // => Request Fifos
   localparam int REQ_MEMORY_TYPE       = "distributed";
-  localparam int REQ_FIFO_DEPTH        = XPM_MIN_FIFO_DEPTH;
+  localparam int REQ_FIFO_DEPTH        = 64;
   localparam int REQ_DATA_COUNT_W      =  $clog2(REQ_FIFO_DEPTH)+1;
 
   // => decoder reception fifo. Must be greater than Command fifos
-  localparam int RX_FIFO_DEPTH = 64;
+  localparam int RX_FIFO_DEPTH = 128;
 
   // Notify RX payload: (distributed)
   localparam int NRX_DEPTH             = 4; //TOREVIEW
   localparam int NRX_RAM_LATENCY       = 1;
 
   // read request command queue: (distributed)
-  localparam int RREQ_CMD_DEPTH        = XPM_MIN_FIFO_DEPTH;
+  localparam int RREQ_CMD_DEPTH        = REQ_FIFO_DEPTH;
   localparam int RREQ_CMD_RAM_LATENCY  = 1;
 
   // => Ciphertext Emission: (Block RAM)
