@@ -122,11 +122,11 @@ package mhdma_pkg;
 
   // => Request Fifos
   localparam int REQ_MEMORY_TYPE       = "distributed";
-  localparam int REQ_FIFO_DEPTH        = 64;
+  localparam int REQ_FIFO_DEPTH        = 128;
   localparam int REQ_DATA_COUNT_W      =  $clog2(REQ_FIFO_DEPTH)+1;
 
   // => decoder reception fifo. Must be greater than Command fifos
-  localparam int RX_FIFO_DEPTH = 128;
+  localparam int RX_FIFO_DEPTH = 2*REQ_FIFO_DEPTH;
 
   // Notify RX payload: (distributed)
   localparam int NRX_DEPTH             = 4; //TOREVIEW
@@ -208,6 +208,8 @@ package mhdma_pkg;
   } slave_error_t;
 
   typedef struct packed {
+    logic              rrqq_cmd_ovf_error;
+    logic              nrqq_cmd_ovf_error;
     logic              seq_num_error;
     logic [ETH_PC-1:0] write_error;
   } master_error_t;
