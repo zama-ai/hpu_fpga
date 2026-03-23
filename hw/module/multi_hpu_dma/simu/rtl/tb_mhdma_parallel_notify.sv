@@ -530,13 +530,12 @@ logic [HPU_NB-1:0][ETH_PC-1:0]                          axi4_ct_rready;
         end
       join
 
-      repeat(300) @(posedge clk_control);
-
-      // checking
+      // checking — wait for interrupt before each read so we never read stale data
       fork
         begin
           for (int i = 0; i < random_iter; i++) begin
-            // HPU A: read ADDR first (no pop), then ID (pops the FIFO)
+            // HPU A: wait for notify FIFO non-empty, then read ADDR (no pop) + ID (pops)
+            wait(interrupt_notify[0]);
             gen_maxil_if[0].maxil_if.read_trans(MHDMA_REQUEST_NOTIFY_REQ_ADDR_OFS, notify_req_addr_rd[0]);
             gen_maxil_if[0].maxil_if.read_trans(MHDMA_REQUEST_NOTIFY_REQ_ID_OFS,   notify_req_id_rd[0]);
             {notify_req_id_expected[0], notify_req_addr_expected[0]} = notify_b_ref_q.pop_front();
@@ -554,7 +553,8 @@ logic [HPU_NB-1:0][ETH_PC-1:0]                          axi4_ct_rready;
 
         begin
           for (int i = 0; i < random_iter; i++) begin
-            // HPU B: read ADDR first (no pop), then ID (pops the FIFO)
+            // HPU B: wait for notify FIFO non-empty, then read ADDR (no pop) + ID (pops)
+            wait(interrupt_notify[1]);
             gen_maxil_if[1].maxil_if.read_trans(MHDMA_REQUEST_NOTIFY_REQ_ADDR_OFS, notify_req_addr_rd[1]);
             gen_maxil_if[1].maxil_if.read_trans(MHDMA_REQUEST_NOTIFY_REQ_ID_OFS,   notify_req_id_rd[1]);
             {notify_req_id_expected[1], notify_req_addr_expected[1]} = notify_a_ref_q.pop_front();
@@ -571,6 +571,9 @@ logic [HPU_NB-1:0][ETH_PC-1:0]                          axi4_ct_rready;
         end
       join
     end
+
+    // wait for last notify ack counter to propagate through CDC before reading stats
+    repeat(100) @(posedge clk_control);
 
     gen_maxil_if[0].maxil_if.read_trans(MHDMA_REQUEST_STAT_NOTIFY_OFS,     stat_notify[0]);
     gen_maxil_if[0].maxil_if.read_trans(MHDMA_REQUEST_STAT_NOTIFY_ACK_OFS, stat_notify_ack[0]);

@@ -755,6 +755,7 @@ module tb_mhdma_errors;
       repeat(200) @(posedge clk_mhdma_cfg);
       maxil_drv.read_trans(MHDMA_SYSTEM_ERRORS_OFS, reg_error);
       errors_t = mhdma_error_t'(reg_error);
+      $display("%t > Error register value :  0x%08b", $time, reg_error);
 
       assert (errors_t.master_error.rrqq_cmd_ovf_error) else begin
         $display("%t > [ERROR] rrqq_cmd_ovf_error not triggered", $time);
@@ -780,6 +781,7 @@ module tb_mhdma_errors;
       repeat(200) @(posedge clk_mhdma_cfg);
       maxil_drv.read_trans(MHDMA_SYSTEM_ERRORS_OFS, reg_error);
       errors_t = mhdma_error_t'(reg_error);
+      $display("%t > Error register value :  0x%08b", $time, reg_error);
 
       assert (errors_t.master_error.nrqq_cmd_ovf_error) else begin
         $display("%t > [ERROR] nrqq_cmd_ovf_error not triggered", $time);
