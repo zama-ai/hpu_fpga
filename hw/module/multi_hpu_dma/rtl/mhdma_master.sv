@@ -1343,7 +1343,33 @@ module mhdma_master
     end
   end
 
-  assign master_error = {seq_num_error, write_error};
+  // rrqq/nrqq command FIFO overflow: sticky, set when FIFO is full and a push is attempted
+  logic rrqq_cmd_ovf_error;
+  logic nrqq_cmd_ovf_error;
+
+  always_ff @(posedge clk_mhdma) begin
+    if (~resetn_mhdma) begin
+      rrqq_cmd_ovf_error <= 1'b0;
+    end else begin
+      if (rst_errors)
+        rrqq_cmd_ovf_error <= 1'b0;
+      else if (rrqq_data_vld & ~rrqq_in_rdy)
+        rrqq_cmd_ovf_error <= 1'b1;
+    end
+  end
+
+  always_ff @(posedge clk_mhdma) begin
+    if (~resetn_mhdma) begin
+      nrqq_cmd_ovf_error <= 1'b0;
+    end else begin
+      if (rst_errors)
+        nrqq_cmd_ovf_error <= 1'b0;
+      else if (nrqq_data_vld & ~nrqq_in_rdy)
+        nrqq_cmd_ovf_error <= 1'b1;
+    end
+  end
+
+  assign master_error = {rrqq_cmd_ovf_error, nrqq_cmd_ovf_error, seq_num_error, write_error};
 
   // =========================================================================================== //
   // Statistics

@@ -10,6 +10,8 @@
 //   error_rreq_command_queue_ovf  - Slave: Read Request command queue overflow
 //   write_error[ETH_PC-1:0]       - Master: AXI write response SLVERR/DECERR
 //   seq_num_error                 - Master: seq num mismatch
+//   rrqq_cmd_ovf_error            - Master: Read Request Queue FIFO overflow (command lost)
+//   nrqq_cmd_ovf_error            - Master: Notify Request Queue FIFO overflow (command lost)
 //   error_id                      - Bridge: Multiple HPUs defined as current (not one-hot)
 //
 // Not tested (hardcoded to 0 in RTL):
@@ -439,8 +441,6 @@ module tb_mhdma_errors;
 // Test Variables
 // ============================================================================================== --
   logic [REG_DATA_W-1:0] read_data;
-  logic [REG_DATA_W-1:0] stat_errors;
-  mhdma_error_t          errors_struct;
 
   logic [RSVD_W+FLAG_W+MODE_W-1:0] req_rfm;
   logic [MAC_ADDR_W-1:0] dst_mac_addr;
@@ -450,6 +450,10 @@ module tb_mhdma_errors;
   logic [IOP_ID_W-1:0]   iop_id;
   logic [SRC_ADDR_W-1:0] src_addr;
   logic [DST_ADDR_W-1:0] dst_addr;
+  logic [REG_DATA_W-1:0] read_req_id;
+  logic [REG_DATA_W-1:0] read_req_addr;
+  logic [REG_DATA_W-1:0] notify_req_id;
+  logic [REG_DATA_W-1:0] notify_req_addr;
 
   assign req_rfm = 'h0; // not something we test here
 
@@ -457,6 +461,8 @@ module tb_mhdma_errors;
 // Main Test Scenario
 // ============================================================================================== --
   int scenario_id;
+  logic [REG_DATA_W-1:0] reg_error;
+  mhdma_error_t          errors_t;
 
   initial begin
     maxil_drv.init();
@@ -473,9 +479,9 @@ module tb_mhdma_errors;
     init_config();
 
     // Read initial error register - should be 0
-    maxil_drv.read_trans(MHDMA_SYSTEM_ERRORS_OFS, stat_errors);
-    display_errors(stat_errors);
-    assert (stat_errors == 0) else begin
+    maxil_drv.read_trans(MHDMA_SYSTEM_ERRORS_OFS, reg_error);
+    display_errors(reg_error);
+    assert (reg_error == 0) else begin
       $display("%t > [ERROR] Error register not zero at startup", $time);
       error_unexpected = 1'b1;
     end
@@ -505,6 +511,29 @@ module tb_mhdma_errors;
     $display("==================================================================================================\n");
 
     test_fifo_overflow_errors();
+
+    $display("\n==================================================================================================");
+    $display("  SCENARIO %0d: Testing rrqq_cmd_ovf_error (Read Request Queue overflow)", scenario_id);
+    $display("==================================================================================================\n");
+
+    test_rrqq_cmd_ovf_error();
+
+    $display("\n==================================================================================================");
+    $display("  SCENARIO %0d: Testing nrqq_cmd_ovf_error (Notify Request Queue overflow)", scenario_id);
+    $display("==================================================================================================\n");
+
+    test_nrqq_cmd_ovf_error();
+
+    $display("\n==================================================================================================");
+    $display("  END of test : checking that none errors sticked & are reset");
+    $display("==================================================================================================\n");
+
+    maxil_drv.read_trans(MHDMA_SYSTEM_ERRORS_OFS, reg_error);
+    display_errors(reg_error);
+    assert (reg_error == 0 ) else begin
+      $display("%t > [ERROR] reg_error has not been properly reset by reading into them", $time);
+      error_unexpected = 1'b1;
+    end
 
     repeat(100) @(posedge clk_mhdma_cfg);
     end_of_test = 1'b1;
@@ -549,8 +578,6 @@ module tb_mhdma_errors;
 
   // Test error_id by configuring multiple HPUs as current
   task automatic test_error_id();
-    logic [REG_DATA_W-1:0] reg_error;
-    mhdma_error_t          errors_t;
     begin
 
       // Configure TWO HPUs as current (invalid - not one-hot)
@@ -584,10 +611,6 @@ module tb_mhdma_errors;
   // Flow: 1) Initiate read request via AXIL -> 2) Master sends RR packet -> 3) "Remote" sends CE packets back
   //       4) Master writes CE data to HBM -> 5) AXI slave returns error -> 6) write_error is set
   task automatic test_write_error();
-    logic [REG_DATA_W-1:0] reg_error;
-    logic [REG_DATA_W-1:0] read_req_id;
-    logic [REG_DATA_W-1:0] read_req_addr;
-    mhdma_error_t          errors_t;
     begin
 
       // Enable AXI write error injection BEFORE any write transactions
@@ -638,10 +661,6 @@ module tb_mhdma_errors;
 
   // Test FIFO overflow errors
   task automatic test_fifo_overflow_errors();
-    logic [REG_DATA_W-1:0] reg_error;
-    logic [REG_DATA_W-1:0] read_req_id;
-    logic [REG_DATA_W-1:0] read_req_addr;
-    mhdma_error_t          errors_t;
     logic [FLAG_W-1:0]     flag;
     logic [MODE_W-1:0]     mode;
     begin
@@ -675,10 +694,6 @@ module tb_mhdma_errors;
 
   // Test FIFO overflow errors
   task automatic test_seq_num();
-    logic [REG_DATA_W-1:0] reg_error;
-    logic [REG_DATA_W-1:0] read_req_id;
-    logic [REG_DATA_W-1:0] read_req_addr;
-    mhdma_error_t          errors_t;
     begin
 
       // Step 1: Initiate a read request
@@ -729,6 +744,53 @@ module tb_mhdma_errors;
     end
   endtask
 
+  // Test rrqq_cmd_ovf_error: flood read request queue until overflow
+  task automatic test_rrqq_cmd_ovf_error();
+    begin
+      // Flood RRQQ FIFO with read requests (more than REQ_FIFO_DEPTH)
+      for (int i = 0; i < 2*REQ_FIFO_DEPTH; i++) begin
+        read_request(src_hpu_id, $urandom(), $urandom(), $urandom());
+      end
+
+      repeat(200) @(posedge clk_mhdma_cfg);
+      maxil_drv.read_trans(MHDMA_SYSTEM_ERRORS_OFS, reg_error);
+      errors_t = mhdma_error_t'(reg_error);
+
+      assert (errors_t.master_error.rrqq_cmd_ovf_error) else begin
+        $display("%t > [ERROR] rrqq_cmd_ovf_error not triggered", $time);
+        error_unexpected = 1'b1;
+      end
+
+      reset_system();
+      scenario_id = scenario_id + 1;
+    end
+  endtask
+
+  // Test nrqq_cmd_ovf_error: flood notify request queue until overflow
+  task automatic test_nrqq_cmd_ovf_error();
+    begin
+      // Flood NRQQ FIFO with notify requests (more than REQ_FIFO_DEPTH)
+      for (int i = 0; i < 2*REQ_FIFO_DEPTH; i++) begin
+        notify_req_addr = {16'($urandom()), 16'($urandom())};
+        notify_req_id   = {8'($urandom()), REQ_ID_NOTIFY, src_hpu_id, req_rfm};
+        maxil_drv.write_trans(MHDMA_REQUEST_REQ_ADDR_OFS, notify_req_addr);
+        maxil_drv.write_trans(MHDMA_REQUEST_REQ_ID_OFS, notify_req_id);
+      end
+
+      repeat(200) @(posedge clk_mhdma_cfg);
+      maxil_drv.read_trans(MHDMA_SYSTEM_ERRORS_OFS, reg_error);
+      errors_t = mhdma_error_t'(reg_error);
+
+      assert (errors_t.master_error.nrqq_cmd_ovf_error) else begin
+        $display("%t > [ERROR] nrqq_cmd_ovf_error not triggered", $time);
+        error_unexpected = 1'b1;
+      end
+
+      reset_system();
+      scenario_id = scenario_id + 1;
+    end
+  endtask
+
   /* Performs a Read request from HPU A to HPU B
     - Since HPU A and HPU B are the same no need to be able to be able to send from both
     - There is two registers to write to send a read request */
@@ -738,8 +800,6 @@ module tb_mhdma_errors;
     input logic [SRC_ADDR_W-1:0] src_addr,
     input logic [DST_ADDR_W-1:0] dest_addr
   );
-    logic [REG_DATA_W-1:0] read_req_id;
-    logic [REG_DATA_W-1:0] read_req_addr;
     begin
       read_req_addr = {dest_addr, src_addr};
       read_req_id = {iop_id, REQ_ID_READ, node_id, req_rfm};
