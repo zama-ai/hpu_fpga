@@ -135,6 +135,7 @@ void b2b_pool_print(void) {
 RemoteOperand_t dst_notifyq[DST_NOTIFYQ_SIZE];
 uint16_t dst_notifyq_head;
 uint16_t dst_notifyq_tail;
+uint16_t dst_notifyq_tail_nofree;
 uint16_t dst_notifyq_free_cnt;
 
 void dst_notifyq_init(void) {
@@ -143,6 +144,7 @@ void dst_notifyq_init(void) {
   }
   dst_notifyq_head = 0;
   dst_notifyq_tail = 0;
+  dst_notifyq_tail_nofree = 0;
   dst_notifyq_free_cnt = DST_NOTIFYQ_SIZE;
 }
 
@@ -158,10 +160,11 @@ RemoteOperand_t *dst_notifyq_pop(uint8_t iid) {
 }
 
 void dst_notifyq_print(uint8_t iid) {
-  PLL_INF("ucore", "[HPU%d] dst_notifyq head %d tail %d free %d",
+  PLL_INF("ucore", "[HPU%d] dst_notifyq head %d tail %d nofree_tail %d free %d",
       phys_hpu_id,
       dst_notifyq_head,
       dst_notifyq_tail,
+      dst_notifyq_tail_nofree,
       dst_notifyq_free_cnt);
   uint16_t index = (dst_notifyq_head - 1) % DST_NOTIFYQ_SIZE;
   while (dst_notifyq[index].iid == iid) {
@@ -189,6 +192,22 @@ RemoteOperand_t *dst_notifyq_getdst(uint8_t iid) {
     dst_notifyq_free_cnt++;
     dst_notifyq_tail = (dst_notifyq_tail + 1) % DST_NOTIFYQ_SIZE;
     return &dst_notifyq[free_slot];
+  }
+  return NULL;
+}
+
+void dst_notifyq_reset_tails() {
+    dst_notifyq_tail_nofree = dst_notifyq_tail;
+}
+
+RemoteOperand_t *dst_notifyq_getdst_nofree(uint8_t iid) {
+  if (dst_notifyq_free_cnt == DST_NOTIFYQ_SIZE) {
+    return NULL; // this means no data available
+  }
+  uint16_t slot = dst_notifyq_tail_nofree;
+  if (dst_notifyq[slot].iid == iid) {
+    dst_notifyq_tail_nofree = (dst_notifyq_tail_nofree + 1) % DST_NOTIFYQ_SIZE;
+    return &dst_notifyq[slot];
   }
   return NULL;
 }
@@ -350,21 +369,25 @@ void iop_teardown(uint8_t iid) {
   //flush dst_notifyq
   RemoteOperand_t *remote_operand = dst_notifyq_getdst(iid);
   while (remote_operand != NULL) {
-    //PLL_DBG("ucore", "[HPU%d] iop_teardown remote_operand iid %d pos %d state %d src %d dst %04x target %d",
-    //    phys_hpu_id,
-    //    iid,
-    //    remote_operand->pos,
-    //    remote_operand->state,
-    //    remote_operand->src_cid,
-    //    remote_operand->dst_cid,
-    //    remote_operand->target_cid);
-    remote_operand->state = OPERAND_STATE_READ_PENDING;
-    generate_ucore_notify(iid, remote_operand->pos, remote_operand->src_cid, remote_operand->dst_cid, remote_operand->target_cid);
+    if (remote_operand->state == OPERAND_STATE_NONE) { // store+sync => notify on ack has not happened
+      //PLL_DBG("ucore", "[HPU%d] teardown notify rdst iid %d pos %d state %d src %d dst %04x target %d",
+      //    phys_hpu_id,
+      //    iid,
+      //    remote_operand->pos,
+      //    remote_operand->state,
+      //    remote_operand->src_cid,
+      //    remote_operand->dst_cid,
+      //    remote_operand->target_cid);
+      remote_operand->state = OPERAND_STATE_READ_PENDING;
+      generate_ucore_notify(iid, remote_operand->pos, remote_operand->src_cid, remote_operand->dst_cid, remote_operand->target_cid);
+    }
     remote_operand = dst_notifyq_getdst(iid);
 #ifdef UCORE_MHDMA_SIMU
     sleep(3);
 #endif
   }
+  //reset tails in remote dst queue
+  dst_notifyq_reset_tails();
   //flush remote source queue
   src_store_reset_iop(iid);
   //cnt remote dst to be sent
@@ -802,20 +825,21 @@ int patch_mem_dop(DOpu_t *dop, OperandBundle_t *iop_dst, OperandBundle_t *iop_sr
         remote_dst->state = OPERAND_STATE_NONE;
         remote_dst->target_cid = dst_cid;
 
-        //PLL_DBG("patch_mem_dop", "[HPU%d] dst store iid %d pos %d src(b2b) %d dst %d(%d/%d) target %d",
-        //        phys_hpu_id,
-        //        cur_iid,
-        //        dst_hpu_id,
-        //        remote_dst->src_cid,
-        //        remote_dst->dst_cid,
-        //        tid,
-        //        bid,
-        //        remote_dst->target_cid);
+        PLL_DBG("patch_mem_dop", "[HPU%d] dst store iid %d pos %d src(b2b) %d dst %d(%d/%d) target %d",
+                phys_hpu_id,
+                cur_iid,
+                dst_hpu_id,
+                remote_dst->src_cid,
+                remote_dst->dst_cid,
+                tid,
+                bid,
+                remote_dst->target_cid);
 
         // add sync to notify DST asap !!
         dop->mem.slot = local_cid;
         //dst_notifyq_print(cur_iid);
       }
+      return_value = 0x00010000;
       dop->mem.mode = MEM_ADDR;
       break;
     }

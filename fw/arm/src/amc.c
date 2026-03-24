@@ -345,7 +345,15 @@ void vInterruptHandler_isc_ack( void* pvCallBackRef ) {
             if (dop_ack.sync.opcode == SYNC_OPCODE) {
               if (dop_ack.sync.is_inner == 1) {
                 // internal ack
-                generate_user_notify(dop_ack.sync.iid, dop_ack.sync.flag);
+                if (dop_ack.sync.flag != 0) {
+                  generate_user_notify(dop_ack.sync.iid, dop_ack.sync.flag);
+                } else { // flag == 0 => DST available
+                  RemoteOperand_t *rdst = dst_notifyq_getdst_nofree(dop_ack.sync.iid);
+                  if (rdst) {
+                    rdst->state = OPERAND_STATE_READ_PENDING;
+                    generate_ucore_notify(dop_ack.sync.iid, rdst->pos, rdst->src_cid, rdst->dst_cid, rdst->target_cid);
+                  }
+                }
               } else {
                 // Write ack value in queue body
                 //volatile uint32_t* ackq_idx = toAmiIopAckqData + (ackq_head % AMI_IOPACKQ_MAX_WORDS);
@@ -910,9 +918,12 @@ static void vTaskFuncMain( void )
                 for (int i=0; i< dop_entry.len; i++) {
                   dop.raw = *(dop_entry.ptr + i);
                   uint32_t patch_rc = patch_dop(&dop, &dst_bundle, &src_bundle, &imm_bundle, dop_buffer, dop_buffer_pos);
+                  // patch_rc: bit 16: need to insert SYNC (to notify DST available)
+                  //           bit 15: need to skip this DOp (LD_B2B or WAIT...)
+                  //           bit 14..0: number of DOp sent to ISC before waiting
 
                   if ((patch_rc & 0x7FFF) > 0) { // DOp has been processed and pre-translated DOp have been flushed to ISC (before wait)
-                    PLL_DBG("UCORE", "[HPU%d] translation of Dop %d (%08x) done (skip %d), %d flushed so reset dop_buffer", phys_hpu_id, i, dop.raw, skip, patch_rc);
+                    //PLL_DBG("UCORE", "[HPU%d] translation of Dop %d (%08x) done (skip %d), %05x flushed so reset dop_buffer", phys_hpu_id, i, dop.raw, skip, patch_rc);
                     dop_buffer_pos=0;
                   }
 
@@ -925,6 +936,23 @@ static void vTaskFuncMain( void )
                     }
                   } else { // processed DOp needs to be dropped
                     skip += 1;
+                  }
+
+                  if ((patch_rc & 0x10000) != 0) { // insert inner SYNC
+                    DOpu_t new_dop;
+                    // insert SYNC on flag 0 (dst) by sync DOp
+                    new_dop.sync.flag = 0;
+                    new_dop.sync.opcode = SYNC_OPCODE;
+                    new_dop.sync.is_inner = 1;
+                    new_dop.sync.iid = cur_iid;
+                    new_dop.sync._pad = 0;
+
+                    dop_buffer[(dop_buffer_pos)%DOP_BUFFER_SIZE] = new_dop.raw;
+                    dop_buffer_pos += 1;
+                    // Flush buffer if full
+                    if ((dop_buffer_pos % DOP_BUFFER_SIZE) == 0) {
+                      flush_dop_buffer_to_isc(dop_buffer, DOP_BUFFER_SIZE);
+                    }
                   }
                 }
 

@@ -156,6 +156,7 @@ void b2b_pool_init(void);
 uint16_t b2b_pool_pop(uint8_t iid);
 uint16_t b2b_pool_free(uint8_t iid);
 void dst_notifyq_init(void);
+RemoteOperand_t *dst_notifyq_getdst_nofree(uint8_t iid);
 void src_store_init(void);
 void src_store_reset_iop(uint8_t iid);
 void src_store_inits(uint8_t iid, OperandBundle_t *iop_src);
