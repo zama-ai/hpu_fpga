@@ -24,6 +24,11 @@
 #include "stream_isc.h"
 #include <stdbool.h>
 
+extern void *xMainTaskSem;
+extern void *xWorkerTaskSem;
+extern volatile uint8_t xMainTaskWaiting;
+extern volatile uint8_t xWorkerTaskWaiting;
+
 uint8_t cur_iid = 1;
 IOpMapping_t cur_mapping;
 uint8_t phys_hpu_id;
@@ -395,7 +400,9 @@ void iop_teardown(uint8_t iid) {
 #ifdef UCORE_MHDMA_SIMU
         sleep(10);
 #else
-        iOSAL_Task_SleepTicks(1);
+        xWorkerTaskWaiting = 1;
+        iOSAL_Semaphore_Pend(xWorkerTaskSem, 5);
+        xWorkerTaskWaiting = 0;
 #endif
       }
     }
@@ -750,7 +757,9 @@ int patch_mem_dop(DOpu_t *dop, OperandBundle_t *iop_dst, OperandBundle_t *iop_sr
 #ifdef UCORE_MHDMA_SIMU
             sleep(10);
 #else
-            iOSAL_Task_SleepTicks(1);
+            xMainTaskWaiting = 1;
+            iOSAL_Semaphore_Pend(xMainTaskSem, 5);
+            xMainTaskWaiting = 0;
 #endif
           }
         }
@@ -893,7 +902,9 @@ int process_ucore_dop(DOpu_t *dop, uint32_t *dop_buffer, int dop_buffer_pos) {
 #ifdef UCORE_MHDMA_SIMU
           sleep(10);
 #else
-          iOSAL_Task_SleepTicks(1);
+          xMainTaskWaiting = 1;
+          iOSAL_Semaphore_Pend(xMainTaskSem, 5);
+          xMainTaskWaiting = 0;
 #endif
         }
       }

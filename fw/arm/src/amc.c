@@ -125,6 +125,10 @@ typedef struct {
 
 void *xMhdmaCommandMbox = NULL;
 void *xMhdmaWorkerTask = NULL;
+void *xMainTaskSem = NULL;
+void *xWorkerTaskSem = NULL;
+volatile uint8_t xMainTaskWaiting = 0;
+volatile uint8_t xWorkerTaskWaiting = 0;
 
 /******************************************************************************/
 /* EVL Callback Declarations                                                  */
@@ -428,6 +432,7 @@ void vInterruptHandler_mhdma_notify( void* pvCallBackRef ) {
         current_elt->slave_hpu_id = slave_hpu_id;
         uint8_t current_state = mhdma_table_state[iid][flag];
         mhdma_table_state[iid][flag] = MHDMA_STATE_RECEIVED;
+        if (xMainTaskWaiting) iOSAL_Semaphore_PostFromISR(xMainTaskSem);
         if (current_state == MHDMA_STATE_LB2B_WAITING) {
           mhdma_table_state[iid][flag] = MHDMA_STATE_READING;
           generate_read_req(iid, flag);
@@ -507,6 +512,7 @@ void vInterruptHandler_mhdma_read_complete( void* pvCallBackRef ) {
       // state should be MHDMA_STATE_READING
       if (*current_elt_state == MHDMA_STATE_READING) {
         *current_elt_state = MHDMA_STATE_RESOLVED;
+        if (xMainTaskWaiting) iOSAL_Semaphore_PostFromISR(xMainTaskSem);
       }
       break;
     }
@@ -516,6 +522,7 @@ void vInterruptHandler_mhdma_read_complete( void* pvCallBackRef ) {
       // state should be reading
       if (dst_store.state[iid][tid][bid] == DST_STATE_READING) {
         dst_store.state[iid][tid][bid] = DST_STATE_RESOLVED;
+        if (xWorkerTaskWaiting) iOSAL_Semaphore_PostFromISR(xWorkerTaskSem);
       }
       break;
     }
@@ -525,6 +532,7 @@ void vInterruptHandler_mhdma_read_complete( void* pvCallBackRef ) {
 
       if (src_store.state[cur_iid][tid][bid] == OPERAND_STATE_DMA_PENDING) {
         src_store.state[cur_iid][tid][bid] = OPERAND_STATE_RESOLVED;
+        if (xMainTaskWaiting) iOSAL_Semaphore_PostFromISR(xMainTaskSem);
       }
 
       break;
@@ -711,6 +719,13 @@ static void vTaskFuncMain( void )
        PLL_ERR( AMC_NAME, "failed creating MHDMA worker task\r\n" );
     } else {
        PLL_ERR( AMC_NAME, "MHDMA worker task initialised\r\n" );
+    }
+
+    if ( OSAL_ERRORS_NONE != iOSAL_Semaphore_Create(&xMainTaskSem, 0, 1, "MainSem") ) {
+       PLL_ERR( AMC_NAME, "failed creating main task semaphore\r\n" );
+    }
+    if ( OSAL_ERRORS_NONE != iOSAL_Semaphore_Create(&xWorkerTaskSem, 0, 1, "WorkerSem") ) {
+       PLL_ERR( AMC_NAME, "failed creating worker task semaphore\r\n" );
     }
 
     // Initialise Interrupts
