@@ -311,13 +311,13 @@ package mhdma_pkg;
   // =========================================================================================== //
   // CDC structs (used in multi_hpu_dma top and mhdma_bridge)
   // =========================================================================================== //
-  // Reset signals (single-bit, CFG -> ETH) - nests per-submodule rst structs
+  // Stat reset signals (single-bit, CFG -> ETH)
   typedef struct packed {
     master_stat_rst_t  master;
     slave_stat_rst_t   slave;
     decoder_stat_rst_t decoder;
     logic              mhdma_errors;
-  } mhdma_rst_cnt_t;
+  } mhdma_stat_rst_t;
 
   // All stat values (ETH -> CFG) - nests per-submodule stat structs
   typedef struct packed {
@@ -326,7 +326,7 @@ package mhdma_pkg;
     decoder_stat_t         decoder;
     formatter_stat_t       formatter;
     logic [REG_DATA_W-1:0] mhdma_errors;
-  } mhdma_cnt_t;
+  } mhdma_stat_to_cfg_t;
 
   // =========================================================================================== //
   // Functions

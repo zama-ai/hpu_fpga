@@ -15,7 +15,7 @@
 //   - Decoded-command arbitration: decoder output is shared between master and slave via
 //     OR'd ready (decoded_command_rdy = rdy_slave | rdy_master)
 //   - Error aggregation: per-submodule errors are packed into mhdma_error_t for regfile readback
-//   - Stat multiplexing: per-submodule stat structs are mapped into the CDC-ready mhdma_cnt_t
+//   - Stat multiplexing: per-submodule stat structs are mapped into mhdma_stat_to_cfg_t
 //
 // Assumptions / Limitations:
 //   - Exactly one hpu_ids entry must have bit [31] set (one-hot). multiple bits set raises
@@ -87,8 +87,8 @@ module mhdma_bridge
   input  logic                                    received_req,
   output logic                                    request_consumed,
   // statistics ---------------------------------------------------------------
-  output mhdma_cnt_t                              stat_cnt,
-  input  mhdma_rst_cnt_t                          rst_cnt,
+  output mhdma_stat_to_cfg_t                      stat_to_cfg,
+  input  mhdma_stat_rst_t                         stat_rst,
   // cfg-domain errors --------------------------------------------------------
   output master_error_cfg_t                       master_error_cfg,
   input  logic                                    rst_errors_cfg,
@@ -299,7 +299,7 @@ module mhdma_bridge
     // errors -----------------------------------------------------------------
     .master_error                    (master_error                            ),
     .master_error_cfg                (master_error_cfg                        ),
-    .rst_errors                      (rst_cnt.mhdma_errors                    ),
+    .rst_errors                      (stat_rst.mhdma_errors                    ),
     .rst_errors_cfg                  (rst_errors_cfg                          ),
     // statistics -------------------------------------------------------------
     .stat                            (master_stat                             ),
@@ -355,7 +355,7 @@ module mhdma_bridge
     .notify_ack_sent                (notify_ack_sent                          ),
     // errors -----------------------------------------------------------------
     .slave_error                    (slave_error                              ),
-    .rst_errors                     (rst_cnt.mhdma_errors                     ),
+    .rst_errors                     (stat_rst.mhdma_errors                     ),
     // statistics -------------------------------------------------------------
     .stat                           (slave_stat                               ),
     .stat_rst                       (slave_stat_rst                           )
@@ -383,7 +383,7 @@ module mhdma_bridge
     .qsfp_rx_tvalid              (qsfp_rx_tvalid                              ),
     // errors -----------------------------------------------------------------
     .decoder_error               (decoder_error                               ),
-    .rst_errors                  (rst_cnt.mhdma_errors                        ),
+    .rst_errors                  (stat_rst.mhdma_errors                        ),
     // statistics -------------------------------------------------------------
     .stat                        (decoder_stat                                ),
     .stat_rst                    (decoder_stat_rst                            )
@@ -424,7 +424,7 @@ module mhdma_bridge
     .qsfp_tx_tready                  (qsfp_tx_tready                          ),
     // errors -----------------------------------------------------------------
     .format_error                    (format_error                            ),
-    .rst_errors                      (rst_cnt.mhdma_errors                    ),
+    .rst_errors                      (stat_rst.mhdma_errors                    ),
     // statistics -------------------------------------------------------------
     .stat                            (formatter_stat                          )
   );
@@ -437,19 +437,19 @@ module mhdma_bridge
   assign mhdma_errors.slave_error     = slave_error;
   assign mhdma_errors.master_error    = master_error;
   assign mhdma_errors.error_id        = error_id;
-  assign stat_cnt.mhdma_errors = {{(32-$bits(mhdma_error_t)){1'b0}}, mhdma_errors};
+  assign stat_to_cfg.mhdma_errors = {{(32-$bits(mhdma_error_t)){1'b0}}, mhdma_errors};
 
   // =========================================================================================== //
   // Statistics: map per-submodule structs to CDC structs
   // =========================================================================================== //
-  assign stat_cnt.master    = master_stat;
-  assign stat_cnt.slave     = slave_stat;
-  assign stat_cnt.decoder   = decoder_stat;
-  assign stat_cnt.formatter = formatter_stat;
+  assign stat_to_cfg.master    = master_stat;
+  assign stat_to_cfg.slave     = slave_stat;
+  assign stat_to_cfg.decoder   = decoder_stat;
+  assign stat_to_cfg.formatter = formatter_stat;
 
-  // reset mapping (rst_cnt -> per-submodule stat_rst)
-  assign master_stat_rst  = rst_cnt.master;
-  assign slave_stat_rst   = rst_cnt.slave;
-  assign decoder_stat_rst = rst_cnt.decoder;
+  // reset mapping (stat_rst -> per-submodule stat_rst)
+  assign master_stat_rst  = stat_rst.master;
+  assign slave_stat_rst   = stat_rst.slave;
+  assign decoder_stat_rst = stat_rst.decoder;
 
 endmodule
