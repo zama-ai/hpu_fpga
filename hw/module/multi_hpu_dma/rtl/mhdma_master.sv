@@ -941,9 +941,20 @@ module mhdma_master
   assign pc_consumed_total = active_pc_base_offset + words_committed;
 
   //  pc_credits : The number of additional words the FSM is allowed to burst right now.
+  //  Registered to break the critical path:
+  //    words_remain -> pc_consumed_total -> pc_credits -> effective_burst_len
   logic [NB_WORDS_TOTAL_WW-1:0] pc_credits;
+  logic [NB_WORDS_TOTAL_WW-1:0] pc_credits_r;
 
   assign pc_credits = (authorized_axi4_words > pc_consumed_total) ? (authorized_axi4_words - pc_consumed_total) : '0;
+
+  always_ff @(posedge clk_mhdma) begin
+    if (~resetn_mhdma) begin
+      pc_credits_r <= '0;
+    end else begin
+      pc_credits_r <= pc_credits;
+    end
+  end
 
   // Page-aligned burst length --------------------------------------------------------------------
   //  computed_burst_len: the burst length limited to the current 4 KB page boundary.
@@ -954,14 +965,14 @@ module mhdma_master
   assign computed_burst_len = (page_word_remain < words_remain) ? page_word_remain : words_remain;
 
   // Credit-clamped burst length ------------------------------------------------------------------
-  //  Final burst length = min(computed_burst_len, pc_credits).
+  //  Final burst length = min(computed_burst_len, pc_credits_r).
   //  Ensures we never issue a burst larger than the data currently received from the network.
-  //  If pc_credits == 0 (no data available yet), effective_burst_len_r == 0, which deasserts
+  //  If pc_credits_r == 0 (no data available yet), effective_burst_len_r == 0, which deasserts
   //  awvalid and stalls the burst FSM in BURST_AW until more packets arrive.
   logic [AXI4_LEN_W:0] effective_burst_len;
   logic [AXI4_LEN_W:0] effective_burst_len_r;
 
-  assign effective_burst_len = (NB_WORDS_TOTAL_WW'(computed_burst_len) <= pc_credits) ? computed_burst_len : (AXI4_LEN_W+1)'(pc_credits);
+  assign effective_burst_len = (NB_WORDS_TOTAL_WW'(computed_burst_len) <= pc_credits_r) ? computed_burst_len : (AXI4_LEN_W+1)'(pc_credits_r);
 
   // Pipeline register: breaks the combinational chain before FSM
   //   burst_addr -> page_word_remain -> computed_burst_len -> effective_burst_len
@@ -1120,8 +1131,11 @@ module mhdma_master
   // ======================================================================================= //
   axi4_aw_if_t m_axi4_aw_single;
 
-  // Suppress awvalid on the first cycle of BURST_AW: effective_burst_len_r is registered and lags by one cycle.
+  // Suppress awvalid for 2 cycles on entry to BURST_AW:
+  //   cycle 1: pc_credits_r settles (registered from combinational pc_credits)
+  //   cycle 2: effective_burst_len_r settles (registered from effective_burst_len using pc_credits_r)
   logic burst_aw_entry;
+  logic burst_aw_entry_r;
 
   always_ff @(posedge clk_mhdma) begin
     if (~resetn_mhdma) begin
@@ -1131,7 +1145,10 @@ module mhdma_master
     end
   end
 
-  assign axi_a_awvalid = (burst_state == BURST_AW) & (effective_burst_len_r > 0) & ~abort_transfer & ~burst_aw_entry;
+  always_ff @(posedge clk_mhdma)
+    burst_aw_entry_r <= burst_aw_entry;
+
+  assign axi_a_awvalid = (burst_state == BURST_AW) & (effective_burst_len_r > 0) & ~abort_transfer & ~burst_aw_entry & ~burst_aw_entry_r;
   assign axi_a.awid    = MHDMA_AXI_ARID;
   assign axi_a.awaddr  = burst_addr;
   assign axi_a.awsize  = MHDMA_ARSIZE;
