@@ -16,6 +16,7 @@ module instruction_scheduler
   import hpu_common_instruction_pkg::*;
   import regf_common_param_pkg::*;
   import isc_common_param_pkg::*;
+  import axi_if_trc_axi_pkg::*;
   (
     input logic  clk,        // clock
     input logic  s_rst_n,    // synchronous reset
@@ -456,37 +457,49 @@ assign query_vld = !query_ack_vld;
 // ============================================================================================== //
 // Timestamp and Trace generation
 // ============================================================================================== //
-  logic [TIMESTAMP_W-1:0] nxt_timestamp;
-
-  // Timestamp is a free running counter
-  assign nxt_timestamp = trace_data.timestamp + 1;
+  logic                 r_trace_wr_en, trace_wr_enD;
+  isc_trace_t           r_trace_data, trace_dataD;
 
   // Flop all trace data
   always_ff @(posedge clk)
     if(!s_rst_n) begin
-      trace_wr_en <= 1'b0;
+      r_trace_wr_en <= 1'b0;
+      r_trace_data <= '0;
     end else begin
-      // Write trace for each successful query
-      trace_wr_en <= (query_ack.status == SUCCESS) && query_ack_vld;
+      r_trace_wr_en <= trace_wr_enD;
+      r_trace_data <= trace_dataD;
     end
 
-  always_ff @(posedge clk) begin
-    trace_data.timestamp <= nxt_timestamp;
-    trace_data.insn <= query_ack.info.insn.raw_insn;
-    trace_data.cmd <= query_ack.cmd;
-    trace_data.state <= query_ack.info.state;
-    trace_data.pe_reserved <=
-      ((query_ack.cmd == RETIRE) && (query_ack.info.insn.kind == PBS)) ?
-        f_pep_ack_pld : '0;
-  end
+  // Construct trace_data words
+  assign trace_dataD.timestamp     = r_trace_data.timestamp + 1; // Free running counter
+  assign trace_dataD.insn          = query_ack.info.insn.raw_insn;
+  assign trace_dataD.sync_id       = {{(7-SYNC_ID_W){1'b0}}, query_ack.info.state.sync_id};
+  assign trace_dataD.issue_lock    = {{(7-POOL_SLOT_W){1'b0}}, query_ack.info.state.issue_lock};
+  assign trace_dataD.rd_lock       = {{(7-POOL_SLOT_W){1'b0}}, query_ack.info.state.rd_lock};
+  assign trace_dataD.wr_lock       = {{(7-POOL_SLOT_W){1'b0}}, query_ack.info.state.wr_lock};
+  assign trace_dataD.cmd           = {{(7-QUERY_CMD_W){1'b0}}, query_ack.cmd};
+  assign trace_dataD.vld_rdpdg_pdg = {'0, query_ack.info.state.vld,query_ack.info.state.rd_pdg, query_ack.info.state.pdg};
+  assign trace_dataD.pe_reserved   = ((query_ack.cmd == RETIRE) && (query_ack.info.insn.kind == PBS)) ? {{(15-LWE_K_W){1'b0}}, f_pep_ack_pld} : '0;
+
+  // Write trace for each successful query
+  assign trace_wr_enD = (query_ack.status == SUCCESS) && query_ack_vld;
 
   // Consume pep_ack_fifo
   assign f_pep_ack_rdy = trace_wr_en && (query_ack.cmd == RETIRE) && (query_ack.info.insn.kind == PBS);
+// Bind on output signals
+assign trace_wr_en = r_trace_wr_en;
+assign trace_data = r_trace_data;
 
 // ============================================================================================== //
 // Assertions
 // ============================================================================================== //
 // pragma translate_off
+  // Check that trace data do not overflow the AXI4_DATA_W of trace interface
+  initial
+   assert (TRACE_W <= AXI4_DATA_W)
+   else 
+      $fatal(1,"%t > ERROR: Instruction trace is bigger that Axi bus width.", $time);
+
   always_ff @(posedge clk)
     if (!s_rst_n) begin
       // do nothing

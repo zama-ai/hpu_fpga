@@ -271,11 +271,12 @@ always_comb begin
 
     refill_req_vld = 1'b1;
 
-    // Query ack in refill is based on the last pool request => directly map the pool ack on it
-    // No buffering required
+    // Query ack in refill is based on the last pool request
+    //=> previous slot info has no interest since it's an old unused slot.
+    // Ack with refill value instead
     refill_query_ack.cmd = r_query_cmd;
     refill_query_ack.status = pool_ack.status;
-    refill_query_ack.info = pool_ack.info;
+    refill_query_ack.info = {insn: query_refill, state: refill_req_info.state};
   end
 end
 

@@ -68,7 +68,7 @@ module isc_pool
 // c0 -> Filter matching slots based on req_info and req_filter
 // c1 -> Combine filter results
 // c2 -> Count the number of matches and find the first match
-// c3 -> Update pool state bosed on req_updt and acknowledge the request
+// c3 -> Update pool state based on req_updt and acknowledge the request
 
   logic r_busy;
   always_ff @(posedge clk)

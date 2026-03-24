@@ -151,6 +151,10 @@ module tb_instruction_scheduler;
   logic                 pep_wr_ack;
   logic[LWE_K_W-1:0]    pep_ack_pld;
 
+  // Trace interface
+  logic                 trace_wr_en;
+  isc_trace_t           trace_data;
+
   // Quasi static
   logic                 use_bpip;
 
@@ -204,9 +208,18 @@ module tb_instruction_scheduler;
     .pep_ack_pld(pep_ack_pld),
 
     .isc_counter_inc(/*UNUSED*/),
-    .isc_rif_info   (/*UNUSED*/)
+    .isc_rif_info   (/*UNUSED*/),
+
+    .trace_data(trace_data),
+    .trace_wr_en(trace_wr_en)
   );
 
+// ============================================================================================== --
+// Simple assertion on stream data
+// ============================================================================================== --
+  assert property (@(posedge clk) trace_wr_en |-> !$isunknown(trace_data))
+  else 
+    $fatal(1,"%t > ERROR: trace_data is unknown while trace_wr_en is asserted.", $time);
 // ============================================================================================== --
 // Insn stream
 // ============================================================================================== --
@@ -297,10 +310,11 @@ module tb_instruction_scheduler;
 
   // Generate random value for associated pep_pld
   initial begin
-   pep_ack_pld = 'x;
    do begin
-     do @(posedge clk); while(!pep_wr_ack);
+     pep_ack_pld = 'x;
+     @(posedge pep_wr_ack);
      pep_ack_pld = $urandom();
+     @(negedge pep_wr_ack);
    end while(1);
   end
 
