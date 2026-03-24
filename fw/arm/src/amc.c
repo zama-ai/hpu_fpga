@@ -298,6 +298,7 @@ extern XScuGic xInterruptController;
 // HPU global variables
 extern uint8_t cur_iid;
 extern uint8_t phys_hpu_id;
+uint32_t timestamp;
 extern uint8_t cluster_first_nid;
 extern uint8_t cluster_last_nid;
 extern uint16_t b2b_pool_start_addr;
@@ -847,11 +848,21 @@ static void vTaskFuncMain( void )
             // Update ucore configuration
             updt_ucore_cfg(&ucore_cfg);
             phys_hpu_id = ucore_cfg.node_id;
+            uint32_t new_timestamp = ucore_cfg.timestamp;
             cluster_first_nid = ucore_cfg.cluster_first_nid;
             cluster_last_nid = ucore_cfg.cluster_last_nid;
             b2b_pool_start_addr = ucore_cfg.ct_user_size;
             b2b_pool_size = ucore_cfg.b2b_size;
-            PLL_DBG("AMC", "Current core config: phys_hpu_id %d b2b_start_addr", phys_hpu_id, b2b_pool_start_addr);
+
+            if (timestamp != new_timestamp) { // this means user SW (tfhe-rs) has been restarted
+                PLL_DBG("parse_iop", "timestamp %d changed => reset inter-HPU struct", new_timestamp);
+                timestamp = new_timestamp;
+                mhdma_table_reset();
+                b2b_pool_init();
+                dst_notifyq_init();
+                src_store_init();
+                dst_store_init();
+            }
 
             // 1. Compute bytes to read from queue
             uint32_t read_bytes = (iopq_used_bytes > IOP_MAX_BYTES)? IOP_MAX_BYTES: iopq_used_bytes;
@@ -879,9 +890,6 @@ static void vTaskFuncMain( void )
                 for (uint32_t i = 0; i < wrap_chunk_size/sizeof(uint32_t); i++) {
                     iop_buffer[i+chunk_size/sizeof(uint32_t)] = * (uint32_t *)(data_ptr + i*sizeof(uint32_t));
                 }
-            }
-            for (int i =0; i < IOP_MAX_WORDS; i++) {
-                PLL_DBG("IOpQ", "@%d -> 0x%x", i, iop_buffer[i]);
             }
 
             // Parse IOp and store in lookup for ack

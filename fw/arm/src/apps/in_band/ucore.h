@@ -125,6 +125,7 @@ typedef struct {
 // A fixed size of FW_RUNTIME_MAX_WORD is reserved at the beginning of the FW memory for this structure
 typedef struct {
   uint8_t  node_id;
+  uint32_t timestamp;
   uint8_t  cluster_first_nid;
   uint8_t  cluster_last_nid;
   uint16_t ct_user_size;

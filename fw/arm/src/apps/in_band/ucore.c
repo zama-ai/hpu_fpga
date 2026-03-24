@@ -84,7 +84,7 @@ void b2b_pool_init(void) {
   if (b2b_pool_size != B2B_POOL_SIZE) {
     PLL_ERR("ucore", "[HPU%d] b2b_pool size is incorrect (fw %d, sw %d)", B2B_POOL_SIZE, b2b_pool_size);
   }
-  memset(b2b_pool, 0xFF, sizeof(b2b_pool));
+  memset(b2b_pool, 0x0, sizeof(b2b_pool));
   b2b_pool_head = 0;
   b2b_pool_tail = 0;
   b2b_pool_free_cnt = B2B_POOL_SIZE;
@@ -113,7 +113,7 @@ uint16_t b2b_pool_free(uint8_t iid) {
   }
   uint16_t free_cnt = 0;
   while (b2b_pool[b2b_pool_tail] == iid && b2b_pool_free_cnt < B2B_POOL_SIZE) {
-    b2b_pool[b2b_pool_tail] = 0xFF;
+    b2b_pool[b2b_pool_tail] = 0x0;
     b2b_pool_tail = (b2b_pool_tail + 1) % B2B_POOL_SIZE;
     b2b_pool_free_cnt++;
     free_cnt++;
@@ -522,7 +522,6 @@ uint32_t parse_iop(
   } while (!operand_prop->operand_prop.is_last);
 
 
-  uint8_t last_iid = cur_iid;
   cur_iid = dst->operand[0].iid;
   cur_mapping.raw = mapping->raw;
   uint8_t nb_hpu = number_of_hpu(*mapping);
@@ -536,14 +535,7 @@ uint32_t parse_iop(
       get_virt_of(phys_hpu_id, *mapping),
       iop_state[cur_iid].state,
       iop_state[cur_iid].nb_hpu);
-  if (last_iid >= cur_iid) { // this means user SW (tfhe-rs) has been restarted
-      PLL_DBG("parse_iop", "last iid: %d >= %d => reset inter-HPU struct", last_iid, cur_iid);
-      mhdma_table_reset();
-      b2b_pool_init();
-      dst_notifyq_init();
-      src_store_init();
-      dst_store_init();
-  }
+
   // Fill bundle length
   dst->len = dst_pos;
   dst_store_initd(cur_iid, dst);
@@ -825,15 +817,15 @@ int patch_mem_dop(DOpu_t *dop, OperandBundle_t *iop_dst, OperandBundle_t *iop_sr
         remote_dst->state = OPERAND_STATE_NONE;
         remote_dst->target_cid = dst_cid;
 
-        PLL_DBG("patch_mem_dop", "[HPU%d] dst store iid %d pos %d src(b2b) %d dst %d(%d/%d) target %d",
-                phys_hpu_id,
-                cur_iid,
-                dst_hpu_id,
-                remote_dst->src_cid,
-                remote_dst->dst_cid,
-                tid,
-                bid,
-                remote_dst->target_cid);
+        //PLL_DBG("patch_mem_dop", "[HPU%d] dst store iid %d pos %d src(b2b) %d dst %d(%d/%d) target %d",
+        //        phys_hpu_id,
+        //        cur_iid,
+        //        dst_hpu_id,
+        //        remote_dst->src_cid,
+        //        remote_dst->dst_cid,
+        //        tid,
+        //        bid,
+        //        remote_dst->target_cid);
 
         // add sync to notify DST asap !!
         dop->mem.slot = local_cid;
@@ -892,7 +884,7 @@ uint16_t get_raw_ct_id(DOpu_t *dop) {
 // Process ucore instructions
 int process_ucore_dop(DOpu_t *dop, OperandBundle_t *iop_src, uint32_t *dop_buffer, int dop_buffer_pos) {
   int return_value = 0;
-  PLL_DBG("process_ucore_dop", "[HPU%d] %08x", phys_hpu_id, dop->raw);
+  //PLL_DBG("process_ucore_dop", "[HPU%d] %08x", phys_hpu_id, dop->raw);
   uint8_t current_flag = dop->ucore.flag;
   switch (dop->ucore.opcode & 0xF) {
     case DOPS_NOTIFY: {
@@ -914,7 +906,7 @@ int process_ucore_dop(DOpu_t *dop, OperandBundle_t *iop_src, uint32_t *dop_buffe
     }
     case DOPS_WAIT: {
       bool data_required = (dop->ucore.hid != 0);
-      PLL_DBG("ucore", "[HPU%d] process wait %08x on iop_id %d flag %d state %d", phys_hpu_id, dop->raw, cur_iid, dop->ucore.flag, mhdma_table_state[cur_iid][current_flag]);
+      //PLL_DBG("ucore", "[HPU%d] process wait %08x on iop_id %d flag %d state %d", phys_hpu_id, dop->raw, cur_iid, dop->ucore.flag, mhdma_table_state[cur_iid][current_flag]);
       //iOSAL_Task_SleepTicks(100);
       // if we need to wait, flush
       if ((dop_buffer_pos%DOP_BUFFER_SIZE) > MIN_DOP_FLUSH
