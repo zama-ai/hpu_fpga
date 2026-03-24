@@ -208,19 +208,40 @@ package mhdma_pkg;
   } slave_error_t;
 
   typedef struct packed {
-    logic              rrqq_cmd_ovf_error;
-    logic              nrqq_cmd_ovf_error;
     logic              seq_num_error;
     logic [ETH_PC-1:0] write_error;
   } master_error_t;
 
   typedef struct packed {
-    format_error_t  format_error;
-    decoder_error_t decoder_error;
-    slave_error_t   slave_error;
-    master_error_t  master_error;
-    logic           error_id;
+    logic              rrqq_cmd_ovf_error;
+    logic              nrqq_cmd_ovf_error;
+  } master_error_cfg_t; // only stucture in config clock
+
+  // mhdma clock domain errors: will be CDC to cfg in multi_hpu_dma
+  typedef struct packed {
+    format_error_t      format_error;
+    decoder_error_t     decoder_error;
+    slave_error_t       slave_error;
+    master_error_t      master_error;
+    logic               error_id;
   } mhdma_error_t;
+
+  // both cdc and cfg errors
+  typedef struct packed {
+    master_error_cfg_t  master_error_cfg;
+    mhdma_error_t       mhdma_error;
+  } mhdma_error_all_t;
+
+  // [31:10] : zeros (padding)
+  // [9]     : master_error_cfg.rrqq_cmd_ovf_error
+  // [8]     : master_error_cfg.nrqq_cmd_ovf_error
+  // [7]     : format_error.formatter_error
+  // [6]     : decoder_error.error_fifo_rx_ovf
+  // [5]     : slave_error.rreq_cmd_ovf_error
+  // [4]     : slave_error.read_rresp_error
+  // [3]     : master_error.seq_num_error
+  // [2:1]   : master_error.write_error[1:0]
+  // [0]     : error_id
 
   // =========================================================================================== //
   // Per-submodule stat/rst structs

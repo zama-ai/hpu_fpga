@@ -98,7 +98,9 @@ module mhdma_master
 
   // Error interface ------------------------------------------------------------------------------
   output master_error_t                       master_error,
+  output master_error_cfg_t                   master_error_cfg,
   input  logic                                rst_errors,
+  input  logic                                rst_errors_cfg,
   // statistics -----------------------------------------------------------------------------------
   output master_stat_t                        stat,
   input  master_stat_rst_t                    stat_rst
@@ -1361,32 +1363,36 @@ module mhdma_master
   end
 
   // rrqq/nrqq command FIFO overflow: sticky, set when FIFO is full and a push is attempted
+  // These signals live in the cfg clock domain (where in_rdy/data_vld are generated)
   logic rrqq_cmd_ovf_error;
   logic nrqq_cmd_ovf_error;
 
-  always_ff @(posedge clk_mhdma) begin
-    if (~resetn_mhdma) begin
+  always_ff @(posedge clk_mhdma_cfg) begin
+    if (~resetn_mhdma_cfg) begin
       rrqq_cmd_ovf_error <= 1'b0;
     end else begin
-      if (rst_errors)
+      if (rst_errors_cfg) begin
         rrqq_cmd_ovf_error <= 1'b0;
-      else if (rrqq_data_vld & ~rrqq_in_rdy)
+      end else if (rrqq_data_vld & ~rrqq_in_rdy) begin
         rrqq_cmd_ovf_error <= 1'b1;
+      end
     end
   end
 
-  always_ff @(posedge clk_mhdma) begin
-    if (~resetn_mhdma) begin
+  always_ff @(posedge clk_mhdma_cfg) begin
+    if (~resetn_mhdma_cfg) begin
       nrqq_cmd_ovf_error <= 1'b0;
     end else begin
-      if (rst_errors)
+      if (rst_errors_cfg) begin
         nrqq_cmd_ovf_error <= 1'b0;
-      else if (nrqq_data_vld & ~nrqq_in_rdy)
+      end else if (nrqq_data_vld & ~nrqq_in_rdy) begin
         nrqq_cmd_ovf_error <= 1'b1;
+      end
     end
   end
 
-  assign master_error = {rrqq_cmd_ovf_error, nrqq_cmd_ovf_error, seq_num_error, write_error};
+  assign master_error     = {seq_num_error, write_error};
+  assign master_error_cfg = {rrqq_cmd_ovf_error, nrqq_cmd_ovf_error};
 
   // =========================================================================================== //
   // Statistics

@@ -186,7 +186,9 @@ module tb_mhdma_master;
 
   // errors / stats
   master_error_t                       master_error;
+  master_error_cfg_t                   master_error_cfg;
   logic                                rst_errors;
+  logic                                rst_errors_cfg;
   master_stat_t                        stat;
   master_stat_rst_t                    stat_rst;
 
@@ -246,7 +248,9 @@ module tb_mhdma_master;
     .notify_sent                   (notify_sent                   ),
     // errors
     .master_error                  (master_error                  ),
+    .master_error_cfg              (master_error_cfg              ),
     .rst_errors                    (rst_errors                    ),
+    .rst_errors_cfg                (rst_errors_cfg                ),
     // stats
     .stat                          (stat                          ),
     .stat_rst                      (stat_rst                      )
@@ -364,6 +368,7 @@ module tb_mhdma_master;
       notify_sent                   = 1'b0;
 
       rst_errors                    = 1'b0;
+      rst_errors_cfg                = 1'b0;
       stat_rst                      = '0;
 
       // Set HBM base addresses: page-aligned per PC
@@ -628,15 +633,26 @@ module tb_mhdma_master;
   endtask
 
   // --------------------------------------------------------------------------------------------- --
-  // Pulse the rst_errors signal (mrmac domain)
+  // Pulse the rst_errors signal (mrmac domain + cfg domain)
   // --------------------------------------------------------------------------------------------- --
   task automatic pulse_rst_errors();
     begin
-      @(posedge clk_mhdma);
-      rst_errors = 1'b1;
-      @(posedge clk_mhdma);
-      rst_errors = 1'b0;
-      repeat (5) @(posedge clk_mhdma);
+      fork
+        begin
+          @(posedge clk_mhdma);
+          rst_errors = 1'b1;
+          @(posedge clk_mhdma);
+          rst_errors = 1'b0;
+          repeat (5) @(posedge clk_mhdma);
+        end
+        begin
+          @(posedge clk_mhdma_cfg);
+          rst_errors_cfg = 1'b1;
+          @(posedge clk_mhdma_cfg);
+          rst_errors_cfg = 1'b0;
+          repeat (5) @(posedge clk_mhdma_cfg);
+        end
+      join
     end
   endtask
 

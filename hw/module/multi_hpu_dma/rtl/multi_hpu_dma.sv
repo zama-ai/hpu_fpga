@@ -161,6 +161,13 @@ module multi_hpu_dma
   mhdma_cnt_t cnt_mhdma;
   mhdma_cnt_t cnt_cfg;
 
+  // cfg-domain master errors (overflow detection) -----------------------------------------------
+  master_error_cfg_t master_error_cfg;
+
+  // Merge cfg-domain master errors with CDC'd mhdma-domain errors (all on cfg clock)
+  logic [REG_DATA_W-1:0] mhdma_errors_cfg_merged;
+  mhdma_error_all_t      mhdma_error_all;
+
   // Transceivers ---------------------------------------------------------------------------------
   assign line_sel             = r_system_lane[1:0];
   assign gt_loopback          = r_system_lane[4:2];
@@ -362,7 +369,7 @@ module multi_hpu_dma
     .r_mhdma_request_stat_physical_addr_pc1_msb           (/* UNUSED - register output, only _upd used */        ),
     .r_mhdma_request_stat_physical_addr_pc1_msb_upd       (regf_rr_phy_addr_pc1[2*REG_DATA_W-1:REG_DATA_W]      ),
     .r_mhdma_system_errors                                (/* UNUSED - register output, only _upd/_rd_en used */ ),
-    .r_mhdma_system_errors_upd                            (cnt_cfg.mhdma_errors                                  ),
+    .r_mhdma_system_errors_upd                            (mhdma_errors_cfg_merged                               ),
     .r_mhdma_system_errors_rd_en                          (rst_cnt_cfg.mhdma_errors                              )
   );
 
@@ -421,6 +428,11 @@ module multi_hpu_dma
     .src_in    (cnt_mhdma       ),
     .dest_out  (cnt_cfg       )
   );
+
+  // Merge cfg-domain master errors with mhdma-domain errors (all on cfg clock)
+  assign mhdma_error_all.master_error_cfg = master_error_cfg;
+  assign mhdma_error_all.mhdma_error      = mhdma_error_t'(cnt_cfg.mhdma_errors[$bits(mhdma_error_t)-1:0]);
+  assign mhdma_errors_cfg_merged          = {{(REG_DATA_W-$bits(mhdma_error_all_t)){1'b0}}, mhdma_error_all};
 
   // ============================================================================================ //
   // Multi-HPU-DMA bridge
@@ -490,8 +502,11 @@ module multi_hpu_dma
     .interrupt_notify               (interrupt_notify                                             ),
     .interrupt_read_request         (interrupt_read_request                                       ),
     // statistics ---------------------------------------------------------------------------------
-    .stat_cnt                       (cnt_mhdma                                                      ),
-    .rst_cnt                        (rst_cnt_mhdma                                                  ),
+    .stat_cnt                       (cnt_mhdma                                                    ),
+    .rst_cnt                        (rst_cnt_mhdma                                                ),
+    // cfg-domain errors (merged here on cfg clock) -----------------------------------------------
+    .master_error_cfg               (master_error_cfg                                             ),
+    .rst_errors_cfg                 (rst_cnt_cfg.mhdma_errors                                     ),
     // QSFP interface one lane --------------------------------------------------------------------
     // tx
     .qsfp_tx_tdata                  (axis_tx_tdata                                                ),

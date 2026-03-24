@@ -462,7 +462,7 @@ module tb_mhdma_errors;
 // ============================================================================================== --
   int scenario_id;
   logic [REG_DATA_W-1:0] reg_error;
-  mhdma_error_t          errors_t;
+  mhdma_error_all_t      errors_t;
 
   initial begin
     maxil_drv.init();
@@ -589,11 +589,11 @@ module tb_mhdma_errors;
 
       // Read error status
       maxil_drv.read_trans(MHDMA_SYSTEM_ERRORS_OFS, reg_error);
-      errors_t = mhdma_error_t'(reg_error);
+      errors_t = mhdma_error_all_t'(reg_error);
       $display("%t > Error register value :  0x%08b", $time, reg_error);
 
       // Check error_id bit
-      if (~errors_t.error_id) begin
+      if (~errors_t.mhdma_error.error_id) begin
         $display("%t > [ERROR] error_id NOT triggered", $time);
         error_unexpected = 1'b1;
       end
@@ -641,11 +641,11 @@ module tb_mhdma_errors;
 
       // Read error status
       maxil_drv.read_trans(MHDMA_SYSTEM_ERRORS_OFS, reg_error);
-      errors_t = mhdma_error_t'(reg_error);
+      errors_t = mhdma_error_all_t'(reg_error);
       $display("%t > Error register value :  0x%08b", $time, reg_error);
 
       // Check write_error bits (bits 3 and 4)
-      assert (|errors_t.master_error.write_error) else begin
+      assert (|errors_t.mhdma_error.master_error.write_error) else begin
         $display("%t > [ERROR] write_error not triggered", $time);
         error_unexpected = 1'b1;
       end
@@ -678,9 +678,9 @@ module tb_mhdma_errors;
       repeat(200) @(posedge clk_mhdma_cfg);
       maxil_drv.read_trans(MHDMA_SYSTEM_ERRORS_OFS, reg_error);
       $display("%t > Error register value :  0x%08b", $time, reg_error);
-      errors_t = mhdma_error_t'(reg_error);
+      errors_t = mhdma_error_all_t'(reg_error);
 
-      assert (errors_t.decoder_error.error_fifo_rx_ovf) else begin
+      assert (errors_t.mhdma_error.decoder_error.error_fifo_rx_ovf) else begin
         $display("%t > [ERROR] error_fifo_rx_ovf not triggered", $time);
         error_unexpected = 1'b1;
       end
@@ -721,10 +721,10 @@ module tb_mhdma_errors;
       end
 
       maxil_drv.read_trans(MHDMA_SYSTEM_ERRORS_OFS, reg_error);
-      errors_t = mhdma_error_t'(reg_error);
+      errors_t = mhdma_error_all_t'(reg_error);
       $display("%t > Error register value :  0x%08b", $time, reg_error);
 
-      assert (errors_t.master_error.seq_num_error) else begin
+      assert (errors_t.mhdma_error.master_error.seq_num_error) else begin
         $display("%t > [ERROR] seq_num_error not triggered", $time);
         error_unexpected = 1'b1;
       end
@@ -754,10 +754,10 @@ module tb_mhdma_errors;
 
       repeat(200) @(posedge clk_mhdma_cfg);
       maxil_drv.read_trans(MHDMA_SYSTEM_ERRORS_OFS, reg_error);
-      errors_t = mhdma_error_t'(reg_error);
+      errors_t = mhdma_error_all_t'(reg_error);
       $display("%t > Error register value :  0x%08b", $time, reg_error);
 
-      assert (errors_t.master_error.rrqq_cmd_ovf_error) else begin
+      assert (errors_t.master_error_cfg.rrqq_cmd_ovf_error) else begin
         $display("%t > [ERROR] rrqq_cmd_ovf_error not triggered", $time);
         error_unexpected = 1'b1;
       end
@@ -780,10 +780,10 @@ module tb_mhdma_errors;
 
       repeat(200) @(posedge clk_mhdma_cfg);
       maxil_drv.read_trans(MHDMA_SYSTEM_ERRORS_OFS, reg_error);
-      errors_t = mhdma_error_t'(reg_error);
+      errors_t = mhdma_error_all_t'(reg_error);
       $display("%t > Error register value :  0x%08b", $time, reg_error);
 
-      assert (errors_t.master_error.nrqq_cmd_ovf_error) else begin
+      assert (errors_t.master_error_cfg.nrqq_cmd_ovf_error) else begin
         $display("%t > [ERROR] nrqq_cmd_ovf_error not triggered", $time);
         error_unexpected = 1'b1;
       end

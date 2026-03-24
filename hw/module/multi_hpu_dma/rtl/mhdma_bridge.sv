@@ -89,6 +89,9 @@ module mhdma_bridge
   // statistics ---------------------------------------------------------------
   output mhdma_cnt_t                              stat_cnt,
   input  mhdma_rst_cnt_t                          rst_cnt,
+  // cfg-domain errors --------------------------------------------------------
+  output master_error_cfg_t                       master_error_cfg,
+  input  logic                                    rst_errors_cfg,
   // interrupts ---------------------------------------------------------------
   input  logic                                    clear_interrupt_notify,
   output logic                                    interrupt_notify,
@@ -295,7 +298,9 @@ module mhdma_bridge
     .notify_sent                     (notify_sent                             ),
     // errors -----------------------------------------------------------------
     .master_error                    (master_error                            ),
+    .master_error_cfg                (master_error_cfg                        ),
     .rst_errors                      (rst_cnt.mhdma_errors                    ),
+    .rst_errors_cfg                  (rst_errors_cfg                          ),
     // statistics -------------------------------------------------------------
     .stat                            (master_stat                             ),
     .stat_rst                        (master_stat_rst                         )
@@ -427,11 +432,11 @@ module mhdma_bridge
   // ==============================================================================================
   // Errors
   // ==============================================================================================
-  assign mhdma_errors.format_error  = format_error;
-  assign mhdma_errors.decoder_error = decoder_error;
-  assign mhdma_errors.slave_error   = slave_error;
-  assign mhdma_errors.master_error  = master_error;
-  assign mhdma_errors.error_id      = error_id;
+  assign mhdma_errors.format_error     = format_error;
+  assign mhdma_errors.decoder_error   = decoder_error;
+  assign mhdma_errors.slave_error     = slave_error;
+  assign mhdma_errors.master_error    = master_error;
+  assign mhdma_errors.error_id        = error_id;
   assign stat_cnt.mhdma_errors = {{(32-$bits(mhdma_error_t)){1'b0}}, mhdma_errors};
 
   // =========================================================================================== //

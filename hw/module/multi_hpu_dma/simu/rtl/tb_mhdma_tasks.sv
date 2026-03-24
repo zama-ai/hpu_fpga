@@ -151,20 +151,20 @@ endtask
 function automatic void display_errors(
   input logic [REG_DATA_W-1:0] stat_errors
 );
-  mhdma_error_t errors_struct;
-  errors_struct = mhdma_error_t'(stat_errors);
+  mhdma_error_all_t errors_struct;
+  errors_struct = mhdma_error_all_t'(stat_errors);
 
   $display("\n --------------------- Errors --------------------------------");
   $display(" Raw error register                      : 0x%08b", stat_errors);
-  $display(" format_error.formatter_error            : %b", errors_struct.format_error.formatter_error);
-  $display(" decoder_error.error_fifo_rx_ovf         : %b", errors_struct.decoder_error.error_fifo_rx_ovf);
-  $display(" slave_error.rreq_cmd_ovf_error          : %b", errors_struct.slave_error.rreq_cmd_ovf_error);
-  $display(" slave_error.read_rresp_error            : %b", errors_struct.slave_error.read_rresp_error);
-  $display(" master_error.rrqq_cmd_ovf_error         : %b", errors_struct.master_error.rrqq_cmd_ovf_error);
-  $display(" master_error.nrqq_cmd_ovf_error         : %b", errors_struct.master_error.nrqq_cmd_ovf_error);
-  $display(" master_error.seq_num_error              : %b", errors_struct.master_error.seq_num_error);
-  $display(" master_error.write_error                : %b", errors_struct.master_error.write_error);
-  $display(" error_id                                : %b", errors_struct.error_id);
+  $display(" format_error.formatter_error            : %b", errors_struct.mhdma_error.format_error.formatter_error);
+  $display(" decoder_error.error_fifo_rx_ovf         : %b", errors_struct.mhdma_error.decoder_error.error_fifo_rx_ovf);
+  $display(" slave_error.rreq_cmd_ovf_error          : %b", errors_struct.mhdma_error.slave_error.rreq_cmd_ovf_error);
+  $display(" slave_error.read_rresp_error            : %b", errors_struct.mhdma_error.slave_error.read_rresp_error);
+  $display(" master_error_cfg.rrqq_cmd_ovf_error     : %b", errors_struct.master_error_cfg.rrqq_cmd_ovf_error);
+  $display(" master_error_cfg.nrqq_cmd_ovf_error     : %b", errors_struct.master_error_cfg.nrqq_cmd_ovf_error);
+  $display(" master_error.seq_num_error              : %b", errors_struct.mhdma_error.master_error.seq_num_error);
+  $display(" master_error.write_error                : %b", errors_struct.mhdma_error.master_error.write_error);
+  $display(" error_id                                : %b", errors_struct.mhdma_error.error_id);
   $display(" -------------------------------------------------------------\n");
 endfunction
 
