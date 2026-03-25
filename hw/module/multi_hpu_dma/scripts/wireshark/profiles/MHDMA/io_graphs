@@ -1,0 +1,2 @@
+"TRUE","NOTIFY + NOTIFY_ACK","mhdma.req_id == 2 || mhdma.req_id == 3","#c0a000","Stacked Bar","Packets","","10","1"
+"TRUE","READ_REQ","mhdma.req_id == 6","#6060ff","Stacked Bar","Packets","","10","1"

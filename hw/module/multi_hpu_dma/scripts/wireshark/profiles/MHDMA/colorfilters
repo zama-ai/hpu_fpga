@@ -1,0 +1,6 @@
+# MHDMA Protocol Coloring Rules (white background)
+@MHDMA EMISSION@mhdma.req_id == 7@[0,32768,0][65535,65535,65535]
+@MHDMA READ_REQ@mhdma.req_id == 6@[0,0,52428][65535,65535,65535]
+@MHDMA NOTIFY@mhdma.req_id == 2@[40000,28000,0][65535,65535,65535]
+@MHDMA NOTIFY_ACK@mhdma.req_id == 3@[32768,0,48000][65535,65535,65535]
+@MHDMA CE gap > 10us@mhdma.ce_delta > 0.00001@[50000,0,0][65535,65535,65535]
