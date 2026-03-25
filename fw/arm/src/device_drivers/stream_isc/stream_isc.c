@@ -70,6 +70,7 @@ int write_isc(uint32_t *pucData, uint32_t writeSize) {
 void flush_dop_buffer_to_isc(uint32_t *dop_buffer, int number_of_dop) {
     uint32_t write_isc_rv = OK;
     PLL_DBG("UCORE", "trying to flush %d dop to isc", number_of_dop);
+    //PLL_ERR("UCORE", "dop_buffer %08x %08x %08x ... %08x %08x %08x",dop_buffer[0], dop_buffer[1], dop_buffer[2], dop_buffer[number_of_dop-2], dop_buffer[number_of_dop-1], dop_buffer[number_of_dop]);
     write_isc_rv = write_isc(dop_buffer, (uint32_t) (number_of_dop * sizeof(uint32_t)));
     while (write_isc_rv == RETRY) {
         PLL_DBG("UCORE", "retry flush %d value to isc", number_of_dop);

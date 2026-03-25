@@ -125,6 +125,7 @@ typedef struct {
 // A fixed size of FW_RUNTIME_MAX_WORD is reserved at the beginning of the FW memory for this structure
 typedef struct {
   uint8_t  node_id;
+  uint32_t timestamp;
   uint8_t  cluster_first_nid;
   uint8_t  cluster_last_nid;
   uint16_t ct_user_size;
@@ -156,6 +157,7 @@ void b2b_pool_init(void);
 uint16_t b2b_pool_pop(uint8_t iid);
 uint16_t b2b_pool_free(uint8_t iid);
 void dst_notifyq_init(void);
+RemoteOperand_t *dst_notifyq_getdst_nofree(uint8_t iid);
 void src_store_init(void);
 void src_store_reset_iop(uint8_t iid);
 void src_store_inits(uint8_t iid, OperandBundle_t *iop_src);

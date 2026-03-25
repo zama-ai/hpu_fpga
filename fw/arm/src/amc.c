@@ -302,6 +302,7 @@ extern XScuGic xInterruptController;
 // HPU global variables
 extern uint8_t cur_iid;
 extern uint8_t phys_hpu_id;
+uint32_t timestamp;
 extern uint8_t cluster_first_nid;
 extern uint8_t cluster_last_nid;
 extern uint16_t b2b_pool_start_addr;
@@ -349,7 +350,15 @@ void vInterruptHandler_isc_ack( void* pvCallBackRef ) {
             if (dop_ack.sync.opcode == SYNC_OPCODE) {
               if (dop_ack.sync.is_inner == 1) {
                 // internal ack
-                generate_user_notify(dop_ack.sync.iid, dop_ack.sync.flag);
+                if (dop_ack.sync.flag != 0) {
+                  generate_user_notify(dop_ack.sync.iid, dop_ack.sync.flag);
+                } else { // flag == 0 => DST available
+                  RemoteOperand_t *rdst = dst_notifyq_getdst_nofree(dop_ack.sync.iid);
+                  if (rdst) {
+                    rdst->state = OPERAND_STATE_READ_PENDING;
+                    generate_ucore_notify(dop_ack.sync.iid, rdst->pos, rdst->src_cid, rdst->dst_cid, rdst->target_cid);
+                  }
+                }
               } else {
                 // Write ack value in queue body
                 //volatile uint32_t* ackq_idx = toAmiIopAckqData + (ackq_head % AMI_IOPACKQ_MAX_WORDS);
@@ -854,11 +863,21 @@ static void vTaskFuncMain( void )
             // Update ucore configuration
             updt_ucore_cfg(&ucore_cfg);
             phys_hpu_id = ucore_cfg.node_id;
+            uint32_t new_timestamp = ucore_cfg.timestamp;
             cluster_first_nid = ucore_cfg.cluster_first_nid;
             cluster_last_nid = ucore_cfg.cluster_last_nid;
             b2b_pool_start_addr = ucore_cfg.ct_user_size;
             b2b_pool_size = ucore_cfg.b2b_size;
-            PLL_DBG("AMC", "Current core config: phys_hpu_id %d b2b_start_addr", phys_hpu_id, b2b_pool_start_addr);
+
+            if (timestamp != new_timestamp) { // this means user SW (tfhe-rs) has been restarted
+                PLL_DBG("parse_iop", "timestamp %d changed => reset inter-HPU struct", new_timestamp);
+                timestamp = new_timestamp;
+                mhdma_table_reset();
+                b2b_pool_init();
+                dst_notifyq_init();
+                src_store_init();
+                dst_store_init();
+            }
 
             // 1. Compute bytes to read from queue
             uint32_t read_bytes = (iopq_used_bytes > IOP_MAX_BYTES)? IOP_MAX_BYTES: iopq_used_bytes;
@@ -886,9 +905,6 @@ static void vTaskFuncMain( void )
                 for (uint32_t i = 0; i < wrap_chunk_size/sizeof(uint32_t); i++) {
                     iop_buffer[i+chunk_size/sizeof(uint32_t)] = * (uint32_t *)(data_ptr + i*sizeof(uint32_t));
                 }
-            }
-            for (int i =0; i < IOP_MAX_WORDS; i++) {
-                PLL_DBG("IOpQ", "@%d -> 0x%x", i, iop_buffer[i]);
             }
 
             // Parse IOp and store in lookup for ack
@@ -925,27 +941,41 @@ static void vTaskFuncMain( void )
                 for (int i=0; i< dop_entry.len; i++) {
                   dop.raw = *(dop_entry.ptr + i);
                   uint32_t patch_rc = patch_dop(&dop, &dst_bundle, &src_bundle, &imm_bundle, dop_buffer, dop_buffer_pos);
+                  // patch_rc: bit 16: need to insert SYNC (to notify DST available)
+                  //           bit 15: need to skip this DOp (LD_B2B or WAIT...)
+                  //           bit 14..0: number of DOp sent to ISC before waiting
 
-                  if (patch_rc == 0) { // classic case the DOp translated needs to go to the dop_buffer
-                    dop_buffer[(dop_buffer_pos)%DOP_BUFFER_SIZE] = dop.raw;
-                    dop_buffer_pos += 1;
-                  } else {
-                    if ((patch_rc & 0x7FFF) > 0) { // DOp has been processed and pre-translated DOp have been flushed to ISC (before wait)
-                      PLL_DBG("UCORE", "[HPU%d] translation of Dop %d done (skip %d), %d flushed so reset dop_buffer", phys_hpu_id, i, skip, patch_rc);
-                      dop_buffer_pos=0;
-                    }
-                    if ((patch_rc & 0x8000) == 0) { // DOp processed that does go to ISC
-                      dop_buffer[(dop_buffer_pos)%DOP_BUFFER_SIZE] = dop.raw;
-                      dop_buffer_pos += 1;
-                    } else {
-                      skip += 1;
-                      continue;
-                    }
+                  if ((patch_rc & 0x7FFF) > 0) { // DOp has been processed and pre-translated DOp have been flushed to ISC (before wait)
+                    //PLL_DBG("UCORE", "[HPU%d] translation of Dop %d (%08x) done (skip %d), %05x flushed so reset dop_buffer", phys_hpu_id, i, dop.raw, skip, patch_rc);
+                    dop_buffer_pos=0;
                   }
 
-                  // Flush buffer if full
-                  if ((dop_buffer_pos % DOP_BUFFER_SIZE) == 0) {
-                    flush_dop_buffer_to_isc(dop_buffer, DOP_BUFFER_SIZE);
+                  if ((patch_rc & 0x8000) == 0) { // classic case the DOp translated needs to go to the dop_buffer
+                    dop_buffer[(dop_buffer_pos)%DOP_BUFFER_SIZE] = dop.raw;
+                    dop_buffer_pos += 1;
+                    // Flush buffer if full
+                    if ((dop_buffer_pos % DOP_BUFFER_SIZE) == 0) {
+                      flush_dop_buffer_to_isc(dop_buffer, DOP_BUFFER_SIZE);
+                    }
+                  } else { // processed DOp needs to be dropped
+                    skip += 1;
+                  }
+
+                  if ((patch_rc & 0x10000) != 0) { // insert inner SYNC
+                    DOpu_t new_dop;
+                    // insert SYNC on flag 0 (dst) by sync DOp
+                    new_dop.sync.flag = 0;
+                    new_dop.sync.opcode = SYNC_OPCODE;
+                    new_dop.sync.is_inner = 1;
+                    new_dop.sync.iid = cur_iid;
+                    new_dop.sync._pad = 0;
+
+                    dop_buffer[(dop_buffer_pos)%DOP_BUFFER_SIZE] = new_dop.raw;
+                    dop_buffer_pos += 1;
+                    // Flush buffer if full
+                    if ((dop_buffer_pos % DOP_BUFFER_SIZE) == 0) {
+                      flush_dop_buffer_to_isc(dop_buffer, DOP_BUFFER_SIZE);
+                    }
                   }
                 }
 
