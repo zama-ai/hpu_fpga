@@ -738,7 +738,9 @@ int read_remote_src(int blocking, OperandBundle_t *iop_src, uint8_t tid, uint8_t
 #ifdef UCORE_MHDMA_SIMU
         sleep(10);
 #else
-        iOSAL_Task_SleepTicks(1);
+        xMainTaskWaiting = 1;
+        iOSAL_Semaphore_Pend(xMainTaskSem, 5);
+        xMainTaskWaiting = 0;
 #endif
       }
     }
@@ -792,62 +794,6 @@ int patch_mem_dop(DOpu_t *dop, OperandBundle_t *iop_dst, OperandBundle_t *iop_sr
         //        dop->mem.rid,
         //        src_store.dst_cid[cur_iid][tid][bid]);
 
-        uint16_t dst_cid = b2b_pool_pop(cur_iid);
-        if (dst_cid == 0xFFFF) {
-          PLL_ERR("patch_mem_dop", "Could not get a free slot in b2b_pool (%04x,%04x,%d)", b2b_pool_head, b2b_pool_tail, b2b_pool_free_cnt);
-          break;
-        }
-        src_store.dst_cid[cur_iid][tid][bid] = dst_cid;
-        uint16_t target_cid = (tid << 8) | bid;
-        //PLL_INF("ucore", "[HPU%d] iop %d need remote src - src_iid %d src_hpu_id %d src_cid %d dst_cid %d",
-        //    phys_hpu_id,
-        //    cur_iid,
-        //    src_iid,
-        //    src_hpu_id,
-        //    src_cid,
-        //    dst_cid);
-        // issue read immediately if src comes from a done iop or if iid = 0 which means src is coming from Host
-        if (iop_state[src_iid].state == IOP_STATE_DONE || src_iid == 0) {
-          src_store.state[cur_iid][tid][bid] = OPERAND_STATE_DMA_PENDING;
-          generate_operand_read_req(
-                  src_iid,
-                  CMD_SRC,
-                  src_hpu_id,
-                  src_cid,
-                  src_store.dst_cid[cur_iid][tid][bid],
-                  target_cid);
-        } else {
-          src_store.state[cur_iid][tid][bid] = OPERAND_STATE_READ_PENDING;
-        }
-
-        // if we need to wait, flush
-        if ((dop_buffer_pos%DOP_BUFFER_SIZE) > MIN_DOP_FLUSH && src_store.state[cur_iid][tid][bid] != OPERAND_STATE_RESOLVED) {
-          flush_dop_buffer_to_isc(dop_buffer, (dop_buffer_pos%DOP_BUFFER_SIZE));
-          return_value = (dop_buffer_pos%DOP_BUFFER_SIZE);
-        }
-        uint32_t wait_cnt = 0;
-        while (src_store.state[cur_iid][tid][bid] != OPERAND_STATE_RESOLVED) {
-          // wait until notify or read ct is received
-          //if ((wait_cnt+1)%1000 == 0) {
-          //  PLL_INF("ucore", "[HPU%d] iop %d wait on remote src - src_iid %d src_hpu_id %d src_cid %d tg %d",
-          //      phys_hpu_id,
-          //      cur_iid,
-          //      src_iid,
-          //      src_hpu_id,
-          //      src_cid,
-          //      target_cid);
-          //}
-          wait_cnt++;
-          if (wait_cnt > 10000) {
-#ifdef UCORE_MHDMA_SIMU
-            sleep(10);
-#else
-            xMainTaskWaiting = 1;
-            iOSAL_Semaphore_Pend(xMainTaskSem, 5);
-            xMainTaskWaiting = 0;
-#endif
-          }
-        }
         dop->mem.slot = src_store.dst_cid[cur_iid][tid][bid];
       }
       break;
