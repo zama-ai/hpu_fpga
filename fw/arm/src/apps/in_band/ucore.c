@@ -38,6 +38,9 @@ uint8_t mhdma_table_state[IOP_ID_MAX_COUNT][FLAG_MAX_COUNT];
 void mhdma_table_reset(void) {
   memset(mhdma_table_state, MHDMA_STATE_EMPTY, sizeof(mhdma_table_state));
 }
+void mhdma_table_reset_iop(uint8_t iid) {
+  memset(mhdma_table_state[iid], MHDMA_STATE_EMPTY, sizeof(mhdma_table_state[iid]));
+}
 
 // IOP state
 iop_state_t iop_state[IOP_ID_MAX_COUNT];
@@ -390,6 +393,8 @@ void iop_teardown(uint8_t iid) {
   dst_notifyq_reset_tails();
   //flush remote source queue
   src_store_reset_iop(iid);
+  //reset mhdma_table for this IOp (all local notify & ld_b2b & wait)
+  mhdma_table_reset_iop(iid);
   //cnt remote dst to be sent
   uint16_t dst_cnts = dst_store_get_owned_cnt(iid, phys_hpu_id);
   uint8_t dst_cnt_owned = (dst_cnts >> 8) & 0XFF;
