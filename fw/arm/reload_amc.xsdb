@@ -1,6 +1,7 @@
 connect
 foreach board $argv {
     set target [expr {3 + 13 * $board}]
+    puts $target
     ta $target
     dow -skip-tcm-clear build/amc.elf
     rst -proc -skip-activate-subsystem -clear-registers
