@@ -218,7 +218,7 @@ module tb_instruction_scheduler;
 // Simple assertion on stream data
 // ============================================================================================== --
   assert property (@(posedge clk) trace_wr_en |-> !$isunknown(trace_data))
-  else 
+  else
     $fatal(1,"%t > ERROR: trace_data is unknown while trace_wr_en is asserted.", $time);
 // ============================================================================================== --
 // Insn stream

@@ -497,7 +497,7 @@ assign trace_data = r_trace_data;
   // Check that trace data do not overflow the AXI4_DATA_W of trace interface
   initial
    assert (TRACE_W <= AXI4_DATA_W)
-   else 
+   else
       $fatal(1,"%t > ERROR: Instruction trace is bigger that Axi bus width.", $time);
 
   always_ff @(posedge clk)
