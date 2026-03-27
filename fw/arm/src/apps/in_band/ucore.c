@@ -946,6 +946,9 @@ int process_ucore_dop(DOpu_t *dop, OperandBundle_t *iop_src, uint32_t *dop_buffe
         uint16_t raw_ct_id = get_raw_ct_id(dop);
         current_elt->dst_ct_id = raw_ct_id;
         current_elt->master_hpu_id = phys_hpu_id;
+        // Here main task reads intermediate ct state and modifies it
+        // so we do not want an ISR to update it in parallel
+        vOSAL_EnterCritical();
         switch (mhdma_table_state[cur_iid][current_flag]) {
           case MHDMA_STATE_RESOLVED: break; // nothing to do
           case MHDMA_STATE_RECEIVED: { // must read asap
@@ -969,6 +972,7 @@ int process_ucore_dop(DOpu_t *dop, OperandBundle_t *iop_src, uint32_t *dop_buffe
             break;
           }
         }
+        vOSAL_ExitCritical();
       } else { // this is a remote src
         if (dop->ucore.mode != MEM_HEAP) {
           PLL_ERR("process_ucore_dop", "[HPU%d] ","LD_B2B with flag 0 but not about a source!! %08x", dop->raw);
