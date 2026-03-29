@@ -16,7 +16,7 @@ extern mhdma_element_t mhdma_table[IOP_ID_MAX_COUNT][FLAG_MAX_COUNT];
 
 #ifdef UCORE_MHDMA_SIMU
   extern int output_pipe;
-  
+
   void write_read_req_command(uint8_t master_hpu_id, uint64_t cmd) {
     if (output_pipe) {
       char* msg = malloc(25*sizeof(char));
@@ -37,7 +37,7 @@ extern mhdma_element_t mhdma_table[IOP_ID_MAX_COUNT][FLAG_MAX_COUNT];
 #else
   volatile uint32_t *cmd_req_id = (volatile uint32_t*)(XPAR_AXI_LPD_BASEADDR + MHDMA_CMD_WRITE_REQ_ID );
   volatile uint32_t *cmd_req_addr = (volatile uint32_t*)(XPAR_AXI_LPD_BASEADDR + MHDMA_CMD_WRITE_REQ_ADDR );
-  
+
   void write_notify_command(uint8_t slave_hpu_id, uint64_t cmd) {
     (void)slave_hpu_id;
     //PLL_ERR("mhdma_driver", "write notify %08x:%08x %08x:%08x",
@@ -51,7 +51,7 @@ extern mhdma_element_t mhdma_table[IOP_ID_MAX_COUNT][FLAG_MAX_COUNT];
     HAL_FLUSH_CACHE_DATA( (uintptr_t)cmd_req_addr, sizeof(uint32_t));
   }
   void write_read_req_command(uint8_t master_hpu_id, uint64_t cmd) {
-    write_notify_command(master_hpu_id, cmd); 
+    write_notify_command(master_hpu_id, cmd);
   }
 #endif
 

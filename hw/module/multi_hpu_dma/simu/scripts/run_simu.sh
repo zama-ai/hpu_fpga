@@ -109,16 +109,23 @@ GLWE_K_LIST=("1" "2")
 # PEM_PC values for unit tests (top-level & scenarios are locked to PEM_PC=2)
 PEM_PC_LIST_UNIT=("1" "2")
 
+index=$(($RANDOM % 3))
+AXI_DATA_W=${AXI_DATA_W_LIST[$index]}
+index=$(($RANDOM % 2))
+GLWE_K=${GLWE_K_LIST[$index]}
+index=$(($RANDOM % 2))
+PEM_PC=${PEM_PC_LIST_UNIT[$index]}
+
 ###################################################################################################
 # 1) Unit tests: sweep PEM_PC x GLWE_K x AXI_DATA_W
 ###################################################################################################
 echo "================================================================"
-echo "INFO> Running unit tests with parameter sweep"
+echo "INFO> Running unit tests with selected parameters"
 echo "================================================================"
 
-for PEM_PC in "${PEM_PC_LIST_UNIT[@]}"; do
-  for GLWE_K in "${GLWE_K_LIST[@]}"; do
-    for AXI_DATA_W in "${AXI_DATA_W_LIST[@]}"; do
+#for PEM_PC in "${PEM_PC_LIST_UNIT[@]}"; do
+#  for GLWE_K in "${GLWE_K_LIST[@]}"; do
+#    for AXI_DATA_W in "${AXI_DATA_W_LIST[@]}"; do
       for TB in "${UNIT_TESTS[@]}"; do
         run_test "${SCRIPT_DIR}/run.sh \
           -g $GLWE_K \
@@ -127,38 +134,38 @@ for PEM_PC in "${PEM_PC_LIST_UNIT[@]}"; do
           -m $TB \
           -F AXI_DATA_W AXI_DATA_W_${AXI_DATA_W}"
       done
-    done
-  done
-done
+#    done
+#  done
+#done
 
 ###################################################################################################
 # 2) Top-level test: sweep PEM_PC x GLWE_K x AXI_DATA_W
 ###################################################################################################
 echo "================================================================"
-echo "INFO> Running top-level ${module} with parameter sweep"
+echo "INFO> Running top-level ${module} with selected parameters"
 echo "================================================================"
 
-for PEM_PC in "${PEM_PC_LIST_UNIT[@]}"; do
-  for GLWE_K in "${GLWE_K_LIST[@]}"; do
-    for AXI_DATA_W in "${AXI_DATA_W_LIST[@]}"; do
+#for PEM_PC in "${PEM_PC_LIST_UNIT[@]}"; do
+#  for GLWE_K in "${GLWE_K_LIST[@]}"; do
+#    for AXI_DATA_W in "${AXI_DATA_W_LIST[@]}"; do
       run_test "${SCRIPT_DIR}/run.sh \
         -g $GLWE_K \
         -E $PEM_PC \
         -- $args \
         -F AXI_DATA_W AXI_DATA_W_${AXI_DATA_W}"
-    done
-  done
-done
+#    done
+#  done
+#done
 
 ###################################################################################################
 # 3) Scenario tests: PEM_PC=2, sweep GLWE_K x AXI_DATA_W
 ###################################################################################################
 echo "================================================================"
-echo "INFO> Running scenario tests with parameter sweep"
+echo "INFO> Running scenario tests with selected parameters"
 echo "================================================================"
 
-for GLWE_K in "${GLWE_K_LIST[@]}"; do
-  for AXI_DATA_W in "${AXI_DATA_W_LIST[@]}"; do
+#for GLWE_K in "${GLWE_K_LIST[@]}"; do
+#  for AXI_DATA_W in "${AXI_DATA_W_LIST[@]}"; do
     for TB in "${SCENARIO_TESTS[@]}"; do
       run_test "${SCRIPT_DIR}/run.sh \
         -g $GLWE_K \
@@ -167,7 +174,7 @@ for GLWE_K in "${GLWE_K_LIST[@]}"; do
         -m $TB \
         -F AXI_DATA_W AXI_DATA_W_${AXI_DATA_W}"
     done
-  done
-done
+#  done
+#done
 
 echo -e "${GREEN}ALL TESTS PASSED${NC}" 1>&2

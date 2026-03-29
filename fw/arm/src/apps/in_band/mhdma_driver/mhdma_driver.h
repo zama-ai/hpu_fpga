@@ -39,7 +39,7 @@ typedef union {
 #define MHDMA_CMD_READ   6
 #define MHDMA_CMD_CT     7
 
-#define CMD_USER 0 // commands used inside an IOp with flag, dealing with ct internal to an IOp 
+#define CMD_USER 0 // commands used inside an IOp with flag, dealing with ct internal to an IOp
 #define CMD_SRC  1 // commands to mean an IOp is done on a node, dealing with source ct
 #define CMD_DST  2 // commands used for IOp destination, dealing with destination ct
 
