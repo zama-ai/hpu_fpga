@@ -45,10 +45,12 @@ extern mhdma_element_t mhdma_table[IOP_ID_MAX_COUNT][FLAG_MAX_COUNT];
     //    (cmd & 0xFFFFFFFF),
     //    (uintptr_t)cmd_req_addr,
     //    ((cmd >> 32) & 0xFFFFFFFF));
+    vOSAL_EnterCritical();
     *cmd_req_id = cmd & 0xFFFFFFFF;
     HAL_FLUSH_CACHE_DATA( (uintptr_t)cmd_req_id, sizeof(uint32_t));
     *cmd_req_addr = (cmd >> 32) & 0xFFFFFFFF;
     HAL_FLUSH_CACHE_DATA( (uintptr_t)cmd_req_addr, sizeof(uint32_t));
+    vOSAL_ExitCritical();
   }
   void write_read_req_command(uint8_t master_hpu_id, uint64_t cmd) {
     write_notify_command(master_hpu_id, cmd);
