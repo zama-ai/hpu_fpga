@@ -485,7 +485,7 @@ assign query_vld = !query_ack_vld;
   assign trace_wr_enD = (query_ack.status == SUCCESS) && query_ack_vld;
 
   // Consume pep_ack_fifo
-  assign f_pep_ack_rdy = trace_wr_en && (query_ack.cmd == RETIRE) && (query_ack.info.insn.kind == PBS);
+  assign f_pep_ack_rdy = trace_wr_enD && (query_ack.cmd == RETIRE) && (query_ack.info.insn.kind == PBS);
 // Bind on output signals
 assign trace_wr_en = r_trace_wr_en;
 assign trace_data = r_trace_data;
