@@ -382,7 +382,9 @@ void iop_teardown(uint8_t iid) {
       //    remote_operand->dst_cid,
       //    remote_operand->target_cid);
       remote_operand->state = OPERAND_STATE_READ_PENDING;
+      vOSAL_EnterCritical();
       generate_ucore_notify(iid, remote_operand->pos, remote_operand->src_cid, remote_operand->dst_cid, remote_operand->target_cid);
+      vOSAL_ExitCritical();
     }
     remote_operand = dst_notifyq_getdst(iid);
 #ifdef UCORE_MHDMA_SIMU
@@ -433,7 +435,9 @@ void iop_teardown(uint8_t iid) {
   // notify IOp locally done to all HPU but local one
   for (int i = cluster_first_nid; i <= cluster_last_nid; i++) {
     if (i != phys_hpu_id) {
+      vOSAL_EnterCritical();
       generate_iop_notify(iid, iop_state[iid].nb_hpu, i);
+      vOSAL_ExitCritical();
 #ifdef UCORE_MHDMA_SIMU
       sleep(1);
 #endif
@@ -704,6 +708,7 @@ int read_remote_src(int blocking, OperandBundle_t *iop_src, uint8_t tid, uint8_t
   // issue read immediately if src comes from a done iop or if iid = 0 which means src is coming from Host
   if ((iop_state[src_iid].state == IOP_STATE_DONE || src_iid == 0) && src_store.state[cur_iid][tid][bid] == OPERAND_STATE_READ_PENDING) {
     src_store.state[cur_iid][tid][bid] = OPERAND_STATE_DMA_PENDING;
+    vOSAL_EnterCritical();
     generate_operand_read_req(
             src_iid,
             CMD_SRC,
@@ -711,6 +716,7 @@ int read_remote_src(int blocking, OperandBundle_t *iop_src, uint8_t tid, uint8_t
             src_cid,
             src_store.dst_cid[cur_iid][tid][bid],
             target_cid);
+    vOSAL_ExitCritical();
   }
 
   if (blocking == 1) {

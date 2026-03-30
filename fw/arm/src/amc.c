@@ -586,6 +586,7 @@ void vMhdmaWorkerTask(void *pvParameters) {
             //        src_store.owner[cur_iid][tid],
             //        src_store.cid_offset[cur_iid][tid] + bid,
             //        src_store.dst_cid[cur_iid][tid][bid]);
+            vOSAL_EnterCritical();
             generate_operand_read_req(
                     cur_iid,
                     mode,
@@ -594,6 +595,7 @@ void vMhdmaWorkerTask(void *pvParameters) {
                     src_store.dst_cid[cur_iid][tid][bid],
                     0);
             src_store.state[cur_iid][tid][bid] = OPERAND_STATE_DMA_PENDING;
+            vOSAL_ExitCritical();
             // try to get next src pending
             src_addr = src_store_get_waiting(cur_iid, iid);
             tid = (src_addr >> 8) & 0xFF;
