@@ -59,7 +59,7 @@ module mhdma_decoder
   // =========================================================================================== //
   // Localparam
   // =========================================================================================== //
-  localparam int NUM_STAT_CNTS = 4;
+  localparam int NUM_STAT_CNTS = 5;
 
   // =========================================================================================== //
   // Input pipeline stage
@@ -348,12 +348,20 @@ module mhdma_decoder
     end
   end
 
+  // Dropped packet detection: packet not recognized (wrong MAC or unknown opcode)
+  // req_id is captured at counter==2 (always_ff), so *_receivedD is first valid at counter==3
+  // Check exactly at counter==3: after that *_receivedD are stable levels, not pulses
+  logic pkt_dropped;
+  assign pkt_dropped = rx_tvalid_in & (rx_counter == 3)
+                     & ~(nack_receivedD | nr_receivedD | rr_receivedD | ce_receivedD);
+
   // counters on received commands
   logic [NUM_STAT_CNTS-1:0][REG_DATA_W-1:0] stat_cnt;
   logic [NUM_STAT_CNTS-1:0]                 stat_cnt_inc;
   logic [NUM_STAT_CNTS-1:0]                 stat_cnt_rst;
 
   assign stat_cnt_inc = {
+    pkt_dropped,
     ciphertext_emission_received,
     notify_ack_received,
     read_request_received,
@@ -361,6 +369,7 @@ module mhdma_decoder
   };
 
   assign stat_cnt_rst = {
+    stat_rst.cnt_dropped,
     stat_rst.cnt_ce_received,
     stat_rst.cnt_nack_received,
     stat_rst.cnt_read_req_received,
@@ -386,5 +395,6 @@ module mhdma_decoder
   assign stat.cnt_read_req_received  = stat_cnt[1];
   assign stat.cnt_nack_received      = stat_cnt[2];
   assign stat.cnt_ce_received        = stat_cnt[3];
+  assign stat.cnt_dropped            = stat_cnt[4];
 
 endmodule

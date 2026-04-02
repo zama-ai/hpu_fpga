@@ -117,13 +117,14 @@ module mhdma_bridge
   localparam int CDC_SYNC_STAGES = 2;
 
   // per-submodule stat/rst struct wires
-  master_stat_t      master_stat;
-  master_stat_rst_t  master_stat_rst;
-  slave_stat_t       slave_stat;
-  slave_stat_rst_t   slave_stat_rst;
-  decoder_stat_t     decoder_stat;
-  decoder_stat_rst_t decoder_stat_rst;
-  formatter_stat_t   formatter_stat;
+  master_stat_t        master_stat;
+  master_stat_rst_t    master_stat_rst;
+  slave_stat_t         slave_stat;
+  slave_stat_rst_t     slave_stat_rst;
+  decoder_stat_t       decoder_stat;
+  decoder_stat_rst_t   decoder_stat_rst;
+  formatter_stat_t     formatter_stat;
+  formatter_stat_rst_t formatter_stat_rst;
 
   // =========================================================================================== //
   // CDC from regf to mrmac clock
@@ -383,7 +384,7 @@ module mhdma_bridge
     .qsfp_rx_tvalid              (qsfp_rx_tvalid                              ),
     // errors -----------------------------------------------------------------
     .decoder_error               (decoder_error                               ),
-    .rst_errors                  (stat_rst.mhdma_errors                        ),
+    .rst_errors                  (stat_rst.mhdma_errors                       ),
     // statistics -------------------------------------------------------------
     .stat                        (decoder_stat                                ),
     .stat_rst                    (decoder_stat_rst                            )
@@ -424,9 +425,10 @@ module mhdma_bridge
     .qsfp_tx_tready                  (qsfp_tx_tready                          ),
     // errors -----------------------------------------------------------------
     .format_error                    (format_error                            ),
-    .rst_errors                      (stat_rst.mhdma_errors                    ),
+    .rst_errors                      (stat_rst.mhdma_errors                   ),
     // statistics -------------------------------------------------------------
-    .stat                            (formatter_stat                          )
+    .stat                            (formatter_stat                          ),
+    .stat_rst                        (formatter_stat_rst                      )
   );
 
   // ==============================================================================================
@@ -448,8 +450,9 @@ module mhdma_bridge
   assign stat_to_cfg.formatter = formatter_stat;
 
   // reset mapping (stat_rst -> per-submodule stat_rst)
-  assign master_stat_rst  = stat_rst.master;
-  assign slave_stat_rst   = stat_rst.slave;
-  assign decoder_stat_rst = stat_rst.decoder;
+  assign master_stat_rst    = stat_rst.master;
+  assign slave_stat_rst     = stat_rst.slave;
+  assign decoder_stat_rst   = stat_rst.decoder;
+  assign formatter_stat_rst = stat_rst.formatter;
 
 endmodule

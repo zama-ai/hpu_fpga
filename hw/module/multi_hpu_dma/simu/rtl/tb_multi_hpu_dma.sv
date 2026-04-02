@@ -509,6 +509,19 @@ module tb_multi_hpu_dma;
   logic [ETH_PC-1:0][2*REG_DATA_W-1:0] stat_rr_phy_addr;
   logic             [REG_DATA_W-1:0]   stat_nb_ce_words_received;
   logic             [REG_DATA_W-1:0]   stat_nb_write_complete;
+  // new stats
+  logic             [REG_DATA_W-1:0]   stat_nb_notify_sent;
+  logic             [REG_DATA_W-1:0]   stat_nb_ce_sent;
+  logic             [REG_DATA_W-1:0]   stat_nb_notify_ack_sent;
+  logic             [REG_DATA_W-1:0]   stat_nb_read_req_sent;
+  logic             [REG_DATA_W-1:0]   stat_t_notify_to_ack_max;
+  logic             [REG_DATA_W-1:0]   stat_t_rr_to_ce_received_max;
+  logic             [REG_DATA_W-1:0]   stat_t_hbm_write_latency;
+  logic             [REG_DATA_W-1:0]   stat_t_hbm_write_latency_max;
+  logic             [REG_DATA_W-1:0]   stat_t_hbm_write_latency_min;
+  logic             [REG_DATA_W-1:0]   stat_t_notify_to_ack_min;
+  logic             [REG_DATA_W-1:0]   stat_t_rr_to_ce_received_min;
+  logic             [REG_DATA_W-1:0]   stat_nb_decoder_dropped;
 
   int arbitrary_notify_nb;
   int arbitrary_read_req_nb;
@@ -803,6 +816,76 @@ module tb_multi_hpu_dma;
     $display(" stat_rr_phy_addr          [1] : %0d", stat_rr_phy_addr[1]);
     $display(" stat_nb_ce_words_received     : %0d", stat_nb_ce_words_received);
     $display(" stat_nb_write_complete        : %0d", stat_nb_write_complete);
+    gen_maxil_if[0].maxil_if.read_trans(MHDMA_REQUEST_STAT_NB_NOTIFY_SENT_OFS, stat_nb_notify_sent);
+    gen_maxil_if[0].maxil_if.read_trans(MHDMA_REQUEST_STAT_NB_CE_SENT_OFS, stat_nb_ce_sent);
+    gen_maxil_if[0].maxil_if.read_trans(MHDMA_REQUEST_STAT_NB_NOTIFY_ACK_SENT_OFS, stat_nb_notify_ack_sent);
+    gen_maxil_if[0].maxil_if.read_trans(MHDMA_REQUEST_STAT_NB_READ_REQ_SENT_OFS, stat_nb_read_req_sent);
+    gen_maxil_if[0].maxil_if.read_trans(MHDMA_REQUEST_STAT_T_HBM_WRITE_LATENCY_OFS, stat_t_hbm_write_latency);
+    gen_maxil_if[0].maxil_if.read_trans(MHDMA_REQUEST_STAT_T_HBM_WRITE_LATENCY_MAX_OFS, stat_t_hbm_write_latency_max);
+    gen_maxil_if[0].maxil_if.read_trans(MHDMA_REQUEST_STAT_T_HBM_WRITE_LATENCY_MIN_OFS, stat_t_hbm_write_latency_min);
+    gen_maxil_if[0].maxil_if.read_trans(MHDMA_REQUEST_STAT_T_NOTIFY_TO_ACK_MIN_OFS, stat_t_notify_to_ack_min);
+    gen_maxil_if[0].maxil_if.read_trans(MHDMA_REQUEST_STAT_T_NOTIFY_TO_ACK_MAX_OFS, stat_t_notify_to_ack_max);
+    gen_maxil_if[0].maxil_if.read_trans(MHDMA_REQUEST_STAT_T_RR_TO_CE_RECEIVED_MIN_OFS, stat_t_rr_to_ce_received_min);
+    gen_maxil_if[0].maxil_if.read_trans(MHDMA_REQUEST_STAT_T_RR_TO_CE_RECEIVED_MAX_OFS, stat_t_rr_to_ce_received_max);
+    gen_maxil_if[0].maxil_if.read_trans(MHDMA_REQUEST_STAT_NB_DECODER_DROPPED_OFS, stat_nb_decoder_dropped);
+    $display(" stat_nb_notify_sent           : %0d", stat_nb_notify_sent);
+    $display(" stat_nb_ce_sent              : %0d", stat_nb_ce_sent);
+    $display(" stat_nb_notify_ack_sent      : %0d", stat_nb_notify_ack_sent);
+    $display(" stat_nb_read_req_sent        : %0d", stat_nb_read_req_sent);
+    $display(" stat_t_hbm_write_latency     : %0d", stat_t_hbm_write_latency);
+    $display(" stat_t_hbm_write_latency_max : %0d", stat_t_hbm_write_latency_max);
+    $display(" stat_t_hbm_write_latency_min : %0d", stat_t_hbm_write_latency_min);
+    $display(" stat_t_notify_to_ack_min     : %0d", stat_t_notify_to_ack_min);
+    $display(" stat_t_notify_to_ack_max     : %0d", stat_t_notify_to_ack_max);
+    $display(" stat_t_rr_to_ce_received_min : %0d", stat_t_rr_to_ce_received_min);
+    $display(" stat_t_rr_to_ce_received_max : %0d", stat_t_rr_to_ce_received_max);
+    $display(" stat_nb_decoder_dropped      : %0d", stat_nb_decoder_dropped);
+
+    // checking that some stats registers are not zeors & correctly accessed
+    assert (stat_t_notify_to_ack_min != 0 && stat_t_notify_to_ack_min != {REG_DATA_W{1'b1}}) else begin
+      $display("%t > [ERROR] HPU_A: stat_t_notify_to_ack_min is uninitialized (%0d)", $time, stat_t_notify_to_ack_min);
+      error_register = 1'b1;
+    end
+    assert (stat_t_notify_to_ack_max != 0) else begin
+      $display("%t > [ERROR] HPU_A: stat_t_notify_to_ack_max is zero", $time);
+      error_register = 1'b1;
+    end
+    assert (stat_t_notify_to_ack_min <= stat_t_notify_to_ack_max) else begin
+      $display("%t > [ERROR] HPU_A: stat_t_notify_to_ack_min (%0d) > max (%0d)", $time, stat_t_notify_to_ack_min, stat_t_notify_to_ack_max);
+      error_register = 1'b1;
+    end
+    assert (stat_t_rr_to_ce_received_min != 0 && stat_t_rr_to_ce_received_min != {REG_DATA_W{1'b1}}) else begin
+      $display("%t > [ERROR] HPU_A: stat_t_rr_to_ce_received_min is uninitialized (%0d)", $time, stat_t_rr_to_ce_received_min);
+      error_register = 1'b1;
+    end
+    assert (stat_t_rr_to_ce_received_max != 0) else begin
+      $display("%t > [ERROR] HPU_A: stat_t_rr_to_ce_received_max is zero", $time);
+      error_register = 1'b1;
+    end
+    assert (stat_t_rr_to_ce_received_min <= stat_t_rr_to_ce_received_max) else begin
+      $display("%t > [ERROR] HPU_A: stat_t_rr_to_ce_received_min (%0d) > max (%0d)", $time, stat_t_rr_to_ce_received_min, stat_t_rr_to_ce_received_max);
+      error_register = 1'b1;
+    end
+    assert (stat_t_hbm_write_latency != 0) else begin
+      $display("%t > [ERROR] HPU_A: stat_t_hbm_write_latency is zero", $time);
+      error_register = 1'b1;
+    end
+    assert (stat_t_hbm_write_latency_max != 0) else begin
+      $display("%t > [ERROR] HPU_A: stat_t_hbm_write_latency_max is zero", $time);
+      error_register = 1'b1;
+    end
+    assert (stat_t_hbm_write_latency_min != 0 && stat_t_hbm_write_latency_min != {REG_DATA_W{1'b1}}) else begin
+      $display("%t > [ERROR] HPU_A: stat_t_hbm_write_latency_min is uninitialized (%0d)", $time, stat_t_hbm_write_latency_min);
+      error_register = 1'b1;
+    end
+    assert (stat_t_hbm_write_latency_min <= stat_t_hbm_write_latency_max) else begin
+      $display("%t > [ERROR] HPU_A: stat_t_hbm_write_latency_min (%0d) > max (%0d)", $time, stat_t_hbm_write_latency_min, stat_t_hbm_write_latency_max);
+      error_register = 1'b1;
+    end
+    assert (stat_nb_decoder_dropped == 0) else begin
+      $display("%t > [ERROR] HPU_A: stat_nb_decoder_dropped is non-zero (%0d) - no bad packets expected", $time, stat_nb_decoder_dropped);
+      error_register = 1'b1;
+    end
 
     $display(" ----------------- HPU_B -------------------------------------");
     gen_maxil_if[1].maxil_if.read_trans(MHDMA_REQUEST_STAT_NOTIFY_OFS, stat_notify);
@@ -849,6 +932,48 @@ module tb_multi_hpu_dma;
     $display(" stat_rr_phy_addr          [1] : %0d", stat_rr_phy_addr[1]);
     $display(" stat_nb_ce_words_received     : %0d", stat_nb_ce_words_received);
     $display(" stat_nb_write_complete        : %0d", stat_nb_write_complete);
+    gen_maxil_if[1].maxil_if.read_trans(MHDMA_REQUEST_STAT_NB_NOTIFY_SENT_OFS, stat_nb_notify_sent);
+    gen_maxil_if[1].maxil_if.read_trans(MHDMA_REQUEST_STAT_NB_CE_SENT_OFS, stat_nb_ce_sent);
+    gen_maxil_if[1].maxil_if.read_trans(MHDMA_REQUEST_STAT_NB_NOTIFY_ACK_SENT_OFS, stat_nb_notify_ack_sent);
+    gen_maxil_if[1].maxil_if.read_trans(MHDMA_REQUEST_STAT_NB_READ_REQ_SENT_OFS, stat_nb_read_req_sent);
+    gen_maxil_if[1].maxil_if.read_trans(MHDMA_REQUEST_STAT_T_HBM_WRITE_LATENCY_OFS, stat_t_hbm_write_latency);
+    gen_maxil_if[1].maxil_if.read_trans(MHDMA_REQUEST_STAT_T_HBM_WRITE_LATENCY_MAX_OFS, stat_t_hbm_write_latency_max);
+    gen_maxil_if[1].maxil_if.read_trans(MHDMA_REQUEST_STAT_T_HBM_WRITE_LATENCY_MIN_OFS, stat_t_hbm_write_latency_min);
+    gen_maxil_if[1].maxil_if.read_trans(MHDMA_REQUEST_STAT_T_NOTIFY_TO_ACK_MIN_OFS, stat_t_notify_to_ack_min);
+    gen_maxil_if[1].maxil_if.read_trans(MHDMA_REQUEST_STAT_T_NOTIFY_TO_ACK_MAX_OFS, stat_t_notify_to_ack_max);
+    gen_maxil_if[1].maxil_if.read_trans(MHDMA_REQUEST_STAT_T_RR_TO_CE_RECEIVED_MIN_OFS, stat_t_rr_to_ce_received_min);
+    gen_maxil_if[1].maxil_if.read_trans(MHDMA_REQUEST_STAT_T_RR_TO_CE_RECEIVED_MAX_OFS, stat_t_rr_to_ce_received_max);
+    gen_maxil_if[1].maxil_if.read_trans(MHDMA_REQUEST_STAT_NB_DECODER_DROPPED_OFS, stat_nb_decoder_dropped);
+    $display(" stat_nb_notify_sent           : %0d", stat_nb_notify_sent);
+    $display(" stat_nb_ce_sent              : %0d", stat_nb_ce_sent);
+    $display(" stat_nb_notify_ack_sent      : %0d", stat_nb_notify_ack_sent);
+    $display(" stat_nb_read_req_sent        : %0d", stat_nb_read_req_sent);
+    $display(" stat_t_hbm_write_latency     : %0d", stat_t_hbm_write_latency);
+    $display(" stat_t_hbm_write_latency_max : %0d", stat_t_hbm_write_latency_max);
+    $display(" stat_t_hbm_write_latency_min : %0d", stat_t_hbm_write_latency_min);
+    $display(" stat_t_notify_to_ack_min     : %0d", stat_t_notify_to_ack_min);
+    $display(" stat_t_notify_to_ack_max     : %0d", stat_t_notify_to_ack_max);
+    $display(" stat_t_rr_to_ce_received_min : %0d", stat_t_rr_to_ce_received_min);
+    $display(" stat_t_rr_to_ce_received_max : %0d", stat_t_rr_to_ce_received_max);
+    $display(" stat_nb_decoder_dropped      : %0d", stat_nb_decoder_dropped);
+
+    // checking that some stats registers are not zeors & correctly accessed
+    assert (stat_t_notify_to_ack_min != 0 && stat_t_notify_to_ack_min != {REG_DATA_W{1'b1}}) else begin
+      $display("%t > [ERROR] HPU_B: stat_t_notify_to_ack_min is uninitialized (%0d)", $time, stat_t_notify_to_ack_min);
+      error_register = 1'b1;
+    end
+    assert (stat_t_notify_to_ack_max != 0) else begin
+      $display("%t > [ERROR] HPU_B: stat_t_notify_to_ack_max is zero", $time);
+      error_register = 1'b1;
+    end
+    assert (stat_t_notify_to_ack_min <= stat_t_notify_to_ack_max) else begin
+      $display("%t > [ERROR] HPU_B: stat_t_notify_to_ack_min (%0d) > max (%0d)", $time, stat_t_notify_to_ack_min, stat_t_notify_to_ack_max);
+      error_register = 1'b1;
+    end
+    assert (stat_nb_decoder_dropped == 0) else begin
+      $display("%t > [ERROR] HPU_B: stat_nb_decoder_dropped is non-zero (%0d)", $time, stat_nb_decoder_dropped);
+      error_register = 1'b1;
+    end
     $display(" ------------------------------------------------------------- \n");
 
     $display("%t > INFO: End simulation",$time);

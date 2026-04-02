@@ -1535,6 +1535,99 @@ module mhdma_master
     end
   end
 
+  // Min latency tracking --------------------------------------------------------------------------
+  logic [REG_DATA_W-1:0] t_notify_to_ack_min;
+  logic [REG_DATA_W-1:0] t_rr_to_ce_received_min;
+
+  always_ff @(posedge clk_mhdma) begin
+    if (~resetn_mhdma) begin
+      t_notify_to_ack_min <= {REG_DATA_W{1'b1}};
+    end else begin
+      if (notify_ack_received) begin
+        t_notify_to_ack_min <= (t_notify_to_ack < t_notify_to_ack_min) ? t_notify_to_ack : t_notify_to_ack_min;
+      end
+    end
+  end
+
+  always_ff @(posedge clk_mhdma) begin
+    if (~resetn_mhdma) begin
+      t_rr_to_ce_received_min <= {REG_DATA_W{1'b1}};
+    end else begin
+      if (ciphertext_received) begin
+        t_rr_to_ce_received_min <= (t_rr_to_ce_received < t_rr_to_ce_received_min) ? t_rr_to_ce_received : t_rr_to_ce_received_min;
+      end
+    end
+  end
+
+  // HBM write latency: from first AW handshake to all PCs transfer done -------------------------
+  logic any_aw_accepted;
+  logic all_transfer_done;
+  logic all_transfer_done_r;
+  logic all_transfer_done_rise;
+  logic count_hbm_write;
+  logic [REG_DATA_W-1:0] t_hbm_write;
+  logic [REG_DATA_W-1:0] stat_t_hbm_write_r;
+  logic [REG_DATA_W-1:0] t_hbm_write_max;
+  logic [REG_DATA_W-1:0] t_hbm_write_min;
+
+  assign any_aw_accepted = |(m_axi4_awvalid & m_axi4_awready);
+  assign all_transfer_done = &pc_transfer_done;
+
+  always_ff @(posedge clk_mhdma) begin
+    if (~resetn_mhdma) begin
+      all_transfer_done_r <= 1'b0;
+    end else begin
+      all_transfer_done_r <= all_transfer_done;
+    end
+  end
+  assign all_transfer_done_rise = all_transfer_done & ~all_transfer_done_r;
+
+  always_ff @(posedge clk_mhdma) begin
+    if (~resetn_mhdma) begin
+      count_hbm_write <= 1'b0;
+    end else if (any_aw_accepted & ~count_hbm_write) begin
+      count_hbm_write <= 1'b1;
+    end else if (all_transfer_done_rise) begin
+      count_hbm_write <= 1'b0;
+    end
+  end
+
+  always_ff @(posedge clk_mhdma) begin
+    if (count_hbm_write) begin
+      t_hbm_write <= t_hbm_write + 1;
+    end else begin
+      t_hbm_write <= 'h0;
+    end
+  end
+
+  always_ff @(posedge clk_mhdma) begin
+    if (~resetn_mhdma) begin
+      stat_t_hbm_write_r <= 'h0;
+    end else if (all_transfer_done_rise) begin
+      stat_t_hbm_write_r <= t_hbm_write;
+    end
+  end
+
+  always_ff @(posedge clk_mhdma) begin
+    if (~resetn_mhdma) begin
+      t_hbm_write_max <= 'h0;
+    end else begin
+      if (all_transfer_done_rise) begin
+        t_hbm_write_max <= (t_hbm_write_max < t_hbm_write) ? t_hbm_write : t_hbm_write_max;
+      end
+    end
+  end
+
+  always_ff @(posedge clk_mhdma) begin
+    if (~resetn_mhdma) begin
+      t_hbm_write_min <= {REG_DATA_W{1'b1}};
+    end else begin
+      if (all_transfer_done_rise) begin
+        t_hbm_write_min <= (t_hbm_write < t_hbm_write_min) ? t_hbm_write : t_hbm_write_min;
+      end
+    end
+  end
+
   // Debug registers ------------------------------------------------------------------------------
   logic [CE_DATA_COUNT_W:0] fifo_cerx_out_cnt;
 
@@ -1585,19 +1678,24 @@ module mhdma_master
     end
   end
 
-  assign stat.fsm_notify            = ntx_state;
-  assign stat.fsm_read_req          = rreq_state;
-  assign stat.fsm_burst             = burst_state;
-  assign stat.cnt_notify            = stat_cnt[0];
-  assign stat.cnt_notify_ack        = stat_cnt[1];
-  assign stat.cnt_notify_retries    = stat_cnt[2];
-  assign stat.cnt_read_req_retries  = stat_cnt[3];
-  assign stat.cnt_notify_timeout    = to_notify_cnt;
-  assign stat.nb_write_complete_cnt = nb_write_complete_cnt;
+  assign stat.fsm_notify                = ntx_state;
+  assign stat.fsm_read_req              = rreq_state;
+  assign stat.fsm_burst                 = burst_state;
+  assign stat.cnt_notify                = stat_cnt[0];
+  assign stat.cnt_notify_ack            = stat_cnt[1];
+  assign stat.cnt_notify_retries        = stat_cnt[2];
+  assign stat.cnt_read_req_retries      = stat_cnt[3];
+  assign stat.cnt_notify_timeout        = to_notify_cnt;
+  assign stat.nb_write_complete_cnt     = nb_write_complete_cnt;
   assign stat.t_notify_to_ack           = stat_t_notify_to_ack_r;
   assign stat.t_notify_to_ack_max       = t_notify_to_ack_max;
+  assign stat.t_notify_to_ack_min       = t_notify_to_ack_min;
   assign stat.t_rr_to_ce_received       = stat_t_rr_to_ce_received_r;
   assign stat.t_rr_to_ce_received_max   = t_rr_to_ce_received_max;
-  assign stat.nb_ce_words_received  = stat_nb_ce_words_received_r;
+  assign stat.t_rr_to_ce_received_min   = t_rr_to_ce_received_min;
+  assign stat.t_hbm_write_latency       = stat_t_hbm_write_r;
+  assign stat.t_hbm_write_latency_max   = t_hbm_write_max;
+  assign stat.t_hbm_write_latency_min   = t_hbm_write_min;
+  assign stat.nb_ce_words_received      = stat_nb_ce_words_received_r;
 
 endmodule

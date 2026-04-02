@@ -469,6 +469,8 @@ logic [HPU_NB-1:0][ETH_PC-1:0]                          axi4_ct_rready;
   logic [HPU_NB-1:0][REG_DATA_W-1:0] stat_rr_received;
   logic [HPU_NB-1:0][REG_DATA_W-1:0] stat_ce_received;
   logic [HPU_NB-1:0][REG_DATA_W-1:0] stat_errors;
+  logic [HPU_NB-1:0][REG_DATA_W-1:0] stat_nb_ce_sent;
+  logic [HPU_NB-1:0][REG_DATA_W-1:0] stat_nb_read_req_sent;
 
   int random_iter;
 
@@ -575,17 +577,25 @@ logic [HPU_NB-1:0][ETH_PC-1:0]                          axi4_ct_rready;
     gen_maxil_if[1].maxil_if.read_trans(MHDMA_SYSTEM_ERRORS_OFS,                     stat_errors[1]);
     gen_maxil_if[0].maxil_if.read_trans(MHDMA_REQUEST_STAT_NB_READ_REQ_RECEIVED_OFS, stat_rr_received[0]);
     gen_maxil_if[0].maxil_if.read_trans(MHDMA_REQUEST_STAT_NB_CE_RECEIVED_OFS,       stat_ce_received[0]);
+    gen_maxil_if[0].maxil_if.read_trans(MHDMA_REQUEST_STAT_NB_CE_SENT_OFS,           stat_nb_ce_sent[0]);
+    gen_maxil_if[0].maxil_if.read_trans(MHDMA_REQUEST_STAT_NB_READ_REQ_SENT_OFS,     stat_nb_read_req_sent[0]);
     gen_maxil_if[1].maxil_if.read_trans(MHDMA_REQUEST_STAT_NB_READ_REQ_RECEIVED_OFS, stat_rr_received[1]);
     gen_maxil_if[1].maxil_if.read_trans(MHDMA_REQUEST_STAT_NB_CE_RECEIVED_OFS,       stat_ce_received[1]);
+    gen_maxil_if[1].maxil_if.read_trans(MHDMA_REQUEST_STAT_NB_CE_SENT_OFS,           stat_nb_ce_sent[1]);
+    gen_maxil_if[1].maxil_if.read_trans(MHDMA_REQUEST_STAT_NB_READ_REQ_SENT_OFS,     stat_nb_read_req_sent[1]);
 
     $display("\n ----------------- HPU_A -------------------------------------");
-    $display(" stat_errors      : 0x%08h", stat_errors[0]);
-    $display(" stat_rr_received : %0d", stat_rr_received[0]);
-    $display(" stat_ce_received : %0d", stat_ce_received[0]);
+    $display(" stat_errors           : 0x%08h", stat_errors[0]);
+    $display(" stat_rr_received      : %0d", stat_rr_received[0]);
+    $display(" stat_ce_received      : %0d", stat_ce_received[0]);
+    $display(" stat_nb_ce_sent       : %0d", stat_nb_ce_sent[0]);
+    $display(" stat_nb_read_req_sent : %0d", stat_nb_read_req_sent[0]);
     $display(" ----------------- HPU_B -------------------------------------");
-    $display(" stat_errors      : 0x%08h", stat_errors[1]);
-    $display(" stat_rr_received : %0d", stat_rr_received[1]);
-    $display(" stat_ce_received : %0d", stat_ce_received[1]);
+    $display(" stat_errors           : 0x%08h", stat_errors[1]);
+    $display(" stat_rr_received      : %0d", stat_rr_received[1]);
+    $display(" stat_ce_received      : %0d", stat_ce_received[1]);
+    $display(" stat_nb_ce_sent       : %0d", stat_nb_ce_sent[1]);
+    $display(" stat_nb_read_req_sent : %0d", stat_nb_read_req_sent[1]);
 
     assert (stat_errors[0] == 0 && stat_errors[1] == 0) else begin
       $display("%t > [ERROR]: Error register is not null!", $time);
@@ -594,6 +604,16 @@ logic [HPU_NB-1:0][ETH_PC-1:0]                          axi4_ct_rready;
 
     assert (stat_ce_received[0] == (NB_PACKETS_FULL+1)*LOOP_READ*random_iter && stat_ce_received[1] == (NB_PACKETS_FULL+1)*LOOP_READ*random_iter) else begin
       $display("%t > [ERROR]: CE received count mismatch with expected value %0d", $time, LOOP_READ*random_iter);
+      error_register_read = 1'b1;
+    end
+
+    assert (stat_nb_read_req_sent[0] == LOOP_READ*random_iter && stat_nb_read_req_sent[1] == LOOP_READ*random_iter) else begin
+      $display("%t > [ERROR]: stat_nb_read_req_sent mismatch: HPU_A=%0d HPU_B=%0d expected=%0d", $time, stat_nb_read_req_sent[0], stat_nb_read_req_sent[1], LOOP_READ*random_iter);
+      error_register_read = 1'b1;
+    end
+
+    assert (stat_nb_ce_sent[0] == LOOP_READ*random_iter && stat_nb_ce_sent[1] == LOOP_READ*random_iter) else begin
+      $display("%t > [ERROR]: stat_nb_ce_sent mismatch: HPU_A=%0d HPU_B=%0d expected=%0d", $time, stat_nb_ce_sent[0], stat_nb_ce_sent[1], LOOP_READ*random_iter);
       error_register_read = 1'b1;
     end
 

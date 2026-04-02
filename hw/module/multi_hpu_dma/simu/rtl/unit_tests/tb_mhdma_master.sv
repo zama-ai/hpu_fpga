@@ -1845,7 +1845,7 @@ module tb_mhdma_master;
         end
         if (error_scenario) break;
 
-        // DO NOT clear the interrupt — accumulate in the FIFO
+        // DO NOT clear the interrupt: accumulate in the FIFO
       end
       if (error_scenario) begin
         scenario_end(scenario_id, clk_mhdma_cfg);

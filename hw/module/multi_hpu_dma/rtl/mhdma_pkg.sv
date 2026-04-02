@@ -258,8 +258,13 @@ package mhdma_pkg;
     logic [REG_DATA_W-1:0] nb_write_complete_cnt;
     logic [REG_DATA_W-1:0] t_notify_to_ack;
     logic [REG_DATA_W-1:0] t_notify_to_ack_max;
+    logic [REG_DATA_W-1:0] t_notify_to_ack_min;
     logic [REG_DATA_W-1:0] t_rr_to_ce_received;
     logic [REG_DATA_W-1:0] t_rr_to_ce_received_max;
+    logic [REG_DATA_W-1:0] t_rr_to_ce_received_min;
+    logic [REG_DATA_W-1:0] t_hbm_write_latency;
+    logic [REG_DATA_W-1:0] t_hbm_write_latency_max;
+    logic [REG_DATA_W-1:0] t_hbm_write_latency_min;
     logic [1:0]            fsm_notify;
     logic [1:0]            fsm_read_req;
     logic [1:0]            fsm_burst;
@@ -295,6 +300,7 @@ package mhdma_pkg;
     logic [REG_DATA_W-1:0] cnt_notify_received;
     logic [REG_DATA_W-1:0] cnt_read_req_received;
     logic [REG_DATA_W-1:0] cnt_ce_received;
+    logic [REG_DATA_W-1:0] cnt_dropped;
   } decoder_stat_t;
 
   typedef struct packed {
@@ -302,21 +308,34 @@ package mhdma_pkg;
     logic cnt_notify_received;
     logic cnt_read_req_received;
     logic cnt_ce_received;
+    logic cnt_dropped;
   } decoder_stat_rst_t;
 
   typedef struct packed {
-    logic [2:0] fsm_formatter;
+    logic [REG_DATA_W-1:0] cnt_read_req_sent;
+    logic [REG_DATA_W-1:0] cnt_notify_sent;
+    logic [REG_DATA_W-1:0] cnt_ce_sent;
+    logic [REG_DATA_W-1:0] cnt_notify_ack_sent;
+    logic [2:0]            fsm_formatter;
   } formatter_stat_t;
+
+  typedef struct packed {
+    logic cnt_read_req_sent;
+    logic cnt_notify_sent;
+    logic cnt_ce_sent;
+    logic cnt_notify_ack_sent;
+  } formatter_stat_rst_t;
 
   // =========================================================================================== //
   // CDC structs (used in multi_hpu_dma top and mhdma_bridge)
   // =========================================================================================== //
   // Stat reset signals (single-bit, CFG -> ETH)
   typedef struct packed {
-    master_stat_rst_t  master;
-    slave_stat_rst_t   slave;
-    decoder_stat_rst_t decoder;
-    logic              mhdma_errors;
+    master_stat_rst_t    master;
+    slave_stat_rst_t     slave;
+    decoder_stat_rst_t   decoder;
+    formatter_stat_rst_t formatter;
+    logic                mhdma_errors;
   } mhdma_stat_rst_t;
 
   // All stat values (ETH -> CFG) - nests per-submodule stat structs

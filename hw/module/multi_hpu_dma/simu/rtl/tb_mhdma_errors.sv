@@ -22,9 +22,9 @@
 `resetall
 `timescale 1ns/10ps
 module tb_mhdma_errors;
-  import mhdma_pkg::*;                   // multi-hpu-dma
-  import axi_if_shell_axil_pkg::*;       // axi4-lite + REG_DATA_W
-  import axi_if_common_param_pkg::*;     // general axi4
+  import mhdma_pkg::*;                     // multi-hpu-dma
+  import axi_if_shell_axil_pkg::*;         // axi4-lite + REG_DATA_W
+  import axi_if_common_param_pkg::*;       // general axi4
   import hpu_regif_core_mhdma_2in3_pkg::*; // ethernet regif
   import axi_if_mhdma_axi_pkg::*;          // AXI ethernet
 
@@ -525,6 +525,12 @@ module tb_mhdma_errors;
     test_nrqq_cmd_ovf_error();
 
     $display("\n==================================================================================================");
+    $display("  SCENARIO %0d: Testing decoder dropped packet counter (wrong MAC + unknown opcode)", scenario_id);
+    $display("==================================================================================================\n");
+
+    test_decoder_dropped();
+
+    $display("\n==================================================================================================");
     $display("  END of test : checking that none errors sticked & are reset");
     $display("==================================================================================================\n");
 
@@ -808,6 +814,61 @@ module tb_mhdma_errors;
 
       maxil_drv.write_trans(MHDMA_REQUEST_REQ_ADDR_OFS, read_req_addr);
       maxil_drv.write_trans(MHDMA_REQUEST_REQ_ID_OFS, read_req_id);
+    end
+  endtask
+
+  // Test decoder dropped packet counter by sending packets with wrong MAC and unknown opcode
+  task automatic test_decoder_dropped();
+    logic [REG_DATA_W-1:0] stat_dropped;
+    logic [MAC_ADDR_W-1:0] wrong_mac;
+    logic [MRMAC_AXIS_W-1:0] unused_payload [$];
+    begin
+      // Read initial drop counter: should be 0
+      maxil_drv.read_trans(MHDMA_REQUEST_STAT_NB_DECODER_DROPPED_OFS, stat_dropped);
+      assert (stat_dropped == 0) else begin
+        $display("%t > [ERROR] stat_nb_decoder_dropped not zero before test (%0d)", $time, stat_dropped);
+        error_unexpected = 1'b1;
+      end
+
+      // 1) Send a notify packet with wrong destination MAC (should be dropped)
+      wrong_mac = 24'hFFFFFF;
+      send_notify_packet(qsfp_rx_vif[0], wrong_mac, src_mac_addr, dst_hpu_id, 8'hAA, 16'h1234);
+
+      // 2) Send a packet with correct MAC but unknown req_id (opcode 0xF = undefined)
+      //    Reuse notify packet structure but patch req_id to unknown value
+      begin
+        logic [MRMAC_AXIS_W-1:0] pkt_data [8];
+        pkt_data[0] = {MAC_OUI, dst_mac_addr, MAC_OUI[MAC_OUI_W-1:8]};
+        pkt_data[1] = {MAC_OUI[7:0], src_mac_addr, ETH_LEN_MIN, LLC_DSAP, LLC_SSAP};
+        pkt_data[2] = {LLC_CTRL, 4'hF, dst_hpu_id, 8'h00, 16'h0, 16'h0, 8'h0}; // req_id=0xF (unknown)
+        pkt_data[3] = {8'h0, 6'h0, 2'b0, 48'h0};
+        for (int i = 4; i < 8; i++) pkt_data[i] = 64'h0;
+
+        for (int i = 0; i < 8; i++) begin
+          @(posedge qsfp_rx_vif[0].clk);
+          qsfp_rx_vif[0].tdata      = byte_swap(pkt_data[i]);
+          qsfp_rx_vif[0].tkeep_user = (i < 7) ? 11'h0FF : 11'h00F;
+          qsfp_rx_vif[0].tlast      = (i == 7);
+          qsfp_rx_vif[0].tvalid     = 1'b1;
+        end
+        @(posedge qsfp_rx_vif[0].clk);
+        qsfp_rx_vif[0].tvalid     = 1'b0;
+        qsfp_rx_vif[0].tlast      = 1'b0;
+        qsfp_rx_vif[0].tkeep_user = 'h0;
+      end
+
+      // Wait for CDC propagation
+      repeat(200) @(posedge clk_mhdma_cfg);
+
+      // Read drop counter: should be 2 (one wrong MAC + one unknown opcode)
+      maxil_drv.read_trans(MHDMA_REQUEST_STAT_NB_DECODER_DROPPED_OFS, stat_dropped);
+      $display("%t > stat_nb_decoder_dropped = %0d (expected 2)", $time, stat_dropped);
+      assert (stat_dropped == 2) else begin
+        $display("%t > [ERROR] stat_nb_decoder_dropped = %0d, expected 2", $time, stat_dropped);
+        error_unexpected = 1'b1;
+      end
+
+      scenario_id = scenario_id + 1;
     end
   endtask
 
