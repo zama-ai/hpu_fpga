@@ -963,7 +963,17 @@ if __name__ == '__main__':
             parameters_d['before'] = {'datatype' : 'string', 'default' : ucli_cmd, 'paramtype' : 'plusarg'}
 
         elif (tool_options_d[tool]["wave_dve"]):
-            ucli_cmd = 'echo \"dump -type vpd -file wave.vpd; dump -add {} -fid VPD0; run {}\" |'.format(args.top_name, tool_options_d[tool]["run_simu_options"])
+            ucli_cmd = ['dump -type vpd -file wave.vpd']
+
+            if ("wave_hier" in tool_options_d[tool]):
+                ucli_cmd.extend([f'dump -add {x} -depth {i} -fid VPD0'
+                    for (i,x) in tool_options_d[tool]["wave_hier"]])
+            else:
+                ucli_cmd.append('dump -add {} -depth 0 -fid VPD0'.format(args.top_name))
+
+            ucli_cmd.append(f'run {tool_options_d[tool]["run_simu_options"]}')
+            ucli_cmd = 'echo \"{}\" |'.format(';'.join(ucli_cmd))
+
             parameters_d['before'] = {'datatype' : 'string', 'default' : ucli_cmd,'paramtype' : 'plusarg'}
         else:
             ucli_cmd = 'echo \"run {}\" |'.format(tool_options_d[tool]["run_simu_options"])
