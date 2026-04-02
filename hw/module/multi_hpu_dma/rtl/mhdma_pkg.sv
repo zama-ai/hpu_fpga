@@ -26,7 +26,7 @@ package mhdma_pkg;
   localparam [  AXI4_ID_W-1:0] MHDMA_AXI_ARID = '0; // Use the same ID for read/writes
 
   // HPU parameters -------------------------------------------------------------------------------
-  localparam int ETH_PC       = PEM_PC; // MHDMA is tied to PEM module: mandatory same number of PC
+  localparam int ETH_PC = PEM_PC; // MHDMA is tied to PEM module: mandatory same number of PC
 
   localparam int ETH_PC_W = $clog2(ETH_PC) == 0 ? 1 : $clog2(ETH_PC);
 
@@ -139,6 +139,9 @@ package mhdma_pkg;
   // => Ciphertext Emission: (Block RAM)
   localparam int FIFO_PC_DEPTH         = CT_NB_WORDS_AXI4/2;
   localparam int FIFO_PC_RAM_LATENCY   = 1;
+
+  // NMU placement pipeline: fifo_element depth between bridge core and NMU demux (distributed)
+  localparam int NMU_PLACEMENT_FIFO_DEPTH = 2;
 
   // QSFP TX fifo: FIFO CE (Block RAM)
   localparam int CE_RAM_LATENCY        = 2;

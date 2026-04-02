@@ -47,24 +47,27 @@ module mhdma_master
   input  logic                                clk_mhdma,
   input  logic                                resetn_mhdma,
   // Axi4 interface for NMU -----------------------------------------------------------------------
-  output logic [ETH_PC-1:0][AXI4_ID_W-1:0]    m_axi4_awid,
-  output logic [ETH_PC-1:0][AXI4_ADD_W-1:0]   m_axi4_awaddr,
-  output logic [ETH_PC-1:0][AXI4_LEN_W-1:0]   m_axi4_awlen,
-  output logic [ETH_PC-1:0][AXI4_SIZE_W-1:0]  m_axi4_awsize,
-  output logic [ETH_PC-1:0][AXI4_BURST_W-1:0] m_axi4_awburst,
-  output logic [ETH_PC-1:0]                   m_axi4_awvalid,
-  input  logic [ETH_PC-1:0]                   m_axi4_awready,
+  output logic [AXI4_ID_W-1:0]                m_axi4_awid,
+  output logic [AXI4_ADD_W-1:0]               m_axi4_awaddr,
+  output logic [AXI4_LEN_W-1:0]               m_axi4_awlen,
+  output logic [AXI4_SIZE_W-1:0]              m_axi4_awsize,
+  output logic [AXI4_BURST_W-1:0]             m_axi4_awburst,
+  output logic                                m_axi4_awvalid,
+  input  logic                                m_axi4_awready,
 
-  output logic [ETH_PC-1:0][AXI4_DATA_W-1:0]  m_axi4_wdata,
-  output logic [ETH_PC-1:0][AXI4_STRB_W-1:0]  m_axi4_wstrb,
-  output logic [ETH_PC-1:0]                   m_axi4_wlast,
-  output logic [ETH_PC-1:0]                   m_axi4_wvalid,
-  input  logic [ETH_PC-1:0]                   m_axi4_wready,
+  output logic [AXI4_DATA_W-1:0]              m_axi4_wdata,
+  output logic [AXI4_STRB_W-1:0]              m_axi4_wstrb,
+  output logic                                m_axi4_wlast,
+  output logic                                m_axi4_wvalid,
+  input  logic                                m_axi4_wready,
 
+  // B channel stays per-PC (master needs per-PC completion tracking)
   input  logic [ETH_PC-1:0][AXI4_ID_W-1:0]    m_axi4_bid,
   input  logic [ETH_PC-1:0][AXI4_RESP_W-1:0]  m_axi4_bresp,
   input  logic [ETH_PC-1:0]                   m_axi4_bvalid,
   output logic [ETH_PC-1:0]                   m_axi4_bready,
+  // PC selector for NMU demux
+  output logic [ETH_PC-1:0]                   wr_pc_sel,
   // regf interface -------------------------------------------------------------------------------
   input  logic [ETH_PC-1:0][2*REG_DATA_W-1:0] regf_ct_mem_addr,
   input  logic               [REG_DATA_W-1:0] regf_req_id,
@@ -1164,29 +1167,25 @@ module mhdma_master
     .DO_RESET_DATA  (1'b0               ),
     .RESET_DATA_VAL (0                  )
   ) fifo_element_awrite (
-    .clk     (clk_mhdma                        ),
-    .s_rst_n (resetn_mhdma                     ),
+    .clk     (clk_mhdma                 ),
+    .s_rst_n (resetn_mhdma              ),
 
-    .in_data (axi_a                            ),
-    .in_vld  (axi_a_awvalid                    ),
-    .in_rdy  (axi_a_awready                    ),
+    .in_data (axi_a                     ),
+    .in_vld  (axi_a_awvalid             ),
+    .in_rdy  (axi_a_awready             ),
 
-    .out_data(m_axi4_aw_single                 ),
-    .out_vld (m_axi4_awvalid_single            ),
-    .out_rdy (|(m_axi4_awready & axi4_write_pc))
+    .out_data(m_axi4_aw_single          ),
+    .out_vld (m_axi4_awvalid_single     ),
+    .out_rdy (m_axi4_awready            )
   );
 
-  // Demux AW to active port
-  generate
-    for (genvar gen_i=0; gen_i<ETH_PC; gen_i++) begin : gen_aw_demux
-      assign m_axi4_awid[gen_i]    = m_axi4_aw_single.awid;
-      assign m_axi4_awaddr[gen_i]  = m_axi4_aw_single.awaddr;
-      assign m_axi4_awlen[gen_i]   = m_axi4_aw_single.awlen;
-      assign m_axi4_awsize[gen_i]  = m_axi4_aw_single.awsize;
-      assign m_axi4_awburst[gen_i] = m_axi4_aw_single.awburst;
-      assign m_axi4_awvalid[gen_i] = m_axi4_awvalid_single & axi4_write_pc[gen_i];
-    end
-  endgenerate
+  // Single AW output: demux happens in mhdma_nmu_demux near the NMU
+  assign m_axi4_awid      = m_axi4_aw_single.awid;
+  assign m_axi4_awaddr    = m_axi4_aw_single.awaddr;
+  assign m_axi4_awlen     = m_axi4_aw_single.awlen;
+  assign m_axi4_awsize    = m_axi4_aw_single.awsize;
+  assign m_axi4_awburst   = m_axi4_aw_single.awburst;
+  assign m_axi4_awvalid   = m_axi4_awvalid_single;
 
   // ======================================================================================= //
   // Data channel (single instance, demuxed to active port)
@@ -1201,33 +1200,32 @@ module mhdma_master
   axi4_w_if_t m_axi4_w_single;
 
   fifo_element #(
-    .WIDTH         (AXI4_W_IF_W ),
-    .DEPTH         (2            ),
-    .TYPE_ARRAY    ({4'h1, 4'h2} ),
-    .DO_RESET_DATA (0            ),
-    .RESET_DATA_VAL(0            )
+    .WIDTH         (AXI4_W_IF_W   ),
+    .DEPTH         (2             ),
+    .TYPE_ARRAY    ({4'h1, 4'h2}  ),
+    .DO_RESET_DATA (0             ),
+    .RESET_DATA_VAL(0             )
   ) fifo_element_write (
-    .clk     (clk_mhdma                       ),
-    .s_rst_n (resetn_mhdma                    ),
+    .clk     (clk_mhdma           ),
+    .s_rst_n (resetn_mhdma        ),
 
-    .in_data (axi_w                           ),
-    .in_vld  (axi_wvalid                      ),
-    .in_rdy  (axi_wready                      ),
+    .in_data (axi_w               ),
+    .in_vld  (axi_wvalid          ),
+    .in_rdy  (axi_wready          ),
 
-    .out_data(m_axi4_w_single                 ),
-    .out_vld (m_axi4_wvalid_single            ),
-    .out_rdy (|(m_axi4_wready & axi4_write_pc))
+    .out_data(m_axi4_w_single     ),
+    .out_vld (m_axi4_wvalid_single),
+    .out_rdy (m_axi4_wready       )
   );
 
-  // Demux W to active port
-  generate
-    for (genvar gen_i=0; gen_i<ETH_PC; gen_i++) begin : gen_w_demux
-      assign m_axi4_wdata[gen_i]  = m_axi4_w_single.wdata;
-      assign m_axi4_wstrb[gen_i]  = m_axi4_w_single.wstrb;
-      assign m_axi4_wlast[gen_i]  = m_axi4_w_single.wlast;
-      assign m_axi4_wvalid[gen_i] = m_axi4_wvalid_single & axi4_write_pc[gen_i];
-    end
-  endgenerate
+  // Single W output: demux happens in mhdma_nmu_demux near the NMU
+  assign m_axi4_wdata   = m_axi4_w_single.wdata;
+  assign m_axi4_wstrb   = m_axi4_w_single.wstrb;
+  assign m_axi4_wlast   = m_axi4_w_single.wlast;
+  assign m_axi4_wvalid  = m_axi4_wvalid_single;
+
+  // PC selector for demux
+  assign wr_pc_sel = axi4_write_pc;
 
   // ======================================================================================= //
   // Per-port B-response tracking (no FIFO, always accept)

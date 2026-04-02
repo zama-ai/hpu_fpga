@@ -43,21 +43,24 @@ module mhdma_slave
   // Ethernet fast clock interface ----------------------------------------------------------------
   input  logic                                                   clk_mhdma,
   input  logic                                                   resetn_mhdma,
-  // Axi4 interface for NMU -----------------------------------------------------------------------
-  output logic [ETH_PC-1:0][  AXI4_ADD_W-1:0]                    m_axi4_araddr,
-  output logic [ETH_PC-1:0][  AXI4_LEN_W-1:0]                    m_axi4_arlen,
-  output logic [ETH_PC-1:0][ AXI4_SIZE_W-1:0]                    m_axi4_arsize,
-  output logic [ETH_PC-1:0][AXI4_BURST_W-1:0]                    m_axi4_arburst,
-  output logic [ETH_PC-1:0]                                      m_axi4_arvalid,
-  input  logic [ETH_PC-1:0]                                      m_axi4_arready,
-  output logic [ETH_PC-1:0][axi_if_mhdma_axi_pkg::AXI4_ID_W-1:0] m_axi4_arid,
+  // Single AXI4 read interface (demuxed to per-PC NMU in mhdma_nmu_demux) -----------------------
+  output logic [  AXI4_ADD_W-1:0]                                 m_axi4_araddr,
+  output logic [  AXI4_LEN_W-1:0]                                 m_axi4_arlen,
+  output logic [ AXI4_SIZE_W-1:0]                                 m_axi4_arsize,
+  output logic [AXI4_BURST_W-1:0]                                 m_axi4_arburst,
+  output logic                                                    m_axi4_arvalid,
+  input  logic                                                    m_axi4_arready,
+  output logic [axi_if_mhdma_axi_pkg::AXI4_ID_W-1:0]              m_axi4_arid,
 
-  input  logic [ETH_PC-1:0][AXI4_DATA_W-1:0]                     m_axi4_rdata,
-  input  logic [ETH_PC-1:0][AXI4_RESP_W-1:0]                     m_axi4_rresp,
-  input  logic [ETH_PC-1:0][axi_if_mhdma_axi_pkg::AXI4_ID_W-1:0] m_axi4_rid,
-  input  logic [ETH_PC-1:0]                                      m_axi4_rlast,
-  input  logic [ETH_PC-1:0]                                      m_axi4_rvalid,
-  output logic [ETH_PC-1:0]                                      m_axi4_rready,
+  input  logic [AXI4_DATA_W-1:0]                                  m_axi4_rdata,
+  input  logic [AXI4_RESP_W-1:0]                                  m_axi4_rresp,
+  input  logic [axi_if_mhdma_axi_pkg::AXI4_ID_W-1:0]              m_axi4_rid,
+  input  logic                                                    m_axi4_rlast,
+  input  logic                                                    m_axi4_rvalid,
+  output logic                                                    m_axi4_rready,
+  // PC selectors for NMU demux ------------------------------------------------------------------
+  output logic [ETH_PC-1:0]                                       ar_pc_sel,
+  output logic [ETH_PC-1:0]                                       rd_pc_sel,
   // regf interface -------------------------------------------------------------------------------
   input  logic [ETH_PC-1:0][2*REG_DATA_W-1:0]                    regf_ct_mem_addr,
   output logic             [  REG_DATA_W-1:0]                    regf_notify_req_id,
@@ -503,53 +506,37 @@ module mhdma_slave
     .out_rdy (fifo_ar_out_rdy)
   );
 
-  // Demux AR outputs to per-PC AXI4 ports: drive active PC, tie others to 0/inactive
-  // We register ar_pc_idx through the fifo_element latency using a shadow register
-  logic [ETH_PC_W-1:0] ar_pc_idx_pipe;
+  // Single AR output: demux happens in mhdma_nmu_demux near the NMU
+  // Shadow register to track which PC the AR in the fifo_element belongs to
+  logic [ETH_PC-1:0] ar_pc_sel_pipe;
   always_ff @(posedge clk_mhdma) begin
     if (~resetn_mhdma) begin
-      ar_pc_idx_pipe <= '0;
+      ar_pc_sel_pipe <= 'h0;
     end else if (s0_axi_arvalid & s0_axi_arready) begin
-      ar_pc_idx_pipe <= ar_pc_idx;
+      ar_pc_sel_pipe <= ar_pc_onehot;
     end
   end
 
-  assign fifo_ar_out_rdy = m_axi4_arready[ar_pc_idx_pipe];
+  assign fifo_ar_out_rdy = m_axi4_arready;
+  assign m_axi4_arvalid  = fifo_ar_out_vld;
+  assign m_axi4_arid     = m_axi4_a.arid;
+  assign m_axi4_araddr   = m_axi4_a.araddr;
+  assign m_axi4_arlen    = m_axi4_a.arlen;
+  assign m_axi4_arsize   = m_axi4_a.arsize;
+  assign m_axi4_arburst  = m_axi4_a.arburst;
+  assign ar_pc_sel       = ar_pc_sel_pipe;
 
-  generate
-    for (genvar gen_rd = 0; gen_rd < ETH_PC; gen_rd++) begin : gen_ar_demux
-      assign m_axi4_arvalid[gen_rd] = fifo_ar_out_vld & (ar_pc_idx_pipe == ETH_PC_W'(gen_rd));
-      assign m_axi4_arid[gen_rd]    = m_axi4_a.arid;
-      assign m_axi4_araddr[gen_rd]  = m_axi4_a.araddr;
-      assign m_axi4_arlen[gen_rd]   = m_axi4_a.arlen;
-      assign m_axi4_arsize[gen_rd]  = m_axi4_a.arsize;
-      assign m_axi4_arburst[gen_rd] = m_axi4_a.arburst;
-    end
-  endgenerate
-
-  // Single shared read data path (R channel) ----------------------------------------------------
-  logic [AXI4_DATA_W-1:0] rdata_muxed;
-  logic [AXI4_RESP_W-1:0] rresp_muxed;
-  logic                   rvalid_muxed;
-
-  assign rdata_muxed  = m_axi4_rdata[rd_pc_idx];
-  assign rresp_muxed  = m_axi4_rresp[rd_pc_idx];
-  assign rvalid_muxed = m_axi4_rvalid[rd_pc_idx];
-
-  // Demux rready: only assert for the active PC
+  // Single read data path (R channel) — mux/demux happens in mhdma_nmu_demux -------------------
   logic rready_shared;
 
-  generate
-    for (genvar gen_rd = 0; gen_rd < ETH_PC; gen_rd++) begin : gen_rready_demux
-      assign m_axi4_rready[gen_rd] = rd_pc_onehot[gen_rd] ? rready_shared : 1'b0;
-    end
-  endgenerate
+  assign m_axi4_rready = rready_shared;
+  assign rd_pc_sel     = rd_pc_onehot;
 
   // rready: we read if and only if we are in ciphertext emission mode
   assign rready_shared = read_fifo_ready & st_read_send;
 
   logic read_fifo_we;
-  assign read_fifo_we = rvalid_muxed & rready_shared;
+  assign read_fifo_we = m_axi4_rvalid & rready_shared;
 
   // Single fifo_ram_rdy_vld for read data
   logic [AXI4_DATA_W-1:0] read_fifo_out_data;
@@ -564,7 +551,7 @@ module mhdma_slave
     .clk        (clk_mhdma),
     .s_rst_n    (resetn_mhdma),
 
-    .in_data    (rdata_muxed),
+    .in_data    (m_axi4_rdata),
     .in_vld     (read_fifo_we),
     .in_rdy     (read_fifo_ready),
 
@@ -756,7 +743,7 @@ module mhdma_slave
     end else begin
       if (rst_errors) begin
         slave_error.read_rresp_error <= 1'b0;
-      end else if (rvalid_muxed & rready_shared & (rresp_muxed != AXI4_OKAY)) begin
+      end else if (m_axi4_rvalid & rready_shared & (m_axi4_rresp != AXI4_OKAY)) begin
         slave_error.read_rresp_error <= 1'b1;
       end
     end
@@ -776,7 +763,7 @@ module mhdma_slave
       if (stat_rst.nb_read_to_hbm) begin
         nb_read_to_hbm <= 'h0;
       end else begin
-        if (|(m_axi4_arready & m_axi4_arvalid)) begin
+        if (m_axi4_arready & m_axi4_arvalid) begin
           nb_read_to_hbm <= nb_read_to_hbm + 1;
         end
       end
@@ -793,7 +780,7 @@ module mhdma_slave
           if (stat_rst.nb_words_received_pc[gen_i]) begin
             nb_words_received_pc[gen_i] <= 'h0;
           end else begin
-            if (rd_pc_onehot[gen_i] & rvalid_muxed & rready_shared) begin
+            if (rd_pc_onehot[gen_i] & m_axi4_rvalid & rready_shared) begin
               nb_words_received_pc[gen_i] <= nb_words_received_pc[gen_i] + 1;
             end
           end
@@ -813,9 +800,9 @@ module mhdma_slave
         if (~resetn_mhdma) begin
           t_wait_words_en[gen_i] <= 1'b0;
         end else begin
-          if (m_axi4_arvalid[gen_i]) begin
+          if (ar_pc_sel_pipe[gen_i] & m_axi4_arvalid) begin
             t_wait_words_en[gen_i] <= 1'b1;
-          end else if (rd_pc_onehot[gen_i] & rvalid_muxed) begin
+          end else if (rd_pc_onehot[gen_i] & m_axi4_rvalid) begin
             t_wait_words_en[gen_i] <= 1'b0;
           end
         end

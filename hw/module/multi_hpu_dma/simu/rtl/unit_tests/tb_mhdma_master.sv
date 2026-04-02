@@ -133,25 +133,44 @@ module tb_mhdma_master;
 // ============================================================================================== --
 // DUT signals
 // ============================================================================================== --
-  // AXI4 write channel (per PC)
-  logic [ETH_PC-1:0][AXI4_ID_W-1:0]    m_axi4_awid;
-  logic [ETH_PC-1:0][AXI4_ADD_W-1:0]   m_axi4_awaddr;
-  logic [ETH_PC-1:0][AXI4_LEN_W-1:0]   m_axi4_awlen;
-  logic [ETH_PC-1:0][AXI4_SIZE_W-1:0]  m_axi4_awsize;
-  logic [ETH_PC-1:0][AXI4_BURST_W-1:0] m_axi4_awburst;
-  logic [ETH_PC-1:0]                   m_axi4_awvalid;
-  logic [ETH_PC-1:0]                   m_axi4_awready;
+  // Single AXI4 write interface (from DUT)
+  logic [AXI4_ID_W-1:0]                m_axi4_awid;
+  logic [AXI4_ADD_W-1:0]               m_axi4_awaddr;
+  logic [AXI4_LEN_W-1:0]               m_axi4_awlen;
+  logic [AXI4_SIZE_W-1:0]              m_axi4_awsize;
+  logic [AXI4_BURST_W-1:0]             m_axi4_awburst;
+  logic                                m_axi4_awvalid;
+  logic                                m_axi4_awready;
 
-  logic [ETH_PC-1:0][AXI4_DATA_W-1:0]  m_axi4_wdata;
-  logic [ETH_PC-1:0][AXI4_STRB_W-1:0]  m_axi4_wstrb;
-  logic [ETH_PC-1:0]                   m_axi4_wlast;
-  logic [ETH_PC-1:0]                   m_axi4_wvalid;
-  logic [ETH_PC-1:0]                   m_axi4_wready;
+  logic [AXI4_DATA_W-1:0]              m_axi4_wdata;
+  logic [AXI4_STRB_W-1:0]              m_axi4_wstrb;
+  logic                                m_axi4_wlast;
+  logic                                m_axi4_wvalid;
+  logic                                m_axi4_wready;
 
+  // PC selector from DUT
+  logic [ETH_PC-1:0]                   wr_pc_sel;
+
+  // B channel stays per-PC
   logic [ETH_PC-1:0][AXI4_ID_W-1:0]    m_axi4_bid;
   logic [ETH_PC-1:0][AXI4_RESP_W-1:0]  m_axi4_bresp;
   logic [ETH_PC-1:0]                   m_axi4_bvalid;
   logic [ETH_PC-1:0]                   m_axi4_bready;
+
+  // Per-PC AXI4 signals (for write responders)
+  logic [ETH_PC-1:0][AXI4_ID_W-1:0]    nmu_axi4_awid;
+  logic [ETH_PC-1:0][AXI4_ADD_W-1:0]   nmu_axi4_awaddr;
+  logic [ETH_PC-1:0][AXI4_LEN_W-1:0]   nmu_axi4_awlen;
+  logic [ETH_PC-1:0][AXI4_SIZE_W-1:0]  nmu_axi4_awsize;
+  logic [ETH_PC-1:0][AXI4_BURST_W-1:0] nmu_axi4_awburst;
+  logic [ETH_PC-1:0]                   nmu_axi4_awvalid;
+  logic [ETH_PC-1:0]                   nmu_axi4_awready;
+
+  logic [ETH_PC-1:0][AXI4_DATA_W-1:0]  nmu_axi4_wdata;
+  logic [ETH_PC-1:0][AXI4_STRB_W-1:0]  nmu_axi4_wstrb;
+  logic [ETH_PC-1:0]                   nmu_axi4_wlast;
+  logic [ETH_PC-1:0]                   nmu_axi4_wvalid;
+  logic [ETH_PC-1:0]                   nmu_axi4_wready;
 
   // regf interface
   logic [ETH_PC-1:0][2*REG_DATA_W-1:0] regf_ct_mem_addr;
@@ -220,6 +239,7 @@ module tb_mhdma_master;
     .m_axi4_bresp                  (m_axi4_bresp                  ),
     .m_axi4_bvalid                 (m_axi4_bvalid                 ),
     .m_axi4_bready                 (m_axi4_bready                 ),
+    .wr_pc_sel                     (wr_pc_sel                     ),
     // regf
     .regf_ct_mem_addr              (regf_ct_mem_addr              ),
     .regf_req_id                   (regf_req_id                   ),
@@ -258,6 +278,70 @@ module tb_mhdma_master;
   );
 
 // ============================================================================================== --
+// NMU demux: single AXI4 from DUT -> per-PC write responders
+// ============================================================================================== --
+  mhdma_nmu_demux mhdma_nmu_demux (
+    .clk            (clk_mhdma      ),
+    .s_rst_n        (s_rstn_mhdma   ),
+    // AR/R unused in master TB
+    .s_axi4_arid    ('0             ),
+    .s_axi4_araddr  ('0             ),
+    .s_axi4_arlen   ('0             ),
+    .s_axi4_arsize  ('0             ),
+    .s_axi4_arburst ('0             ),
+    .s_axi4_arvalid (1'b0           ),
+    .s_axi4_arready (               ),
+    .s_axi4_rdata   (               ),
+    .s_axi4_rresp   (               ),
+    .s_axi4_rid     (               ),
+    .s_axi4_rlast   (               ),
+    .s_axi4_rvalid  (               ),
+    .s_axi4_rready  (1'b0           ),
+    .ar_pc_sel      ('0             ),
+    .rd_pc_sel      ('0             ),
+    // Single AXI4 write from DUT
+    .s_axi4_awid    (m_axi4_awid    ),
+    .s_axi4_awaddr  (m_axi4_awaddr  ),
+    .s_axi4_awlen   (m_axi4_awlen   ),
+    .s_axi4_awsize  (m_axi4_awsize  ),
+    .s_axi4_awburst (m_axi4_awburst ),
+    .s_axi4_awvalid (m_axi4_awvalid ),
+    .s_axi4_awready (m_axi4_awready ),
+    .s_axi4_wdata   (m_axi4_wdata   ),
+    .s_axi4_wstrb   (m_axi4_wstrb   ),
+    .s_axi4_wlast   (m_axi4_wlast   ),
+    .s_axi4_wvalid  (m_axi4_wvalid  ),
+    .s_axi4_wready  (m_axi4_wready  ),
+    .wr_pc_sel      (wr_pc_sel      ),
+    // Per-PC NMU ports
+    .m_axi4_arid    (               ),
+    .m_axi4_araddr  (               ),
+    .m_axi4_arlen   (               ),
+    .m_axi4_arsize  (               ),
+    .m_axi4_arburst (               ),
+    .m_axi4_arvalid (               ),
+    .m_axi4_arready ('0             ),
+    .m_axi4_rdata   ('0             ),
+    .m_axi4_rresp   ('0             ),
+    .m_axi4_rid     ('0             ),
+    .m_axi4_rlast   ('0             ),
+    .m_axi4_rvalid  ('0             ),
+    .m_axi4_rready  (               ),
+    .m_axi4_awid    (nmu_axi4_awid    ),
+    .m_axi4_awaddr  (nmu_axi4_awaddr  ),
+    .m_axi4_awlen   (nmu_axi4_awlen   ),
+    .m_axi4_awsize  (nmu_axi4_awsize  ),
+    .m_axi4_awburst (nmu_axi4_awburst ),
+    .m_axi4_awvalid (nmu_axi4_awvalid ),
+    .m_axi4_awready (nmu_axi4_awready ),
+    .m_axi4_wdata   (nmu_axi4_wdata   ),
+    .m_axi4_wstrb   (nmu_axi4_wstrb   ),
+    .m_axi4_wlast   (nmu_axi4_wlast   ),
+    .m_axi4_wvalid  (nmu_axi4_wvalid  ),
+    .m_axi4_wready  (nmu_axi4_wready  )
+  );
+
+// ============================================================================================== --
 // Simple AXI4 write responder
 // ============================================================================================== --
 // Accepts AW and W channels, returns B responses with configurable delay and response type.
@@ -281,28 +365,28 @@ module tb_mhdma_master;
       always @(posedge clk_mhdma)
         awready_rand <= $urandom_range(0, 3) != 0;
 
-      assign m_axi4_awready[gen_pc] = awready_rand;
+      assign nmu_axi4_awready[gen_pc] = awready_rand;
 
       // W channel: randomly toggling ready (~75% asserted)
       logic wready_rand = 1'b1;
       always @(posedge clk_mhdma)
         wready_rand <= $urandom_range(0, 3) != 0;
 
-      assign m_axi4_wready[gen_pc] = wready_rand;
+      assign nmu_axi4_wready[gen_pc] = wready_rand;
 
       // Capture AW transactions
       always @(posedge clk_mhdma) begin
-        if (m_axi4_awvalid[gen_pc] && m_axi4_awready[gen_pc]) begin
-          axi4_aw_captured_addr[gen_pc].push_back(m_axi4_awaddr[gen_pc]);
-          axi4_aw_captured_len[gen_pc].push_back(m_axi4_awlen[gen_pc]);
+        if (nmu_axi4_awvalid[gen_pc] && nmu_axi4_awready[gen_pc]) begin
+          axi4_aw_captured_addr[gen_pc].push_back(nmu_axi4_awaddr[gen_pc]);
+          axi4_aw_captured_len[gen_pc].push_back(nmu_axi4_awlen[gen_pc]);
         end
       end
 
       // Capture W transactions
       always @(posedge clk_mhdma) begin
-        if (m_axi4_wvalid[gen_pc] && m_axi4_wready[gen_pc]) begin
-          axi4_w_captured_data[gen_pc].push_back(m_axi4_wdata[gen_pc]);
-          axi4_w_captured_strb[gen_pc].push_back(m_axi4_wstrb[gen_pc]);
+        if (nmu_axi4_wvalid[gen_pc] && nmu_axi4_wready[gen_pc]) begin
+          axi4_w_captured_data[gen_pc].push_back(nmu_axi4_wdata[gen_pc]);
+          axi4_w_captured_strb[gen_pc].push_back(nmu_axi4_wstrb[gen_pc]);
         end
       end
 
@@ -318,7 +402,7 @@ module tb_mhdma_master;
       end
 
       always @(posedge clk_mhdma) begin
-        if (m_axi4_wvalid[gen_pc] && m_axi4_wready[gen_pc] && m_axi4_wlast[gen_pc])
+        if (nmu_axi4_wvalid[gen_pc] && nmu_axi4_wready[gen_pc] && nmu_axi4_wlast[gen_pc])
           b_detected <= b_detected + 1;
       end
 
@@ -2114,29 +2198,29 @@ module tb_mhdma_master;
       // awvalid must not deassert without awready handshake
       property axi4_awvalid_stable;
         @(posedge clk_mhdma) disable iff (!s_rstn_mhdma)
-        (m_axi4_awvalid[gen_pc] && !m_axi4_awready[gen_pc]) |=>
-          $stable(m_axi4_awvalid[gen_pc]) && $stable(m_axi4_awaddr[gen_pc]) && $stable(m_axi4_awlen[gen_pc])
-          && $stable(m_axi4_awburst[gen_pc]) && $stable(m_axi4_awsize[gen_pc]) && $stable(m_axi4_awid[gen_pc]);
+        (nmu_axi4_awvalid[gen_pc] && !nmu_axi4_awready[gen_pc]) |=>
+          $stable(nmu_axi4_awvalid[gen_pc]) && $stable(nmu_axi4_awaddr[gen_pc]) && $stable(nmu_axi4_awlen[gen_pc])
+          && $stable(nmu_axi4_awburst[gen_pc]) && $stable(nmu_axi4_awsize[gen_pc]) && $stable(nmu_axi4_awid[gen_pc]);
       endproperty
 
       // wvalid must not deassert without wready handshake
       property axi4_wvalid_stable;
         @(posedge clk_mhdma) disable iff (!s_rstn_mhdma)
-        (m_axi4_wvalid[gen_pc] && !m_axi4_wready[gen_pc]) |=>
-          $stable(m_axi4_wvalid[gen_pc]) && $stable(m_axi4_wdata[gen_pc]) && $stable(m_axi4_wlast[gen_pc])
-          && $stable(m_axi4_wstrb[gen_pc]);
+        (nmu_axi4_wvalid[gen_pc] && !nmu_axi4_wready[gen_pc]) |=>
+          $stable(nmu_axi4_wvalid[gen_pc]) && $stable(nmu_axi4_wdata[gen_pc]) && $stable(nmu_axi4_wlast[gen_pc])
+          && $stable(nmu_axi4_wstrb[gen_pc]);
       endproperty
 
       // awburst must always be INCR
       property axi4_awburst_incr;
         @(posedge clk_mhdma) disable iff (!s_rstn_mhdma)
-        m_axi4_awvalid[gen_pc] |-> (m_axi4_awburst[gen_pc] == AXI4B_INCR);
+        nmu_axi4_awvalid[gen_pc] |-> (nmu_axi4_awburst[gen_pc] == AXI4B_INCR);
       endproperty
 
       // awsize must be correct for AXI4_DATA_W
       property axi4_awsize_correct;
         @(posedge clk_mhdma) disable iff (!s_rstn_mhdma)
-        m_axi4_awvalid[gen_pc] |-> (m_axi4_awsize[gen_pc] == MHDMA_ARSIZE);
+        nmu_axi4_awvalid[gen_pc] |-> (nmu_axi4_awsize[gen_pc] == MHDMA_ARSIZE);
       endproperty
 
       assert_awvalid_stable: assert property(axi4_awvalid_stable)
@@ -2166,15 +2250,15 @@ module tb_mhdma_master;
       // burst must not cross a 4KB page boundary (AXI4 spec A3.4.1)
       property axi4_no_4k_cross;
         @(posedge clk_mhdma) disable iff (!s_rstn_mhdma)
-        (m_axi4_awvalid[gen_pc] && m_axi4_awready[gen_pc]) |->
-          (m_axi4_awaddr[gen_pc][PAGE_BYTES_W-1:0]
-           + ((m_axi4_awlen[gen_pc] + 1) * AXI4_DATA_BYTES)) <= PAGE_BYTES;
+        (nmu_axi4_awvalid[gen_pc] && nmu_axi4_awready[gen_pc]) |->
+          (nmu_axi4_awaddr[gen_pc][PAGE_BYTES_W-1:0]
+           + ((nmu_axi4_awlen[gen_pc] + 1) * AXI4_DATA_BYTES)) <= PAGE_BYTES;
       endproperty
 
       assert_no_4k_cross: assert property(axi4_no_4k_cross)
         else begin
           $display("[ERROR-SVA] PC%0d AW channel: burst crosses 4KB page boundary (addr=0x%0h, len=%0d)",
-                   gen_pc, m_axi4_awaddr[gen_pc], m_axi4_awlen[gen_pc]);
+                   gen_pc, nmu_axi4_awaddr[gen_pc], nmu_axi4_awlen[gen_pc]);
           error_assert = 1'b1;
         end
 
