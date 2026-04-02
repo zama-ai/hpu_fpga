@@ -108,7 +108,7 @@ module tb_hpu;
   parameter string BLWE_FILE_PREFIX = "input/ucode/blwe/input/blwe";
   parameter string OUT_BLWE_FILE_PREFIX = "input/ucode/blwe/output/blwe";
   // ucore parameters
-  localparam int   EXPECTED_UCORE_VERSION_MAJOR = 2;
+  localparam int   EXPECTED_UCORE_VERSION_MAJOR = 3;
   localparam int   EXPECTED_UCORE_VERSION_MINOR = 0;
   localparam int   UCORE_VERSION_IOP            = 'h00FE0000;
   localparam int   EMPTY_DST_IOP                = 'h60000000;
