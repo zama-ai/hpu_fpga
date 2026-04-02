@@ -435,48 +435,84 @@ module multi_hpu_dma
   // ============================================================================================ //
   // Multi-HPU-DMA bridge
   // ============================================================================================ //
-  logic [MRMAC_AXIS_W-1:0 ] axis_rx_tdata;
-  logic [MRMAC_TKEEP_W-1:0] axis_rx_tkeep_user;
-  logic                     axis_rx_tlast;
-  logic                     axis_rx_tvalid;
+  logic [MRMAC_AXIS_W-1:0 ]                     axis_rx_tdata;
+  logic [MRMAC_TKEEP_W-1:0]                     axis_rx_tkeep_user;
+  logic                                         axis_rx_tlast;
+  logic                                         axis_rx_tvalid;
 
-  logic [MRMAC_AXIS_W-1:0 ] axis_tx_tdata;
-  logic [MRMAC_TKEEP_W-1:0] axis_tx_tkeep_user;
-  logic                     axis_tx_tlast;
-  logic                     axis_tx_tvalid;
-  logic                     axis_tx_tready;
+  logic [MRMAC_AXIS_W-1:0 ]                     axis_tx_tdata;
+  logic [MRMAC_TKEEP_W-1:0]                     axis_tx_tkeep_user;
+  logic                                         axis_tx_tlast;
+  logic                                         axis_tx_tvalid;
+  logic                                         axis_tx_tready;
+
+  // Single AXI4 between bridge and NMU demux
+  logic [axi_if_mhdma_axi_pkg::AXI4_ID_W-1:0]   bridge_arid;
+  logic [axi_if_mhdma_axi_pkg::AXI4_ADD_W-1:0]  bridge_araddr;
+  logic [AXI4_LEN_W-1:0]                        bridge_arlen;
+  logic [AXI4_SIZE_W-1:0]                       bridge_arsize;
+  logic [AXI4_BURST_W-1:0]                      bridge_arburst;
+  logic                                         bridge_arvalid;
+  logic                                         bridge_arready;
+  logic [axi_if_mhdma_axi_pkg::AXI4_ID_W-1:0]   bridge_rid;
+  logic [axi_if_mhdma_axi_pkg::AXI4_DATA_W-1:0] bridge_rdata;
+  logic [AXI4_RESP_W-1:0]                       bridge_rresp;
+  logic                                         bridge_rlast;
+  logic                                         bridge_rvalid;
+  logic                                         bridge_rready;
+  logic [mhdma_pkg::ETH_PC-1:0]                 bridge_ar_pc_sel;
+  logic [mhdma_pkg::ETH_PC-1:0]                 bridge_rd_pc_sel;
+
+  logic [axi_if_mhdma_axi_pkg::AXI4_ID_W-1:0]   bridge_awid;
+  logic [axi_if_mhdma_axi_pkg::AXI4_ADD_W-1:0]  bridge_awaddr;
+  logic [AXI4_LEN_W-1:0]                        bridge_awlen;
+  logic [AXI4_SIZE_W-1:0]                       bridge_awsize;
+  logic [AXI4_BURST_W-1:0]                      bridge_awburst;
+  logic                                         bridge_awvalid;
+  logic                                         bridge_awready;
+  logic [axi_if_mhdma_axi_pkg::AXI4_DATA_W-1:0] bridge_wdata;
+  logic [axi_if_mhdma_axi_pkg::AXI4_STRB_W-1:0] bridge_wstrb;
+  logic                                         bridge_wlast;
+  logic                                         bridge_wvalid;
+  logic                                         bridge_wready;
+  logic [mhdma_pkg::ETH_PC-1:0]                 bridge_wr_pc_sel;
 
   mhdma_bridge mhdma_bridge (
     .clk_mhdma_cfg                  (clk_mhdma_cfg                                                ),
     .resetn_mhdma_cfg               (resetn_mhdma_cfg                                             ),
     .clk_mhdma                      (clk_mhdma                                                    ),
     .resetn_mhdma                   (resetn_mhdma                                                 ),
-    // axi4-full for each ETH_PC ------------------------------------------------------------------
-    .m_axi4_arid                    (m_axi4_mhdma_hbm_arid                                        ),
-    .m_axi4_araddr                  (m_axi4_mhdma_hbm_araddr                                      ),
-    .m_axi4_arlen                   (m_axi4_mhdma_hbm_arlen                                       ),
-    .m_axi4_arsize                  (m_axi4_mhdma_hbm_arsize                                      ),
-    .m_axi4_arburst                 (m_axi4_mhdma_hbm_arburst                                     ),
-    .m_axi4_arvalid                 (m_axi4_mhdma_hbm_arvalid                                     ),
-    .m_axi4_arready                 (m_axi4_mhdma_hbm_arready                                     ),
-    .m_axi4_rid                     (m_axi4_mhdma_hbm_rid                                         ),
-    .m_axi4_rdata                   (m_axi4_mhdma_hbm_rdata                                       ),
-    .m_axi4_rresp                   (m_axi4_mhdma_hbm_rresp                                       ),
-    .m_axi4_rlast                   (m_axi4_mhdma_hbm_rlast                                       ),
-    .m_axi4_rvalid                  (m_axi4_mhdma_hbm_rvalid                                      ),
-    .m_axi4_rready                  (m_axi4_mhdma_hbm_rready                                      ),
-    .m_axi4_awid                    (m_axi4_mhdma_hbm_awid                                        ),
-    .m_axi4_awaddr                  (m_axi4_mhdma_hbm_awaddr                                      ),
-    .m_axi4_awlen                   (m_axi4_mhdma_hbm_awlen                                       ),
-    .m_axi4_awsize                  (m_axi4_mhdma_hbm_awsize                                      ),
-    .m_axi4_awburst                 (m_axi4_mhdma_hbm_awburst                                     ),
-    .m_axi4_awvalid                 (m_axi4_mhdma_hbm_awvalid                                     ),
-    .m_axi4_awready                 (m_axi4_mhdma_hbm_awready                                     ),
-    .m_axi4_wdata                   (m_axi4_mhdma_hbm_wdata                                       ),
-    .m_axi4_wstrb                   (m_axi4_mhdma_hbm_wstrb                                       ),
-    .m_axi4_wlast                   (m_axi4_mhdma_hbm_wlast                                       ),
-    .m_axi4_wvalid                  (m_axi4_mhdma_hbm_wvalid                                      ),
-    .m_axi4_wready                  (m_axi4_mhdma_hbm_wready                                      ),
+    // Single AXI4 read interface ----------------------------------------------------------------
+    .m_axi4_arid                    (bridge_arid                                                  ),
+    .m_axi4_araddr                  (bridge_araddr                                                ),
+    .m_axi4_arlen                   (bridge_arlen                                                 ),
+    .m_axi4_arsize                  (bridge_arsize                                                ),
+    .m_axi4_arburst                 (bridge_arburst                                               ),
+    .m_axi4_arvalid                 (bridge_arvalid                                               ),
+    .m_axi4_arready                 (bridge_arready                                               ),
+    .m_axi4_rid                     (bridge_rid                                                   ),
+    .m_axi4_rdata                   (bridge_rdata                                                 ),
+    .m_axi4_rresp                   (bridge_rresp                                                 ),
+    .m_axi4_rlast                   (bridge_rlast                                                 ),
+    .m_axi4_rvalid                  (bridge_rvalid                                                ),
+    .m_axi4_rready                  (bridge_rready                                                ),
+    .ar_pc_sel                      (bridge_ar_pc_sel                                             ),
+    .rd_pc_sel                      (bridge_rd_pc_sel                                             ),
+    // Single AXI4 write interface ---------------------------------------------------------------
+    .m_axi4_awid                    (bridge_awid                                                  ),
+    .m_axi4_awaddr                  (bridge_awaddr                                                ),
+    .m_axi4_awlen                   (bridge_awlen                                                 ),
+    .m_axi4_awsize                  (bridge_awsize                                                ),
+    .m_axi4_awburst                 (bridge_awburst                                               ),
+    .m_axi4_awvalid                 (bridge_awvalid                                               ),
+    .m_axi4_awready                 (bridge_awready                                               ),
+    .m_axi4_wdata                   (bridge_wdata                                                 ),
+    .m_axi4_wstrb                   (bridge_wstrb                                                 ),
+    .m_axi4_wlast                   (bridge_wlast                                                 ),
+    .m_axi4_wvalid                  (bridge_wvalid                                                ),
+    .m_axi4_wready                  (bridge_wready                                                ),
+    .wr_pc_sel                      (bridge_wr_pc_sel                                             ),
+    // B channel per-PC (master needs per-PC completion tracking) --------------------------------
     .m_axi4_bid                     (m_axi4_mhdma_hbm_bid                                         ),
     .m_axi4_bresp                   (m_axi4_mhdma_hbm_bresp                                       ),
     .m_axi4_bvalid                  (m_axi4_mhdma_hbm_bvalid                                      ),
@@ -500,11 +536,11 @@ module multi_hpu_dma
     .interrupt_notify               (interrupt_notify                                             ),
     .interrupt_read_request         (interrupt_read_request                                       ),
     // statistics ---------------------------------------------------------------------------------
-    .stat_to_cfg                    (stat_mhdma                                                    ),
-    .stat_rst                       (stat_rst_mhdma                                                ),
+    .stat_to_cfg                    (stat_mhdma                                                   ),
+    .stat_rst                       (stat_rst_mhdma                                               ),
     // cfg-domain errors (merged here on cfg clock) -----------------------------------------------
     .master_error_cfg               (master_error_cfg                                             ),
-    .rst_errors_cfg                 (stat_rst_cfg.mhdma_errors                                     ),
+    .rst_errors_cfg                 (stat_rst_cfg.mhdma_errors                                    ),
     // QSFP interface one lane --------------------------------------------------------------------
     // tx
     .qsfp_tx_tdata                  (axis_tx_tdata                                                ),
@@ -518,6 +554,72 @@ module multi_hpu_dma
     .qsfp_rx_tlast                  (axis_rx_tlast                                                ),
     .qsfp_rx_tvalid                 (axis_rx_tvalid                                               )
   );
+
+  // ============================================================================================ //
+  // NMU demux: single AXI4 from bridge -> per-PC NMU ports
+  // ============================================================================================ //
+  // parameter is set by package
+  mhdma_nmu_demux mhdma_nmu_demux (
+    .clk                            (clk_mhdma                                                    ),
+    .s_rst_n                        (resetn_mhdma                                                 ),
+    // Single AXI4 read from bridge
+    .s_axi4_arid                    (bridge_arid                                                  ),
+    .s_axi4_araddr                  (bridge_araddr                                                ),
+    .s_axi4_arlen                   (bridge_arlen                                                 ),
+    .s_axi4_arsize                  (bridge_arsize                                                ),
+    .s_axi4_arburst                 (bridge_arburst                                               ),
+    .s_axi4_arvalid                 (bridge_arvalid                                               ),
+    .s_axi4_arready                 (bridge_arready                                               ),
+    .s_axi4_rdata                   (bridge_rdata                                                 ),
+    .s_axi4_rresp                   (bridge_rresp                                                 ),
+    .s_axi4_rid                     (bridge_rid                                                   ),
+    .s_axi4_rlast                   (bridge_rlast                                                 ),
+    .s_axi4_rvalid                  (bridge_rvalid                                                ),
+    .s_axi4_rready                  (bridge_rready                                                ),
+    .ar_pc_sel                      (bridge_ar_pc_sel                                             ),
+    .rd_pc_sel                      (bridge_rd_pc_sel                                             ),
+    // Single AXI4 write from bridge
+    .s_axi4_awid                    (bridge_awid                                                  ),
+    .s_axi4_awaddr                  (bridge_awaddr                                                ),
+    .s_axi4_awlen                   (bridge_awlen                                                 ),
+    .s_axi4_awsize                  (bridge_awsize                                                ),
+    .s_axi4_awburst                 (bridge_awburst                                               ),
+    .s_axi4_awvalid                 (bridge_awvalid                                               ),
+    .s_axi4_awready                 (bridge_awready                                               ),
+    .s_axi4_wdata                   (bridge_wdata                                                 ),
+    .s_axi4_wstrb                   (bridge_wstrb                                                 ),
+    .s_axi4_wlast                   (bridge_wlast                                                 ),
+    .s_axi4_wvalid                  (bridge_wvalid                                                ),
+    .s_axi4_wready                  (bridge_wready                                                ),
+    .wr_pc_sel                      (bridge_wr_pc_sel                                             ),
+    // Per-PC NMU ports
+    .m_axi4_arid                    (m_axi4_mhdma_hbm_arid                                        ),
+    .m_axi4_araddr                  (m_axi4_mhdma_hbm_araddr                                      ),
+    .m_axi4_arlen                   (m_axi4_mhdma_hbm_arlen                                       ),
+    .m_axi4_arsize                  (m_axi4_mhdma_hbm_arsize                                      ),
+    .m_axi4_arburst                 (m_axi4_mhdma_hbm_arburst                                     ),
+    .m_axi4_arvalid                 (m_axi4_mhdma_hbm_arvalid                                     ),
+    .m_axi4_arready                 (m_axi4_mhdma_hbm_arready                                     ),
+    .m_axi4_rdata                   (m_axi4_mhdma_hbm_rdata                                       ),
+    .m_axi4_rresp                   (m_axi4_mhdma_hbm_rresp                                       ),
+    .m_axi4_rid                     (m_axi4_mhdma_hbm_rid                                         ),
+    .m_axi4_rlast                   (m_axi4_mhdma_hbm_rlast                                       ),
+    .m_axi4_rvalid                  (m_axi4_mhdma_hbm_rvalid                                      ),
+    .m_axi4_rready                  (m_axi4_mhdma_hbm_rready                                      ),
+    .m_axi4_awid                    (m_axi4_mhdma_hbm_awid                                        ),
+    .m_axi4_awaddr                  (m_axi4_mhdma_hbm_awaddr                                      ),
+    .m_axi4_awlen                   (m_axi4_mhdma_hbm_awlen                                       ),
+    .m_axi4_awsize                  (m_axi4_mhdma_hbm_awsize                                      ),
+    .m_axi4_awburst                 (m_axi4_mhdma_hbm_awburst                                     ),
+    .m_axi4_awvalid                 (m_axi4_mhdma_hbm_awvalid                                     ),
+    .m_axi4_awready                 (m_axi4_mhdma_hbm_awready                                     ),
+    .m_axi4_wdata                   (m_axi4_mhdma_hbm_wdata                                       ),
+    .m_axi4_wstrb                   (m_axi4_mhdma_hbm_wstrb                                       ),
+    .m_axi4_wlast                   (m_axi4_mhdma_hbm_wlast                                       ),
+    .m_axi4_wvalid                  (m_axi4_mhdma_hbm_wvalid                                      ),
+    .m_axi4_wready                  (m_axi4_mhdma_hbm_wready                                      )
+  );
+  // B channel goes directly from NMU to bridge (per-PC, not through demux)
 
   // ============================================================================================ //
   // AXI4-stream lane switch
