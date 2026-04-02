@@ -988,8 +988,8 @@ proc create_hier_cell_noc_wrapper { parentCell nameHier ntt_psi } {
   # NSU for Axi-lite
   # NMU for hbm PCs
   set_property CONFIG.PHYSICAL_LOC NOC_NSU512_X0Y10 [get_bd_intf_pins axi_noc_cips/M06_AXI]
-  set_property CONFIG.PHYSICAL_LOC NOC_NMU512_X0Y10 [get_bd_intf_pins axi_noc_cips/S22_AXI]
-  set_property CONFIG.PHYSICAL_LOC NOC_NMU512_X0Y11 [get_bd_intf_pins axi_noc_cips/S21_AXI]
+  set_property CONFIG.PHYSICAL_LOC NOC_NMU512_X2Y10 [get_bd_intf_pins axi_noc_cips/S22_AXI]
+  set_property CONFIG.PHYSICAL_LOC NOC_NMU512_X2Y11 [get_bd_intf_pins axi_noc_cips/S21_AXI]
 
   #  AXIS
   set_property CONFIG.PHYSICAL_LOC NOC_NMU512_X0Y0  [get_bd_intf_pins axis_noc/S00_AXIS]
