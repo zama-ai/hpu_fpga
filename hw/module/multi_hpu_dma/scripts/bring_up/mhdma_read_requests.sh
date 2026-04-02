@@ -31,26 +31,19 @@ set -e
 # Trap SIGINT (Ctrl+C) and kill all child processes
 trap 'kill $(jobs -p) 2>/dev/null; exit 0' SIGINT SIGTERM
 
+source /etc/profile.d/v80_pcie_dev.sh
+source "$(dirname "$0")/mhdma_package.sh"
+
 # =================================================================================================
 # Default parameters
 # =================================================================================================
 NUM_LOOPS=10
 
-# Data sizes per PC
-PC0_DATA_SIZE=8224 # 0x2020 bytes
-PC1_DATA_SIZE=8192 # 0x2000 bytes
-
 # Address space parameters:
-HBM_PC_RANGE=0x40000000                    # HBM_PC_RANGE = 0x40000000 (1GB per PC)
-HBM_PC_RANGE_BYTE=$((HBM_PC_RANGE / 8))
-CT_MEM_BYTES=12288
-HW_MAX_ADDR=0xAAAA  # Hardware limit: floor(HBM_PORT_RANGE/CT_MEM_BYTES)
+HBM_INIT_SIZE=$((HBM_PC_RANGE / 8))       # 128MB subset for test init
 
-NODE_SOURCE=24
-NODE_REQUEST=01
-
-PC0_ADDR=0x4400000000
-PC1_ADDR=0x4420000000
+NODE_SOURCE=${V80_BOARDS_MAP[1,pcie_id]}
+NODE_REQUEST=${V80_BOARDS_MAP[0,pcie_id]}
 
 # Statistics
 PASS_COUNT=0
@@ -76,7 +69,7 @@ show_help() {
     echo "  - CT_MEM_BYTES = 0x3000"
     echo "  - Hardware limit: SRC_ADDR_W = DST_ADDR_W = 16 bits (max 0xFFFF)"
     echo "  - Physical address = base + (logical_addr << PC_STRIDE)"
-    echo "  - PC0 data size: 0x2020 bytes (8224)"
+    echo "  - PC0 data size: 0x2040 bytes (8256)"
     echo "  - PC1 data size: 0x2000 bytes (8192)"
     echo ""
     echo "Alignment:"
@@ -119,7 +112,7 @@ done
 # =================================================================================================
 if [ -z "$hputil" ]; then
     echo " [FAILURE]: you did not export variable for hputil"
-    exit 0
+    exit 1
 fi
 
 echo " [INFO]: using hputil at $hputil"
@@ -128,7 +121,7 @@ setup_check=$($hputil -f 1 register read mhdma_system::hpu_id_0)
 
 if [ "$setup_check" == "0x0" ]; then
     echo " [FAILURE]: you did not do the setup"
-    exit 0
+    exit 1
 fi
 
 # =================================================================================================
@@ -159,7 +152,7 @@ perform_read_request() {
 
     # Send read request
     $hputil -f 0 register write mhdma_request::req_addr --value $request_addr
-    $hputil -f 0 register write mhdma_request::req_id   --value 0x00614000
+    $hputil -f 0 register write mhdma_request::req_id   --value $(build_req_id $REQ_ID_READ 1 1)
 
     # Calculate physical addresses
     local src_addr_val=$((src_addr * CT_MEM_BYTES))
@@ -229,7 +222,7 @@ echo "==========================================================================
 echo "  Configuration:"
 echo "    - Number of loops:  $NUM_LOOPS"
 echo "    - Max address:      $HW_MAX_ADDR (0x$(printf '%x' $HW_MAX_ADDR)) [HW limit: 0x$(printf '%x' $HW_MAX_ADDR)]"
-echo "    - HBM PC range:     0x$(printf '%x' $HBM_PC_RANGE)"
+echo "    - HBM PC range:     0x$(printf '%x' $HBM_PC_RANGE) (init size: 0x$(printf '%x' $HBM_INIT_SIZE))"
 echo "    - stride in bytes   $CT_MEM_BYTES "
 echo "    - Node source:      $NODE_SOURCE"
 echo "    - Node request:     $NODE_REQUEST"
@@ -258,9 +251,9 @@ for ((i=1; i<=NUM_LOOPS; i++)); do
     ADDR_PC1_SRC=$(printf "0x%x" "$((PC1_ADDR + src_addr_val))")
 
     echo ""
-    echo " Initializing HBM with random data (full PC range: 0x$(printf '%x' $HBM_PC_RANGE) bytes)"
-    dma-to-device -d /dev/qdma${NODE_SOURCE}001-MM-1 -s $HBM_PC_RANGE_BYTE -a $ADDR_PC0_SRC -o 0x0 -c 1 -f /dev/random
-    dma-to-device -d /dev/qdma${NODE_SOURCE}001-MM-1 -s $HBM_PC_RANGE_BYTE -a $ADDR_PC1_SRC -o 0x0 -c 1 -f /dev/random
+    echo " Initializing HBM with random data (128MB test range: 0x$(printf '%x' $HBM_INIT_SIZE) bytes)"
+    dma-to-device -d /dev/qdma${NODE_SOURCE}001-MM-1 -s $HBM_INIT_SIZE -a $ADDR_PC0_SRC -o 0x0 -c 1 -f /dev/random
+    dma-to-device -d /dev/qdma${NODE_SOURCE}001-MM-1 -s $HBM_INIT_SIZE -a $ADDR_PC1_SRC -o 0x0 -c 1 -f /dev/random
     echo ""
 
     if perform_read_request $i $src_addr $dst_addr; then
@@ -284,7 +277,5 @@ if [ $FAIL_COUNT -eq 0 ]; then
     exit 0
 else
     echo " [FAILURE]: $FAIL_COUNT read requests failed"
-    exit 0
+    exit 1
 fi
-$hputil -f 0 register write mhdma_request::req_addr --value 0x0
-$hputil -f 0 register write mhdma_request::req_id   --value 0x00614000

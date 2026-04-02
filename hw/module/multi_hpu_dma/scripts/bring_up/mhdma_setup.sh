@@ -107,7 +107,7 @@ while [[ $# -gt 0 ]]; do
     *)
       echo "[ERROR] Unknown option: $1"
       usage
-      exit 0
+      exit 1
       ;;
   esac
 done
@@ -115,13 +115,13 @@ done
 # Validate NUM_FPGAS
 if [[ ! "$NUM_FPGAS" =~ ^(2|4|8)$ ]]; then
   echo "[ERROR] Number of FPGAs must be 2, 4, or 8"
-  exit 0
+  exit 1
 fi
 
 # Check hputil
 if [ -z "$hputil" ]; then
   echo "[FAILURE] You did not export variable for hputil"
-  exit 0
+  exit 1
 else
   echo "[INFO] Using hputil at $hputil"
 fi
@@ -130,11 +130,11 @@ fi
 for ((b=0; b<NUM_FPGAS; b++)); do
   if [ "${V80_BOARDS_MAP[$b,pcie_id]}" = "x" ]; then
     echo "[ERROR] Board $b is not configured in V80_BOARDS_MAP but is required for $NUM_FPGAS FPGA setup"
-    exit 0
+    exit 1
   fi
   if [ -z "${V80_BOARDS_MAP[$b,mac_address]}" ]; then
     echo "[ERROR] Board $b has no mac_address configured in V80_BOARDS_MAP"
-    exit 0
+    exit 1
   fi
 done
 

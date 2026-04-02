@@ -17,6 +17,32 @@
 # ==============================================================================
 
 # ==============================================================================
+# HARDWARE CONSTANTS (from pem_common_param_pkg.sv / mhdma_pkg.sv)
+# ==============================================================================
+# Production params: N=2048, GLWE_K=1, MOD_Q_W=64, AXI4_DATA_W=512, PEM_PC=2
+CT_MEM_BYTES=12288          # 0x3000 — page-aligned CT stride
+PC0_DATA_SIZE=8224          # 0x2040 = 129 AXI4 words * 64 bytes (AXI4_WORD_PER_PC0)
+PC1_DATA_SIZE=8192          # 0x2000 = 128 AXI4 words * 64 bytes (AXI4_WORD_PER_PC)
+PC0_ADDR=0x4400000000       # HBM base address for PC0
+PC1_ADDR=0x4420000000       # HBM base address for PC1
+HBM_PC_RANGE=0x40000000     # 1GB per PC
+# Conservative max logical CT address (~half of theoretical max 0x15555)
+HW_MAX_ADDR=0xAAAA
+
+# req_id opcodes (mhdma_pkg.sv)
+REQ_ID_NOTIFY=2
+REQ_ID_NOTIFY_ACK=3
+REQ_ID_READ=6
+REQ_ID_EMISSION=7
+
+# req_id register layout: iop_id[31:24] req_id[23:20] node_id[19:16] mode[15:14] flag[13:8] rsvd[7:0]
+# req_addr register layout: dst_addr[31:16] src_addr[15:0]
+build_req_id() {
+    local opcode=$1 node=$2 mode=$3 flag=${4:-0} iop=${5:-0}
+    printf "0x%08x" $(( (iop << 24) | (opcode << 20) | (node << 16) | (mode << 14) | (flag << 8) ))
+}
+
+# ==============================================================================
 # BOARD UTILITIES
 # ==============================================================================
 
@@ -73,11 +99,11 @@ mhdma_stats() {
   echo "  Notify timeout retries:   $($hputil -f $board register read mhdma_request::stat_notify_timeout_retry)"
   echo "  Notify timeouts:          $($hputil -f $board register read mhdma_request::stat_notify_timeout)"
   echo "  Notify received:          $($hputil -f $board register read mhdma_request::stat_nb_notify_received)"
+  echo "  Notify ACK (nack) recv:   $($hputil -f $board register read mhdma_request::stat_nb_nack_received)"
   echo ""
   echo "--- Read Request Statistics ---"
   echo "  Read req timeout retries: $($hputil -f $board register read mhdma_request::stat_read_req_timeout_retry)"
   echo "  Read req received:        $($hputil -f $board register read mhdma_request::stat_nb_read_req_received)"
-  echo "  NACK received:            $($hputil -f $board register read mhdma_request::stat_nb_nack_received)"
   echo ""
   echo "--- Ciphertext Statistics ---"
   echo "  CE received:              $($hputil -f $board register read mhdma_request::stat_nb_ce_received)"

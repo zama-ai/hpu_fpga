@@ -9,6 +9,9 @@
 
 trap 'kill $(jobs -p) 2>/dev/null; exit 0' SIGINT SIGTERM
 
+source /etc/profile.d/v80_pcie_dev.sh
+source "$(dirname "$0")/mhdma_package.sh"
+
 NUM_CARDS=$1
 NUM_REQUESTS=${2:-10}
 
@@ -26,11 +29,18 @@ echo ""
 echo " [INFO]: using hputil at $hputil"
 echo ""
 
+for ((b=0; b<NUM_CARDS; b++)); do
+    if ! _mhdma_board_valid $b; then
+        echo " [ERROR]: Board $b not configured in V80_BOARDS_MAP"
+        exit 1
+    fi
+done
+
 # Ring: card i notifies card (i+1)%N
 for card in $(seq 0 $((NUM_CARDS - 1))); do
   dest=$(( (card + 1) % NUM_CARDS ))
   base_addr=$((card * 0x1000))
-  req_id=$(printf "0x%08x" $(( (2 << 20) | (dest << 16) | (1 << 14) )))
+  req_id=$(build_req_id $REQ_ID_NOTIFY $dest 1)
   echo " [INFO]: Card $card -> Card $dest (req_id=$req_id)"
   (
     for i in $(seq 0 $((NUM_REQUESTS - 1))); do
