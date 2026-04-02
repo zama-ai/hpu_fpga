@@ -14,8 +14,9 @@
 //   nrqq_cmd_ovf_error            - Master: Notify Request Queue FIFO overflow (command lost)
 //   error_id                      - Bridge: Multiple HPUs defined as current (not one-hot)
 //
-// Not tested (hardcoded to 0 in RTL):
-//   - formatter_error             - Formatter: Currently disabled
+// Not tested here:
+//   - formatter_error             - Formatter: tvalid gap during CE payload (tb_mhdma_formatter
+//                                   checks the gating prevents it, but no test triggers it)
 //
 // ==============================================================================================
 
