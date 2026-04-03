@@ -44,13 +44,13 @@ module tb_ucore;
 
   localparam int TEST_LEN = 2;
 
-  localparam int EXPECTED_UCORE_VERSION_MAJOR = 2;
+  localparam int EXPECTED_UCORE_VERSION_MAJOR = 3;
   localparam int EXPECTED_UCORE_VERSION_MINOR = 0;
   localparam int UCORE_VERSION_IOP            = 'h00FE0000;
   localparam int EMPTY_DST_IOP                = 'h60000000;
   localparam int EMPTY_SRC_IOP                = 'h20000000;
 
-  localparam int SYNC_DOP_WORD='h4000ffff;
+  localparam int SYNC_DOP_WORD='hBC040000;
 
   // size of AXI4 addr bus during simulation
   localparam int AXI4_ADD_W = 24;
