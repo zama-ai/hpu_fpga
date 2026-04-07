@@ -292,7 +292,8 @@ volatile uint32_t *toAmiIopAckqData = ( volatile uint32_t* )( HAL_RPU_SHARED_MEM
 
 #define DEBUG_PTR  0x7F00000
 #define DEBUG_ADDR 0x7F00004
-#define DEBUG_SIZE 0x80000
+// 0x20000 uint32_t means max should be at 0x7F80004 (0x3FF80004)
+#define DEBUG_SIZE 0x20000
 volatile uint32_t *debugPtrAddr = ( volatile uint32_t* )( HAL_RPU_SHARED_MEMORY_BASE_ADDR + DEBUG_PTR);
 volatile uint32_t *debugZoneAddr = ( volatile uint32_t* )( HAL_RPU_SHARED_MEMORY_BASE_ADDR + DEBUG_ADDR);
 uint32_t debugZonePtr = 0;
