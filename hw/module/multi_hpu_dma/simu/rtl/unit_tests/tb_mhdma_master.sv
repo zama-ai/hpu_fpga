@@ -30,6 +30,7 @@
 //   > AXI4 write error handling
 //   > Multiple sequential notify requests
 //   > Multiple sequential read requests
+//   > NOTIFY_ACK leakage into received_cmd (regression for 57bf253984)
 //   > Statistics counters
 //   > Error reset
 //
@@ -810,6 +811,40 @@ module tb_mhdma_master;
       end
 
       $display("[INFO:%0d] PC%0d: %0d total W beats", scenario_id, pc, total_w_beats);
+    end
+  endtask
+
+  // --------------------------------------------------------------------------------------------- --
+  // Inject a NOTIFY_ACK command through the decoded_command interface (mhdma domain).
+  // This simulates the decoder forwarding an ACK from a remote HPU.
+  // --------------------------------------------------------------------------------------------- --
+  task automatic feed_notify_ack(
+    input logic [IOP_ID_W-1:0]   ack_iop_id,
+    input logic [HPU_ID_W-1:0]   ack_hpu_id,
+    input logic [SEQ_NUM_W-1:0]  ack_seq_num
+  );
+    begin
+      @(posedge clk_mhdma);
+      decoded_command.req_id       = REQ_ID_NOTIFY_ACK;
+      decoded_command.seq_num      = ack_seq_num;
+      decoded_command.iop_id       = ack_iop_id;
+      decoded_command.hpu_id       = ack_hpu_id;
+      decoded_command.src_addr     = '0;
+      decoded_command.dst_addr     = '0;
+      decoded_command.mode         = '0;
+      decoded_command.flag         = '0;
+      decoded_command.rsvd         = '0;
+      decoded_command.src_mac_addr = '0;
+      decoded_command_vld          = 1'b1;
+
+      // Wait for handshake (nack_rdy asserts decoded_command_rdy)
+      @(posedge clk_mhdma);
+      while (!decoded_command_rdy) @(posedge clk_mhdma);
+      // Pulse notify_ack_received alongside the command handshake (matches real decoder behavior)
+      notify_ack_received = 1'b1;
+      @(posedge clk_mhdma);
+      decoded_command_vld = 1'b0;
+      notify_ack_received = 1'b0;
     end
   endtask
 
@@ -1934,6 +1969,98 @@ module tb_mhdma_master;
     end
   endtask
 
+  // --------------------------------------------------------------------------------------------- --
+  // Scenario : NOTIFY_ACK leakage into received_cmd (spotted and fixed in 57bf253984)
+  //
+  // A NOTIFY_ACK arriving mid-ciphertext overwrote received_cmd with the ACK's fields.
+  // The read-complete FIFO entry (built from received_cmd at valid_ciphertext_received)
+  // then contained the ACK's iop_id/hpu_id instead of the original EMISSION's fields.
+  //
+  // Steps:
+  //   1. Issue a READ request and start receiving ciphertext (CE packets)
+  //   2. After the first CE packet, inject a NOTIFY_ACK with different iop_id/hpu_id
+  //   3. Continue feeding remaining CE packets to complete the ciphertext
+  //   4. Verify regf_read_req_id contains the EMISSION's fields, NOT the ACK's
+  // --------------------------------------------------------------------------------------------- --
+  task automatic run_scenario_ack_leakage_to_received_cmd();
+    logic cmd_timed_out;
+    logic irq_timed_out;
+    logic [REG_DATA_W-1:0] exp_read_req_id;
+    logic [REG_DATA_W-1:0] exp_read_addr;
+    // ACK fields: intentionally different from the read request
+    logic [IOP_ID_W-1:0]   ack_iop_id;
+    logic [HPU_ID_W-1:0]   ack_hpu_id;
+    begin
+      scenario_start(scenario_id, "NOTIFY_ACK leakage into received_cmd");
+      randomize_fields();
+      clear_axi4_captures();
+
+      // Choose ACK fields that differ from the read request's
+      ack_iop_id = ~iop_id;
+      ack_hpu_id = ~hpu_id;
+
+      // 1. Issue READ request
+      inject_regf_request(
+        .iop_id   (iop_id      ),
+        .req_type (REQ_ID_READ ),
+        .hpu_id   (hpu_id      ),
+        .mode     (req_mode    ),
+        .flag     (req_flag    ),
+        .src_addr (iop_src_addr),
+        .dst_addr (iop_dst_addr)
+      );
+
+      wait_master_command_vld(500, cmd_timed_out);
+      assert (!cmd_timed_out) else begin
+        $display("[ERROR:%0d] Timed out waiting for master_command_vld", scenario_id);
+        error_scenario = 1'b1;
+      end
+      consume_master_command();
+      simulate_pulse(read_request_sent, clk_mhdma);
+
+      // 2. Feed ALL CE packets to complete the ciphertext.
+      feed_full_ciphertext(iop_id, hpu_id, req_mode, req_flag, iop_src_addr, iop_dst_addr);
+
+      // 3. Inject a NOTIFY_ACK with different fields AFTER the last CE packet.
+      //    The AXI4 write pipeline + B responses are still in-flight, so
+      //    valid_ciphertext_received has NOT fired yet.
+      //    Without the req_id guard, this overwrites received_cmd BEFORE the
+      //    read-complete FIFO entry is generated.
+      feed_notify_ack(
+        .ack_iop_id  (ack_iop_id),
+        .ack_hpu_id  (ack_hpu_id),
+        .ack_seq_num (8'hAB)
+      );
+
+      // 5. Wait for read-complete interrupt
+      wait_interrupt_rr(5000, irq_timed_out);
+      assert (!irq_timed_out) else begin
+        $display("[ERROR:%0d] Timed out waiting for interrupt", scenario_id);
+        error_scenario = 1'b1;
+      end
+
+      // 6. Verify regf_read_req_id contains the EMISSION's fields
+      exp_read_req_id = {iop_id, REQ_ID_EMISSION, hpu_id, req_mode, req_flag, 8'h0};
+      exp_read_addr   = {iop_dst_addr, iop_src_addr};
+
+      assert (regf_read_req_id == exp_read_req_id) else begin
+        $display("[ERROR:%0d] regf_read_req_id mismatch (ACK leaked?) | exp %08h got %08h",
+                 scenario_id, exp_read_req_id, regf_read_req_id);
+        error_scenario = 1'b1;
+      end
+      assert (regf_read_addr == exp_read_addr) else begin
+        $display("[ERROR:%0d] regf_read_addr mismatch (ACK leaked?) | exp %08h got %08h",
+                 scenario_id, exp_read_addr, regf_read_addr);
+        error_scenario = 1'b1;
+      end
+
+      clear_signal(clear_interrupt_rr, clk_mhdma_cfg);
+      clear_axi4_captures();
+
+      scenario_end(scenario_id, clk_mhdma_cfg);
+    end
+  endtask
+
 // ============================================================================================== --
 // Main test sequence
 // ============================================================================================== --
@@ -1964,6 +2091,7 @@ module tb_mhdma_master;
     run_scenario_multiple_notifies();
     run_scenario_multiple_reads();
     run_scenario_irq_fifo_backpressure();
+    run_scenario_ack_leakage_to_received_cmd();
     run_scenario_statistics();
     run_scenario_error_reset();
 
