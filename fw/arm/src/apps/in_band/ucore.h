@@ -24,6 +24,9 @@
 #define PLL_DBG( t, m, ... ) printf( m "\n", ##__VA_ARGS__ )  /* used for debug prints      */
 
 #define HAL_INVALIDATE_CACHE_DATA(a,b) printf("invalidate cache\n")
+#define iOSAL_Task_SleepTicks(n) while(0)
+#define vOSAL_EnterCritical() while(0);
+#define vOSAL_ExitCritical() while(0);
 #endif
 
 
