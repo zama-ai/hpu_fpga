@@ -83,10 +83,10 @@
 #define DST_STATE_READING     2 // dst remove read triggered but not done yet
 #define DST_STATE_RESOLVED    3 // dst locally available
 
-#define OPERAND_STATE_NONE         0 // no info on this operand
-#define OPERAND_STATE_READ_PENDING 1 // source/dst is needed and should be read as soon as IOp producing it is done or notify is received
-#define OPERAND_STATE_DMA_PENDING  2 // read request sent, waiting for data
-#define OPERAND_STATE_RESOLVED     3 // source/dst is ready locally
+#define OPERAND_STATE_NONE         5 // no info on this operand
+#define OPERAND_STATE_READ_PENDING 6 // source/dst is needed and should be read as soon as IOp producing it is done or notify is received
+#define OPERAND_STATE_DMA_PENDING  7 // read request sent, waiting for data
+#define OPERAND_STATE_RESOLVED     8 // source/dst is ready locally
 
 #define IOP_STATE_UNKNOWN  0xFF // iop unknown
 #define IOP_STATE_RUNNING  0xFE // iop running
