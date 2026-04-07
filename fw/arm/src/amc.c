@@ -545,7 +545,7 @@ void vInterruptHandler_mhdma_read_complete( void* pvCallBackRef ) {
     }
     case CMD_SRC: {
       // state should be DMA pending since a read has been sent
-      if (src_store.state[cur_iid][tid][bid] == OPERAND_STATE_DMA_PENDING) {
+      if (src_store.state[iid][tid][bid] == OPERAND_STATE_DMA_PENDING) {
         src_store.state[iid][tid][bid] = OPERAND_STATE_RESOLVED;
       }
 

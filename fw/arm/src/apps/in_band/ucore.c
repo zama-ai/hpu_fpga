@@ -777,7 +777,7 @@ int read_remote_src(int blocking, OperandBundle_t *iop_src, uint8_t tid, uint8_t
             src_store.state[cur_iid][tid][bid]);
       }
       wait_cnt++;
-      if (wait_cnt > 0) {
+      if (wait_cnt > 10000) {
 #ifdef UCORE_MHDMA_SIMU
         sleep(10);
 #else
