@@ -737,7 +737,7 @@ module mhdma_master
   command_t received_cmd;
 
   always_ff @(posedge clk_mhdma)
-    if (decoded_command_rdy & decoded_command_vld)
+    if (decoded_command_rdy & decoded_command_vld & (decoded_command.req_id == REQ_ID_EMISSION))
       received_cmd <= decoded_command;
 
   // Computing physical address =>  hbm_pc_offset + ctId * CT_MEM_BYTES
