@@ -290,23 +290,6 @@ volatile uint32_t *toAmiIopAckqHead = ( volatile uint32_t* )( HAL_RPU_SHARED_MEM
 volatile uint32_t *toAmiIopAckqTail = ( volatile uint32_t* )( HAL_RPU_SHARED_MEMORY_BASE_ADDR + OFFSET_TO_AMI_IOPACKQ_TAIL );
 volatile uint32_t *toAmiIopAckqData = ( volatile uint32_t* )( HAL_RPU_SHARED_MEMORY_BASE_ADDR + OFFSET_TO_AMI_IOPACKQ_DATA_START );
 
-#define DEBUG_PTR  0x7F00000
-#define DEBUG_ADDR 0x7F00004
-// 0x20000 uint32_t means max should be at 0x7F80004 (0x3FF80004)
-#define DEBUG_SIZE 0x20000
-volatile uint32_t *debugPtrAddr = ( volatile uint32_t* )( HAL_RPU_SHARED_MEMORY_BASE_ADDR + DEBUG_PTR);
-volatile uint32_t *debugZoneAddr = ( volatile uint32_t* )( HAL_RPU_SHARED_MEMORY_BASE_ADDR + DEBUG_ADDR);
-uint32_t debugZonePtr = 0;
-
-void print_ddr_debug(uint32_t data) {
-  volatile uint32_t* debug_idx = debugZoneAddr + (debugZonePtr % DEBUG_SIZE);
-  *debug_idx = data;
-  HAL_FLUSH_CACHE_DATA( (uintptr_t)debug_idx, sizeof(uint32_t));
-  debugZonePtr += 1;
-  *debugPtrAddr = (debugZonePtr % DEBUG_SIZE);
-  HAL_FLUSH_CACHE_DATA( (uintptr_t)debugPtrAddr, sizeof(uint32_t));
-}
-
 #define HIGH_PRIORITY_INTR  0xA0 // default is around 0xA0 and lower val means higher priority
 #define EDGE_SENSITIVE_INTR 0x3  // triggers on posedge of interrupt signal
 #define ACTIVE_ONE_INTR     0x1  // default value, triggers when signal is at 1
@@ -560,18 +543,6 @@ void vMhdmaWorkerTask(void *pvParameters) {
   // Infinite loop for the task
   FOREVER {
 
-    //for (int i = 1; i < 10; i++) {
-    //  for (int j = 0; j < 2; j++) {
-    //    for (int k = 0; k < 16; k++) {
-    //      if (src_store.state[i][j][k] == 0) {
-    //        PLL_ERR("MhdmaWorker", "[HPU%d] src state error (%d,%d,%d): %d", phys_hpu_id, i, j, k, src_store.state[i][j][k]);
-    //        iOSAL_Task_SleepTicks(10);
-    //      }
-    //    }
-    //  }
-    //}
-
-
     if ( OSAL_ERRORS_NONE == iOSAL_MBox_Pend( xMhdmaCommandMbox, (void*)&rxCmd, OSAL_TIMEOUT_WAIT_FOREVER) ) {
       mbox_msg_cnt += 1;
       switch (rxCmd.cmdID) {
@@ -630,8 +601,7 @@ void vMhdmaWorkerTask(void *pvParameters) {
           }
 
           // local b2b pool linked to this done IOp (for dst) are not needed anymore
-          uint16_t b2b_free_cnt = b2b_pool_free(iid);
-          //PLL_ERR("MhdmaWorker", "iop %d read src clean local b2bpool (%d slots)", iid, b2b_free_cnt);
+          (void)b2b_pool_free(iid);
           break;
 
         case MHDMA_CMD_PRINT_ERR:

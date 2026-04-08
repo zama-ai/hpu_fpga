@@ -5,13 +5,13 @@
 // Header and constants used by ucore firmware
 // ==============================================================================================
 
-//#include "pll.h"
 #include "hpu_dop_fmt.h"
 #include "hpu_iop_fmt.h"
 
 // Headers
 // ============================================================================================= //
 #include <stdio.h>
+#include "profile_hal.h"
 
 #ifndef __UCORE_H__
 #define __UCORE_H__
@@ -95,6 +95,11 @@
 #define IOP_STATE_RUNNING  0xFE // iop running
 #define IOP_STATE_DONE     0    // iop finished
 
+#define DEBUG_PTR  0x7F00000
+#define DEBUG_ADDR 0x7F00004
+// 0x20000 uint32_t means max should be at 0x7F80004 (0x3FF80004)
+#define DEBUG_SIZE 0x20000
+
 typedef struct {
   uint8_t state;
   uint8_t nb_hpu;
@@ -153,6 +158,7 @@ typedef struct {
 
 // Hpu functions prototypes
 // ============================================================================================= //
+void print_ddr_debug(uint32_t data);
 void mhdma_table_reset(void);
 void iop_state_init(void);
 void iop_state_node_ack(uint8_t iid, uint8_t nb_hpu);

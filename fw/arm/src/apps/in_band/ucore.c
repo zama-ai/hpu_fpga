@@ -35,6 +35,22 @@ mhdma_element_t mhdma_table[IOP_ID_MAX_COUNT][FLAG_MAX_COUNT];
 uint8_t mhdma_table_state[IOP_ID_MAX_COUNT][FLAG_MAX_COUNT];
 extern uint64_t intr_readc_cnt;
 
+// DDR debug trace
+volatile uint32_t *debugPtrAddr = ( volatile uint32_t* )( HAL_RPU_SHARED_MEMORY_BASE_ADDR + DEBUG_PTR);
+volatile uint32_t *debugZoneAddr = ( volatile uint32_t* )( HAL_RPU_SHARED_MEMORY_BASE_ADDR + DEBUG_ADDR);
+uint32_t debugZonePtr = 0;
+
+void print_ddr_debug(uint32_t data) {
+  vOSAL_EnterCritical();
+  volatile uint32_t* debug_idx = debugZoneAddr + (debugZonePtr % DEBUG_SIZE);
+  *debug_idx = data;
+  HAL_FLUSH_CACHE_DATA( (uintptr_t)debug_idx, sizeof(uint32_t));
+  debugZonePtr += 1;
+  *debugPtrAddr = (debugZonePtr % DEBUG_SIZE);
+  HAL_FLUSH_CACHE_DATA( (uintptr_t)debugPtrAddr, sizeof(uint32_t));
+  vOSAL_ExitCritical();
+}
+
 // mhdma_table (User data)
 void mhdma_table_reset(void) {
   memset(mhdma_table_state, MHDMA_STATE_EMPTY, sizeof(mhdma_table_state));
@@ -125,6 +141,8 @@ uint16_t b2b_pool_free(uint8_t iid) {
     b2b_pool_free_cnt++;
     free_cnt++;
   }
+  print_ddr_debug(0xB2B00000+iid);
+  print_ddr_debug((b2b_pool_free_cnt << 16) + free_cnt);
   return free_cnt;
 }
 
@@ -457,13 +475,14 @@ void iop_teardown(uint8_t iid) {
 #endif
     }
   }
+  vOSAL_EnterCritical();
   // update iop_state
   iop_state_node_ack(iid, iop_state[iid].nb_hpu);
+  vOSAL_ExitCritical();
 
   // release b2b pool slot for this IOp
   if (iop_state[iid].state == IOP_STATE_DONE) {
-    uint16_t b2b_free_cnt = b2b_pool_free(iid);
-    PLL_DBG("ucore", "[HPU%d] iop_teardown iid %d free b2b_pool slots: %d", phys_hpu_id, iid, b2b_free_cnt);
+    (void)b2b_pool_free(iid);
   }
 
   // reset all dst of iop for next execution of this iid
@@ -766,7 +785,7 @@ int read_remote_src(int blocking, OperandBundle_t *iop_src, uint8_t tid, uint8_t
     while (src_store.state[cur_iid][tid][bid] != OPERAND_STATE_RESOLVED) {
       // wait until notify or read ct is received
       if ((wait_cnt+1)%1000 == 0) {
-        PLL_DBG("ucore", "[HPU%d] iop %d wait on src - src_iid %d src_hid %d src_cid %d tg %d rc_irq %ld state %d",
+        PLL_DBG("ucore", "[HPU%d] iop %d wait src: src_iid %d src_hid %d src_cid %d tg %d rc_irq %ld state %d",
             phys_hpu_id,
             cur_iid,
             src_iid,
