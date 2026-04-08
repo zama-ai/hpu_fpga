@@ -35,6 +35,7 @@ mhdma_element_t mhdma_table[IOP_ID_MAX_COUNT][FLAG_MAX_COUNT];
 uint8_t mhdma_table_state[IOP_ID_MAX_COUNT][FLAG_MAX_COUNT];
 extern uint64_t intr_readc_cnt;
 
+#ifndef UCORE_MHDMA_SIMU
 // DDR debug trace
 volatile uint32_t *debugPtrAddr = ( volatile uint32_t* )( HAL_RPU_SHARED_MEMORY_BASE_ADDR + DEBUG_PTR);
 volatile uint32_t *debugZoneAddr = ( volatile uint32_t* )( HAL_RPU_SHARED_MEMORY_BASE_ADDR + DEBUG_ADDR);
@@ -50,6 +51,11 @@ void print_ddr_debug(uint32_t data) {
   HAL_FLUSH_CACHE_DATA( (uintptr_t)debugPtrAddr, sizeof(uint32_t));
   vOSAL_ExitCritical();
 }
+#else
+void print_ddr_debug(uint32_t data) {
+  while(0);
+}
+#endif
 
 // mhdma_table (User data)
 void mhdma_table_reset(void) {

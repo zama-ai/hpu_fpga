@@ -11,7 +11,10 @@
 // Headers
 // ============================================================================================= //
 #include <stdio.h>
+
+#ifndef UCORE_MHDMA_SIMU
 #include "profile_hal.h"
+#endif
 
 #ifndef __UCORE_H__
 #define __UCORE_H__
