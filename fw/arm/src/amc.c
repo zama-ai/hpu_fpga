@@ -280,7 +280,6 @@ uint64_t ullAmcInitStatus = 0;
 uint64_t isc_intr_global_cnt = 0;
 uint64_t debug_intr_global_cnt = 0;
 uint64_t intr_notify_cnt = 0;
-uint32_t intr_notify_data = 0;
 uint64_t intr_readc_cnt = 0;
 uint32_t mbox_msg_lost_cnt = 0;
 uint32_t mbox_msg_cnt = 0;
@@ -416,8 +415,6 @@ void vInterruptHandler_mhdma_notify( void* pvCallBackRef ) {
     uint8_t mode = notify.fields.mode;
     // is also the nb_hpu in CMD_SRC
     uint8_t flag = notify.fields.flag;
-
-    int current_ack_cnt = read_isc_ack_cnt();
 
     if (debug_intr_global_cnt%2 == 1) {
       // This is a debug msg to print received notify
