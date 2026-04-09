@@ -500,7 +500,7 @@ proc create_hier_cell_mrmac_wrapper  { parentCell nameHier } {
                   [get_bd_pins mrmac_0_core/tx_axi_clk] \
                   [get_bd_pins mrmac_0_core/rx_axi_clk]
 
-  # ts_clk: PTP unused, use apb3clk_quad (100 MHz) to satisfy MRMAC min period
+  # ts_clk: PTP unused, use apb3clk_quad (200 MHz) to satisfy MRMAC min period
   for {set i 0} {$i < 4} {incr i} {
     connect_bd_net [get_bd_pins apb3clk_quad] [get_bd_pins concat_4_clk_ts/In${i}]
   }
