@@ -581,48 +581,48 @@ module top_hpu #(
 
   // HPU_AXI4_ETH_HBM
   /*Write channel*/
-  logic [ETH_PC-1:0][AXI4_MHDMA_ID_W-1:0]       m_axi4_mhdma_hbm_awid;
-  logic [ETH_PC-1:0][AXI4_MHDMA_ADD_W-1:0]      m_axi4_mhdma_hbm_awaddr;
-  logic [ETH_PC-1:0][AXI4_LEN_W-1:0]            m_axi4_mhdma_hbm_awlen;
-  logic [ETH_PC-1:0][AXI4_SIZE_W-1:0]           m_axi4_mhdma_hbm_awsize;
-  logic [ETH_PC-1:0][AXI4_BURST_W-1:0]          m_axi4_mhdma_hbm_awburst;
-  logic [ETH_PC-1:0]                            m_axi4_mhdma_hbm_awvalid;
-  logic [ETH_PC-1:0]                            m_axi4_mhdma_hbm_awready;
-  logic [ETH_PC-1:0][AXI4_MHDMA_DATA_W-1:0]     m_axi4_mhdma_hbm_wdata;
-  logic [ETH_PC-1:0][AXI4_MHDMA_DATA_BYTES-1:0] m_axi4_mhdma_hbm_wstrb;   // unused
-  logic [ETH_PC-1:0]                            m_axi4_mhdma_hbm_wlast;
-  logic [ETH_PC-1:0]                            m_axi4_mhdma_hbm_wvalid;
-  logic [ETH_PC-1:0]                            m_axi4_mhdma_hbm_wready;
-  logic [ETH_PC-1:0][AXI4_MHDMA_ID_W-1:0]       m_axi4_mhdma_hbm_bid;
-  logic [ETH_PC-1:0][AXI4_RESP_W-1:0]           m_axi4_mhdma_hbm_bresp;
-  logic [ETH_PC-1:0]                            m_axi4_mhdma_hbm_bvalid;
-  logic [ETH_PC-1:0]                            m_axi4_mhdma_hbm_bready;
+  logic [AXI4_MHDMA_ID_W-1:0]       m_axi4_mhdma_hbm_awid;
+  logic [AXI4_MHDMA_ADD_W-1:0]      m_axi4_mhdma_hbm_awaddr;
+  logic [AXI4_LEN_W-1:0]            m_axi4_mhdma_hbm_awlen;
+  logic [AXI4_SIZE_W-1:0]           m_axi4_mhdma_hbm_awsize;
+  logic [AXI4_BURST_W-1:0]          m_axi4_mhdma_hbm_awburst;
+  logic                             m_axi4_mhdma_hbm_awvalid;
+  logic                             m_axi4_mhdma_hbm_awready;
+  logic [AXI4_MHDMA_DATA_W-1:0]     m_axi4_mhdma_hbm_wdata;
+  logic [AXI4_MHDMA_DATA_BYTES-1:0] m_axi4_mhdma_hbm_wstrb;   // unused
+  logic                             m_axi4_mhdma_hbm_wlast;
+  logic                             m_axi4_mhdma_hbm_wvalid;
+  logic                             m_axi4_mhdma_hbm_wready;
+  logic [AXI4_MHDMA_ID_W-1:0]       m_axi4_mhdma_hbm_bid;
+  logic [AXI4_RESP_W-1:0]           m_axi4_mhdma_hbm_bresp;
+  logic                             m_axi4_mhdma_hbm_bvalid;
+  logic                             m_axi4_mhdma_hbm_bready;
   /*Unused signal tight to constant in the top*/
-  logic [ETH_PC-1:0][AXI4_AWLOCK_W-1:0]         m_axi4_mhdma_hbm_awlock;
-  logic [ETH_PC-1:0][AXI4_AWCACHE_W-1:0]        m_axi4_mhdma_hbm_awcache;
-  logic [ETH_PC-1:0][AXI4_AWPROT_W-1:0]         m_axi4_mhdma_hbm_awprot;
-  logic [ETH_PC-1:0][AXI4_AWQOS_W-1:0]          m_axi4_mhdma_hbm_awqos;
-  logic [ETH_PC-1:0][AXI4_AWREGION_W-1:0]       m_axi4_mhdma_hbm_awregion;
+  logic [AXI4_AWLOCK_W-1:0]         m_axi4_mhdma_hbm_awlock;
+  logic [AXI4_AWCACHE_W-1:0]        m_axi4_mhdma_hbm_awcache;
+  logic [AXI4_AWPROT_W-1:0]         m_axi4_mhdma_hbm_awprot;
+  logic [AXI4_AWQOS_W-1:0]          m_axi4_mhdma_hbm_awqos;
+  logic [AXI4_AWREGION_W-1:0]       m_axi4_mhdma_hbm_awregion;
   /*Read channel*/
-  logic [ETH_PC-1:0][AXI4_MHDMA_ID_W-1:0]       m_axi4_mhdma_hbm_arid;
-  logic [ETH_PC-1:0][AXI4_MHDMA_ADD_W-1:0]      m_axi4_mhdma_hbm_araddr;
-  logic [ETH_PC-1:0][AXI4_LEN_W-1:0]            m_axi4_mhdma_hbm_arlen;
-  logic [ETH_PC-1:0][AXI4_SIZE_W-1:0]           m_axi4_mhdma_hbm_arsize;
-  logic [ETH_PC-1:0][AXI4_BURST_W-1:0]          m_axi4_mhdma_hbm_arburst;
-  logic [ETH_PC-1:0]                            m_axi4_mhdma_hbm_arvalid;
-  logic [ETH_PC-1:0]                            m_axi4_mhdma_hbm_arready;
-  logic [ETH_PC-1:0][AXI4_MHDMA_ID_W-1:0]       m_axi4_mhdma_hbm_rid;       // unused
-  logic [ETH_PC-1:0][AXI4_MHDMA_DATA_W-1:0]     m_axi4_mhdma_hbm_rdata;
-  logic [ETH_PC-1:0][AXI4_RESP_W-1:0]           m_axi4_mhdma_hbm_rresp;
-  logic [ETH_PC-1:0]                            m_axi4_mhdma_hbm_rlast;
-  logic [ETH_PC-1:0]                            m_axi4_mhdma_hbm_rvalid;
-  logic [ETH_PC-1:0]                            m_axi4_mhdma_hbm_rready;
+  logic [AXI4_MHDMA_ID_W-1:0]       m_axi4_mhdma_hbm_arid;
+  logic [AXI4_MHDMA_ADD_W-1:0]      m_axi4_mhdma_hbm_araddr;
+  logic [AXI4_LEN_W-1:0]            m_axi4_mhdma_hbm_arlen;
+  logic [AXI4_SIZE_W-1:0]           m_axi4_mhdma_hbm_arsize;
+  logic [AXI4_BURST_W-1:0]          m_axi4_mhdma_hbm_arburst;
+  logic                             m_axi4_mhdma_hbm_arvalid;
+  logic                             m_axi4_mhdma_hbm_arready;
+  logic [AXI4_MHDMA_ID_W-1:0]       m_axi4_mhdma_hbm_rid;       // unused
+  logic [AXI4_MHDMA_DATA_W-1:0]     m_axi4_mhdma_hbm_rdata;
+  logic [AXI4_RESP_W-1:0]           m_axi4_mhdma_hbm_rresp;
+  logic                             m_axi4_mhdma_hbm_rlast;
+  logic                             m_axi4_mhdma_hbm_rvalid;
+  logic                             m_axi4_mhdma_hbm_rready;
   /*Unused signal tight to constant in the top*/
-  logic [ETH_PC-1:0][AXI4_ARLOCK_W-1:0]         m_axi4_mhdma_hbm_arlock;
-  logic [ETH_PC-1:0][AXI4_ARCACHE_W-1:0]        m_axi4_mhdma_hbm_arcache;
-  logic [ETH_PC-1:0][AXI4_ARPROT_W-1:0]         m_axi4_mhdma_hbm_arprot;
-  logic [ETH_PC-1:0][AXI4_ARQOS_W-1:0]          m_axi4_mhdma_hbm_arqos;
-  logic [ETH_PC-1:0][AXI4_ARREGION_W-1:0]       m_axi4_mhdma_hbm_arregion;
+  logic [AXI4_ARLOCK_W-1:0]         m_axi4_mhdma_hbm_arlock;
+  logic [AXI4_ARCACHE_W-1:0]        m_axi4_mhdma_hbm_arcache;
+  logic [AXI4_ARPROT_W-1:0]         m_axi4_mhdma_hbm_arprot;
+  logic [AXI4_ARQOS_W-1:0]          m_axi4_mhdma_hbm_arqos;
+  logic [AXI4_ARREGION_W-1:0]       m_axi4_mhdma_hbm_arregion;
 
   // ======================================================================= //
   // Ethernet link: MRMAC, GTM and DMA
@@ -2282,83 +2282,44 @@ module top_hpu #(
     .KSK_AXI_15_wstrb   (m_axi4_ksk_wstrb[15]   ),
     .KSK_AXI_15_wvalid  (m_axi4_ksk_wvalid[15]  ),
 
-    .MHDMA_HBM_AXI_0_araddr  (m_axi4_mhdma_hbm_araddr[0]  ),
-    .MHDMA_HBM_AXI_0_arburst (m_axi4_mhdma_hbm_arburst[0] ),
-    .MHDMA_HBM_AXI_0_arcache (m_axi4_mhdma_hbm_arcache[0] ),
-    // .MHDMA_HBM_AXI_0_arid    (m_axi4_mhdma_hbm_arid[0]    ),
-    .MHDMA_HBM_AXI_0_arlen   (m_axi4_mhdma_hbm_arlen[0]   ),
-    .MHDMA_HBM_AXI_0_arlock  (m_axi4_mhdma_hbm_arlock[0]  ),
-    .MHDMA_HBM_AXI_0_arprot  (m_axi4_mhdma_hbm_arprot[0]  ),
-    .MHDMA_HBM_AXI_0_arready (m_axi4_mhdma_hbm_arready[0] ),
-    .MHDMA_HBM_AXI_0_arsize  (m_axi4_mhdma_hbm_arsize[0]  ),
-    // .MHDMA_HBM_AXI_0_aruser  (m_axi4_mhdma_hbm_aruser[0]  ),//
-    .MHDMA_HBM_AXI_0_arvalid (m_axi4_mhdma_hbm_arvalid[0] ),
-    .MHDMA_HBM_AXI_0_awaddr  (m_axi4_mhdma_hbm_awaddr[0]  ),
-    .MHDMA_HBM_AXI_0_awburst (m_axi4_mhdma_hbm_awburst[0] ),
-    .MHDMA_HBM_AXI_0_awcache (m_axi4_mhdma_hbm_awcache[0] ),
-    .MHDMA_HBM_AXI_0_awid    (m_axi4_mhdma_hbm_awid[0]    ),
-    .MHDMA_HBM_AXI_0_awlen   (m_axi4_mhdma_hbm_awlen[0]   ),
-    .MHDMA_HBM_AXI_0_awlock  (m_axi4_mhdma_hbm_awlock[0]  ),
-    .MHDMA_HBM_AXI_0_awprot  (m_axi4_mhdma_hbm_awprot[0]  ),
-    .MHDMA_HBM_AXI_0_awready (m_axi4_mhdma_hbm_awready[0] ),
-    .MHDMA_HBM_AXI_0_awsize  (m_axi4_mhdma_hbm_awsize[0]  ),
-    // .MHDMA_HBM_AXI_0_awuser  (m_axi4_mhdma_hbm_awuser[0]  ),//
-    .MHDMA_HBM_AXI_0_awvalid (m_axi4_mhdma_hbm_awvalid[0] ),
-    .MHDMA_HBM_AXI_0_bid     (m_axi4_mhdma_hbm_bid[0]     ),
-    .MHDMA_HBM_AXI_0_bready  (m_axi4_mhdma_hbm_bready[0]  ),
-    .MHDMA_HBM_AXI_0_bresp   (m_axi4_mhdma_hbm_bresp[0]   ),
-    // .MHDMA_HBM_AXI_0_buser   (m_axi4_mhdma_hbm_buser[0]   ),//
-    .MHDMA_HBM_AXI_0_bvalid  (m_axi4_mhdma_hbm_bvalid[0]  ),
-    .MHDMA_HBM_AXI_0_rdata   (m_axi4_mhdma_hbm_rdata[0]   ),
-    // .MHDMA_HBM_AXI_0_rid     (m_axi4_mhdma_hbm_rid[0]     ),
-    .MHDMA_HBM_AXI_0_rlast   (m_axi4_mhdma_hbm_rlast[0]   ),
-    .MHDMA_HBM_AXI_0_rready  (m_axi4_mhdma_hbm_rready[0]  ),
-    .MHDMA_HBM_AXI_0_rresp   (m_axi4_mhdma_hbm_rresp[0]   ),
-    .MHDMA_HBM_AXI_0_rvalid  (m_axi4_mhdma_hbm_rvalid[0]  ),
-    .MHDMA_HBM_AXI_0_wdata   (m_axi4_mhdma_hbm_wdata[0]   ),
-    .MHDMA_HBM_AXI_0_wlast   (m_axi4_mhdma_hbm_wlast[0]   ),
-    .MHDMA_HBM_AXI_0_wready  (m_axi4_mhdma_hbm_wready[0]  ),
-    .MHDMA_HBM_AXI_0_wstrb   (m_axi4_mhdma_hbm_wstrb[0]   ),
-    .MHDMA_HBM_AXI_0_wvalid  (m_axi4_mhdma_hbm_wvalid[0]  ),
-
-    .MHDMA_HBM_AXI_1_araddr  (m_axi4_mhdma_hbm_araddr[1]  ),
-    .MHDMA_HBM_AXI_1_arburst (m_axi4_mhdma_hbm_arburst[1] ),
-    .MHDMA_HBM_AXI_1_arcache (m_axi4_mhdma_hbm_arcache[1] ),
-    // .MHDMA_HBM_AXI_1_arid    (m_axi4_mhdma_hbm_arid[1]    ),
-    .MHDMA_HBM_AXI_1_arlen   (m_axi4_mhdma_hbm_arlen[1]   ),
-    .MHDMA_HBM_AXI_1_arlock  (m_axi4_mhdma_hbm_arlock[1]  ),
-    .MHDMA_HBM_AXI_1_arprot  (m_axi4_mhdma_hbm_arprot[1]  ),
-    .MHDMA_HBM_AXI_1_arready (m_axi4_mhdma_hbm_arready[1] ),
-    .MHDMA_HBM_AXI_1_arsize  (m_axi4_mhdma_hbm_arsize[1]  ),
-    // .MHDMA_HBM_AXI_1_aruser  (m_axi4_mhdma_hbm_aruser[1]  ),//
-    .MHDMA_HBM_AXI_1_arvalid (m_axi4_mhdma_hbm_arvalid[1] ),
-    .MHDMA_HBM_AXI_1_awaddr  (m_axi4_mhdma_hbm_awaddr[1]  ),
-    .MHDMA_HBM_AXI_1_awburst (m_axi4_mhdma_hbm_awburst[1] ),
-    .MHDMA_HBM_AXI_1_awcache (m_axi4_mhdma_hbm_awcache[1] ),
-    .MHDMA_HBM_AXI_1_awid    (m_axi4_mhdma_hbm_awid[1]    ),
-    .MHDMA_HBM_AXI_1_awlen   (m_axi4_mhdma_hbm_awlen[1]   ),
-    .MHDMA_HBM_AXI_1_awlock  (m_axi4_mhdma_hbm_awlock[1]  ),
-    .MHDMA_HBM_AXI_1_awprot  (m_axi4_mhdma_hbm_awprot[1]  ),
-    .MHDMA_HBM_AXI_1_awready (m_axi4_mhdma_hbm_awready[1] ),
-    .MHDMA_HBM_AXI_1_awsize  (m_axi4_mhdma_hbm_awsize[1]  ),
-    // .MHDMA_HBM_AXI_1_awuser  (m_axi4_mhdma_hbm_awuser[1]  ),//
-    .MHDMA_HBM_AXI_1_awvalid (m_axi4_mhdma_hbm_awvalid[1] ),
-    .MHDMA_HBM_AXI_1_bid     (m_axi4_mhdma_hbm_bid[1]     ),
-    .MHDMA_HBM_AXI_1_bready  (m_axi4_mhdma_hbm_bready[1]  ),
-    .MHDMA_HBM_AXI_1_bresp   (m_axi4_mhdma_hbm_bresp[1]   ),
-    // .MHDMA_HBM_AXI_1_buser   (m_axi4_mhdma_hbm_buser[1]   ),//
-    .MHDMA_HBM_AXI_1_bvalid  (m_axi4_mhdma_hbm_bvalid[1]  ),
-    .MHDMA_HBM_AXI_1_rdata   (m_axi4_mhdma_hbm_rdata[1]   ),
-    // .MHDMA_HBM_AXI_1_rid     (m_axi4_mhdma_hbm_rid[1]     ),
-    .MHDMA_HBM_AXI_1_rlast   (m_axi4_mhdma_hbm_rlast[1]   ),
-    .MHDMA_HBM_AXI_1_rready  (m_axi4_mhdma_hbm_rready[1]  ),
-    .MHDMA_HBM_AXI_1_rresp   (m_axi4_mhdma_hbm_rresp[1]   ),
-    .MHDMA_HBM_AXI_1_rvalid  (m_axi4_mhdma_hbm_rvalid[1]  ),
-    .MHDMA_HBM_AXI_1_wdata   (m_axi4_mhdma_hbm_wdata[1]   ),
-    .MHDMA_HBM_AXI_1_wlast   (m_axi4_mhdma_hbm_wlast[1]   ),
-    .MHDMA_HBM_AXI_1_wready  (m_axi4_mhdma_hbm_wready[1]  ),
-    .MHDMA_HBM_AXI_1_wstrb   (m_axi4_mhdma_hbm_wstrb[1]   ),
-    .MHDMA_HBM_AXI_1_wvalid  (m_axi4_mhdma_hbm_wvalid[1]  ),
+    .MHDMA_HBM_AXI_0_araddr  (m_axi4_mhdma_hbm_araddr  ),
+    .MHDMA_HBM_AXI_0_arburst (m_axi4_mhdma_hbm_arburst ),
+    .MHDMA_HBM_AXI_0_arcache (m_axi4_mhdma_hbm_arcache ),
+    // .MHDMA_HBM_AXI_0_arid    (m_axi4_mhdma_hbm_arid    ),
+    .MHDMA_HBM_AXI_0_arlen   (m_axi4_mhdma_hbm_arlen   ),
+    .MHDMA_HBM_AXI_0_arlock  (m_axi4_mhdma_hbm_arlock  ),
+    .MHDMA_HBM_AXI_0_arprot  (m_axi4_mhdma_hbm_arprot  ),
+    .MHDMA_HBM_AXI_0_arready (m_axi4_mhdma_hbm_arready ),
+    .MHDMA_HBM_AXI_0_arsize  (m_axi4_mhdma_hbm_arsize  ),
+    // .MHDMA_HBM_AXI_0_aruser  (m_axi4_mhdma_hbm_aruser  ),//
+    .MHDMA_HBM_AXI_0_arvalid (m_axi4_mhdma_hbm_arvalid ),
+    .MHDMA_HBM_AXI_0_awaddr  (m_axi4_mhdma_hbm_awaddr  ),
+    .MHDMA_HBM_AXI_0_awburst (m_axi4_mhdma_hbm_awburst ),
+    .MHDMA_HBM_AXI_0_awcache (m_axi4_mhdma_hbm_awcache ),
+    .MHDMA_HBM_AXI_0_awid    (m_axi4_mhdma_hbm_awid    ),
+    .MHDMA_HBM_AXI_0_awlen   (m_axi4_mhdma_hbm_awlen   ),
+    .MHDMA_HBM_AXI_0_awlock  (m_axi4_mhdma_hbm_awlock  ),
+    .MHDMA_HBM_AXI_0_awprot  (m_axi4_mhdma_hbm_awprot  ),
+    .MHDMA_HBM_AXI_0_awready (m_axi4_mhdma_hbm_awready ),
+    .MHDMA_HBM_AXI_0_awsize  (m_axi4_mhdma_hbm_awsize  ),
+    // .MHDMA_HBM_AXI_0_awuser  (m_axi4_mhdma_hbm_awuser  ),//
+    .MHDMA_HBM_AXI_0_awvalid (m_axi4_mhdma_hbm_awvalid ),
+    .MHDMA_HBM_AXI_0_bid     (m_axi4_mhdma_hbm_bid     ),
+    .MHDMA_HBM_AXI_0_bready  (m_axi4_mhdma_hbm_bready  ),
+    .MHDMA_HBM_AXI_0_bresp   (m_axi4_mhdma_hbm_bresp   ),
+    // .MHDMA_HBM_AXI_0_buser   (m_axi4_mhdma_hbm_buser   ),//
+    .MHDMA_HBM_AXI_0_bvalid  (m_axi4_mhdma_hbm_bvalid  ),
+    .MHDMA_HBM_AXI_0_rdata   (m_axi4_mhdma_hbm_rdata   ),
+    // .MHDMA_HBM_AXI_0_rid     (m_axi4_mhdma_hbm_rid     ),
+    .MHDMA_HBM_AXI_0_rlast   (m_axi4_mhdma_hbm_rlast   ),
+    .MHDMA_HBM_AXI_0_rready  (m_axi4_mhdma_hbm_rready  ),
+    .MHDMA_HBM_AXI_0_rresp   (m_axi4_mhdma_hbm_rresp   ),
+    .MHDMA_HBM_AXI_0_rvalid  (m_axi4_mhdma_hbm_rvalid  ),
+    .MHDMA_HBM_AXI_0_wdata   (m_axi4_mhdma_hbm_wdata   ),
+    .MHDMA_HBM_AXI_0_wlast   (m_axi4_mhdma_hbm_wlast   ),
+    .MHDMA_HBM_AXI_0_wready  (m_axi4_mhdma_hbm_wready  ),
+    .MHDMA_HBM_AXI_0_wstrb   (m_axi4_mhdma_hbm_wstrb   ),
+    .MHDMA_HBM_AXI_0_wvalid  (m_axi4_mhdma_hbm_wvalid  ),
 
     /* AXI stream
      */
@@ -2980,7 +2941,7 @@ module top_hpu #(
     .m_axi4_mhdma_hbm_arlock       (m_axi4_mhdma_hbm_arlock),
     .m_axi4_mhdma_hbm_arcache      (m_axi4_mhdma_hbm_arcache),
     .m_axi4_mhdma_hbm_arprot       (m_axi4_mhdma_hbm_arprot),
-    .m_axi4_mhdma_hbm_arqos        (m_axi4_mhdma_hbm_-arqos),
+    .m_axi4_mhdma_hbm_arqos        (m_axi4_mhdma_hbm_arqos),
     .m_axi4_mhdma_hbm_arregion     (m_axi4_mhdma_hbm_arregion),
 
     /* AXI-STREAM interface
