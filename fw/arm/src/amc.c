@@ -550,7 +550,7 @@ void vMhdmaWorkerTask(void *pvParameters) {
     if ( OSAL_ERRORS_NONE == iOSAL_MBox_Pend( xMhdmaCommandMbox, (void*)&rxCmd, OSAL_TIMEOUT_WAIT_FOREVER) ) {
       mbox_msg_cnt += 1;
       switch (rxCmd.cmdID) {
-        case HDMA_CMD_IOP_TEARDOWN: {
+        case MHDMA_CMD_IOP_TEARDOWN: {
           DOpu_t dop;
           dop.raw = rxCmd.payload;
           uint8_t ack_iid = dop.sync.iid;
