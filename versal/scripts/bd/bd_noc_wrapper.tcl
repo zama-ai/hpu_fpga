@@ -217,7 +217,7 @@ proc create_hier_cell_noc_wrapper { parentCell nameHier ntt_psi } {
     }
   }
 
-  for { set i 0}  {$i < $MHDMA_PC_AXI_NB} {incr i} {
+  for { set i 0}  {$i < $MHDMA_AXI_NB} {incr i} {
     set name "MHDMA_AXI_${i}"
     create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:aximm_rtl:1.0 $name
   }
@@ -241,7 +241,7 @@ proc create_hier_cell_noc_wrapper { parentCell nameHier ntt_psi } {
     }
   }
 
-  for { set i 0}  {$i < $MHDMA_PC_AXI_NB} {incr i} {
+  for { set i 0}  {$i < $MHDMA_AXI_NB} {incr i} {
     set sc_mhdma [create_bd_cell -type ip -vlnv xilinx.com:ip:smartconnect:1.0 mhdma_sc_${i}]
     set_property CONFIG.NUM_SI {1} [get_bd_cells mhdma_sc_${i}]
   }
@@ -271,7 +271,7 @@ proc create_hier_cell_noc_wrapper { parentCell nameHier ntt_psi } {
     CONFIG.HBM_REF_CLK_SELECTION {Internal} \
     CONFIG.NUM_CLKS [expr 9 + $LPD_AXI_NB + $REGIF_CLK_NB] \
     CONFIG.NUM_HBM_BLI $HNMU_AXI_NB \
-    CONFIG.NUM_MI [expr $AXI_PCIE_NB + $REGIF_NB*$REGIF_CLK_NB + $MHDMA_PC_AXI_NB] \
+    CONFIG.NUM_MI [expr $AXI_PCIE_NB + $REGIF_NB*$REGIF_CLK_NB + $MHDMA_AXI_NB] \
     CONFIG.NUM_NMI {4} \
     CONFIG.NUM_NSI {0} \
     CONFIG.NUM_SI [expr $NMU_AXI_NB + $LPD_AXI_NB] \
@@ -416,7 +416,7 @@ proc create_hier_cell_noc_wrapper { parentCell nameHier ntt_psi } {
   }
 
   set mhdma_m_noc_pins_l [list]
-  for { set i 0}  {$i < $MHDMA_PC_AXI_NB} {incr i} {
+  for { set i 0}  {$i < $MHDMA_AXI_NB} {incr i} {
     lappend mhdma_m_noc_pins_l [format "M%02d_AXI" [expr $i + $mhdma_m_ofs]]
   }
 
@@ -605,20 +605,17 @@ proc create_hier_cell_noc_wrapper { parentCell nameHier ntt_psi } {
 
   }
 
-  # MHDMA
+  # MHDMA — single NMU, single HBM port (accesses full pseudo-channel range through one port)
   set mhdma_hbm_qos [set_qos $MHDMA_HBM_RD_BW $MHDMA_HBM_WR_BW $MHDMA_HBM_RD_BURST_AVG $MHDMA_HBM_WR_BURST_AVG]
-  for { set i 0}  {$i < $MHDMA_PC_AXI_NB} {incr i} {
-    set idx [lindex $mhdma_hbm_ports_l $i]
-    set hbm_port_name [format "HBM%0d_PORT%0d" [expr int($idx / 4)] [expr $idx % 4]]
-    set cnx [list $hbm_port_name $mhdma_hbm_qos]
-
-    set_property -dict [ list \
-     CONFIG.DATA_WIDTH $MHDMA_HBM_DATA_W \
-     CONFIG.CONNECTIONS $cnx \
-     CONFIG.NOC_PARAMS {} \
-     CONFIG.CATEGORY {pl} \
-   ] [get_bd_intf_pins axi_noc_cips/[lindex $mhdma_noc_pins_l $i]]
-  }
+  set idx [lindex $mhdma_hbm_ports_l 0]
+  set hbm_port_name [format "HBM%0d_PORT%0d" [expr int($idx / 4)] [expr $idx % 4]]
+  set mhdma_cnx [list $hbm_port_name $mhdma_hbm_qos]
+  set_property -dict [ list \
+    CONFIG.DATA_WIDTH $MHDMA_HBM_DATA_W \
+    CONFIG.CONNECTIONS $mhdma_cnx \
+    CONFIG.NOC_PARAMS {} \
+    CONFIG.CATEGORY {pl} \
+  ] [get_bd_intf_pins axi_noc_cips/[lindex $mhdma_noc_pins_l 0]]
 
   #== NMU
   # CPM 0
@@ -986,10 +983,9 @@ proc create_hier_cell_noc_wrapper { parentCell nameHier ntt_psi } {
 
   # MHDMA
   # NSU for Axi-lite
-  # NMU for hbm PCs
+  # NMU for hbm (single NMU, both PCs)
   set_property CONFIG.PHYSICAL_LOC NOC_NSU512_X0Y10 [get_bd_intf_pins axi_noc_cips/M06_AXI]
-  set_property CONFIG.PHYSICAL_LOC NOC_NMU512_X2Y10 [get_bd_intf_pins axi_noc_cips/S22_AXI]
-  set_property CONFIG.PHYSICAL_LOC NOC_NMU512_X2Y11 [get_bd_intf_pins axi_noc_cips/S21_AXI]
+  set_property CONFIG.PHYSICAL_LOC NOC_NMU512_X2Y10 [get_bd_intf_pins axi_noc_cips/[lindex $mhdma_noc_pins_l 0]]
 
   #  AXIS
   set_property CONFIG.PHYSICAL_LOC NOC_NMU512_X0Y0  [get_bd_intf_pins axis_noc/S00_AXIS]

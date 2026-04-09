@@ -128,40 +128,36 @@ module tb_mhdma_slave;
 // DUT signals
 // ============================================================================================== --
   // Single AXI4 Read interface (from DUT)
-  logic [  AXI4_ADD_W-1:0]                               m_axi4_araddr;
-  logic [  AXI4_LEN_W-1:0]                               m_axi4_arlen;
-  logic [ AXI4_SIZE_W-1:0]                               m_axi4_arsize;
-  logic [AXI4_BURST_W-1:0]                               m_axi4_arburst;
-  logic                                                  m_axi4_arvalid;
-  logic                                                  m_axi4_arready;
-  logic [axi_if_mhdma_axi_pkg::AXI4_ID_W-1:0]            m_axi4_arid;
+  logic [  AXI4_ADD_W-1:0]                    m_axi4_araddr;
+  logic [  AXI4_LEN_W-1:0]                    m_axi4_arlen;
+  logic [ AXI4_SIZE_W-1:0]                    m_axi4_arsize;
+  logic [AXI4_BURST_W-1:0]                    m_axi4_arburst;
+  logic                                       m_axi4_arvalid;
+  logic                                       m_axi4_arready;
+  logic [axi_if_mhdma_axi_pkg::AXI4_ID_W-1:0] m_axi4_arid;
 
-  logic [AXI4_DATA_W-1:0]                                m_axi4_rdata;
-  logic [AXI4_RESP_W-1:0]                                m_axi4_rresp;
-  logic [axi_if_mhdma_axi_pkg::AXI4_ID_W-1:0]            m_axi4_rid;
-  logic                                                  m_axi4_rlast;
-  logic                                                  m_axi4_rvalid;
-  logic                                                  m_axi4_rready;
+  logic [AXI4_DATA_W-1:0]                     m_axi4_rdata;
+  logic [AXI4_RESP_W-1:0]                     m_axi4_rresp;
+  logic [axi_if_mhdma_axi_pkg::AXI4_ID_W-1:0] m_axi4_rid;
+  logic                                       m_axi4_rlast;
+  logic                                       m_axi4_rvalid;
+  logic                                       m_axi4_rready;
 
-  // PC selectors from DUT
-  logic [ETH_PC-1:0] ar_pc_sel;
-  logic [ETH_PC-1:0] rd_pc_sel;
+  // NMU-side AXI4 signals (scalar, single NMU port)
+  logic [  AXI4_ADD_W-1:0]                    nmu_axi4_araddr;
+  logic [  AXI4_LEN_W-1:0]                    nmu_axi4_arlen;
+  logic [ AXI4_SIZE_W-1:0]                    nmu_axi4_arsize;
+  logic [AXI4_BURST_W-1:0]                    nmu_axi4_arburst;
+  logic                                       nmu_axi4_arvalid;
+  logic                                       nmu_axi4_arready;
+  logic [axi_if_mhdma_axi_pkg::AXI4_ID_W-1:0] nmu_axi4_arid;
 
-  // Per-PC AXI4 signals (for AXI memory models)
-  logic [ETH_PC-1:0][  AXI4_ADD_W-1:0]                  nmu_axi4_araddr;
-  logic [ETH_PC-1:0][  AXI4_LEN_W-1:0]                  nmu_axi4_arlen;
-  logic [ETH_PC-1:0][ AXI4_SIZE_W-1:0]                  nmu_axi4_arsize;
-  logic [ETH_PC-1:0][AXI4_BURST_W-1:0]                  nmu_axi4_arburst;
-  logic [ETH_PC-1:0]                                    nmu_axi4_arvalid;
-  logic [ETH_PC-1:0]                                    nmu_axi4_arready;
-  logic [ETH_PC-1:0][axi_if_mhdma_axi_pkg::AXI4_ID_W-1:0] nmu_axi4_arid;
-
-  logic [ETH_PC-1:0][AXI4_DATA_W-1:0]                   nmu_axi4_rdata;
-  logic [ETH_PC-1:0][AXI4_RESP_W-1:0]                   nmu_axi4_rresp;
-  logic [ETH_PC-1:0][axi_if_mhdma_axi_pkg::AXI4_ID_W-1:0] nmu_axi4_rid;
-  logic [ETH_PC-1:0]                                    nmu_axi4_rlast;
-  logic [ETH_PC-1:0]                                    nmu_axi4_rvalid;
-  logic [ETH_PC-1:0]                                    nmu_axi4_rready;
+  logic [AXI4_DATA_W-1:0]                     nmu_axi4_rdata;
+  logic [AXI4_RESP_W-1:0]                     nmu_axi4_rresp;
+  logic [axi_if_mhdma_axi_pkg::AXI4_ID_W-1:0] nmu_axi4_rid;
+  logic                                       nmu_axi4_rlast;
+  logic                                       nmu_axi4_rvalid;
+  logic                                       nmu_axi4_rready;
 
   // Register file interface
   logic [ETH_PC-1:0][2*REG_DATA_W-1:0] regf_ct_mem_addr;
@@ -203,8 +199,8 @@ module tb_mhdma_slave;
   mhdma_slave #(
     .CDC_SYNC_STAGES(CDC_SYNC_STAGES)
   ) mhdma_slave (
-    .clk_mhdma_cfg                (clk_mhdma_cfg               ),
-    .resetn_mhdma_cfg             (s_rstn_cfg            ),
+    .clk_mhdma_cfg          (clk_mhdma_cfg         ),
+    .resetn_mhdma_cfg       (s_rstn_cfg            ),
     .clk_mhdma              (clk_mhdma             ),
     .resetn_mhdma           (s_rstn_mhdma          ),
 
@@ -222,8 +218,6 @@ module tb_mhdma_slave;
     .m_axi4_rlast           (m_axi4_rlast          ),
     .m_axi4_rvalid          (m_axi4_rvalid         ),
     .m_axi4_rready          (m_axi4_rready         ),
-    .ar_pc_sel              (ar_pc_sel             ),
-    .rd_pc_sel              (rd_pc_sel             ),
 
     .regf_ct_mem_addr       (regf_ct_mem_addr      ),
     .regf_notify_req_id     (regf_notify_req_id    ),
@@ -255,9 +249,9 @@ module tb_mhdma_slave;
   );
 
 // ============================================================================================== --
-// NMU demux: single AXI4 from DUT -> per-PC AXI memory models
+// NMU pipe: pipeline register between DUT and NMU port
 // ============================================================================================== --
-  mhdma_nmu_demux mhdma_nmu_demux (
+  mhdma_nmu_pipe mhdma_nmu_pipe (
     .clk            (clk_mhdma      ),
     .s_rst_n        (s_rstn_mhdma   ),
     .s_axi4_arid    (m_axi4_arid    ),
@@ -273,8 +267,6 @@ module tb_mhdma_slave;
     .s_axi4_rlast   (m_axi4_rlast   ),
     .s_axi4_rvalid  (m_axi4_rvalid  ),
     .s_axi4_rready  (m_axi4_rready  ),
-    .ar_pc_sel      (ar_pc_sel      ),
-    .rd_pc_sel      (rd_pc_sel      ),
     // AW/W unused in slave TB
     .s_axi4_awid    ('0             ),
     .s_axi4_awaddr  ('0             ),
@@ -288,8 +280,7 @@ module tb_mhdma_slave;
     .s_axi4_wlast   (1'b0           ),
     .s_axi4_wvalid  (1'b0           ),
     .s_axi4_wready  (               ),
-    .wr_pc_sel      ('0             ),
-    // Per-PC NMU ports
+    // Single NMU port
     .m_axi4_arid    (nmu_axi4_arid    ),
     .m_axi4_araddr  (nmu_axi4_araddr  ),
     .m_axi4_arlen   (nmu_axi4_arlen   ),
@@ -309,91 +300,83 @@ module tb_mhdma_slave;
     .m_axi4_awsize  (                 ),
     .m_axi4_awburst (                 ),
     .m_axi4_awvalid (                 ),
-    .m_axi4_awready ('0               ),
+    .m_axi4_awready (1'b0             ),
     .m_axi4_wdata   (                 ),
     .m_axi4_wstrb   (                 ),
     .m_axi4_wlast   (                 ),
     .m_axi4_wvalid  (                 ),
-    .m_axi4_wready  ('0               )
+    .m_axi4_wready  (1'b0             )
   );
 
 // ============================================================================================== --
-// AXI4 Read Responder (per PC)
+// AXI4 Read Responder (single NMU port)
 // ============================================================================================== --
-  int ar_transaction_count [ETH_PC];
+  int ar_transaction_count;
 
-  generate
-    for (genvar gen_pc = 0; gen_pc < ETH_PC; gen_pc++) begin : gen_axi4_responder
-      axi4_mem #(
-        .DATA_WIDTH      (AXI4_DATA_W),
-        .ADDR_WIDTH      (AXI4_ADD_W),
-        .ID_WIDTH        (axi_if_mhdma_axi_pkg::AXI4_ID_W),
-        .STRB_WIDTH      (AXI4_DATA_W/8),
-        .RD_CMD_BUF_DEPTH(AXI4_MEM_RD_CMD_BUF_DEPTH),
-        .RD_DATA_LATENCY (AXI4_MEM_RD_DATA_LATENCY),
-        .WR_CMD_BUF_DEPTH(1),  // minimum, write channel unused
-        .WR_DATA_LATENCY (1),  // minimum, write channel unused
-        .USE_RD_RANDOM   (AXI4_MEM_USE_RD_RANDOM),
-        .USE_WR_RANDOM   (0)   // write channel unused
-      ) u_axi4_mem (
-        .clk              (clk_mhdma),
-        .rst              (~s_rstn_mhdma),
-        // Write channel - tied off (DUT is read-only, no AW/W/B)
-        .s_axi4_awid      ({axi_if_mhdma_axi_pkg::AXI4_ID_W{1'b0}}),
-        .s_axi4_awaddr    ({AXI4_ADD_W{1'b0}}),
-        .s_axi4_awlen     (8'h0),
-        .s_axi4_awsize    (3'h0),
-        .s_axi4_awburst   (2'h0),
-        .s_axi4_awlock    (1'b0),
-        .s_axi4_awcache   (4'h0),
-        .s_axi4_awprot    (3'h0),
-        .s_axi4_awqos     (4'h0),
-        .s_axi4_awregion  (4'h0),
-        .s_axi4_awvalid   (1'b0),
-        .s_axi4_awready   (/* UNUSED */),
-        .s_axi4_wdata     ({AXI4_DATA_W{1'b0}}),
-        .s_axi4_wstrb     ({(AXI4_DATA_W/8){1'b0}}),
-        .s_axi4_wlast     (1'b0),
-        .s_axi4_wvalid    (1'b0),
-        .s_axi4_wready    (/* UNUSED */),
-        .s_axi4_bid       (/* UNUSED */),
-        .s_axi4_bresp     (/* UNUSED */),
-        .s_axi4_bvalid    (/* UNUSED */),
-        .s_axi4_bready    (1'b0),
-        // Read channel - connected to DUT master interface
-        .s_axi4_arid      (nmu_axi4_arid[gen_pc]),
-        .s_axi4_araddr    (nmu_axi4_araddr[gen_pc]),
-        .s_axi4_arlen     (nmu_axi4_arlen[gen_pc]),
-        .s_axi4_arsize    (nmu_axi4_arsize[gen_pc]),
-        .s_axi4_arburst   (nmu_axi4_arburst[gen_pc]),
-        .s_axi4_arlock    (1'b0),
-        .s_axi4_arcache   (4'h0),
-        .s_axi4_arprot    (3'h0),
-        .s_axi4_arqos     (4'h0),
-        .s_axi4_arregion  (4'h0),
-        .s_axi4_arvalid   (nmu_axi4_arvalid[gen_pc]),
-        .s_axi4_arready   (nmu_axi4_arready[gen_pc]),
-        .s_axi4_rid       (nmu_axi4_rid[gen_pc]),
-        .s_axi4_rdata     (nmu_axi4_rdata[gen_pc]),
-        .s_axi4_rresp     (nmu_axi4_rresp[gen_pc]),
-        .s_axi4_rlast     (nmu_axi4_rlast[gen_pc]),
-        .s_axi4_rvalid    (nmu_axi4_rvalid[gen_pc]),
-        .s_axi4_rready    (nmu_axi4_rready[gen_pc])
-      );
-    end
-  endgenerate
+  axi4_mem #(
+    .DATA_WIDTH      (AXI4_DATA_W                            ),
+    .ADDR_WIDTH      (AXI4_ADD_W                             ),
+    .ID_WIDTH        (axi_if_mhdma_axi_pkg::AXI4_ID_W        ),
+    .STRB_WIDTH      (AXI4_DATA_W/8                          ),
+    .RD_CMD_BUF_DEPTH(AXI4_MEM_RD_CMD_BUF_DEPTH              ),
+    .RD_DATA_LATENCY (AXI4_MEM_RD_DATA_LATENCY               ),
+    .WR_CMD_BUF_DEPTH(1                                      ), // minimum, write channel unused
+    .WR_DATA_LATENCY (1                                      ), // minimum, write channel unused
+    .USE_RD_RANDOM   (AXI4_MEM_USE_RD_RANDOM                 ),
+    .USE_WR_RANDOM   (0                                      )  // write channel unused
+  ) u_axi4_mem (
+    .clk             (clk_mhdma                              ),
+    .rst             (~s_rstn_mhdma                          ),
+    // Write channel - tied off (DUT is read-only, no AW/W/B)
+    .s_axi4_awid     ({axi_if_mhdma_axi_pkg::AXI4_ID_W{1'b0}}),
+    .s_axi4_awaddr   ({AXI4_ADD_W{1'b0}}                     ),
+    .s_axi4_awlen    (8'h0                                   ),
+    .s_axi4_awsize   (3'h0                                   ),
+    .s_axi4_awburst  (2'h0                                   ),
+    .s_axi4_awlock   (1'b0                                   ),
+    .s_axi4_awcache  (4'h0                                   ),
+    .s_axi4_awprot   (3'h0                                   ),
+    .s_axi4_awqos    (4'h0                                   ),
+    .s_axi4_awregion (4'h0                                   ),
+    .s_axi4_awvalid  (1'b0                                   ),
+    .s_axi4_awready  (/* UNUSED */                           ),
+    .s_axi4_wdata    ({AXI4_DATA_W{1'b0}}                    ),
+    .s_axi4_wstrb    ({(AXI4_DATA_W/8){1'b0}}                ),
+    .s_axi4_wlast    (1'b0                                   ),
+    .s_axi4_wvalid   (1'b0                                   ),
+    .s_axi4_wready   (/* UNUSED */                           ),
+    .s_axi4_bid      (/* UNUSED */                           ),
+    .s_axi4_bresp    (/* UNUSED */                           ),
+    .s_axi4_bvalid   (/* UNUSED */                           ),
+    .s_axi4_bready   (1'b0                                   ),
+    // Read channel - connected to DUT via NMU pipe
+    .s_axi4_arid     (nmu_axi4_arid                          ),
+    .s_axi4_araddr   (nmu_axi4_araddr                        ),
+    .s_axi4_arlen    (nmu_axi4_arlen                         ),
+    .s_axi4_arsize   (nmu_axi4_arsize                        ),
+    .s_axi4_arburst  (nmu_axi4_arburst                       ),
+    .s_axi4_arlock   (1'b0                                   ),
+    .s_axi4_arcache  (4'h0                                   ),
+    .s_axi4_arprot   (3'h0                                   ),
+    .s_axi4_arqos    (4'h0                                   ),
+    .s_axi4_arregion (4'h0                                   ),
+    .s_axi4_arvalid  (nmu_axi4_arvalid                       ),
+    .s_axi4_arready  (nmu_axi4_arready                       ),
+    .s_axi4_rid      (nmu_axi4_rid                           ),
+    .s_axi4_rdata    (nmu_axi4_rdata                         ),
+    .s_axi4_rresp    (nmu_axi4_rresp                         ),
+    .s_axi4_rlast    (nmu_axi4_rlast                         ),
+    .s_axi4_rvalid   (nmu_axi4_rvalid                        ),
+    .s_axi4_rready   (nmu_axi4_rready                        )
+  );
 
-  // Track AR transactions per PC
-  generate
-    for (genvar gen_pc = 0; gen_pc < ETH_PC; gen_pc++) begin : gen_ar_tracker
-      always_ff @(posedge clk_mhdma) begin
-        if (~s_rstn_mhdma)
-          ar_transaction_count[gen_pc] <= 0;
-        else if (nmu_axi4_arvalid[gen_pc] && nmu_axi4_arready[gen_pc])
-          ar_transaction_count[gen_pc] <= ar_transaction_count[gen_pc] + 1;
-      end
-    end
-  endgenerate
+  // Track AR transactions (single counter for the single NMU port)
+  always_ff @(posedge clk_mhdma) begin
+    if (~s_rstn_mhdma)
+      ar_transaction_count <= 0;
+    else if (nmu_axi4_arvalid && nmu_axi4_arready)
+      ar_transaction_count <= ar_transaction_count + 1;
+  end
 
 // ============================================================================================== --
 // Helper tasks
@@ -742,16 +725,16 @@ module tb_mhdma_slave;
 
     consume_slave_command();
 
-    // Wait for first AXI4 AR transaction on PC0
+    // Wait for first AXI4 AR transaction
     begin : wait_ar_block
       int wait_count;
       wait_count = 0;
-      while (~nmu_axi4_arvalid[0] & (wait_count < TIMEOUT_CYCLES)) begin
+      while (~nmu_axi4_arvalid & (wait_count < TIMEOUT_CYCLES)) begin
         @(posedge clk_mhdma);
         wait_count++;
       end
       assert (wait_count < TIMEOUT_CYCLES) else begin
-        $display("[ERROR:%0d] AR timeout on PC0", scenario_id);
+        $display("[ERROR:%0d] AR timeout", scenario_id);
         error_timeout = 1'b1;
       end
     end
@@ -1041,17 +1024,14 @@ module tb_mhdma_slave;
 
     // Stall: with slave_command_rdy=0, RREQ FIFO not popped : no new AXI4 reads
     begin : stall_check
-      int ar_count_before [ETH_PC];
-      for (int pc = 0; pc < ETH_PC; pc++)
-        ar_count_before[pc] = ar_transaction_count[pc];
+      int ar_count_before;
+      ar_count_before = ar_transaction_count;
 
       repeat (100) @(posedge clk_mhdma);
 
-      for (int pc = 0; pc < ETH_PC; pc++) begin
-        assert (ar_transaction_count[pc] == ar_count_before[pc]) else begin
-          $display("[ERROR:%0d] AXI4 AR on PC%0d during backpressure", scenario_id, pc);
-          error_assert = 1'b1;
-        end
+      assert (ar_transaction_count == ar_count_before) else begin
+        $display("[ERROR:%0d] AXI4 AR during backpressure", scenario_id);
+        error_assert = 1'b1;
       end
     end
     assert (stat.fsm_cem == 2'b10) else begin
@@ -1394,10 +1374,12 @@ module tb_mhdma_slave;
   // -------------------------------------------------------------------------
   task automatic run_scenario_phy_addr_and_page_boundary_all_pcs();
     logic [2*REG_DATA_W-1:0] saved_addr [ETH_PC];
-    int ar_count_before [ETH_PC];
-    int ar_count_after  [ETH_PC];
+    int ar_count_before;
 
     logic [AXI4_ADD_W-1:0] expected_phy_addr [ETH_PC];
+    // Capture per-PC first AR address from the single NMU port.
+    // DUT sends ARs in PC order (PC0 first, then PC1, ...).
+    // We identify the PC boundary by matching against expected_phy_addr ranges.
     logic [AXI4_ADD_W-1:0] captured_first_araddr [ETH_PC];
     logic                  captured [ETH_PC];
 
@@ -1414,8 +1396,8 @@ module tb_mhdma_slave;
     for (int pc = 0; pc < ETH_PC; pc++) begin
       expected_phy_addr[pc] = regf_ct_mem_addr[pc] + iop_src_addr * CT_MEM_BYTES;
       captured[pc] = 1'b0;
-      ar_count_before[pc] = ar_transaction_count[pc];
     end
+    ar_count_before = ar_transaction_count;
 
     // Send the command and consume slave_command (but do NOT send ciphertext_sent yet)
     send_decoded_command(REQ_ID_READ, hpu_id, iop_id, iop_src_addr, iop_dst_addr, req_flag, req_mode, 'h0);
@@ -1424,16 +1406,20 @@ module tb_mhdma_slave;
     check_no_timeout(timed_out, scenario_id, "slave_command_vld timeout");
     consume_slave_command();
 
-    // Wait for all PCs to have at least one AR transaction, capturing the first address per PC
+    // Capture first AR address per PC from the single NMU port.
+    // DUT sends PCs sequentially; match each AR handshake to a PC by address range.
     begin : monitor_ar_addrs
       int monitor_cnt;
       monitor_cnt = 0;
       while (monitor_cnt < TIMEOUT_CYCLES) begin
         @(posedge clk_mhdma);
-        for (int pc = 0; pc < ETH_PC; pc++) begin
-          if (~captured[pc] & nmu_axi4_arvalid[pc] & nmu_axi4_arready[pc]) begin
-            captured_first_araddr[pc] = nmu_axi4_araddr[pc];
-            captured[pc] = 1'b1;
+        if (nmu_axi4_arvalid & nmu_axi4_arready) begin
+          for (int pc = 0; pc < ETH_PC; pc++) begin
+            // Match: the AR address falls within the same 1 MB region as expected_phy_addr[pc]
+            if (~captured[pc] & (nmu_axi4_araddr[AXI4_ADD_W-1:20] == expected_phy_addr[pc][AXI4_ADD_W-1:20])) begin
+              captured_first_araddr[pc] = nmu_axi4_araddr;
+              captured[pc] = 1'b1;
+            end
           end
         end
         begin
@@ -1470,13 +1456,16 @@ module tb_mhdma_slave;
       end
     end
 
-    // Check page boundary splitting produced multiple bursts per PC
-    for (int pc = 0; pc < ETH_PC; pc++) begin
-      ar_count_after[pc] = ar_transaction_count[pc];
-      $display("%t > %0d: PC%0d AR transactions = %0d",
-               $time, scenario_id, pc, ar_count_after[pc] - ar_count_before[pc]);
-      assert (ar_count_after[pc] - ar_count_before[pc] > 1) else begin
-        $display("[ERROR:%0d] PC%0d: expected multiple AR bursts near page boundary", scenario_id, pc);
+    // Check page boundary splitting produced multiple bursts (total across all PCs)
+    begin
+      int ar_count_after;
+      ar_count_after = ar_transaction_count;
+      $display("%t > %0d: total AR transactions = %0d",
+               $time, scenario_id, ar_count_after - ar_count_before);
+      // With ETH_PC PCs each near a page boundary, we expect at least 2*ETH_PC AR bursts
+      assert (ar_count_after - ar_count_before > ETH_PC) else begin
+        $display("[ERROR:%0d] expected multiple AR bursts near page boundary, got %0d",
+                 scenario_id, ar_count_after - ar_count_before);
         error_assert = 1'b1;
       end
     end
@@ -1528,34 +1517,29 @@ module tb_mhdma_slave;
 // XSIM is fast enough for SVA in this test
 // ============================================================================================== --
 
-  generate
-    for (genvar gen_pc = 0; gen_pc < ETH_PC; gen_pc++) begin : gen_sva_axi4
+  // AXI4 read-channel protocol checks (single NMU port)
+  property axi4_arvalid_stable;
+    @(posedge clk_mhdma) disable iff (~s_rstn_mhdma)
+    (nmu_axi4_arvalid && !nmu_axi4_arready) |=>
+      $stable(nmu_axi4_arvalid) && $stable(nmu_axi4_araddr) && $stable(nmu_axi4_arlen);
+  endproperty
 
-      property axi4_arvalid_stable;
-        @(posedge clk_mhdma) disable iff (~s_rstn_mhdma)
-        (nmu_axi4_arvalid[gen_pc] && !nmu_axi4_arready[gen_pc]) |=>
-          $stable(nmu_axi4_arvalid[gen_pc]) && $stable(nmu_axi4_araddr[gen_pc]) && $stable(nmu_axi4_arlen[gen_pc]);
-      endproperty
+  property axi4_arburst_incr;
+    @(posedge clk_mhdma) disable iff (~s_rstn_mhdma)
+    nmu_axi4_arvalid |-> (nmu_axi4_arburst == AXI4B_INCR);
+  endproperty
 
-      property axi4_arburst_incr;
-        @(posedge clk_mhdma) disable iff (~s_rstn_mhdma)
-        nmu_axi4_arvalid[gen_pc] |-> (nmu_axi4_arburst[gen_pc] == AXI4B_INCR);
-      endproperty
-
-      assert_arvalid_stable: assert property(axi4_arvalid_stable)
-        else begin
-          $display("[ERROR-SVA] PC%0d AR channel: value changed when arready was low", gen_pc);
-          error_assert = 1'b1;
-        end
-
-      assert_arburst_incr: assert property(axi4_arburst_incr)
-        else begin
-          $display("[ERROR-SVA] PC%0d AR channel: arburst is not INCR", gen_pc);
-          error_assert = 1'b1;
-        end
-
+  assert_arvalid_stable: assert property(axi4_arvalid_stable)
+    else begin
+      $display("[ERROR-SVA] AR channel: value changed when arready was low");
+      error_assert = 1'b1;
     end
-  endgenerate
+
+  assert_arburst_incr: assert property(axi4_arburst_incr)
+    else begin
+      $display("[ERROR-SVA] AR channel: arburst is not INCR");
+      error_assert = 1'b1;
+    end
 
   // NRX FSM should not be in unknown state
   property nrx_fsm_valid;

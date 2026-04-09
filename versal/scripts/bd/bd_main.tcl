@@ -804,16 +804,14 @@ proc create_root_design { parentCell ntt_psi } {
     assign_bd_address -offset $add_ofs -range $_nsp_hpu::HBM_PORT_RANGE -target_address_space [get_bd_addr_spaces CT_AXI_${i}] [get_bd_addr_segs noc_wrapper/axi_noc_cips/$noc_pin/$hbm_pc_name] -force
   }
   puts "MHDMA HBM"
-  for { set i 0}  {$i < $_nsp_hpu::MHDMA_PC_AXI_NB} {incr i} {
-    set hbm_port_idx [lindex $_nsp_hpu::MHDMA_HBM_PORTS_L $i]
-    set hbm_pc_idx [expr int($hbm_port_idx/2)]
-    set hbm_pc_name [format "HBM%0d_PC%0d" [expr int($hbm_pc_idx/2)] [expr $hbm_pc_idx%2]]
+  # Single NMU, single port — map the full pseudo-channel range (covers both CT PC address regions)
+  set noc_pin [lindex $_nsp_hpu::MHDMA_NOC_PINS_L 0]
+  set hbm_port_idx [lindex $_nsp_hpu::MHDMA_HBM_PORTS_L 0]
+  set hbm_pc_idx [expr int($hbm_port_idx/2)]
+  set hbm_pc_name [format "HBM%0d_PC%0d" [expr int($hbm_pc_idx/2)] [expr $hbm_pc_idx%2]]
+  set add_ofs [expr $_nsp_hpu::HBM_ADD_OFS + $hbm_pc_idx * $_nsp_hpu::HBM_PC_RANGE]
 
-    set add_ofs [expr $_nsp_hpu::HBM_ADD_OFS + $hbm_port_idx * $_nsp_hpu::HBM_PORT_RANGE]
-    set noc_pin [lindex $_nsp_hpu::MHDMA_NOC_PINS_L $i]
-
-    assign_bd_address -offset $add_ofs -range $_nsp_hpu::HBM_PORT_RANGE -target_address_space [get_bd_addr_spaces MHDMA_HBM_AXI_${i}] [get_bd_addr_segs noc_wrapper/axi_noc_cips/$noc_pin/$hbm_pc_name] -force
-  }
+  assign_bd_address -offset $add_ofs -range $_nsp_hpu::HBM_PC_RANGE -target_address_space [get_bd_addr_spaces MHDMA_HBM_AXI_0] [get_bd_addr_segs noc_wrapper/axi_noc_cips/$noc_pin/$hbm_pc_name] -force
   puts "TRC"
   for { set i 0}  {$i < $_nsp_hpu::TRC_AXI_NB} {incr i} {
     set hbm_port_idx [lindex $_nsp_hpu::TRC_HBM_PORTS_L $i]

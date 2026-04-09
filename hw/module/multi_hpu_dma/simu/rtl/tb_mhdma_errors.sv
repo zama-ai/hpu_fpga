@@ -117,37 +117,37 @@ module tb_mhdma_errors;
   logic                                   s_axil_mhdma_rvalid;
   logic                                   s_axil_mhdma_rready;
 
-  // AXI4 HBM interface
-  logic [ETH_PC-1:0][AXI4_ID_W-1:0]       m_axi4_awid;
-  logic [ETH_PC-1:0][AXI4_ADD_W-1:0]      m_axi4_awaddr;
-  logic [ETH_PC-1:0][7:0]                 m_axi4_awlen;
-  logic [ETH_PC-1:0][2:0]                 m_axi4_awsize;
-  logic [ETH_PC-1:0][1:0]                 m_axi4_awburst;
-  logic [ETH_PC-1:0]                      m_axi4_awvalid;
-  logic [ETH_PC-1:0]                      m_axi4_awready;
-  logic [ETH_PC-1:0][AXI4_DATA_W-1:0]     m_axi4_wdata;
-  logic [ETH_PC-1:0][(AXI4_DATA_W/8)-1:0] m_axi4_wstrb;
-  logic [ETH_PC-1:0]                      m_axi4_wlast;
-  logic [ETH_PC-1:0]                      m_axi4_wvalid;
-  logic [ETH_PC-1:0]                      m_axi4_wready;
-  logic [ETH_PC-1:0][AXI4_ID_W-1:0]       m_axi4_bid;
-  logic [ETH_PC-1:0][1:0]                 m_axi4_bresp;
-  logic [ETH_PC-1:0]                      m_axi4_bvalid;
-  logic [ETH_PC-1:0]                      m_axi4_bready;
+  // AXI4 HBM interface (single NMU)
+  logic [AXI4_ID_W-1:0]       m_axi4_awid;
+  logic [AXI4_ADD_W-1:0]      m_axi4_awaddr;
+  logic [7:0]                 m_axi4_awlen;
+  logic [2:0]                 m_axi4_awsize;
+  logic [1:0]                 m_axi4_awburst;
+  logic                       m_axi4_awvalid;
+  logic                       m_axi4_awready;
+  logic [AXI4_DATA_W-1:0]     m_axi4_wdata;
+  logic [(AXI4_DATA_W/8)-1:0] m_axi4_wstrb;
+  logic                       m_axi4_wlast;
+  logic                       m_axi4_wvalid;
+  logic                       m_axi4_wready;
+  logic [AXI4_ID_W-1:0]       m_axi4_bid;
+  logic [1:0]                 m_axi4_bresp;
+  logic                       m_axi4_bvalid;
+  logic                       m_axi4_bready;
 
-  logic [ETH_PC-1:0][AXI4_ID_W-1:0]       m_axi4_arid;
-  logic [ETH_PC-1:0][AXI4_ADD_W-1:0]      m_axi4_araddr;
-  logic [ETH_PC-1:0][7:0]                 m_axi4_arlen;
-  logic [ETH_PC-1:0][2:0]                 m_axi4_arsize;
-  logic [ETH_PC-1:0][1:0]                 m_axi4_arburst;
-  logic [ETH_PC-1:0]                      m_axi4_arvalid;
-  logic [ETH_PC-1:0]                      m_axi4_arready;
-  logic [ETH_PC-1:0][AXI4_ID_W-1:0]       m_axi4_rid;
-  logic [ETH_PC-1:0][AXI4_DATA_W-1:0]     m_axi4_rdata;
-  logic [ETH_PC-1:0][1:0]                 m_axi4_rresp;
-  logic [ETH_PC-1:0]                      m_axi4_rlast;
-  logic [ETH_PC-1:0]                      m_axi4_rvalid;
-  logic [ETH_PC-1:0]                      m_axi4_rready;
+  logic [AXI4_ID_W-1:0]       m_axi4_arid;
+  logic [AXI4_ADD_W-1:0]      m_axi4_araddr;
+  logic [7:0]                 m_axi4_arlen;
+  logic [2:0]                 m_axi4_arsize;
+  logic [1:0]                 m_axi4_arburst;
+  logic                       m_axi4_arvalid;
+  logic                       m_axi4_arready;
+  logic [AXI4_ID_W-1:0]       m_axi4_rid;
+  logic [AXI4_DATA_W-1:0]     m_axi4_rdata;
+  logic [1:0]                 m_axi4_rresp;
+  logic                       m_axi4_rlast;
+  logic                       m_axi4_rvalid;
+  logic                       m_axi4_rready;
 
   // QSFP interface
   logic [QSFP_LANE_NB-1:0][MRMAC_AXIS_W-1:0 ] qsfp_tx_tdata;
@@ -326,111 +326,107 @@ module tb_mhdma_errors;
     end
   end
 
-  // AXI Read response - simple model
-  generate
-    for (genvar pc = 0; pc < ETH_PC; pc++) begin : gen_axi_mem
-      logic [7:0] rd_beat_cnt;
-      logic [7:0] rd_len;
-      logic [AXI4_ID_W-1:0] rd_id;
-      logic rd_active;
+  // AXI Read response - simple model (single NMU)
+  logic [7:0] rd_beat_cnt;
+  logic [7:0] rd_len;
+  logic [AXI4_ID_W-1:0] rd_id;
+  logic rd_active;
 
-      always_ff @(posedge clk_mhdma) begin
-        if (~s_rstn_mhdma) begin
-          m_axi4_arready[pc] <= 1'b1;
-          m_axi4_rvalid[pc]  <= 1'b0;
-          m_axi4_rlast[pc]   <= 1'b0;
-          m_axi4_rresp[pc]   <= AXI4_OKAY;
-          rd_active          <= 1'b0;
-          rd_beat_cnt        <= '0;
-        end else begin
-          // Accept read address
-          if (m_axi4_arvalid[pc] && m_axi4_arready[pc]) begin
-            rd_len     <= m_axi4_arlen[pc];
-            rd_id      <= m_axi4_arid[pc];
-            rd_active  <= 1'b1;
-            rd_beat_cnt <= '0;
-            m_axi4_arready[pc] <= 1'b0;
-          end
-
-          // Generate read data
-          if (rd_active) begin
-            m_axi4_rvalid[pc] <= 1'b1;
-            m_axi4_rid[pc]    <= rd_id;
-            m_axi4_rdata[pc]  <= axi_mem[rd_beat_cnt[7:0]];
-            m_axi4_rlast[pc]  <= (rd_beat_cnt == rd_len);
-
-            if (m_axi4_rready[pc]) begin
-              if (rd_beat_cnt == rd_len) begin
-                rd_active <= 1'b0;
-                m_axi4_rvalid[pc] <= 1'b0;
-                m_axi4_rlast[pc]  <= 1'b0;
-                m_axi4_arready[pc] <= 1'b1;
-              end else begin
-                rd_beat_cnt <= rd_beat_cnt + 1;
-              end
-            end
-          end
-        end
+  always_ff @(posedge clk_mhdma) begin
+    if (~s_rstn_mhdma) begin
+      m_axi4_arready <= 1'b1;
+      m_axi4_rvalid  <= 1'b0;
+      m_axi4_rlast   <= 1'b0;
+      m_axi4_rresp   <= AXI4_OKAY;
+      rd_active       <= 1'b0;
+      rd_beat_cnt     <= '0;
+    end else begin
+      // Accept read address
+      if (m_axi4_arvalid && m_axi4_arready) begin
+        rd_len      <= m_axi4_arlen;
+        rd_id       <= m_axi4_arid;
+        rd_active   <= 1'b1;
+        rd_beat_cnt <= '0;
+        m_axi4_arready <= 1'b0;
       end
 
-      // AXI Write response with error injection
-      logic [7:0] wr_beat_cnt;
-      logic [7:0] wr_len;
-      logic [AXI4_ID_W-1:0] wr_id;
-      logic wr_addr_received;
-      logic wr_data_done;
+      // Generate read data
+      if (rd_active) begin
+        m_axi4_rvalid <= 1'b1;
+        m_axi4_rid    <= rd_id;
+        m_axi4_rdata  <= axi_mem[rd_beat_cnt[7:0]];
+        m_axi4_rlast  <= (rd_beat_cnt == rd_len);
 
-      always_ff @(posedge clk_mhdma) begin
-        if (~s_rstn_mhdma) begin
-          m_axi4_awready[pc] <= 1'b1;
-          m_axi4_wready[pc]  <= 1'b1;
-          m_axi4_bvalid[pc]  <= 1'b0;
-          m_axi4_bresp[pc]   <= AXI4_OKAY;
-          wr_addr_received   <= 1'b0;
-          wr_data_done       <= 1'b0;
-          wr_beat_cnt        <= '0;
-        end else begin
-          // Accept write address
-          if (m_axi4_awvalid[pc] && m_axi4_awready[pc]) begin
-            wr_len  <= m_axi4_awlen[pc];
-            wr_id   <= m_axi4_awid[pc];
-            wr_addr_received <= 1'b1;
-            m_axi4_awready[pc] <= 1'b0;
-            wr_beat_cnt <= '0;
-          end
-
-          // Accept write data
-          if (m_axi4_wvalid[pc] && m_axi4_wready[pc]) begin
-            if (m_axi4_wlast[pc]) begin
-              wr_data_done <= 1'b1;
-              m_axi4_wready[pc] <= 1'b0;
-            end
-          end
-
-          // Generate write response
-          if (wr_addr_received && wr_data_done && !m_axi4_bvalid[pc]) begin
-            m_axi4_bvalid[pc] <= 1'b1;
-            m_axi4_bid[pc]    <= wr_id;
-            // Inject error if requested
-            if (inject_axi_write_error) begin
-              m_axi4_bresp[pc] <= axi_error_type;
-            end else begin
-              m_axi4_bresp[pc] <= AXI4_OKAY;
-            end
-          end
-
-          // Clear write response when acknowledged
-          if (m_axi4_bvalid[pc] && m_axi4_bready[pc]) begin
-            m_axi4_bvalid[pc]  <= 1'b0;
-            m_axi4_awready[pc] <= 1'b1;
-            m_axi4_wready[pc]  <= 1'b1;
-            wr_addr_received   <= 1'b0;
-            wr_data_done       <= 1'b0;
+        if (m_axi4_rready) begin
+          if (rd_beat_cnt == rd_len) begin
+            rd_active      <= 1'b0;
+            m_axi4_rvalid  <= 1'b0;
+            m_axi4_rlast   <= 1'b0;
+            m_axi4_arready <= 1'b1;
+          end else begin
+            rd_beat_cnt <= rd_beat_cnt + 1;
           end
         end
       end
     end
-  endgenerate
+  end
+
+  // AXI Write response with error injection (single NMU)
+  logic [7:0] wr_beat_cnt;
+  logic [7:0] wr_len;
+  logic [AXI4_ID_W-1:0] wr_id;
+  logic wr_addr_received;
+  logic wr_data_done;
+
+  always_ff @(posedge clk_mhdma) begin
+    if (~s_rstn_mhdma) begin
+      m_axi4_awready   <= 1'b1;
+      m_axi4_wready    <= 1'b1;
+      m_axi4_bvalid    <= 1'b0;
+      m_axi4_bresp     <= AXI4_OKAY;
+      wr_addr_received <= 1'b0;
+      wr_data_done     <= 1'b0;
+      wr_beat_cnt      <= '0;
+    end else begin
+      // Accept write address
+      if (m_axi4_awvalid && m_axi4_awready) begin
+        wr_len           <= m_axi4_awlen;
+        wr_id            <= m_axi4_awid;
+        wr_addr_received <= 1'b1;
+        m_axi4_awready   <= 1'b0;
+        wr_beat_cnt      <= '0;
+      end
+
+      // Accept write data
+      if (m_axi4_wvalid && m_axi4_wready) begin
+        if (m_axi4_wlast) begin
+          wr_data_done  <= 1'b1;
+          m_axi4_wready <= 1'b0;
+        end
+      end
+
+      // Generate write response
+      if (wr_addr_received && wr_data_done && !m_axi4_bvalid) begin
+        m_axi4_bvalid <= 1'b1;
+        m_axi4_bid    <= wr_id;
+        // Inject error if requested
+        if (inject_axi_write_error) begin
+          m_axi4_bresp <= axi_error_type;
+        end else begin
+          m_axi4_bresp <= AXI4_OKAY;
+        end
+      end
+
+      // Clear write response when acknowledged
+      if (m_axi4_bvalid && m_axi4_bready) begin
+        m_axi4_bvalid    <= 1'b0;
+        m_axi4_awready   <= 1'b1;
+        m_axi4_wready    <= 1'b1;
+        wr_addr_received <= 1'b0;
+        wr_data_done     <= 1'b0;
+      end
+    end
+  end
 
   // GT signals
   initial begin

@@ -148,29 +148,25 @@ module tb_mhdma_master;
   logic                                m_axi4_wvalid;
   logic                                m_axi4_wready;
 
-  // PC selector from DUT
-  logic [ETH_PC-1:0]                   wr_pc_sel;
+  logic [AXI4_ID_W-1:0]                m_axi4_bid;
+  logic [AXI4_RESP_W-1:0]              m_axi4_bresp;
+  logic                                m_axi4_bvalid;
+  logic                                m_axi4_bready;
 
-  // B channel stays per-PC
-  logic [ETH_PC-1:0][AXI4_ID_W-1:0]    m_axi4_bid;
-  logic [ETH_PC-1:0][AXI4_RESP_W-1:0]  m_axi4_bresp;
-  logic [ETH_PC-1:0]                   m_axi4_bvalid;
-  logic [ETH_PC-1:0]                   m_axi4_bready;
+  // NMU-side AXI4 signals
+  logic [AXI4_ID_W-1:0]                nmu_axi4_awid;
+  logic [AXI4_ADD_W-1:0]               nmu_axi4_awaddr;
+  logic [AXI4_LEN_W-1:0]               nmu_axi4_awlen;
+  logic [AXI4_SIZE_W-1:0]              nmu_axi4_awsize;
+  logic [AXI4_BURST_W-1:0]             nmu_axi4_awburst;
+  logic                                nmu_axi4_awvalid;
+  logic                                nmu_axi4_awready;
 
-  // Per-PC AXI4 signals (for write responders)
-  logic [ETH_PC-1:0][AXI4_ID_W-1:0]    nmu_axi4_awid;
-  logic [ETH_PC-1:0][AXI4_ADD_W-1:0]   nmu_axi4_awaddr;
-  logic [ETH_PC-1:0][AXI4_LEN_W-1:0]   nmu_axi4_awlen;
-  logic [ETH_PC-1:0][AXI4_SIZE_W-1:0]  nmu_axi4_awsize;
-  logic [ETH_PC-1:0][AXI4_BURST_W-1:0] nmu_axi4_awburst;
-  logic [ETH_PC-1:0]                   nmu_axi4_awvalid;
-  logic [ETH_PC-1:0]                   nmu_axi4_awready;
-
-  logic [ETH_PC-1:0][AXI4_DATA_W-1:0]  nmu_axi4_wdata;
-  logic [ETH_PC-1:0][AXI4_STRB_W-1:0]  nmu_axi4_wstrb;
-  logic [ETH_PC-1:0]                   nmu_axi4_wlast;
-  logic [ETH_PC-1:0]                   nmu_axi4_wvalid;
-  logic [ETH_PC-1:0]                   nmu_axi4_wready;
+  logic [AXI4_DATA_W-1:0]              nmu_axi4_wdata;
+  logic [AXI4_STRB_W-1:0]              nmu_axi4_wstrb;
+  logic                                nmu_axi4_wlast;
+  logic                                nmu_axi4_wvalid;
+  logic                                nmu_axi4_wready;
 
   // regf interface
   logic [ETH_PC-1:0][2*REG_DATA_W-1:0] regf_ct_mem_addr;
@@ -239,7 +235,6 @@ module tb_mhdma_master;
     .m_axi4_bresp                  (m_axi4_bresp                  ),
     .m_axi4_bvalid                 (m_axi4_bvalid                 ),
     .m_axi4_bready                 (m_axi4_bready                 ),
-    .wr_pc_sel                     (wr_pc_sel                     ),
     // regf
     .regf_ct_mem_addr              (regf_ct_mem_addr              ),
     .regf_req_id                   (regf_req_id                   ),
@@ -278,55 +273,52 @@ module tb_mhdma_master;
   );
 
 // ============================================================================================== --
-// NMU demux: single AXI4 from DUT -> per-PC write responders
+// NMU pipe: pipeline register between DUT and NMU port
 // ============================================================================================== --
-  mhdma_nmu_demux mhdma_nmu_demux (
-    .clk            (clk_mhdma      ),
-    .s_rst_n        (s_rstn_mhdma   ),
+  mhdma_nmu_pipe mhdma_nmu_pipe (
+    .clk            (clk_mhdma        ),
+    .s_rst_n        (s_rstn_mhdma     ),
     // AR/R unused in master TB
-    .s_axi4_arid    ('0             ),
-    .s_axi4_araddr  ('0             ),
-    .s_axi4_arlen   ('0             ),
-    .s_axi4_arsize  ('0             ),
-    .s_axi4_arburst ('0             ),
-    .s_axi4_arvalid (1'b0           ),
-    .s_axi4_arready (               ),
-    .s_axi4_rdata   (               ),
-    .s_axi4_rresp   (               ),
-    .s_axi4_rid     (               ),
-    .s_axi4_rlast   (               ),
-    .s_axi4_rvalid  (               ),
-    .s_axi4_rready  (1'b0           ),
-    .ar_pc_sel      ('0             ),
-    .rd_pc_sel      ('0             ),
+    .s_axi4_arid    ('0               ),
+    .s_axi4_araddr  ('0               ),
+    .s_axi4_arlen   ('0               ),
+    .s_axi4_arsize  ('0               ),
+    .s_axi4_arburst ('0               ),
+    .s_axi4_arvalid (1'b0             ),
+    .s_axi4_arready (                 ),
+    .s_axi4_rdata   (                 ),
+    .s_axi4_rresp   (                 ),
+    .s_axi4_rid     (                 ),
+    .s_axi4_rlast   (                 ),
+    .s_axi4_rvalid  (                 ),
+    .s_axi4_rready  (1'b0             ),
     // Single AXI4 write from DUT
-    .s_axi4_awid    (m_axi4_awid    ),
-    .s_axi4_awaddr  (m_axi4_awaddr  ),
-    .s_axi4_awlen   (m_axi4_awlen   ),
-    .s_axi4_awsize  (m_axi4_awsize  ),
-    .s_axi4_awburst (m_axi4_awburst ),
-    .s_axi4_awvalid (m_axi4_awvalid ),
-    .s_axi4_awready (m_axi4_awready ),
-    .s_axi4_wdata   (m_axi4_wdata   ),
-    .s_axi4_wstrb   (m_axi4_wstrb   ),
-    .s_axi4_wlast   (m_axi4_wlast   ),
-    .s_axi4_wvalid  (m_axi4_wvalid  ),
-    .s_axi4_wready  (m_axi4_wready  ),
-    .wr_pc_sel      (wr_pc_sel      ),
-    // Per-PC NMU ports
-    .m_axi4_arid    (               ),
-    .m_axi4_araddr  (               ),
-    .m_axi4_arlen   (               ),
-    .m_axi4_arsize  (               ),
-    .m_axi4_arburst (               ),
-    .m_axi4_arvalid (               ),
-    .m_axi4_arready ('0             ),
-    .m_axi4_rdata   ('0             ),
-    .m_axi4_rresp   ('0             ),
-    .m_axi4_rid     ('0             ),
-    .m_axi4_rlast   ('0             ),
-    .m_axi4_rvalid  ('0             ),
-    .m_axi4_rready  (               ),
+    .s_axi4_awid    (m_axi4_awid      ),
+    .s_axi4_awaddr  (m_axi4_awaddr    ),
+    .s_axi4_awlen   (m_axi4_awlen     ),
+    .s_axi4_awsize  (m_axi4_awsize    ),
+    .s_axi4_awburst (m_axi4_awburst   ),
+    .s_axi4_awvalid (m_axi4_awvalid   ),
+    .s_axi4_awready (m_axi4_awready   ),
+    .s_axi4_wdata   (m_axi4_wdata     ),
+    .s_axi4_wstrb   (m_axi4_wstrb     ),
+    .s_axi4_wlast   (m_axi4_wlast     ),
+    .s_axi4_wvalid  (m_axi4_wvalid    ),
+    .s_axi4_wready  (m_axi4_wready    ),
+    // Single NMU port
+    .m_axi4_arid    (                 ),
+    .m_axi4_araddr  (                 ),
+    .m_axi4_arlen   (                 ),
+    .m_axi4_arsize  (                 ),
+    .m_axi4_arburst (                 ),
+    .m_axi4_arvalid (                 ),
+    .m_axi4_arready (1'b0             ),
+    .m_axi4_rdata   ('0               ),
+    .m_axi4_rresp   ('0               ),
+    .m_axi4_rid     ('0               ),
+    .m_axi4_rlast   (1'b0             ),
+    .m_axi4_rvalid  (1'b0             ),
+    .m_axi4_rready  (                 ),
     .m_axi4_awid    (nmu_axi4_awid    ),
     .m_axi4_awaddr  (nmu_axi4_awaddr  ),
     .m_axi4_awlen   (nmu_axi4_awlen   ),
@@ -342,14 +334,14 @@ module tb_mhdma_master;
   );
 
 // ============================================================================================== --
-// Simple AXI4 write responder
+// Simple AXI4 write responder (single NMU port)
 // ============================================================================================== --
-// Accepts AW and W channels, returns B responses with configurable delay and response type.
-// Tracks per-PC write addresses and data for verification.
+// Accepts AW and W channels on the single NMU port, returns B responses with configurable delay.
+// Tracks write addresses and data per PC (using AXI ID to determine the PC) for verification.
 
-  // Configurable B response delay (in mrmac clock cycles) and response type
-  int unsigned axi4_bresp_delay [ETH_PC];
-  logic [AXI4_RESP_W-1:0] axi4_bresp_type [ETH_PC];
+  // Configurable B response delay and response type (single NMU — one value for all bursts)
+  int unsigned axi4_bresp_delay = 2;
+  logic [AXI4_RESP_W-1:0] axi4_bresp_type = AXI4_OKAY;
 
   // Write data capture (per PC): queue of addresses and data words written
   logic [AXI4_ADD_W-1:0]  axi4_aw_captured_addr [ETH_PC][$];
@@ -357,74 +349,96 @@ module tb_mhdma_master;
   logic [AXI4_DATA_W-1:0] axi4_w_captured_data  [ETH_PC][$];
   logic [AXI4_STRB_W-1:0] axi4_w_captured_strb  [ETH_PC][$];
 
-  generate
-    for (genvar gen_pc = 0; gen_pc < ETH_PC; gen_pc++) begin : gen_axi4_responder
+  // AW channel: randomly toggling ready (~75% asserted)
+  logic awready_rand = 1'b1;
+  always @(posedge clk_mhdma)
+    awready_rand <= $urandom_range(0, 3) != 0;
 
-      // AW channel: randomly toggling ready (~75% asserted)
-      logic awready_rand = 1'b1;
-      always @(posedge clk_mhdma)
-        awready_rand <= $urandom_range(0, 3) != 0;
+  assign nmu_axi4_awready = awready_rand;
 
-      assign nmu_axi4_awready[gen_pc] = awready_rand;
+  // W channel: randomly toggling ready (~75% asserted)
+  logic wready_rand = 1'b1;
+  always @(posedge clk_mhdma)
+    wready_rand <= $urandom_range(0, 3) != 0;
 
-      // W channel: randomly toggling ready (~75% asserted)
-      logic wready_rand = 1'b1;
-      always @(posedge clk_mhdma)
-        wready_rand <= $urandom_range(0, 3) != 0;
+  assign nmu_axi4_wready = wready_rand;
 
-      assign nmu_axi4_wready[gen_pc] = wready_rand;
+  // Track current AW PC index for capture routing (based on burst order: PC0 first, then PC1, ...)
+  // The DUT sends all bursts for PC0, then all bursts for PC1, etc.
+  // We track the current PC by counting AW transactions vs the expected per-PC burst count.
+  // Simpler: just use a single capture queue and route to per-PC queues based on AW order.
+  // Since the DUT processes PCs in order (PC0 words first), we track the PC index by
+  // counting AW beats and mapping to PCs by the expected word counts.
+  // For simplicity: maintain an AW PC tracker that increments based on accumulated word count.
+  int aw_pc_tracker = 0;
+  int aw_word_accumulator = 0;
 
-      // Capture AW transactions
-      always @(posedge clk_mhdma) begin
-        if (nmu_axi4_awvalid[gen_pc] && nmu_axi4_awready[gen_pc]) begin
-          axi4_aw_captured_addr[gen_pc].push_back(nmu_axi4_awaddr[gen_pc]);
-          axi4_aw_captured_len[gen_pc].push_back(nmu_axi4_awlen[gen_pc]);
-        end
+  // Capture AW transactions — route to per-PC queues based on aw_pc_tracker
+  always @(posedge clk_mhdma) begin
+    if (nmu_axi4_awvalid && nmu_axi4_awready) begin
+      axi4_aw_captured_addr[aw_pc_tracker].push_back(nmu_axi4_awaddr);
+      axi4_aw_captured_len[aw_pc_tracker].push_back(nmu_axi4_awlen);
+      aw_word_accumulator += int'(nmu_axi4_awlen) + 1;
+      // Check if this PC's words are complete; advance to next PC (capped at ETH_PC-1)
+      if (aw_pc_tracker == 0 && aw_word_accumulator >= AXI4_WORD_PER_PC0 && ETH_PC > 1) begin
+        aw_pc_tracker++;
+        aw_word_accumulator = 0;
+      end else if (aw_pc_tracker > 0 && aw_word_accumulator >= AXI4_WORD_PER_PC) begin
+        if (aw_pc_tracker < ETH_PC - 1) aw_pc_tracker++;
+        aw_word_accumulator = 0;
       end
-
-      // Capture W transactions
-      always @(posedge clk_mhdma) begin
-        if (nmu_axi4_wvalid[gen_pc] && nmu_axi4_wready[gen_pc]) begin
-          axi4_w_captured_data[gen_pc].push_back(nmu_axi4_wdata[gen_pc]);
-          axi4_w_captured_strb[gen_pc].push_back(nmu_axi4_wstrb[gen_pc]);
-        end
-      end
-
-      // B response generation: two counters avoid shared-variable races.
-      // always_ff counts wlast detections, initial block tracks how many were responded.
-      int unsigned b_detected = 0;
-      initial begin
-        m_axi4_bvalid[gen_pc]    = 1'b0;
-        m_axi4_bresp[gen_pc]     = AXI4_OKAY;
-        m_axi4_bid[gen_pc]       = '0;
-        axi4_bresp_delay[gen_pc] = 2;
-        axi4_bresp_type[gen_pc]  = AXI4_OKAY;
-      end
-
-      always @(posedge clk_mhdma) begin
-        if (nmu_axi4_wvalid[gen_pc] && nmu_axi4_wready[gen_pc] && nmu_axi4_wlast[gen_pc])
-          b_detected <= b_detected + 1;
-      end
-
-      int unsigned b_responded = 0;
-      initial begin
-        forever begin
-          @(posedge clk_mhdma);
-          if (b_detected > b_responded) begin
-            repeat (axi4_bresp_delay[gen_pc]) @(posedge clk_mhdma);
-            m_axi4_bvalid[gen_pc] = 1'b1;
-            m_axi4_bresp[gen_pc]  = axi4_bresp_type[gen_pc];
-            m_axi4_bid[gen_pc]    = MHDMA_AXI_ARID;
-            @(posedge clk_mhdma);
-            while (!m_axi4_bready[gen_pc]) @(posedge clk_mhdma);
-            m_axi4_bvalid[gen_pc] = 1'b0;
-            b_responded++;
-          end
-        end
-      end
-
     end
-  endgenerate
+  end
+
+  // Capture W transactions — route to per-PC queues based on W beat order
+  // The DUT sends W data in the same PC order as AW, so we track similarly.
+  int w_pc_tracker = 0;
+  int w_word_accumulator = 0;
+
+  int unsigned b_detected = 0;
+
+  always @(posedge clk_mhdma) begin
+    if (nmu_axi4_wvalid && nmu_axi4_wready) begin
+      axi4_w_captured_data[w_pc_tracker].push_back(nmu_axi4_wdata);
+      axi4_w_captured_strb[w_pc_tracker].push_back(nmu_axi4_wstrb);
+
+      if (nmu_axi4_wlast)
+        b_detected <= b_detected + 1;
+
+      w_word_accumulator++;
+      if (w_pc_tracker == 0 && w_word_accumulator >= AXI4_WORD_PER_PC0 && ETH_PC > 1) begin
+        w_pc_tracker++;
+        w_word_accumulator = 0;
+      end else if (w_pc_tracker > 0 && w_word_accumulator >= AXI4_WORD_PER_PC) begin
+        if (w_pc_tracker < ETH_PC - 1) w_pc_tracker++;
+        w_word_accumulator = 0;
+      end
+    end
+  end
+
+  // B response generation: single responder, single configurable bresp value
+  initial begin
+    m_axi4_bvalid = 1'b0;
+    m_axi4_bresp  = AXI4_OKAY;
+    m_axi4_bid    = '0;
+  end
+
+  int unsigned b_responded = 0;
+  initial begin
+    forever begin
+      @(posedge clk_mhdma);
+      if (b_detected > b_responded) begin
+        repeat (axi4_bresp_delay) @(posedge clk_mhdma);
+        m_axi4_bvalid = 1'b1;
+        m_axi4_bresp  = axi4_bresp_type;
+        m_axi4_bid    = MHDMA_AXI_ARID;
+        @(posedge clk_mhdma);
+        while (!m_axi4_bready) @(posedge clk_mhdma);
+        m_axi4_bvalid = 1'b0;
+        b_responded++;
+      end
+    end
+  end
 
 // ============================================================================================== --
 // Helper tasks
@@ -462,10 +476,8 @@ module tb_mhdma_master;
       end
 
       // Reset AXI4 responder config
-      for (int pc = 0; pc < ETH_PC; pc++) begin
-        axi4_bresp_delay[pc] = $urandom_range(1, 5);
-        axi4_bresp_type[pc]  = AXI4_OKAY;
-      end
+      axi4_bresp_delay = $urandom_range(1, 5);
+      axi4_bresp_type  = AXI4_OKAY;
     end
   endtask
 
@@ -607,6 +619,10 @@ module tb_mhdma_master;
         axi4_w_captured_data[pc].delete();
         axi4_w_captured_strb[pc].delete();
       end
+      aw_pc_tracker       = 0;
+      aw_word_accumulator = 0;
+      w_pc_tracker        = 0;
+      w_word_accumulator  = 0;
     end
   endtask
 
@@ -1655,29 +1671,23 @@ module tb_mhdma_master;
     bit flow_failed;
     begin
       scenario_start(scenario_id, "AXI4 write error handling");
-      axi4_bresp_type[0] = AXI4_SLVERR;
+      axi4_bresp_type = AXI4_SLVERR;
       randomize_fields();
       do_read_request_flow(flow_failed);
       if (flow_failed) error_scenario = 1'b1;
       repeat (20) @(posedge clk_mhdma);
-      assert (master_error.write_error[0] == 1'b1) else begin
-        $display("[ERROR:%0d] write_error[0] not set for SLVERR", scenario_id);
+      // Single NMU: SLVERR applies to all bursts, so all PCs should report error
+      assert (master_error.write_error == '1) else begin
+        $display("[ERROR:%0d] write_error not fully set for SLVERR (got %b)", scenario_id, master_error.write_error);
         error_scenario = 1'b1;
       end
 
-      if (ETH_PC > 1) begin
-        assert (master_error.write_error[1] == 1'b0) else begin
-          $display("[ERROR:%0d] write_error[1] unexpectedly set", scenario_id);
-          error_scenario = 1'b1;
-        end
-      end
-
       // Restore and clear errors
-      axi4_bresp_type[0] = AXI4_OKAY;
+      axi4_bresp_type = AXI4_OKAY;
       pulse_rst_errors();
 
-      assert (master_error.write_error[0] == 1'b0) else begin
-        $display("[ERROR:%0d] write_error[0] not cleared after rst_errors", scenario_id);
+      assert (master_error.write_error == '0) else begin
+        $display("[ERROR:%0d] write_error not cleared after rst_errors", scenario_id);
         error_scenario = 1'b1;
       end
 
@@ -2191,113 +2201,108 @@ module tb_mhdma_master;
 // XSIM is fast enough for SVA in this test
 // ============================================================================================== --
 
-  // AXI4 write-channel protocol checks (per PC): handshake stability, burst type/size, 4KB boundary, wlast
-  generate
-    for (genvar gen_pc = 0; gen_pc < ETH_PC; gen_pc++) begin : gen_sva_axi4
+  // AXI4 write-channel protocol checks (single NMU port): handshake stability, burst type/size, 4KB boundary, wlast
 
-      // awvalid must not deassert without awready handshake
-      property axi4_awvalid_stable;
-        @(posedge clk_mhdma) disable iff (!s_rstn_mhdma)
-        (nmu_axi4_awvalid[gen_pc] && !nmu_axi4_awready[gen_pc]) |=>
-          $stable(nmu_axi4_awvalid[gen_pc]) && $stable(nmu_axi4_awaddr[gen_pc]) && $stable(nmu_axi4_awlen[gen_pc])
-          && $stable(nmu_axi4_awburst[gen_pc]) && $stable(nmu_axi4_awsize[gen_pc]) && $stable(nmu_axi4_awid[gen_pc]);
-      endproperty
+  // awvalid must not deassert without awready handshake
+  property axi4_awvalid_stable;
+    @(posedge clk_mhdma) disable iff (!s_rstn_mhdma)
+    (nmu_axi4_awvalid && !nmu_axi4_awready) |=>
+      $stable(nmu_axi4_awvalid) && $stable(nmu_axi4_awaddr) && $stable(nmu_axi4_awlen)
+      && $stable(nmu_axi4_awburst) && $stable(nmu_axi4_awsize) && $stable(nmu_axi4_awid);
+  endproperty
 
-      // wvalid must not deassert without wready handshake
-      property axi4_wvalid_stable;
-        @(posedge clk_mhdma) disable iff (!s_rstn_mhdma)
-        (nmu_axi4_wvalid[gen_pc] && !nmu_axi4_wready[gen_pc]) |=>
-          $stable(nmu_axi4_wvalid[gen_pc]) && $stable(nmu_axi4_wdata[gen_pc]) && $stable(nmu_axi4_wlast[gen_pc])
-          && $stable(nmu_axi4_wstrb[gen_pc]);
-      endproperty
+  // wvalid must not deassert without wready handshake
+  property axi4_wvalid_stable;
+    @(posedge clk_mhdma) disable iff (!s_rstn_mhdma)
+    (nmu_axi4_wvalid && !nmu_axi4_wready) |=>
+      $stable(nmu_axi4_wvalid) && $stable(nmu_axi4_wdata) && $stable(nmu_axi4_wlast)
+      && $stable(nmu_axi4_wstrb);
+  endproperty
 
-      // awburst must always be INCR
-      property axi4_awburst_incr;
-        @(posedge clk_mhdma) disable iff (!s_rstn_mhdma)
-        nmu_axi4_awvalid[gen_pc] |-> (nmu_axi4_awburst[gen_pc] == AXI4B_INCR);
-      endproperty
+  // awburst must always be INCR
+  property axi4_awburst_incr;
+    @(posedge clk_mhdma) disable iff (!s_rstn_mhdma)
+    nmu_axi4_awvalid |-> (nmu_axi4_awburst == AXI4B_INCR);
+  endproperty
 
-      // awsize must be correct for AXI4_DATA_W
-      property axi4_awsize_correct;
-        @(posedge clk_mhdma) disable iff (!s_rstn_mhdma)
-        nmu_axi4_awvalid[gen_pc] |-> (nmu_axi4_awsize[gen_pc] == MHDMA_ARSIZE);
-      endproperty
+  // awsize must be correct for AXI4_DATA_W
+  property axi4_awsize_correct;
+    @(posedge clk_mhdma) disable iff (!s_rstn_mhdma)
+    nmu_axi4_awvalid |-> (nmu_axi4_awsize == MHDMA_ARSIZE);
+  endproperty
 
-      assert_awvalid_stable: assert property(axi4_awvalid_stable)
-        else begin
-          $display("[ERROR-SVA] PC%0d AW channel: value changed when awready was low", gen_pc);
-          error_assert = 1'b1;
-        end
-
-      assert_wvalid_stable: assert property(axi4_wvalid_stable)
-        else begin
-          $display("[ERROR-SVA] PC%0d W channel: value changed when wready was low", gen_pc);
-          error_assert = 1'b1;
-        end
-
-      assert_awburst_incr: assert property(axi4_awburst_incr)
-        else begin
-          $display("[ERROR-SVA] PC%0d AW channel: awburst is not INCR", gen_pc);
-          error_assert = 1'b1;
-        end
-
-      assert_awsize_correct: assert property(axi4_awsize_correct)
-        else begin
-          $display("[ERROR-SVA] PC%0d AW channel: awsize is incorrect", gen_pc);
-          error_assert = 1'b1;
-        end
-
-      // burst must not cross a 4KB page boundary (AXI4 spec A3.4.1)
-      property axi4_no_4k_cross;
-        @(posedge clk_mhdma) disable iff (!s_rstn_mhdma)
-        (nmu_axi4_awvalid[gen_pc] && nmu_axi4_awready[gen_pc]) |->
-          (nmu_axi4_awaddr[gen_pc][PAGE_BYTES_W-1:0]
-           + ((nmu_axi4_awlen[gen_pc] + 1) * AXI4_DATA_BYTES)) <= PAGE_BYTES;
-      endproperty
-
-      assert_no_4k_cross: assert property(axi4_no_4k_cross)
-        else begin
-          $display("[ERROR-SVA] PC%0d AW channel: burst crosses 4KB page boundary (addr=0x%0h, len=%0d)",
-                   gen_pc, nmu_axi4_awaddr[gen_pc], nmu_axi4_awlen[gen_pc]);
-          error_assert = 1'b1;
-        end
-
-      // wlast correctness: check at the INTERNAL handshake point (before the
-      // fifo_element_write pipeline register), where wlast and burst_beat_cnt
-      // are synchronous.
-      // DUT defines: wlast = (burst_word_cnt != 0) & (burst_beat_cnt == burst_word_cnt - 1)
-      //              w_send_data = axi_wvalid & axi_wready  (internal handshake)
-
-      // wlast must assert on the final beat
-      property axi4_wlast_correct;
-        @(posedge clk_mhdma) disable iff (!s_rstn_mhdma)
-        (mhdma_master.w_send_data && mhdma_master.wlast) |->
-          (mhdma_master.burst_beat_cnt == mhdma_master.burst_word_cnt - 1);
-      endproperty
-
-      // wlast must not assert before the final beat
-      property axi4_wlast_not_early;
-        @(posedge clk_mhdma) disable iff (!s_rstn_mhdma)
-        (mhdma_master.w_send_data && !mhdma_master.wlast) |->
-          (mhdma_master.burst_beat_cnt < mhdma_master.burst_word_cnt - 1);
-      endproperty
-
-      assert_wlast_correct: assert property(axi4_wlast_correct)
-        else begin
-          $display("[ERROR-SVA] W channel: wlast on wrong beat (beat=%0d, word_cnt=%0d)",
-                   mhdma_master.burst_beat_cnt, mhdma_master.burst_word_cnt);
-          error_assert = 1'b1;
-        end
-
-      assert_wlast_not_early: assert property(axi4_wlast_not_early)
-        else begin
-          $display("[ERROR-SVA] W channel: wlast missing (beat=%0d < word_cnt-1=%0d)",
-                   mhdma_master.burst_beat_cnt, mhdma_master.burst_word_cnt - 1);
-          error_assert = 1'b1;
-        end
-
+  assert_awvalid_stable: assert property(axi4_awvalid_stable)
+    else begin
+      $display("[ERROR-SVA] AW channel: value changed when awready was low");
+      error_assert = 1'b1;
     end
-  endgenerate
+
+  assert_wvalid_stable: assert property(axi4_wvalid_stable)
+    else begin
+      $display("[ERROR-SVA] W channel: value changed when wready was low");
+      error_assert = 1'b1;
+    end
+
+  assert_awburst_incr: assert property(axi4_awburst_incr)
+    else begin
+      $display("[ERROR-SVA] AW channel: awburst is not INCR");
+      error_assert = 1'b1;
+    end
+
+  assert_awsize_correct: assert property(axi4_awsize_correct)
+    else begin
+      $display("[ERROR-SVA] AW channel: awsize is incorrect");
+      error_assert = 1'b1;
+    end
+
+  // burst must not cross a 4KB page boundary (AXI4 spec A3.4.1)
+  property axi4_no_4k_cross;
+    @(posedge clk_mhdma) disable iff (!s_rstn_mhdma)
+    (nmu_axi4_awvalid && nmu_axi4_awready) |->
+      (nmu_axi4_awaddr[PAGE_BYTES_W-1:0]
+       + ((nmu_axi4_awlen + 1) * AXI4_DATA_BYTES)) <= PAGE_BYTES;
+  endproperty
+
+  assert_no_4k_cross: assert property(axi4_no_4k_cross)
+    else begin
+      $display("[ERROR-SVA] AW channel: burst crosses 4KB page boundary (addr=0x%0h, len=%0d)",
+               nmu_axi4_awaddr, nmu_axi4_awlen);
+      error_assert = 1'b1;
+    end
+
+  // wlast correctness: check at the INTERNAL handshake point (before the
+  // fifo_element_write pipeline register), where wlast and burst_beat_cnt
+  // are synchronous.
+  // DUT defines: wlast = (burst_word_cnt != 0) & (burst_beat_cnt == burst_word_cnt - 1)
+  //              w_send_data = axi_wvalid & axi_wready  (internal handshake)
+
+  // wlast must assert on the final beat
+  property axi4_wlast_correct;
+    @(posedge clk_mhdma) disable iff (!s_rstn_mhdma)
+    (mhdma_master.w_send_data && mhdma_master.wlast) |->
+      (mhdma_master.burst_beat_cnt == mhdma_master.burst_word_cnt - 1);
+  endproperty
+
+  // wlast must not assert before the final beat
+  property axi4_wlast_not_early;
+    @(posedge clk_mhdma) disable iff (!s_rstn_mhdma)
+    (mhdma_master.w_send_data && !mhdma_master.wlast) |->
+      (mhdma_master.burst_beat_cnt < mhdma_master.burst_word_cnt - 1);
+  endproperty
+
+  assert_wlast_correct: assert property(axi4_wlast_correct)
+    else begin
+      $display("[ERROR-SVA] W channel: wlast on wrong beat (beat=%0d, word_cnt=%0d)",
+               mhdma_master.burst_beat_cnt, mhdma_master.burst_word_cnt);
+      error_assert = 1'b1;
+    end
+
+  assert_wlast_not_early: assert property(axi4_wlast_not_early)
+    else begin
+      $display("[ERROR-SVA] W channel: wlast missing (beat=%0d < word_cnt-1=%0d)",
+               mhdma_master.burst_beat_cnt, mhdma_master.burst_word_cnt - 1);
+      error_assert = 1'b1;
+    end
 
   // master_command_vld should deassert within 2 cycles after handshake
   // (1-cycle lag is expected: registered FSM state + fifo_element pipeline)

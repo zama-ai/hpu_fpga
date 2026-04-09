@@ -53,7 +53,7 @@
       "is_include_file": false
     },
     {
-      "name": "hw/module/multi_hpu_dma/rtl/mhdma_nmu_demux.sv",
+      "name": "hw/module/multi_hpu_dma/rtl/mhdma_nmu_pipe.sv",
       "library": "work",
       "env": ["all"],
       "target": ["all"],
