@@ -15,8 +15,13 @@
 extern uint8_t cur_iid;
 extern uint8_t phys_hpu_id;
 extern mhdma_element_t mhdma_table[IOP_ID_MAX_COUNT][FLAG_MAX_COUNT];
+extern uint8_t mhdma_table_state[IOP_ID_MAX_COUNT][FLAG_MAX_COUNT];
 extern iop_state_t iop_state[IOP_ID_MAX_COUNT];
 extern dst_store_t dst_store;
+extern src_store_t src_store;
+extern uint8_t cluster_first_nid;
+extern uint8_t cluster_last_nid;
+uint64_t intr_readc_cnt = 0;
 
 int output_pipe = 0;
 int start_iop = 0;
@@ -37,15 +42,14 @@ void interrupt_notify_handler(uint64_t notify_data) {
 
   switch (mode) {
     case CMD_USER: {
-      mhdma_element_t *current_elt = &mhdma_table[iid][flag];
-      printf("notify user before: iid %d flag %d state %d\n", iid, flag, current_elt->state);
-      uint8_t current_state = current_elt->state;
-      current_elt->state = MHDMA_STATE_RECEIVED;
+      uint8_t current_state = mhdma_table_state[iid][flag];
+      printf("notify user before: iid %d flag %d state %d\n", iid, flag, current_state);
+      mhdma_table_state[iid][flag] = MHDMA_STATE_RECEIVED;
       if (current_state == MHDMA_STATE_LB2B_WAITING) {
-        current_elt->state = MHDMA_STATE_READING;
+        mhdma_table_state[iid][flag] = MHDMA_STATE_READING;
         generate_read_req(iid, flag);
       }
-      printf("notify user after: iid %d flag %d state %d\n", iid, flag, current_elt->state);
+      printf("notify user after: iid %d flag %d state %d\n", iid, flag, mhdma_table_state[iid][flag]);
       break;
     }
     case CMD_DST: {
@@ -69,11 +73,16 @@ void interrupt_notify_handler(uint64_t notify_data) {
         // if remote_src is state NONE, it means b2b_pool slot is not ready => do nothing here
         // if remote_src is state DMA pending, it means read of this src is already on-going => do nothing here
         // if remote_src is resolved, then nothing todo either
- 	RemoteOperand_t *remote_src = src_notifyq_find_by_state(iid, OPERAND_STATE_READ_PENDING);
-	while (remote_src != NULL) {
+        uint16_t src_addr = src_store_get_waiting(cur_iid, iid);
+        uint8_t tid = (src_addr >> 8) & 0xFF;
+        uint8_t bid = (src_addr & 0xFF);
+        while (src_addr != 0xFFFF) {
           // by design remote_src->state == OPERAND_STATE_READ_PENDING)
-          generate_operand_read_req(iid, mode, remote_src->pos, remote_src->src_cid, remote_src->dst_cid, 0);
-          remote_src->state = OPERAND_STATE_DMA_PENDING;
+          generate_operand_read_req(iid, mode, src_store.owner[cur_iid][tid], src_store.cid_offset[cur_iid][tid] + bid, src_store.dst_cid[cur_iid][tid][bid], 0);
+          // try to get next src pending
+          src_addr = src_store_get_waiting(cur_iid, iid);
+          tid = (src_addr >> 8) & 0xFF;
+          bid = (src_addr & 0xFF);
  	}
 
         uint16_t b2b_free_cnt = b2b_pool_free(iid);
@@ -101,13 +110,12 @@ void interrupt_read_complete_handler(uint64_t rc_data) {
 
   switch (mode) {
     case CMD_USER: {
-      mhdma_element_t *current_elt = &mhdma_table[iid][flag];
-      printf("[HPU%d] read_complete user before: iid %d flag %d state %d\n", phys_hpu_id, iid, flag, current_elt->state);
+      printf("[HPU%d] read_complete user before: iid %d flag %d state %d\n", phys_hpu_id, iid, flag, mhdma_table_state[iid][flag]);
       // state should be MHDMA_STATE_READING
-      if (current_elt->state == MHDMA_STATE_READING) {
-        current_elt->state = MHDMA_STATE_RESOLVED;
+      if (mhdma_table_state[iid][flag] == MHDMA_STATE_READING) {
+        mhdma_table_state[iid][flag] = MHDMA_STATE_RESOLVED;
       }
-      printf("[HPU%d] read_complete user after: iid %d flag %d state %d\n", phys_hpu_id, iid, flag, current_elt->state);
+      printf("[HPU%d] read_complete user after: iid %d flag %d state %d\n", phys_hpu_id, iid, flag, mhdma_table_state[iid][flag]);
       break;
     }
     case CMD_DST: {
@@ -121,21 +129,17 @@ void interrupt_read_complete_handler(uint64_t rc_data) {
       break;
     }
     case CMD_SRC: {
-      // there may be a src identification issue here
-      //uint8_t tid = (rc.fields.src_cid >> 8) & 0xFF;
-      //uint8_t bid = (rc.fields.src_cid & 0xFF);
+      uint8_t tid = rc.fields.flag;
+      uint8_t bid = (rc.fields._pad & 0xFF);
+      printf("read_complete recv: iid %d from %d tid %d bid %d state %d\n", iid, slave_hpu_id, tid, bid, src_store.state[cur_iid][tid][bid]);
 
-      // here there is no verification read complete is exactly about source requested
-      RemoteOperand_t *remote_src = src_notifyq_find_by_state(iid, OPERAND_STATE_DMA_PENDING);
-      if (remote_src != NULL) {
-        // by design remote_src->state == OPERAND_STATE_DMA_PENDING
-        remote_src->state = OPERAND_STATE_RESOLVED;
+      if (src_store.state[cur_iid][tid][bid] == OPERAND_STATE_DMA_PENDING) {
+        src_store.state[cur_iid][tid][bid] = OPERAND_STATE_RESOLVED;
         printf("flag one src as resolved: %d %d %d\n",
-            remote_src->iid,
-            (remote_src->src_cid >> 8) & 0xFF,
-            (remote_src->src_cid & 0xFF));
+            cur_iid,
+            tid,
+            bid);
       }
-      src_notifyq_print(iid);
       break;
     }
   }
@@ -162,6 +166,7 @@ void interrupt_ack_handler(uint32_t ack) {
       // iop ack
       uint8_t ack_iid = dop_ack.sync.iid;
       iop_teardown(ack_iid);
+      printf("[HPU%d] iid %d teardown done", phys_hpu_id, ack_iid);
     }
   }
 }
@@ -309,6 +314,8 @@ int main(int argc, char *argv[]) {
   uint32_t dop[MAX_VALUES];
   int count_iop = 0;
   int count_dop = 0;
+  cluster_first_nid = 0;
+  cluster_last_nid = 1;
 
   // 1. Open IOp the file
   fp = fopen(filename_iop, "r");
@@ -366,7 +373,7 @@ int main(int argc, char *argv[]) {
     iop_state_init();
     b2b_pool_init();
     dst_notifyq_init();
-    src_notifyq_init();
+    src_store_init();
     dst_store_init();
   }
 
@@ -397,11 +404,18 @@ int main(int argc, char *argv[]) {
   DOpu_t cur_dop;
   for (int i = 0; i < count_dop; i++) {
     cur_dop.raw = dop[i];
-    if (patch_dop(&cur_dop, &dst_bundle, &src_bundle, &imm_bundle)) {
+    uint32_t patch_rc = patch_dop(&cur_dop, &dst_bundle, &src_bundle, &imm_bundle, NULL, 0);
+    // patch_rc: bit 16: need to insert SYNC (to notify DST available)
+    //           bit 15: need to skip this DOp (LD_B2B or WAIT...)
+    //           bit 14..0: number of DOp sent to ISC before waiting
+    if ((patch_rc & 0x8000) != 0) {
       // it means current DOp was a UCORE DOp that got processed and removed from stream
       continue;
     }
     printf("dop %08x: opcode %d\n", cur_dop.raw, cur_dop.raw_field.opcode);
+    if ((patch_rc & 0x10000) != 0) { // insert inner SYNC
+      printf("dop: opcode SYNC inserted for dst notify\n");
+    }
     switch (get_kind(&cur_dop)) {
       case DOPK_MEM: {
         printf("mem dop %08x: slot %d mode %d rid %d\n", cur_dop.raw, cur_dop.mem.slot, cur_dop.mem.mode, cur_dop.mem.rid);

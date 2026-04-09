@@ -38,14 +38,6 @@ source "$(dirname "$0")/mhdma_package.sh"
 # =================================================================================================
 NUM_CARDS=2
 
-PC0_DATA_SIZE=8224   # 0x2020 bytes
-PC1_DATA_SIZE=8192   # 0x2000 bytes
-CT_MEM_BYTES=12288   # 0x3000
-
-PC0_ADDR=0x4400000000
-PC1_ADDR=0x4420000000
-HW_MAX_ADDR=0xAAAA   # floor(HBM_PORT_RANGE / CT_MEM_BYTES)
-
 TIMEOUT_ITER=1000
 
 # =================================================================================================
@@ -172,7 +164,7 @@ for ((card=0; card<NUM_CARDS; card++)); do
     # req_addr: {dst_addr[15:0], src_addr[15:0]}
     req_addr=$(printf "0x%08x" $(( ((dst_addr & 0xFFFF) << 16) | (src_addr & 0xFFFF) )))
     # req_id: iop_id=0, REQ_ID_READ=6, node_id=next_card, mode=1
-    req_id=$(printf "0x%08x" $(( (6 << 20) | (next_card << 16) | (1 << 14) )))
+    req_id=$(build_req_id $REQ_ID_READ $next_card 1)
 
     (
         $hputil -f $card register write mhdma_request::req_addr --value "$req_addr" > /dev/null

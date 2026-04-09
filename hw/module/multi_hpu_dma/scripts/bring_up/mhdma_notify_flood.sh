@@ -9,6 +9,9 @@
 
 trap 'kill $(jobs -p) 2>/dev/null; exit 0' SIGINT SIGTERM
 
+source /etc/profile.d/v80_pcie_dev.sh
+source "$(dirname "$0")/mhdma_package.sh"
+
 NUM_CARDS=$1
 NUM_REQUESTS=${2:-10}
 
@@ -26,6 +29,13 @@ echo ""
 echo " [INFO]: using hputil at $hputil"
 echo ""
 
+for ((b=0; b<NUM_CARDS; b++)); do
+    if ! _mhdma_board_valid $b; then
+        echo " [ERROR]: Board $b not configured in V80_BOARDS_MAP"
+        exit 1
+    fi
+done
+
 # Pick one random target card
 target=$((RANDOM % NUM_CARDS))
 echo "=================================================================================================="
@@ -33,7 +43,7 @@ echo " [INFO]: Target card: $target — all other cards will notify it"
 echo "=================================================================================================="
 
 # Precompute req_id in parent shell
-req_id=$(printf "0x%08x" $(( (2 << 20) | (target << 16) | (1 << 14) )))
+req_id=$(build_req_id $REQ_ID_NOTIFY $target 1)
 
 # Launch all cards (except target) in parallel
 for card in $(seq 0 $((NUM_CARDS - 1))); do

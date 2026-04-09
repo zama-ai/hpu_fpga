@@ -1,7 +1,7 @@
 // ============================================================================================== //
 // Description  : Axi4-lite register bank
 // This file was generated with rust regmap generator:
-//  * Date:  2026-03-02
+//  * Date:  2026-04-02
 //  * Tool_version: 27d9e880d531030160fd8749c606142942d5558d
 // ---------------------------------------------------------------------------------------------- //
 // xR[n]W[na]
@@ -199,6 +199,41 @@ import hpu_regif_core_mhdma_2in3_pkg::*;
   // Register IO: mhdma_request_stat_cnt_nb_write_complete
     , output logic [REG_DATA_W-1: 0] r_mhdma_request_stat_cnt_nb_write_complete
     , input  logic [REG_DATA_W-1: 0] r_mhdma_request_stat_cnt_nb_write_complete_upd
+  // Register IO: mhdma_request_stat_nb_notify_sent
+    , output logic [REG_DATA_W-1: 0] r_mhdma_request_stat_nb_notify_sent
+    , input  logic [REG_DATA_W-1: 0] r_mhdma_request_stat_nb_notify_sent_upd
+    , output logic r_mhdma_request_stat_nb_notify_sent_rd_en
+  // Register IO: mhdma_request_stat_nb_ce_sent
+    , output logic [REG_DATA_W-1: 0] r_mhdma_request_stat_nb_ce_sent
+    , input  logic [REG_DATA_W-1: 0] r_mhdma_request_stat_nb_ce_sent_upd
+    , output logic r_mhdma_request_stat_nb_ce_sent_rd_en
+  // Register IO: mhdma_request_stat_nb_notify_ack_sent
+    , output logic [REG_DATA_W-1: 0] r_mhdma_request_stat_nb_notify_ack_sent
+    , input  logic [REG_DATA_W-1: 0] r_mhdma_request_stat_nb_notify_ack_sent_upd
+    , output logic r_mhdma_request_stat_nb_notify_ack_sent_rd_en
+  // Register IO: mhdma_request_stat_nb_read_req_sent
+    , output logic [REG_DATA_W-1: 0] r_mhdma_request_stat_nb_read_req_sent
+    , input  logic [REG_DATA_W-1: 0] r_mhdma_request_stat_nb_read_req_sent_upd
+    , output logic r_mhdma_request_stat_nb_read_req_sent_rd_en
+  // Register IO: mhdma_request_stat_t_hbm_write_latency
+    , output logic [REG_DATA_W-1: 0] r_mhdma_request_stat_t_hbm_write_latency
+    , input  logic [REG_DATA_W-1: 0] r_mhdma_request_stat_t_hbm_write_latency_upd
+  // Register IO: mhdma_request_stat_t_hbm_write_latency_max
+    , output logic [REG_DATA_W-1: 0] r_mhdma_request_stat_t_hbm_write_latency_max
+    , input  logic [REG_DATA_W-1: 0] r_mhdma_request_stat_t_hbm_write_latency_max_upd
+  // Register IO: mhdma_request_stat_t_hbm_write_latency_min
+    , output logic [REG_DATA_W-1: 0] r_mhdma_request_stat_t_hbm_write_latency_min
+    , input  logic [REG_DATA_W-1: 0] r_mhdma_request_stat_t_hbm_write_latency_min_upd
+  // Register IO: mhdma_request_stat_t_notify_to_ack_min
+    , output logic [REG_DATA_W-1: 0] r_mhdma_request_stat_t_notify_to_ack_min
+    , input  logic [REG_DATA_W-1: 0] r_mhdma_request_stat_t_notify_to_ack_min_upd
+  // Register IO: mhdma_request_stat_t_rr_to_ce_received_min
+    , output logic [REG_DATA_W-1: 0] r_mhdma_request_stat_t_rr_to_ce_received_min
+    , input  logic [REG_DATA_W-1: 0] r_mhdma_request_stat_t_rr_to_ce_received_min_upd
+  // Register IO: mhdma_request_stat_nb_decoder_dropped
+    , output logic [REG_DATA_W-1: 0] r_mhdma_request_stat_nb_decoder_dropped
+    , input  logic [REG_DATA_W-1: 0] r_mhdma_request_stat_nb_decoder_dropped_upd
+    , output logic r_mhdma_request_stat_nb_decoder_dropped_rd_en
   // Register IO: mhdma_lane_debug
     , output mhdma_lane_debug_t r_mhdma_lane_debug
   // Register IO: mhdma_hbm_axi4_addr_2in3_ct_pc0_lsb
@@ -532,6 +567,36 @@ import hpu_regif_core_mhdma_2in3_pkg::*;
 //-- Default mhdma_request_stat_cnt_nb_write_complete
   logic [REG_DATA_W-1:0]mhdma_request_stat_cnt_nb_write_complete_default;
   assign mhdma_request_stat_cnt_nb_write_complete_default = 'h0;
+//-- Default mhdma_request_stat_nb_notify_sent
+  logic [REG_DATA_W-1:0]mhdma_request_stat_nb_notify_sent_default;
+  assign mhdma_request_stat_nb_notify_sent_default = 'h0;
+//-- Default mhdma_request_stat_nb_ce_sent
+  logic [REG_DATA_W-1:0]mhdma_request_stat_nb_ce_sent_default;
+  assign mhdma_request_stat_nb_ce_sent_default = 'h0;
+//-- Default mhdma_request_stat_nb_notify_ack_sent
+  logic [REG_DATA_W-1:0]mhdma_request_stat_nb_notify_ack_sent_default;
+  assign mhdma_request_stat_nb_notify_ack_sent_default = 'h0;
+//-- Default mhdma_request_stat_nb_read_req_sent
+  logic [REG_DATA_W-1:0]mhdma_request_stat_nb_read_req_sent_default;
+  assign mhdma_request_stat_nb_read_req_sent_default = 'h0;
+//-- Default mhdma_request_stat_t_hbm_write_latency
+  logic [REG_DATA_W-1:0]mhdma_request_stat_t_hbm_write_latency_default;
+  assign mhdma_request_stat_t_hbm_write_latency_default = 'h0;
+//-- Default mhdma_request_stat_t_hbm_write_latency_max
+  logic [REG_DATA_W-1:0]mhdma_request_stat_t_hbm_write_latency_max_default;
+  assign mhdma_request_stat_t_hbm_write_latency_max_default = 'h0;
+//-- Default mhdma_request_stat_t_hbm_write_latency_min
+  logic [REG_DATA_W-1:0]mhdma_request_stat_t_hbm_write_latency_min_default;
+  assign mhdma_request_stat_t_hbm_write_latency_min_default = 'h0;
+//-- Default mhdma_request_stat_t_notify_to_ack_min
+  logic [REG_DATA_W-1:0]mhdma_request_stat_t_notify_to_ack_min_default;
+  assign mhdma_request_stat_t_notify_to_ack_min_default = 'h0;
+//-- Default mhdma_request_stat_t_rr_to_ce_received_min
+  logic [REG_DATA_W-1:0]mhdma_request_stat_t_rr_to_ce_received_min_default;
+  assign mhdma_request_stat_t_rr_to_ce_received_min_default = 'h0;
+//-- Default mhdma_request_stat_nb_decoder_dropped
+  logic [REG_DATA_W-1:0]mhdma_request_stat_nb_decoder_dropped_default;
+  assign mhdma_request_stat_nb_decoder_dropped_default = 'h0;
 //-- Default mhdma_lane_debug
   mhdma_lane_debug_t mhdma_lane_debug_default;
   always_comb begin
@@ -975,6 +1040,86 @@ import hpu_regif_core_mhdma_2in3_pkg::*;
       r_mhdma_request_stat_cnt_nb_write_complete       <= r_mhdma_request_stat_cnt_nb_write_completeD;
     end
   end
+// Register FF: mhdma_request_stat_nb_notify_sent
+  logic [REG_DATA_W-1:0] r_mhdma_request_stat_nb_notify_sentD;
+  assign r_mhdma_request_stat_nb_notify_sentD       = r_mhdma_request_stat_nb_notify_sent_upd;
+  assign r_mhdma_request_stat_nb_notify_sent_rd_en = rd_en_ok && (rd_add[AXIL_ADD_RANGE_W-1:0] == MHDMA_REQUEST_STAT_NB_NOTIFY_SENT_OFS[AXIL_ADD_RANGE_W-1:0]);
+  assign r_mhdma_request_stat_nb_notify_sent = r_mhdma_request_stat_nb_notify_sent_upd;
+// Register FF: mhdma_request_stat_nb_ce_sent
+  logic [REG_DATA_W-1:0] r_mhdma_request_stat_nb_ce_sentD;
+  assign r_mhdma_request_stat_nb_ce_sentD       = r_mhdma_request_stat_nb_ce_sent_upd;
+  assign r_mhdma_request_stat_nb_ce_sent_rd_en = rd_en_ok && (rd_add[AXIL_ADD_RANGE_W-1:0] == MHDMA_REQUEST_STAT_NB_CE_SENT_OFS[AXIL_ADD_RANGE_W-1:0]);
+  assign r_mhdma_request_stat_nb_ce_sent = r_mhdma_request_stat_nb_ce_sent_upd;
+// Register FF: mhdma_request_stat_nb_notify_ack_sent
+  logic [REG_DATA_W-1:0] r_mhdma_request_stat_nb_notify_ack_sentD;
+  assign r_mhdma_request_stat_nb_notify_ack_sentD       = r_mhdma_request_stat_nb_notify_ack_sent_upd;
+  assign r_mhdma_request_stat_nb_notify_ack_sent_rd_en = rd_en_ok && (rd_add[AXIL_ADD_RANGE_W-1:0] == MHDMA_REQUEST_STAT_NB_NOTIFY_ACK_SENT_OFS[AXIL_ADD_RANGE_W-1:0]);
+  assign r_mhdma_request_stat_nb_notify_ack_sent = r_mhdma_request_stat_nb_notify_ack_sent_upd;
+// Register FF: mhdma_request_stat_nb_read_req_sent
+  logic [REG_DATA_W-1:0] r_mhdma_request_stat_nb_read_req_sentD;
+  assign r_mhdma_request_stat_nb_read_req_sentD       = r_mhdma_request_stat_nb_read_req_sent_upd;
+  assign r_mhdma_request_stat_nb_read_req_sent_rd_en = rd_en_ok && (rd_add[AXIL_ADD_RANGE_W-1:0] == MHDMA_REQUEST_STAT_NB_READ_REQ_SENT_OFS[AXIL_ADD_RANGE_W-1:0]);
+  assign r_mhdma_request_stat_nb_read_req_sent = r_mhdma_request_stat_nb_read_req_sent_upd;
+// Register FF: mhdma_request_stat_t_hbm_write_latency
+  logic [REG_DATA_W-1:0] r_mhdma_request_stat_t_hbm_write_latencyD;
+  assign r_mhdma_request_stat_t_hbm_write_latencyD       = r_mhdma_request_stat_t_hbm_write_latency_upd;
+  always_ff @(posedge clk) begin
+    if (!s_rst_n) begin
+      r_mhdma_request_stat_t_hbm_write_latency       <= mhdma_request_stat_t_hbm_write_latency_default;
+    end
+    else begin
+      r_mhdma_request_stat_t_hbm_write_latency       <= r_mhdma_request_stat_t_hbm_write_latencyD;
+    end
+  end
+// Register FF: mhdma_request_stat_t_hbm_write_latency_max
+  logic [REG_DATA_W-1:0] r_mhdma_request_stat_t_hbm_write_latency_maxD;
+  assign r_mhdma_request_stat_t_hbm_write_latency_maxD       = r_mhdma_request_stat_t_hbm_write_latency_max_upd;
+  always_ff @(posedge clk) begin
+    if (!s_rst_n) begin
+      r_mhdma_request_stat_t_hbm_write_latency_max       <= mhdma_request_stat_t_hbm_write_latency_max_default;
+    end
+    else begin
+      r_mhdma_request_stat_t_hbm_write_latency_max       <= r_mhdma_request_stat_t_hbm_write_latency_maxD;
+    end
+  end
+// Register FF: mhdma_request_stat_t_hbm_write_latency_min
+  logic [REG_DATA_W-1:0] r_mhdma_request_stat_t_hbm_write_latency_minD;
+  assign r_mhdma_request_stat_t_hbm_write_latency_minD       = r_mhdma_request_stat_t_hbm_write_latency_min_upd;
+  always_ff @(posedge clk) begin
+    if (!s_rst_n) begin
+      r_mhdma_request_stat_t_hbm_write_latency_min       <= mhdma_request_stat_t_hbm_write_latency_min_default;
+    end
+    else begin
+      r_mhdma_request_stat_t_hbm_write_latency_min       <= r_mhdma_request_stat_t_hbm_write_latency_minD;
+    end
+  end
+// Register FF: mhdma_request_stat_t_notify_to_ack_min
+  logic [REG_DATA_W-1:0] r_mhdma_request_stat_t_notify_to_ack_minD;
+  assign r_mhdma_request_stat_t_notify_to_ack_minD       = r_mhdma_request_stat_t_notify_to_ack_min_upd;
+  always_ff @(posedge clk) begin
+    if (!s_rst_n) begin
+      r_mhdma_request_stat_t_notify_to_ack_min       <= mhdma_request_stat_t_notify_to_ack_min_default;
+    end
+    else begin
+      r_mhdma_request_stat_t_notify_to_ack_min       <= r_mhdma_request_stat_t_notify_to_ack_minD;
+    end
+  end
+// Register FF: mhdma_request_stat_t_rr_to_ce_received_min
+  logic [REG_DATA_W-1:0] r_mhdma_request_stat_t_rr_to_ce_received_minD;
+  assign r_mhdma_request_stat_t_rr_to_ce_received_minD       = r_mhdma_request_stat_t_rr_to_ce_received_min_upd;
+  always_ff @(posedge clk) begin
+    if (!s_rst_n) begin
+      r_mhdma_request_stat_t_rr_to_ce_received_min       <= mhdma_request_stat_t_rr_to_ce_received_min_default;
+    end
+    else begin
+      r_mhdma_request_stat_t_rr_to_ce_received_min       <= r_mhdma_request_stat_t_rr_to_ce_received_minD;
+    end
+  end
+// Register FF: mhdma_request_stat_nb_decoder_dropped
+  logic [REG_DATA_W-1:0] r_mhdma_request_stat_nb_decoder_droppedD;
+  assign r_mhdma_request_stat_nb_decoder_droppedD       = r_mhdma_request_stat_nb_decoder_dropped_upd;
+  assign r_mhdma_request_stat_nb_decoder_dropped_rd_en = rd_en_ok && (rd_add[AXIL_ADD_RANGE_W-1:0] == MHDMA_REQUEST_STAT_NB_DECODER_DROPPED_OFS[AXIL_ADD_RANGE_W-1:0]);
+  assign r_mhdma_request_stat_nb_decoder_dropped = r_mhdma_request_stat_nb_decoder_dropped_upd;
 // Register FF: mhdma_lane_debug
   logic [REG_DATA_W-1:0] r_mhdma_lane_debugD;
   assign r_mhdma_lane_debugD = (wr_en_ok && (wr_add[AXIL_ADD_RANGE_W-1:0] == MHDMA_LANE_DEBUG_OFS[AXIL_ADD_RANGE_W-1:0]))? wr_data: r_mhdma_lane_debug;
@@ -1186,6 +1331,36 @@ import hpu_regif_core_mhdma_2in3_pkg::*;
           end
           MHDMA_REQUEST_STAT_CNT_NB_WRITE_COMPLETE_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register mhdma_request_stat_cnt_nb_write_complete
             axil_rdataD = r_mhdma_request_stat_cnt_nb_write_complete;
+          end
+          MHDMA_REQUEST_STAT_NB_NOTIFY_SENT_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register mhdma_request_stat_nb_notify_sent
+            axil_rdataD = r_mhdma_request_stat_nb_notify_sent;
+          end
+          MHDMA_REQUEST_STAT_NB_CE_SENT_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register mhdma_request_stat_nb_ce_sent
+            axil_rdataD = r_mhdma_request_stat_nb_ce_sent;
+          end
+          MHDMA_REQUEST_STAT_NB_NOTIFY_ACK_SENT_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register mhdma_request_stat_nb_notify_ack_sent
+            axil_rdataD = r_mhdma_request_stat_nb_notify_ack_sent;
+          end
+          MHDMA_REQUEST_STAT_NB_READ_REQ_SENT_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register mhdma_request_stat_nb_read_req_sent
+            axil_rdataD = r_mhdma_request_stat_nb_read_req_sent;
+          end
+          MHDMA_REQUEST_STAT_T_HBM_WRITE_LATENCY_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register mhdma_request_stat_t_hbm_write_latency
+            axil_rdataD = r_mhdma_request_stat_t_hbm_write_latency;
+          end
+          MHDMA_REQUEST_STAT_T_HBM_WRITE_LATENCY_MAX_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register mhdma_request_stat_t_hbm_write_latency_max
+            axil_rdataD = r_mhdma_request_stat_t_hbm_write_latency_max;
+          end
+          MHDMA_REQUEST_STAT_T_HBM_WRITE_LATENCY_MIN_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register mhdma_request_stat_t_hbm_write_latency_min
+            axil_rdataD = r_mhdma_request_stat_t_hbm_write_latency_min;
+          end
+          MHDMA_REQUEST_STAT_T_NOTIFY_TO_ACK_MIN_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register mhdma_request_stat_t_notify_to_ack_min
+            axil_rdataD = r_mhdma_request_stat_t_notify_to_ack_min;
+          end
+          MHDMA_REQUEST_STAT_T_RR_TO_CE_RECEIVED_MIN_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register mhdma_request_stat_t_rr_to_ce_received_min
+            axil_rdataD = r_mhdma_request_stat_t_rr_to_ce_received_min;
+          end
+          MHDMA_REQUEST_STAT_NB_DECODER_DROPPED_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register mhdma_request_stat_nb_decoder_dropped
+            axil_rdataD = r_mhdma_request_stat_nb_decoder_dropped;
           end
           MHDMA_LANE_DEBUG_OFS[AXIL_ADD_RANGE_W-1:0]: begin // register mhdma_lane_debug
             axil_rdataD = r_mhdma_lane_debug;

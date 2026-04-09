@@ -468,8 +468,11 @@ logic [HPU_NB-1:0][ETH_PC-1:0]                          axi4_ct_rready;
   logic [HPU_NB-1:0][REG_DATA_W-1:0] notify_req_addr_expected;
   logic [HPU_NB-1:0][REG_DATA_W-1:0] stat_notify;
   logic [HPU_NB-1:0][REG_DATA_W-1:0] stat_notify_ack;
-  logic       [2*REG_DATA_W-1:0] notify_a_ref_q[$];
-  logic       [2*REG_DATA_W-1:0] notify_b_ref_q[$];
+  logic [HPU_NB-1:0][REG_DATA_W-1:0] stat_nb_notify_sent;
+  logic [HPU_NB-1:0][REG_DATA_W-1:0] stat_nb_notify_ack_sent;
+
+  logic [2*REG_DATA_W-1:0] notify_a_ref_q[$];
+  logic [2*REG_DATA_W-1:0] notify_b_ref_q[$];
 
   int arbitrary_notify_nb;
   int arbitrary_read_req_nb;
@@ -530,7 +533,7 @@ logic [HPU_NB-1:0][ETH_PC-1:0]                          axi4_ct_rready;
         end
       join
 
-      // checking — wait for interrupt before each read so we never read stale data
+      // checking: wait for interrupt before each read so we never read stale data
       fork
         begin
           for (int i = 0; i < random_iter; i++) begin
@@ -575,20 +578,38 @@ logic [HPU_NB-1:0][ETH_PC-1:0]                          axi4_ct_rready;
     // wait for last notify ack counter to propagate through CDC before reading stats
     repeat(100) @(posedge clk_control);
 
-    gen_maxil_if[0].maxil_if.read_trans(MHDMA_REQUEST_STAT_NOTIFY_OFS,     stat_notify[0]);
-    gen_maxil_if[0].maxil_if.read_trans(MHDMA_REQUEST_STAT_NOTIFY_ACK_OFS, stat_notify_ack[0]);
-    gen_maxil_if[1].maxil_if.read_trans(MHDMA_REQUEST_STAT_NOTIFY_OFS,     stat_notify[1]);
-    gen_maxil_if[1].maxil_if.read_trans(MHDMA_REQUEST_STAT_NOTIFY_ACK_OFS, stat_notify_ack[1]);
+    gen_maxil_if[0].maxil_if.read_trans(MHDMA_REQUEST_STAT_NOTIFY_OFS,              stat_notify[0]);
+    gen_maxil_if[0].maxil_if.read_trans(MHDMA_REQUEST_STAT_NOTIFY_ACK_OFS,          stat_notify_ack[0]);
+    gen_maxil_if[0].maxil_if.read_trans(MHDMA_REQUEST_STAT_NB_NOTIFY_SENT_OFS,      stat_nb_notify_sent[0]);
+    gen_maxil_if[0].maxil_if.read_trans(MHDMA_REQUEST_STAT_NB_NOTIFY_ACK_SENT_OFS,  stat_nb_notify_ack_sent[0]);
+    gen_maxil_if[1].maxil_if.read_trans(MHDMA_REQUEST_STAT_NOTIFY_OFS,              stat_notify[1]);
+    gen_maxil_if[1].maxil_if.read_trans(MHDMA_REQUEST_STAT_NOTIFY_ACK_OFS,          stat_notify_ack[1]);
+    gen_maxil_if[1].maxil_if.read_trans(MHDMA_REQUEST_STAT_NB_NOTIFY_SENT_OFS,      stat_nb_notify_sent[1]);
+    gen_maxil_if[1].maxil_if.read_trans(MHDMA_REQUEST_STAT_NB_NOTIFY_ACK_SENT_OFS,  stat_nb_notify_ack_sent[1]);
 
     $display("\n ----------------- HPU_A -------------------------------------");
     $display(" stat_notify                 : %0d", stat_notify[0]);
     $display(" stat_notify_ack             : %0d", stat_notify_ack[0]);
+    $display(" stat_nb_notify_sent         : %0d", stat_nb_notify_sent[0]);
+    $display(" stat_nb_notify_ack_sent     : %0d", stat_nb_notify_ack_sent[0]);
     $display(" ----------------- HPU_B -------------------------------------");
     $display(" stat_notify                 : %0d", stat_notify[1]);
     $display(" stat_notify_ack             : %0d", stat_notify_ack[1]);
+    $display(" stat_nb_notify_sent         : %0d", stat_nb_notify_sent[1]);
+    $display(" stat_nb_notify_ack_sent     : %0d", stat_nb_notify_ack_sent[1]);
 
     assert ((stat_notify[0] == stat_notify[1]) & (stat_notify_ack[0] == stat_notify_ack[1]) & (stat_notify[0] == LOOP_NOTIFY*random_iter)) else begin
       $display("%t > [ERROR]: Number of ack and Notify mismatch with expected value %0d", $time, random_iter);
+      error_number_received = 1'b1;
+    end
+
+    assert (stat_nb_notify_sent[0] == LOOP_NOTIFY*random_iter && stat_nb_notify_sent[1] == LOOP_NOTIFY*random_iter) else begin
+      $display("%t > [ERROR]: stat_nb_notify_sent mismatch: HPU_A=%0d HPU_B=%0d expected=%0d", $time, stat_nb_notify_sent[0], stat_nb_notify_sent[1], LOOP_NOTIFY*random_iter);
+      error_number_received = 1'b1;
+    end
+
+    assert (stat_nb_notify_ack_sent[0] == LOOP_NOTIFY*random_iter && stat_nb_notify_ack_sent[1] == LOOP_NOTIFY*random_iter) else begin
+      $display("%t > [ERROR]: stat_nb_notify_ack_sent mismatch: HPU_A=%0d HPU_B=%0d expected=%0d", $time, stat_nb_notify_ack_sent[0], stat_nb_notify_ack_sent[1], LOOP_NOTIFY*random_iter);
       error_number_received = 1'b1;
     end
 

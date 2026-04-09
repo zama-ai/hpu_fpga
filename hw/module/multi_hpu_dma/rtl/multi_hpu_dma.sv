@@ -302,75 +302,105 @@ module multi_hpu_dma
     .r_mhdma_system_timeout_read_req                      (r_system_timeout_read_req                             ),
     // stats -----------------------------------------------------------------------------------------------------
     .r_mhdma_request_stat_notify                          (/* UNUSED - register output, only _upd/_rd_en used */ ),
-    .r_mhdma_request_stat_notify_upd                      (stat_cfg.master.cnt_notify                             ),
-    .r_mhdma_request_stat_notify_rd_en                    (stat_rst_cfg.master.cnt_notify                         ),
+    .r_mhdma_request_stat_notify_upd                      (stat_cfg.master.cnt_notify                            ),
+    .r_mhdma_request_stat_notify_rd_en                    (stat_rst_cfg.master.cnt_notify                        ),
     .r_mhdma_request_stat_notify_ack                      (/* UNUSED - register output, only _upd/_rd_en used */ ),
-    .r_mhdma_request_stat_notify_ack_upd                  (stat_cfg.master.cnt_notify_ack                         ),
-    .r_mhdma_request_stat_notify_ack_rd_en                (stat_rst_cfg.master.cnt_notify_ack                     ),
+    .r_mhdma_request_stat_notify_ack_upd                  (stat_cfg.master.cnt_notify_ack                        ),
+    .r_mhdma_request_stat_notify_ack_rd_en                (stat_rst_cfg.master.cnt_notify_ack                    ),
     .r_mhdma_request_stat_notify_timeout                  (/* UNUSED - register output, only _upd/_rd_en used */ ),
-    .r_mhdma_request_stat_notify_timeout_upd              (stat_cfg.master.cnt_notify_timeout                     ),
-    .r_mhdma_request_stat_notify_timeout_rd_en            (stat_rst_cfg.master.cnt_timeout                        ),
+    .r_mhdma_request_stat_notify_timeout_upd              (stat_cfg.master.cnt_notify_timeout                    ),
+    .r_mhdma_request_stat_notify_timeout_rd_en            (stat_rst_cfg.master.cnt_timeout                       ),
     .r_mhdma_request_stat_notify_timeout_retry            (/* UNUSED - register output, only _upd/_rd_en used */ ),
-    .r_mhdma_request_stat_notify_timeout_retry_upd        (stat_cfg.master.cnt_notify_retries                     ),
-    .r_mhdma_request_stat_notify_timeout_retry_rd_en      (stat_rst_cfg.master.cnt_notify_retry                   ),
+    .r_mhdma_request_stat_notify_timeout_retry_upd        (stat_cfg.master.cnt_notify_retries                    ),
+    .r_mhdma_request_stat_notify_timeout_retry_rd_en      (stat_rst_cfg.master.cnt_notify_retry                  ),
     .r_mhdma_request_stat_read_req_timeout_retry          (/* UNUSED - register output, only _upd/_rd_en used */ ),
-    .r_mhdma_request_stat_read_req_timeout_retry_upd      (stat_cfg.master.cnt_read_req_retries                   ),
-    .r_mhdma_request_stat_read_req_timeout_retry_rd_en    (stat_rst_cfg.master.cnt_read_req_retry                 ),
+    .r_mhdma_request_stat_read_req_timeout_retry_upd      (stat_cfg.master.cnt_read_req_retries                  ),
+    .r_mhdma_request_stat_read_req_timeout_retry_rd_en    (stat_rst_cfg.master.cnt_read_req_retry                ),
     .r_mhdma_request_stat_nb_nack_received                (/* UNUSED - register output, only _upd/_rd_en used */ ),
-    .r_mhdma_request_stat_nb_nack_received_upd            (stat_cfg.decoder.cnt_nack_received                     ),
-    .r_mhdma_request_stat_nb_nack_received_rd_en          (stat_rst_cfg.decoder.cnt_nack_received                 ),
+    .r_mhdma_request_stat_nb_nack_received_upd            (stat_cfg.decoder.cnt_nack_received                    ),
+    .r_mhdma_request_stat_nb_nack_received_rd_en          (stat_rst_cfg.decoder.cnt_nack_received                ),
     .r_mhdma_request_stat_nb_notify_received              (/* UNUSED - register output, only _upd/_rd_en used */ ),
-    .r_mhdma_request_stat_nb_notify_received_upd          (stat_cfg.decoder.cnt_notify_received                   ),
-    .r_mhdma_request_stat_nb_notify_received_rd_en        (stat_rst_cfg.decoder.cnt_notify_received               ),
+    .r_mhdma_request_stat_nb_notify_received_upd          (stat_cfg.decoder.cnt_notify_received                  ),
+    .r_mhdma_request_stat_nb_notify_received_rd_en        (stat_rst_cfg.decoder.cnt_notify_received              ),
     .r_mhdma_request_stat_nb_read_req_received            (/* UNUSED - register output, only _upd/_rd_en used */ ),
-    .r_mhdma_request_stat_nb_read_req_received_upd        (stat_cfg.decoder.cnt_read_req_received                 ),
-    .r_mhdma_request_stat_nb_read_req_received_rd_en      (stat_rst_cfg.decoder.cnt_read_req_received             ),
+    .r_mhdma_request_stat_nb_read_req_received_upd        (stat_cfg.decoder.cnt_read_req_received                ),
+    .r_mhdma_request_stat_nb_read_req_received_rd_en      (stat_rst_cfg.decoder.cnt_read_req_received            ),
     .r_mhdma_request_stat_nb_ce_received                  (/* UNUSED - register output, only _upd/_rd_en used */ ),
-    .r_mhdma_request_stat_nb_ce_received_upd              (stat_cfg.decoder.cnt_ce_received                       ),
-    .r_mhdma_request_stat_nb_ce_received_rd_en            (stat_rst_cfg.decoder.cnt_ce_received                   ),
+    .r_mhdma_request_stat_nb_ce_received_upd              (stat_cfg.decoder.cnt_ce_received                      ),
+    .r_mhdma_request_stat_nb_ce_received_rd_en            (stat_rst_cfg.decoder.cnt_ce_received                  ),
     .r_mhdma_request_stat_nb_ce_words_received            (/* UNUSED - register output, only _upd/_rd_en used */ ),
-    .r_mhdma_request_stat_nb_ce_words_received_upd        (stat_cfg.master.nb_ce_words_received                   ),
-    .r_mhdma_request_stat_nb_ce_words_received_rd_en      (stat_rst_cfg.master.nb_ce_words_received               ),
+    .r_mhdma_request_stat_nb_ce_words_received_upd        (stat_cfg.master.nb_ce_words_received                  ),
+    .r_mhdma_request_stat_nb_ce_words_received_rd_en      (stat_rst_cfg.master.nb_ce_words_received              ),
     .r_mhdma_request_stat_nb_read_to_hbm                  (/* UNUSED - register output, only _upd/_rd_en used */ ),
-    .r_mhdma_request_stat_nb_read_to_hbm_upd              (stat_cfg.slave.nb_read_to_hbm                          ),
-    .r_mhdma_request_stat_nb_read_to_hbm_rd_en            (stat_rst_cfg.slave.nb_read_to_hbm                      ),
+    .r_mhdma_request_stat_nb_read_to_hbm_upd              (stat_cfg.slave.nb_read_to_hbm                         ),
+    .r_mhdma_request_stat_nb_read_to_hbm_rd_en            (stat_rst_cfg.slave.nb_read_to_hbm                     ),
     .r_mhdma_request_stat_nb_words_received_pc_pc0        (/* UNUSED - register output, only _upd/_rd_en used */ ),
-    .r_mhdma_request_stat_nb_words_received_pc_pc0_upd    (stat_cfg.slave.nb_words_received_pc[0]                 ),
-    .r_mhdma_request_stat_nb_words_received_pc_pc0_rd_en  (stat_rst_cfg.slave.nb_words_received_pc[0]             ),
+    .r_mhdma_request_stat_nb_words_received_pc_pc0_upd    (stat_cfg.slave.nb_words_received_pc[0]                ),
+    .r_mhdma_request_stat_nb_words_received_pc_pc0_rd_en  (stat_rst_cfg.slave.nb_words_received_pc[0]            ),
     .r_mhdma_request_stat_nb_words_received_pc_pc1        (/* UNUSED - register output, only _upd/_rd_en used */ ),
     .r_mhdma_request_stat_nb_words_received_pc_pc1_upd    (regf_nb_words_rx_pc1                                  ),
     .r_mhdma_request_stat_nb_words_received_pc_pc1_rd_en  (regf_rst_nb_words_rx_pc1                              ),
     .r_mhdma_request_stat_cnt_nb_write_complete           (/* UNUSED - register output, only _upd used */        ),
-    .r_mhdma_request_stat_cnt_nb_write_complete_upd       (stat_cfg.master.nb_write_complete_cnt                  ),
+    .r_mhdma_request_stat_cnt_nb_write_complete_upd       (stat_cfg.master.nb_write_complete_cnt                 ),
     // timing
     .r_mhdma_request_stat_t_notify_to_ack                 (/* UNUSED - register output, only _upd used */        ),
-    .r_mhdma_request_stat_t_notify_to_ack_upd             (stat_cfg.master.t_notify_to_ack                        ),
+    .r_mhdma_request_stat_t_notify_to_ack_upd             (stat_cfg.master.t_notify_to_ack                       ),
     .r_mhdma_request_stat_t_notify_to_ack_max             (/* UNUSED - register output, only _upd used */        ),
-    .r_mhdma_request_stat_t_notify_to_ack_max_upd         (stat_cfg.master.t_notify_to_ack_max                    ),
+    .r_mhdma_request_stat_t_notify_to_ack_max_upd         (stat_cfg.master.t_notify_to_ack_max                   ),
     .r_mhdma_request_stat_t_rr_to_ce_received             (/* UNUSED - register output, only _upd used */        ),
-    .r_mhdma_request_stat_t_rr_to_ce_received_upd         (stat_cfg.master.t_rr_to_ce_received                    ),
+    .r_mhdma_request_stat_t_rr_to_ce_received_upd         (stat_cfg.master.t_rr_to_ce_received                   ),
     .r_mhdma_request_stat_t_rr_to_ce_received_max         (/* UNUSED - register output, only _upd used */        ),
-    .r_mhdma_request_stat_t_rr_to_ce_received_max_upd     (stat_cfg.master.t_rr_to_ce_received_max                ),
+    .r_mhdma_request_stat_t_rr_to_ce_received_max_upd     (stat_cfg.master.t_rr_to_ce_received_max               ),
     .r_mhdma_request_stat_t_ce_first_to_last_pkt          (/* UNUSED - register output, only _upd used */        ),
-    .r_mhdma_request_stat_t_ce_first_to_last_pkt_upd      (stat_cfg.decoder.t_ce_first_to_last_pkt                ),
+    .r_mhdma_request_stat_t_ce_first_to_last_pkt_upd      (stat_cfg.decoder.t_ce_first_to_last_pkt               ),
     .r_mhdma_request_stat_t_rr_wait_words_pc_pc0          (/* UNUSED - register output, only _upd used */        ),
-    .r_mhdma_request_stat_t_rr_wait_words_pc_pc0_upd      (stat_cfg.slave.t_rr_wait_words_pc[0]                   ),
+    .r_mhdma_request_stat_t_rr_wait_words_pc_pc0_upd      (stat_cfg.slave.t_rr_wait_words_pc[0]                  ),
     .r_mhdma_request_stat_t_rr_wait_words_pc_pc1          (/* UNUSED - register output, only _upd used */        ),
     .r_mhdma_request_stat_t_rr_wait_words_pc_pc1_upd      (regf_t_rr_wait_pc1                                    ),
     // registers
     .r_mhdma_system_fsm_value                             (/* UNUSED - register output, only _upd used */        ),
     .r_mhdma_system_fsm_value_upd                         (fsm_value_composed                                    ),
     .r_mhdma_request_stat_physical_addr_pc0_lsb           (/* UNUSED - register output, only _upd used */        ),
-    .r_mhdma_request_stat_physical_addr_pc0_lsb_upd       (stat_cfg.slave.rr_phy_addr[0][REG_DATA_W-1:0]          ),
+    .r_mhdma_request_stat_physical_addr_pc0_lsb_upd       (stat_cfg.slave.rr_phy_addr[0][REG_DATA_W-1:0]         ),
     .r_mhdma_request_stat_physical_addr_pc0_msb           (/* UNUSED - register output, only _upd used */        ),
     .r_mhdma_request_stat_physical_addr_pc0_msb_upd       (stat_cfg.slave.rr_phy_addr[0][2*REG_DATA_W-1:REG_DATA_W]),
     .r_mhdma_request_stat_physical_addr_pc1_lsb           (/* UNUSED - register output, only _upd used */        ),
     .r_mhdma_request_stat_physical_addr_pc1_lsb_upd       (regf_rr_phy_addr_pc1[REG_DATA_W-1:0]                  ),
     .r_mhdma_request_stat_physical_addr_pc1_msb           (/* UNUSED - register output, only _upd used */        ),
-    .r_mhdma_request_stat_physical_addr_pc1_msb_upd       (regf_rr_phy_addr_pc1[2*REG_DATA_W-1:REG_DATA_W]      ),
+    .r_mhdma_request_stat_physical_addr_pc1_msb_upd       (regf_rr_phy_addr_pc1[2*REG_DATA_W-1:REG_DATA_W]       ),
     .r_mhdma_system_errors                                (/* UNUSED - register output, only _upd/_rd_en used */ ),
     .r_mhdma_system_errors_upd                            (mhdma_errors_cfg_merged                               ),
-    .r_mhdma_system_errors_rd_en                          (stat_rst_cfg.mhdma_errors                              )
+    .r_mhdma_system_errors_rd_en                          (stat_rst_cfg.mhdma_errors                             ),
+    // new TX-side counters (formatter)
+    .r_mhdma_request_stat_nb_notify_sent                  (/* UNUSED - register output, only _upd/_rd_en used */ ),
+    .r_mhdma_request_stat_nb_notify_sent_upd              (stat_cfg.formatter.cnt_notify_sent                    ),
+    .r_mhdma_request_stat_nb_notify_sent_rd_en            (stat_rst_cfg.formatter.cnt_notify_sent                ),
+    .r_mhdma_request_stat_nb_ce_sent                      (/* UNUSED - register output, only _upd/_rd_en used */ ),
+    .r_mhdma_request_stat_nb_ce_sent_upd                  (stat_cfg.formatter.cnt_ce_sent                        ),
+    .r_mhdma_request_stat_nb_ce_sent_rd_en                (stat_rst_cfg.formatter.cnt_ce_sent                    ),
+    .r_mhdma_request_stat_nb_notify_ack_sent              (/* UNUSED - register output, only _upd/_rd_en used */ ),
+    .r_mhdma_request_stat_nb_notify_ack_sent_upd          (stat_cfg.formatter.cnt_notify_ack_sent                ),
+    .r_mhdma_request_stat_nb_notify_ack_sent_rd_en        (stat_rst_cfg.formatter.cnt_notify_ack_sent            ),
+    // read-request sent counter (formatter)
+    .r_mhdma_request_stat_nb_read_req_sent                (/* UNUSED - register output, only _upd/_rd_en used */ ),
+    .r_mhdma_request_stat_nb_read_req_sent_upd            (stat_cfg.formatter.cnt_read_req_sent                  ),
+    .r_mhdma_request_stat_nb_read_req_sent_rd_en          (stat_rst_cfg.formatter.cnt_read_req_sent              ),
+    // HBM write latency
+    .r_mhdma_request_stat_t_hbm_write_latency             (/* UNUSED - register output, only _upd used */        ),
+    .r_mhdma_request_stat_t_hbm_write_latency_upd         (stat_cfg.master.t_hbm_write_latency                   ),
+    .r_mhdma_request_stat_t_hbm_write_latency_max         (/* UNUSED - register output, only _upd used */        ),
+    .r_mhdma_request_stat_t_hbm_write_latency_max_upd     (stat_cfg.master.t_hbm_write_latency_max               ),
+    .r_mhdma_request_stat_t_hbm_write_latency_min         (/* UNUSED - register output, only _upd used */        ),
+    .r_mhdma_request_stat_t_hbm_write_latency_min_upd     (stat_cfg.master.t_hbm_write_latency_min               ),
+    // min latency variants
+    .r_mhdma_request_stat_t_notify_to_ack_min             (/* UNUSED - register output, only _upd used */        ),
+    .r_mhdma_request_stat_t_notify_to_ack_min_upd         (stat_cfg.master.t_notify_to_ack_min                   ),
+    .r_mhdma_request_stat_t_rr_to_ce_received_min         (/* UNUSED - register output, only _upd used */        ),
+    .r_mhdma_request_stat_t_rr_to_ce_received_min_upd     (stat_cfg.master.t_rr_to_ce_received_min               ),
+    // decoder dropped counter
+    .r_mhdma_request_stat_nb_decoder_dropped              (/* UNUSED - register output, only _upd/_rd_en used */ ),
+    .r_mhdma_request_stat_nb_decoder_dropped_upd          (stat_cfg.decoder.cnt_dropped                          ),
+    .r_mhdma_request_stat_nb_decoder_dropped_rd_en        (stat_rst_cfg.decoder.cnt_dropped                      )
   );
 
   // ============================================================================================ //
@@ -416,15 +446,37 @@ module multi_hpu_dma
   end
 
   // CDC: Counter values (ETH -> CFG)
+  // Split into two xpm_cdc_handshake instances because of the XPM limit: 1024 bits width max
+  localparam int STAT_DATA_W    = $bits(mhdma_stat_to_cfg_t);
+  localparam int STAT_MASTER_W  = $bits(master_stat_t);
+  localparam int STAT_REST_W    = STAT_DATA_W - STAT_MASTER_W;
+
+  logic [STAT_DATA_W-1:0] stat_mhdma_flat;
+  logic [STAT_DATA_W-1:0] stat_cfg_flat;
+
+  assign stat_mhdma_flat = stat_mhdma;
+  assign stat_cfg        = mhdma_stat_to_cfg_t'(stat_cfg_flat);
+
   xpm_cdc_handshake_wrapper #(
-    .WIDTH           ($bits(mhdma_stat_to_cfg_t)),
-    .CDC_SYNC_STAGES (CDC_SYNC_STAGES   )
-  ) cdc_cnt (
-    .src_clk   (clk_mhdma     ),
-    .src_rst_n (resetn_mhdma  ),
-    .dest_clk  (clk_mhdma_cfg ),
-    .src_in    (stat_mhdma       ),
-    .dest_out  (stat_cfg       )
+    .WIDTH           (STAT_MASTER_W    ),
+    .CDC_SYNC_STAGES (CDC_SYNC_STAGES  )
+  ) cdc_stat_master (
+    .src_clk   (clk_mhdma                                      ),
+    .src_rst_n (resetn_mhdma                                   ),
+    .dest_clk  (clk_mhdma_cfg                                  ),
+    .src_in    (stat_mhdma_flat[STAT_DATA_W-1 -: STAT_MASTER_W]),
+    .dest_out  (stat_cfg_flat[STAT_DATA_W-1 -: STAT_MASTER_W]  )
+  );
+
+  xpm_cdc_handshake_wrapper #(
+    .WIDTH           (STAT_REST_W      ),
+    .CDC_SYNC_STAGES (CDC_SYNC_STAGES  )
+  ) cdc_stat_slave_dec_fmt (
+    .src_clk   (clk_mhdma                       ),
+    .src_rst_n (resetn_mhdma                    ),
+    .dest_clk  (clk_mhdma_cfg                   ),
+    .src_in    (stat_mhdma_flat[STAT_REST_W-1:0]),
+    .dest_out  (stat_cfg_flat[STAT_REST_W-1:0]  )
   );
 
   // Merge cfg-domain master errors with mhdma-domain errors (all on cfg clock)

@@ -121,6 +121,7 @@ typedef enum {
 typedef struct {
   MhdmaCmdType_t cmdID;
   uint32_t payload;
+  uint64_t debug;
 } MhdmaCommand_t;
 
 void *xMhdmaCommandMbox = NULL;
@@ -418,15 +419,14 @@ void vInterruptHandler_mhdma_notify( void* pvCallBackRef ) {
 
     int current_ack_cnt = read_isc_ack_cnt();
 
-    if (debug_intr_global_cnt%2 == 1) {
-      // This is a debug msg to print received notify
-      MhdmaCommand_t cmd;
-      cmd.cmdID = MHDMA_CMD_PRINT_ERR;
-      cmd.payload = (iid << 24 | (notify.fields.src_cid & 0xF) << 20 | slave_hpu_id << 16 | mode << 8 | flag);
-      if (xMhdmaCommandMbox) {
-        if (iOSAL_MBox_PostFromISR(xMhdmaCommandMbox, (void*)&cmd) != 0) {
-          mbox_msg_lost_cnt+=1;
-        }
+    // This is a debug msg to print received notify
+    MhdmaCommand_t cmd;
+    cmd.cmdID = MHDMA_CMD_PRINT_ERR;
+    cmd.payload = (iid << 24 | (notify.fields.src_cid & 0xF) << 20 | slave_hpu_id << 16 | mode << 8 | flag);
+    cmd.debug   = notify_data;
+    if (xMhdmaCommandMbox) {
+      if (iOSAL_MBox_PostFromISR(xMhdmaCommandMbox, (void*)&cmd) != 0) {
+        mbox_msg_lost_cnt+=1;
       }
     }
 
@@ -497,16 +497,17 @@ void vInterruptHandler_mhdma_read_complete( void* pvCallBackRef ) {
   uint8_t mode = rc.fields.mode;
   // is also the nb_hpu in CMD_SRC
   uint8_t flag = rc.fields.flag;
+  uint8_t tid = rc.fields.flag;
+  uint8_t bid = (rc.fields._pad & 0xFF);
 
-  if (debug_intr_global_cnt%2 == 1) {
-    // This is a debug msg to print received read complete
-    MhdmaCommand_t cmd;
-    cmd.cmdID = MHDMA_CMD_PRINT_ERR;
-    cmd.payload = (iid << 24 | slave_hpu_id << 16 | mode << 8 | flag) | 0x80000000;
-    if (xMhdmaCommandMbox) {
-      if (iOSAL_MBox_PostFromISR(xMhdmaCommandMbox, (void*)&cmd) != 0) {
-        mbox_msg_lost_cnt+=1;
-      }
+  // This is a debug msg to print received read complete
+  MhdmaCommand_t cmd;
+  cmd.cmdID = MHDMA_CMD_PRINT_ERR;
+  cmd.payload = (iid << 24 | mode << 20 | src_store.state[iid][tid][bid] << 16  | flag << 8 | rc.fields._pad) | 0x80000000;
+  cmd.debug   = rc_data;
+  if (xMhdmaCommandMbox) {
+    if (iOSAL_MBox_PostFromISR(xMhdmaCommandMbox, (void*)&cmd) != 0) {
+      mbox_msg_lost_cnt+=1;
     }
   }
 
@@ -520,8 +521,6 @@ void vInterruptHandler_mhdma_read_complete( void* pvCallBackRef ) {
       break;
     }
     case CMD_DST: {
-      uint8_t tid = rc.fields.flag;
-      uint8_t bid = (rc.fields._pad & 0xFF);
       // state should be reading
       if (dst_store.state[iid][tid][bid] == DST_STATE_READING) {
         dst_store.state[iid][tid][bid] = DST_STATE_RESOLVED;
@@ -529,11 +528,9 @@ void vInterruptHandler_mhdma_read_complete( void* pvCallBackRef ) {
       break;
     }
     case CMD_SRC: {
-      uint8_t tid = rc.fields.flag;
-      uint8_t bid = (rc.fields._pad & 0xFF);
-
-      if (src_store.state[cur_iid][tid][bid] == OPERAND_STATE_DMA_PENDING) {
-        src_store.state[cur_iid][tid][bid] = OPERAND_STATE_RESOLVED;
+      // state should be DMA pending since a read has been sent
+      if (src_store.state[iid][tid][bid] == OPERAND_STATE_DMA_PENDING) {
+        src_store.state[iid][tid][bid] = OPERAND_STATE_RESOLVED;
       }
 
       break;
@@ -545,6 +542,7 @@ void vMhdmaWorkerTask(void *pvParameters) {
   MhdmaCommand_t rxCmd;
   // Infinite loop for the task
   FOREVER {
+
     if ( OSAL_ERRORS_NONE == iOSAL_MBox_Pend( xMhdmaCommandMbox, (void*)&rxCmd, OSAL_TIMEOUT_WAIT_FOREVER) ) {
       mbox_msg_cnt += 1;
       switch (rxCmd.cmdID) {
@@ -603,19 +601,19 @@ void vMhdmaWorkerTask(void *pvParameters) {
           }
 
           // local b2b pool linked to this done IOp (for dst) are not needed anymore
-          uint16_t b2b_free_cnt = b2b_pool_free(iid);
-          //PLL_ERR("MhdmaWorker", "iop %d read src clean local b2bpool (%d slots)", iid, b2b_free_cnt);
+          (void)b2b_pool_free(iid);
           break;
 
         case MHDMA_CMD_PRINT_ERR:
-          PLL_ERR("MhdmaWorker", "info: %08x msg cnt: %d lost: %d", rxCmd.payload, mbox_msg_cnt, mbox_msg_lost_cnt);
-          //print_iop_state();
-          iOSAL_Task_SleepTicks(10);
+          print_ddr_debug(rxCmd.payload);
+          print_ddr_debug(rxCmd.debug & 0xFFFFFFFF);
+          print_ddr_debug((rxCmd.debug >> 32) & 0xFFFFFFFF);
           break;
 
         case MHDMA_CMD_PRINT_ACK:
-          PLL_ERR("MhdmaWorker", "ack: %08x", rxCmd.payload);
-          iOSAL_Task_SleepTicks(10);
+          print_ddr_debug(rxCmd.payload);
+          print_ddr_debug(rxCmd.debug & 0xFFFFFFFF);
+          print_ddr_debug((rxCmd.debug >> 32) & 0xFFFFFFFF);
           break;
 
         default:

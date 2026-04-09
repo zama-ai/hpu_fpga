@@ -5,13 +5,16 @@
 // Header and constants used by ucore firmware
 // ==============================================================================================
 
-//#include "pll.h"
 #include "hpu_dop_fmt.h"
 #include "hpu_iop_fmt.h"
 
 // Headers
 // ============================================================================================= //
 #include <stdio.h>
+
+#ifndef UCORE_MHDMA_SIMU
+#include "profile_hal.h"
+#endif
 
 #ifndef __UCORE_H__
 #define __UCORE_H__
@@ -24,6 +27,9 @@
 #define PLL_DBG( t, m, ... ) printf( m "\n", ##__VA_ARGS__ )  /* used for debug prints      */
 
 #define HAL_INVALIDATE_CACHE_DATA(a,b) printf("invalidate cache\n")
+#define iOSAL_Task_SleepTicks(n) while(0)
+#define vOSAL_EnterCritical() while(0);
+#define vOSAL_ExitCritical() while(0);
 #endif
 
 
@@ -83,14 +89,19 @@
 #define DST_STATE_READING     2 // dst remove read triggered but not done yet
 #define DST_STATE_RESOLVED    3 // dst locally available
 
-#define OPERAND_STATE_NONE         0 // no info on this operand
-#define OPERAND_STATE_READ_PENDING 1 // source/dst is needed and should be read as soon as IOp producing it is done or notify is received
-#define OPERAND_STATE_DMA_PENDING  2 // read request sent, waiting for data
-#define OPERAND_STATE_RESOLVED     3 // source/dst is ready locally
+#define OPERAND_STATE_NONE         5 // no info on this operand
+#define OPERAND_STATE_READ_PENDING 6 // source/dst is needed and should be read as soon as IOp producing it is done or notify is received
+#define OPERAND_STATE_DMA_PENDING  7 // read request sent, waiting for data
+#define OPERAND_STATE_RESOLVED     8 // source/dst is ready locally
 
 #define IOP_STATE_UNKNOWN  0xFF // iop unknown
 #define IOP_STATE_RUNNING  0xFE // iop running
 #define IOP_STATE_DONE     0    // iop finished
+
+#define DEBUG_PTR  0x7F00000
+#define DEBUG_ADDR 0x7F00004
+// 0x20000 uint32_t means max should be at 0x7F80004 (0x3FF80004)
+#define DEBUG_SIZE 0x20000
 
 typedef struct {
   uint8_t state;
@@ -150,6 +161,7 @@ typedef struct {
 
 // Hpu functions prototypes
 // ============================================================================================= //
+void print_ddr_debug(uint32_t data);
 void mhdma_table_reset(void);
 void iop_state_init(void);
 void iop_state_node_ack(uint8_t iid, uint8_t nb_hpu);

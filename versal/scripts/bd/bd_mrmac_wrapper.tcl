@@ -443,6 +443,7 @@ proc create_hier_cell_mrmac_wrapper  { parentCell nameHier } {
 
   # clocks
   set concat_4_clk_axis_mrmac  [create_bd_cell -type inline_hdl -vlnv xilinx.com:inline_hdl:ilconcat:1.0 concat_4_clk_axis_mrmac]
+  set concat_4_clk_ts          [create_bd_cell -type inline_hdl -vlnv xilinx.com:inline_hdl:ilconcat:1.0 concat_4_clk_ts]
   set concat_4_clk_mhdma_control [create_bd_cell -type inline_hdl -vlnv xilinx.com:inline_hdl:ilconcat:1.0 concat_4_clk_mhdma_control]
 
   set concat_4_rx_usr_clock  [create_bd_cell -type inline_hdl -vlnv xilinx.com:inline_hdl:ilconcat:1.0 concat_4_rx_usr_clock]
@@ -490,14 +491,20 @@ proc create_hier_cell_mrmac_wrapper  { parentCell nameHier } {
   connect_bd_net [get_bd_pins concat_4_pm_tick/Dout] [get_bd_pins mrmac_0_core/pm_tick]
 
 
-  # s_axis_mrmac_aclk to (tx_axi_clk & rx_axi_clk & tx_ts_clk & rx_ts_clk)
+  # s_axis_mrmac_aclk to (tx_axi_clk & rx_axi_clk)
   for {set i 0} {$i < 4} {incr i} {
     connect_bd_net [get_bd_pins s_axis_mrmac_aclk] [get_bd_pins concat_4_clk_axis_mrmac/In${i}]
   }
 
   connect_bd_net [get_bd_pins concat_4_clk_axis_mrmac/Dout] \
                   [get_bd_pins mrmac_0_core/tx_axi_clk] \
-                  [get_bd_pins mrmac_0_core/rx_axi_clk] \
+                  [get_bd_pins mrmac_0_core/rx_axi_clk]
+
+  # ts_clk: PTP unused, use apb3clk_quad (200 MHz) to satisfy MRMAC min period
+  for {set i 0} {$i < 4} {incr i} {
+    connect_bd_net [get_bd_pins apb3clk_quad] [get_bd_pins concat_4_clk_ts/In${i}]
+  }
+  connect_bd_net [get_bd_pins concat_4_clk_ts/Dout] \
                   [get_bd_pins mrmac_0_core/tx_ts_clk] \
                   [get_bd_pins mrmac_0_core/rx_ts_clk]
 

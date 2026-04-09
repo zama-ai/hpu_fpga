@@ -33,8 +33,9 @@
 // ================================================================================================
 
 module mhdma_formatter
-  import mhdma_pkg::*;            // multi-hpu-dma
-  import axi_if_mhdma_axi_pkg::*; // AXI4
+  import mhdma_pkg::*;                              // multi-hpu-dma
+  import axi_if_mhdma_axi_pkg::*;                   // AXI4
+  import axi_if_shell_axil_pkg::*;                  // REG_DATA_W
 (
   // Ethernet fast clock interface --------------------------------------------
   input  logic                                      clk_mhdma,
@@ -71,7 +72,8 @@ module mhdma_formatter
   output logic                                      qsfp_tx_tvalid,
   input  logic                                      qsfp_tx_tready,
   // statistics ---------------------------------------------------------------
-  output formatter_stat_t                           stat
+  output formatter_stat_t                           stat,
+  input  formatter_stat_rst_t                       stat_rst
 );
 
 // pragma translate_off
@@ -683,5 +685,27 @@ module mhdma_formatter
   // Statistics
   // =========================================================================================== //
   assign stat.fsm_formatter = tx_state;
+
+  // TX packet counters
+  localparam int NUM_FMT_STAT_CNTS = 4;
+  logic [NUM_FMT_STAT_CNTS-1:0][REG_DATA_W-1:0] fmt_stat_cnt;
+  logic [NUM_FMT_STAT_CNTS-1:0]                 fmt_stat_cnt_inc;
+  logic [NUM_FMT_STAT_CNTS-1:0]                 fmt_stat_cnt_rst;
+
+  assign fmt_stat_cnt_inc = {read_request_sent, notify_sent, notify_ack_sent, ciphertext_sent};
+  assign fmt_stat_cnt_rst = {stat_rst.cnt_read_req_sent, stat_rst.cnt_notify_sent, stat_rst.cnt_notify_ack_sent, stat_rst.cnt_ce_sent};
+
+  for (genvar gen_i = 0; gen_i < NUM_FMT_STAT_CNTS; gen_i++) begin : gen_fmt_stat_cnt
+    always_ff @(posedge clk_mhdma) begin
+      if (~resetn_mhdma)                  fmt_stat_cnt[gen_i] <= 'h0;
+      else if (fmt_stat_cnt_rst[gen_i])   fmt_stat_cnt[gen_i] <= 'h0;
+      else if (fmt_stat_cnt_inc[gen_i])   fmt_stat_cnt[gen_i] <= fmt_stat_cnt[gen_i] + 1;
+    end
+  end
+
+  assign stat.cnt_ce_sent         = fmt_stat_cnt[0];
+  assign stat.cnt_notify_ack_sent = fmt_stat_cnt[1];
+  assign stat.cnt_notify_sent     = fmt_stat_cnt[2];
+  assign stat.cnt_read_req_sent   = fmt_stat_cnt[3];
 
 endmodule

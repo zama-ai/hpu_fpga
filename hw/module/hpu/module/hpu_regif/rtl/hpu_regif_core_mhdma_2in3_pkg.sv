@@ -1,7 +1,7 @@
 // ============================================================================================== //
 // Description  : register  map address definition package
 // This file was generated with rust regmap generator:
-//  * Date:  2026-03-02
+//  * Date:  2026-04-02
 //  * Tool_version: 27d9e880d531030160fd8749c606142942d5558d
 // ---------------------------------------------------------------------------------------------- //
 //
@@ -113,6 +113,16 @@ package hpu_regif_core_mhdma_2in3_pkg;
   localparam int MHDMA_REQUEST_STAT_PHYSICAL_ADDR_PC1_LSB_OFS = 'h50170;
   localparam int MHDMA_REQUEST_STAT_PHYSICAL_ADDR_PC1_MSB_OFS = 'h50174;
   localparam int MHDMA_REQUEST_STAT_CNT_NB_WRITE_COMPLETE_OFS = 'h50178;
+  localparam int MHDMA_REQUEST_STAT_NB_NOTIFY_SENT_OFS = 'h5017c;
+  localparam int MHDMA_REQUEST_STAT_NB_CE_SENT_OFS = 'h50180;
+  localparam int MHDMA_REQUEST_STAT_NB_NOTIFY_ACK_SENT_OFS = 'h50184;
+  localparam int MHDMA_REQUEST_STAT_NB_READ_REQ_SENT_OFS = 'h50188;
+  localparam int MHDMA_REQUEST_STAT_T_HBM_WRITE_LATENCY_OFS = 'h5018c;
+  localparam int MHDMA_REQUEST_STAT_T_HBM_WRITE_LATENCY_MAX_OFS = 'h50190;
+  localparam int MHDMA_REQUEST_STAT_T_HBM_WRITE_LATENCY_MIN_OFS = 'h50194;
+  localparam int MHDMA_REQUEST_STAT_T_NOTIFY_TO_ACK_MIN_OFS = 'h50198;
+  localparam int MHDMA_REQUEST_STAT_T_RR_TO_CE_RECEIVED_MIN_OFS = 'h5019c;
+  localparam int MHDMA_REQUEST_STAT_NB_DECODER_DROPPED_OFS = 'h501a0;
   typedef struct packed {
     logic [(1-1):0] reset_registers;
     logic [(1-1):0] tx_loop;

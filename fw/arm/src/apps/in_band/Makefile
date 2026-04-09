@@ -8,10 +8,16 @@ all: $(TARGET)
 $(TARGET): ./mhdma_driver/main.c ./mhdma_driver/mhdma_driver.c ucore.c
 	$(CC) $(CFLAGS) -o $(TARGET) $(INCLUDES) ./mhdma_driver/main.c ./mhdma_driver/mhdma_driver.c ucore.c
 
-tests: $(TARGET)
+test33: $(TARGET)
 	./mhdma_fw tests/iop33.hex tests/iop33_dop0.hex 0 &
 	./mhdma_fw tests/iop33.hex tests/iop33_dop1.hex 1 &
 	. ./tests/start.bash
+
+test32: $(TARGET)
+	./mhdma_fw tests/iop32.hex tests/iop32_dop0.hex 0 &
+	./mhdma_fw tests/iop32.hex tests/iop32_dop1.hex 1 &
+	. ./tests/start.bash
+
 
 clean:
 	rm -f $(TARGET)
