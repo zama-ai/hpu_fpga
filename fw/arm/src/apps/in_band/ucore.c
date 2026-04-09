@@ -42,14 +42,12 @@ volatile uint32_t *debugZoneAddr = ( volatile uint32_t* )( HAL_RPU_SHARED_MEMORY
 uint32_t debugZonePtr = 0;
 
 void print_ddr_debug(uint32_t data) {
-  vOSAL_EnterCritical();
   volatile uint32_t* debug_idx = debugZoneAddr + (debugZonePtr % DEBUG_SIZE);
   *debug_idx = data;
   HAL_FLUSH_CACHE_DATA( (uintptr_t)debug_idx, sizeof(uint32_t));
   debugZonePtr += 1;
   *debugPtrAddr = (debugZonePtr % DEBUG_SIZE);
   HAL_FLUSH_CACHE_DATA( (uintptr_t)debugPtrAddr, sizeof(uint32_t));
-  vOSAL_ExitCritical();
 }
 #else
 void print_ddr_debug(uint32_t data) {
