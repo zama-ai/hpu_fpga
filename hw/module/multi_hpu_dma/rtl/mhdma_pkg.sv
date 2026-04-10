@@ -218,7 +218,7 @@ package mhdma_pkg;
   typedef struct packed {
     logic              rrqq_cmd_ovf_error;
     logic              nrqq_cmd_ovf_error;
-  } master_error_cfg_t; // only stucture in config clock
+  } master_error_cfg_t; // only structure in config clock
 
   // mhdma clock domain errors: will be CDC to cfg in multi_hpu_dma
   typedef struct packed {

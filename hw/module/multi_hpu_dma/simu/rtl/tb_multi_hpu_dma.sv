@@ -841,7 +841,7 @@ module tb_multi_hpu_dma;
     $display(" stat_t_rr_to_ce_received_max : %0d", stat_t_rr_to_ce_received_max);
     $display(" stat_nb_decoder_dropped      : %0d", stat_nb_decoder_dropped);
 
-    // checking that some stats registers are not zeors & correctly accessed
+    // checking that some stats registers are not zeros & correctly accessed
     assert (stat_t_notify_to_ack_min != 0 && stat_t_notify_to_ack_min != {REG_DATA_W{1'b1}}) else begin
       $display("%t > [ERROR] HPU_A: stat_t_notify_to_ack_min is uninitialized (%0d)", $time, stat_t_notify_to_ack_min);
       error_register = 1'b1;
@@ -957,7 +957,7 @@ module tb_multi_hpu_dma;
     $display(" stat_t_rr_to_ce_received_max : %0d", stat_t_rr_to_ce_received_max);
     $display(" stat_nb_decoder_dropped      : %0d", stat_nb_decoder_dropped);
 
-    // checking that some stats registers are not zeors & correctly accessed
+    // checking that some stats registers are not zeros & correctly accessed
     assert (stat_t_notify_to_ack_min != 0 && stat_t_notify_to_ack_min != {REG_DATA_W{1'b1}}) else begin
       $display("%t > [ERROR] HPU_B: stat_t_notify_to_ack_min is uninitialized (%0d)", $time, stat_t_notify_to_ack_min);
       error_register = 1'b1;
