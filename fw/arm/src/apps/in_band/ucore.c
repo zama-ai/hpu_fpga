@@ -42,14 +42,12 @@ volatile uint32_t *debugZoneAddr = ( volatile uint32_t* )( HAL_RPU_SHARED_MEMORY
 uint32_t debugZonePtr = 0;
 
 void print_ddr_debug(uint32_t data) {
-  vOSAL_EnterCritical();
   volatile uint32_t* debug_idx = debugZoneAddr + (debugZonePtr % DEBUG_SIZE);
   *debug_idx = data;
   HAL_FLUSH_CACHE_DATA( (uintptr_t)debug_idx, sizeof(uint32_t));
   debugZonePtr += 1;
   *debugPtrAddr = (debugZonePtr % DEBUG_SIZE);
   HAL_FLUSH_CACHE_DATA( (uintptr_t)debugPtrAddr, sizeof(uint32_t));
-  vOSAL_ExitCritical();
 }
 #else
 void print_ddr_debug(uint32_t data) {
@@ -85,19 +83,20 @@ void iop_state_node_ack(uint8_t iid, uint8_t nb_hpu) {
   }
 }
 
+// ugly debug fct (should not be used)
 void print_iop_state(void) {
     PLL_ERR("ucore", "[HPU%d] cur_iid %d state %d (-2 %d:%d -1 %d:%d +1 %d:%d +2 %d:%d)",
             phys_hpu_id,
             cur_iid,
             iop_state[cur_iid].state,
-            (cur_iid-2)%IOP_ID_MAX_COUNT,
-            iop_state[(cur_iid-2)%IOP_ID_MAX_COUNT].state,
-            (cur_iid-1)%IOP_ID_MAX_COUNT,
-            iop_state[(cur_iid-2)%IOP_ID_MAX_COUNT].state,
-            (cur_iid+1)%IOP_ID_MAX_COUNT,
-            iop_state[(cur_iid+1)%IOP_ID_MAX_COUNT].state,
-            (cur_iid+2)%IOP_ID_MAX_COUNT,
-            iop_state[(cur_iid+2)%IOP_ID_MAX_COUNT].state);
+            (uint8_t)(cur_iid-2),
+            iop_state[(uint8_t)(cur_iid-2)].state,
+            (uint8_t)(cur_iid-1),
+            iop_state[(uint8_t)(cur_iid-1)].state,
+            (uint8_t)(cur_iid+1),
+            iop_state[(uint8_t)(cur_iid+1)].state,
+            (uint8_t)(cur_iid+2),
+            iop_state[(uint8_t)(cur_iid+2)].state);
 }
 
 // B2B Pool
@@ -247,7 +246,7 @@ RemoteOperand_t *dst_notifyq_find(uint8_t iid, uint8_t dst_hpu_id, uint16_t dst_
   if (dst_notifyq_free_cnt == DST_NOTIFYQ_SIZE) {
     return NULL; // there is no dst in the queue
   }
-  uint16_t index = dst_notifyq_head;
+  uint16_t index = (dst_notifyq_head - 1) % DST_NOTIFYQ_SIZE;
   while (dst_notifyq[index].iid != iid
       || dst_notifyq[index].pos != dst_hpu_id
       || dst_notifyq[index].dst_cid != dst_cid) {
@@ -554,7 +553,7 @@ uint32_t parse_iop(
 
     if ((stream_pos*sizeof(uint32_t)) > iop_pending_bytes) {
       for (int i =0; i < 7; i++) {
-          PLL_ERR("parse_iop", "Fail parse_iop dsts", "@%d -> 0x%x", i, Xil_EndianSwap32(stream[i]));
+          PLL_ERR("parse_iop", "Fail parse_iop dsts @%d -> 0x%x", i, Xil_EndianSwap32(stream[i]));
       }
       PLL_ERR("parse_iop", "not enough bytes to reach last destination");
       return 0;
@@ -606,7 +605,7 @@ uint32_t parse_iop(
     stream_pos++;
     if ((stream_pos*sizeof(uint32_t)) > iop_pending_bytes) {
       for (int i =0; i < 7; i++) {
-          PLL_ERR("parse_iop", "Fail parse_iop srcs", "@%d -> 0x%x", i, Xil_EndianSwap32(stream[i]));
+          PLL_ERR("parse_iop", "Fail parse_iop srcs @%d -> 0x%x", i, Xil_EndianSwap32(stream[i]));
       }
       PLL_ERR("parse_iop", "not enough bytes to reach last source");
       return 0;
@@ -640,7 +639,7 @@ uint32_t parse_iop(
 
       if ((stream_pos*sizeof(uint32_t)) > iop_pending_bytes) {
         for (int i =0; i < 7; i++) {
-            PLL_ERR("parse_iop", "Fail parse_iop imms", "@%d -> 0x%x", i, Xil_EndianSwap32(stream[i]));
+            PLL_ERR("parse_iop", "Fail parse_iop imms @%d -> 0x%x", i, Xil_EndianSwap32(stream[i]));
         }
         PLL_ERR("parse_iop", "not enough bytes to reach last immediate");
         return 0;
@@ -873,7 +872,9 @@ int patch_mem_dop(DOpu_t *dop, OperandBundle_t *iop_dst, OperandBundle_t *iop_sr
         dop->mem.slot = iop_dst->operand[tid].cid_ofst + bid;
         dst_store.state[cur_iid][tid][bid] = DST_STATE_RESOLVED;
       } else {
+        vOSAL_EnterCritical();
         uint16_t local_cid = b2b_pool_pop(cur_iid);
+        vOSAL_ExitCritical();
         if (local_cid == 0xFFFF) {
           PLL_ERR("patch_mem_dop", "Could not get a free slot in b2b_pool (%04x,%04x,%d)", b2b_pool_head, b2b_pool_tail, b2b_pool_free_cnt);
           break;

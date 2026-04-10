@@ -280,7 +280,6 @@ uint64_t ullAmcInitStatus = 0;
 uint64_t isc_intr_global_cnt = 0;
 uint64_t debug_intr_global_cnt = 0;
 uint64_t intr_notify_cnt = 0;
-uint32_t intr_notify_data = 0;
 uint64_t intr_readc_cnt = 0;
 uint32_t mbox_msg_lost_cnt = 0;
 uint32_t mbox_msg_cnt = 0;
@@ -417,16 +416,16 @@ void vInterruptHandler_mhdma_notify( void* pvCallBackRef ) {
     // is also the nb_hpu in CMD_SRC
     uint8_t flag = notify.fields.flag;
 
-    int current_ack_cnt = read_isc_ack_cnt();
-
-    // This is a debug msg to print received notify
-    MhdmaCommand_t cmd;
-    cmd.cmdID = MHDMA_CMD_PRINT_ERR;
-    cmd.payload = (iid << 24 | (notify.fields.src_cid & 0xF) << 20 | slave_hpu_id << 16 | mode << 8 | flag);
-    cmd.debug   = notify_data;
-    if (xMhdmaCommandMbox) {
-      if (iOSAL_MBox_PostFromISR(xMhdmaCommandMbox, (void*)&cmd) != 0) {
-        mbox_msg_lost_cnt+=1;
+    if (debug_intr_global_cnt%2 == 1) {
+      // This is a debug msg to print received notify
+      MhdmaCommand_t cmd;
+      cmd.cmdID = MHDMA_CMD_PRINT_ERR;
+      cmd.payload = (iid << 24 | (notify.fields.src_cid & 0xF) << 20 | slave_hpu_id << 16 | mode << 8 | flag);
+      cmd.debug   = notify_data;
+      if (xMhdmaCommandMbox) {
+        if (iOSAL_MBox_PostFromISR(xMhdmaCommandMbox, (void*)&cmd) != 0) {
+          mbox_msg_lost_cnt+=1;
+        }
       }
     }
 
@@ -500,14 +499,16 @@ void vInterruptHandler_mhdma_read_complete( void* pvCallBackRef ) {
   uint8_t tid = rc.fields.flag;
   uint8_t bid = (rc.fields._pad & 0xFF);
 
-  // This is a debug msg to print received read complete
-  MhdmaCommand_t cmd;
-  cmd.cmdID = MHDMA_CMD_PRINT_ERR;
-  cmd.payload = (iid << 24 | mode << 20 | src_store.state[iid][tid][bid] << 16  | flag << 8 | rc.fields._pad) | 0x80000000;
-  cmd.debug   = rc_data;
-  if (xMhdmaCommandMbox) {
-    if (iOSAL_MBox_PostFromISR(xMhdmaCommandMbox, (void*)&cmd) != 0) {
-      mbox_msg_lost_cnt+=1;
+  if (debug_intr_global_cnt%2 == 1) {
+    // This is a debug msg to print received read complete
+    MhdmaCommand_t cmd;
+    cmd.cmdID = MHDMA_CMD_PRINT_ERR;
+    cmd.payload = (iid << 24 | mode << 20 | src_store.state[iid][tid][bid] << 16  | flag << 8 | rc.fields._pad) | 0x80000000;
+    cmd.debug   = rc_data;
+    if (xMhdmaCommandMbox) {
+      if (iOSAL_MBox_PostFromISR(xMhdmaCommandMbox, (void*)&cmd) != 0) {
+        mbox_msg_lost_cnt+=1;
+      }
     }
   }
 
@@ -546,7 +547,7 @@ void vMhdmaWorkerTask(void *pvParameters) {
     if ( OSAL_ERRORS_NONE == iOSAL_MBox_Pend( xMhdmaCommandMbox, (void*)&rxCmd, OSAL_TIMEOUT_WAIT_FOREVER) ) {
       mbox_msg_cnt += 1;
       switch (rxCmd.cmdID) {
-        case MHDMA_CMD_IOP_TEARDOWN:
+        case MHDMA_CMD_IOP_TEARDOWN: {
           DOpu_t dop;
           dop.raw = rxCmd.payload;
           uint8_t ack_iid = dop.sync.iid;
@@ -564,8 +565,9 @@ void vMhdmaWorkerTask(void *pvParameters) {
           *toAmiIopAckqHead = ackq_head;
           HAL_FLUSH_CACHE_DATA( (uintptr_t)toAmiIopAckqHead, sizeof(uint32_t));
           break;
+        }
 
-        case MHDMA_CMD_IOP_READSRC:
+        case MHDMA_CMD_IOP_READSRC: {
           uint8_t iid = (rxCmd.payload >> 24) & 0xFF;
           uint8_t hpu_id = (rxCmd.payload >> 16) & 0xFF;
           uint8_t mode = (rxCmd.payload >> 8) & 0xFF;
@@ -603,18 +605,19 @@ void vMhdmaWorkerTask(void *pvParameters) {
           // local b2b pool linked to this done IOp (for dst) are not needed anymore
           (void)b2b_pool_free(iid);
           break;
+        }
 
-        case MHDMA_CMD_PRINT_ERR:
+        case MHDMA_CMD_PRINT_ERR: {
           print_ddr_debug(rxCmd.payload);
           print_ddr_debug(rxCmd.debug & 0xFFFFFFFF);
           print_ddr_debug((rxCmd.debug >> 32) & 0xFFFFFFFF);
           break;
+        }
 
-        case MHDMA_CMD_PRINT_ACK:
+        case MHDMA_CMD_PRINT_ACK: {
           print_ddr_debug(rxCmd.payload);
-          print_ddr_debug(rxCmd.debug & 0xFFFFFFFF);
-          print_ddr_debug((rxCmd.debug >> 32) & 0xFFFFFFFF);
           break;
+        }
 
         default:
           PLL_ERR("MhdmaWorker", "rcv mhdma cmd unknown %d %08x", rxCmd.cmdID, rxCmd.payload);
