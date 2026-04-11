@@ -819,8 +819,34 @@ static void vTaskFuncMain( void )
     Lookup_t dop_entry;
     DOpu_t   dop;
     bool stop_consuming_iop = false;
+    uint16_t loop_cnt = 0;
 
     FOREVER {
+        // ----------------------------------------------------------------------------------------
+        // read ucore config from hpu-backend regularly
+        // and reset internal structure if timestamp has changed (new hpu-backend run)
+        // each x10 loop means ~1ms because each loop sleeps 1 tick ~= 100us
+        if ((loop_cnt % 10) == 0) {
+            // Update ucore configuration
+            updt_ucore_cfg(&ucore_cfg);
+            phys_hpu_id = ucore_cfg.node_id;
+            uint32_t new_timestamp = ucore_cfg.timestamp;
+            cluster_first_nid = ucore_cfg.cluster_first_nid;
+            cluster_last_nid = ucore_cfg.cluster_last_nid;
+            b2b_pool_start_addr = ucore_cfg.ct_user_size;
+            b2b_pool_size = ucore_cfg.b2b_size;
+
+            if (timestamp != new_timestamp) { // this means user SW (tfhe-rs) has been restarted
+                PLL_DBG("parse_iop", "timestamp %d changed => reset inter-HPU struct", new_timestamp);
+                timestamp = new_timestamp;
+                mhdma_table_reset();
+                b2b_pool_init();
+                dst_notifyq_init();
+                src_store_init();
+                dst_store_init();
+            }
+        }
+
         // ----------------------------------------------------------------------------------------
         // Second handle IOp queue containing IOp pushed by AMI driver
         // Update queue pointer
@@ -848,24 +874,6 @@ static void vTaskFuncMain( void )
             }
             PLL_INF("AMC", "Fw received IOP request, translation into DOP needed [head 0x%x; tail 0x%x]", iopq_head, iopq_tail);
 
-            // Update ucore configuration
-            updt_ucore_cfg(&ucore_cfg);
-            phys_hpu_id = ucore_cfg.node_id;
-            uint32_t new_timestamp = ucore_cfg.timestamp;
-            cluster_first_nid = ucore_cfg.cluster_first_nid;
-            cluster_last_nid = ucore_cfg.cluster_last_nid;
-            b2b_pool_start_addr = ucore_cfg.ct_user_size;
-            b2b_pool_size = ucore_cfg.b2b_size;
-
-            if (timestamp != new_timestamp) { // this means user SW (tfhe-rs) has been restarted
-                PLL_DBG("parse_iop", "timestamp %d changed => reset inter-HPU struct", new_timestamp);
-                timestamp = new_timestamp;
-                mhdma_table_reset();
-                b2b_pool_init();
-                dst_notifyq_init();
-                src_store_init();
-                dst_store_init();
-            }
 
             // 1. Compute bytes to read from queue
             uint32_t read_bytes = (iopq_used_bytes > IOP_MAX_BYTES)? IOP_MAX_BYTES: iopq_used_bytes;
@@ -992,6 +1000,7 @@ static void vTaskFuncMain( void )
         }
         // Give hand back to scheduler for other tasks
         iOSAL_Task_SleepTicks(1);
+        loop_cnt+=1;
     }
 }
 
