@@ -971,9 +971,16 @@ module mhdma_master
 
   // Credit-clamped burst length ------------------------------------------------------------------
   //  Final burst length = min(computed_burst_len, pc_credits_r).
-  //  Ensures we never issue a burst larger than the data currently received from the network.
-  //  If pc_credits_r == 0 (no data available yet), effective_burst_len_r == 0, which deasserts
-  //  awvalid and stalls the burst FSM in BURST_AW until more packets arrive.
+  //  pc_credits_r = words authorized by validated packet headers, minus words already
+  //  committed by previous bursts. Clamping AW to this bound prevents issuing bursts
+  //  beyond what packets have authorized, keeping in-flight credit (and required RX
+  //  buffering) bounded.
+  //  It does NOT by itself prevent W-channel underrun once AW is accepted :
+  //  continuous wvalid relies on the RX deserializer keeping the elastic buffer fed
+  //  (w_buf_vld high) for the duration of the burst.
+  //  If pc_credits_r == 0, effective_burst_len_r == 0 and axi_a_awvalid stays low,
+  //  stalling the FSM in BURST_AW until more packets are validated.
+
   logic [AXI4_LEN_W:0] effective_burst_len;
   logic [AXI4_LEN_W:0] effective_burst_len_r;
 

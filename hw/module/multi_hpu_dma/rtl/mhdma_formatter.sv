@@ -297,9 +297,9 @@ module mhdma_formatter
   logic okay_to_send_request;          // level between start of / end of packet
   logic small_packet;                  // level of a small packet (notify & ack + read request)
 
-  logic tx_header_last; // last header word
-  logic tx_small_last;  // last word of a small packet
-  logic tx_last_word;   // pulse on last word
+  logic tx_header_last; // pulse when tx_cnt == NB_WORDS_CUST_HEADER_SIZE (4): end of the 4-word custom header
+  logic tx_small_last;  // pulse when tx_cnt == NB_WORDS_MIN (8): end of a small packet (notify/ack/read-req: header + zero-padding)
+  logic tx_last_word;   // pulse at end of a CE frame: tx_cnt == NB_WORDS_FULL (or NB_WORDS_PARTIAL on last packet)
 
   // Signals feeding the output AXI-Stream buffer (fifo_element_qsfp)
   logic                     tx_tlast_D;
@@ -519,7 +519,7 @@ module mhdma_formatter
   logic [        MRMAC_AXIS_BYTES-1:0] tx_byte_enable;
   logic [        MRMAC_AXIS_BYTES-1:0] tx_byte_enable_d;
 
-  assign tx_byte_enable_d = (last_word_bytes == 0) ? {MRMAC_AXIS_BYTES{1'b1}} : 8'(1 << last_word_bytes) - 1;
+  assign tx_byte_enable_d = (last_word_bytes == 0) ? {MRMAC_AXIS_BYTES{1'b1}} : MRMAC_AXIS_BYTES'(1 << last_word_bytes) - 1;
 
   always_ff @(posedge clk_mhdma) begin
     if (~resetn_mhdma) begin
@@ -543,8 +543,10 @@ module mhdma_formatter
   // Building packets
   // =========================================================================================== //
   // Ciphertext emission --------------------------------------------------------------------------
-  // we need to stall words coming from ciphertext emission to build headers
-  logic ce_stalling; // level: up when we need to send header between packets
+  // MRMAC drops frames on tvalid gaps mid-frame: between two CE frames, stall CE FIFO reads
+  // while the next inter-frame header is emitted so the payload stream stays gap-free.
+  // (The very first header is sent at start of CT emission, before any payload — see ce_first_header.)
+  logic ce_stalling; // level: high during inter-frame header window
   logic ce_stalling_tmp;
   logic ce_header_pending;
 
@@ -585,7 +587,8 @@ module mhdma_formatter
   // level active when we have headers on ciphertext emission
   assign ce_header_valid = (ce_first_header | ce_stalling);
 
-  // backpressure over ciphertext coefficients
+  // CE FIFO read-enable (gating, not true backpressure): pop a coefficient only when MRMAC
+  // is ready, FSM is in CT emission, first header is sent, and not in inter-frame header window.
   assign ce_fifo_rdy = tx_tready & st_ct_emission & ce_first_header_sent & ~ce_stalling;
 
   // =========================================================================================== //

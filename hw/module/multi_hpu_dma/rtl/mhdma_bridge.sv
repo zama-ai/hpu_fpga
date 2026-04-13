@@ -176,7 +176,8 @@ module mhdma_bridge
     end
   end
 
-  // just to simplify notations
+  // hpu_index : position of the set bit in one_hot_id (regf_hpu_ids[].bit[31]).
+  // Used as MAC table index and, by SW convention, as current_hpu_id.
   logic [          HPU_ID_W-1:0] current_hpu_idD;
   logic [        MAC_ADDR_W-1:0] current_hpu_macD;
   logic [$clog2(NB_MAX_HPU)-1:0] hpu_index;
