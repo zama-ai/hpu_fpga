@@ -709,20 +709,20 @@ static void vTaskFuncMain( void )
     if ( OSAL_ERRORS_NONE != iOSAL_MBox_Create(&xMhdmaCommandMbox, 1024, sizeof(MhdmaCommand_t),"Mhdma Queue") ) {
        PLL_ERR( AMC_NAME, "failed creating MHDMA MBOX\r\n" );
     } else {
-       PLL_ERR( AMC_NAME, "MHDMA MBOX initialised\r\n" );
+       PLL_INF( AMC_NAME, "MHDMA MBOX initialised\r\n" );
     }
 
     if ( OSAL_ERRORS_NONE != iOSAL_Task_Create(&xMhdmaWorkerTask, vMhdmaWorkerTask, 4096, NULL, AMC_TASK_PRIO_DEFAULT, "Mhdma Worker") ) {
        PLL_ERR( AMC_NAME, "failed creating MHDMA worker task\r\n" );
     } else {
-       PLL_ERR( AMC_NAME, "MHDMA worker task initialised\r\n" );
+       PLL_INF( AMC_NAME, "MHDMA worker task initialised\r\n" );
     }
 
     // Initialise Interrupts
     if( OSAL_ERRORS_NONE != iOSAL_Interrupt_Setup( XPAR_FABRIC_RTL_INTERRUPT_1_INTR, vInterruptHandler_isc_ack, NULL ) ) {
        PLL_ERR( AMC_NAME, "failed init isc interruption\r\n" );
     } else {
-       PLL_ERR( AMC_NAME, "interrupt handler on isc interrupt initialised\r\n" );
+       PLL_INF( AMC_NAME, "interrupt handler on isc interrupt initialised\r\n" );
     }
     XScuGic_SetPriorityTriggerType(
        &xInterruptController,
@@ -733,7 +733,7 @@ static void vTaskFuncMain( void )
     if( OSAL_ERRORS_NONE != iOSAL_Interrupt_Enable( XPAR_FABRIC_RTL_INTERRUPT_1_INTR) ) {
        PLL_ERR( AMC_NAME, "failed enabling isc interrupt\r\n" );
     } else {
-       PLL_ERR( AMC_NAME, "enabling isc interrupt on rising edge\r\n" );
+       PLL_INF( AMC_NAME, "enabling isc interrupt on rising edge\r\n" );
     }
     if( OSAL_ERRORS_NONE != iOSAL_Interrupt_Setup( XPAR_FABRIC_RTL_INTERRUPT_0_INTR, vInterruptHandler_debug, NULL ) ) {
        PLL_ERR( AMC_NAME, "failed init interrupt hpu_interrupt[0](debug)\r\n" );
