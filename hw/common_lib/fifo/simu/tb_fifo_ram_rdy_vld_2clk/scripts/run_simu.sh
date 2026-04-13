@@ -62,7 +62,7 @@ echo -n "" > $TMP_FILE
 for i in `seq 1 15`; do
   # TODO: ram latency cannot be modified right now
   # Depth must be a power of two !
-  depth=$((1 << (RANDOM % 12 + 3)))
+  depth=$((1 << (RANDOM % 12 + 4)))
   CLK_HALF_PERIOD_A=$((RANDOM % 9 + 1))
   CLK_HALF_PERIOD_B=$((RANDOM % 9 + 1))
 
