@@ -263,13 +263,6 @@ src_store_t src_store;
 
 void src_store_init(void) {
   memset(src_store.state, OPERAND_STATE_NONE, sizeof(src_store.state));
-  //for (int i = 0; i < IOP_ID_MAX_COUNT; i++) {
-  //  for (int j = 0; j < MAX_DST_VARS; j++) {
-  //    for (int k = 0; k < MAX_VAR_BLKS; k++) {
-  //      src_store.state[i][j][k] = OPERAND_STATE_NONE;
-  //    }
-  //  }
-  //}
 }
 
 void src_store_reset_iop(uint8_t iid) {
@@ -288,10 +281,6 @@ void src_store_inits(uint8_t iid, OperandBundle_t *iop_src) {
         src_store.state[iid][i][k] = OPERAND_STATE_NONE;
       }
     }
-    // useless but ... to remove
-    //for (int j = blk_start; j < MAX_VAR_BLKS; j++) {
-    //  src_store.state[iid][i][j] = OPERAND_STATE_NONE;
-    //}
   }
 }
 
@@ -505,7 +494,6 @@ void iop_teardown(uint8_t iid) {
 // Parse an IOp from stream
 // returns the number of bytes used by parsed IOp
 // Currently there is no way to report error back to host -> No check are implemented during parsing
-// TODO implement error return through ACKQ and implement check during parsing
 uint32_t parse_iop(
      uint32_t *stream,
      uint32_t iop_pending_bytes,
@@ -982,8 +970,6 @@ int process_ucore_dop(DOpu_t *dop, OperandBundle_t *iop_src, uint32_t *dop_buffe
     }
     case DOPS_WAIT: {
       bool data_required = (dop->ucore.hid != 0);
-      //PLL_DBG("ucore", "[HPU%d] process wait %08x on iop_id %d flag %d state %d", phys_hpu_id, dop->raw, cur_iid, dop->ucore.flag, mhdma_table_state[cur_iid][current_flag]);
-      //iOSAL_Task_SleepTicks(100);
       // if we need to wait, flush
 #ifndef UCORE_MHDMA_SIMU
       if ((dop_buffer_pos%DOP_BUFFER_SIZE) > MIN_DOP_FLUSH

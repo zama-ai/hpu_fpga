@@ -38,12 +38,14 @@ extern mhdma_element_t mhdma_table[IOP_ID_MAX_COUNT][FLAG_MAX_COUNT];
   volatile uint32_t *cmd_req_id = (volatile uint32_t*)(XPAR_AXI_LPD_BASEADDR + MHDMA_CMD_WRITE_REQ_ID );
   volatile uint32_t *cmd_req_addr = (volatile uint32_t*)(XPAR_AXI_LPD_BASEADDR + MHDMA_CMD_WRITE_REQ_ADDR );
 
+  // XPAR_AXI_LPD_BASEADDR is in MMU region 1 that is non-cachaeble => no need for cache flush
+  // xsdb% rwr cp15 c6 mpumrnr 1                                                                                                                                                           // xsdb% rrd cp15 c6
+  //    dfar: 00000000     ifar: 00000000  mpurbar: 80000000  mpurser: 0000003b
+  // mpuracr: 00000300  mpumrnr: 00000001
   void write_notify_command(uint8_t slave_hpu_id, uint64_t cmd) {
     (void)slave_hpu_id;
     *cmd_req_id = cmd & 0xFFFFFFFF;
-    HAL_FLUSH_CACHE_DATA( (uintptr_t)cmd_req_id, sizeof(uint32_t));
     *cmd_req_addr = (cmd >> 32) & 0xFFFFFFFF;
-    HAL_FLUSH_CACHE_DATA( (uintptr_t)cmd_req_addr, sizeof(uint32_t));
   }
   void write_read_req_command(uint8_t master_hpu_id, uint64_t cmd) {
     write_notify_command(master_hpu_id, cmd);

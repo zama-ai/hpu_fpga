@@ -376,9 +376,6 @@ void vInterruptHandler_isc_ack( void* pvCallBackRef ) {
             popped_iop_ack = pop_isc_ack();
         }
     }
-    // not clear this changes anything
-    //BaseType_t xHigherPriorityTaskWoken = pdTRUE;
-    //portYIELD_FROM_ISR( xHigherPriorityTaskWoken );
 }
 
 /*
@@ -400,9 +397,7 @@ void vInterruptHandler_mhdma_notify( void* pvCallBackRef ) {
     uint32_t notify_tmp_req_id = 0;
     uint32_t notify_tmp_req_addr = 0;
     // read request::notify 0x50108
-    HAL_INVALIDATE_CACHE_DATA( (uintptr_t)(XPAR_AXI_LPD_BASEADDR + MHDMA_NOTIFY_DATA_REQ_ADDR) , sizeof(uint32_t) );
     notify_tmp_req_addr = * (volatile uint32_t *) (XPAR_AXI_LPD_BASEADDR + MHDMA_NOTIFY_DATA_REQ_ADDR);
-    HAL_INVALIDATE_CACHE_DATA( (uintptr_t)(XPAR_AXI_LPD_BASEADDR + MHDMA_NOTIFY_DATA_REQ_ID) , sizeof(uint32_t) );
     notify_tmp_req_id = * (volatile uint32_t *) (XPAR_AXI_LPD_BASEADDR + MHDMA_NOTIFY_DATA_REQ_ID);
     notify_data = (((uint64_t)notify_tmp_req_addr) << 32) | notify_tmp_req_id;
     // read register
@@ -481,9 +476,7 @@ void vInterruptHandler_mhdma_read_complete( void* pvCallBackRef ) {
   uint32_t rc_tmp_req_id = 0;
   uint32_t rc_tmp_req_addr = 0;
   // read request::rc 0x50108
-  HAL_INVALIDATE_CACHE_DATA( (uintptr_t)(XPAR_AXI_LPD_BASEADDR + MHDMA_READ_DONE_DATA_REQ_ADDR) , sizeof(uint32_t) );
   rc_tmp_req_addr = * (volatile uint32_t *) (XPAR_AXI_LPD_BASEADDR + MHDMA_READ_DONE_DATA_REQ_ADDR);
-  HAL_INVALIDATE_CACHE_DATA( (uintptr_t)(XPAR_AXI_LPD_BASEADDR + MHDMA_READ_DONE_DATA_REQ_ID) , sizeof(uint32_t) );
   rc_tmp_req_id = * (volatile uint32_t *) (XPAR_AXI_LPD_BASEADDR + MHDMA_READ_DONE_DATA_REQ_ID);
   rc_data = (((uint64_t)rc_tmp_req_addr) << 32) | rc_tmp_req_id;
   // read register
