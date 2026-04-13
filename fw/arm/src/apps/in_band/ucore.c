@@ -934,7 +934,7 @@ uint16_t get_raw_ct_id(DOpu_t *dop) {
       raw_ct_id = dop->ucore.slot;
       break;
     }
-    case MEM_HEAP: { // Heap templateb
+    case MEM_HEAP: { // Heap template
       // Replace Heap offset by concrete addr and toggle the mode
       raw_ct_id = HEAP_START_SLOT - dop->ucore.slot;
       dop->ucore.mode = MEM_ADDR;

@@ -1,3 +1,12 @@
+// ==============================================================================================
+// BSD 3-Clause Clear License
+// Copyright © 2025 ZAMA. All rights reserved.
+// ----------------------------------------------------------------------------------------------
+// Host-side bench harness simulating one HPU running the MHDMA firmware.
+// Inter-HPU transport is replaced by named pipes (/tmp/hpu_<id>); ISR-style handlers
+// dispatch notify / read-complete / ack events through the real driver state machines.
+// ==============================================================================================
+
 #include <stdint.h>
 #include <unistd.h>
 #include <stdio.h>
@@ -83,7 +92,7 @@ void interrupt_notify_handler(uint64_t notify_data) {
           src_addr = src_store_get_waiting(cur_iid, iid);
           tid = (src_addr >> 8) & 0xFF;
           bid = (src_addr & 0xFF);
- 	}
+       	}
 
         uint16_t b2b_free_cnt = b2b_pool_free(iid);
         printf("iop_teardown free b2b_pool slots: %d\n", b2b_free_cnt);

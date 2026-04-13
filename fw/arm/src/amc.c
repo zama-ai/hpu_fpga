@@ -1658,7 +1658,7 @@ static void updt_ucore_cfg(UcoreCfg_t* cfg)
   // Invalidate cache
   HAL_INVALIDATE_CACHE_DATA( (uintptr_t)DOP_FW_ADDR , FW_RUNTIME_MAX_WORD * sizeof(uint32_t));
   // Read value
-  // NB: pvOSAL_MemCpy seems completly bugged on small size. replace it with explicit pointer read
+  // NB: pvOSAL_MemCpy seems completely bugged on small size. replace it with explicit pointer read
   // pvOSAL_MemCpy((void*)DOP_FW_ADDR, (void*) cfg, sizeof(UcoreCfg_t));
   *cfg = *((volatile UcoreCfg_t*) DOP_FW_ADDR);
 }
