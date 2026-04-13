@@ -1662,4 +1662,3 @@ static void updt_ucore_cfg(UcoreCfg_t* cfg)
   // pvOSAL_MemCpy((void*)DOP_FW_ADDR, (void*) cfg, sizeof(UcoreCfg_t));
   *cfg = *((volatile UcoreCfg_t*) DOP_FW_ADDR);
 }
-
