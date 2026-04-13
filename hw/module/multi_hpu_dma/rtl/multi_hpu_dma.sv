@@ -12,7 +12,7 @@
 //   - clk_mhdma_cfg : slow configuration clock (AXI4-Lite, register file, request handling)
 //   - clk_mhdma     : fast Ethernet clock (QSFP datapath & HBM AXI4 interfaces)
 // clk_mhdma's frequency depends on MRMAC axi interface. Here we chose to be in "independent
-// Non-Segmented 25GE 64 bit". AXI4 stream size (64) is arbitrary, the rest is mandatory.
+// Non-Segmented 25GE 64 bit".
 //
 // Interfaces:
 //   - AXI4-Lite slave  : register file access from host / RPU
