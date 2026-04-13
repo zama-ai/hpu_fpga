@@ -19,8 +19,8 @@
 // - If the command FIFO overflows, incoming commands are silently dropped and error_fifo_rx_ovf is
 //    raised, sticky until read (rst_errors).
 // - ETH LEN is only used for packet handling outside FPGA, we ignore it here
-// - A packet with an unrecognized req_id, registers dst_mac_addr and req_id but generates
-//    no command & increments no counter.
+// - A packet with an unrecognized req_id (or mismatched MAC) registers dst_mac_addr and
+//    req_id but generates no command; it increments the cnt_dropped counter.
 // - Stat counters (cnt_*) are REG_DATA_W wide and wrap on overflow.
 //
 // ================================================================================================

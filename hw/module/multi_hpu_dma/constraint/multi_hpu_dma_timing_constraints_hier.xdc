@@ -55,10 +55,10 @@ set_property ram_style "block" [get_cells -hier -filter {NAME =~ *mhdma_decoder/
 # # Master: ciphertext RX FIFO (depth=CT_NB_COEF=2049, MRMAC_AXIS_W=64b, ~131Kb)
 # set_property ram_style "block" [get_cells -hier -filter {NAME =~ *mhdma_master/*fifo_ce_rx/ram/ram_1R1W/ram_1R1W_core/a_reg*}]
 
-# Slave: per-PC read data buffer (depth=FIFO_PC_DEPTH=CT_NB_WORDS_AXI4/2=256, AXI4_DATA_W=256b, ~64Kb)
+# Slave: per-PC read data buffer (depth=FIFO_PC_DEPTH=CT_NB_WORDS_AXI4/2, width=AXI4_DATA_W; total ~CT_SIZE/2 = ~64Kb regardless of AXI4_DATA_W)
 set_property ram_style "block" [get_cells -hier -filter {NAME =~ *mhdma_slave/*fifo_pc_read/ram/ram_1R1W/ram_1R1W_core/a_reg*}]
 
-# Slave: ciphertext emission FIFO (depth=PAGE_AXI4_DATA*NB_MRMAC_WORDS_PER_READ=512, MRMAC_AXIS_W=64b, ~32Kb)
+# Slave: ciphertext emission FIFO (depth=CT_NB_COEF=2049, MRMAC_AXIS_W=64b, ~131Kb)
 set_property ram_style "block" [get_cells -hier -filter {NAME =~ *mhdma_slave/*fifo_ce/ram/ram_1R1W/ram_1R1W_core/a_reg*}]
 
 # Formatter: ciphertext store-and-forward FIFO (depth=NB_WORDS_PAYLOAD=184, MRMAC_AXIS_W=64b, ~11.5Kb)

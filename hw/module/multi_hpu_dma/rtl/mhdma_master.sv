@@ -818,7 +818,7 @@ module mhdma_master
 
   // deser_word_next is only here to avoid one clock cycle bubble :
   // It takes combinationally the register "deser_word" but updates previous word space (deser_cnt*MRMAC_AXIS_W +: MRMAC_AXIS_W).
-  // When deser_last_beat we skip the register and instead we take deser_word_next wit all AXI4_DATA_W/MRMAC_AXIS_W words
+  // When deser_last_beat we skip the register and instead we take deser_word_next with all AXI4_DATA_W/MRMAC_AXIS_W words
   always_comb begin
     deser_word_next = deser_word;
     deser_word_next[deser_cnt*MRMAC_AXIS_W +: MRMAC_AXIS_W] = fifo_cerx_out_data;

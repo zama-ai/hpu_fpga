@@ -320,7 +320,7 @@ module mhdma_formatter
   logic ce_first_header;      // level: up for first packet header (used for tx & backpressure)
   logic ce_first_header_sent; // level: up when first packet header has been sent
   logic ce_last_packet;       // level: up when last packet is transmitting
-  logic ce_end_of_packet;     // pulse: asserted on any stop condition (OR of all stop signals)
+  logic ce_end_of_packet;     // pulse: asserted when CE last packet has been fully transmitted (ce_last_packet & tx_tlast_D)
   logic ce_start_of_header;   // pulse: header transmission for all packets
   logic ce_start_emission;    // pulse: start of first header transmission
   logic ce_sop_header;        // pulse: start-of headers between packets

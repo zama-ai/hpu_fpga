@@ -11,7 +11,7 @@
 // Architecture overview:
 //   - There are two FSMs : NRX (Notify RX) & CEM (Ciphertext EMission)
 //   - A CDC FIFO (fifo_nrx_regf) bridges notify information from clk_mhdma to clk_mhdma_cfg.
-//   - If fifo_nrx_regf is full we don't consume words from decoder FIFO
+//   - If fifo_nrx_commands is full we don't consume words from decoder FIFO
 //   - PCs are processed sequentially (ar_pc_onehot / rd_pc_onehot), so a single
 //     shared burst FSM, fifo_element, fifo_ram_rdy_vld and serialization pipeline is used.
 //     Per-PC AXI4 IO is muxed/demuxed based on the active PC index.

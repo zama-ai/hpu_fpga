@@ -192,7 +192,7 @@ module mhdma_bridge
   assign current_hpu_macD = (one_hot_id==0) ? 'h0 : hpu_mac_table[hpu_index];
   assign current_hpu_idD  = (one_hot_id==0) ? 'h0 : HPU_ID_W'(hpu_index);
 
-  // theses two registers are here to ease P&R
+  // these two registers are here to ease P&R
   logic [  HPU_ID_W-1:0] current_hpu_id;
   logic [MAC_ADDR_W-1:0] current_hpu_mac;
 
