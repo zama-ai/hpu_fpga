@@ -166,37 +166,37 @@ module tb_mhdma_pkt_loss;
   // HPUs
   logic [NB_HPU-1:0][MAC_ADDR_W-1:0] mac_addr_l;
 
-  // AXI4 to HBM: HPUA ----------------------------------------------------------------------------
-  logic [ETH_PC-1:0][AXI4_ID_W-1:0]       axi4_ct_awid;
-  logic [ETH_PC-1:0][AXI4_ADD_W-1:0]      axi4_ct_awaddr;
-  logic [ETH_PC-1:0][7:0]                 axi4_ct_awlen;
-  logic [ETH_PC-1:0][2:0]                 axi4_ct_awsize;
-  logic [ETH_PC-1:0][1:0]                 axi4_ct_awburst;
-  logic [ETH_PC-1:0]                      axi4_ct_awvalid;
-  logic [ETH_PC-1:0]                      axi4_ct_awready;
-  logic [ETH_PC-1:0][AXI4_DATA_W-1:0]     axi4_ct_wdata;
-  logic [ETH_PC-1:0][(AXI4_DATA_W/8)-1:0] axi4_ct_wstrb;
-  logic [ETH_PC-1:0]                      axi4_ct_wlast;
-  logic [ETH_PC-1:0]                      axi4_ct_wvalid;
-  logic [ETH_PC-1:0]                      axi4_ct_wready;
-  logic [ETH_PC-1:0][AXI4_ID_W-1:0]       axi4_ct_bid;
-  logic [ETH_PC-1:0][1:0]                 axi4_ct_bresp;
-  logic [ETH_PC-1:0]                      axi4_ct_bvalid;
-  logic [ETH_PC-1:0]                      axi4_ct_bready;
+  // AXI4 to HBM: HPUA (single NMU) ----------------------------------------------------------------
+  logic [AXI4_ID_W-1:0]       axi4_ct_awid;
+  logic [AXI4_ADD_W-1:0]      axi4_ct_awaddr;
+  logic [7:0]                 axi4_ct_awlen;
+  logic [2:0]                 axi4_ct_awsize;
+  logic [1:0]                 axi4_ct_awburst;
+  logic                       axi4_ct_awvalid;
+  logic                       axi4_ct_awready;
+  logic [AXI4_DATA_W-1:0]     axi4_ct_wdata;
+  logic [(AXI4_DATA_W/8)-1:0] axi4_ct_wstrb;
+  logic                       axi4_ct_wlast;
+  logic                       axi4_ct_wvalid;
+  logic                       axi4_ct_wready;
+  logic [AXI4_ID_W-1:0]       axi4_ct_bid;
+  logic [1:0]                 axi4_ct_bresp;
+  logic                       axi4_ct_bvalid;
+  logic                       axi4_ct_bready;
 
-  logic [ETH_PC-1:0][AXI4_ID_W-1:0]       axi4_ct_arid;
-  logic [ETH_PC-1:0][AXI4_ADD_W-1:0]      axi4_ct_araddr;
-  logic [ETH_PC-1:0][7:0]                 axi4_ct_arlen;
-  logic [ETH_PC-1:0][2:0]                 axi4_ct_arsize;
-  logic [ETH_PC-1:0][1:0]                 axi4_ct_arburst;
-  logic [ETH_PC-1:0]                      axi4_ct_arvalid;
-  logic [ETH_PC-1:0]                      axi4_ct_arready;
-  logic [ETH_PC-1:0][AXI4_ID_W-1:0]       axi4_ct_rid;
-  logic [ETH_PC-1:0][AXI4_DATA_W-1:0]     axi4_ct_rdata;
-  logic [ETH_PC-1:0][1:0]                 axi4_ct_rresp;
-  logic [ETH_PC-1:0]                      axi4_ct_rlast;
-  logic [ETH_PC-1:0]                      axi4_ct_rvalid;
-  logic [ETH_PC-1:0]                      axi4_ct_rready;
+  logic [AXI4_ID_W-1:0]       axi4_ct_arid;
+  logic [AXI4_ADD_W-1:0]      axi4_ct_araddr;
+  logic [7:0]                 axi4_ct_arlen;
+  logic [2:0]                 axi4_ct_arsize;
+  logic [1:0]                 axi4_ct_arburst;
+  logic                       axi4_ct_arvalid;
+  logic                       axi4_ct_arready;
+  logic [AXI4_ID_W-1:0]       axi4_ct_rid;
+  logic [AXI4_DATA_W-1:0]     axi4_ct_rdata;
+  logic [1:0]                 axi4_ct_rresp;
+  logic                       axi4_ct_rlast;
+  logic                       axi4_ct_rvalid;
+  logic                       axi4_ct_rready;
 
   // ============================================================================================== --
   // Design under test instance
@@ -431,79 +431,74 @@ logic [DST_ADDR_W-1:0] dst_addr;
   assign maxil_drv_if.rresp   = s_axil_mhdma_rresp;
   assign maxil_drv_if.rvalid  = s_axil_mhdma_rvalid;
 
-  generate
-      for (genvar gen_pc=0; gen_pc<ETH_PC; gen_pc=gen_pc+1) begin : gen_mem_pc
-        axi4_mem #(
-          .DATA_WIDTH      (AXI4_DATA_W                     ),
-          .ADDR_WIDTH      (MEM_SIM_SIZE                    ),
-          .ID_WIDTH        (AXI4_ID_W                       ),
-          .WR_CMD_BUF_DEPTH(MEM_WR_CMD_BUF_DEPTH            ),
-          .RD_CMD_BUF_DEPTH(MEM_RD_CMD_BUF_DEPTH            ),
-          .WR_DATA_LATENCY (MEM_WR_DATA_LATENCY+ gen_pc * 50),
-          .RD_DATA_LATENCY (MEM_RD_DATA_LATENCY             ),
-          .USE_WR_RANDOM   (MEM_USE_WR_RANDOM               ),
-          .USE_RD_RANDOM   (MEM_USE_RD_RANDOM               )
-        ) axi4_mem_ct (
-          .clk           (clk_mhdma                         ),
-          .rst           (~s_rstn_mhdma                     ),
-          .s_axi4_awid   (axi4_ct_awid[gen_pc]     ),
-          .s_axi4_awaddr (axi4_ct_awaddr[gen_pc][MEM_SIM_SIZE-1:0]),
-          .s_axi4_awlen  (axi4_ct_awlen[gen_pc]    ),
-          .s_axi4_awsize (axi4_ct_awsize[gen_pc]   ),
-          .s_axi4_awburst(axi4_ct_awburst[gen_pc]  ),
-          .s_axi4_awlock  (/* UNUSED */),
-          .s_axi4_awcache (/* UNUSED */),
-          .s_axi4_awprot  (/* UNUSED */),
-          .s_axi4_awqos   (/* UNUSED */),
-          .s_axi4_awregion(/* UNUSED */),
-          .s_axi4_awvalid(axi4_ct_awvalid[gen_pc]  ),
-          .s_axi4_awready(axi4_ct_awready[gen_pc]  ),
-          .s_axi4_wdata  (axi4_ct_wdata[gen_pc]    ),
-          .s_axi4_wstrb  (axi4_ct_wstrb[gen_pc]    ),
-          .s_axi4_wlast  (axi4_ct_wlast[gen_pc]    ),
-          .s_axi4_wvalid (axi4_ct_wvalid[gen_pc]   ),
-          .s_axi4_wready (axi4_ct_wready[gen_pc]   ),
-          .s_axi4_bid    (axi4_ct_bid[gen_pc]      ),
-          .s_axi4_bresp  (axi4_ct_bresp[gen_pc]    ),
-          .s_axi4_bvalid (axi4_ct_bvalid[gen_pc]   ),
-          .s_axi4_bready (axi4_ct_bready[gen_pc]   ),
-          .s_axi4_arid   (axi4_ct_arid[gen_pc]     ),
-          .s_axi4_araddr (axi4_ct_araddr[gen_pc][MEM_SIM_SIZE-1:0]),
-          .s_axi4_arlen  (axi4_ct_arlen[gen_pc]    ),
-          .s_axi4_arsize (axi4_ct_arsize[gen_pc]   ),
-          .s_axi4_arburst(axi4_ct_arburst[gen_pc]  ),
-          .s_axi4_arlock  (/* UNUSED */),
-          .s_axi4_arcache (/* UNUSED */),
-          .s_axi4_arprot  (/* UNUSED */),
-          .s_axi4_arqos   (/* UNUSED */),
-          .s_axi4_arregion(/* UNUSED */),
-          .s_axi4_arvalid(axi4_ct_arvalid[gen_pc]  ),
-          .s_axi4_arready(axi4_ct_arready[gen_pc]  ),
-          .s_axi4_rid    (axi4_ct_rid[gen_pc]      ),
-          .s_axi4_rdata  (axi4_ct_rdata[gen_pc]    ),
-          .s_axi4_rresp  (axi4_ct_rresp[gen_pc]    ),
-          .s_axi4_rlast  (axi4_ct_rlast[gen_pc]    ),
-          .s_axi4_rvalid (axi4_ct_rvalid[gen_pc]   ),
-          .s_axi4_rready (axi4_ct_rready[gen_pc]   )
-        );
+  axi4_mem #(
+    .DATA_WIDTH      (AXI4_DATA_W          ),
+    .ADDR_WIDTH      (MEM_SIM_SIZE         ),
+    .ID_WIDTH        (AXI4_ID_W            ),
+    .WR_CMD_BUF_DEPTH(MEM_WR_CMD_BUF_DEPTH ),
+    .RD_CMD_BUF_DEPTH(MEM_RD_CMD_BUF_DEPTH ),
+    .WR_DATA_LATENCY (MEM_WR_DATA_LATENCY  ),
+    .RD_DATA_LATENCY (MEM_RD_DATA_LATENCY  ),
+    .USE_WR_RANDOM   (MEM_USE_WR_RANDOM    ),
+    .USE_RD_RANDOM   (MEM_USE_RD_RANDOM    )
+  ) axi4_mem_ct (
+    .clk              (clk_mhdma                       ),
+    .rst              (~s_rstn_mhdma                   ),
+    .s_axi4_awid      (axi4_ct_awid                    ),
+    .s_axi4_awaddr    (axi4_ct_awaddr[MEM_SIM_SIZE-1:0]),
+    .s_axi4_awlen     (axi4_ct_awlen                   ),
+    .s_axi4_awsize    (axi4_ct_awsize                  ),
+    .s_axi4_awburst   (axi4_ct_awburst                 ),
+    .s_axi4_awlock    (/* UNUSED */                    ),
+    .s_axi4_awcache   (/* UNUSED */                    ),
+    .s_axi4_awprot    (/* UNUSED */                    ),
+    .s_axi4_awqos     (/* UNUSED */                    ),
+    .s_axi4_awregion  (/* UNUSED */                    ),
+    .s_axi4_awvalid   (axi4_ct_awvalid                 ),
+    .s_axi4_awready   (axi4_ct_awready                 ),
+    .s_axi4_wdata     (axi4_ct_wdata                   ),
+    .s_axi4_wstrb     (axi4_ct_wstrb                   ),
+    .s_axi4_wlast     (axi4_ct_wlast                   ),
+    .s_axi4_wvalid    (axi4_ct_wvalid                  ),
+    .s_axi4_wready    (axi4_ct_wready                  ),
+    .s_axi4_bid       (axi4_ct_bid                     ),
+    .s_axi4_bresp     (axi4_ct_bresp                   ),
+    .s_axi4_bvalid    (axi4_ct_bvalid                  ),
+    .s_axi4_bready    (axi4_ct_bready                  ),
+    .s_axi4_arid      (axi4_ct_arid                    ),
+    .s_axi4_araddr    (axi4_ct_araddr[MEM_SIM_SIZE-1:0]),
+    .s_axi4_arlen     (axi4_ct_arlen                   ),
+    .s_axi4_arsize    (axi4_ct_arsize                  ),
+    .s_axi4_arburst   (axi4_ct_arburst                 ),
+    .s_axi4_arlock    (/* UNUSED */                    ),
+    .s_axi4_arcache   (/* UNUSED */                    ),
+    .s_axi4_arprot    (/* UNUSED */                    ),
+    .s_axi4_arqos     (/* UNUSED */                    ),
+    .s_axi4_arregion  (/* UNUSED */                    ),
+    .s_axi4_arvalid   (axi4_ct_arvalid                 ),
+    .s_axi4_arready   (axi4_ct_arready                 ),
+    .s_axi4_rid       (axi4_ct_rid                     ),
+    .s_axi4_rdata     (axi4_ct_rdata                   ),
+    .s_axi4_rresp     (axi4_ct_rresp                   ),
+    .s_axi4_rlast     (axi4_ct_rlast                   ),
+    .s_axi4_rvalid    (axi4_ct_rvalid                  ),
+    .s_axi4_rready    (axi4_ct_rready                  )
+  );
 
-        // Each generated instance initializes its own memory
-        initial begin
-          for (int k = 0; k < 2**MEM_SIM_SIZE; k++) begin
-            logic [AXI4_DATA_W-1:0] value;
-            value = '0;
-            for (int j = 0; j < AXI4_DATA_W/64; j++) begin
-              logic [63:0] w;
-              w[63:32] = $urandom();
-              w[31:0]  = $urandom();
-              value |= (w << (j*64));
-            end
-            axi4_mem_ct.axi4_ram_ct_wr.mem[k] = value;
-          end
-        end
-
+  // Initialize memory
+  initial begin
+    for (int k = 0; k < 2**MEM_SIM_SIZE; k++) begin
+      logic [AXI4_DATA_W-1:0] value;
+      value = '0;
+      for (int j = 0; j < AXI4_DATA_W/64; j++) begin
+        logic [63:0] w;
+        w[63:32] = $urandom();
+        w[31:0]  = $urandom();
+        value |= (w << (j*64));
       end
-  endgenerate
+      axi4_mem_ct.axi4_ram_ct_wr.mem[k] = value;
+    end
+  end
 
   // Decoder --------------------------------------------------------------------------------------
   command_t rx_header;

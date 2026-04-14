@@ -155,37 +155,37 @@ module tb_multi_hpu_dma;
   logic [HPU_NB-1:0]                                      interrupt_notify;
   logic [HPU_NB-1:0]                                      interrupt_read_request;
 
-  // cnx to memory models - vectorized [HPU_NB][ETH_PC]
-  logic [HPU_NB-1:0][ETH_PC-1:0][AXI4_ID_W-1:0]           axi4_ct_awid;
-  logic [HPU_NB-1:0][ETH_PC-1:0][AXI4_ADD_W-1:0]          axi4_ct_awaddr;
-  logic [HPU_NB-1:0][ETH_PC-1:0][7:0]                     axi4_ct_awlen;
-  logic [HPU_NB-1:0][ETH_PC-1:0][2:0]                     axi4_ct_awsize;
-  logic [HPU_NB-1:0][ETH_PC-1:0][1:0]                     axi4_ct_awburst;
-  logic [HPU_NB-1:0][ETH_PC-1:0]                          axi4_ct_awvalid;
-  logic [HPU_NB-1:0][ETH_PC-1:0]                          axi4_ct_awready;
-  logic [HPU_NB-1:0][ETH_PC-1:0][AXI4_DATA_W-1:0]         axi4_ct_wdata;
-  logic [HPU_NB-1:0][ETH_PC-1:0][(AXI4_DATA_W/8)-1:0]     axi4_ct_wstrb;
-  logic [HPU_NB-1:0][ETH_PC-1:0]                          axi4_ct_wlast;
-  logic [HPU_NB-1:0][ETH_PC-1:0]                          axi4_ct_wvalid;
-  logic [HPU_NB-1:0][ETH_PC-1:0]                          axi4_ct_wready;
-  logic [HPU_NB-1:0][ETH_PC-1:0][AXI4_ID_W-1:0]           axi4_ct_bid;
-  logic [HPU_NB-1:0][ETH_PC-1:0][1:0]                     axi4_ct_bresp;
-  logic [HPU_NB-1:0][ETH_PC-1:0]                          axi4_ct_bvalid;
-  logic [HPU_NB-1:0][ETH_PC-1:0]                          axi4_ct_bready;
+  // cnx to memory models - vectorized [HPU_NB] (single NMU per HPU)
+  logic [HPU_NB-1:0][AXI4_ID_W-1:0]           axi4_ct_awid;
+  logic [HPU_NB-1:0][AXI4_ADD_W-1:0]          axi4_ct_awaddr;
+  logic [HPU_NB-1:0][7:0]                     axi4_ct_awlen;
+  logic [HPU_NB-1:0][2:0]                     axi4_ct_awsize;
+  logic [HPU_NB-1:0][1:0]                     axi4_ct_awburst;
+  logic [HPU_NB-1:0]                          axi4_ct_awvalid;
+  logic [HPU_NB-1:0]                          axi4_ct_awready;
+  logic [HPU_NB-1:0][AXI4_DATA_W-1:0]         axi4_ct_wdata;
+  logic [HPU_NB-1:0][(AXI4_DATA_W/8)-1:0]     axi4_ct_wstrb;
+  logic [HPU_NB-1:0]                          axi4_ct_wlast;
+  logic [HPU_NB-1:0]                          axi4_ct_wvalid;
+  logic [HPU_NB-1:0]                          axi4_ct_wready;
+  logic [HPU_NB-1:0][AXI4_ID_W-1:0]           axi4_ct_bid;
+  logic [HPU_NB-1:0][1:0]                     axi4_ct_bresp;
+  logic [HPU_NB-1:0]                          axi4_ct_bvalid;
+  logic [HPU_NB-1:0]                          axi4_ct_bready;
 
-  logic [HPU_NB-1:0][ETH_PC-1:0][AXI4_ID_W-1:0]           axi4_ct_arid;
-  logic [HPU_NB-1:0][ETH_PC-1:0][AXI4_ADD_W-1:0]          axi4_ct_araddr;
-  logic [HPU_NB-1:0][ETH_PC-1:0][7:0]                     axi4_ct_arlen;
-  logic [HPU_NB-1:0][ETH_PC-1:0][2:0]                     axi4_ct_arsize;
-  logic [HPU_NB-1:0][ETH_PC-1:0][1:0]                     axi4_ct_arburst;
-  logic [HPU_NB-1:0][ETH_PC-1:0]                          axi4_ct_arvalid;
-  logic [HPU_NB-1:0][ETH_PC-1:0]                          axi4_ct_arready;
-  logic [HPU_NB-1:0][ETH_PC-1:0][AXI4_ID_W-1:0]           axi4_ct_rid;
-  logic [HPU_NB-1:0][ETH_PC-1:0][AXI4_DATA_W-1:0]         axi4_ct_rdata;
-  logic [HPU_NB-1:0][ETH_PC-1:0][1:0]                     axi4_ct_rresp;
-  logic [HPU_NB-1:0][ETH_PC-1:0]                          axi4_ct_rlast;
-  logic [HPU_NB-1:0][ETH_PC-1:0]                          axi4_ct_rvalid;
-  logic [HPU_NB-1:0][ETH_PC-1:0]                          axi4_ct_rready;
+  logic [HPU_NB-1:0][AXI4_ID_W-1:0]           axi4_ct_arid;
+  logic [HPU_NB-1:0][AXI4_ADD_W-1:0]          axi4_ct_araddr;
+  logic [HPU_NB-1:0][7:0]                     axi4_ct_arlen;
+  logic [HPU_NB-1:0][2:0]                     axi4_ct_arsize;
+  logic [HPU_NB-1:0][1:0]                     axi4_ct_arburst;
+  logic [HPU_NB-1:0]                          axi4_ct_arvalid;
+  logic [HPU_NB-1:0]                          axi4_ct_arready;
+  logic [HPU_NB-1:0][AXI4_ID_W-1:0]           axi4_ct_rid;
+  logic [HPU_NB-1:0][AXI4_DATA_W-1:0]         axi4_ct_rdata;
+  logic [HPU_NB-1:0][1:0]                     axi4_ct_rresp;
+  logic [HPU_NB-1:0]                          axi4_ct_rlast;
+  logic [HPU_NB-1:0]                          axi4_ct_rvalid;
+  logic [HPU_NB-1:0]                          axi4_ct_rready;
 
   // ============================================================================================== --
   // Design under test instance
@@ -379,76 +379,73 @@ module tb_multi_hpu_dma;
 
   generate
     for (genvar gen_hpu=0; gen_hpu<HPU_NB; gen_hpu=gen_hpu+1) begin : gen_mem_hpu
-      for (genvar gen_pc=0; gen_pc<ETH_PC; gen_pc=gen_pc+1) begin : gen_mem_pc
-        axi4_mem #(
-          .DATA_WIDTH      (AXI4_DATA_W                     ),
-          .ADDR_WIDTH      (MEM_SIM_SIZE                    ),
-          .ID_WIDTH        (AXI4_ID_W                       ),
-          .WR_CMD_BUF_DEPTH(MEM_WR_CMD_BUF_DEPTH            ),
-          .RD_CMD_BUF_DEPTH(MEM_RD_CMD_BUF_DEPTH            ),
-          .WR_DATA_LATENCY (MEM_WR_DATA_LATENCY+ gen_pc * 50),
-          .RD_DATA_LATENCY (MEM_RD_DATA_LATENCY             ),
-          .USE_WR_RANDOM   (MEM_USE_WR_RANDOM               ),
-          .USE_RD_RANDOM   (MEM_USE_RD_RANDOM               )
-        ) axi4_mem_ct (
-          .clk           (clk_mhdma                         ),
-          .rst           (~s_rstn_mhdma                     ),
-          .s_axi4_awid   (axi4_ct_awid[gen_hpu][gen_pc]     ),
-          .s_axi4_awaddr (axi4_ct_awaddr[gen_hpu][gen_pc][MEM_SIM_SIZE-1:0]),
-          .s_axi4_awlen  (axi4_ct_awlen[gen_hpu][gen_pc]    ),
-          .s_axi4_awsize (axi4_ct_awsize[gen_hpu][gen_pc]   ),
-          .s_axi4_awburst(axi4_ct_awburst[gen_hpu][gen_pc]  ),
-          .s_axi4_awlock  (/* UNUSED */),
-          .s_axi4_awcache (/* UNUSED */),
-          .s_axi4_awprot  (/* UNUSED */),
-          .s_axi4_awqos   (/* UNUSED */),
-          .s_axi4_awregion(/* UNUSED */),
-          .s_axi4_awvalid(axi4_ct_awvalid[gen_hpu][gen_pc]  ),
-          .s_axi4_awready(axi4_ct_awready[gen_hpu][gen_pc]  ),
-          .s_axi4_wdata  (axi4_ct_wdata[gen_hpu][gen_pc]    ),
-          .s_axi4_wstrb  (axi4_ct_wstrb[gen_hpu][gen_pc]    ),
-          .s_axi4_wlast  (axi4_ct_wlast[gen_hpu][gen_pc]    ),
-          .s_axi4_wvalid (axi4_ct_wvalid[gen_hpu][gen_pc]   ),
-          .s_axi4_wready (axi4_ct_wready[gen_hpu][gen_pc]   ),
-          .s_axi4_bid    (axi4_ct_bid[gen_hpu][gen_pc]      ),
-          .s_axi4_bresp  (axi4_ct_bresp[gen_hpu][gen_pc]    ),
-          .s_axi4_bvalid (axi4_ct_bvalid[gen_hpu][gen_pc]   ),
-          .s_axi4_bready (axi4_ct_bready[gen_hpu][gen_pc]   ),
-          .s_axi4_arid   (axi4_ct_arid[gen_hpu][gen_pc]     ),
-          .s_axi4_araddr (axi4_ct_araddr[gen_hpu][gen_pc][MEM_SIM_SIZE-1:0]),
-          .s_axi4_arlen  (axi4_ct_arlen[gen_hpu][gen_pc]    ),
-          .s_axi4_arsize (axi4_ct_arsize[gen_hpu][gen_pc]   ),
-          .s_axi4_arburst(axi4_ct_arburst[gen_hpu][gen_pc]  ),
-          .s_axi4_arlock  (/* UNUSED */),
-          .s_axi4_arcache (/* UNUSED */),
-          .s_axi4_arprot  (/* UNUSED */),
-          .s_axi4_arqos   (/* UNUSED */),
-          .s_axi4_arregion(/* UNUSED */),
-          .s_axi4_arvalid(axi4_ct_arvalid[gen_hpu][gen_pc]  ),
-          .s_axi4_arready(axi4_ct_arready[gen_hpu][gen_pc]  ),
-          .s_axi4_rid    (axi4_ct_rid[gen_hpu][gen_pc]      ),
-          .s_axi4_rdata  (axi4_ct_rdata[gen_hpu][gen_pc]    ),
-          .s_axi4_rresp  (axi4_ct_rresp[gen_hpu][gen_pc]    ),
-          .s_axi4_rlast  (axi4_ct_rlast[gen_hpu][gen_pc]    ),
-          .s_axi4_rvalid (axi4_ct_rvalid[gen_hpu][gen_pc]   ),
-          .s_axi4_rready (axi4_ct_rready[gen_hpu][gen_pc]   )
-        );
+      axi4_mem #(
+        .DATA_WIDTH      (AXI4_DATA_W          ),
+        .ADDR_WIDTH      (MEM_SIM_SIZE         ),
+        .ID_WIDTH        (AXI4_ID_W            ),
+        .WR_CMD_BUF_DEPTH(MEM_WR_CMD_BUF_DEPTH ),
+        .RD_CMD_BUF_DEPTH(MEM_RD_CMD_BUF_DEPTH ),
+        .WR_DATA_LATENCY (MEM_WR_DATA_LATENCY  ),
+        .RD_DATA_LATENCY (MEM_RD_DATA_LATENCY  ),
+        .USE_WR_RANDOM   (MEM_USE_WR_RANDOM    ),
+        .USE_RD_RANDOM   (MEM_USE_RD_RANDOM    )
+      ) axi4_mem_ct (
+        .clk           (clk_mhdma                                ),
+        .rst           (~s_rstn_mhdma                            ),
+        .s_axi4_awid   (axi4_ct_awid[gen_hpu]                    ),
+        .s_axi4_awaddr (axi4_ct_awaddr[gen_hpu][MEM_SIM_SIZE-1:0]),
+        .s_axi4_awlen  (axi4_ct_awlen[gen_hpu]                   ),
+        .s_axi4_awsize (axi4_ct_awsize[gen_hpu]                  ),
+        .s_axi4_awburst(axi4_ct_awburst[gen_hpu]                 ),
+        .s_axi4_awlock  (/* UNUSED */),
+        .s_axi4_awcache (/* UNUSED */),
+        .s_axi4_awprot  (/* UNUSED */),
+        .s_axi4_awqos   (/* UNUSED */),
+        .s_axi4_awregion(/* UNUSED */),
+        .s_axi4_awvalid(axi4_ct_awvalid[gen_hpu]                 ),
+        .s_axi4_awready(axi4_ct_awready[gen_hpu]                 ),
+        .s_axi4_wdata  (axi4_ct_wdata[gen_hpu]                   ),
+        .s_axi4_wstrb  (axi4_ct_wstrb[gen_hpu]                   ),
+        .s_axi4_wlast  (axi4_ct_wlast[gen_hpu]                   ),
+        .s_axi4_wvalid (axi4_ct_wvalid[gen_hpu]                  ),
+        .s_axi4_wready (axi4_ct_wready[gen_hpu]                  ),
+        .s_axi4_bid    (axi4_ct_bid[gen_hpu]                     ),
+        .s_axi4_bresp  (axi4_ct_bresp[gen_hpu]                   ),
+        .s_axi4_bvalid (axi4_ct_bvalid[gen_hpu]                  ),
+        .s_axi4_bready (axi4_ct_bready[gen_hpu]                  ),
+        .s_axi4_arid   (axi4_ct_arid[gen_hpu]                    ),
+        .s_axi4_araddr (axi4_ct_araddr[gen_hpu][MEM_SIM_SIZE-1:0]),
+        .s_axi4_arlen  (axi4_ct_arlen[gen_hpu]                   ),
+        .s_axi4_arsize (axi4_ct_arsize[gen_hpu]                  ),
+        .s_axi4_arburst(axi4_ct_arburst[gen_hpu]                 ),
+        .s_axi4_arlock  (/* UNUSED */),
+        .s_axi4_arcache (/* UNUSED */),
+        .s_axi4_arprot  (/* UNUSED */),
+        .s_axi4_arqos   (/* UNUSED */),
+        .s_axi4_arregion(/* UNUSED */),
+        .s_axi4_arvalid(axi4_ct_arvalid[gen_hpu]                 ),
+        .s_axi4_arready(axi4_ct_arready[gen_hpu]                 ),
+        .s_axi4_rid    (axi4_ct_rid[gen_hpu]                     ),
+        .s_axi4_rdata  (axi4_ct_rdata[gen_hpu]                   ),
+        .s_axi4_rresp  (axi4_ct_rresp[gen_hpu]                   ),
+        .s_axi4_rlast  (axi4_ct_rlast[gen_hpu]                   ),
+        .s_axi4_rvalid (axi4_ct_rvalid[gen_hpu]                  ),
+        .s_axi4_rready (axi4_ct_rready[gen_hpu]                  )
+      );
 
-        // Each generated instance initializes its own memory
-        initial begin
-          for (int k = 0; k < 2**MEM_SIM_SIZE; k++) begin
-            logic [255:0] value;
-            value = '0;
-            for (int j = 0; j < 4; j++) begin
-              logic [63:0] w;
-              w[63:32] = $urandom();
-              w[31:0]  = $urandom();
-              value |= (w << (j*64));
-            end
-            axi4_mem_ct.axi4_ram_ct_wr.mem[k] = value;
+      // Each generated instance initializes its own memory
+      initial begin
+        for (int k = 0; k < 2**MEM_SIM_SIZE; k++) begin
+          logic [AXI4_DATA_W-1:0] value;
+          value = '0;
+          for (int j = 0; j < AXI4_DATA_W/64; j++) begin
+            logic [63:0] w;
+            w[63:32] = $urandom();
+            w[31:0]  = $urandom();
+            value |= (w << (j*64));
           end
+          axi4_mem_ct.axi4_ram_ct_wr.mem[k] = value;
         end
-
       end
     end
   endgenerate
@@ -487,7 +484,7 @@ module tb_multi_hpu_dma;
 
   logic [REG_DATA_W-1:0] stat_errors;
 
-  logic [REG_DATA_W-1:0] regf_start_addr_ofs;
+  logic [2*REG_DATA_W-1:0] regf_start_addr_ofs [ETH_PC];
 
   logic [REG_DATA_W-1:0] stat_notify;
   logic [REG_DATA_W-1:0] stat_notify_ack;
@@ -535,7 +532,8 @@ module tb_multi_hpu_dma;
     reset_registers = 'h0;
     tx_loop         = 'h0;
     rx_to_tx        = 'h0;
-    regf_start_addr_ofs = 'h0;
+    regf_start_addr_ofs[0] = 'hF;
+    if (ETH_PC > 1) regf_start_addr_ofs[1] = 'hA;
     repeat(20) @(posedge clk_control);
 
     random_iter           = $urandom_range(32, 2);
@@ -616,7 +614,7 @@ module tb_multi_hpu_dma;
         error_rr_payload = 1'b1;
       end
 
-      gen_check_mem.check_memories(iop_src_addr, iop_dst_addr);
+      check_memories(iop_src_addr, iop_dst_addr);
     end
 
     scenario_id = scenario_id + 1;
@@ -750,7 +748,7 @@ module tb_multi_hpu_dma;
       exp_src_addr = rr_src_addr_ref_q.pop_back();
       exp_dst_addr = rr_dst_addr_ref_q.pop_back();
 
-      gen_check_mem.check_memories(exp_src_addr, exp_dst_addr);
+      check_memories(exp_src_addr, exp_dst_addr);
     end
 
     $display("%t > INFO : All %0d read request have been sent  and memory models checked\n",$time, arbitrary_read_req_nb);
@@ -1194,97 +1192,52 @@ module tb_multi_hpu_dma;
 // This does not work for ETH_PC != 2
 
   /* Checker
-  * memory content should be the same between HPU_A and HPU_B for PC_0 and PC_1
+  * memory content should be the same between HPU_A and HPU_B
   * assumption: we chose in this test to do read request from HPU A to B
   * anything can be in HPU B memory. on HPU A we have only the copied values of hpu B
+  * Single NMU: all PC data goes through one memory per HPU
   */
-  // check_memories must live inside a generate so that PC1 hierarchical refs
-  // are only elaborated when gen_mem_pc[1] actually exists.
-  generate if (ETH_PC > 1) begin : gen_check_mem
-    task automatic check_memories(
-      input logic [SRC_ADDR_W-1:0] src_addr,
-      input logic [DST_ADDR_W-1:0] dst_addr
-    );
-      int addr_hpu_0, addr_hpu_1;
-      logic mismatch_found;
-      logic [AXI4_DATA_W-1:0] val_hpu0, val_hpu1;
-      int nb_words;
+  task automatic check_memories(
+    input logic [SRC_ADDR_W-1:0] src_addr,
+    input logic [DST_ADDR_W-1:0] dst_addr
+  );
+    int addr_hpu_0, addr_hpu_1;
+    logic mismatch_found;
+    logic [AXI4_DATA_W-1:0] val_hpu0, val_hpu1;
+    int nb_words;
 
-      mismatch_found = 1'b0;
-      addr_hpu_0 = (regf_start_addr_ofs + (dst_addr * CT_MEM_BYTES)) / AXI4_DATA_BYTES;
-      addr_hpu_1 = (regf_start_addr_ofs + (src_addr * CT_MEM_BYTES)) / AXI4_DATA_BYTES;
-      $display("addr_hpu_0 = %x, addr_hpu_1 = %x", addr_hpu_0, addr_hpu_1);
+    mismatch_found = 1'b0;
 
-      for (int pc = 0; pc < ETH_PC; pc++) begin
-        nb_words = (pc == 0) ? AXI4_WORD_PER_PC0 : AXI4_WORD_PER_PC;
-        for (int k = 0; k < nb_words; k++) begin
-          if (pc == 0) begin
-            val_hpu0 = gen_mem_hpu[0].gen_mem_pc[0].axi4_mem_ct.axi4_ram_ct_wr.mem[addr_hpu_0 + k];
-            val_hpu1 = gen_mem_hpu[1].gen_mem_pc[0].axi4_mem_ct.axi4_ram_ct_wr.mem[addr_hpu_1 + k];
-          end else begin
-            val_hpu0 = gen_mem_hpu[0].gen_mem_pc[1].axi4_mem_ct.axi4_ram_ct_wr.mem[addr_hpu_0 + k];
-            val_hpu1 = gen_mem_hpu[1].gen_mem_pc[1].axi4_mem_ct.axi4_ram_ct_wr.mem[addr_hpu_1 + k];
-          end
+    for (int pc = 0; pc < ETH_PC; pc++) begin
+      addr_hpu_0 = (regf_start_addr_ofs[pc] + dst_addr * CT_MEM_BYTES) / AXI4_DATA_BYTES;
+      addr_hpu_1 = (regf_start_addr_ofs[pc] + src_addr * CT_MEM_BYTES) / AXI4_DATA_BYTES;
+      $display("PC%0d: addr_hpu_0 = %x, addr_hpu_1 = %x", pc, addr_hpu_0, addr_hpu_1);
 
-          if ($isunknown(val_hpu0)) begin
-            $display("ERROR: X/Z in HPU_0 at PC=%0d, offset=%0d, addr=%0d, val=%h", pc, k, addr_hpu_0 + k, val_hpu0);
-            mismatch_found = 1;
-            error_write_mismatch = 1'b1;
-          end else if ($isunknown(val_hpu1)) begin
-            $display("ERROR: X/Z in HPU_1 at PC=%0d, offset=%0d, addr=%0d, val=%h", pc, k, addr_hpu_1 + k, val_hpu1);
-            mismatch_found = 1;
-            error_write_mismatch = 1'b1;
-          end else if (val_hpu0 !== val_hpu1) begin
-            $display("ERROR: Mismatch at PC=%0d, offset=%0d: HPU_0[%0d]=%h != HPU_1[%0d]=%h",
-                     pc, k, addr_hpu_0 + k, val_hpu0, addr_hpu_1 + k, val_hpu1);
-            mismatch_found = 1;
-            error_write_mismatch = 1'b1;
-          end
-        end
-      end
-
-      if (~mismatch_found)
-        $display("[INFO]: Memory check PASSED: HPU_A and HPU_B contents match");
-    endtask
-  end else begin : gen_check_mem
-    task automatic check_memories(
-      input logic [SRC_ADDR_W-1:0] src_addr,
-      input logic [DST_ADDR_W-1:0] dst_addr
-    );
-      int addr_hpu_0, addr_hpu_1;
-      logic mismatch_found;
-      logic [AXI4_DATA_W-1:0] val_hpu0, val_hpu1;
-
-      mismatch_found = 1'b0;
-      addr_hpu_0 = (regf_start_addr_ofs + (dst_addr * CT_MEM_BYTES)) / AXI4_DATA_BYTES;
-      addr_hpu_1 = (regf_start_addr_ofs + (src_addr * CT_MEM_BYTES)) / AXI4_DATA_BYTES;
-      $display("addr_hpu_0 = %x, addr_hpu_1 = %x", addr_hpu_0, addr_hpu_1);
-
-      // Only PC0 exists when ETH_PC==1
-      for (int k = 0; k < AXI4_WORD_PER_PC0; k++) begin
-        val_hpu0 = gen_mem_hpu[0].gen_mem_pc[0].axi4_mem_ct.axi4_ram_ct_wr.mem[addr_hpu_0 + k];
-        val_hpu1 = gen_mem_hpu[1].gen_mem_pc[0].axi4_mem_ct.axi4_ram_ct_wr.mem[addr_hpu_1 + k];
+      nb_words = (pc == 0) ? AXI4_WORD_PER_PC0 : AXI4_WORD_PER_PC;
+      for (int k = 0; k < nb_words; k++) begin
+        val_hpu0 = gen_mem_hpu[0].axi4_mem_ct.axi4_ram_ct_wr.mem[addr_hpu_0 + k];
+        val_hpu1 = gen_mem_hpu[1].axi4_mem_ct.axi4_ram_ct_wr.mem[addr_hpu_1 + k];
 
         if ($isunknown(val_hpu0)) begin
-          $display("ERROR: X/Z in HPU_0 at PC=0, offset=%0d, addr=%0d, val=%h", k, addr_hpu_0 + k, val_hpu0);
+          $display("ERROR: X/Z in HPU_0 at PC=%0d, offset=%0d, addr=%0d, val=%h", pc, k, addr_hpu_0 + k, val_hpu0);
           mismatch_found = 1;
           error_write_mismatch = 1'b1;
         end else if ($isunknown(val_hpu1)) begin
-          $display("ERROR: X/Z in HPU_1 at PC=0, offset=%0d, addr=%0d, val=%h", k, addr_hpu_1 + k, val_hpu1);
+          $display("ERROR: X/Z in HPU_1 at PC=%0d, offset=%0d, addr=%0d, val=%h", pc, k, addr_hpu_1 + k, val_hpu1);
           mismatch_found = 1;
           error_write_mismatch = 1'b1;
         end else if (val_hpu0 !== val_hpu1) begin
-          $display("ERROR: Mismatch at PC=0, offset=%0d: HPU_0[%0d]=%h != HPU_1[%0d]=%h",
-                   k, addr_hpu_0 + k, val_hpu0, addr_hpu_1 + k, val_hpu1);
+          $display("ERROR: Mismatch at PC=%0d, offset=%0d: HPU_0[%0d]=%h != HPU_1[%0d]=%h",
+                   pc, k, addr_hpu_0 + k, val_hpu0, addr_hpu_1 + k, val_hpu1);
           mismatch_found = 1;
           error_write_mismatch = 1'b1;
         end
       end
+    end
 
-      if (~mismatch_found)
-        $display("[INFO]: Memory check PASSED: HPU_A and HPU_B contents match");
-    endtask
-  end endgenerate
+    if (~mismatch_found)
+      $display("[INFO]: Memory check PASSED: HPU_A and HPU_B contents match");
+  endtask
 
 
   // ============================================================================================== --

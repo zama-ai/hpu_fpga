@@ -15,7 +15,9 @@
 //
 // Write path: stream-through with reactive page-aligned bursts.
 //  - Dataflow: decoder > fifo_ce_rx > deserialization > fifo > burst FSM > fifo > AXI4
-//  - One burst state machine per PC (BURST_IDLE > BURST_AW > BURST_W_DATA > BURST_DONE)
+//  - Single burst FSM processes ETH_PC contexts sequentially on one shared AXI4 port
+//  - B responses tracked with a global counter and cumulative per-PC thresholds
+//    (relies on AXI same-ID in-order guarantee since all PCs share one NMU)
 //
 // Assumptions:
 //  - regf_timeout_duration_notify & regf_timeout_duration_read_req are quasi static signals.
@@ -61,13 +63,10 @@ module mhdma_master
   output logic                                m_axi4_wvalid,
   input  logic                                m_axi4_wready,
 
-  // B channel stays per-PC (master needs per-PC completion tracking)
-  input  logic [ETH_PC-1:0][AXI4_ID_W-1:0]    m_axi4_bid,
-  input  logic [ETH_PC-1:0][AXI4_RESP_W-1:0]  m_axi4_bresp,
-  input  logic [ETH_PC-1:0]                   m_axi4_bvalid,
-  output logic [ETH_PC-1:0]                   m_axi4_bready,
-  // PC selector for NMU demux
-  output logic [ETH_PC-1:0]                   wr_pc_sel,
+  input  logic [AXI4_ID_W-1:0]                m_axi4_bid,
+  input  logic [AXI4_RESP_W-1:0]              m_axi4_bresp,
+  input  logic                                m_axi4_bvalid,
+  output logic                                m_axi4_bready,
   // regf interface -------------------------------------------------------------------------------
   input  logic [ETH_PC-1:0][2*REG_DATA_W-1:0] regf_ct_mem_addr,
   input  logic               [REG_DATA_W-1:0] regf_req_id,
@@ -120,6 +119,10 @@ module mhdma_master
   localparam int AXI_BURST_NB_MAX    = 2 * (NB_PACKETS_FULL + 2);
   localparam int AXI_BURST_NB_MAX_W  = $clog2(AXI_BURST_NB_MAX) == 0 ? 1 : $clog2(AXI_BURST_NB_MAX);
   localparam int AXI_BURST_NB_MAX_WW = $clog2(AXI_BURST_NB_MAX+1) == 0 ? 1 : $clog2(AXI_BURST_NB_MAX+1);
+
+  // Global burst counter width (sum across all PCs for single-NMU B-response tracking)
+  localparam int AXI_BURST_NB_MAX_TOTAL    = ETH_PC * AXI_BURST_NB_MAX;
+  localparam int AXI_BURST_NB_MAX_TOTAL_WW = $clog2(AXI_BURST_NB_MAX_TOTAL+1) == 0 ? 1 : $clog2(AXI_BURST_NB_MAX_TOTAL+1);
 
   localparam int NUM_STAT_CNTS = 4;
 
@@ -1139,7 +1142,7 @@ module mhdma_master
   end
 
   // ======================================================================================= //
-  // Address channel (single instance, demuxed to active port)
+  // Address channel
   // ======================================================================================= //
   axi4_aw_if_t m_axi4_aw_single;
 
@@ -1186,7 +1189,7 @@ module mhdma_master
     .out_rdy (m_axi4_awready            )
   );
 
-  // Single AW output: demux happens in mhdma_nmu_demux near the NMU
+  // Single AW output: pipelined in mhdma_nmu_pipe near the NMU
   assign m_axi4_awid      = m_axi4_aw_single.awid;
   assign m_axi4_awaddr    = m_axi4_aw_single.awaddr;
   assign m_axi4_awlen     = m_axi4_aw_single.awlen;
@@ -1195,7 +1198,7 @@ module mhdma_master
   assign m_axi4_awvalid   = m_axi4_awvalid_single;
 
   // ======================================================================================= //
-  // Data channel (single instance, demuxed to active port)
+  // Data channel
   // ======================================================================================= //
   // Elastic buffer consumption: driven by single burst FSM
   assign w_buf_rdy   = (axi_wready & (burst_state == BURST_W_DATA) & |axi4_write_pc & ~abort_draining) | abort_transfer;
@@ -1225,39 +1228,51 @@ module mhdma_master
     .out_rdy (m_axi4_wready       )
   );
 
-  // Single W output: demux happens in mhdma_nmu_demux near the NMU
+  // Single W output: pipelined in mhdma_nmu_pipe near the NMU
   assign m_axi4_wdata   = m_axi4_w_single.wdata;
   assign m_axi4_wstrb   = m_axi4_w_single.wstrb;
   assign m_axi4_wlast   = m_axi4_w_single.wlast;
   assign m_axi4_wvalid  = m_axi4_wvalid_single;
 
-  // PC selector for demux
-  assign wr_pc_sel = axi4_write_pc;
-
   // ======================================================================================= //
-  // Per-port B-response tracking (no FIFO, always accept)
+  // Single-NMU B-response tracking (no FIFO, always accept)
   // * we do this in order to not wait for each B response before sending next write
+  // * PCs are processed sequentially so B responses arrive in PC order (AXI same-ID ordering)
+  // * A single global brsp_cnt is compared against cumulative per-PC burst thresholds
   // ======================================================================================= //
-  logic [ETH_PC-1:0]                           pc_w_done;
-  logic [ETH_PC-1:0][AXI_BURST_NB_MAX_WW-1:0]  brsp_cnt;
+  logic [ETH_PC-1:0]                    pc_w_done;
+  logic [AXI_BURST_NB_MAX_TOTAL_WW-1:0] brsp_cnt;
 
+  // Always accept B responses (no backpressure)
+  assign m_axi4_bready = 1'b1;
+
+  // Effective per-PC burst count: use live bursts_issued for the active PC,
+  // saved_bursts_issued for completed PCs (so early B responses are attributed correctly)
+  logic [ETH_PC-1:0][AXI_BURST_NB_MAX_WW-1:0] effective_bursts_issued;
   generate
-    for (genvar gen_i=0; gen_i<ETH_PC; gen_i++) begin : gen_b_track
-      // Always accept B responses (no backpressure)
-      assign m_axi4_bready[gen_i] = 1'b1;
+    for (genvar gen_i = 0; gen_i < ETH_PC; gen_i++) begin : gen_eff_bursts
+      assign effective_bursts_issued[gen_i] = axi4_write_pc[gen_i] ? bursts_issued : saved_bursts_issued[gen_i];
+    end
+  endgenerate
 
-      // Per-port B-response counter
-      always_ff @(posedge clk_mhdma) begin
-        if (~resetn_mhdma) begin
-          brsp_cnt[gen_i] <= '0;
-        end else if (start_read_request) begin
-          brsp_cnt[gen_i] <= '0;
-        end else if (m_axi4_bvalid[gen_i]) begin
-          brsp_cnt[gen_i] <= brsp_cnt[gen_i] + 1;
-        end
-      end
+  // Cumulative burst thresholds per PC
+  logic [ETH_PC-1:0][AXI_BURST_NB_MAX_TOTAL_WW-1:0] cum_bursts_issued;
+  always_comb begin
+    cum_bursts_issued[0] = AXI_BURST_NB_MAX_TOTAL_WW'(effective_bursts_issued[0]);
+    for (int i = 1; i < ETH_PC; i++)
+      cum_bursts_issued[i] = cum_bursts_issued[i-1] + AXI_BURST_NB_MAX_TOTAL_WW'(effective_bursts_issued[i]);
+  end
 
-      // Sticky flag: W-data sent for this PC
+  // Single global B-response counter
+  always_ff @(posedge clk_mhdma) begin
+    if (~resetn_mhdma)           brsp_cnt <= '0;
+    else if (start_read_request) brsp_cnt <= '0;
+    else if (m_axi4_bvalid)     brsp_cnt <= brsp_cnt + 1;
+  end
+
+  // Per-PC W-done sticky flags
+  generate
+    for (genvar gen_i = 0; gen_i < ETH_PC; gen_i++) begin : gen_pc_w_done
       always_ff @(posedge clk_mhdma) begin
         if (~resetn_mhdma) begin
           pc_w_done[gen_i] <= 1'b0;
@@ -1267,22 +1282,39 @@ module mhdma_master
           pc_w_done[gen_i] <= 1'b1;
         end
       end
+    end
+  endgenerate
 
-      // Per-PC transfer done: all W beats sent AND all B responses received
-      assign pc_transfer_done[gen_i] = pc_w_done[gen_i] & (saved_bursts_issued[gen_i] == brsp_cnt[gen_i]);
+  // Per-PC transfer done: cumulative threshold comparison
+  generate
+    for (genvar gen_i = 0; gen_i < ETH_PC; gen_i++) begin : gen_pc_done
+      assign pc_transfer_done[gen_i] = pc_w_done[gen_i] & (brsp_cnt >= cum_bursts_issued[gen_i]);
+    end
+  endgenerate
 
-      // Write error tracking (sticky per-PC, clearable by rst_errors)
+  // Determine which PC owns the current B response (for per-PC error attribution)
+  logic [ETH_PC_W-1:0] brsp_pc_idx;
+  always_comb begin
+    brsp_pc_idx = ETH_PC_W'(ETH_PC - 1); // default: last PC
+    for (int i = ETH_PC-1; i >= 0; i--)
+      if (brsp_cnt < cum_bursts_issued[i])
+        brsp_pc_idx = ETH_PC_W'(i);
+  end
+
+  // Per-PC write error tracking (sticky, clearable by rst_errors)
+  generate
+    for (genvar gen_i = 0; gen_i < ETH_PC; gen_i++) begin : gen_wr_err
       always_ff @(posedge clk_mhdma) begin
         if (~resetn_mhdma) begin
           write_error[gen_i] <= 1'b0;
         end else begin
           if (rst_errors) begin
             write_error[gen_i] <= 1'b0;
-          end else if (m_axi4_bvalid[gen_i]) begin
-            case (m_axi4_bresp[gen_i])
+          end else if (m_axi4_bvalid & (brsp_pc_idx == ETH_PC_W'(gen_i))) begin
+            case (m_axi4_bresp)
               AXI4_SLVERR: write_error[gen_i] <= 1'b1;
               AXI4_DECERR: write_error[gen_i] <= 1'b1;
-              default:; // two others are ignored : we want sticky errors
+              default:; // OKAY and EXOKAY: ignored, we want sticky errors
             endcase
           end
         end
@@ -1575,7 +1607,7 @@ module mhdma_master
   logic [REG_DATA_W-1:0] t_hbm_write_max;
   logic [REG_DATA_W-1:0] t_hbm_write_min;
 
-  assign any_aw_accepted = |(m_axi4_awvalid & m_axi4_awready);
+  assign any_aw_accepted = m_axi4_awvalid & m_axi4_awready;
   assign all_transfer_done = &pc_transfer_done;
 
   always_ff @(posedge clk_mhdma) begin

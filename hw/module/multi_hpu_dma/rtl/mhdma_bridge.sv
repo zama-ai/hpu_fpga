@@ -68,14 +68,10 @@ module mhdma_bridge
   output logic                                    m_axi4_wvalid,
   input  logic                                    m_axi4_wready,
   // Write response channel
-  input  logic [ETH_PC-1:0][  AXI4_ID_W-1:0]      m_axi4_bid,
-  input  logic [ETH_PC-1:0][AXI4_RESP_W-1:0]      m_axi4_bresp,
-  input  logic [ETH_PC-1:0]                       m_axi4_bvalid,
-  output logic [ETH_PC-1:0]                       m_axi4_bready,
-  // NMU selectors
-  output logic [ETH_PC-1:0]                       ar_pc_sel,
-  output logic [ETH_PC-1:0]                       rd_pc_sel,
-  output logic [ETH_PC-1:0]                       wr_pc_sel,
+  input  logic [  AXI4_ID_W-1:0]                  m_axi4_bid,
+  input  logic [AXI4_RESP_W-1:0]                  m_axi4_bresp,
+  input  logic                                    m_axi4_bvalid,
+  output logic                                    m_axi4_bready,
   // regf interface -----------------------------------------------------------
   input  logic [NB_MAX_HPU-1:0][  REG_DATA_W-1:0] regf_hpu_ids,
   input  logic [    ETH_PC-1:0][2*REG_DATA_W-1:0] regf_ct_mem_addr,
@@ -273,7 +269,6 @@ module mhdma_bridge
     .m_axi4_bresp                    (m_axi4_bresp                            ),
     .m_axi4_bvalid                   (m_axi4_bvalid                           ),
     .m_axi4_bready                   (m_axi4_bready                           ),
-    .wr_pc_sel                       (wr_pc_sel                               ),
     // regf interface ---------------------------------------------------------
     .regf_ct_mem_addr                (regf_ct_mem_addr                        ),
     .regf_req_id                     (regf_req_id                             ),
@@ -338,8 +333,6 @@ module mhdma_bridge
     .m_axi4_rlast                   (m_axi4_rlast                             ),
     .m_axi4_rvalid                  (m_axi4_rvalid                            ),
     .m_axi4_rready                  (m_axi4_rready                            ),
-    .ar_pc_sel                      (ar_pc_sel                                ),
-    .rd_pc_sel                      (rd_pc_sel                                ),
     // regf interface ---------------------------------------------------------
     .regf_ct_mem_addr               (regf_ct_mem_addr                         ),
     .regf_notify_req_id             (regf_notify_req_id                       ),

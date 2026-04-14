@@ -200,7 +200,7 @@ namespace eval _nsp_hpu {
     variable CT_AXI_NB 2
     variable GLWE_AXI_NB 1
     variable TRC_AXI_NB 1
-    variable MHDMA_PC_AXI_NB 2
+    variable MHDMA_PC_AXI_NB 1
     # DOP and ACK
     variable AXIS_NB 2
 

@@ -14,7 +14,7 @@
 //   - If fifo_nrx_commands is full we don't consume words from decoder FIFO
 //   - PCs are processed sequentially (ar_pc_onehot / rd_pc_onehot), so a single
 //     shared burst FSM, fifo_element, fifo_ram_rdy_vld and serialization pipeline is used.
-//     Per-PC AXI4 IO is muxed/demuxed based on the active PC index.
+//     All PCs share a single AXI4 NMU port; per-PC addresses are selected internally.
 //   - AXI4 read data (AXI4_DATA_W wide) is serialized into MRMAC_AXIS_W words before
 //     being pushed into the CE FIFO for the formatter.
 //
@@ -43,7 +43,7 @@ module mhdma_slave
   // Ethernet fast clock interface ----------------------------------------------------------------
   input  logic                                                   clk_mhdma,
   input  logic                                                   resetn_mhdma,
-  // Single AXI4 read interface (demuxed to per-PC NMU in mhdma_nmu_demux) -----------------------
+  // Single AXI4 read interface -------------------------------------------------------------------
   output logic [  AXI4_ADD_W-1:0]                                m_axi4_araddr,
   output logic [  AXI4_LEN_W-1:0]                                m_axi4_arlen,
   output logic [ AXI4_SIZE_W-1:0]                                m_axi4_arsize,
@@ -58,9 +58,6 @@ module mhdma_slave
   input  logic                                                   m_axi4_rlast,
   input  logic                                                   m_axi4_rvalid,
   output logic                                                   m_axi4_rready,
-  // PC selectors for NMU demux ------------------------------------------------------------------
-  output logic [ETH_PC-1:0]                                      ar_pc_sel,
-  output logic [ETH_PC-1:0]                                      rd_pc_sel,
   // regf interface -------------------------------------------------------------------------------
   input  logic [ETH_PC-1:0][2*REG_DATA_W-1:0]                    regf_ct_mem_addr,
   output logic             [  REG_DATA_W-1:0]                    regf_notify_req_id,
@@ -506,7 +503,6 @@ module mhdma_slave
     .out_rdy (fifo_ar_out_rdy)
   );
 
-  // Single AR output: demux happens in mhdma_nmu_demux near the NMU
   // Shadow register to track which PC the AR in the fifo_element belongs to
   logic [ETH_PC-1:0] ar_pc_sel_pipe;
   always_ff @(posedge clk_mhdma) begin
@@ -524,13 +520,11 @@ module mhdma_slave
   assign m_axi4_arlen    = m_axi4_a.arlen;
   assign m_axi4_arsize   = m_axi4_a.arsize;
   assign m_axi4_arburst  = m_axi4_a.arburst;
-  assign ar_pc_sel       = ar_pc_sel_pipe;
 
-  // Single read data path (R channel) — mux/demux happens in mhdma_nmu_demux -------------------
+  // Single read data path (R channel) -----------------------------------------------------------
   logic rready_shared;
 
   assign m_axi4_rready = rready_shared;
-  assign rd_pc_sel     = rd_pc_onehot;
 
   // rready: we read if and only if we are in ciphertext emission mode
   assign rready_shared = read_fifo_ready & st_read_send;

@@ -16,7 +16,7 @@
 //
 // Interfaces:
 //   - AXI4-Lite slave  : register file access from host / RPU
-//   - AXI4-Full master : per-PC HBM read/write channels (ETH_PC ports)
+//   - AXI4-Full master : single NMU port for HBM read/write (all ETH_PC PCs share one port)
 //   - AXI-Stream       : QSFP TX/RX per lane (QSFP_LANE_NB lanes, one selected via line_sel)
 //   - Interrupts       : notify and read_request to host
 //   - GT control       : transceiver reset and loopback configuration
@@ -60,39 +60,39 @@ module multi_hpu_dma
   output logic [1:0]                                               s_axil_mhdma_rresp,
   output logic                                                     s_axil_mhdma_rvalid,
   input  logic                                                     s_axil_mhdma_rready,
-  // Axi4-full HBM interface ----------------------------------------------------------------------
+  // Axi4-full HBM interface (single NMU) ---------------------------------------------------------
   // Write channel
-  output logic [ETH_PC-1:0][axi_if_mhdma_axi_pkg::AXI4_ID_W-1:0]   m_axi4_mhdma_hbm_awid,
-  output logic [ETH_PC-1:0][axi_if_mhdma_axi_pkg::AXI4_ADD_W-1:0]  m_axi4_mhdma_hbm_awaddr,
-  output logic [ETH_PC-1:0][AXI4_LEN_W-1:0]                        m_axi4_mhdma_hbm_awlen,
-  output logic [ETH_PC-1:0][AXI4_SIZE_W-1:0]                       m_axi4_mhdma_hbm_awsize,
-  output logic [ETH_PC-1:0][AXI4_BURST_W-1:0]                      m_axi4_mhdma_hbm_awburst,
-  output logic [ETH_PC-1:0]                                        m_axi4_mhdma_hbm_awvalid,
-  input  logic [ETH_PC-1:0]                                        m_axi4_mhdma_hbm_awready,
-  output logic [ETH_PC-1:0][axi_if_mhdma_axi_pkg::AXI4_DATA_W-1:0] m_axi4_mhdma_hbm_wdata,
-  output logic [ETH_PC-1:0][axi_if_mhdma_axi_pkg::AXI4_STRB_W-1:0] m_axi4_mhdma_hbm_wstrb,
-  output logic [ETH_PC-1:0]                                        m_axi4_mhdma_hbm_wlast,
-  output logic [ETH_PC-1:0]                                        m_axi4_mhdma_hbm_wvalid,
-  input  logic [ETH_PC-1:0]                                        m_axi4_mhdma_hbm_wready,
+  output logic [axi_if_mhdma_axi_pkg::AXI4_ID_W-1:0]                m_axi4_mhdma_hbm_awid,
+  output logic [axi_if_mhdma_axi_pkg::AXI4_ADD_W-1:0]               m_axi4_mhdma_hbm_awaddr,
+  output logic [AXI4_LEN_W-1:0]                                     m_axi4_mhdma_hbm_awlen,
+  output logic [AXI4_SIZE_W-1:0]                                    m_axi4_mhdma_hbm_awsize,
+  output logic [AXI4_BURST_W-1:0]                                   m_axi4_mhdma_hbm_awburst,
+  output logic                                                      m_axi4_mhdma_hbm_awvalid,
+  input  logic                                                      m_axi4_mhdma_hbm_awready,
+  output logic [axi_if_mhdma_axi_pkg::AXI4_DATA_W-1:0]              m_axi4_mhdma_hbm_wdata,
+  output logic [axi_if_mhdma_axi_pkg::AXI4_STRB_W-1:0]              m_axi4_mhdma_hbm_wstrb,
+  output logic                                                      m_axi4_mhdma_hbm_wlast,
+  output logic                                                      m_axi4_mhdma_hbm_wvalid,
+  input  logic                                                      m_axi4_mhdma_hbm_wready,
   // Write response channel
-  input  logic [ETH_PC-1:0][axi_if_mhdma_axi_pkg::AXI4_ID_W-1:0]   m_axi4_mhdma_hbm_bid,
-  input  logic [ETH_PC-1:0][AXI4_RESP_W-1:0]                       m_axi4_mhdma_hbm_bresp,
-  input  logic [ETH_PC-1:0]                                        m_axi4_mhdma_hbm_bvalid,
-  output logic [ETH_PC-1:0]                                        m_axi4_mhdma_hbm_bready,
+  input  logic [axi_if_mhdma_axi_pkg::AXI4_ID_W-1:0]                m_axi4_mhdma_hbm_bid,
+  input  logic [AXI4_RESP_W-1:0]                                    m_axi4_mhdma_hbm_bresp,
+  input  logic                                                      m_axi4_mhdma_hbm_bvalid,
+  output logic                                                      m_axi4_mhdma_hbm_bready,
   // Read channel
-  output logic [ETH_PC-1:0][axi_if_mhdma_axi_pkg::AXI4_ADD_W-1:0]  m_axi4_mhdma_hbm_araddr,
-  output logic [ETH_PC-1:0][AXI4_LEN_W-1:0]                        m_axi4_mhdma_hbm_arlen,
-  output logic [ETH_PC-1:0][AXI4_SIZE_W-1:0]                       m_axi4_mhdma_hbm_arsize,
-  output logic [ETH_PC-1:0][AXI4_BURST_W-1:0]                      m_axi4_mhdma_hbm_arburst,
-  output logic [ETH_PC-1:0]                                        m_axi4_mhdma_hbm_arvalid,
-  input  logic [ETH_PC-1:0]                                        m_axi4_mhdma_hbm_arready,
-  output logic [ETH_PC-1:0][axi_if_mhdma_axi_pkg::AXI4_ID_W-1:0]   m_axi4_mhdma_hbm_arid,     // unused
-  input  logic [ETH_PC-1:0][axi_if_mhdma_axi_pkg::AXI4_DATA_W-1:0] m_axi4_mhdma_hbm_rdata,
-  input  logic [ETH_PC-1:0]                                        m_axi4_mhdma_hbm_rlast,
-  input  logic [ETH_PC-1:0]                                        m_axi4_mhdma_hbm_rvalid,
-  output logic [ETH_PC-1:0]                                        m_axi4_mhdma_hbm_rready,
-  input  logic [ETH_PC-1:0][axi_if_mhdma_axi_pkg::AXI4_ID_W-1:0]   m_axi4_mhdma_hbm_rid,      // unused
-  input  logic [ETH_PC-1:0][AXI4_RESP_W-1:0]                       m_axi4_mhdma_hbm_rresp,    // unused
+  output logic [axi_if_mhdma_axi_pkg::AXI4_ADD_W-1:0]               m_axi4_mhdma_hbm_araddr,
+  output logic [AXI4_LEN_W-1:0]                                     m_axi4_mhdma_hbm_arlen,
+  output logic [AXI4_SIZE_W-1:0]                                    m_axi4_mhdma_hbm_arsize,
+  output logic [AXI4_BURST_W-1:0]                                   m_axi4_mhdma_hbm_arburst,
+  output logic                                                      m_axi4_mhdma_hbm_arvalid,
+  input  logic                                                      m_axi4_mhdma_hbm_arready,
+  output logic [axi_if_mhdma_axi_pkg::AXI4_ID_W-1:0]                m_axi4_mhdma_hbm_arid,
+  input  logic [axi_if_mhdma_axi_pkg::AXI4_DATA_W-1:0]              m_axi4_mhdma_hbm_rdata,
+  input  logic                                                      m_axi4_mhdma_hbm_rlast,
+  input  logic                                                      m_axi4_mhdma_hbm_rvalid,
+  output logic                                                      m_axi4_mhdma_hbm_rready,
+  input  logic [axi_if_mhdma_axi_pkg::AXI4_ID_W-1:0]                m_axi4_mhdma_hbm_rid,
+  input  logic [AXI4_RESP_W-1:0]                                    m_axi4_mhdma_hbm_rresp,
   // QSFP system interface ------------------------------------------------------------------------
   // == TX
   output logic [QSFP_LANE_NB-1:0][MRMAC_AXIS_W-1:0  ]              qsfp_tx_tdata,
@@ -498,7 +498,7 @@ module multi_hpu_dma
   logic                                         axis_tx_tvalid;
   logic                                         axis_tx_tready;
 
-  // Single AXI4 between bridge and NMU demux
+  // Single AXI4 between bridge and NMU pipe
   logic [axi_if_mhdma_axi_pkg::AXI4_ID_W-1:0]   bridge_arid;
   logic [axi_if_mhdma_axi_pkg::AXI4_ADD_W-1:0]  bridge_araddr;
   logic [AXI4_LEN_W-1:0]                        bridge_arlen;
@@ -512,8 +512,6 @@ module multi_hpu_dma
   logic                                         bridge_rlast;
   logic                                         bridge_rvalid;
   logic                                         bridge_rready;
-  logic [mhdma_pkg::ETH_PC-1:0]                 bridge_ar_pc_sel;
-  logic [mhdma_pkg::ETH_PC-1:0]                 bridge_rd_pc_sel;
 
   logic [axi_if_mhdma_axi_pkg::AXI4_ID_W-1:0]   bridge_awid;
   logic [axi_if_mhdma_axi_pkg::AXI4_ADD_W-1:0]  bridge_awaddr;
@@ -527,7 +525,6 @@ module multi_hpu_dma
   logic                                         bridge_wlast;
   logic                                         bridge_wvalid;
   logic                                         bridge_wready;
-  logic [mhdma_pkg::ETH_PC-1:0]                 bridge_wr_pc_sel;
 
   mhdma_bridge mhdma_bridge (
     .clk_mhdma_cfg                  (clk_mhdma_cfg                                                ),
@@ -548,8 +545,6 @@ module multi_hpu_dma
     .m_axi4_rlast                   (bridge_rlast                                                 ),
     .m_axi4_rvalid                  (bridge_rvalid                                                ),
     .m_axi4_rready                  (bridge_rready                                                ),
-    .ar_pc_sel                      (bridge_ar_pc_sel                                             ),
-    .rd_pc_sel                      (bridge_rd_pc_sel                                             ),
     // Single AXI4 write interface ---------------------------------------------------------------
     .m_axi4_awid                    (bridge_awid                                                  ),
     .m_axi4_awaddr                  (bridge_awaddr                                                ),
@@ -563,8 +558,7 @@ module multi_hpu_dma
     .m_axi4_wlast                   (bridge_wlast                                                 ),
     .m_axi4_wvalid                  (bridge_wvalid                                                ),
     .m_axi4_wready                  (bridge_wready                                                ),
-    .wr_pc_sel                      (bridge_wr_pc_sel                                             ),
-    // B channel per-PC (master needs per-PC completion tracking) --------------------------------
+    // B channel ----------------------------------------------------------------------------------
     .m_axi4_bid                     (m_axi4_mhdma_hbm_bid                                         ),
     .m_axi4_bresp                   (m_axi4_mhdma_hbm_bresp                                       ),
     .m_axi4_bvalid                  (m_axi4_mhdma_hbm_bvalid                                      ),
@@ -608,10 +602,11 @@ module multi_hpu_dma
   );
 
   // ============================================================================================ //
-  // NMU demux: single AXI4 from bridge -> per-PC NMU ports
+  // NMU pipeline: bridge AXI4 -> pipeline stages -> single NMU port
+  // All ETH_PC processing contexts share this single AXI4 port. PCs are processed sequentially
+  // by the burst FSM; the NMU accesses both PC address regions within the same HBM pseudo-channel.
   // ============================================================================================ //
-  // parameter is set by package
-  mhdma_nmu_demux mhdma_nmu_demux (
+  mhdma_nmu_pipe mhdma_nmu_pipe (
     .clk                            (clk_mhdma                                                    ),
     .s_rst_n                        (resetn_mhdma                                                 ),
     // Single AXI4 read from bridge
@@ -628,8 +623,6 @@ module multi_hpu_dma
     .s_axi4_rlast                   (bridge_rlast                                                 ),
     .s_axi4_rvalid                  (bridge_rvalid                                                ),
     .s_axi4_rready                  (bridge_rready                                                ),
-    .ar_pc_sel                      (bridge_ar_pc_sel                                             ),
-    .rd_pc_sel                      (bridge_rd_pc_sel                                             ),
     // Single AXI4 write from bridge
     .s_axi4_awid                    (bridge_awid                                                  ),
     .s_axi4_awaddr                  (bridge_awaddr                                                ),
@@ -643,8 +636,7 @@ module multi_hpu_dma
     .s_axi4_wlast                   (bridge_wlast                                                 ),
     .s_axi4_wvalid                  (bridge_wvalid                                                ),
     .s_axi4_wready                  (bridge_wready                                                ),
-    .wr_pc_sel                      (bridge_wr_pc_sel                                             ),
-    // Per-PC NMU ports
+    // Single NMU port
     .m_axi4_arid                    (m_axi4_mhdma_hbm_arid                                        ),
     .m_axi4_araddr                  (m_axi4_mhdma_hbm_araddr                                      ),
     .m_axi4_arlen                   (m_axi4_mhdma_hbm_arlen                                       ),
@@ -671,7 +663,6 @@ module multi_hpu_dma
     .m_axi4_wvalid                  (m_axi4_mhdma_hbm_wvalid                                      ),
     .m_axi4_wready                  (m_axi4_mhdma_hbm_wready                                      )
   );
-  // B channel goes directly from NMU to bridge (per-PC, not through demux)
 
   // ============================================================================================ //
   // AXI4-stream lane switch

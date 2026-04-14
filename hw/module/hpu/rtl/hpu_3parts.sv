@@ -96,7 +96,7 @@ module hpu_3parts
   `HPU_AXI4_IO(bsk, BSK, axi_if_bsk_axi_pkg, [BSK_PC_MAX-1:0])
 
   //== Axi4 ETH HBM interface
-  `HPU_AXI4_IO(mhdma_hbm, MHDMA_HBM, axi_if_mhdma_axi_pkg, [ETH_PC-1:0])
+  `HPU_AXI4_IO(mhdma_hbm, MHDMA_HBM, axi_if_mhdma_axi_pkg,)
 
   // QSFP system interface
   // == TX
@@ -549,7 +549,7 @@ module hpu_3parts
     .s_axil_mhdma_rvalid        (s_axil_mhdma_2in3_rvalid),
     .s_axil_mhdma_rready        (s_axil_mhdma_2in3_rready),
 
-    `HPU_AXI4_FULL_INSTANCE(mhdma_hbm, mhdma_hbm,,[ETH_PC-1:0])
+    `HPU_AXI4_FULL_INSTANCE(mhdma_hbm, mhdma_hbm,,)
 
     .decomp_ntt_data_avail      (out_p1_p2_sll_ctrl.decomp_ntt_ctrl.data_avail),
     .decomp_ntt_data            (out_p1_p2_sll_data.decomp_ntt_data.data),

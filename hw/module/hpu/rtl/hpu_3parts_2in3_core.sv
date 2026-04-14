@@ -123,7 +123,7 @@ module hpu_3parts_2in3_core
   output pep_rif_elt_t                       pep_rif_elt,
 
   // Multi-HPU-DMA
-  `HPU_AXI4_IO(mhdma_hbm, MHDMA_HBM, axi_if_mhdma_axi_pkg, [ETH_PC-1:0])
+  `HPU_AXI4_IO(mhdma_hbm, MHDMA_HBM, axi_if_mhdma_axi_pkg,)
   // QSFP system interface
   // == TX
   output logic [QSFP_LANE_NB-1:0][MRMAC_AXIS_W-1:0]  qsfp_tx_tdata,
@@ -462,7 +462,7 @@ module hpu_3parts_2in3_core
 
   // initialize axi4 signals ----------------------------------------------------------------------
   // Tie-off m_axi4 unused features
-  `HPU_AXI4_TIE_GL_UNUSED(mhdma_hbm, [ETH_PC-1:0], ETH_PC)
+  `HPU_AXI4_TIE_GL_UNUSED(mhdma_hbm,,)
   // reset for mrmac resyncronized for the two clock frequencies
   logic cfg_eth_srst_n;   // ethernet configuration slow clock
   logic prc_mrmac_srst_n; // mrmac clock at axis speed
@@ -470,10 +470,9 @@ module hpu_3parts_2in3_core
   // /!\ Workaround : simulation AXI4_MHDMA_HBM_ADD_W may be different from
   // the AXI4_MHDMA_HBM_ADD_W of the package (= the synthesized value).
   // Use intermediate variable.
-  logic [ETH_PC-1:0][axi_if_mhdma_axi_pkg::AXI4_ADD_W-1:0] m_axi4_mhdma_hbm_araddr_tmp;
+  logic [axi_if_mhdma_axi_pkg::AXI4_ADD_W-1:0] m_axi4_mhdma_hbm_araddr_tmp;
   always_comb
-    for (int i=0; i<ETH_PC; i=i+1)
-      m_axi4_mhdma_hbm_araddr[i] = m_axi4_mhdma_hbm_araddr_tmp[i][AXI4_MHDMA_HBM_ADD_W-1:0];
+    m_axi4_mhdma_hbm_araddr = m_axi4_mhdma_hbm_araddr_tmp[AXI4_MHDMA_HBM_ADD_W-1:0];
 
 // pragma translate_off
   always_ff @(posedge prc_mhdma_clk)
@@ -481,21 +480,18 @@ module hpu_3parts_2in3_core
       // Do nothing
     end
     else begin
-      for (int i=0; i<ETH_PC; i=i+1) begin
-        if (m_axi4_mhdma_hbm_arvalid[i]) begin
-          assert(m_axi4_mhdma_hbm_araddr_tmp[i] >> AXI4_MHDMA_HBM_ADD_W == '0)
-          else begin
-            $fatal(1,"%t > ERROR: HBM ETHERNET AXI [%d] address overflows. Simulation supports only %d bits: 0x%0x.",$time, i, AXI4_MHDMA_HBM_ADD_W, m_axi4_mhdma_hbm_araddr_tmp[i]);
-          end
+      if (m_axi4_mhdma_hbm_arvalid) begin
+        assert(m_axi4_mhdma_hbm_araddr_tmp >> AXI4_MHDMA_HBM_ADD_W == '0)
+        else begin
+          $fatal(1,"%t > ERROR: HBM ETHERNET AXI address overflows. Simulation supports only %d bits: 0x%0x.",$time, AXI4_MHDMA_HBM_ADD_W, m_axi4_mhdma_hbm_araddr_tmp);
         end
       end
     end
 // pragma translate_on
 
-  logic [ETH_PC-1:0][axi_if_mhdma_axi_pkg::AXI4_ADD_W-1:0] m_axi4_mhdma_hbm_awaddr_tmp;
+  logic [axi_if_mhdma_axi_pkg::AXI4_ADD_W-1:0] m_axi4_mhdma_hbm_awaddr_tmp;
   always_comb
-    for (int i=0; i<ETH_PC; i=i+1)
-      m_axi4_mhdma_hbm_awaddr[i] = m_axi4_mhdma_hbm_awaddr_tmp[i][AXI4_MHDMA_HBM_ADD_W-1:0];
+    m_axi4_mhdma_hbm_awaddr = m_axi4_mhdma_hbm_awaddr_tmp[AXI4_MHDMA_HBM_ADD_W-1:0];
 
 // pragma translate_off
   always_ff @(posedge prc_mhdma_clk)
@@ -503,12 +499,10 @@ module hpu_3parts_2in3_core
       // Do nothing
     end
     else begin
-      for (int i=0; i<ETH_PC; i=i+1) begin
-        if (m_axi4_mhdma_hbm_arvalid[i]) begin
-          assert(m_axi4_mhdma_hbm_awaddr_tmp[i] >> AXI4_MHDMA_HBM_ADD_W == '0)
-          else begin
-            $fatal(1,"%t > ERROR: HBM ETHERNET AXI [%d] address overflows. Simulation supports only %d bits: 0x%0x.",$time, i, AXI4_MHDMA_HBM_ADD_W, m_axi4_mhdma_hbm_awaddr_tmp[i]);
-          end
+      if (m_axi4_mhdma_hbm_awvalid) begin
+        assert(m_axi4_mhdma_hbm_awaddr_tmp >> AXI4_MHDMA_HBM_ADD_W == '0)
+        else begin
+          $fatal(1,"%t > ERROR: HBM ETHERNET AXI address overflows. Simulation supports only %d bits: 0x%0x.",$time, AXI4_MHDMA_HBM_ADD_W, m_axi4_mhdma_hbm_awaddr_tmp);
         end
       end
     end
@@ -563,7 +557,7 @@ module hpu_3parts_2in3_core
     .s_axil_mhdma_rvalid    (s_axil_mhdma_rvalid),
     .s_axil_mhdma_rready    (s_axil_mhdma_rready),
     // HBM axi4
-    `HPU_AXI4_SHORT_INSTANCE(mhdma_hbm, mhdma_hbm, _tmp, [ETH_PC-1:0])
+    `HPU_AXI4_SHORT_INSTANCE(mhdma_hbm, mhdma_hbm, _tmp,)
     // interrupts
     .interrupt_notify       (interrupt_notify),
     .interrupt_read_request (interrupt_read_request),
