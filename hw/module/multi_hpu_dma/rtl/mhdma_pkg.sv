@@ -141,7 +141,7 @@ package mhdma_pkg;
   localparam int FIFO_PC_RAM_LATENCY   = 1;
 
   // NMU placement pipeline: fifo_element depth between bridge core and single NMU
-  localparam int NMU_PLACEMENT_FIFO_DEPTH = 2;
+  localparam int NMU_PLACEMENT_FIFO_DEPTH = 4;
 
   // QSFP TX fifo: FIFO CE (Block RAM)
   localparam int CE_RAM_LATENCY        = 2;
