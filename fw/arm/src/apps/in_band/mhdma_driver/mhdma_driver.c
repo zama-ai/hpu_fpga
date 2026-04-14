@@ -21,7 +21,7 @@
 #endif
 
 extern uint8_t phys_hpu_id;
-extern mhdma_element_t mhdma_table[IOP_ID_MAX_COUNT][FLAG_MAX_COUNT];
+extern volatile mhdma_element_t mhdma_table[IOP_ID_MAX_COUNT][FLAG_MAX_COUNT];
 
 #ifdef UCORE_MHDMA_SIMU
   extern int output_pipe;
@@ -63,7 +63,7 @@ extern mhdma_element_t mhdma_table[IOP_ID_MAX_COUNT][FLAG_MAX_COUNT];
 #endif
 
 void generate_read_req(uint8_t iop_id, uint8_t flag) {
-  mhdma_element_t *current_elt = &mhdma_table[iop_id][flag];
+  volatile mhdma_element_t *current_elt = &mhdma_table[iop_id][flag];
   mhdma_cmd_t read_req;
   read_req.raw = 0;
   read_req.fields.dst_cid = current_elt->dst_ct_id;
@@ -93,7 +93,7 @@ void generate_operand_read_req(uint8_t iop_id, uint8_t mode, uint8_t slave_hpu_i
 }
 
 void generate_user_notify(uint8_t iop_id, uint8_t flag) {
-  mhdma_element_t *current_elt = &mhdma_table[iop_id][flag];
+  volatile mhdma_element_t *current_elt = &mhdma_table[iop_id][flag];
   mhdma_cmd_t nc;
   nc.raw = 0;
   nc.fields.dst_cid = 0;

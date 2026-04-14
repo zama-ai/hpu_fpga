@@ -86,7 +86,7 @@
 
 #define DST_STATE_NONE        0 // it means this dst is not needed for this iop
 #define DST_STATE_WAIT_NOTIFY 1 // reset value of dst store elt, it means dst is expecting data (local or remote)
-#define DST_STATE_READING     2 // dst remove read triggered but not done yet
+#define DST_STATE_READING     2 // remote dst read triggered but not done yet
 #define DST_STATE_RESOLVED    3 // dst locally available
 
 #define OPERAND_STATE_NONE         5 // no info on this operand
@@ -109,16 +109,16 @@ typedef struct {
 } iop_state_t;
 
 typedef struct {
-  uint8_t owner[IOP_ID_MAX_COUNT][MAX_DST_VARS];
-  uint8_t state[IOP_ID_MAX_COUNT][MAX_DST_VARS][MAX_VAR_BLKS];
+  volatile uint8_t owner[IOP_ID_MAX_COUNT][MAX_DST_VARS];
+  volatile uint8_t state[IOP_ID_MAX_COUNT][MAX_DST_VARS][MAX_VAR_BLKS];
 } dst_store_t;
 
 typedef struct {
-  uint8_t owner[IOP_ID_MAX_COUNT][MAX_DST_VARS];
-  uint8_t src_iid[IOP_ID_MAX_COUNT][MAX_DST_VARS];
-  uint16_t cid_offset[IOP_ID_MAX_COUNT][MAX_DST_VARS];
-  uint16_t dst_cid[IOP_ID_MAX_COUNT][MAX_DST_VARS][MAX_VAR_BLKS];
-  uint8_t state[IOP_ID_MAX_COUNT][MAX_DST_VARS][MAX_VAR_BLKS];
+  volatile uint8_t owner[IOP_ID_MAX_COUNT][MAX_DST_VARS];
+  volatile uint8_t src_iid[IOP_ID_MAX_COUNT][MAX_DST_VARS];
+  volatile uint16_t cid_offset[IOP_ID_MAX_COUNT][MAX_DST_VARS];
+  volatile uint16_t dst_cid[IOP_ID_MAX_COUNT][MAX_DST_VARS][MAX_VAR_BLKS];
+  volatile uint8_t state[IOP_ID_MAX_COUNT][MAX_DST_VARS][MAX_VAR_BLKS];
 } src_store_t;
 
 // master HPU is read initiator

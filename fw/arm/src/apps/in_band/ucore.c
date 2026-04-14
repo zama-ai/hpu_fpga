@@ -31,8 +31,8 @@ uint8_t cluster_first_nid;
 uint8_t cluster_last_nid;
 uint16_t b2b_pool_start_addr = 12288;
 uint16_t b2b_pool_size = 4096;
-mhdma_element_t mhdma_table[IOP_ID_MAX_COUNT][FLAG_MAX_COUNT];
-uint8_t mhdma_table_state[IOP_ID_MAX_COUNT][FLAG_MAX_COUNT];
+volatile mhdma_element_t mhdma_table[IOP_ID_MAX_COUNT][FLAG_MAX_COUNT];
+volatile uint8_t mhdma_table_state[IOP_ID_MAX_COUNT][FLAG_MAX_COUNT];
 extern uint64_t intr_readc_cnt;
 
 #ifndef UCORE_MHDMA_SIMU
@@ -57,14 +57,14 @@ void print_ddr_debug(uint32_t data) {
 
 // mhdma_table (User data)
 void mhdma_table_reset(void) {
-  memset(mhdma_table_state, MHDMA_STATE_EMPTY, sizeof(mhdma_table_state));
+  memset((void*)mhdma_table_state, MHDMA_STATE_EMPTY, sizeof(mhdma_table_state));
 }
 void mhdma_table_reset_iop(uint8_t iid) {
-  memset(mhdma_table_state[iid], MHDMA_STATE_EMPTY, sizeof(mhdma_table_state[iid]));
+  memset((void*)mhdma_table_state[iid], MHDMA_STATE_EMPTY, sizeof(mhdma_table_state[iid]));
 }
 
 // IOP state
-iop_state_t iop_state[IOP_ID_MAX_COUNT];
+volatile iop_state_t iop_state[IOP_ID_MAX_COUNT];
 
 void iop_state_init(void) {
   for (int i = 0; i < IOP_ID_MAX_COUNT; i++) {
@@ -259,14 +259,14 @@ RemoteOperand_t *dst_notifyq_find(uint8_t iid, uint8_t dst_hpu_id, uint16_t dst_
 }
 
 // src store
-src_store_t src_store;
+volatile src_store_t src_store;
 
 void src_store_init(void) {
-  memset(src_store.state, OPERAND_STATE_NONE, sizeof(src_store.state));
+  memset((void*)src_store.state, OPERAND_STATE_NONE, sizeof(src_store.state));
 }
 
 void src_store_reset_iop(uint8_t iid) {
-  memset(src_store.state[iid], OPERAND_STATE_NONE, sizeof(src_store.state[iid]));
+  memset((void*)src_store.state[iid], OPERAND_STATE_NONE, sizeof(src_store.state[iid]));
 }
 
 void src_store_inits(uint8_t iid, OperandBundle_t *iop_src) {
@@ -321,18 +321,18 @@ void src_store_print(uint8_t iid) {
 }
 
 // dst_store tracking all dst block to know when IOp is really done
-dst_store_t dst_store;
+volatile dst_store_t dst_store;
 
 void dst_store_init(void) {
   // not sure we need to reset owner
-  memset(dst_store.owner, 0xFF, sizeof(dst_store.owner));
-  memset(dst_store.state, DST_STATE_WAIT_NOTIFY, sizeof(dst_store.state));
+  memset((void*)dst_store.owner, 0xFF, sizeof(dst_store.owner));
+  memset((void*)dst_store.state, DST_STATE_WAIT_NOTIFY, sizeof(dst_store.state));
 }
 
 void dst_store_reset_iop(uint8_t iid) {
   // not sure we need to reset owner
-  memset(dst_store.owner[iid], 0xFF, sizeof(dst_store.owner[iid]));
-  memset(dst_store.state[iid], DST_STATE_WAIT_NOTIFY, sizeof(dst_store.state[iid]));
+  memset((void*)dst_store.owner[iid], 0xFF, sizeof(dst_store.owner[iid]));
+  memset((void*)dst_store.state[iid], DST_STATE_WAIT_NOTIFY, sizeof(dst_store.state[iid]));
 }
 
 void dst_store_initd(uint8_t iid, OperandBundle_t *iop_dst) {
@@ -953,7 +953,7 @@ int process_ucore_dop(DOpu_t *dop, OperandBundle_t *iop_src, uint32_t *dop_buffe
   switch (dop->ucore.opcode & 0xF) {
     case DOPS_NOTIFY: {
       uint16_t raw_ct_id = get_raw_ct_id(dop);
-      mhdma_element_t *current_elt = &mhdma_table[cur_iid][current_flag];
+      volatile mhdma_element_t *current_elt = &mhdma_table[cur_iid][current_flag];
       mhdma_table_state[cur_iid][current_flag] = MHDMA_STATE_NOTIFY_PENDING;
       current_elt->src_ct_id = raw_ct_id;
       current_elt->slave_hpu_id = phys_hpu_id;
@@ -1001,7 +1001,7 @@ int process_ucore_dop(DOpu_t *dop, OperandBundle_t *iop_src, uint32_t *dop_buffe
     }
     case DOPS_LD_B2B: {
       if (current_flag > 0) { // F0 is reserved for pre-load of sources
-        mhdma_element_t *current_elt = &mhdma_table[cur_iid][current_flag];
+        volatile mhdma_element_t *current_elt = &mhdma_table[cur_iid][current_flag];
         uint16_t raw_ct_id = get_raw_ct_id(dop);
         current_elt->dst_ct_id = raw_ct_id;
         current_elt->master_hpu_id = phys_hpu_id;

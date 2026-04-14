@@ -303,11 +303,11 @@ extern uint8_t cluster_first_nid;
 extern uint8_t cluster_last_nid;
 extern uint16_t b2b_pool_start_addr;
 extern uint16_t b2b_pool_size;
-extern iop_state_t iop_state[IOP_ID_MAX_COUNT];
-extern src_store_t src_store;
-extern dst_store_t dst_store;
-extern mhdma_element_t mhdma_table[IOP_ID_MAX_COUNT][FLAG_MAX_COUNT];
-extern uint8_t mhdma_table_state[IOP_ID_MAX_COUNT][FLAG_MAX_COUNT];
+extern volatile iop_state_t iop_state[IOP_ID_MAX_COUNT];
+extern volatile src_store_t src_store;
+extern volatile dst_store_t dst_store;
+extern volatile mhdma_element_t mhdma_table[IOP_ID_MAX_COUNT][FLAG_MAX_COUNT];
+extern volatile uint8_t mhdma_table_state[IOP_ID_MAX_COUNT][FLAG_MAX_COUNT];
 
 /******************************************************************************/
 /* Function implementations                                                   */
@@ -426,7 +426,7 @@ void vInterruptHandler_mhdma_notify( void* pvCallBackRef ) {
 
     switch (mode) {
       case CMD_USER: {
-        mhdma_element_t *current_elt = &mhdma_table[iid][flag];
+        volatile mhdma_element_t *current_elt = &mhdma_table[iid][flag];
         current_elt->src_ct_id = notify.fields.src_cid;
         current_elt->slave_hpu_id = slave_hpu_id;
         uint8_t current_state = mhdma_table_state[iid][flag];
@@ -485,7 +485,6 @@ void vInterruptHandler_mhdma_read_complete( void* pvCallBackRef ) {
 
   // get iop_id, slave_hpu_id, src_ct_id, dst_ct_id, flag
   uint8_t iid = rc.fields.iid;
-  uint8_t slave_hpu_id = rc.fields.hid;
   uint8_t mode = rc.fields.mode;
   // is also the nb_hpu in CMD_SRC
   uint8_t flag = rc.fields.flag;
@@ -507,7 +506,7 @@ void vInterruptHandler_mhdma_read_complete( void* pvCallBackRef ) {
 
   switch (mode) {
     case CMD_USER: {
-      uint8_t *current_elt_state = &mhdma_table_state[iid][flag];
+      volatile uint8_t *current_elt_state = &mhdma_table_state[iid][flag];
       // state should be MHDMA_STATE_READING
       if (*current_elt_state == MHDMA_STATE_READING) {
         *current_elt_state = MHDMA_STATE_RESOLVED;
@@ -562,7 +561,6 @@ void vMhdmaWorkerTask(void *pvParameters) {
 
         case MHDMA_CMD_IOP_READSRC: {
           uint8_t iid = (rxCmd.payload >> 24) & 0xFF;
-          uint8_t hpu_id = (rxCmd.payload >> 16) & 0xFF;
           uint8_t mode = (rxCmd.payload >> 8) & 0xFF;
           // if remote_src is state NONE, it means b2b_pool slot is not ready => do nothing here
           // if remote_src is state DMA pending, it means read of this src is already on-going => do nothing here
@@ -832,11 +830,13 @@ static void vTaskFuncMain( void )
             if (timestamp != new_timestamp) { // this means user SW (tfhe-rs) has been restarted
                 PLL_DBG("parse_iop", "timestamp %d changed => reset inter-HPU struct", new_timestamp);
                 timestamp = new_timestamp;
+                vOSAL_EnterCritical();
                 mhdma_table_reset();
                 b2b_pool_init();
                 dst_notifyq_init();
                 src_store_init();
                 dst_store_init();
+                vOSAL_ExitCritical();
             }
         }
 
