@@ -19,6 +19,9 @@
 # Quasi static signals
 set_false_path -to [get_cells -hierarchical -filter {NAME =~ *mhdma_bridge/*hpu_ids_cdc_reg*}]
 
+set_false_path -through [get_nets -hierarchical -regexp -filter { NAME =~ ".*multi_hpu_dma/gt_line_rate.*"}]
+set_false_path -through [get_nets -hierarchical -regexp -filter { NAME =~ ".*multi_hpu_dma/gt_loopback.*"}]
+
 set_false_path -from    [get_cells -hierarchical -regexp -filter { NAME =~ ".*/r_mhdma_lane_debug_reg.*"}]
 set_false_path -from    [get_cells -hierarchical -regexp -filter { NAME =~ ".*/r_mhdma_system_timeout_notify_reg.*"}]
 set_false_path -from    [get_cells -hierarchical -regexp -filter { NAME =~ ".*/r_mhdma_system_timeout_read_req_reg.*"}]
@@ -27,6 +30,12 @@ set_false_path -through [get_cells -hierarchical -regexp -filter { NAME =~ ".*/r
 
 set_false_path -to [get_cells -hierarchical -filter {NAME =~ *mhdma_slave/*phy_addr_reg*}] -from [get_cells -hierarchical -filter {NAME =~ *hpu_regif_core_mhdma_2in3/*addr_2in3_ct_*_reg*}]
 set_false_path -to [get_cells -hierarchical -filter {NAME =~ *mhdma_master/*phy_addr_reg*}] -from [get_cells -hierarchical -filter {NAME =~ *hpu_regif_core_mhdma_2in3/*addr_2in3_ct_*_reg*}]
+
+# asynchronous reset signals
+# note that gt_rx_reset_done and gt_tx_reset_done are clocked with axi_clk. same clock as the regfile that reads them.
+set_false_path -through [get_nets  -hierarchical -regexp -filter { NAME =~ ".*gt_reset_rx_datapath.*"}]
+set_false_path -through [get_nets  -hierarchical -regexp -filter { NAME =~ ".*gt_reset_tx_datapath.*"}]
+set_false_path -through [get_nets  -hierarchical -regexp -filter { NAME =~ ".*gt_reset_all.*"}]
 
 # ==============================================================================================
 # RAM style constraints for FIFO instances
