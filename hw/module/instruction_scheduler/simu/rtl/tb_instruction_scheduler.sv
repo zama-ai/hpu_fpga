@@ -491,6 +491,9 @@ endtask
   int order_errors;
   int insert_idx;
 
+  bit [PE_INST_W-1:0] inner_sync_exp_q[$]; // expected inner sync ack sequence across DOP_ITER
+  int inner_sync_errors;
+
   initial begin
   // Init axis
   axis_insn_drv.init();
@@ -502,17 +505,41 @@ endtask
   $display("%t > INFO: read %d DOp instructions", $time, insn_cnt);
   insert_idx = $urandom % (insn_cnt/3);
 
-  repeat($urandom() % 5) begin
-    $display("%t > INFO: introduced x4 inner sync %08x at index", $time, 32'hBC060000, insert_idx);
-    insn_q.insert(insert_idx, 32'hBC061800);
-    insn_q.insert(insert_idx, 32'hBC061000);
-    insn_q.insert(insert_idx, 32'hBC060800);
-    insn_q.insert(insert_idx, 32'hBC060000);
-    insert_idx+= ($urandom() % 10) + 10;
-    insn_cnt+=4;
-    if (insert_idx > insn_cnt) begin
-      break;
+  begin : inner_sync_insertion
+    int n_inner_sync;
+    bit [PE_INST_W-1:0] grp_q[$];
+    bit [PE_INST_W-1:0] dop;
+    repeat($urandom() % 5) begin
+      n_inner_sync = ($urandom() % 10) + 1; // 1..10
+      grp_q.delete();
+      for (int k = 0; k < n_inner_sync; k++) begin
+        dop = 32'hBC060000 | (32'($urandom() % 64) << 11);
+        grp_q.push_back(dop);
+      end
+      $display("%t > INFO: inserting %0d inner sync(s) at index %0d", $time, n_inner_sync, insert_idx);
+      foreach (grp_q[k])
+        $display("%t > INFO:   [%0d] dop=%08x flag=%0d", $time, k, grp_q[k], (grp_q[k] >> 11) & 6'h3F);
+      // Insert reversed so program order in insn_q matches grp_q order
+      for (int k = n_inner_sync - 1; k >= 0; k--)
+        insn_q.insert(insert_idx, grp_q[k]);
+      foreach (grp_q[k])
+        inner_sync_exp_q.push_back(grp_q[k]);
+      insert_idx += ($urandom() % 10) + 10;
+      insn_cnt += n_inner_sync;
+      if (insert_idx > insn_cnt) break;
     end
+  end
+
+  // Replicate the one-iteration sequence DOP_ITER-1 more times
+  begin
+    int base_size;
+    base_size = inner_sync_exp_q.size();
+    for (int iter = 1; iter < DOP_ITER; iter++)
+      for (int i = 0; i < base_size; i++)
+        inner_sync_exp_q.push_back(inner_sync_exp_q[i]);
+    inner_sync_errors = 0;
+    $display("%t > INFO: %0d inner sync(s) per iteration, %0d total expected",
+             $time, base_size, inner_sync_exp_q.size());
   end
 
   while (!s_rst_n) @(posedge clk);
@@ -558,8 +585,20 @@ endtask
           $display("%t > INFO: DUT generate Ack",$time);
           if (end_of_iop == DOP_ITER) break;
         end
-        else begin
-          $display("%t > INFO: DUT generate internal Ack %08x",$time, iop_ack);
+        else begin // bit[17] == 1: INNER SYNC ack
+          if (inner_sync_exp_q.size() == 0) begin
+            $display("%t > ERROR: unexpected inner sync ack %08x", $time, iop_ack);
+            inner_sync_errors++;
+          end else begin
+            bit [PE_INST_W-1:0] exp_ack;
+            exp_ack = inner_sync_exp_q.pop_front();
+            if (iop_ack !== exp_ack) begin
+              $display("%t > ERROR: inner sync ack mismatch: got %08x expected %08x (flag got=%0d exp=%0d)",
+                       $time, iop_ack, exp_ack, (iop_ack>>11)&'h3F, (exp_ack>>11)&'h3F);
+              inner_sync_errors++;
+            end else
+              $display("%t > INFO: inner sync ack %08x flag=%0d [OK]", $time, iop_ack, (iop_ack>>11)&'h3F);
+          end
         end
         @(posedge clk);
       end while (1);
@@ -568,11 +607,17 @@ endtask
     disable fork;
   join
 
+  // Check all expected inner sync acks were received
+  if (inner_sync_exp_q.size() != 0) begin
+    $display("%t > ERROR: %0d inner sync ack(s) not generated", $time, inner_sync_exp_q.size());
+    inner_sync_errors++;
+  end
+
   // Check generated instruction order
   // 1. reload insn from file
   // 2. Check against generated retire stream
   check_insn_stream(ref_q, retire_q, order_errors);
-  error = |order_errors;
+  error = |order_errors | |inner_sync_errors;
   repeat(10) @(posedge clk);
 
   end_of_test = 1'b1;
