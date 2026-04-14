@@ -85,7 +85,6 @@ module mhdma_nmu_pipe
   output logic                                m_axi4_wvalid,
   input  logic                                m_axi4_wready
   // Note: B channel (write response) is NOT handled here.
-  // It goes directly from NMU to bridge because master needs completion tracking.
 );
 
   // =========================================================================================== //
