@@ -168,8 +168,8 @@ namespace eval _nsp_hpu {
     variable HPU_KSK_HBM_DATA_W 256
 
     # CT <-> HBM
-    variable HPU_CT_HBM_RD_BW 4000
-    variable HPU_CT_HBM_WR_BW 4000
+    variable HPU_CT_HBM_RD_BW 12000
+    variable HPU_CT_HBM_WR_BW 12000
     variable HPU_CT_HBM_RD_BURST_AVG 16
     variable HPU_CT_HBM_WR_BURST_AVG 16
     variable HPU_CT_HBM_BURST_MAX 16
