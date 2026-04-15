@@ -802,6 +802,46 @@ int read_remote_src(int blocking, OperandBundle_t *iop_src, uint8_t tid, uint8_t
   return return_value;
 }
 
+int read_local_src(OperandBundle_t *iop_src, uint8_t tid, uint32_t *dop_buffer, int dop_buffer_pos) {
+  int return_value = 0;
+  // local source
+  uint8_t src_iid = iop_src->operand[tid].iid;
+
+  // exit immediately if src is available (from host or from done IOp)
+  if (iop_state[src_iid].state == IOP_STATE_DONE || src_iid == 0) {
+    return 0;
+  }
+
+  // if we need to wait, flush already translated DOp
+#ifndef UCORE_MHDMA_SIMU
+  if ((dop_buffer_pos%DOP_BUFFER_SIZE) > MIN_DOP_FLUSH) {
+    flush_dop_buffer_to_isc(dop_buffer, (dop_buffer_pos%DOP_BUFFER_SIZE));
+    return_value = (dop_buffer_pos%DOP_BUFFER_SIZE);
+  }
+#endif
+  uint32_t wait_cnt = 0;
+  while (iop_state[src_iid].state != IOP_STATE_DONE) {
+    // wait until
+    if ((wait_cnt+1)%1000 == 0) {
+      PLL_DBG("ucore", "[HPU%d] iop %d wait iop: src_iid %d state %d",
+          phys_hpu_id,
+          cur_iid,
+          src_iid,
+          iop_state[src_iid].state);
+    }
+    wait_cnt++;
+    if (wait_cnt > 10000) {
+#ifdef UCORE_MHDMA_SIMU
+        sleep(10);
+#else
+        iOSAL_Task_SleepTicks(1);
+#endif
+    }
+  }
+
+  return return_value;
+}
+
 // Patching function
 // ============================================================================================= //
 // Patch templated memory instruction
@@ -834,6 +874,7 @@ int patch_mem_dop(DOpu_t *dop, OperandBundle_t *iop_dst, OperandBundle_t *iop_sr
       dop->mem.mode = MEM_ADDR;
       if (iop_src->operand[tid].pos == phys_hpu_id) {
         // local access
+        return_value = read_local_src(iop_src, tid, dop_buffer, dop_buffer_pos);
         dop->mem.slot = iop_src->operand[tid].cid_ofst + bid;
         src_store.state[cur_iid][tid][bid] = OPERAND_STATE_RESOLVED;
       } else {
