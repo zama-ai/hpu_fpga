@@ -416,7 +416,7 @@ void vInterruptHandler_mhdma_notify( void* pvCallBackRef ) {
       MhdmaCommand_t cmd;
       cmd.cmdID = MHDMA_CMD_PRINT_ERR;
       cmd.payload = (iid << 24 | (notify.fields.src_cid & 0xF) << 20 | slave_hpu_id << 16 | mode << 8 | flag);
-      cmd.debug   = notify_data;
+      cmd.debug   = notify_data | (iop_state[iid].state << 32);
       if (xMhdmaCommandMbox) {
         if (iOSAL_MBox_PostFromISR(xMhdmaCommandMbox, (void*)&cmd) != 0) {
           mbox_msg_lost_cnt+=1;
@@ -584,7 +584,7 @@ void vMhdmaWorkerTask(void *pvParameters) {
                     src_store.owner[cur_iid][tid],
                     src_store.cid_offset[cur_iid][tid] + bid,
                     src_store.dst_cid[cur_iid][tid][bid],
-                    0);
+                    src_addr);
             src_store.state[cur_iid][tid][bid] = OPERAND_STATE_DMA_PENDING;
             vOSAL_ExitCritical();
             // try to get next src pending

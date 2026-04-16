@@ -560,10 +560,12 @@ uint32_t parse_iop(
   cur_iid = dst->operand[0].iid;
   cur_mapping.raw = mapping->raw;
   uint8_t nb_hpu = number_of_hpu(*mapping);
-  if (iop_state[cur_iid].state >= nb_hpu) {
+  vOSAL_EnterCritical();
+  if (iop_state[cur_iid].state >= nb_hpu || iop_state[cur_iid].state == IOP_STATE_DONE) {
     iop_state[cur_iid].state  = IOP_STATE_RUNNING;
   }
   iop_state[cur_iid].nb_hpu = nb_hpu;
+  vOSAL_ExitCritical();
   PLL_INF("parse_iop", "[HPU%d] parse_iop starting iop %d (virt hid %d) state %d nb_hpu %d",
       phys_hpu_id,
       cur_iid,
