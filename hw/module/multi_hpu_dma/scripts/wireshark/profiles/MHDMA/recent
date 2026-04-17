@@ -1,0 +1,27 @@
+# Recent settings for MHDMA profile
+#
+# Note: Wireshark overwrites this file on exit.
+# Re-run install_profile.sh to restore defaults.
+
+gui.toolbar_main_show: true
+gui.filter_toolbar_show: true
+gui.packet_list_show: true
+gui.tree_view_show: true
+gui.byte_view_show: true
+gui.packet_diagram_show: true
+gui.statusbar_show: true
+gui.packet_list_colorize: true
+
+# Time: relative to first packet, microsecond precision
+gui.time_format: RELATIVE
+gui.time_precision: USEC
+gui.seconds_format: SECONDS
+gui.zoom_level: 0
+gui.bytes_view: HEX
+gui.bytes_encoding: FROM_PACKET
+gui.packet_diagram_field_values: false
+gui.allow_hover_selection: true
+gui.follow_show: ASCII
+gui.follow_delta: NONE
+gui.show_bytes_decode: NONE
+gui.show_bytes_show: ASCII

@@ -19,6 +19,7 @@
 //  https://docs.amd.com/v/u/en-US/ds806_axi_fifo_mm_s
 
 int write_isc(uint32_t *pucData, uint32_t Write_Size);
+void flush_dop_buffer_to_isc(uint32_t *dop_buffer, int number_of_dop);
 
 /* Pop an Ack from AXIs ---------------------------------------------------------------------------
  *

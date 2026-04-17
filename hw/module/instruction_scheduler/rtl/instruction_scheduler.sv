@@ -16,6 +16,7 @@ module instruction_scheduler
   import hpu_common_instruction_pkg::*;
   import regf_common_param_pkg::*;
   import isc_common_param_pkg::*;
+  import axi_if_trc_axi_pkg::*;
   (
     input logic  clk,        // clock
     input logic  s_rst_n,    // synchronous reset
@@ -33,7 +34,7 @@ module instruction_scheduler
 
     // Pseudo stream for ack
     input  logic                 insn_ack_rdy,
-    output logic[PE_INST_W-1: 0] insn_ack_cnt,
+    output logic[PE_INST_W-1: 0] insn_ack,
     output logic                 insn_ack_vld,
     output logic                 insn_ack_int,
 
@@ -136,26 +137,25 @@ fifo_element #(
   .out_rdy (f2_insn_rdy)
 );
 
-logic                  f2_insn_ack_rdy;
-logic [PE_INST_W-1: 0] f2_insn_ack_cnt;
-logic                  f2_insn_ack_vld;
+logic sync_vld;
+logic sync_rdy;
 
 // Use FifoElem type 3 to cut the rdy path for timing purpose
 fifo_element #(
   .WIDTH          (PE_INST_W),
   .DEPTH          (1),
-  .TYPE_ARRAY     (4'h3),
+  .TYPE_ARRAY     (8'h3),
   .DO_RESET_DATA  (0),
   .RESET_DATA_VAL (0)
 ) insn_ack_fifo_element (
   .clk     (clk),
-  .s_rst_n(s_rst_n),
+  .s_rst_n (s_rst_n),
 
-  .in_data (f2_insn_ack_cnt),
-  .in_vld  (f2_insn_ack_vld),
-  .in_rdy  (f2_insn_ack_rdy),
+  .in_data (query_ack.info.insn.raw_insn),
+  .in_vld  (sync_vld),
+  .in_rdy  (sync_rdy),
 
-  .out_data(insn_ack_cnt),
+  .out_data(insn_ack),
   .out_vld (insn_ack_vld),
   .out_rdy (insn_ack_rdy)
 );
@@ -304,7 +304,7 @@ generate
 
   // Construct multi-hot ready that duplicated pem_rdy (For kind LD/ kind ST)
   // And also assert SYNC rdy
-  assign query_pe_rdy = {1'b1, pe_rdy, pe_rdy[0]};
+  assign query_pe_rdy = {sync_rdy, pe_rdy, pe_rdy[0]};
   // Connect pe_ack to query_pe_ack
   assign query_pe_rd_ack = rd_ack_vld;
   assign query_pe_wr_ack = wr_ack_vld;
@@ -318,22 +318,6 @@ generate
 
   assign pep_insn = pe_insn_out[PEP_OFS];
   assign pep_vld = pe_vld_out[PEP_OFS];
-
-// ============================================================================================== //
-// Ack generation
-// ============================================================================================== //
-// Convert ack pulse in pseudo stream for easy interfacing with hpu
-logic insn_ack;
-isc_ack #(
-  .CNT_W(PE_INST_W)
-) ack_pseudo_stream (
-      .clk(clk),
-      .s_rst_n(s_rst_n),
-      .in_pulse(insn_ack),
-      .out_vld(f2_insn_ack_vld),
-      .out_cnt(f2_insn_ack_cnt),
-      .out_rdy(f2_insn_ack_rdy)
-    );
 
 // ============================================================================================== //
 // Instances of Query/Pool and instruction parser
@@ -425,7 +409,7 @@ assign pe_vld[PEP_OFS] = (query_ack_vld && (query_ack.status == SUCCESS) && (que
 // Indeed no need to issue then retire sync instruction
 // Thus the sync ack is directly generated at the issue stage.
 // Internally pool that issue a SYNC directly release the slot
-assign insn_ack = (query_ack_vld && (query_ack.status == SUCCESS) && (query_ack.cmd == ISSUE) && (query_ack.info.insn.kind == SYNC));
+assign sync_vld = (query_ack_vld && (query_ack.status == SUCCESS) && (query_ack.cmd == ISSUE) && (query_ack.info.insn.kind == SYNC));
 
 // ============================================================================================== //
 // Arbiter
@@ -451,7 +435,8 @@ assign query_vld = !query_ack_vld;
     isc_counter_incD = '0;
     isc_rif_infoD    = '0;
 
-    isc_counter_incD.ack_inc  = f2_insn_ack_rdy & f2_insn_ack_vld;
+    // bit 17 is is_inner flag so if it is 0 it is a end of IOp
+    isc_counter_incD.ack_inc  = sync_vld & sync_rdy & !query_ack.info.insn.raw_insn[17];
     isc_counter_incD.inst_inc = f2_insn_rdy & f2_insn_vld;
 
     isc_rif_infoD.insn_pld[0]   = f2_insn_rdy && f2_insn_vld ? f2_insn_pld : isc_rif_info.insn_pld[0];
@@ -472,37 +457,49 @@ assign query_vld = !query_ack_vld;
 // ============================================================================================== //
 // Timestamp and Trace generation
 // ============================================================================================== //
-  logic [TIMESTAMP_W-1:0] nxt_timestamp;
-
-  // Timestamp is a free running counter
-  assign nxt_timestamp = trace_data.timestamp + 1;
+  logic                 r_trace_wr_en, trace_wr_enD;
+  isc_trace_t           r_trace_data, trace_dataD;
 
   // Flop all trace data
   always_ff @(posedge clk)
     if(!s_rst_n) begin
-      trace_wr_en <= 1'b0;
+      r_trace_wr_en <= 1'b0;
+      r_trace_data <= '0;
     end else begin
-      // Write trace for each successful query
-      trace_wr_en <= (query_ack.status == SUCCESS) && query_ack_vld;
+      r_trace_wr_en <= trace_wr_enD;
+      r_trace_data <= trace_dataD;
     end
 
-  always_ff @(posedge clk) begin
-    trace_data.timestamp <= nxt_timestamp;
-    trace_data.insn <= query_ack.info.insn.raw_insn;
-    trace_data.cmd <= query_ack.cmd;
-    trace_data.state <= query_ack.info.state;
-    trace_data.pe_reserved <=
-      ((query_ack.cmd == RETIRE) && (query_ack.info.insn.kind == PBS)) ?
-        f_pep_ack_pld : '0;
-  end
+  // Construct trace_data words
+  assign trace_dataD.timestamp     = r_trace_data.timestamp + 1; // Free running counter
+  assign trace_dataD.insn          = query_ack.info.insn.raw_insn;
+  assign trace_dataD.sync_id       = {{(7-SYNC_ID_W){1'b0}}, query_ack.info.state.sync_id};
+  assign trace_dataD.issue_lock    = {{(7-POOL_SLOT_W){1'b0}}, query_ack.info.state.issue_lock};
+  assign trace_dataD.rd_lock       = {{(7-POOL_SLOT_W){1'b0}}, query_ack.info.state.rd_lock};
+  assign trace_dataD.wr_lock       = {{(7-POOL_SLOT_W){1'b0}}, query_ack.info.state.wr_lock};
+  assign trace_dataD.cmd           = {{(7-QUERY_CMD_W){1'b0}}, query_ack.cmd};
+  assign trace_dataD.vld_rdpdg_pdg = {'0, query_ack.info.state.vld,query_ack.info.state.rd_pdg, query_ack.info.state.pdg};
+  assign trace_dataD.pe_reserved   = ((query_ack.cmd == RETIRE) && (query_ack.info.insn.kind == PBS)) ? {{(15-LWE_K_W){1'b0}}, f_pep_ack_pld} : '0;
+
+  // Write trace for each successful query
+  assign trace_wr_enD = (query_ack.status == SUCCESS) && query_ack_vld;
 
   // Consume pep_ack_fifo
-  assign f_pep_ack_rdy = trace_wr_en && (query_ack.cmd == RETIRE) && (query_ack.info.insn.kind == PBS);
+  assign f_pep_ack_rdy = trace_wr_enD && (query_ack.cmd == RETIRE) && (query_ack.info.insn.kind == PBS);
+// Bind on output signals
+assign trace_wr_en = r_trace_wr_en;
+assign trace_data = r_trace_data;
 
 // ============================================================================================== //
 // Assertions
 // ============================================================================================== //
 // pragma translate_off
+  // Check that trace data do not overflow the AXI4_DATA_W of trace interface
+  initial
+   assert (TRACE_W <= AXI4_DATA_W)
+   else
+      $fatal(1,"%t > ERROR: Instruction trace is bigger that Axi bus width.", $time);
+
   always_ff @(posedge clk)
     if (!s_rst_n) begin
       // do nothing
@@ -564,6 +561,14 @@ assign query_vld = !query_ack_vld;
   logic [15:0] _intr_dist;
   logic [15:0] _intr_min_dist;
 
+  logic _skip_assert;
+
+  always @(posedge clk)
+      if (!s_rst_n)
+          _skip_assert <= 1'b1;
+      else if (_cfg_clk_r0 & ~_cfg_clk_r1)
+          _skip_assert <= 1'b0;
+
   always @(posedge clk)
       if (!s_rst_n) begin
           _cfg_clk_r0        <= 1'b0;
@@ -580,9 +585,10 @@ assign query_vld = !query_ack_vld;
           _cfg_clk_period    <= _cfg_clk_cycle_cnt > _cfg_clk_period ? _cfg_clk_cycle_cnt : _cfg_clk_period;
           _intr_dist         <= insn_ack_interrupt ? '0 : (_intr_dist == '1) ? _intr_dist : _intr_dist + 1;
           _intr_min_dist     <= ((insn_ack_vld & insn_ack_rdy) && (_intr_min_dist > _intr_dist)) ? _intr_dist : _intr_min_dist;
-          assert ( _intr_min_dist > (_cfg_clk_period << 1) )
+          // no interrupt must be lost due to CDC ratio between cfg and fast clock.
+          assert (_skip_assert | ( _intr_min_dist > (_cfg_clk_period << 1) ))
           else begin
-            $fatal(1,"%t > ERROR: Interrupt (IOp ACK) should not toggle faster than cfg_clk can catch (interrupt dist %d < %d cycles of x2 cfg clk period)", $time, _intr_min_dist, _cfg_clk_period << 1);
+           $fatal(1,"%t > ERROR: Interrupt (IOp ACK) should not toggle faster than cfg_clk can catch (interrupt dist %d < %d cycles of x2 cfg clk period)", $time, _intr_min_dist, _cfg_clk_period << 1);
           end
       end
 

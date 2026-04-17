@@ -1,0 +1,6 @@
+"TRUE","All MHDMA","mhdma",""
+"TRUE","EMISSION","mhdma.req_id == 7",""
+"TRUE","READ_REQ","mhdma.req_id == 6",""
+"TRUE","NOTIFY","mhdma.req_id == 2",""
+"TRUE","NOTIFY_ACK","mhdma.req_id == 3",""
+"TRUE","CE gap>10us","mhdma.ce_delta > 0.00001","Emission packets with inter-packet gap exceeding 10us"

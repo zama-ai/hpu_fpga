@@ -51,7 +51,7 @@ package hpu_common_instruction_pkg;
     DOP_MULS    = 6'b00_1100,
     // --> Sync
     // NB: Only viewed by the scheduler, never reach PE
-    DOP_SYNC    = 6'b01_0000,
+    DOP_SYNC    = 6'b10_1111,
     // --> load store in mem
     DOP_LD      = 6'b10_0000,
     DOP_ST      = 6'b10_0001,
@@ -71,9 +71,9 @@ package hpu_common_instruction_pkg;
     // --> Arith
     DOPT_ARITH = 2'b00,
     // --> Sync
-    // NB: Only viewed by the scheduler, never reach PE
-    DOPT_SYNC = 2'b01,
-    // --> load store in mem
+    // NB: Only viewed by the ucore, should never reach ISC
+    DOPT_UCORE = 2'b01,
+    // --> load store in mem + sync (should never reach PE)
     DOPT_LS = 2'b10,
     // --> PBS + KS
     DOPT_PBS = 2'b11

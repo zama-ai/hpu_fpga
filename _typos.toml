@@ -15,6 +15,7 @@ extend-ignore-identifiers-re = [
     "2nd",
     "ND",
     "_DDR4_[0-9]_[0-9]_*",
+    "ser",
 ]
 
 extend-ignore-re = [
@@ -23,6 +24,8 @@ extend-ignore-re = [
     "[0-9]*h[0-9a-fA-F]+",
     # proper noun
     "Toom-Cook",
+    "SerDes",
+    "BA",
 ]
 
 [files]

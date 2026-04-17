@@ -67,8 +67,9 @@ module isc_pool
 // Pool request is hand pipelined with the following stages:
 // c0 -> Filter matching slots based on req_info and req_filter
 // c1 -> Combine filter results
-// c2 -> Count the number of matches and find the first match
-// c3 -> Update pool state bosed on req_updt and acknowledge the request
+// c2 -> Find the oldest match (priority encoder)
+// c3 -> Count the number of matches and convert oldest match to binary id
+// c4 -> Update pool state based on req_updt and acknowledge the request
 
   logic r_busy;
   always_ff @(posedge clk)
@@ -188,14 +189,14 @@ module isc_pool
     c1_data.match_mh <= c0_data.filter_mh[0] & c0_data.filter_mh[1] & c0_data.filter_mh[2];
 
 // ============================================================================================== //
-// C2: Match Count
-// Counts the number of matches and finds the first match
+// C2: Find oldest match
+// Priority-encode the match vector to find the oldest (LSB) matching slot.
+// Registered here to break timing between the priority encoder and the
+// downstream one_hot_to_bin / count_ones logic.
 // ============================================================================================== //
 
-  // 2. Extract global information
+  // 2. Extract global information: find oldest matching slot
   logic [POOL_SLOT_NB-1:0] c1_match_oldest_1h;
-  logic [POOL_SLOT_W-1:0]  c1_match_oldest_id;
-  logic [POOL_SLOT_W:0]    c1_match_count;
 
   // Matching could be order from oldest to newest (LSB -> MSB)
   // Thus the oldest one is always the first bit equal to 1
@@ -208,29 +209,10 @@ module isc_pool
     .out_vect_ext_to_msb (/*UNUSED*/)
   );
 
-  // Convert oldest 1h in id
-  common_lib_one_hot_to_bin #(
-    .ONE_HOT_W (POOL_SLOT_NB)
-  ) c1_match_oldest_htb (
-    .in_1h     (c1_match_oldest_1h),
-    .out_value (c1_match_oldest_id)
-  );
-
-  // Compute the number of matches
-  common_lib_count_ones #(
-    .MULTI_HOT_W (POOL_SLOT_NB)
-  ) c1_count_matches (
-    .in_mh   (c1_data.match_mh),
-    .out_cnt (c1_match_count)
-  );
-
   typedef struct packed {
     logic                    vld;
     logic [POOL_SLOT_NB-1:0] match_oldest_1h;
-    logic [POOL_SLOT_W-1:0]  match_oldest_id;
-    logic [POOL_SLOT_W:0]    match_count;
     logic [POOL_SLOT_NB-1:0] match_mh;
-    logic                    has_match;
   } c2_data_t;
   c2_data_t c2_data;
 
@@ -243,18 +225,65 @@ module isc_pool
 
   always_ff @(posedge clk) begin
     c2_data.match_oldest_1h <= c1_match_oldest_1h;
-    c2_data.match_oldest_id <= c1_match_oldest_id;
-    c2_data.match_count     <= c1_match_count;
     c2_data.match_mh        <= c1_data.match_mh;
-    c2_data.has_match       <= |c1_data.match_mh;
   end
 
 // ============================================================================================== //
-// C3: Ack
+// C3: Match count and oldest-id encoding
+// Convert the registered one-hot oldest match to binary and count total matches.
+// ============================================================================================== //
+
+  // 3. Extract global information: convert to binary id and count matches
+  logic [POOL_SLOT_W-1:0] c2_match_oldest_id;
+  logic [POOL_SLOT_W:0]   c2_match_count;
+
+  // Convert oldest 1h in id
+  common_lib_one_hot_to_bin #(
+    .ONE_HOT_W (POOL_SLOT_NB)
+  ) c2_match_oldest_htb (
+    .in_1h     (c2_data.match_oldest_1h),
+    .out_value (c2_match_oldest_id)
+  );
+
+  // Compute the number of matches
+  common_lib_count_ones #(
+    .MULTI_HOT_W (POOL_SLOT_NB)
+  ) c2_count_matches (
+    .in_mh   (c2_data.match_mh),
+    .out_cnt (c2_match_count)
+  );
+
+  typedef struct packed {
+    logic                    vld;
+    logic [POOL_SLOT_NB-1:0] match_oldest_1h;
+    logic [POOL_SLOT_W-1:0]  match_oldest_id;
+    logic [POOL_SLOT_W:0]    match_count;
+    logic [POOL_SLOT_NB-1:0] match_mh;
+    logic                    has_match;
+  } c3_data_t;
+  c3_data_t c3_data;
+
+  always_ff @(posedge clk)
+    if(!s_rst_n) begin
+      c3_data.vld <= '0;
+    end else begin
+      c3_data.vld <= c2_data.vld;
+    end
+
+  always_ff @(posedge clk) begin
+    c3_data.match_oldest_1h <= c2_data.match_oldest_1h;
+    c3_data.match_oldest_id <= c2_match_oldest_id;
+    c3_data.match_count     <= c2_match_count;
+    c3_data.match_mh        <= c2_data.match_mh;
+    c3_data.has_match       <= |c2_data.match_mh;
+  end
+
+// ============================================================================================== //
+// C4: Ack
 // Compute next pool state and Ack
 // ============================================================================================== //
 
-  // 3. Describe Update logic
+  // 4. Describe Update logic
   // Update structure
   isc_pool_info_t [POOL_SLOT_NB:0] extend_pinfo;
   isc_pool_info_t [POOL_SLOT_NB-1:0] updt_pinfo, ordered_pinfo;
@@ -268,7 +297,7 @@ module isc_pool
     for (int i=0; i < POOL_SLOT_NB; i=i+1) begin
       updt_pinfo[i] = r_pinfo[i];
       // vld/pdg update are single-slot update
-      if (c2_data.match_oldest_1h[i]) begin
+      if (c3_data.match_oldest_1h[i]) begin
         if (r_pinfo[i].insn.kind == SYNC) begin
           // Custom handling of Sync instruction -> Issue directly release the slot
           updt_pinfo[i].state.vld = r_pinfo[i].state.vld ^ req.updt.toggle_pdg;
@@ -281,7 +310,7 @@ module isc_pool
       end
 
       // RdWr- Lock are muli-slot update
-      if (c2_data.match_mh[i]) begin
+      if (c3_data.match_mh[i]) begin
         updt_pinfo[i].state.rd_lock = (r_pinfo[i].state.rd_lock != 0)? r_pinfo[i].state.rd_lock - req.updt.dec_rd_lock: '0;
         updt_pinfo[i].state.wr_lock = (r_pinfo[i].state.wr_lock != 0)? r_pinfo[i].state.wr_lock - req.updt.dec_wr_lock: '0;
         updt_pinfo[i].state.issue_lock = (r_pinfo[i].state.issue_lock != 0)? r_pinfo[i].state.issue_lock - req.updt.dec_issue_lock: '0;
@@ -301,33 +330,33 @@ module isc_pool
     for (int i=0; i< POOL_SLOT_NB; i=i+1) begin
       extend_pinfo[i] = updt_pinfo[i];
     end
-    extend_pinfo[POOL_SLOT_NB] = (req.updt.cmd == POOL_UPDATE) ? updt_pinfo[c2_data.match_oldest_id]: updt_req_info;
+    extend_pinfo[POOL_SLOT_NB] = (req.updt.cmd == POOL_UPDATE) ? updt_pinfo[c3_data.match_oldest_id]: updt_req_info;
   end
 
   // Apply reorder
   always_comb begin
     for (int i=0; i< POOL_SLOT_NB; i=i+1) begin
-      ordered_pinfo[i] = (req.updt.reorder && c2_data.has_match
-                      && (c2_data.match_oldest_id <= POOL_SLOT_W'(i))) ?
+      ordered_pinfo[i] = (req.updt.reorder && c3_data.has_match
+                      && (c3_data.match_oldest_id <= POOL_SLOT_W'(i))) ?
                          extend_pinfo[i+1]: extend_pinfo[i];
     end
   end
 
-  assign r_pinfo_ce = c2_data.vld;
+  assign r_pinfo_ce = c3_data.vld;
   assign nxt_pinfo  = ordered_pinfo;
 
   always_ff @(posedge clk)
     if (!s_rst_n) begin
       ack_vld <= '0;
     end else begin
-      ack_vld <= c2_data.vld;
+      ack_vld <= c3_data.vld;
     end
 
   always_ff @(posedge clk) begin
-    if (c2_data.vld) begin
-      ack.status   <= c2_data.has_match ? SUCCESS : FAILURE;
-      ack.nb_match <= c2_data.match_count;
-      ack.info     <= r_pinfo[c2_data.match_oldest_id]; // Return the slot before update
+    if (c3_data.vld) begin
+      ack.status   <= c3_data.has_match ? SUCCESS : FAILURE;
+      ack.nb_match <= c3_data.match_count;
+      ack.info     <= r_pinfo[c3_data.match_oldest_id]; // Return the slot before update
     end
   end
 

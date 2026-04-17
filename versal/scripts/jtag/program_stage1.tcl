@@ -21,17 +21,12 @@ for {set i 0} {$i < [llength $targets]} {incr i} {
 }
 if {$found_index != -1} {
     open_hw_target [lindex $targets $found_index]
-    set hw_device [get_hw_devices]
-    current_hw_device [get_hw_devices [lindex $hw_device 1]]
-    refresh_hw_device -update_hw_probes false [lindex [get_hw_devices [lindex $hw_device 1]] 0]
-
-    set_property PROBES.FILE {} [get_hw_devices [lindex $hw_device 1]]
-    set_property FULL_PROBES.FILE {} [get_hw_devices [lindex $hw_device 1]]
+    set hw_device [lindex [get_hw_devices] 1]
+    current_hw_device [get_hw_devices $hw_device]
 
     # stage 1 programming
-    set_property PROGRAM.FILE $TOP_NAME [get_hw_devices [lindex $hw_device 1]]
-    program_hw_devices [get_hw_devices [lindex $hw_device 1]]
-    refresh_hw_device [lindex [get_hw_devices [lindex $hw_device 1]] 0]
+    set_property PROGRAM.FILE $TOP_NAME [get_hw_devices $hw_device]
+    program_hw_devices [get_hw_devices $hw_device]
 } else {
     puts "Could not find $SERIAL_NUMBER in list of hw targets $targets"
 }

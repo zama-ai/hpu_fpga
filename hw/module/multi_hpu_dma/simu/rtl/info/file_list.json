@@ -1,0 +1,37 @@
+{
+  "local_root_path": "${PROJECT_DIR}",
+  "dep_root_path": "${PROJECT_DIR}",
+  "_comment": "This file_list is here only to be able to launch unit tests, our scripts don't support file_lists calling two steps below",
+  "rtl_files": [
+    {
+      "name": "hw/module/multi_hpu_dma/simu/rtl/unit_tests/tb_mhdma_decoder.sv",
+      "library": "work",
+      "env": ["simu"],
+      "target": ["all"],
+      "is_include_file": false
+    },
+    {
+      "name": "hw/module/multi_hpu_dma/simu/rtl/unit_tests/tb_mhdma_formatter.sv",
+      "library": "work",
+      "env": ["simu"],
+      "target": ["all"],
+      "is_include_file": false
+    },
+    {
+      "name": "hw/module/multi_hpu_dma/simu/rtl/unit_tests/tb_mhdma_master.sv",
+      "library": "work",
+      "env": ["simu"],
+      "target": ["all"],
+      "is_include_file": false
+    },
+    {
+      "name": "hw/module/multi_hpu_dma/simu/rtl/unit_tests/tb_mhdma_slave.sv",
+      "library": "work",
+      "env": ["simu"],
+      "target": ["all"],
+      "is_include_file": false
+    }
+  ],
+  "dependency_dir": ["hw/module/multi_hpu_dma/simu", "hw/module/multi_hpu_dma"],
+  "include_dir": []
+}

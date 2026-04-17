@@ -1,0 +1,77 @@
+{
+  "local_root_path": "${PROJECT_DIR}",
+  "dep_root_path": "${PROJECT_DIR}",
+  "is_include_dir": false,
+  "rtl_files": [
+    {
+      "name": "hw/module/multi_hpu_dma/rtl/mhdma_pkg.sv",
+      "library": "work",
+      "env": ["all"],
+      "target": ["all"],
+      "is_include_file": false
+    },
+    {
+      "name": "hw/module/multi_hpu_dma/rtl/multi_hpu_dma.sv",
+      "library": "work",
+      "env": ["all"],
+      "target": ["all"],
+      "is_include_file": false
+    },
+    {
+      "name": "hw/module/multi_hpu_dma/rtl/mhdma_bridge.sv",
+      "library": "work",
+      "env": ["all"],
+      "target": ["all"],
+      "is_include_file": false
+    },
+    {
+      "name": "hw/module/multi_hpu_dma/rtl/mhdma_decoder.sv",
+      "library": "work",
+      "env": ["all"],
+      "target": ["all"],
+      "is_include_file": false
+    },
+    {
+      "name": "hw/module/multi_hpu_dma/rtl/mhdma_formatter.sv",
+      "library": "work",
+      "env": ["all"],
+      "target": ["all"],
+      "is_include_file": false
+    },
+    {
+      "name": "hw/module/multi_hpu_dma/rtl/mhdma_master.sv",
+      "library": "work",
+      "env": ["all"],
+      "target": ["all"],
+      "is_include_file": false
+    },
+    {
+      "name": "hw/module/multi_hpu_dma/rtl/mhdma_slave.sv",
+      "library": "work",
+      "env": ["all"],
+      "target": ["all"],
+      "is_include_file": false
+    },
+    {
+      "name": "hw/module/multi_hpu_dma/rtl/mhdma_nmu_pipe.sv",
+      "library": "work",
+      "env": ["all"],
+      "target": ["all"],
+      "is_include_file": false
+    }
+  ],
+  "constraint_files": [
+    "hw/module/multi_hpu_dma/constraint/multi_hpu_dma_timing_constraints_local.xdc",
+    "hw/module/multi_hpu_dma/constraint/multi_hpu_dma_timing_constraints_hier.xdc"
+  ],
+  "dependency_dir": [
+    "hw/module/pe_mem/module/pem_common",
+    "hw/common_lib/cdc/module/xpm_cdc_handshake_wrapper",
+    "hw/common_lib/cdc/module/xpm_fifo_async_wrapper",
+    "hw/common_lib/cdc/module/xpm_cdc_single_wrapper",
+    "hw/common_lib/fifo",
+    "hw/module/hpu/module/hpu_regif",
+    "hw/module/axi_if/module/axi_if_common"
+  ],
+  "include_dir": []
+}

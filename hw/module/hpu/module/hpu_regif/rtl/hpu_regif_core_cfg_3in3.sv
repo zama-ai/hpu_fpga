@@ -30,8 +30,8 @@
 //      : Value provided by the RTL. The host can read it with notify. The write data is processed by the RTL.
 // ============================================================================================== //
 module hpu_regif_core_cfg_3in3
-import axi_if_common_param_pkg::*;
 import axi_if_shell_axil_pkg::*;
+import axi_if_common_param_pkg::*;
 import hpu_regif_core_cfg_3in3_pkg::*;
 #()(
   input  logic                           clk,

@@ -1,0 +1,20 @@
+# MHDMA Profile Preferences
+
+# Packet list columns
+# %m=No, %t=Time, %Yt=Delta time, %s=Source, %d=Destination, %p=Protocol
+# %Cus:field:0:R = custom resolved field
+gui.column.format:
+        "No.", "%m",
+        "Time", "%t",
+        "Delta (us)", "%Cus:frame.time_delta:0:R",
+        "Source", "%s",
+        "Destination", "%d",
+        "Protocol", "%p",
+        "Req ID", "%Cus:mhdma.req_id:0:R",
+        "HPU", "%Cus:mhdma.hpu_id:0:R",
+        "Seq", "%Cus:mhdma.seq_num:0:R",
+        "Src Addr", "%Cus:mhdma.src_addr:0:R",
+        "Dst Addr", "%Cus:mhdma.dst_addr:0:R",
+        "CE Delta", "%Cus:mhdma.ce_delta:0:R",
+        "Length", "%L",
+        "Info", "%i"

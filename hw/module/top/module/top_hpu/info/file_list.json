@@ -12,6 +12,7 @@
         }
     ],
     "constraint_files": [
+        "hw/module/top/module/top_hpu/constraint/top_hpu_timing_constraints_hier.xdc"
     ],
     "dependency_dir": [
         "hw/common_lib/fifo",

@@ -60,13 +60,22 @@ proc create_hier_cell_shell_wrapper { parentCell nameHier } {
   set axi_lpd_pin [ create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:aximm_rtl:1.0 axi_lpd ]
 
   set rtl_interrupt_pin [ create_bd_pin -dir I -from [expr $IRQ_NB - 1] -to 0 -type intr rtl_interrupt ]
+
   set clk_usr_1_0_pin [ create_bd_pin -dir O -type clk clk_usr_1_0 ]
   set clk_usr_0_0_pin [ create_bd_pin -dir O -type clk clk_usr_0_0 ]
+  set clk_mhdma_cfg_0_pin [ create_bd_pin -dir O -type clk clk_mhdma_cfg_0 ]
+  set clk_mhdma_0_pin [ create_bd_pin -dir O -type clk clk_mhdma_0 ]
+  set clk_gt_freerun_0_pin [ create_bd_pin -dir O -type clk clk_gt_freerun_0 ]
   set clk_usr_0_0_fr_pin [ create_bd_pin -dir O -type clk clk_usr_0_0_fr ]
   set clk_usr_0_0_ce_pin [ create_bd_pin -dir I clk_usr_0_0_ce ]
-  set resetn_usr_0_ic_0_pin [ create_bd_pin -dir O -from 0 -to 0 -type rst resetn_usr_0_ic_0 ]
-  set resetn_usr_0_ic_0_pin [ create_bd_pin -dir I -from 0 -to 0 -type rst resetn_usr_0_ic_0_gated ]
-  set resetn_usr_1_ic_0_pin [ create_bd_pin -dir O -from 0 -to 0 -type rst resetn_usr_1_ic_0 ]
+
+  # WARN: isn't first resetn_usr_0_ic_0_pin removed?
+  set resetn_usr_0_ic_0_pin      [ create_bd_pin -dir O -from 0 -to 0 -type rst resetn_usr_0_ic_0 ]
+  set resetn_usr_0_ic_0_pin      [ create_bd_pin -dir I -from 0 -to 0 -type rst resetn_usr_0_ic_0_gated ]
+  set resetn_usr_1_ic_0_pin      [ create_bd_pin -dir O -from 0 -to 0 -type rst resetn_usr_1_ic_0 ]
+  set resetn_mhdma_cfg_ic_0_pin    [ create_bd_pin -dir O -from 0 -to 0 -type rst resetn_mhdma_cfg_ic_0 ]
+  set resetn_gt_freerun_ic_0_pin [ create_bd_pin -dir O -from 0 -to 0 -type rst resetn_gt_freerun_ic_0 ]
+
   set pl0_ref_clk_0_pin [ create_bd_pin -dir O -type clk pl0_ref_clk_0 ]
   set pl0_resetn_0_pin [ create_bd_pin -dir O -type rst pl0_resetn_0 ]
 
@@ -373,13 +382,20 @@ proc create_hier_cell_shell_wrapper { parentCell nameHier } {
   connect_bd_intf_net -intf_net cips_PCIE1_GT [get_bd_intf_pins cips/PCIE1_GT] [get_bd_intf_pins gt_pciea1]
   connect_bd_intf_net -intf_net gt_pcie_refclk_1 [get_bd_intf_pins gt_pcie_refclk] [get_bd_intf_pins cips/gt_refclk1]
 
-  connect_bd_net -net clock_reset_clk_usr_0 [get_bd_pins clock_reset/clk_usr_0] [get_bd_pins clk_usr_0_0]
-  connect_bd_net -net clock_reset_clk_usr_1 [get_bd_pins clock_reset/clk_usr_1] [get_bd_pins clk_usr_1_0]
-  connect_bd_net -net clock_reset_resetn_usr_0_ic [get_bd_pins clock_reset/resetn_usr_0_ic] [get_bd_pins resetn_usr_0_ic_0]
+  connect_bd_net -net clock_reset_clk_usr_0      [get_bd_pins clock_reset/clk_usr_0]       [get_bd_pins clk_usr_0_0]
+  connect_bd_net -net clock_reset_clk_usr_1      [get_bd_pins clock_reset/clk_usr_1]       [get_bd_pins clk_usr_1_0]
+  connect_bd_net -net clock_reset_mhdma_cfg      [get_bd_pins clock_reset/clk_mhdma_cfg]   [get_bd_pins clk_mhdma_cfg_0]
+  connect_bd_net -net clock_reset_mhdma    [get_bd_pins clock_reset/clk_mhdma] [get_bd_pins clk_mhdma_0]
+  connect_bd_net -net clock_reset_gt_freerun     [get_bd_pins clock_reset/clk_gt_freerun]  [get_bd_pins clk_gt_freerun_0]
+  connect_bd_net -net clock_reset_clk_usr_0_0_fr [get_bd_pins clock_reset/clk_usr_0_fr]    $clk_usr_0_0_fr_pin
+
+  connect_bd_net -net clock_reset_resetn_usr_0_ic      [get_bd_pins clock_reset/resetn_usr_0_ic]      [get_bd_pins resetn_usr_0_ic_0]
+  connect_bd_net -net clock_reset_resetn_usr_1_ic      [get_bd_pins clock_reset/resetn_usr_1_ic]      [get_bd_pins resetn_usr_1_ic_0]
+  connect_bd_net -net clock_reset_resetn_mhdma_cfg_ic  [get_bd_pins clock_reset/resetn_mhdma_cfg_ic]  [get_bd_pins resetn_mhdma_cfg_ic_0]
+  connect_bd_net -net clock_reset_resetn_gt_freerun_ic [get_bd_pins clock_reset/resetn_gt_freerun_ic] [get_bd_pins resetn_gt_freerun_ic_0]
+
   connect_bd_net -net clock_reset_resetn_usr_0_ic_gated [get_bd_pins resetn_usr_0_ic_0_gated] [get_bd_pins axi_to_axis/s_axi_aresetn]
-  connect_bd_net -net clock_reset_resetn_usr_1_ic [get_bd_pins clock_reset/resetn_usr_1_ic] [get_bd_pins resetn_usr_1_ic_0]
   connect_bd_net -net clock_reset_clk_usr_0_ce [get_bd_pins clock_reset/clk_usr_0_ce] $clk_usr_0_0_ce_pin
-  connect_bd_net -net clock_reset_clk_usr_0_0_fr [get_bd_pins clock_reset/clk_usr_0_fr] $clk_usr_0_0_fr_pin
 
   connect_bd_net -net base_logic_irq_gcq_m2r [get_bd_pins base_logic/irq_gcq_m2r] [get_bd_pins cips/pl_ps_irq0]
   connect_bd_net -net cips_dma1_axi_aresetn [get_bd_pins cips/dma1_axi_aresetn] [get_bd_pins clock_reset/dma_axi_aresetn]

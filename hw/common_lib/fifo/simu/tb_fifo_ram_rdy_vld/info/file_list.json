@@ -1,9 +1,9 @@
 {
-    "local_root_path": "${PROJECT_DIR}/hw/common_lib/fifo/simu/tb_fifo_ram_rdy_vld",
+    "local_root_path": "${PROJECT_DIR}",
     "dep_root_path"  : "${PROJECT_DIR}",
     "rtl_files": [
         {
-            "name": "rtl/tb_fifo_ram_rdy_vld.sv",
+            "name": "hw/common_lib/fifo/simu/tb_fifo_ram_rdy_vld/rtl/tb_fifo_ram_rdy_vld.sv",
             "library": "work",
             "env": ["simu"],
             "target": ["all"],

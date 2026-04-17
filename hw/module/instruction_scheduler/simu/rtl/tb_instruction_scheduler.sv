@@ -30,7 +30,7 @@ module tb_instruction_scheduler;
 // localparam
 // ============================================================================================== --
   localparam int CLK_HALF_PERIOD     = 1;
-  localparam int LPD_CLK_HALF_PERIOD = 10;
+  localparam int LPD_CLK_HALF_PERIOD = 4;
   localparam int ARST_ACTIVATION     = 17;
 
   localparam int SLOT_NB=8;
@@ -40,7 +40,8 @@ module tb_instruction_scheduler;
   localparam string FILE_ASM_INSN    = "input/dop_stream.hex";
   localparam int    ASM_INSN_HALT    = 2; // Chance to draw long delay over 255 values
 
-  localparam int DOP_SYNC_WORD = 'h4000fff0;
+  localparam int DOP_SYNC_WORD = 'hBC00fff0;
+  localparam int DOP_SYNC_OPCODE = 'h2F;
   localparam int DOP_ITER = 4;
 
   // Max time take by fake pe
@@ -124,7 +125,7 @@ module tb_instruction_scheduler;
   logic[PE_INST_W-1: 0] insn_pld;
   logic                 insn_vld;
   logic                 insn_ack_rdy;
-  logic[PE_INST_W-1: 0] insn_ack_cnt;
+  logic[PE_INST_W-1: 0] insn_ack;
   logic                 insn_ack_vld;
   logic                 insn_ack_int;
 
@@ -149,6 +150,10 @@ module tb_instruction_scheduler;
   logic                 pep_rd_ack;
   logic                 pep_wr_ack;
   logic[LWE_K_W-1:0]    pep_ack_pld;
+
+  // Trace interface
+  logic                 trace_wr_en;
+  isc_trace_t           trace_data;
 
   // Quasi static
   logic                 use_bpip;
@@ -176,7 +181,7 @@ module tb_instruction_scheduler;
     .insn_vld(insn_vld),
 
     .insn_ack_rdy(insn_ack_rdy),
-    .insn_ack_cnt(insn_ack_cnt),
+    .insn_ack    (insn_ack),
     .insn_ack_vld(insn_ack_vld),
     .insn_ack_int(insn_ack_int),
 
@@ -203,9 +208,18 @@ module tb_instruction_scheduler;
     .pep_ack_pld(pep_ack_pld),
 
     .isc_counter_inc(/*UNUSED*/),
-    .isc_rif_info   (/*UNUSED*/)
+    .isc_rif_info   (/*UNUSED*/),
+
+    .trace_data(trace_data),
+    .trace_wr_en(trace_wr_en)
   );
 
+// ============================================================================================== --
+// Simple assertion on stream data
+// ============================================================================================== --
+  assert property (@(posedge clk) trace_wr_en |-> !$isunknown(trace_data))
+  else
+    $fatal(1,"%t > ERROR: trace_data is unknown while trace_wr_en is asserted.", $time);
 // ============================================================================================== --
 // Insn stream
 // ============================================================================================== --
@@ -228,7 +242,7 @@ module tb_instruction_scheduler;
   ) axis_insn_ack_ep ( .clk(clk), .rst_n(s_rst_n));
 
   // Connect interface on testbench signals
-  assign axis_insn_ack_ep.tdata = insn_ack_cnt;
+  assign axis_insn_ack_ep.tdata = insn_ack;
   assign insn_ack_rdy = axis_insn_ack_ep.tready;
   assign axis_insn_ack_ep.tvalid = insn_ack_vld;
 
@@ -296,10 +310,11 @@ module tb_instruction_scheduler;
 
   // Generate random value for associated pep_pld
   initial begin
-   pep_ack_pld = 'x;
    do begin
-     do @(posedge clk); while(!pep_wr_ack);
+     pep_ack_pld = 'x;
+     @(posedge pep_wr_ack);
      pep_ack_pld = $urandom();
+     @(negedge pep_wr_ack);
    end while(1);
   end
 
@@ -471,9 +486,13 @@ endtask
   bit [PE_INST_W-1: 0] insn_retire;
   bit [PE_INST_W-1: 0] retire_q[$];
   bit _is_last;
-  bit [PE_INST_W-1: 0] _iop_retire;
+  bit [PE_INST_W-1: 0] iop_ack;
 
   int order_errors;
+  int insert_idx;
+
+  bit [PE_INST_W-1:0] inner_sync_exp_q[$]; // expected inner sync ack sequence across DOP_ITER
+  int inner_sync_errors;
 
   initial begin
   // Init axis
@@ -483,6 +502,45 @@ endtask
 
   // Read insn from file
   read_insn_stream(insn_q, insn_cnt);
+  $display("%t > INFO: read %d DOp instructions", $time, insn_cnt);
+  insert_idx = $urandom % (insn_cnt/3);
+
+  begin : inner_sync_insertion
+    int n_inner_sync;
+    bit [PE_INST_W-1:0] grp_q[$];
+    bit [PE_INST_W-1:0] dop;
+    repeat($urandom() % 5) begin
+      n_inner_sync = ($urandom() % 10) + 1; // 1..10
+      grp_q.delete();
+      for (int k = 0; k < n_inner_sync; k++) begin
+        dop = 32'hBC060000 | (32'($urandom() % 64) << 11);
+        grp_q.push_back(dop);
+      end
+      $display("%t > INFO: inserting %0d inner sync(s) at index %0d", $time, n_inner_sync, insert_idx);
+      foreach (grp_q[k])
+        $display("%t > INFO:   [%0d] dop=%08x flag=%0d", $time, k, grp_q[k], (grp_q[k] >> 11) & 6'h3F);
+      // Insert reversed so program order in insn_q matches grp_q order
+      for (int k = n_inner_sync - 1; k >= 0; k--)
+        insn_q.insert(insert_idx, grp_q[k]);
+      foreach (grp_q[k])
+        inner_sync_exp_q.push_back(grp_q[k]);
+      insert_idx += ($urandom() % 10) + 10;
+      insn_cnt += n_inner_sync;
+      if (insert_idx > insn_cnt) break;
+    end
+  end
+
+  // Replicate the one-iteration sequence DOP_ITER-1 more times
+  begin
+    int base_size;
+    base_size = inner_sync_exp_q.size();
+    for (int iter = 1; iter < DOP_ITER; iter++)
+      for (int i = 0; i < base_size; i++)
+        inner_sync_exp_q.push_back(inner_sync_exp_q[i]);
+    inner_sync_errors = 0;
+    $display("%t > INFO: %0d inner sync(s) per iteration, %0d total expected",
+             $time, base_size, inner_sync_exp_q.size());
+  end
 
   while (!s_rst_n) @(posedge clk);
   repeat(1000) @(posedge clk);
@@ -493,7 +551,9 @@ endtask
       begin
         foreach(insn_q[i]) begin
           axis_insn_drv.push(insn_q[i], 1'bx);
-          ref_q.push_back(insn_q[i]);
+          if (insn_q[i][PE_INST_W-1 -: DOP_W] != DOP_SYNC_OPCODE) begin
+            ref_q.push_back(insn_q[i]);
+          end
           // Draw random value for stream delay
           if (!rand_insn_delay.randomize() with {rand_insn_delay.data dist {
                 [0: 5] :/ ((2**8-1)-ASM_INSN_HALT),
@@ -501,8 +561,7 @@ endtask
             $display("%t > ERROR: randomization of rand_vld", $time);
             $finish;
           end
-        repeat(rand_insn_delay.get_data) @(posedge clk);
-
+          repeat(rand_insn_delay.get_data) @(posedge clk);
         end
         $display("%t > INFO: All instruction pushed in DUT [%d]",$time, insn_cnt);
         // Append a sync for proper end of simulation
@@ -517,22 +576,48 @@ endtask
        @(posedge clk);
       end while (1);
     end
-    begin // Probe end condition
-      for(int dop_iter=0; dop_iter < DOP_ITER; dop_iter++)
-      begin
-        axis_insn_ack_ep.pop(_iop_retire, _is_last);
-        $display("%t > INFO: DUT generate Ack",$time);
-      end
+    begin // Probe end condition & internal ack
+      int end_of_iop = 0;
+      do begin
+        axis_insn_ack_ep.pop(iop_ack, _is_last);
+        if (iop_ack[17] == 1'b0) begin
+          end_of_iop++;
+          $display("%t > INFO: DUT generate Ack",$time);
+          if (end_of_iop == DOP_ITER) break;
+        end
+        else begin // bit[17] == 1: INNER SYNC ack
+          if (inner_sync_exp_q.size() == 0) begin
+            $display("%t > ERROR: unexpected inner sync ack %08x", $time, iop_ack);
+            inner_sync_errors++;
+          end else begin
+            bit [PE_INST_W-1:0] exp_ack;
+            exp_ack = inner_sync_exp_q.pop_front();
+            if (iop_ack !== exp_ack) begin
+              $display("%t > ERROR: inner sync ack mismatch: got %08x expected %08x (flag got=%0d exp=%0d)",
+                       $time, iop_ack, exp_ack, (iop_ack>>11)&'h3F, (exp_ack>>11)&'h3F);
+              inner_sync_errors++;
+            end else
+              $display("%t > INFO: inner sync ack %08x flag=%0d [OK]", $time, iop_ack, (iop_ack>>11)&'h3F);
+          end
+        end
+        @(posedge clk);
+      end while (1);
     end
     join_any
     disable fork;
   join
 
+  // Check all expected inner sync acks were received
+  if (inner_sync_exp_q.size() != 0) begin
+    $display("%t > ERROR: %0d inner sync ack(s) not generated", $time, inner_sync_exp_q.size());
+    inner_sync_errors++;
+  end
+
   // Check generated instruction order
   // 1. reload insn from file
   // 2. Check against generated retire stream
   check_insn_stream(ref_q, retire_q, order_errors);
-  error = |order_errors;
+  error = |order_errors | |inner_sync_errors;
   repeat(10) @(posedge clk);
 
   end_of_test = 1'b1;

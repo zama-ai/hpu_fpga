@@ -111,7 +111,7 @@ int main () {
         // It is not clear why this is needed
         Xil_DCacheFlush();
     } else {
-      // like any other IOp we ack with 1st work of input IOp
+      // like any other IOp we ack with 1st word of input IOp
       iop_ack = pop(&ack_iop_lut);
       iop_ack += ((UCORE_VERSION_MAJOR << 8) + UCORE_VERSION_MINOR) & 0xFFFF;
       putfsl(iop_ack, ACKQ_MAXIS_ID);
@@ -225,10 +225,10 @@ void irqx_dop_ack_fwd(void) {
   uint32_t dop_ack, iop_ack;
 
   getfsl(dop_ack, ACK_SAXIS_ID);
-  for (int ack = 0; ack < dop_ack; ack++) {
-    iop_ack = pop(&ack_iop_lut);
-    putfsl(iop_ack, ACKQ_MAXIS_ID);
-  }
+
+  // push 1 ack (as ISC ack are not a counter anymore)
+  iop_ack = pop(&ack_iop_lut);
+  putfsl(iop_ack, ACKQ_MAXIS_ID);
 }
 
 int irqx_init(void){

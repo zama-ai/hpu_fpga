@@ -33,6 +33,7 @@ module hpu_3parts
   import ntt_core_common_param_pkg::*;
   import pep_ks_common_param_pkg::*;
   import pep_if_pkg::*;
+  import mhdma_pkg::*;
 #(
   // AXI4 ADD_W could be redefined by the simulation.
   parameter int    AXI4_TRC_ADD_W   = 64,
@@ -40,10 +41,16 @@ module hpu_3parts
   parameter int    AXI4_GLWE_ADD_W  = 64,
   parameter int    AXI4_BSK_ADD_W   = 64,
   parameter int    AXI4_KSK_ADD_W   = 64,
+  parameter int    AXI4_MHDMA_HBM_ADD_W = 64,
 
   // HPU version
   parameter int    VERSION_MAJOR    = 2,
   parameter int    VERSION_MINOR    = 0,
+
+  // Ethernet
+  parameter int    QSFP_LANE_NB  = 4,  // number of QSFP lines
+  parameter int    AXIS_TDATA_W  = 64, // must match MAC+PCS configuration from bd
+  parameter int    AXIS_TKEEP_W  = 11, // must match MAC+PCS configuration from bd
 
   // Add pipe on signals between parts.
   parameter int    INTER_PART_PIPE  = 2 // Indicates the number of pipes on signals crossing the SLRs.
@@ -60,6 +67,10 @@ module hpu_3parts
   input  logic                   cfg_clk,    // config clock
   input  logic                   cfg_srst_n, // synchronous reset
 
+  input logic                    cfg_mhdma_clk,     // ethernet configuration slow clock
+
+  input logic                    prc_mhdma_clk,    // mrmac clock at axis speed
+
   output logic [INTERRUPT_W-1:0] interrupt,
 
   //== Axi4-lite slave @prc_clk and @cfg_clk
@@ -67,6 +78,7 @@ module hpu_3parts
   `HPU_AXIL_IO(cfg_1in3,axi_if_shell_axil_pkg)
   `HPU_AXIL_IO(prc_3in3,axi_if_shell_axil_pkg)
   `HPU_AXIL_IO(cfg_3in3,axi_if_shell_axil_pkg)
+  `HPU_AXIL_IO(mhdma_2in3,axi_if_shell_axil_pkg)
 
   //== Axi4 trace interface
   `HPU_AXI4_IO(trc, TRC, axi_if_trc_axi_pkg,)
@@ -82,6 +94,33 @@ module hpu_3parts
 
   //== Axi4 BSK interface
   `HPU_AXI4_IO(bsk, BSK, axi_if_bsk_axi_pkg, [BSK_PC_MAX-1:0])
+
+  //== Axi4 ETH HBM interface
+  `HPU_AXI4_IO(mhdma_hbm, MHDMA_HBM, axi_if_mhdma_axi_pkg,)
+
+  // QSFP system interface
+  // == TX
+  output logic [QSFP_LANE_NB-1:0][AXIS_TDATA_W-1:0  ] qsfp_tx_tdata,
+  output logic [QSFP_LANE_NB-1:0][AXIS_TKEEP_W-1:0 ]  qsfp_tx_tkeep_user,
+  output logic [QSFP_LANE_NB-1:0]                     qsfp_tx_tlast,
+  output logic [QSFP_LANE_NB-1:0]                     qsfp_tx_tvalid,
+  input  logic [QSFP_LANE_NB-1:0]                     qsfp_tx_tready,
+  // == RX
+  input  logic [QSFP_LANE_NB-1:0][AXIS_TDATA_W-1:0  ] qsfp_rx_tdata,
+  input  logic [QSFP_LANE_NB-1:0][AXIS_TKEEP_W-1:0 ]  qsfp_rx_tkeep_user,
+  input  logic [QSFP_LANE_NB-1:0]                     qsfp_rx_tlast,
+  input  logic [QSFP_LANE_NB-1:0]                     qsfp_rx_tvalid,
+  // interrupts
+  output logic                                        interrupt_notify,
+  output logic                                        interrupt_read_request,
+  // transceiver control
+  output logic [2:0]                                  gt_loopback,
+  output logic [7:0]                                  gt_line_rate,
+  output logic [QSFP_LANE_NB-1:0]                     gt_reset_rx_datapath,
+  output logic [QSFP_LANE_NB-1:0]                     gt_reset_tx_datapath,
+  output logic [QSFP_LANE_NB-1:0]                     gt_reset_all,
+  input  logic [QSFP_LANE_NB-1:0]                     gt_rx_reset_done,
+  input  logic [QSFP_LANE_NB-1:0]                     gt_tx_reset_done,
 
   //== AXI stream for ISC
   input  logic [PE_INST_W-1:0] isc_dop,
@@ -142,6 +181,7 @@ module hpu_3parts
   logic       hpu_reset;
   logic       hpu_reset_done;
   logic       soft_prc_srst_n;
+  logic       soft_mhdma_srst_n;
   logic       global_rst;
 
   hpu_soft_reset
@@ -309,8 +349,6 @@ module hpu_3parts
   assign in_p2_p3_sll_ctrl.ntt_proc_cmd_avail = out_p1_p2_sll_ctrl.ntt_proc_cmd_avail;
   assign in_p2_p3_sll_ctrl.bsk_ctrl = out_p1_p2_sll_ctrl.bsk_ctrl;
   assign in_p2_p1_sll_ctrl.bsk_ctrl = out_p3_p2_sll_ctrl.bsk_ctrl;
-  // TODO: remove that when 2in3 drives its interrupt
-  assign hpu_2in3_interrupt = '0;
   assign in_p2_p3_sll_interrupt     = out_p1_p2_sll_interrupt | hpu_2in3_interrupt;
 
   hpu_qual_sll #(
@@ -487,6 +525,32 @@ module hpu_3parts
     .cfg_clk                    (cfg_clk),
     .cfg_srst_n                 (cfg_srst_n),
 
+    .cfg_mhdma_clk              (cfg_mhdma_clk),
+
+    .prc_mhdma_clk              (prc_mhdma_clk),
+
+    .interrupt                  (hpu_2in3_interrupt),
+
+    .s_axil_mhdma_awaddr        (s_axil_mhdma_2in3_awaddr),
+    .s_axil_mhdma_awvalid       (s_axil_mhdma_2in3_awvalid),
+    .s_axil_mhdma_awready       (s_axil_mhdma_2in3_awready),
+    .s_axil_mhdma_wdata         (s_axil_mhdma_2in3_wdata),
+    .s_axil_mhdma_wstrb         (s_axil_mhdma_2in3_wstrb),
+    .s_axil_mhdma_wvalid        (s_axil_mhdma_2in3_wvalid),
+    .s_axil_mhdma_wready        (s_axil_mhdma_2in3_wready),
+    .s_axil_mhdma_bresp         (s_axil_mhdma_2in3_bresp),
+    .s_axil_mhdma_bvalid        (s_axil_mhdma_2in3_bvalid),
+    .s_axil_mhdma_bready        (s_axil_mhdma_2in3_bready),
+    .s_axil_mhdma_araddr        (s_axil_mhdma_2in3_araddr),
+    .s_axil_mhdma_arvalid       (s_axil_mhdma_2in3_arvalid),
+    .s_axil_mhdma_arready       (s_axil_mhdma_2in3_arready),
+    .s_axil_mhdma_rdata         (s_axil_mhdma_2in3_rdata),
+    .s_axil_mhdma_rresp         (s_axil_mhdma_2in3_rresp),
+    .s_axil_mhdma_rvalid        (s_axil_mhdma_2in3_rvalid),
+    .s_axil_mhdma_rready        (s_axil_mhdma_2in3_rready),
+
+    `HPU_AXI4_FULL_INSTANCE(mhdma_hbm, mhdma_hbm,,)
+
     .decomp_ntt_data_avail      (out_p1_p2_sll_ctrl.decomp_ntt_ctrl.data_avail),
     .decomp_ntt_data            (out_p1_p2_sll_data.decomp_ntt_data.data),
     .decomp_ntt_sob             (out_p1_p2_sll_data.decomp_ntt_data.sob),
@@ -522,7 +586,27 @@ module hpu_3parts
     .ntt_proc_cmd               (out_p1_p2_sll_data.ntt_proc_cmd),
     .ntt_proc_cmd_avail         (out_p1_p2_sll_ctrl.ntt_proc_cmd_avail),
 
-    .pep_rif_elt                (in_p2_p3_sll_ctrl.pep_rif_elt)
+    .pep_rif_elt                (in_p2_p3_sll_ctrl.pep_rif_elt),
+
+    .qsfp_tx_tdata              (qsfp_tx_tdata),
+    .qsfp_tx_tkeep_user         (qsfp_tx_tkeep_user),
+    .qsfp_tx_tlast              (qsfp_tx_tlast),
+    .qsfp_tx_tvalid             (qsfp_tx_tvalid),
+    .qsfp_tx_tready             (qsfp_tx_tready),
+
+    .qsfp_rx_tdata              (qsfp_rx_tdata),
+    .qsfp_rx_tkeep_user         (qsfp_rx_tkeep_user),
+    .qsfp_rx_tlast              (qsfp_rx_tlast),
+    .qsfp_rx_tvalid             (qsfp_rx_tvalid),
+
+    .gt_loopback                (gt_loopback),
+    .gt_line_rate               (gt_line_rate),
+    .gt_reset_rx_datapath       (gt_reset_rx_datapath),
+    .gt_reset_tx_datapath       (gt_reset_tx_datapath),
+    .gt_reset_all               (gt_reset_all),
+    .gt_rx_reset_done           (gt_rx_reset_done),
+    .gt_tx_reset_done           (gt_tx_reset_done)
+
   );
 
 // ============================================================================================== --

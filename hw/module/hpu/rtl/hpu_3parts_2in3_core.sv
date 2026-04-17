@@ -26,6 +26,7 @@ module hpu_3parts_2in3_core
   import axi_if_ksk_axi_pkg::*;
   import axi_if_glwe_axi_pkg::*;
   import axi_if_ct_axi_pkg::*;
+  import axi_if_mhdma_axi_pkg::*;
   import axi_if_trc_axi_pkg::*;
   import regf_common_param_pkg::*;
   import pem_common_param_pkg::*;
@@ -34,6 +35,7 @@ module hpu_3parts_2in3_core
   import ntt_core_common_param_pkg::*;
   import pep_ks_common_param_pkg::*;
   import pep_if_pkg::*;
+  import mhdma_pkg::*;
 #(
   // AXI4 ADD_W could be redefined by the simulation.
   parameter int    AXI4_TRC_ADD_W   = 64,
@@ -41,6 +43,7 @@ module hpu_3parts_2in3_core
   parameter int    AXI4_GLWE_ADD_W  = 64,
   parameter int    AXI4_BSK_ADD_W   = 64,
   parameter int    AXI4_KSK_ADD_W   = 64,
+  parameter int    AXI4_MHDMA_HBM_ADD_W = 64,
 
   // HPU version
   parameter int    VERSION_MAJOR    = 2,
@@ -52,6 +55,30 @@ module hpu_3parts_2in3_core
 
   input  logic                               cfg_clk,     // config clock
   input  logic                               cfg_srst_n, // synchronous reset
+
+  input logic                                cfg_mhdma_clk, // ethernet configuration slow clock
+
+  input logic                                prc_mhdma_clk, // mhdma clock at mrmac-axis speed
+
+  output interrupt_t                         interrupt,
+
+  input  logic [AXIL_ADD_W-1:0]              s_axil_mhdma_awaddr,
+  input  logic                               s_axil_mhdma_awvalid,
+  output logic                               s_axil_mhdma_awready,
+  input  logic [AXIL_DATA_W-1:0]             s_axil_mhdma_wdata,
+  input  logic [AXIL_DATA_BYTES-1:0]         s_axil_mhdma_wstrb, /* UNUSED */
+  input  logic                               s_axil_mhdma_wvalid,
+  output logic                               s_axil_mhdma_wready,
+  output logic [1:0]                         s_axil_mhdma_bresp,
+  output logic                               s_axil_mhdma_bvalid,
+  input  logic                               s_axil_mhdma_bready,
+  input  logic [AXIL_ADD_W-1:0]              s_axil_mhdma_araddr,
+  input  logic                               s_axil_mhdma_arvalid,
+  output logic                               s_axil_mhdma_arready,
+  output logic [AXIL_DATA_W-1:0]             s_axil_mhdma_rdata,
+  output logic [1:0]                         s_axil_mhdma_rresp,
+  output logic                               s_axil_mhdma_rvalid,
+  input  logic                               s_axil_mhdma_rready,
 
   // Decomposer -> NTT
   input  logic [PSI-1:0][R-1:0]              decomp_ntt_data_avail,
@@ -93,7 +120,30 @@ module hpu_3parts_2in3_core
   input logic                                ntt_proc_cmd_avail,
 
   //-- For regif
-  output pep_rif_elt_t                       pep_rif_elt
+  output pep_rif_elt_t                       pep_rif_elt,
+
+  // Multi-HPU-DMA
+  `HPU_AXI4_IO(mhdma_hbm, MHDMA_HBM, axi_if_mhdma_axi_pkg,)
+  // QSFP system interface
+  // == TX
+  output logic [QSFP_LANE_NB-1:0][MRMAC_AXIS_W-1:0]  qsfp_tx_tdata,
+  output logic [QSFP_LANE_NB-1:0][MRMAC_TKEEP_W-1:0] qsfp_tx_tkeep_user,
+  output logic [QSFP_LANE_NB-1:0]                    qsfp_tx_tlast,
+  output logic [QSFP_LANE_NB-1:0]                    qsfp_tx_tvalid,
+  input  logic [QSFP_LANE_NB-1:0]                    qsfp_tx_tready,
+  // == RX
+  input  logic [QSFP_LANE_NB-1:0][MRMAC_AXIS_W-1:0]  qsfp_rx_tdata,
+  input  logic [QSFP_LANE_NB-1:0][MRMAC_TKEEP_W-1:0] qsfp_rx_tkeep_user,
+  input  logic [QSFP_LANE_NB-1:0]                    qsfp_rx_tlast,
+  input  logic [QSFP_LANE_NB-1:0]                    qsfp_rx_tvalid,
+  // transceiver control
+  output logic [2:0]                                 gt_loopback,
+  output logic [7:0]                                 gt_line_rate,
+  output logic [QSFP_LANE_NB-1:0]                    gt_reset_rx_datapath,
+  output logic [QSFP_LANE_NB-1:0]                    gt_reset_tx_datapath,
+  output logic [QSFP_LANE_NB-1:0]                    gt_reset_all,
+  input  logic [QSFP_LANE_NB-1:0]                    gt_rx_reset_done,
+  input  logic [QSFP_LANE_NB-1:0]                    gt_tx_reset_done
 );
 
 // ============================================================================================== --
@@ -103,6 +153,8 @@ module hpu_3parts_2in3_core
 // ============================================================================================== --
 // Signals
 // ============================================================================================== --
+  logic                                   interrupt_notify;
+  logic                                   interrupt_read_request;
   // -------------------------------------------------------------------------------------------- --
   // Control
   // -------------------------------------------------------------------------------------------- --
@@ -396,5 +448,145 @@ module hpu_3parts_2in3_core
     .pep_rif_counter_inc      (pep_modsw_rif_counter_inc)
   );
 
-endmodule
+  // ==============================================================================================
+  // multi HPU DMA
+  // contains:
+  // * decoder
+  // * formatter
+  // * master module (Notify & Read-Request)
+  // * slave module (Notify-ACK & Ciphertext-Emission)
+  // ==============================================================================================
+  // reset for mrmac resyncronized for the two clock frequencies
+  logic cfg_mhdma_srst_n; // ethernet configuration slow clock
+  logic prc_mhdma_srst_n; // mrmac clock at axis speed
 
+  // initialize axi4 signals ----------------------------------------------------------------------
+  // Tie-off m_axi4 unused features
+  `HPU_AXI4_TIE_GL_UNUSED(mhdma_hbm,,)
+  // reset for mrmac resyncronized for the two clock frequencies
+  logic cfg_eth_srst_n;   // ethernet configuration slow clock
+  logic prc_mrmac_srst_n; // mrmac clock at axis speed
+
+  // /!\ Workaround : simulation AXI4_MHDMA_HBM_ADD_W may be different from
+  // the AXI4_MHDMA_HBM_ADD_W of the package (= the synthesized value).
+  // Use intermediate variable.
+  logic [axi_if_mhdma_axi_pkg::AXI4_ADD_W-1:0] m_axi4_mhdma_hbm_araddr_tmp;
+  always_comb
+    m_axi4_mhdma_hbm_araddr = m_axi4_mhdma_hbm_araddr_tmp[AXI4_MHDMA_HBM_ADD_W-1:0];
+
+// pragma translate_off
+  always_ff @(posedge prc_mhdma_clk)
+    if (!prc_mhdma_srst_n) begin
+      // Do nothing
+    end
+    else begin
+      if (m_axi4_mhdma_hbm_arvalid) begin
+        assert(m_axi4_mhdma_hbm_araddr_tmp >> AXI4_MHDMA_HBM_ADD_W == '0)
+        else begin
+          $fatal(1,"%t > ERROR: HBM ETHERNET AXI address overflows. Simulation supports only %d bits: 0x%0x.",$time, AXI4_MHDMA_HBM_ADD_W, m_axi4_mhdma_hbm_araddr_tmp);
+        end
+      end
+    end
+// pragma translate_on
+
+  logic [axi_if_mhdma_axi_pkg::AXI4_ADD_W-1:0] m_axi4_mhdma_hbm_awaddr_tmp;
+  always_comb
+    m_axi4_mhdma_hbm_awaddr = m_axi4_mhdma_hbm_awaddr_tmp[AXI4_MHDMA_HBM_ADD_W-1:0];
+
+// pragma translate_off
+  always_ff @(posedge prc_mhdma_clk)
+    if (!prc_mhdma_srst_n) begin
+      // Do nothing
+    end
+    else begin
+      if (m_axi4_mhdma_hbm_awvalid) begin
+        assert(m_axi4_mhdma_hbm_awaddr_tmp >> AXI4_MHDMA_HBM_ADD_W == '0)
+        else begin
+          $fatal(1,"%t > ERROR: HBM ETHERNET AXI address overflows. Simulation supports only %d bits: 0x%0x.",$time, AXI4_MHDMA_HBM_ADD_W, m_axi4_mhdma_hbm_awaddr_tmp);
+        end
+      end
+    end
+// pragma translate_on
+  // ==============================================================================================
+
+  xpm_cdc_single_wrapper #(
+    // The frequency of the input signal is extremely low, this should be enough
+    .CDC_SYNC_STAGES ( 2 ) ,
+    .SRC_INPUT_REG   ( 0 )
+  ) sync_cfg_prc_mrmac_slow (
+    .src_clk  ( prc_clk           ) ,
+    .src_in   ( prc_srst_n        ) ,
+    .dest_clk ( cfg_mhdma_clk       ) ,
+    .dest_out ( cfg_mhdma_srst_n    )
+  );
+
+  xpm_cdc_single_wrapper #(
+    // The frequency of the input signal is extremely low, this should be enough
+    .CDC_SYNC_STAGES ( 2 ) ,
+    .SRC_INPUT_REG   ( 0 )
+  ) sync_cfg_prc_mrmac_fast (
+    .src_clk  ( prc_clk           ) ,
+    .src_in   ( prc_srst_n        ) ,
+    .dest_clk ( prc_mhdma_clk     ) ,
+    .dest_out ( prc_mhdma_srst_n  )
+  );
+
+  multi_hpu_dma #(
+  ) multi_hpu_dma (
+    // System interface
+    .clk_mhdma_cfg          (cfg_mhdma_clk),
+    .resetn_mhdma_cfg       (cfg_mhdma_srst_n),
+    .clk_mhdma              (prc_mhdma_clk),
+    .resetn_mhdma           (prc_mhdma_srst_n),
+    // register interface
+    .s_axil_mhdma_awaddr    (s_axil_mhdma_awaddr),
+    .s_axil_mhdma_awvalid   (s_axil_mhdma_awvalid),
+    .s_axil_mhdma_awready   (s_axil_mhdma_awready),
+    .s_axil_mhdma_wdata     (s_axil_mhdma_wdata),
+    .s_axil_mhdma_wstrb     (s_axil_mhdma_wstrb),
+    .s_axil_mhdma_wvalid    (s_axil_mhdma_wvalid),
+    .s_axil_mhdma_wready    (s_axil_mhdma_wready),
+    .s_axil_mhdma_bresp     (s_axil_mhdma_bresp),
+    .s_axil_mhdma_bvalid    (s_axil_mhdma_bvalid),
+    .s_axil_mhdma_bready    (s_axil_mhdma_bready),
+    .s_axil_mhdma_araddr    (s_axil_mhdma_araddr),
+    .s_axil_mhdma_arvalid   (s_axil_mhdma_arvalid),
+    .s_axil_mhdma_arready   (s_axil_mhdma_arready),
+    .s_axil_mhdma_rdata     (s_axil_mhdma_rdata),
+    .s_axil_mhdma_rresp     (s_axil_mhdma_rresp),
+    .s_axil_mhdma_rvalid    (s_axil_mhdma_rvalid),
+    .s_axil_mhdma_rready    (s_axil_mhdma_rready),
+    // HBM axi4
+    `HPU_AXI4_SHORT_INSTANCE(mhdma_hbm, mhdma_hbm, _tmp,)
+    // interrupts
+    .interrupt_notify       (interrupt_notify),
+    .interrupt_read_request (interrupt_read_request),
+    // directly from QSFP axi4-stream
+    .qsfp_tx_tdata          (qsfp_tx_tdata),
+    .qsfp_tx_tkeep_user     (qsfp_tx_tkeep_user),
+    .qsfp_tx_tlast          (qsfp_tx_tlast),
+    .qsfp_tx_tvalid         (qsfp_tx_tvalid),
+    .qsfp_tx_tready         (qsfp_tx_tready),
+
+    .qsfp_rx_tdata          (qsfp_rx_tdata),
+    .qsfp_rx_tkeep_user     (qsfp_rx_tkeep_user),
+    .qsfp_rx_tlast          (qsfp_rx_tlast),
+    .qsfp_rx_tvalid         (qsfp_rx_tvalid),
+
+    // gt control signals
+    .gt_loopback            (gt_loopback),
+    .gt_line_rate           (gt_line_rate),
+    .gt_reset_rx_datapath   (gt_reset_rx_datapath),
+    .gt_reset_tx_datapath   (gt_reset_tx_datapath),
+    .gt_reset_all           (gt_reset_all),
+    .gt_rx_reset_done       (gt_rx_reset_done),
+    .gt_tx_reset_done       (gt_tx_reset_done)
+  );
+
+  always_comb begin
+    interrupt                          = '0;
+    interrupt.mhdma_notify_interrupt   = interrupt_notify;
+    interrupt.mhdma_readdone_interrupt = interrupt_read_request;
+  end
+
+endmodule

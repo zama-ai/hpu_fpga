@@ -67,6 +67,18 @@ int write_isc(uint32_t *pucData, uint32_t writeSize) {
     return iStatus;
 }
 
+void flush_dop_buffer_to_isc(uint32_t *dop_buffer, int number_of_dop) {
+    uint32_t write_isc_rv = OK;
+    //PLL_DBG("UCORE", "trying to flush %d dop to isc", number_of_dop);
+    //PLL_ERR("UCORE", "dop_buffer %08x %08x %08x ... %08x %08x %08x",dop_buffer[0], dop_buffer[1], dop_buffer[2], dop_buffer[number_of_dop-2], dop_buffer[number_of_dop-1], dop_buffer[number_of_dop]);
+    write_isc_rv = write_isc(dop_buffer, (uint32_t) (number_of_dop * sizeof(uint32_t)));
+    while (write_isc_rv == RETRY) {
+        //PLL_DBG("UCORE", "retry flush %d value to isc", number_of_dop);
+        iOSAL_Task_SleepTicks(20);
+        write_isc_rv = write_isc(dop_buffer, (uint32_t) (number_of_dop * sizeof(uint32_t)));
+    }
+}
+
 /* Checking if acknowledge AXIS is not empty ------------------------------------------------------
  *
  * this function is meant to get the number of available words in the ack stream FIFO
@@ -85,8 +97,9 @@ int read_isc_ack_cnt(void) {
  */
 uint32_t pop_isc_ack() {
     uint32_t iop_ack = 0;
+    int available_word = read_isc_ack_cnt();
 
-    if (read_isc_ack_cnt() > 0) {
+    if (available_word > 0) {
         iop_ack = * (volatile uint32_t *) (XPAR_AXI_FIFO_0_BASEADDR + 0x20);
     }
     return iop_ack;
