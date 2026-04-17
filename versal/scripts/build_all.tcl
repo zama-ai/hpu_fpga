@@ -80,7 +80,8 @@ proc import_all { } {
 
   set_property STEPS.SYNTH_DESIGN.TCL.PRE       [get_files *syn.pre.tcl]                [get_runs synth_1]
   set_property STEPS.SYNTH_DESIGN.TCL.POST      [get_files *syn.post.tcl]               [get_runs synth_1]
-  set_property strategy Performance_ExtraTimingOpt                                   [get_runs impl_1]
+  #set_property strategy Performance_ExtraTimingOpt                                     [get_runs impl_1]
+  set_property strategy Performance_AggressiveExplore                                   [get_runs impl_1]
   set_property STEPS.OPT_DESIGN.TCL.PRE         [get_files *opt.pre.tcl]                [get_runs impl_1]
   set_property STEPS.OPT_DESIGN.TCL.POST        [get_files *opt.post.tcl]               [get_runs impl_1]
   set_property STEPS.PLACE_DESIGN.TCL.PRE       [get_files *place.pre.tcl]              [get_runs impl_1]

@@ -10,7 +10,7 @@ set_property IP_REPO_PATHS $VERSAL/iprepo/ [current_project]
 
 route_design -unroute -nets [get_nets -of_objects [get_sites $SITE]]
 update_clock_routing
-route_design
+route_design -directive AggressiveExplore
 
 source $VERSAL/constraints/hooks/hook_route.post.tcl
 report_timing_summary -rpx route_timing_summary.rpx -max_paths 1000 \

@@ -95,8 +95,8 @@ module mhdma_nmu_pipe
 
   fifo_element #(
     .WIDTH         (AXI4_AR_IF_W),
-    .DEPTH         (FIFO_DEPTH),
-    .TYPE_ARRAY    ({FIFO_DEPTH{4'h3}}),
+    .DEPTH         (1'b1),
+    .TYPE_ARRAY    (4'h3),
     .DO_RESET_DATA (0),
     .RESET_DATA_VAL(0)
   ) fifo_ar_placement (
@@ -154,8 +154,8 @@ module mhdma_nmu_pipe
 
   fifo_element #(
     .WIDTH         (AXI4_AW_IF_W),
-    .DEPTH         (FIFO_DEPTH),
-    .TYPE_ARRAY    ({FIFO_DEPTH{4'h3}}),
+    .DEPTH         (1'b1),
+    .TYPE_ARRAY    (4'h3),
     .DO_RESET_DATA (0),
     .RESET_DATA_VAL(0)
   ) fifo_aw_placement (
@@ -185,7 +185,7 @@ module mhdma_nmu_pipe
   fifo_element #(
     .WIDTH         (AXI4_W_IF_W),
     .DEPTH         (FIFO_DEPTH),
-    .TYPE_ARRAY    ({4'h2, {FIFO_DEPTH-1{4'h1}}}),
+    .TYPE_ARRAY    ({{FIFO_DEPTH-1{4'h1}}, 4'h2}),
     .DO_RESET_DATA (0),
     .RESET_DATA_VAL(0)
   ) fifo_w_placement (
