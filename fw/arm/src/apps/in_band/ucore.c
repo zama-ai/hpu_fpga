@@ -34,6 +34,7 @@ uint16_t b2b_pool_size = 4096;
 volatile mhdma_element_t mhdma_table[IOP_ID_MAX_COUNT][FLAG_MAX_COUNT];
 volatile uint8_t mhdma_table_state[IOP_ID_MAX_COUNT][FLAG_MAX_COUNT];
 extern uint64_t intr_readc_cnt;
+extern uint32_t debug_intr_global_cnt;
 
 #ifndef UCORE_MHDMA_SIMU
 // DDR debug trace
@@ -119,6 +120,7 @@ void b2b_pool_init(void) {
 }
 
 uint16_t b2b_pool_pop(uint8_t iid) {
+  vOSAL_EnterCritical();
   if (b2b_pool_free_cnt == 0) {
     return 0xFFFF; // this means no more empty slot
   }
@@ -126,10 +128,12 @@ uint16_t b2b_pool_pop(uint8_t iid) {
   b2b_pool_free_cnt--;
   b2b_pool_head = (b2b_pool_head + 1) % B2B_POOL_SIZE;
   b2b_pool[alloc_slot] = iid;
+  vOSAL_ExitCritical();
   return (alloc_slot + b2b_pool_start_addr);
 }
 
 uint16_t b2b_pool_free(uint8_t iid) {
+  vOSAL_EnterCritical();
   if (b2b_pool_free_cnt == B2B_POOL_SIZE) {
     // we should not be doing a free
     // maybe this iop did not use any slot
@@ -148,6 +152,7 @@ uint16_t b2b_pool_free(uint8_t iid) {
   }
   print_ddr_debug(0xB2B00000+iid);
   print_ddr_debug((b2b_pool_free_cnt << 16) + free_cnt);
+  vOSAL_ExitCritical();
   return free_cnt;
 }
 
@@ -471,7 +476,11 @@ void iop_teardown(uint8_t iid) {
   }
   vOSAL_EnterCritical();
   // update iop_state
+  //print_ddr_debug(0xBEE20000 | ((uint32_t)iid << 8) | iop_state[iid].nb_hpu << 4 | iop_state[iid].state);
   iop_state_node_ack(iid, iop_state[iid].nb_hpu);
+  if (debug_intr_global_cnt%2 == 1) {
+    print_ddr_debug(0xBEE30000 | ((uint32_t)iid << 8) | iop_state[iid].nb_hpu << 4 | iop_state[iid].state);
+  }
   vOSAL_ExitCritical();
 
   // release b2b pool slot for this IOp
@@ -561,10 +570,14 @@ uint32_t parse_iop(
   cur_mapping.raw = mapping->raw;
   uint8_t nb_hpu = number_of_hpu(*mapping);
   vOSAL_EnterCritical();
+  //print_ddr_debug(0xBEE00000 | ((uint32_t)cur_iid << 8) | iop_state[cur_iid].nb_hpu << 4 | iop_state[cur_iid].state);
   if (iop_state[cur_iid].state >= nb_hpu || iop_state[cur_iid].state == IOP_STATE_DONE) {
     iop_state[cur_iid].state  = IOP_STATE_RUNNING;
   }
   iop_state[cur_iid].nb_hpu = nb_hpu;
+  if (debug_intr_global_cnt%2 == 1) {
+    print_ddr_debug(0xBEE10000 | ((uint32_t)cur_iid << 8) | iop_state[cur_iid].nb_hpu << 4 | iop_state[cur_iid].state);
+  }
   vOSAL_ExitCritical();
   PLL_INF("parse_iop", "[HPU%d] parse_iop starting iop %d (virt hid %d) state %d nb_hpu %d",
       phys_hpu_id,

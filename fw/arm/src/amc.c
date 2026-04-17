@@ -115,7 +115,7 @@ typedef enum {
   MHDMA_CMD_PRINT_ERR = 0,
   MHDMA_CMD_PRINT_ACK,
   MHDMA_CMD_IOP_TEARDOWN,
-  MHDMA_CMD_IOP_READSRC,
+  MHDMA_CMD_END_OF_IOP,
 } MhdmaCmdType_t;
 
 typedef struct {
@@ -416,7 +416,7 @@ void vInterruptHandler_mhdma_notify( void* pvCallBackRef ) {
       MhdmaCommand_t cmd;
       cmd.cmdID = MHDMA_CMD_PRINT_ERR;
       cmd.payload = (iid << 24 | (notify.fields.src_cid & 0xF) << 20 | slave_hpu_id << 16 | mode << 8 | flag);
-      cmd.debug   = notify_data | (iop_state[iid].state << 32);
+      cmd.debug   = notify_data | ((uint64_t)iop_state[iid].state << 32);
       if (xMhdmaCommandMbox) {
         if (iOSAL_MBox_PostFromISR(xMhdmaCommandMbox, (void*)&cmd) != 0) {
           mbox_msg_lost_cnt+=1;
@@ -450,16 +450,12 @@ void vInterruptHandler_mhdma_notify( void* pvCallBackRef ) {
         break;
       }
       case CMD_SRC: {
-        iop_state_node_ack(iid, flag);
-
-        if (iop_state[iid].state == IOP_STATE_DONE) {
-          MhdmaCommand_t cmd;
-          cmd.cmdID = MHDMA_CMD_IOP_READSRC;
-          cmd.payload = iid << 24 | slave_hpu_id << 16 | mode << 8;
-          if (xMhdmaCommandMbox) {
-            if (iOSAL_MBox_PostFromISR(xMhdmaCommandMbox, (void*)&cmd) != 0) {
-              mbox_msg_lost_cnt+=1;
-            }
+        MhdmaCommand_t cmd;
+        cmd.cmdID = MHDMA_CMD_END_OF_IOP;
+        cmd.payload = iid << 24 | slave_hpu_id << 16 | mode << 8 | flag;
+        if (xMhdmaCommandMbox) {
+          if (iOSAL_MBox_PostFromISR(xMhdmaCommandMbox, (void*)&cmd) != 0) {
+            mbox_msg_lost_cnt+=1;
           }
         }
         break;
@@ -559,42 +555,54 @@ void vMhdmaWorkerTask(void *pvParameters) {
           break;
         }
 
-        case MHDMA_CMD_IOP_READSRC: {
+        case MHDMA_CMD_END_OF_IOP: {
           uint8_t iid = (rxCmd.payload >> 24) & 0xFF;
           uint8_t mode = (rxCmd.payload >> 8) & 0xFF;
-          // if remote_src is state NONE, it means b2b_pool slot is not ready => do nothing here
-          // if remote_src is state DMA pending, it means read of this src is already on-going => do nothing here
-          // if remote_src is resolved, then nothing todo either
-          uint16_t src_addr = src_store_get_waiting(cur_iid, iid);
-          uint8_t tid = (src_addr >> 8) & 0xFF;
-          uint8_t bid = (src_addr & 0xFF);
-          while (src_addr != 0xFFFF) {
-            //PLL_ERR("MhdmaWorker", "iop read src for cur_iid %d (%d/%d) triggered by iid %d from %d src %04X dst %04X",
-            //        cur_iid,
-            //        tid,
-            //        bid,
-            //        iid,
-            //        src_store.owner[cur_iid][tid],
-            //        src_store.cid_offset[cur_iid][tid] + bid,
-            //        src_store.dst_cid[cur_iid][tid][bid]);
-            vOSAL_EnterCritical();
-            generate_operand_read_req(
-                    cur_iid,
-                    mode,
-                    src_store.owner[cur_iid][tid],
-                    src_store.cid_offset[cur_iid][tid] + bid,
-                    src_store.dst_cid[cur_iid][tid][bid],
-                    src_addr);
-            src_store.state[cur_iid][tid][bid] = OPERAND_STATE_DMA_PENDING;
-            vOSAL_ExitCritical();
-            // try to get next src pending
-            src_addr = src_store_get_waiting(cur_iid, iid);
-            tid = (src_addr >> 8) & 0xFF;
-            bid = (src_addr & 0xFF);
-          }
+          uint8_t flag = rxCmd.payload & 0xFF;
 
-          // local b2b pool linked to this done IOp (for dst) are not needed anymore
-          (void)b2b_pool_free(iid);
+          vOSAL_EnterCritical();
+          //print_ddr_debug(0xBEE40000 | ((uint32_t)iid << 8) | iop_state[iid].nb_hpu << 4 | iop_state[iid].state);
+          iop_state_node_ack(iid, flag);
+          if (debug_intr_global_cnt%2 == 1) {
+            print_ddr_debug(0xBEE50000 | ((uint32_t)iid << 8) | iop_state[iid].nb_hpu << 4 | iop_state[iid].state);
+          }
+          vOSAL_ExitCritical();
+
+          if (iop_state[iid].state == IOP_STATE_DONE) {
+            // if remote_src is state NONE, it means b2b_pool slot is not ready => do nothing here
+            // if remote_src is state DMA pending, it means read of this src is already on-going => do nothing here
+            // if remote_src is resolved, then nothing todo either
+            uint16_t src_addr = src_store_get_waiting(cur_iid, iid);
+            uint8_t tid = (src_addr >> 8) & 0xFF;
+            uint8_t bid = (src_addr & 0xFF);
+            while (src_addr != 0xFFFF) {
+              //PLL_ERR("MhdmaWorker", "iop read src for cur_iid %d (%d/%d) triggered by iid %d from %d src %04X dst %04X",
+              //        cur_iid,
+              //        tid,
+              //        bid,
+              //        iid,
+              //        src_store.owner[cur_iid][tid],
+              //        src_store.cid_offset[cur_iid][tid] + bid,
+              //        src_store.dst_cid[cur_iid][tid][bid]);
+              vOSAL_EnterCritical();
+              generate_operand_read_req(
+                      cur_iid,
+                      mode,
+                      src_store.owner[cur_iid][tid],
+                      src_store.cid_offset[cur_iid][tid] + bid,
+                      src_store.dst_cid[cur_iid][tid][bid],
+                      src_addr);
+              src_store.state[cur_iid][tid][bid] = OPERAND_STATE_DMA_PENDING;
+              vOSAL_ExitCritical();
+              // try to get next src pending
+              src_addr = src_store_get_waiting(cur_iid, iid);
+              tid = (src_addr >> 8) & 0xFF;
+              bid = (src_addr & 0xFF);
+            }
+
+            // local b2b pool linked to this done IOp (for dst) are not needed anymore
+            (void)b2b_pool_free(iid);
+          }
           break;
         }
 
