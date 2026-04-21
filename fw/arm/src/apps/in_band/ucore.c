@@ -476,10 +476,9 @@ void iop_teardown(uint8_t iid) {
   }
   vOSAL_EnterCritical();
   // update iop_state
-  //print_ddr_debug(0xBEE20000 | ((uint32_t)iid << 8) | iop_state[iid].nb_hpu << 4 | iop_state[iid].state);
   iop_state_node_ack(iid, iop_state[iid].nb_hpu);
   if (debug_intr_global_cnt%2 == 1) {
-    print_ddr_debug(0xBEE30000 | ((uint32_t)iid << 8) | iop_state[iid].nb_hpu << 4 | iop_state[iid].state);
+    print_ddr_debug(0xBEE20000 | ((uint32_t)iid << 8) | iop_state[iid].nb_hpu << 4 | iop_state[iid].state);
   }
   vOSAL_ExitCritical();
 
@@ -570,7 +569,6 @@ uint32_t parse_iop(
   cur_mapping.raw = mapping->raw;
   uint8_t nb_hpu = number_of_hpu(*mapping);
   vOSAL_EnterCritical();
-  //print_ddr_debug(0xBEE00000 | ((uint32_t)cur_iid << 8) | iop_state[cur_iid].nb_hpu << 4 | iop_state[cur_iid].state);
   if (iop_state[cur_iid].state >= nb_hpu || iop_state[cur_iid].state == IOP_STATE_DONE) {
     iop_state[cur_iid].state  = IOP_STATE_RUNNING;
   }
