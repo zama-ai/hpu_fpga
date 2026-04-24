@@ -15,8 +15,14 @@
 //   error_id                      - Bridge: Multiple HPUs defined as current (not one-hot)
 //
 // Not tested here:
-//   - formatter_error             - Formatter: tvalid gap during CE payload (tb_mhdma_formatter
+//   - ce_underrun_error           - Formatter: tvalid gap during CE payload (tb_mhdma_formatter
 //                                   checks the gating prevents it, but no test triggers it)
+//   - slave_discard_error         - Formatter: slave command with unrecognized req_id. Tested in
+//                                   tb_mhdma_formatter unit TB (upstream slave/master only emit
+//                                   legal req_ids, so the defensive discard path cannot be
+//                                   reached from the integration-level stimuli).
+//   - master_discard_error        - Formatter: master command with unrecognized req_id. Tested
+//                                   in tb_mhdma_formatter unit TB (same rationale as above).
 //
 // ==============================================================================================
 

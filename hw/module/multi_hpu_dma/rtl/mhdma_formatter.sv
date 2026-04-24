@@ -26,8 +26,9 @@
 // - command.hpu_id must be < NB_MAX_HPU. No bounds check on MAC table index;
 // - NB_PACKETS_FULL >= 1. The stalling / threshold logic assumes at least one full frame.
 // - LAST_PACKET_BYTE_SIZE >= ETH_NB_BYTES_MIN (64).
-// - Commands with unrecognized req_id are silently discarded
-// - Formatter_error (sticky, cleared by rst_errors) detects tvalid gap during CE payload
+// - Commands with unrecognized req_id are silently discarded; a sticky error flag
+//   (slave_discard_error / master_discard_error) is raised so software can observe it.
+// - ce_underrun_error (sticky, cleared by rst_errors) detects tvalid gap during CE payload
 //   transmission. fifo_ce gating should prevent this under normal operation.
 //
 // ================================================================================================
@@ -667,19 +668,37 @@ module mhdma_formatter
   // =========================================================================================== //
   // Errors
   // =========================================================================================== //
-  // Detect tvalid gap during payload transmission (MRMAC TX underrun)
+  // ce_underrun_error: detect tvalid gap during CE payload transmission (MRMAC TX underrun)
   logic payload_active;
 
   assign payload_active = st_ct_emission & ce_first_header_sent & ~ce_stalling & |tx_cnt;
 
   always_ff @(posedge clk_mhdma) begin
     if (~resetn_mhdma) begin
-      format_error.formatter_error <= 1'b0;
+      format_error.ce_underrun_error <= 1'b0;
     end else begin
       if (rst_errors) begin
-        format_error.formatter_error <= 1'b0;
+        format_error.ce_underrun_error <= 1'b0;
       end else if (payload_active & ~ce_fifo_out_vld & tx_tready) begin
-        format_error.formatter_error <= 1'b1;
+        format_error.ce_underrun_error <= 1'b1;
+      end
+    end
+  end
+
+  // slave/master_discard_error: sticky flags raised when a command with an unrecognized
+  // req_id is silently discarded (defensive path: in normal operation slave/master upstream
+  // only emit legal req_ids, so these should never fire).
+  always_ff @(posedge clk_mhdma) begin
+    if (~resetn_mhdma) begin
+      format_error.slave_discard_error  <= 1'b0;
+      format_error.master_discard_error <= 1'b0;
+    end else begin
+      if (rst_errors) begin
+        format_error.slave_discard_error  <= 1'b0;
+        format_error.master_discard_error <= 1'b0;
+      end else begin
+        if (slave_discard)  format_error.slave_discard_error  <= 1'b1;
+        if (master_discard) format_error.master_discard_error <= 1'b1;
       end
     end
   end

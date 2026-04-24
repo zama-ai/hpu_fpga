@@ -1040,9 +1040,9 @@ module tb_mhdma_formatter;
       error_starvation = 1'b1;
     end
 
-    // Frame-level gating should prevent the formatter_error flag
-    assert (format_error.formatter_error == 1'b0) else begin
-      $display("[ERROR:%0d] formatter_error raised despite frame-level gating", scenario_id);
+    // Frame-level gating should prevent the ce_underrun_error flag
+    assert (format_error.ce_underrun_error == 1'b0) else begin
+      $display("[ERROR:%0d] ce_underrun_error raised despite frame-level gating", scenario_id);
       error_starvation = 1'b1;
     end
 
@@ -1488,8 +1488,8 @@ module tb_mhdma_formatter;
       error_mid_bp = 1'b1;
     end
 
-    assert (format_error.formatter_error == 1'b0) else begin
-      $display("%t > [ERROR:%0d] formatter_error raised during mid-frame backpressure", $time, scenario_id);
+    assert (format_error.ce_underrun_error == 1'b0) else begin
+      $display("%t > [ERROR:%0d] ce_underrun_error raised during mid-frame backpressure", $time, scenario_id);
       error_mid_bp = 1'b1;
     end
 
@@ -1646,6 +1646,17 @@ module tb_mhdma_formatter;
       error_discard = 1'b1;
     end
 
+    // Sticky slave_discard_error must be latched
+    assert (format_error.slave_discard_error == 1'b1) else begin
+      $display("[ERROR:%0d] slave_discard_error not set after invalid slave command", scenario_id);
+      error_discard = 1'b1;
+    end
+    // And master side should not be affected yet
+    assert (format_error.master_discard_error == 1'b0) else begin
+      $display("[ERROR:%0d] master_discard_error unexpectedly set by invalid slave command", scenario_id);
+      error_discard = 1'b1;
+    end
+
     // --- Invalid master command ---
     @(posedge clk);
     master_command.req_id       <= invalid_req_id;
@@ -1673,6 +1684,28 @@ module tb_mhdma_formatter;
     end
     assert (tx_frame_count == 0) else begin
       $display("[ERROR:%0d] unexpected TX frame after invalid master command", scenario_id);
+      error_discard = 1'b1;
+    end
+
+    // Sticky master_discard_error must be latched (slave one still set, since sticky)
+    assert (format_error.master_discard_error == 1'b1) else begin
+      $display("[ERROR:%0d] master_discard_error not set after invalid master command", scenario_id);
+      error_discard = 1'b1;
+    end
+    assert (format_error.slave_discard_error == 1'b1) else begin
+      $display("[ERROR:%0d] slave_discard_error lost its sticky value", scenario_id);
+      error_discard = 1'b1;
+    end
+
+    // --- rst_errors clears the sticky discard flags ---
+    @(posedge clk);
+    rst_errors <= 1'b1;
+    @(posedge clk);
+    rst_errors <= 1'b0;
+    repeat (4) @(posedge clk);
+    assert (format_error.slave_discard_error == 1'b0 && format_error.master_discard_error == 1'b0) else begin
+      $display("[ERROR:%0d] discard error flags not cleared by rst_errors (slave=%0b master=%0b)",
+               scenario_id, format_error.slave_discard_error, format_error.master_discard_error);
       error_discard = 1'b1;
     end
 

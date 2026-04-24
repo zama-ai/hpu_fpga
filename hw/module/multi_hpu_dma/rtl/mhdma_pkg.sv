@@ -198,7 +198,9 @@ package mhdma_pkg;
 
   // Errors ---------------------------------------------------------------------------------------
   typedef struct packed {
-    logic formatter_error;
+    logic master_discard_error; // master_command received with unrecognized req_id (discarded)
+    logic slave_discard_error;  // slave_command received with unrecognized req_id (discarded)
+    logic ce_underrun_error;    // tvalid gap during CE payload transmission (MRMAC TX underrun)
   } format_error_t;
 
   typedef struct packed {
@@ -235,10 +237,12 @@ package mhdma_pkg;
     mhdma_error_t       mhdma_error;
   } mhdma_error_all_t;
 
-  // [31:10] : zeros (padding)
-  // [9]     : master_error_cfg.rrqq_cmd_ovf_error
-  // [8]     : master_error_cfg.nrqq_cmd_ovf_error
-  // [7]     : format_error.formatter_error
+  // [31:12] : zeros (padding)
+  // [11]    : master_error_cfg.rrqq_cmd_ovf_error
+  // [10]    : master_error_cfg.nrqq_cmd_ovf_error
+  // [9]     : format_error.master_discard_error
+  // [8]     : format_error.slave_discard_error
+  // [7]     : format_error.ce_underrun_error
   // [6]     : decoder_error.error_fifo_rx_ovf
   // [5]     : slave_error.rreq_cmd_ovf_error
   // [4]     : slave_error.read_rresp_error

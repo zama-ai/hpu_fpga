@@ -99,6 +99,11 @@ module mhdma_slave
   assign received_notify       = (decoded_command.req_id == REQ_ID_NOTIFY);
   assign received_read_request = (decoded_command.req_id == REQ_ID_READ);
 
+  logic arbiter_nack;            // arbiter picks "Notify-ACK" branch this cycle
+  logic arbiter_read;            // arbiter picks "Read-emission" branch this cycle
+  logic arbiter_handshake;       // next_slave_command handshake : command commits to buffer
+  logic slave_command_handshake; // slave_command  handshake     : formatter accepts command
+
   // ==============================================================================================
   // Notify RX (NRX)
   // ==============================================================================================
@@ -181,8 +186,8 @@ module mhdma_slave
   logic nrx_regf_in_rdy;
   logic nrx_regf_write_enable;
 
-  assign nrx_cmd_out_rdy = st_transmit_ack & slave_command_rdy & nrx_regf_in_rdy & (slave_command.req_id == REQ_ID_NOTIFY_ACK);
-  assign nrx_regf_write_enable = nrx_cmd_out_vld & nrx_cmd_out_rdy;
+  assign nrx_cmd_out_rdy       = arbiter_handshake & arbiter_nack;
+  assign nrx_regf_write_enable = nrx_cmd_out_rdy;
 
   // CFG domain ----------------------------------------------------------------------------------
   logic [2*REG_DATA_W-1:0] nrx_regf_out_data;
@@ -294,7 +299,7 @@ module mhdma_slave
     .almost_full (/* UNUSED */)
   );
 
-  assign rreq_cmd_out_rdy = st_read_send & slave_command_rdy & (slave_command.req_id == REQ_ID_EMISSION);
+  assign rreq_cmd_out_rdy = slave_command_handshake & (slave_command.req_id == REQ_ID_EMISSION);
 
   // ==============================================================================================
   // Consuming Decoded commands
@@ -686,33 +691,58 @@ module mhdma_slave
   );
 
   // =========================================================================================== //
-  // Interface to formatter
+  // Arbiter: Slave command
   // =========================================================================================== //
-  // ACKs take precedence over read requests
-  // we don't need dst_addr, flag & mode for ack
-  always_ff @(posedge clk_mhdma) begin
-    if (nrx_cmd_out_vld)  begin
-      slave_command          <= nrx_cmd_fifo;
-      slave_command.rsvd     <= 'h0;
-      slave_command.flag     <= 'h0;
-      slave_command.mode     <= 'h0;
-      slave_command.dst_addr <= 'h0;
-    end else if (rreq_cmd_out_vld) begin
-      slave_command          <= rreq_cmd_fifo;
-    end else begin
-      slave_command          <= 'h0;
+  // Priority arbiter (notify-ack > read-emission) feeding a fifo_element towards formatter.
+  // Source FIFO pops are advanced on the arbiter's upstream handshake (arbiter_handshake),
+  // so a single command entering the buffer cannot be replayed while  formatter drains it.
+
+  command_t next_slave_command;
+  logic     next_slave_command_vld;
+  logic     next_slave_command_rdy;
+
+  assign arbiter_nack             =  nrx_cmd_out_vld;
+  assign arbiter_read             = ~arbiter_nack & rreq_cmd_out_vld;
+  assign arbiter_handshake        = next_slave_command_vld & next_slave_command_rdy;
+  assign slave_command_handshake  = slave_command_vld      & slave_command_rdy;
+
+  always_comb begin
+    next_slave_command     = 'h0;
+    next_slave_command_vld = 1'b0;
+
+    if (arbiter_nack) begin
+      next_slave_command          = nrx_cmd_fifo;
+      next_slave_command.rsvd     = 'h0;
+      next_slave_command.flag     = 'h0;
+      next_slave_command.mode     = 'h0;
+      next_slave_command.dst_addr = 'h0;
+
+      next_slave_command_vld      = st_transmit_ack & nrx_regf_in_rdy;
+    end else if (arbiter_read) begin
+      next_slave_command          = rreq_cmd_fifo;
+
+      next_slave_command_vld      = st_read_send;
     end
   end
 
-  // Slave_command_vld: set when either FIFO has data
-  // These fifos have their data consumed when slave_command_rdy and correct fsm state is current
-  always_ff @(posedge clk_mhdma) begin
-    if (~resetn_mhdma) begin
-      slave_command_vld <= 1'b0;
-    end else begin
-      slave_command_vld <= nrx_cmd_out_vld | rreq_cmd_out_vld;
-    end
-  end
+  fifo_element #(
+    .WIDTH          ($bits(next_slave_command)),
+    .DEPTH          (1                         ),
+    .TYPE_ARRAY     (4'h3                      ),
+    .DO_RESET_DATA  (1'b0                      ),
+    .RESET_DATA_VAL (0                         )
+  ) fifo_element_slave_cmd (
+    .clk     (clk_mhdma   ),
+    .s_rst_n (resetn_mhdma),
+
+    .in_data (next_slave_command    ),
+    .in_vld  (next_slave_command_vld),
+    .in_rdy  (next_slave_command_rdy),
+
+    .out_data(slave_command    ),
+    .out_vld (slave_command_vld),
+    .out_rdy (slave_command_rdy)
+  );
 
   // =========================================================================================== //
   // Error detection

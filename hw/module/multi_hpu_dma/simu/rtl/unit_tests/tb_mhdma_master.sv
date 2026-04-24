@@ -31,6 +31,7 @@
 //   > Multiple sequential notify requests
 //   > Multiple sequential read requests
 //   > NOTIFY_ACK leakage into received_cmd (regression for 57bf253984)
+//   > Race: master_command.req_id flips between formatter's observation and rdy pulse
 //   > Statistics counters
 //   > Error reset
 //
@@ -2155,6 +2156,131 @@ module tb_mhdma_master;
     end
   endtask
 
+  // --------------------------------------------------------------------------------------------- --
+  // Scenario : Concurrent NOTIFY + READ traffic through the master_command arbiter
+  //
+  // The master_command arbiter + fifo_element  must correctly serialize a READ already in flight
+  // with a NOTIFY that arrives while the READ holds the buffer.
+  // This scenario covers:
+  //   - arbiter priority + per-command serialization (one command in the buffer at a time)
+  //   - source-FIFO pop atomicity (nrqq retry-FIFO push happens once per fresh notify)
+  //   - dispatch-event side effects (no spurious *_sent; FSMs only advance on real dispatch)
+  //   - both commands surface with their payloads preserved end-to-end
+  //
+  // req_id stability while vld=1 & rdy=0 is directly enforced by the SVA
+  // assert_master_cmd_req_id_stable — no scenario-level assertion duplicates it here.
+  //
+  // Steps:
+  //   1. Inject a READ; wait for master_command_vld with req_id=READ.
+  //   2. Inject a NOTIFY while the READ is still held in the buffer.
+  //   3. Pulse master_command_rdy + read_request_sent to dispatch the READ.
+  //   4. Check cnt_notify didn't increment (no formatter notify transmission happened),
+  //      then complete the READ flow and verify the queued NOTIFY drains with the
+  //      correct iop_id.
+  // --------------------------------------------------------------------------------------------- --
+  task automatic run_scenario_concurrent_notify_read();
+    logic                  cmd_timed_out;
+    logic                  irq_timed_out;
+    logic [REG_DATA_W-1:0] saved_cnt_notify;
+    logic [IOP_ID_W-1:0]   notify_iop_id;
+    begin
+      scenario_start(scenario_id, "Concurrent NOTIFY + READ traffic through the arbiter");
+      clear_axi4_captures();
+      randomize_fields();
+      saved_cnt_notify = stat.cnt_notify;
+      notify_iop_id    = iop_id ^ 8'hFF;
+
+      // Phase 1: inject READ, wait for master_command_vld with req_id=READ
+      inject_regf_request(
+        .iop_id   (iop_id      ),
+        .req_type (REQ_ID_READ ),
+        .hpu_id   (hpu_id      ),
+        .mode     (req_mode    ),
+        .flag     (req_flag    ),
+        .src_addr (iop_src_addr),
+        .dst_addr (iop_dst_addr)
+      );
+
+      wait_master_command_vld(500, cmd_timed_out);
+      assert (!cmd_timed_out) else begin
+        $display("[ERROR:%0d] Timed out waiting for READ master_command_vld", scenario_id);
+        error_scenario = 1'b1;
+      end
+      assert (master_command.req_id == REQ_ID_READ) else begin
+        $display("[ERROR:%0d] Phase1: expected req_id=READ, got %0h", scenario_id, master_command.req_id);
+        error_scenario = 1'b1;
+      end
+
+      // Phase 2: inject NOTIFY while master_command is still vld=1 with req_id=READ.
+      // A correct DUT must hold master_command stable until master_command_rdy pulses.
+      // A buggy DUT overwrites req_id to NOTIFY via the priority mux.
+      inject_regf_request(
+        .iop_id   (notify_iop_id),
+        .req_type (REQ_ID_NOTIFY),
+        .hpu_id   (hpu_id       ),
+        .mode     (req_mode     ),
+        .flag     (req_flag     ),
+        .src_addr (iop_src_addr ),
+        .dst_addr (iop_dst_addr )
+      );
+
+      // Give the CDC fifo enough time to propagate the NOTIFY into nrqq_cmd_vld.
+      repeat (100) @(posedge clk_mhdma);
+
+      // Phase 3: formatter commits to consume the READ it observed in phase 1.
+      @(posedge clk_mhdma);
+      master_command_rdy = 1'b1;
+      @(posedge clk_mhdma);
+      master_command_rdy = 1'b0;
+
+      // Phase 4: formatter sends the read packet.
+      simulate_pulse(read_request_sent, clk_mhdma);
+
+      // Phase 5: let FSMs settle, then check no spurious notify transmission happened.
+      // FSM state snapshots are intentionally NOT asserted here — they are implementation
+      // artifacts of where the FSM-trigger pulse lives in the arbiter/buffer pipeline.
+      // The real invariants checked are:
+      //   - cnt_notify unchanged (no notify_sent without a real formatter transmission)
+      //   - both commands eventually drain with the correct payload (cleanup phase)
+      //   - req_id stability while vld & !rdy (covered by assert_master_cmd_req_id_stable)
+      repeat (10) @(posedge clk_mhdma);
+
+      assert (stat.cnt_notify == saved_cnt_notify) else begin
+        $display("[ERROR:%0d] cnt_notify incremented unexpectedly (was %0d, now %0d) -- notify_sent pulsed without a corresponding formatter notify transmission", scenario_id, saved_cnt_notify, stat.cnt_notify);
+        error_scenario = 1'b1;
+      end
+
+      // Complete the READ flow, then drain the queued NOTIFY.
+      feed_full_ciphertext(iop_id, hpu_id, req_mode, req_flag, iop_src_addr, iop_dst_addr);
+      wait_interrupt_rr(5000, irq_timed_out);
+      if (!irq_timed_out) clear_signal(clear_interrupt_rr, clk_mhdma_cfg);
+      repeat (20) @(posedge clk_mhdma);
+
+      // The queued NOTIFY must surface on master_command with its original payload.
+      wait_master_command_vld(500, cmd_timed_out);
+      assert (!cmd_timed_out) else begin
+        $display("[ERROR:%0d] Queued NOTIFY did not surface after READ completed", scenario_id);
+        error_scenario = 1'b1;
+      end
+      if (!cmd_timed_out) begin
+        assert (master_command.req_id == REQ_ID_NOTIFY) else begin
+          $display("[ERROR:%0d] Expected queued NOTIFY, got req_id=%0h", scenario_id, master_command.req_id);
+          error_scenario = 1'b1;
+        end
+        assert (master_command.iop_id == notify_iop_id) else begin
+          $display("[ERROR:%0d] NOTIFY iop_id mismatch: expected %0h, got %0h", scenario_id, notify_iop_id, master_command.iop_id);
+          error_scenario = 1'b1;
+        end
+        consume_master_command();
+        simulate_pulse(notify_sent, clk_mhdma);
+        simulate_pulse(notify_ack_received, clk_mhdma);
+        repeat (20) @(posedge clk_mhdma);
+      end
+
+      scenario_end(scenario_id, clk_mhdma_cfg);
+    end
+  endtask
+
 // ============================================================================================== --
 // Main test sequence
 // ============================================================================================== --
@@ -2186,6 +2312,7 @@ module tb_mhdma_master;
     run_scenario_multiple_reads();
     run_scenario_irq_fifo_backpressure();
     run_scenario_ack_leakage_to_received_cmd();
+    run_scenario_concurrent_notify_read();
     run_scenario_statistics();
     run_scenario_error_reset();
 
@@ -2304,16 +2431,30 @@ module tb_mhdma_master;
       error_assert = 1'b1;
     end
 
-  // master_command_vld should deassert within 2 cycles after handshake
-  // (1-cycle lag is expected: registered FSM state + fifo_element pipeline)
+  // After a handshake, vld must either drop or present a new command within 2 cycles
+  // (no stale command held with vld high).
   property master_cmd_vld_deassert_after_handshake;
     @(posedge clk_mhdma) disable iff (!s_rstn_mhdma)
-    (master_command_vld && master_command_rdy) |-> ##[1:2] !master_command_vld;
+    (master_command_vld && master_command_rdy) |->
+      ##[1:2] (!master_command_vld || !$stable(master_command));
   endproperty
 
   assert_master_cmd_handshake: assert property(master_cmd_vld_deassert_after_handshake)
     else begin
-      $display("[ERROR-SVA] master_command_vld did not deassert after handshake");
+      $display("[ERROR-SVA] master_command_vld stuck high with stale command after handshake");
+      error_assert = 1'b1;
+    end
+
+  // While vld=1 and rdy=0, req_id must remain stable (valid/ready contract).
+  property master_command_req_id_stable;
+    @(posedge clk_mhdma) disable iff (!s_rstn_mhdma)
+    (master_command_vld && !master_command_rdy) |=>
+      (!master_command_vld || $stable(master_command.req_id));
+  endproperty
+
+  assert_master_cmd_req_id_stable: assert property(master_command_req_id_stable)
+    else begin
+      $display("[ERROR-SVA] master_command.req_id changed while vld=1 and rdy=0");
       error_assert = 1'b1;
     end
 

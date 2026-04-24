@@ -27,8 +27,6 @@
 //    decoded_command_rdy is asserted (1-cycle latency: rdy is registered).
 //
 // Note:
-//  - master_command_vld drops only one clock cycle after ready :
-//      acceptable because handshakes are only FSM-to-FSM
 //  - If FIFO read request -> regif is full. We block FSM and cannot go to RR_SEND_REQUEST
 //
 // ================================================================================================
@@ -130,6 +128,12 @@ module mhdma_master
   // FSM
   // ==============================================================================================
   logic timeout_reached_notify;
+  // Master command is arbitered later in the file before sending to formatter.
+  // We need those signal for backpressure early on
+  logic arbiter_notify;           // arbiter picks "Notify" branch (fresh or retry) this cycle
+  logic arbiter_read;             // arbiter picks "Read"   branch (fresh or retry) this cycle
+  logic arbiter_handshake;        // next_master_command handshake : command commits to buffer
+  logic master_command_handshake; // master_command handshake      : formatter accepts command
 
   // Notify TX (NTX) ------------------------------------------------------------------------------
   typedef enum logic [1:0] {
@@ -246,7 +250,7 @@ module mhdma_master
     end else begin
       if (timeout_reached_notify) begin
         ntx_retry <= 1'b1;
-      end else if (master_command_rdy & (master_command.req_id == REQ_ID_NOTIFY)) begin
+      end else if (arbiter_handshake & arbiter_notify) begin
         ntx_retry <= 1'b0;
       end
     end
@@ -269,7 +273,7 @@ module mhdma_master
     end else begin
       if (timeout_reached_read_request | retry_seq_num) begin
         rr_retry <= 1'b1;
-      end else if (master_command_rdy & (master_command.req_id == REQ_ID_READ)) begin
+      end else if (arbiter_handshake & arbiter_read) begin
         rr_retry <= 1'b0;
       end
     end
@@ -461,8 +465,8 @@ module mhdma_master
     .out_vld     (rrqq_cmd_vld)
   );
 
-  assign rrqq_cmd_rdy = start_read_request & st_rr_wait_request;
-  assign start_read_request = master_command_rdy & (master_command.req_id == REQ_ID_READ);
+  assign rrqq_cmd_rdy       = arbiter_handshake & arbiter_read & ~rr_retry;
+  assign start_read_request = master_command_handshake & (master_command.req_id == REQ_ID_READ);
 
   // Notify ReQuest Queue (NRQQ) ------------------------------------------------------------------
   // === CFG domain
@@ -528,8 +532,8 @@ module mhdma_master
   logic     nrqq_retry_rdy;
   logic     nrqq_retry_vld;
 
-  assign nrqq_cmd_rdy = (master_command_rdy & (master_command.req_id == REQ_ID_NOTIFY)) & ~ntx_retry & nrqq_retry_in_rdy;
-  assign start_notify_request = nrqq_cmd_rdy;
+  assign nrqq_cmd_rdy         = arbiter_handshake & arbiter_notify & ~ntx_retry;
+  assign start_notify_request = master_command_handshake & (master_command.req_id == REQ_ID_NOTIFY);
 
   fifo_ram_rdy_vld # (
     .WIDTH       (IOP_ID_W + HPU_ID_W + RSVD_W + FLAG_W + MODE_W + DST_ADDR_W + SRC_ADDR_W),
@@ -540,7 +544,7 @@ module mhdma_master
     .s_rst_n     (resetn_mhdma),
 
     .in_data     ({nrqq_cmd.iop_id, nrqq_cmd.hpu_id, nrqq_cmd.mode, nrqq_cmd.flag, nrqq_cmd.rsvd, nrqq_cmd.dst_addr, nrqq_cmd.src_addr}),
-    .in_vld      (start_notify_request),
+    .in_vld      (nrqq_cmd_rdy        ),
     .in_rdy      (nrqq_retry_in_rdy   ),
 
     .out_data    ({nrqq_retry.iop_id, nrqq_retry.hpu_id, nrqq_retry.mode, nrqq_retry.flag, nrqq_retry.rsvd, nrqq_retry.dst_addr, nrqq_retry.src_addr}),
@@ -558,44 +562,71 @@ module mhdma_master
   assign request_consumed = (rrqq_data_vld | nrqq_data_vld);
 
   // =========================================================================================== //
-  // Master command allocation
+  // Arbiter: Master command
   // =========================================================================================== //
-  logic ce_reception_ready; // gating when fifo is not empty
+  // Priority arbiter (notify > read) feeding a fifo_element towards formatter.
+  // Source FIFOs and retry flags are advanced on the arbiter's upstream handshake (arbiter_handshake),
+  // so a single command entering the buffer cannot be replayed while the formatter drains it.
 
-  always_ff @(posedge clk_mhdma) begin
-    if (~resetn_mhdma) begin
-      master_command.req_id <= 'h0;   // prevents X upon start of FSM
-      master_command_vld    <= 1'b0;
-    end else begin
-    if (nrqq_cmd_vld | ntx_retry) begin
-      master_command.hpu_id   <= ntx_retry ? nrqq_retry.hpu_id   : nrqq_cmd.hpu_id;
-      master_command.rsvd     <= ntx_retry ? nrqq_retry.rsvd     : nrqq_cmd.rsvd;
-      master_command.flag     <= ntx_retry ? nrqq_retry.flag     : nrqq_cmd.flag;
-      master_command.mode     <= ntx_retry ? nrqq_retry.mode     : nrqq_cmd.mode;
-      master_command.iop_id   <= ntx_retry ? nrqq_retry.iop_id   : nrqq_cmd.iop_id;
-      master_command.src_addr <= ntx_retry ? nrqq_retry.src_addr : nrqq_cmd.src_addr;
-      master_command.dst_addr <= ntx_retry ? nrqq_retry.dst_addr : nrqq_cmd.dst_addr;
-      master_command.req_id   <= REQ_ID_NOTIFY;
+  logic     ce_reception_ready; // gating when fifo is not empty
+  command_t next_master_command;
+  logic     next_master_command_vld;
+  logic     next_master_command_rdy;
 
-      master_command_vld      <= ((st_ntx_wait_request & nrqq_cmd_vld) | (nrqq_retry_vld & ntx_retry));
+  assign arbiter_notify           = (nrqq_cmd_vld | ntx_retry);
+  assign arbiter_read             = ~arbiter_notify & (rrqq_cmd_vld | rr_retry);
+  assign arbiter_handshake        = next_master_command_vld & next_master_command_rdy;
+  assign master_command_handshake = master_command_vld & master_command_rdy;
 
-    end else if (rrqq_cmd_vld | rr_retry) begin
-      master_command.hpu_id   <= rrqq_cmd.hpu_id;
-      master_command.rsvd     <= rrqq_cmd.rsvd;
-      master_command.flag     <= rrqq_cmd.flag;
-      master_command.mode     <= rrqq_cmd.mode;
-      master_command.iop_id   <= rrqq_cmd.iop_id;
-      master_command.src_addr <= rrqq_cmd.src_addr;
-      master_command.dst_addr <= rrqq_cmd.dst_addr;
-      master_command.req_id   <= REQ_ID_READ;
+  always_comb begin
+    next_master_command     = 'h0;
+    next_master_command_vld = 1'b0;
 
-      master_command_vld      <= ((st_rr_wait_request & rrqq_cmd_vld & ce_reception_ready & rr_regf_in_rdy) | rr_retry);
+    if (arbiter_notify) begin
+      next_master_command.hpu_id   = ntx_retry ? nrqq_retry.hpu_id   : nrqq_cmd.hpu_id;
+      next_master_command.rsvd     = ntx_retry ? nrqq_retry.rsvd     : nrqq_cmd.rsvd;
+      next_master_command.flag     = ntx_retry ? nrqq_retry.flag     : nrqq_cmd.flag;
+      next_master_command.mode     = ntx_retry ? nrqq_retry.mode     : nrqq_cmd.mode;
+      next_master_command.iop_id   = ntx_retry ? nrqq_retry.iop_id   : nrqq_cmd.iop_id;
+      next_master_command.src_addr = ntx_retry ? nrqq_retry.src_addr : nrqq_cmd.src_addr;
+      next_master_command.dst_addr = ntx_retry ? nrqq_retry.dst_addr : nrqq_cmd.dst_addr;
+      next_master_command.req_id   = REQ_ID_NOTIFY;
 
-    end else begin
-      master_command_vld <= 1'b0;
-    end
+      // Two ways to be valid : (Notify request command) | (retry Notify request)
+      next_master_command_vld      = (~ntx_retry & st_ntx_wait_request & nrqq_cmd_vld & nrqq_retry_in_rdy) | ( ntx_retry & nrqq_retry_vld);
+    end else if (arbiter_read) begin
+      next_master_command.hpu_id   = rrqq_cmd.hpu_id;
+      next_master_command.rsvd     = rrqq_cmd.rsvd;
+      next_master_command.flag     = rrqq_cmd.flag;
+      next_master_command.mode     = rrqq_cmd.mode;
+      next_master_command.iop_id   = rrqq_cmd.iop_id;
+      next_master_command.src_addr = rrqq_cmd.src_addr;
+      next_master_command.dst_addr = rrqq_cmd.dst_addr;
+      next_master_command.req_id   = REQ_ID_READ;
+
+      // Two ways to be valid : (Read request command) | (retry Read request)
+      next_master_command_vld = (~rr_retry & st_rr_wait_request & rrqq_cmd_vld & ce_reception_ready & rr_regf_in_rdy) | rr_retry;
     end
   end
+
+  fifo_element #(
+    .WIDTH          ($bits(next_master_command)),
+    .DEPTH          (1                         ),
+    .TYPE_ARRAY     (4'h3                      ),
+    .DO_RESET_DATA  (1'b0                      ),
+    .RESET_DATA_VAL (0                         )
+  ) fifo_element_ar (
+    .clk     (clk_mhdma                        ),
+    .s_rst_n (resetn_mhdma                     ),
+
+    .in_data (next_master_command              ),
+    .in_vld  (next_master_command_vld          ),
+    .in_rdy  (next_master_command_rdy          ),
+
+    .out_data(master_command                   ),
+    .out_vld (master_command_vld               ),
+    .out_rdy (master_command_rdy               )
+  );
 
   // =========================================================================================== //
   // Abort transfer on seq_num mismatch

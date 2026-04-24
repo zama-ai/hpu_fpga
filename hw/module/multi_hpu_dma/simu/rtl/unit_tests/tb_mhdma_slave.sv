@@ -1087,52 +1087,59 @@ module tb_mhdma_slave;
     // 1. Start CEM flow
     send_decoded_command(REQ_ID_READ, hpu_id, iop_id, iop_src_addr, iop_dst_addr, req_flag, req_mode, '0);
 
-    // 2. Verify CEM is active
+    // 2. Verify CEM is active and slave_command is presenting EMISSION
     begin : wait_cem_active
       int cnt;
       cnt = 0;
       while (stat.fsm_cem != 2'b10 & cnt < 500) begin @(posedge clk_mhdma); cnt++; end
       assert (cnt < 500) else begin $display("[ERROR:%0d] CEM FSM not in READ_N_SEND", scenario_id); error_assert = 1'b1; end
     end
+    wait_slave_command_vld(500, timed_out);
+    check_no_timeout(timed_out, scenario_id, "EMISSION slave_command_vld timeout");
+    assert (slave_command.req_id == REQ_ID_EMISSION) else begin
+      $display("[ERROR:%0d] expected EMISSION before NOTIFY injection, got %0h", scenario_id, slave_command.req_id);
+      error_assert = 1'b1;
+    end
 
-    // 3. Send NOTIFY while CEM is busy
+    // 3. Send NOTIFY while CEM is busy. The in-flight EMISSION on slave_command
+    // must remain stable (valid/ready handshake contract); NRX_ACK may not surface
+    // until the EMISSION is consumed.
     send_decoded_command(REQ_ID_NOTIFY, hpu_id_n, iop_id_n, src_n, dst_n, flag_n, mode_n, '0);
 
-    // 4. NRX has priority in slave_command mux - verify NOTIFY_ACK shows up
+    // 4. EMISSION must still be the presented command (no priority-mux overwrite).
     repeat (5) @(posedge clk_mhdma);
     assert (slave_command_vld) else begin
       $display("[ERROR:%0d] slave_command_vld not asserted", scenario_id);
       error_assert = 1'b1;
     end
-    assert (slave_command.req_id == REQ_ID_NOTIFY_ACK) else begin
-      $display("[ERROR:%0d] expected NOTIFY_ACK, got %0h", scenario_id, slave_command.req_id);
-      error_assert = 1'b1;
-    end
-
-    // 5. Consume NRX command (RREQ stays in FIFO due to priority guard)
-    consume_slave_command();
-    simulate_pulse(notify_ack_sent, clk_mhdma);
-
-    // 6. Complete NRX: interrupt
-    wait_interrupt_notify(500, timed_out);
-    check_no_timeout(timed_out, scenario_id, "interrupt_notify timeout");
-    clear_signal(clear_interrupt_notify, clk_mhdma_cfg);
-
-    // 7. Consume RREQ command (now presented on slave_command after NRX drained)
-    wait_slave_command_vld(500, timed_out);
-    check_no_timeout(timed_out, scenario_id, "EMISSION slave_command_vld timeout");
     assert (slave_command.req_id == REQ_ID_EMISSION) else begin
-      $display("[ERROR:%0d] expected EMISSION after NRX drain, got %0h", scenario_id, slave_command.req_id);
+      $display("[ERROR:%0d] slave_command.req_id flipped while EMISSION was in-flight, got %0h", scenario_id, slave_command.req_id);
       error_assert = 1'b1;
     end
-    consume_slave_command();
 
-    // 8. Complete CEM: AXI4 reads -> CE data
+    // 5. Consume EMISSION and complete the CEM read flow.
+    consume_slave_command();
     wait_ce_vld(TIMEOUT_CYCLES, timed_out);
     check_no_timeout(timed_out, scenario_id, "ce_vld timeout");
     repeat (CE_DRAIN_WAIT_CYCLES) @(posedge clk_mhdma);
     simulate_pulse(ciphertext_sent, clk_mhdma);
     repeat (50) @(posedge clk_mhdma);
+
+    // 6. Now the queued NOTIFY_ACK should surface on slave_command.
+    wait_slave_command_vld(500, timed_out);
+    check_no_timeout(timed_out, scenario_id, "NOTIFY_ACK slave_command_vld timeout after CEM drain");
+    assert (slave_command.req_id == REQ_ID_NOTIFY_ACK) else begin
+      $display("[ERROR:%0d] expected NOTIFY_ACK after CEM drain, got %0h", scenario_id, slave_command.req_id);
+      error_assert = 1'b1;
+    end
+    consume_slave_command();
+    simulate_pulse(notify_ack_sent, clk_mhdma);
+
+    // 7. Complete NRX: interrupt
+    wait_interrupt_notify(500, timed_out);
+    check_no_timeout(timed_out, scenario_id, "interrupt_notify timeout");
+    clear_signal(clear_interrupt_notify, clk_mhdma_cfg);
+    repeat (20) @(posedge clk_mhdma);
 
     check_fsm_idle(scenario_id);
     scenario_end(scenario_id, clk_mhdma_cfg);
@@ -1574,6 +1581,20 @@ module tb_mhdma_slave;
   assert_ar_issued_only_on_active_rd_pc: assert property(ar_issued_only_on_active_rd_pc)
     else begin
       $display("[ERROR-SVA] AR issued while ar_pc_onehot (0x%0h) != rd_pc_onehot (0x%0h)", mhdma_slave.ar_pc_onehot, mhdma_slave.rd_pc_onehot);
+      error_assert = 1'b1;
+    end
+
+  // While vld=1 and rdy=0, req_id must stay stable.
+  // Otherwise the rdy pulse acks a different command than the one originally presented.
+  property slave_command_req_id_stable;
+    @(posedge clk_mhdma) disable iff (~s_rstn_mhdma)
+    (slave_command_vld && !slave_command_rdy) |=>
+      (!slave_command_vld || $stable(slave_command.req_id));
+  endproperty
+
+  assert_slave_cmd_req_id_stable: assert property(slave_command_req_id_stable)
+    else begin
+      $display("[ERROR-SVA] slave_command.req_id changed while vld=1 and rdy=0 (priority-mux overwrite)");
       error_assert = 1'b1;
     end
 

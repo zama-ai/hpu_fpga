@@ -156,7 +156,9 @@ function automatic void display_errors(
 
   $display("\n --------------------- Errors --------------------------------");
   $display(" Raw error register                      : 0x%08b", stat_errors);
-  $display(" format_error.formatter_error            : %b", errors_struct.mhdma_error.format_error.formatter_error);
+  $display(" format_error.ce_underrun_error          : %b", errors_struct.mhdma_error.format_error.ce_underrun_error);
+  $display(" format_error.slave_discard_error        : %b", errors_struct.mhdma_error.format_error.slave_discard_error);
+  $display(" format_error.master_discard_error       : %b", errors_struct.mhdma_error.format_error.master_discard_error);
   $display(" decoder_error.error_fifo_rx_ovf         : %b", errors_struct.mhdma_error.decoder_error.error_fifo_rx_ovf);
   $display(" slave_error.rreq_cmd_ovf_error          : %b", errors_struct.mhdma_error.slave_error.rreq_cmd_ovf_error);
   $display(" slave_error.read_rresp_error            : %b", errors_struct.mhdma_error.slave_error.read_rresp_error);
