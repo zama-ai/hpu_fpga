@@ -27,8 +27,7 @@
 uint8_t cur_iid = 1;
 IOpMapping_t cur_mapping;
 uint8_t phys_hpu_id;
-uint8_t cluster_first_nid;
-uint8_t cluster_last_nid;
+uint8_t node_mask;
 uint16_t b2b_pool_start_addr = 12288;
 uint16_t b2b_pool_size = 4096;
 volatile mhdma_element_t mhdma_table[IOP_ID_MAX_COUNT][FLAG_MAX_COUNT];
@@ -464,8 +463,10 @@ void iop_teardown(uint8_t iid) {
   }
 
   // notify IOp locally done to all HPU but local one
-  for (int i = cluster_first_nid; i <= cluster_last_nid; i++) {
-    if (i != phys_hpu_id) {
+  for (int i = 0; i < MAX_HPU_IN_CLUSTER; i++) {
+    if ((i != phys_hpu_id) // Not local
+        && ( ((node_mask >> i) & 0x1) == 0x1)) // active in cluster
+    {
       vOSAL_EnterCritical();
       generate_iop_notify(iid, iop_state[iid].nb_hpu, i);
       vOSAL_ExitCritical();

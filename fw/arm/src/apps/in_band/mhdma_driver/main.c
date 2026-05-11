@@ -28,8 +28,7 @@ extern uint8_t mhdma_table_state[IOP_ID_MAX_COUNT][FLAG_MAX_COUNT];
 extern iop_state_t iop_state[IOP_ID_MAX_COUNT];
 extern dst_store_t dst_store;
 extern src_store_t src_store;
-extern uint8_t cluster_first_nid;
-extern uint8_t cluster_last_nid;
+extern uint8_t node_mask;
 uint64_t intr_readc_cnt = 0;
 
 int output_pipe = 0;
@@ -323,8 +322,7 @@ int main(int argc, char *argv[]) {
   uint32_t dop[MAX_VALUES];
   int count_iop = 0;
   int count_dop = 0;
-  cluster_first_nid = 0;
-  cluster_last_nid = 1;
+  node_mask = 0x1;
 
   // 1. Open IOp the file
   fp = fopen(filename_iop, "r");
