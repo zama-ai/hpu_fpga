@@ -716,6 +716,11 @@ uint32_t get_lookup(IOpHeader_t header, IOpMapping_t mapping, uint8_t hid, Looku
   // Then invalidate the translation slot entry
   HAL_INVALIDATE_CACHE_DATA( (uintptr_t) (DOP_LUT_ADDR + entry), sizeof(uint32_t));
   lookup->len = *((volatile uint32_t*) (DOP_LUT_ADDR + entry));
+  // Check that retrieved entry is correctly initialized
+  if (lookup->len == 0) {
+    PLL_ERR("get_lookup", "Current entry [@%lx] -> [@%lx] isn't initialized", entry_addr, DOP_LUT_ADDR + entry);
+    return 1;
+  }
   lookup->ptr =  (volatile uint32_t*) (DOP_LUT_ADDR + entry + sizeof(uint32_t));
   HAL_INVALIDATE_CACHE_DATA( (uintptr_t) lookup->ptr, lookup->len*sizeof(uint32_t));
 
