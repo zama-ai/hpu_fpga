@@ -55,6 +55,12 @@ proc create_hier_cell_noc_wrapper { parentCell nameHier ntt_psi } {
   set RPU_AXIL_RD_BURST_AVG $_nsp_hpu::RPU_AXIL_RD_BURST_AVG
   set RPU_AXIL_WR_BURST_AVG $_nsp_hpu::RPU_AXIL_WR_BURST_AVG
 
+  # RPU <-> AXIL of MHDMA
+  set RPU_AXIL_MHDMA_RD_BW $_nsp_hpu::RPU_AXIL_MHDMA_RD_BW
+  set RPU_AXIL_MHDMA_WR_BW $_nsp_hpu::RPU_AXIL_MHDMA_WR_BW
+  set RPU_AXIL_MHDMA_RD_BURST_AVG $_nsp_hpu::RPU_AXIL_MHDMA_RD_BURST_AVG
+  set RPU_AXIL_MHDMA_WR_BURST_AVG $_nsp_hpu::RPU_AXIL_MHDMA_WR_BURST_AVG
+
   # RPU <-> ISC
   set RPU_ISC_WR_BW $_nsp_hpu::RPU_ISC_WR_BW
   set RPU_ISC_WR_BURST_AVG $_nsp_hpu::RPU_ISC_WR_BURST_AVG
@@ -627,6 +633,12 @@ proc create_hier_cell_noc_wrapper { parentCell nameHier ntt_psi } {
   set pcie_cnx_0 [list]
   lappend pcie_cnx_0 [lindex $ddr_noc_pins_l 0] $pcie_ddr_dma_qos
   lappend pcie_cnx_0 [lindex $ddr_noc_pins_l 2] $pcie_ddr_dma_qos
+  for {set i 0}  {$i < $REGIF_NB*$REGIF_CLK_NB} {incr i} {
+    lappend pcie_cnx_0 [lindex $mregif_noc_pins_l $i] $pcie_axil_qos
+  }
+  for {set i 0}  {$i < $MHDMA_AXI_NB} {incr i} {
+    lappend pcie_cnx_0 [lindex $mhdma_m_noc_pins_l $i] $pcie_axil_qos
+  }
   for { set i 0}  {$i < $AXI_PCIE_NB} {incr i 1} {
     lappend pcie_cnx_0 [lindex $pcie_mgmt_noc_pins_l $i] $pcie_axil_qos
   }
@@ -640,7 +652,14 @@ proc create_hier_cell_noc_wrapper { parentCell nameHier ntt_psi } {
   set_property -dict [ list \
    CONFIG.CONNECTIONS $pcie_cnx_0 \
    CONFIG.DEST_IDS {M00_AXI:0x480} \
-   CONFIG.REMAPS {M00_INI {{0x20108000000 0x00038000000 0x08000000}}} \
+   CONFIG.REMAPS {M00_INI {{0x20108000000 0x00038000000 0x08000000}} \
+                  M03_AXI {{0x0201_0010_0000 0x201_8000_0000 0x10000}} \
+                  M02_AXI {{0x0201_0011_0000 0x201_8001_0000 0x10000}} \
+                  M05_AXI {{0x0201_0012_0000 0x201_8002_0000 0x10000}} \
+                  M04_AXI {{0x0201_0013_0000 0x201_8003_0000 0x10000}} \
+                  M06_AXI {{0x0201_0014_0000 0x201_8004_0000 0x10000}} \
+                  M07_AXI {{0x0201_0015_0000 0x201_8005_0000 0x10000}} \
+                 } \
    CONFIG.NOC_PARAMS {} \
    CONFIG.CATEGORY {ps_pcie} \
  ] [get_bd_intf_pins axi_noc_cips/[lindex $cpm_noc_pins_l 0]]
@@ -714,8 +733,9 @@ proc create_hier_cell_noc_wrapper { parentCell nameHier ntt_psi } {
    ] [get_bd_intf_pins axi_noc_cips/[lindex $bsk_noc_pins_l $i]]
   }
 
-  # Regfile : RPU <-> PL through NOC
   set axil_qos [set_qos $RPU_AXIL_RD_BW $RPU_AXIL_WR_BW $RPU_AXIL_RD_BURST_AVG $RPU_AXIL_WR_BURST_AVG]
+  set axil_mhdma_qos [set_qos $RPU_AXIL_MHDMA_RD_BW $RPU_AXIL_MHDMA_WR_BW $RPU_AXIL_MHDMA_RD_BURST_AVG $RPU_AXIL_MHDMA_WR_BURST_AVG]
+  # Regfile : RPU <-> PL through NOC
   set regif_cnx [list]
   for {set i 0}  {$i < $REGIF_NB*$REGIF_CLK_NB} {incr i} {
     lappend regif_cnx [lindex $mregif_noc_pins_l $i] $axil_qos
@@ -723,11 +743,17 @@ proc create_hier_cell_noc_wrapper { parentCell nameHier ntt_psi } {
   # Regfile : RPU <-> MHDMA through NOC
   # using axi-lite, same connection as regfile
   for {set i 0}  {$i < $MHDMA_AXI_NB} {incr i} {
-    lappend regif_cnx [lindex $mhdma_m_noc_pins_l $i] $axil_qos
+    lappend regif_cnx [lindex $mhdma_m_noc_pins_l $i] $axil_mhdma_qos
   }
   set_property -dict [list \
     CONFIG.CONNECTIONS $regif_cnx
   ] [get_bd_intf_pins axi_noc_cips/[lindex $sregif_noc_pins_l 0]]
+  set_property CONFIG.APERTURES {{0x201_8000_0000 64k}} [get_bd_intf_pins /noc_wrapper/axi_noc_cips/M03_AXI]
+  set_property CONFIG.APERTURES {{0x201_8001_0000 64K}} [get_bd_intf_pins /noc_wrapper/axi_noc_cips/M02_AXI]
+  set_property CONFIG.APERTURES {{0x201_8002_0000 64K}} [get_bd_intf_pins /noc_wrapper/axi_noc_cips/M05_AXI]
+  set_property CONFIG.APERTURES {{0x201_8003_0000 64K}} [get_bd_intf_pins /noc_wrapper/axi_noc_cips/M04_AXI]
+  set_property CONFIG.APERTURES {{0x201_8004_0000 64K}} [get_bd_intf_pins /noc_wrapper/axi_noc_cips/M06_AXI]
+  set_property CONFIG.APERTURES {{0x201_8005_0000 64K}} [get_bd_intf_pins /noc_wrapper/axi_noc_cips/M07_AXI]
 
   # MGMT
   set_property -dict [ list \

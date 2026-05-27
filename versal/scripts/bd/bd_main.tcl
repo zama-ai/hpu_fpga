@@ -725,6 +725,12 @@ proc create_root_design { parentCell ntt_psi } {
   assign_bd_address -offset 0x020101010000 -range 0x00001000 -target_address_space [get_bd_addr_spaces shell_wrapper/cips/CPM_PCIE_NOC_0] [get_bd_addr_segs shell_wrapper/base_logic/gcq_m2r/S00_AXI/S00_AXI_Reg] -force
   assign_bd_address -offset 0x020101040000 -range 0x00001000 -target_address_space [get_bd_addr_spaces shell_wrapper/cips/CPM_PCIE_NOC_0] [get_bd_addr_segs shell_wrapper/clock_reset/pcie_mgmt_pdi_reset/pcie_mgmt_pdi_reset_gpio/S_AXI/Reg] -force
   assign_bd_address -offset 0x020101001000 -range 0x00001000 -target_address_space [get_bd_addr_spaces shell_wrapper/cips/CPM_PCIE_NOC_0] [get_bd_addr_segs shell_wrapper/base_logic/uuid_rom/S_AXI/reg0] -force
+  assign_bd_address -offset 0x20100100000 -range 0x00010000 -target_address_space [get_bd_addr_spaces shell_wrapper/cips/CPM_PCIE_NOC_0] [get_bd_addr_segs /REGIF_AXI_0_1/Reg] -force
+  assign_bd_address -offset 0x20100110000 -range 0x00010000 -target_address_space [get_bd_addr_spaces shell_wrapper/cips/CPM_PCIE_NOC_0] [get_bd_addr_segs /REGIF_AXI_0_0/Reg] -force
+  assign_bd_address -offset 0x20100120000 -range 0x00010000 -target_address_space [get_bd_addr_spaces shell_wrapper/cips/CPM_PCIE_NOC_0] [get_bd_addr_segs /REGIF_AXI_1_1/Reg] -force
+  assign_bd_address -offset 0x20100130000 -range 0x00010000 -target_address_space [get_bd_addr_spaces shell_wrapper/cips/CPM_PCIE_NOC_0] [get_bd_addr_segs /REGIF_AXI_1_0/Reg] -force
+  assign_bd_address -offset 0x20100140000 -range 0x00010000 -target_address_space [get_bd_addr_spaces shell_wrapper/cips/CPM_PCIE_NOC_0] [get_bd_addr_segs /MHDMA_AXI_0/Reg] -force
+  assign_bd_address -offset 0x20100150000 -range 0x00010000 -target_address_space [get_bd_addr_spaces shell_wrapper/cips/CPM_PCIE_NOC_0] [get_bd_addr_segs /MHDMA_AXI_1/Reg] -force
 
   # CPM 1
   assign_bd_address -offset 0x050080000000 -range 0x80000000 -target_address_space [get_bd_addr_spaces shell_wrapper/cips/CPM_PCIE_NOC_1] [get_bd_addr_segs noc_wrapper/ddr_noc/axi_noc_mc_ddr4_0/S01_INI/C1_DDR_CH1] -force

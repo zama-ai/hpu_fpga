@@ -95,10 +95,16 @@ namespace eval _nsp_hpu {
     variable RPU_DDR_WR_BURST_AVG 64
 
     # RPU <-> AXIL
-    variable RPU_AXIL_RD_BW 100
-    variable RPU_AXIL_WR_BW 100
+    variable RPU_AXIL_RD_BW 20
+    variable RPU_AXIL_WR_BW 20
     variable RPU_AXIL_RD_BURST_AVG 1
     variable RPU_AXIL_WR_BURST_AVG 1
+
+    # RPU <-> AXIL of MHDMA
+    variable RPU_AXIL_MHDMA_RD_BW 80
+    variable RPU_AXIL_MHDMA_WR_BW 80
+    variable RPU_AXIL_MHDMA_RD_BURST_AVG 1
+    variable RPU_AXIL_MHDMA_WR_BURST_AVG 1
 
     # RPU <-> ISC
     variable RPU_ISC_WR_BW 500
@@ -112,8 +118,8 @@ namespace eval _nsp_hpu {
     variable PCIE_HBM_DMA_DATA_W 128
 
     # PCIE <-> AXIL
-    variable PCIE_AXIL_RD_BW 100
-    variable PCIE_AXIL_WR_BW 100
+    variable PCIE_AXIL_RD_BW 20
+    variable PCIE_AXIL_WR_BW 20
     variable PCIE_AXIL_RD_BURST_AVG 1
     variable PCIE_AXIL_WR_BURST_AVG 1
 
