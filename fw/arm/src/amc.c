@@ -299,8 +299,7 @@ extern XScuGic xInterruptController;
 extern uint8_t cur_iid;
 extern uint8_t phys_hpu_id;
 uint32_t timestamp;
-extern uint8_t cluster_first_nid;
-extern uint8_t cluster_last_nid;
+extern uint8_t node_mask;
 extern uint16_t b2b_pool_start_addr;
 extern uint16_t b2b_pool_size;
 extern volatile iop_state_t iop_state[IOP_ID_MAX_COUNT];
@@ -829,8 +828,7 @@ static void vTaskFuncMain( void )
             updt_ucore_cfg(&ucore_cfg);
             phys_hpu_id = ucore_cfg.node_id;
             uint32_t new_timestamp = ucore_cfg.timestamp;
-            cluster_first_nid = ucore_cfg.cluster_first_nid;
-            cluster_last_nid = ucore_cfg.cluster_last_nid;
+            node_mask = ucore_cfg.node_mask;
             b2b_pool_start_addr = ucore_cfg.ct_user_size;
             b2b_pool_size = ucore_cfg.b2b_size;
 

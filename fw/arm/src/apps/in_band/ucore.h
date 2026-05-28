@@ -137,8 +137,7 @@ typedef struct {
 typedef struct {
   uint8_t  node_id;
   uint32_t timestamp;
-  uint8_t  cluster_first_nid;
-  uint8_t  cluster_last_nid;
+  uint8_t  node_mask;
   uint16_t ct_user_size;
   uint16_t b2b_size;
   // TODO extend this with required runtime informations

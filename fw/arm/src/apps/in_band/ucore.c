@@ -27,8 +27,7 @@
 uint8_t cur_iid = 1;
 IOpMapping_t cur_mapping;
 uint8_t phys_hpu_id;
-uint8_t cluster_first_nid;
-uint8_t cluster_last_nid;
+uint8_t node_mask;
 uint16_t b2b_pool_start_addr = 12288;
 uint16_t b2b_pool_size = 4096;
 volatile mhdma_element_t mhdma_table[IOP_ID_MAX_COUNT][FLAG_MAX_COUNT];
@@ -464,8 +463,10 @@ void iop_teardown(uint8_t iid) {
   }
 
   // notify IOp locally done to all HPU but local one
-  for (int i = cluster_first_nid; i <= cluster_last_nid; i++) {
-    if (i != phys_hpu_id) {
+  for (int i = 0; i < MAX_HPU_IN_CLUSTER; i++) {
+    if ((i != phys_hpu_id) // Not local
+        && ( ((node_mask >> i) & 0x1) == 0x1)) // active in cluster
+    {
       vOSAL_EnterCritical();
       generate_iop_notify(iid, iop_state[iid].nb_hpu, i);
       vOSAL_ExitCritical();
@@ -715,6 +716,11 @@ uint32_t get_lookup(IOpHeader_t header, IOpMapping_t mapping, uint8_t hid, Looku
   // Then invalidate the translation slot entry
   HAL_INVALIDATE_CACHE_DATA( (uintptr_t) (DOP_LUT_ADDR + entry), sizeof(uint32_t));
   lookup->len = *((volatile uint32_t*) (DOP_LUT_ADDR + entry));
+  // Check that retrieved entry is correctly initialized
+  if (lookup->len == 0) {
+    PLL_ERR("get_lookup", "Current entry [@%lx] -> [@%lx] isn't initialized", entry_addr, DOP_LUT_ADDR + entry);
+    return 1;
+  }
   lookup->ptr =  (volatile uint32_t*) (DOP_LUT_ADDR + entry + sizeof(uint32_t));
   HAL_INVALIDATE_CACHE_DATA( (uintptr_t) lookup->ptr, lookup->len*sizeof(uint32_t));
 
