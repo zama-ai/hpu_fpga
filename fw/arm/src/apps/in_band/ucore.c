@@ -980,7 +980,12 @@ void patch_imm_dop(DOpu_t *dop, ImmediatBundle_t *iop_imm) {
 
       // TODO: Let crop be configured by user ?
       // In theory we could add up to MSG_WIDTH + CARRY_WIDTH. Current crop may be to strong in some cases.
-      dop->arith_msg.msg_cst = ((iop_imm->cst[tid].msg[slot_id]) >> offset) & ((1 << MSG_WIDTH) -1);
+      if (slot_id < iop_imm->cst[tid].len) {
+        dop->arith_msg.msg_cst = ((iop_imm->cst[tid].msg[slot_id]) >> offset) & ((1 << MSG_WIDTH) -1);
+      } else {
+        dop->arith_msg.msg_cst = 0;
+      }
+
       dop->arith_msg.msg_mode = IMM_CST;
       break;
     }
