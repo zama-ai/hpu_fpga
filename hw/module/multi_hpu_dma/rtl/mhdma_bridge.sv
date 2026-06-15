@@ -12,8 +12,8 @@
 //
 // Additionally handles:
 //   - HPU identification: CDC of hpu_ids from cfg_clock to one-hot lookup & current_hpu_mac/id
-//   - Decoded-command arbitration: decoder output is shared between master and slave via
-//     OR'd ready (decoded_command_rdy = rdy_slave | rdy_master)
+//   - Decoded-command dispatch: the decoder splits commands into two independent per-role queues
+//     (master-role: NOTIFY_ACK/EMISSION ; slave-role: NOTIFY/READ).
 //   - Error aggregation: per-submodule errors are packed into mhdma_error_t for regfile readback
 //   - Stat multiplexing: per-submodule stat structs are mapped into mhdma_stat_to_cfg_t
 //
@@ -22,7 +22,7 @@
 //     error_id. All-zeros is treated as "no HPU selected" (current_hpu_mac = 0).
 //   - Decoded command dispatch relies on req_id partitioning: master consumes NOTIFY_ACK and
 //     CT EMISSION commands, slave consumes NOTIFY and READ commands.
-//     Bridge OR's their ready signals : correctness depends on these req_id sets being disjoint.
+//     The decoder demuxes on req_id into two independent FIFOs, req_id sets remain disjoint.
 //   - regf_ct_mem_addr, regf_req_id/addr cross from cfg to eth domain inside sub-modules.
 //
 // ================================================================================================
@@ -221,13 +221,13 @@ module mhdma_bridge
   logic     notify_ack_sent;
 
   // Decoder <-> (Master & Slave)
-  command_t decoded_command;
-  logic     decoded_command_rdy;
-  logic     decoded_command_vld;
-  logic     decoded_command_rdy_slave;
-  logic     decoded_command_rdy_master;
+  command_t decoded_command_master;
+  logic     decoded_command_master_rdy;
+  logic     decoded_command_master_vld;
 
-  assign decoded_command_rdy = decoded_command_rdy_slave | decoded_command_rdy_master;
+  command_t decoded_command_slave;
+  logic     decoded_command_slave_rdy;
+  logic     decoded_command_slave_vld;
 
   // Decoder <-> Master
   logic [MRMAC_AXIS_W-1:0] decoder_rx_tdata;
@@ -284,9 +284,9 @@ module mhdma_bridge
     .clear_interrupt_rr              (clear_interrupt_rr                      ),
     .interrupt_read_request          (interrupt_read_request                  ),
     // decoder interface ------------------------------------------------------
-    .decoded_command                 (decoded_command                         ),
-    .decoded_command_rdy             (decoded_command_rdy_master              ),
-    .decoded_command_vld             (decoded_command_vld                     ),
+    .decoded_command                 (decoded_command_master                  ),
+    .decoded_command_rdy             (decoded_command_master_rdy              ),
+    .decoded_command_vld             (decoded_command_master_vld              ),
     // ciphertext reception
     .decoder_rx_tdata                (decoder_rx_tdata                        ),
     .decoder_rx_tvalid               (decoder_rx_tvalid                       ),
@@ -341,9 +341,9 @@ module mhdma_bridge
     .clear_interrupt_notify         (clear_interrupt_notify                   ),
     .interrupt_notify               (interrupt_notify                         ),
     // decoder interface ------------------------------------------------------
-    .decoded_command                (decoded_command                          ),
-    .decoded_command_rdy            (decoded_command_rdy_slave                ),
-    .decoded_command_vld            (decoded_command_vld                      ),
+    .decoded_command                (decoded_command_slave                    ),
+    .decoded_command_rdy            (decoded_command_slave_rdy                ),
+    .decoded_command_vld            (decoded_command_slave_vld                ),
     // formatter interface ----------------------------------------------------
     .slave_command                  (slave_command                            ),
     .slave_command_vld              (slave_command_vld                        ),
@@ -372,9 +372,12 @@ module mhdma_bridge
     .notify_ack_received         (notify_ack_received                         ),
     .current_hpu_mac             (current_hpu_mac                             ),
     // Header information -----------------------------------------------------
-    .decoded_command             (decoded_command                             ),
-    .decoded_command_rdy         (decoded_command_rdy                         ),
-    .decoded_command_vld         (decoded_command_vld                         ),
+    .decoded_command_master      (decoded_command_master                      ),
+    .decoded_command_master_rdy  (decoded_command_master_rdy                  ),
+    .decoded_command_master_vld  (decoded_command_master_vld                  ),
+    .decoded_command_slave       (decoded_command_slave                       ),
+    .decoded_command_slave_rdy   (decoded_command_slave_rdy                   ),
+    .decoded_command_slave_vld   (decoded_command_slave_vld                   ),
     // RX payload -------------------------------------------------------------
     .rx_tdata_out                (decoder_rx_tdata                            ),
     .rx_tvalid_out               (decoder_rx_tvalid                           ),

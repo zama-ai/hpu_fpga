@@ -5,7 +5,12 @@
 // Description  : Multi-HPU DMA reception and decoder module
 //
 // Receives raw QSFP RX AXI-Stream data, parses the custom Ethernet header word by word (h0..h3),
-// pushes decoded commands into a FIFO for downstream consumption.
+// pushes decoded commands into per-role FIFOs for downstream consumption:
+//  - a master-role queue (NOTIFY_ACK + CT EMISSION)
+//  - a slave-role queue (NOTIFY + READ)
+// Splitting by consumer role keeps long-held slave-role command from head-of-line-blocking a master
+// EMISSION command, which would otherwise desync the EMISSION command from its unbackpressured payload.
+//
 // For Ciphertext Emission packets, payload data is forwarded on a separate AXI-Stream like bus
 //
 // Latency: QSFP input to decoded command =
@@ -16,8 +21,8 @@
 // - No backpressure on QSFP RX input (no tready output with our MRMAC configuration).
 //   This implies that Ciphertext Emission words have no backpressure and go to master with a
 //    streaming interface
-// - If the command FIFO overflows, incoming commands are silently dropped and error_fifo_rx_ovf is
-//    raised, sticky until read (rst_errors).
+// - If either command FIFO overflows, incoming commands are silently dropped and error_fifo_rx_ovf
+//    is raised, sticky until read (rst_errors).
 // - ETH LEN is only used for packet handling outside FPGA, we ignore it here
 // - A packet with an unrecognized req_id (or mismatched MAC) registers dst_mac_addr and
 //    req_id but generates no command; it increments the cnt_dropped counter.
@@ -36,9 +41,13 @@ module mhdma_decoder
   output logic                     notify_ack_received,
   input  logic [MAC_ADDR_W-1:0]    current_hpu_mac,
   // Header information ---------------------------------------------------------------------------
-  output command_t                 decoded_command,
-  output logic                     decoded_command_vld,
-  input  logic                     decoded_command_rdy,
+  output command_t                 decoded_command_master,
+  output logic                     decoded_command_master_vld,
+  input  logic                     decoded_command_master_rdy,
+
+  output command_t                 decoded_command_slave,
+  output logic                     decoded_command_slave_vld,
+  input  logic                     decoded_command_slave_rdy,
   // Streaming Ciphertext payload -----------------------------------------------------------------
   output logic [MRMAC_AXIS_W-1:0]  rx_tdata_out,
   output logic                     rx_tvalid_out,
@@ -232,35 +241,62 @@ module mhdma_decoder
   end
 
   command_t fifo_rx_cmd_in_data;
-  logic     fifo_rx_cmd_in_vld;
-  logic     fifo_rx_cmd_in_rdy;
+  logic     fifo_rx_cmd_master_in_vld;
+  logic     fifo_rx_cmd_master_in_rdy;
+  logic     fifo_rx_cmd_slave_in_vld;
+  logic     fifo_rx_cmd_slave_in_rdy;
 
-  // Push into FIFO one cycle after frame 3 data is captured.
+  // Push into the per-role FIFO one cycle after frame 3 data is captured.
   // Gate with *_receivedD to only push for known command types with matching MAC address.
-  always_ff @(posedge clk_mhdma)
-    fifo_rx_cmd_in_vld <= (rx_tvalid_in & (rx_counter == 3)) & (nack_receivedD | nr_receivedD | rr_receivedD | ce_receivedD);
+  // *_receivedD are one-hot per frame, so master/slave valids are mutually exclusive.
+  //   master-role : NOTIFY_ACK (nack) + CT EMISSION (ce)
+  //   slave-role  : NOTIFY     (nr)   + READ        (rr)
+  always_ff @(posedge clk_mhdma) begin
+    fifo_rx_cmd_master_in_vld <= (rx_tvalid_in & (rx_counter == 3)) & (nack_receivedD | ce_receivedD);
+    fifo_rx_cmd_slave_in_vld  <= (rx_tvalid_in & (rx_counter == 3)) & (nr_receivedD   | rr_receivedD);
+  end
 
   assign fifo_rx_cmd_in_data = {src_mac_addr, seq_num, hpu_id, rsvd, flag, mode, req_id, iop_id, ct_src_addr, ct_dst_addr};
 
+  // Master-role command queue (NOTIFY_ACK + CT EMISSION)
   fifo_ram_rdy_vld # (
-    .WIDTH       ($bits(command_t)    ),
-    .DEPTH       (RX_FIFO_DEPTH       )
-  ) fifo_rx_cmd (
-    .clk         (clk_mhdma           ),
-    .s_rst_n     (resetn_mhdma        ),
+    .WIDTH       ($bits(command_t)          ),
+    .DEPTH       (RX_FIFO_DEPTH             )
+  ) fifo_rx_cmd_master (
+    .clk         (clk_mhdma                 ),
+    .s_rst_n     (resetn_mhdma              ),
 
-    .in_data     (fifo_rx_cmd_in_data ),
-    .in_vld      (fifo_rx_cmd_in_vld  ),
-    .in_rdy      (fifo_rx_cmd_in_rdy  ),
+    .in_data     (fifo_rx_cmd_in_data       ),
+    .in_vld      (fifo_rx_cmd_master_in_vld ),
+    .in_rdy      (fifo_rx_cmd_master_in_rdy ),
 
-    .out_data    (decoded_command     ),
-    .out_vld     (decoded_command_vld ),
-    .out_rdy     (decoded_command_rdy ),
+    .out_data    (decoded_command_master    ),
+    .out_vld     (decoded_command_master_vld),
+    .out_rdy     (decoded_command_master_rdy),
 
     .almost_full (/*     UNUSED     */)
   );
 
-  // Building sticky error bit on fifo_rx_cmd overflow
+  // Slave-role command queue (NOTIFY + READ)
+  fifo_ram_rdy_vld # (
+    .WIDTH       ($bits(command_t)         ),
+    .DEPTH       (RX_FIFO_DEPTH            )
+  ) fifo_rx_cmd_slave (
+    .clk         (clk_mhdma                ),
+    .s_rst_n     (resetn_mhdma             ),
+
+    .in_data     (fifo_rx_cmd_in_data      ),
+    .in_vld      (fifo_rx_cmd_slave_in_vld ),
+    .in_rdy      (fifo_rx_cmd_slave_in_rdy ),
+
+    .out_data    (decoded_command_slave    ),
+    .out_vld     (decoded_command_slave_vld),
+    .out_rdy     (decoded_command_slave_rdy),
+
+    .almost_full (/*     UNUSED     */)
+  );
+
+  // Building sticky error bit on either command FIFO overflowing
   logic error_fifo_rx_ovf;
 
   always_ff @(posedge clk_mhdma) begin
@@ -270,7 +306,8 @@ module mhdma_decoder
       if (rst_errors) begin
         error_fifo_rx_ovf <= 1'b0;
       end else begin
-        if (fifo_rx_cmd_in_vld & ~fifo_rx_cmd_in_rdy) begin
+        if ((fifo_rx_cmd_master_in_vld & ~fifo_rx_cmd_master_in_rdy)
+          | (fifo_rx_cmd_slave_in_vld  & ~fifo_rx_cmd_slave_in_rdy )) begin
           error_fifo_rx_ovf <= 1'b1;
         end
       end
