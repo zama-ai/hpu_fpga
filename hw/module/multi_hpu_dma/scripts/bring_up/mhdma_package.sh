@@ -103,7 +103,7 @@ _mhdma_addr() {
 }
 
 # Board index -> PCIe BDF (the ami_tool -d argument)
-_mhdma_bdf() { echo "${V80_BOARDS_MAP[$1,pcie_id]}"; }
+_mhdma_bdf() { echo "${V80_BOARDS_MAP[$1,pcie_id]}:00.0"; }
 
 # Write a 32-bit register.  Usage: mhdma_reg_write <board> <section::register> <value>
 mhdma_reg_write() {
