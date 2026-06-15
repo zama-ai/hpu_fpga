@@ -50,18 +50,18 @@ configure_fpga() {
   # Write MAC addresses for all HPU ID slots
   for ((slot=0; slot<8; slot++)); do
     local mac_value=$(get_mac_value $board_idx $slot)
-    $hputil -f $board_idx register write mhdma_system::hpu_id_$slot --value $mac_value
+    mhdma_reg_write $board_idx mhdma_system::hpu_id_$slot $mac_value
   done
 
   # Write timeout values
-  $hputil -f $board_idx register write mhdma_system::timeout_notify   --value 0xFFFFFFFF
-  $hputil -f $board_idx register write mhdma_system::timeout_read_req --value 0xFFFFFFFF
+  mhdma_reg_write $board_idx mhdma_system::timeout_notify 0xFFFFFFFF
+  mhdma_reg_write $board_idx mhdma_system::timeout_read_req 0xFFFFFFFF
 
   # Write HBM AXI4 addresses
-  $hputil -f $board_idx register write mhdma_hbm_axi4_addr_2in3::ct_pc0_msb --value 0x00000044
-  $hputil -f $board_idx register write mhdma_hbm_axi4_addr_2in3::ct_pc0_lsb --value 0x00000000
-  $hputil -f $board_idx register write mhdma_hbm_axi4_addr_2in3::ct_pc1_msb --value 0x00000044
-  $hputil -f $board_idx register write mhdma_hbm_axi4_addr_2in3::ct_pc1_lsb --value 0x20000000
+  mhdma_reg_write $board_idx mhdma_hbm_axi4_addr_2in3::ct_pc0_msb 0x00000044
+  mhdma_reg_write $board_idx mhdma_hbm_axi4_addr_2in3::ct_pc0_lsb 0x00000000
+  mhdma_reg_write $board_idx mhdma_hbm_axi4_addr_2in3::ct_pc1_msb 0x00000044
+  mhdma_reg_write $board_idx mhdma_hbm_axi4_addr_2in3::ct_pc1_lsb 0x20000000
 
   echo "[INFO] Board $board_idx (PCIe: $pcie_id) configured."
 }
@@ -118,13 +118,11 @@ if [[ ! "$NUM_FPGAS" =~ ^(2|4|8)$ ]]; then
   exit 1
 fi
 
-# Check hputil
-if [ -z "$hputil" ]; then
-  echo "[FAILURE] You did not export variable for hputil"
+# Check ami_tool
+if ! mhdma_check_ami; then
   exit 1
-else
-  echo "[INFO] Using hputil at $hputil"
 fi
+echo "[INFO] Using ami_tool at $(command -v "$MHDMA_AMI_TOOL")"
 
 # Validate that required boards are configured
 for ((b=0; b<NUM_FPGAS; b++)); do

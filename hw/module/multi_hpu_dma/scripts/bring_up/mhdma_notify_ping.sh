@@ -15,8 +15,7 @@ source "$(dirname "$0")/mhdma_package.sh"
 
 NUM_CARDS=$1
 
-if [ -z "$hputil" ]; then
-  echo " [FAILURE]: you did not export variable for hputil"
+if ! mhdma_check_ami; then
   exit 1
 fi
 
@@ -26,7 +25,7 @@ if [ -z "$NUM_CARDS" ] || [ "$NUM_CARDS" -lt 2 ]; then
 fi
 
 echo ""
-echo " [INFO]: using hputil at $hputil"
+echo " [INFO]: using ami_tool at $(command -v "$MHDMA_AMI_TOOL")"
 echo ""
 
 for ((b=0; b<NUM_CARDS; b++)); do
@@ -55,8 +54,8 @@ for card in $(seq 0 $((NUM_CARDS - 1))); do
 
       echo " [INFO]: Card $card -> Card $dest (req_id=$req_id, flag=$flag)"
 
-      $hputil -f $card register write mhdma_request::req_addr --value "$addr" > /dev/null
-      $hputil -f $card register write mhdma_request::req_id   --value $req_id > /dev/null
+      mhdma_reg_write $card mhdma_request::req_addr "$addr" > /dev/null
+      mhdma_reg_write $card mhdma_request::req_id $req_id > /dev/null
 
       flag=$((flag + 1))
     done
@@ -92,8 +91,8 @@ while read -r card notify nack; do
 done < <(
   for card in $(seq 0 $((NUM_CARDS - 1))); do
     (
-      notify=$($hputil -f $card register read mhdma_request::stat_nb_notify_received | awk 'END {print $NF}')
-      nack=$($hputil -f $card register read mhdma_request::stat_nb_nack_received     | awk 'END {print $NF}')
+      notify=$(mhdma_reg_read $card mhdma_request::stat_nb_notify_received | awk 'END {print $NF}')
+      nack=$(mhdma_reg_read $card mhdma_request::stat_nb_nack_received     | awk 'END {print $NF}')
       echo "$card $notify $nack"
     ) &
   done

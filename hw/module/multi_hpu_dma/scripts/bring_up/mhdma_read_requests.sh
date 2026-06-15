@@ -110,14 +110,13 @@ done
 # =================================================================================================
 # Environment check
 # =================================================================================================
-if [ -z "$hputil" ]; then
-    echo " [FAILURE]: you did not export variable for hputil"
-    exit 1
+if ! mhdma_check_ami; then
+  exit 1
 fi
 
-echo " [INFO]: using hputil at $hputil"
+echo " [INFO]: using ami_tool at $(command -v "$MHDMA_AMI_TOOL")"
 
-setup_check=$($hputil -f 1 register read mhdma_system::hpu_id_0)
+setup_check=$(mhdma_reg_read 1 mhdma_system::hpu_id_0)
 
 if [ "$setup_check" == "0x0" ]; then
     echo " [FAILURE]: you did not do the setup"
@@ -151,8 +150,8 @@ perform_read_request() {
     echo "--------------------------------------------------------------------------------------------------"
 
     # Send read request
-    $hputil -f 0 register write mhdma_request::req_addr --value $request_addr
-    $hputil -f 0 register write mhdma_request::req_id   --value $(build_req_id $REQ_ID_READ 1 1)
+    mhdma_reg_write 0 mhdma_request::req_addr $request_addr
+    mhdma_reg_write 0 mhdma_request::req_id   "$(build_req_id $REQ_ID_READ 1 1)"
 
     # Calculate physical addresses
     local src_addr_val=$((src_addr * CT_MEM_BYTES))
@@ -184,7 +183,7 @@ perform_read_request() {
     # Wait for transfer completion
      echo "  Waiting for transfer to complete..."
      for ((wait=0; wait<1000; wait++)); do
-         rr_status=$($hputil -f 0 register read mhdma_request::read_request)
+         rr_status=$(mhdma_reg_read 0 mhdma_request::read_request)
          if [ "$rr_status" != "0x0" ]; then
              echo "  Transfer complete: $rr_status"
              break

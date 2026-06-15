@@ -82,12 +82,11 @@ fi
 # =================================================================================================
 # Environment check
 # =================================================================================================
-if [ -z "$hputil" ]; then
-    echo " [FAILURE]: you did not export variable for hputil"
-    exit 1
+if ! mhdma_check_ami; then
+  exit 1
 fi
 
-echo " [INFO]: using hputil at $hputil"
+echo " [INFO]: using ami_tool at $(command -v "$MHDMA_AMI_TOOL")"
 
 for ((b=0; b<NUM_CARDS; b++)); do
     if [ "${V80_BOARDS_MAP[$b,pcie_id]}" = "x" ]; then
@@ -96,7 +95,7 @@ for ((b=0; b<NUM_CARDS; b++)); do
     fi
 done
 
-setup_check=$($hputil -f 0 register read mhdma_system::hpu_id_0)
+setup_check=$(mhdma_reg_read 0 mhdma_system::hpu_id_0)
 if [ "$setup_check" == "0x0" ]; then
     echo " [FAILURE]: you did not run the setup (mhdma_setup.sh)"
     exit 1
@@ -167,16 +166,16 @@ for ((card=0; card<NUM_CARDS; card++)); do
     req_id=$(build_req_id $REQ_ID_READ $next_card 1)
 
     (
-        $hputil -f $card register write mhdma_request::req_addr --value "$req_addr" > /dev/null
-        $hputil -f $card register write mhdma_request::req_id   --value "$req_id" > /dev/null
+        mhdma_reg_write $card mhdma_request::req_addr "$req_addr" > /dev/null
+        mhdma_reg_write $card mhdma_request::req_id "$req_id" > /dev/null
 
         echo " [INFO]: Board $card -> Board $next_card: src=0x$(printf '%04x' $src_addr) dst=0x$(printf '%04x' $dst_addr) req_addr=$req_addr req_id=$req_id"
 
         # Wait for completion and pop FIFO
         for ((w=0; w<TIMEOUT_ITER; w++)); do
-            rr_status=$($hputil -f $card register read mhdma_request::read_request)
+            rr_status=$(mhdma_reg_read $card mhdma_request::read_request)
             if [ "$rr_status" != "0x0" ]; then
-                $hputil -f $card register read mhdma_request::read_request_req_id > /dev/null
+                mhdma_reg_read $card mhdma_request::read_request_req_id > /dev/null
                 echo " [INFO]: Board $card: completion received"
                 break
             fi
@@ -249,9 +248,9 @@ echo "==========================================================================
 
 for ((card=0; card<NUM_CARDS; card++)); do
     (
-        errors=$($hputil -f $card register read mhdma_system::errors | awk 'END {print $NF}')
-        ce=$($hputil -f $card register read mhdma_request::stat_nb_ce_received | awk 'END {print $NF}')
-        rr=$($hputil -f $card register read mhdma_request::stat_nb_read_req_received | awk 'END {print $NF}')
+        errors=$(mhdma_reg_read $card mhdma_system::errors | awk 'END {print $NF}')
+        ce=$(mhdma_reg_read $card mhdma_request::stat_nb_ce_received | awk 'END {print $NF}')
+        rr=$(mhdma_reg_read $card mhdma_request::stat_nb_read_req_received | awk 'END {print $NF}')
         echo " Board $card: errors=$errors ce_received=$ce rr_received=$rr"
     ) &
 done
