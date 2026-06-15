@@ -118,7 +118,9 @@ mhdma_reg_write() {
 mhdma_reg_read() {
   local addr val
   addr=$(_mhdma_addr "$2") || return 1
-  val=$(sudo "$MHDMA_AMI_TOOL" bar_rd -d "$(_mhdma_bdf "$1")" -b "$MHDMA_BAR" -a "$addr" | awk '/\[/{print $NF}')
+  # ami_tool prints "[ 0x..addr.. ]\t <value>" with CRLF line endings; take the
+  # last field of the value line and strip the trailing carriage return.
+  val=$(sudo "$MHDMA_AMI_TOOL" bar_rd -d "$(_mhdma_bdf "$1")" -b "$MHDMA_BAR" -a "$addr" | awk '/\[/{gsub(/\r/,"",$NF); print $NF}')
   val=${val#0x}; val=${val#0X}
   [ -z "$val" ] && return 1
   printf '0x%x\n' "$((16#$val))"
