@@ -148,10 +148,28 @@ module tb_mhdma_decoder;
   logic [MAC_ADDR_W-1:0]    current_hpu_mac;
 
   // Command output
-  logic                     notify_ack_received;
-  command_t                 decoded_command;
-  logic                     decoded_command_vld;
-  logic                     decoded_command_rdy;
+  // Decoder now exposes two role-split command streams (master-role: NOTIFY_ACK/EMISSION ;
+  // slave-role: NOTIFY/READ). Merge them back into a single decoded_command view so the existing
+  // single-stream consume task/checks work. NOTE: cross-role ordering is no longer guaranteed by a
+  // single FIFO; scenarios that assert ordering BETWEEN a master-role and a slave-role command
+  // must be reviewed. Ordering WITHIN a role is preserved.
+  logic     notify_ack_received;
+  command_t decoded_command_master;
+  logic     decoded_command_master_vld;
+  logic     decoded_command_master_rdy;
+
+  command_t decoded_command_slave;
+  logic     decoded_command_slave_vld;
+  logic     decoded_command_slave_rdy;
+
+  command_t decoded_command;
+  logic     decoded_command_vld;
+  logic     decoded_command_rdy;
+
+  assign decoded_command          = decoded_command_slave_vld ? decoded_command_slave : decoded_command_master;
+  assign decoded_command_vld      = decoded_command_slave_vld | decoded_command_master_vld;
+  assign decoded_command_slave_rdy  = decoded_command_rdy &  decoded_command_slave_vld;
+  assign decoded_command_master_rdy = decoded_command_rdy & ~decoded_command_slave_vld;
 
   // RX payload output
   logic [MRMAC_AXIS_W-1:0]  rx_tdata_out;
@@ -167,29 +185,32 @@ module tb_mhdma_decoder;
 
   mhdma_decoder decoder (
     // Ethernet fast clock interface
-    .clk_mhdma          (clk                  ),
-    .resetn_mhdma       (s_rstn               ),
+    .clk_mhdma                 (clk                       ),
+    .resetn_mhdma              (s_rstn                    ),
     // Command interface
-    .notify_ack_received(notify_ack_received  ),
-    .current_hpu_mac    (current_hpu_mac      ),
+    .notify_ack_received       (notify_ack_received       ),
+    .current_hpu_mac           (current_hpu_mac           ),
     // Header information
-    .decoded_command    (decoded_command      ),
-    .decoded_command_vld(decoded_command_vld  ),
-    .decoded_command_rdy(decoded_command_rdy  ),
+    .decoded_command_master    (decoded_command_master    ),
+    .decoded_command_master_vld(decoded_command_master_vld),
+    .decoded_command_master_rdy(decoded_command_master_rdy),
+    .decoded_command_slave     (decoded_command_slave     ),
+    .decoded_command_slave_vld (decoded_command_slave_vld ),
+    .decoded_command_slave_rdy (decoded_command_slave_rdy ),
     // RX payload
-    .rx_tdata_out       (rx_tdata_out         ),
-    .rx_tvalid_out      (rx_tvalid_out        ),
+    .rx_tdata_out              (rx_tdata_out              ),
+    .rx_tvalid_out             (rx_tvalid_out             ),
     //  Statistics
-    .stat               (stat                 ),
-    .stat_rst           (stat_rst             ),
+    .stat                      (stat                      ),
+    .stat_rst                  (stat_rst                  ),
     // Error interface
-    .decoder_error      (decoder_error        ),
-    .rst_errors         (rst_errors           ),
+    .decoder_error             (decoder_error             ),
+    .rst_errors                (rst_errors                ),
     // QSFP system interface
-    .qsfp_rx_tdata      (qsfp_rx_vif.tdata     ),
-    .qsfp_rx_tkeep_user (qsfp_rx_vif.tkeep_user),
-    .qsfp_rx_tlast      (qsfp_rx_vif.tlast     ),
-    .qsfp_rx_tvalid     (qsfp_rx_vif.tvalid    )
+    .qsfp_rx_tdata             (qsfp_rx_vif.tdata         ),
+    .qsfp_rx_tkeep_user        (qsfp_rx_vif.tkeep_user    ),
+    .qsfp_rx_tlast             (qsfp_rx_vif.tlast         ),
+    .qsfp_rx_tvalid            (qsfp_rx_vif.tvalid        )
   );
 
 // ============================================================================================== --

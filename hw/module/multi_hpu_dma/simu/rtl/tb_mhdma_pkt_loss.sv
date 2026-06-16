@@ -4,12 +4,20 @@
 // ------------------------------------------------------------------------------------------------
 // Description  : Testbench for packet loss and retries in multi-HPU DMA.
 //
-// Scenarios:
-//   - Normal notify/ack handshake
-//   - Notify retry on missing and incorrect ack
-//   - Multiple pending notifies
-//   - Read request retry on timeout
-//   - Read request receiving wrong and then correct seq num
+// Scenarios (run sequentially; see the run list in the main initial block):
+//   Notify (master notify path):
+//     - notify_nominal       : nominal request and ack
+//     - notify_ack_timeout    : ack never returns -> timeout retry, late ack accepted
+//     - notify_wrong_ack      : ack with wrong MAC ignored -> retry -> good ack
+//     - notify_ack_delayed    : ack delayed with a second notify pending (in-order ack)
+//   Read (master read / ciphertext path):
+//     - read_nominal          : request -> full ciphertext burst -> completion IRQ
+//     - read_timeout          : request unanswered -> timeout retry -> answer -> IRQ
+//   Recovery (seq_num mismatch):
+//     - recovery_wrong_seq_num   : wrong seq_num mid-burst -> abort -> retry -> recover
+//     - recovery_dropped_packet  : dropped packet (fwd skip) -> mismatch -> retry -> recover
+//     - recovery_slave_read      : mismatch recovery while a slave READ is head-of-line
+//     - recovery_slave_notify    : mismatch recovery while a slave NOTIFY is head-of-line
 //
 // HPU_A is the DUT, HPU_B is emulated by this testbench.
 //
@@ -132,8 +140,11 @@ module tb_mhdma_pkt_loss;
 
   // Global watchdog: prevent simulation from hanging, some tests here are waiting on failure
   initial begin
+    logic [REG_DATA_W-1:0] wd_errors;
     #5_000_000;
     $display("%t > FAILURE: Global watchdog timeout!", $time);
+    maxil_drv_if.read_trans(MHDMA_SYSTEM_ERRORS_OFS, wd_errors);
+    dump_mhdma_state("global watchdog timeout", wd_errors);
     error_timeout_watchdog = 1'b1;
   end
 
@@ -393,6 +404,8 @@ logic [REG_DATA_W-1:0] stat_cnt_read_req_received;
 logic [REG_DATA_W-1:0] stat_cnt_ce_received;
 logic [REG_DATA_W-1:0] stat_read_req_timeout_retry;
 logic [REG_DATA_W-1:0] stat_errors;
+logic [REG_DATA_W-1:0] rr_recv_base;
+logic [REG_DATA_W-1:0] nr_recv_base;
 
 logic [SRC_ADDR_W-1:0] iop_src_addr;
 logic [DST_ADDR_W-1:0] iop_dst_addr;
@@ -501,9 +514,25 @@ logic [DST_ADDR_W-1:0] dst_addr;
   end
 
   // Decoder --------------------------------------------------------------------------------------
+  // The decoder now exposes two role-split command streams. The scenario logic only inspects
+  // READ/NOTIFY and uses !rx_header_vld for idle, so merge both streams back into a single
+  // rx_header view and drain both queues (slave-role shown first; READ/NOTIFY live there).
+  command_t rx_header_master;
+  logic     rx_header_master_vld;
+  logic     rx_header_master_rdy;
+
+  command_t rx_header_slave;
+  logic     rx_header_slave_vld;
+  logic     rx_header_slave_rdy;
+
   command_t rx_header;
-  logic rx_header_vld;
-  logic rx_header_rdy;
+  logic     rx_header_vld;
+  logic     rx_header_rdy;
+
+  assign rx_header          = rx_header_slave_vld ? rx_header_slave : rx_header_master;
+  assign rx_header_vld      = rx_header_slave_vld | rx_header_master_vld;
+  assign rx_header_slave_rdy  = rx_header_rdy &  rx_header_slave_vld;
+  assign rx_header_master_rdy = rx_header_rdy & ~rx_header_slave_vld;
 
   // this is supposed to be HPU_B decoder
   mhdma_decoder mhdma_decoder (
@@ -513,9 +542,13 @@ logic [DST_ADDR_W-1:0] dst_addr;
     .notify_ack_received (/*    unused          */),
     .current_hpu_mac     (src_mac_addr            ),
 
-    .decoded_command     (rx_header               ),
-    .decoded_command_vld (rx_header_vld           ),
-    .decoded_command_rdy (rx_header_rdy           ),
+    .decoded_command_master     (rx_header_master    ),
+    .decoded_command_master_vld (rx_header_master_vld),
+    .decoded_command_master_rdy (rx_header_master_rdy),
+
+    .decoded_command_slave      (rx_header_slave     ),
+    .decoded_command_slave_vld  (rx_header_slave_vld ),
+    .decoded_command_slave_rdy  (rx_header_slave_rdy ),
 
     .rx_tdata_out        (/*    unused          */),
     .rx_tvalid_out       (/*    unused          */),
@@ -557,431 +590,18 @@ logic [DST_ADDR_W-1:0] dst_addr;
     $display("==================================================================================================");
     init_config();
 
-    $display("\n==================================================================================================");
-    $display("  SCENARIO %0d: Default behavior", scenario_id);
-    $display("==================================================================================================");
-    iop_id   = scenario_id;
-    src_addr = $urandom_range(0, 1<<SRC_ADDR_W);
-
-    notify_request(src_hpu_id, dst_hpu_id, iop_id, iop_src_addr);
-
-    repeat(2) @(posedge clk_mhdma);
-
-    send_notify_ack_packet(qsfp_rx_vif[0], dst_mac_addr, src_mac_addr, dst_hpu_id, iop_id, src_addr, 16'h0);
-
-    repeat (50) @(posedge clk_control);
-
-    maxil_drv_if.read_trans(MHDMA_REQUEST_STAT_NB_NACK_RECEIVED_OFS, stat_cnt_nack_received);
-    maxil_drv_if.read_trans(MHDMA_REQUEST_STAT_NOTIFY_OFS, stat_notify);
-
-    assert (stat_cnt_nack_received == 1) begin
-      $display("%t > [INFO]: Received %0d ack after Notify", $time, stat_cnt_nack_received);
-    end else begin
-      $display("%t > [ERROR]: HPU didn't receive the ack from testbench", $time);
-      error_ack = 1'b1;
-    end
-
-    check_fsm_initialized();
-
-    scenario_id = scenario_id + 1;
-
-    $display("\n==================================================================================================");
-    $display("  SCENARIO %0d: no ack is sent to hpu_a", scenario_id);
-    $display("==================================================================================================");
-    iop_id       = scenario_id;
-    iop_src_addr = $urandom_range(0, 1<<SRC_ADDR_W);
-    notify_request(src_hpu_id, dst_hpu_id, iop_id, iop_src_addr);
-
-    repeat(2*TIMEOUT_DUR_NOTIFY+5) @(posedge clk_mhdma);
-
-    send_notify_ack_packet(qsfp_rx_vif[0], dst_mac_addr, src_mac_addr, dst_hpu_id, iop_id, src_addr, 16'h0);
-
-    repeat (50) @(posedge clk_control);
-
-    maxil_drv_if.read_trans(MHDMA_REQUEST_STAT_NB_NACK_RECEIVED_OFS, stat_cnt_nack_received);
-    maxil_drv_if.read_trans(MHDMA_REQUEST_STAT_NOTIFY_TIMEOUT_RETRY_OFS, stat_notify_retry);
-
-    assert (stat_notify_retry != 0) begin
-      $display("%t > [INFO]: Did %0d retries", $time, stat_notify_retry);
-      $display("%t > [INFO]: Received %0d ack after Notify", $time, stat_cnt_nack_received);
-    end else begin
-      $display("%t > [ERROR]: HPU didn't retry sending other Notifies", $time);
-      error_retry = 1'b1;
-    end
-
-    check_fsm_initialized();
-
-    scenario_id = scenario_id + 1;
-
-    $display("\n==================================================================================================");
-    $display("  SCENARIO %0d: an incorrect ack is sent to hpu", scenario_id);
-    $display("==================================================================================================");
-    iop_id       = scenario_id;
-    iop_src_addr = $urandom_range(0, 1<<SRC_ADDR_W);
-    notify_request(src_hpu_id, dst_hpu_id, iop_id, iop_src_addr);
-
-    repeat(2*TIMEOUT_DUR_NOTIFY + 5) @(posedge clk_mhdma);
-    send_notify_ack_packet(qsfp_rx_vif[0], 24'b0, src_mac_addr, dst_hpu_id, iop_id, src_addr, 16'h0);
-
-    repeat(2*TIMEOUT_DUR_NOTIFY + 5 ) @(posedge clk_mhdma);
-    send_notify_ack_packet(qsfp_rx_vif[0], dst_mac_addr, src_mac_addr, dst_hpu_id, iop_id, src_addr, 16'h0);
-
-    repeat (50) @(posedge clk_control);
-    maxil_drv_if.read_trans(MHDMA_REQUEST_STAT_NB_NACK_RECEIVED_OFS, stat_cnt_nack_received);
-    maxil_drv_if.read_trans(MHDMA_REQUEST_STAT_NOTIFY_TIMEOUT_RETRY_OFS, stat_notify_retry);
-
-    assert (stat_notify_retry != 0) begin
-      $display("%t > [INFO]: Did %0d retries", $time, stat_notify_retry);
-      $display("%t > [INFO]: Received %0d ack after Notify", $time, stat_cnt_nack_received);
-    end else begin
-      $display("%t > [ERROR]: HPU didn't retry sending other Notifies", $time);
-      error_retry = 1'b1;
-    end
-
-    check_fsm_initialized();
-
-    scenario_id = scenario_id + 1;
-
-    $display("\n==================================================================================================");
-    $display("  SCENARIO %0d: no ack for a time and a new notify is pending", scenario_id);
-    $display("==================================================================================================");
-    iop_id       = 'd58;
-    iop_src_addr = $urandom_range(0, 1<<SRC_ADDR_W);
-    notify_request(src_hpu_id, dst_hpu_id, iop_id, iop_src_addr);
-
-    iop_id       = 'd98;
-    iop_src_addr = $urandom_range(0, 1<<SRC_ADDR_W);
-    notify_request(src_hpu_id, dst_hpu_id, iop_id, iop_src_addr);
-
-    // Wait for decoder to receive first notify (with possible retries)
-    wait(rx_header_vld && rx_header.req_id == REQ_ID_NOTIFY && rx_header.iop_id == 'd58);
-    $display("%t > [TB] Decoder saw notify iop_id=58", $time);
-    send_notify_ack_packet(qsfp_rx_vif[0], dst_mac_addr, src_mac_addr, dst_hpu_id, 'd58, src_addr, 16'h0);
-
-    // Wait for decoder to receive second notify
-    wait(rx_header_vld && rx_header.req_id == REQ_ID_NOTIFY && rx_header.iop_id == 'd98);
-    $display("%t > [TB] Decoder saw notify iop_id=98", $time);
-    send_notify_ack_packet(qsfp_rx_vif[0], dst_mac_addr, src_mac_addr, dst_hpu_id, 'd98, src_addr, 16'h0);
-
-    // Verify we received the expected notifies
-    repeat(50) @(posedge clk_control);
-
-    check_fsm_initialized();
-
-    scenario_id = scenario_id + 1;
-
-    $display("\n==================================================================================================");
-    $display("  SCENARIO %0d: Ciphertext emission - Default behavior", scenario_id);
-    $display("==================================================================================================");
-    iop_id       = scenario_id;
-    iop_src_addr = $urandom_range(0, 1<<SRC_ADDR_W);
-    iop_dst_addr = $urandom_range(0, 1<<DST_ADDR_W);
-
-    fork
-      begin
-        read_request(dst_hpu_id, iop_id, iop_src_addr, iop_dst_addr);
-      end
-      begin
-        wait(rx_header_vld & (rx_header.req_id == REQ_ID_READ));
-      end
-    join
-
-    // Send ciphertext emission packets as if we're the remote HPU responding
-    for (int pkt = 0; pkt < NB_PACKETS_FULL+1; pkt++) begin
-      send_ciphertext_emission_packet(qsfp_rx_vif[0], dst_mac_addr, src_mac_addr, dst_hpu_id, iop_id, iop_src_addr, iop_dst_addr, pkt[7:0], unused_payload);
-      repeat(10) @(posedge clk_mhdma);
-    end
-
-    repeat(50) @(posedge clk_control);
-
-    maxil_drv_if.read_trans(MHDMA_REQUEST_STAT_NB_READ_REQ_RECEIVED_OFS, stat_cnt_read_req_received);
-    maxil_drv_if.read_trans(MHDMA_REQUEST_STAT_NB_CE_RECEIVED_OFS, stat_cnt_ce_received);
-    maxil_drv_if.read_trans(MHDMA_REQUEST_STAT_READ_REQ_TIMEOUT_RETRY_OFS, stat_read_req_timeout_retry);
-
-    assert (stat_cnt_ce_received == NB_PACKETS_FULL+1) begin
-      $display("%t > [INFO]: stat_cnt_ce_received : %0d", $time, stat_cnt_ce_received);
-    end else begin
-      $display("%t > [ERROR]: HPU didn't receive correct amount of CE packets (%0d) expected %0d", $time, stat_cnt_ce_received, NB_PACKETS_FULL+1);
-      error_retry = 1'b1;
-    end
-
-    assert (stat_read_req_timeout_retry == 0) begin
-      $display("%t > [INFO]: HPU didn't retry sending other Read requests", $time);
-    end else begin
-      $display("%t > [ERROR]: Did %0d retries", $time, stat_read_req_timeout_retry);
-      error_retry = 1'b1;
-    end
-
-    wait(interrupt_read_request);
-    maxil_drv_if.read_trans(MHDMA_REQUEST_READ_REQUEST_REQ_ID_OFS, read_data); // don't care about answer just need to lower itr
-
-    repeat(100) @(posedge clk_control);
-
-    check_fsm_initialized();
-
-    if (~interrupt_read_request)
-      $display("%t > [INFO]: interrupt_read_request correctly lowered", $time);
-
-    scenario_id = scenario_id + 1;
-
-    $display("\n==================================================================================================");
-    $display("  SCENARIO %0d: Read request is emitted but not answered", scenario_id);
-    $display("==================================================================================================");
-    iop_id       = scenario_id;
-    iop_src_addr = $urandom_range(0, 1<<SRC_ADDR_W);
-    iop_dst_addr = $urandom_range(0, 1<<DST_ADDR_W);
-    read_request(dst_hpu_id, iop_id, iop_src_addr, iop_dst_addr);
-
-    repeat(2*TIMEOUT_DUR_READ_REQ + 10 ) @(posedge clk_mhdma);
-
-    $display("%t > [INFO]: answering only after %0d clock cycles", $time, 2*TIMEOUT_DUR_READ_REQ + 10 );
-
-  // Send ciphertext emission packets as if we're the remote HPU responding
-    for (int pkt = 0; pkt < NB_PACKETS_FULL+1; pkt++) begin
-      send_ciphertext_emission_packet(qsfp_rx_vif[0], dst_mac_addr, src_mac_addr, dst_hpu_id, iop_id, iop_src_addr, iop_dst_addr, pkt[7:0], unused_payload);
-      repeat(10) @(posedge clk_mhdma);
-    end
-
-    maxil_drv_if.read_trans(MHDMA_REQUEST_STAT_READ_REQ_TIMEOUT_RETRY_OFS, stat_read_req_timeout_retry);
-
-    assert (stat_read_req_timeout_retry != 0) begin
-      $display("%t > [INFO]: Did %0d retries", $time, stat_read_req_timeout_retry);
-    end else begin
-      $display("%t > [ERROR]: HPU didn't retry sending other Notifies", $time);
-      error_retry = 1'b1;
-    end
-
-    repeat(100) @(posedge clk_control);
-
-    wait(interrupt_read_request);
-    maxil_drv_if.read_trans(MHDMA_REQUEST_READ_REQUEST_REQ_ID_OFS, read_data); // don't care about answer just need to lower itr
-
-    repeat(100) @(posedge clk_control);
-
-    check_fsm_initialized();
-
-    if (~interrupt_read_request)
-      $display("%t > [INFO]: interrupt_read_request correctly lowered", $time);
-
-
-    scenario_id = scenario_id + 1;
-
-    $display("\n==================================================================================================");
-    $display("  SCENARIO %0d: Sending a wrong seq num - immediate abort and retry", scenario_id);
-    $display("==================================================================================================");
-    // Clear stale stat counter
-    maxil_drv_if.read_trans(MHDMA_REQUEST_STAT_READ_REQ_TIMEOUT_RETRY_OFS, stat_read_req_timeout_retry);
-    // Set timeout to max to prove retry happens via mismatch, NOT timeout
-    maxil_drv_if.write_trans(MHDMA_SYSTEM_TIMEOUT_READ_REQ_OFS, 32'hFFFFFFFF);
-
-    iop_id       = scenario_id;
-    iop_src_addr = $urandom_range(0, (1 << MEM_SIM_SIZE) / CT_MEM_BYTES - 1);
-    iop_dst_addr = $urandom_range(0, (1 << MEM_SIM_SIZE) / CT_MEM_BYTES - 1);
-
-    fork
-      read_request(dst_hpu_id, iop_id, iop_src_addr, iop_dst_addr);
-      wait(rx_header_vld & (rx_header.req_id == REQ_ID_READ));
-    join
-
-    // Wait for initial request to be consumed by decoder (avoid race on retry wait)
-    wait(!rx_header_vld);
-
-    // Send CE packets while monitoring for the retry read request in parallel.
-    // The abort + retry can complete while stale packets are still being sent,
-    // so the retry monitor must run concurrently to avoid missing it.
-    fork
-      begin
-        // Send CE packets: packet 8 has wrong seq_num (backward: 3 < expected 8)
-        for (int pkt = 0; pkt < NB_PACKETS_FULL+1; pkt++) begin
-          if (pkt == 1) begin
-            send_ciphertext_emission_packet(qsfp_rx_vif[0], dst_mac_addr, src_mac_addr, dst_hpu_id, iop_id, iop_src_addr, iop_dst_addr, 3, unused_payload);
-          end else begin
-            send_ciphertext_emission_packet(qsfp_rx_vif[0], dst_mac_addr, src_mac_addr, dst_hpu_id, iop_id, iop_src_addr, iop_dst_addr, pkt[7:0], unused_payload);
-          end
-          repeat(10) @(posedge clk_mhdma);
-        end
-      end
-      begin
-        // Wait for retry read request on QSFP TX (DUT completes abort then re-sends)
-        wait(rx_header_vld & (rx_header.req_id == REQ_ID_READ));
-        $display("%t > [INFO]: Retry read request detected on QSFP TX", $time);
-      end
-    join
-
-    // Wait for retry read request to be fully consumed on QSFP TX
-    wait(!rx_header_vld);
-
-    if (interrupt_read_request) begin
-      $display("%t > [ERROR]: interrupt_read_request should not have been raised during abort", $time);
-      error_interrupt = 1'b1;
-    end
-
-    // Allow CDC propagation of stat counters (mhdma -> cfg clock domain)
-    repeat(10) @(posedge clk_control);
-
-    // Verify retry stat was incremented (mismatch-triggered, not timeout)
-    maxil_drv_if.read_trans(MHDMA_REQUEST_STAT_READ_REQ_TIMEOUT_RETRY_OFS, stat_read_req_timeout_retry);
-    assert (stat_read_req_timeout_retry != 0) begin
-      $display("%t > [INFO]: Did %0d retries after wrong seq num", $time, stat_read_req_timeout_retry);
-    end else begin
-      $display("%t > [ERROR]: HPU didn't retry after seq_num mismatch", $time);
-      error_retry = 1'b1;
-    end
-
-    // Check error register has seq_num_error (read also clears via read-to-clear)
-    maxil_drv_if.read_trans(MHDMA_SYSTEM_ERRORS_OFS, stat_errors);
-    display_errors(stat_errors);
-
-    // Respond to retry with correct ciphertext (all packets from seq_num 0)
-    for (int pkt = 0; pkt < NB_PACKETS_FULL+1; pkt++) begin
-      send_ciphertext_emission_packet(qsfp_rx_vif[0], dst_mac_addr, src_mac_addr, dst_hpu_id, iop_id, iop_src_addr, iop_dst_addr, pkt[7:0], unused_payload);
-      repeat(10) @(posedge clk_mhdma);
-    end
-
-    repeat(200) @(posedge clk_control);
-
-    if (interrupt_read_request) begin
-      maxil_drv_if.read_trans(MHDMA_REQUEST_READ_REQUEST_REQ_ID_OFS, read_data);
-    end else begin
-      $display("%t > [ERROR]: interrupt_read_request has not been raised after retry", $time);
-      error_interrupt = 1'b1;
-    end
-
-    repeat(100) @(posedge clk_control);
-    check_fsm_initialized();
-
-    if (~interrupt_read_request)
-      $display("%t > [INFO]: interrupt_read_request correctly lowered", $time);
-
-    // Restore timeout for next scenario
-    maxil_drv_if.write_trans(MHDMA_SYSTEM_TIMEOUT_READ_REQ_OFS, TIMEOUT_DUR_READ_REQ);
-
-    scenario_id = scenario_id + 1;
-
-    // Forward-skip mismatch requires at least 3 packets (drop one in the middle).
-    // NB_PACKETS_FULL < 2 means only 2 packets exist (seq_num 0..1), not enough.
-    if (NB_PACKETS_FULL < 2) begin
-      $display("\n==================================================================================================");
-      $display("  SCENARIO %0d: a real drop of packet - SKIPPED (NB_PACKETS_FULL=%0d < 2)", scenario_id, NB_PACKETS_FULL);
-      $display("==================================================================================================");
-    end else begin
-
-    $display("\n==================================================================================================");
-    $display("  SCENARIO %0d: a real drop of packet - abort then retry", scenario_id);
-    $display("==================================================================================================");
-    // Clear stale stat counter
-    maxil_drv_if.read_trans(MHDMA_REQUEST_STAT_READ_REQ_TIMEOUT_RETRY_OFS, stat_read_req_timeout_retry);
-    // Set timeout to max: we expect mismatch-triggered retry, not timeout
-    maxil_drv_if.write_trans(MHDMA_SYSTEM_TIMEOUT_READ_REQ_OFS, 32'hFFFFFFFF);
-
-    iop_id       = scenario_id;
-    iop_src_addr = $urandom_range(0, (1 << MEM_SIM_SIZE) / CT_MEM_BYTES - 1);
-    iop_dst_addr = $urandom_range(0, (1 << MEM_SIM_SIZE) / CT_MEM_BYTES - 1);
-
-    // Drop a packet in the middle: must be >= 1 (pkt 0 sets up address) and
-    // < NB_PACKETS_FULL (a later packet must arrive to trigger forward-skip mismatch).
-    drop_idx = 1;
-
-    fork
-      read_request(dst_hpu_id, iop_id, iop_src_addr, iop_dst_addr);
-      wait(rx_header_vld & (rx_header.req_id == REQ_ID_READ));
-    join
-
-    // Wait for initial request to be consumed by decoder (avoid race on retry wait)
-    wait(!rx_header_vld);
-
-    // Send CE packets while monitoring for the retry read request in parallel.
-    // The abort + retry can complete while stale packets are still being sent,
-    // so the retry monitor must run concurrently to avoid missing it.
-    fork
-      begin
-        // Send CE packets: drop one packet entirely (forward skip: DUT expects drop_idx, gets drop_idx+1)
-        for (int pkt = 0; pkt < NB_PACKETS_FULL+1; pkt++) begin
-          if (pkt == drop_idx) begin
-            $display("%t > [INFO]: Dropping packet %0d (simulating network loss)", $time, drop_idx);
-          end else begin
-            send_ciphertext_emission_packet(qsfp_rx_vif[0], dst_mac_addr, src_mac_addr, dst_hpu_id, iop_id, iop_src_addr, iop_dst_addr, pkt[7:0], unused_payload);
-          end
-          repeat(10) @(posedge clk_mhdma);
-        end
-      end
-      begin
-        // Wait for retry read request on QSFP TX
-        wait(rx_header_vld & (rx_header.req_id == REQ_ID_READ));
-        $display("%t > [INFO]: Retry read request detected on QSFP TX (mismatch on dropped pkt)", $time);
-      end
-    join
-
-    // Wait for retry read request to be fully consumed on QSFP TX
-    wait(!rx_header_vld);
-
-    if (interrupt_read_request) begin
-      $display("%t > [ERROR]: interrupt_read_request should not have been raised during abort", $time);
-      error_interrupt = 1'b1;
-    end
-
-    // Allow CDC propagation of stat counters (mhdma -> cfg clock domain)
-    repeat(10) @(posedge clk_control);
-
-    // Verify retry stat was incremented
-    maxil_drv_if.read_trans(MHDMA_REQUEST_STAT_READ_REQ_TIMEOUT_RETRY_OFS, stat_read_req_timeout_retry);
-    assert (stat_read_req_timeout_retry != 0) begin
-      $display("%t > [INFO]: Did %0d retries after packet loss", $time, stat_read_req_timeout_retry);
-    end else begin
-      $display("%t > [ERROR]: HPU didn't retry after packet loss", $time);
-      error_retry = 1'b1;
-    end
-
-    // Check error register (read also clears via read-to-clear)
-    maxil_drv_if.read_trans(MHDMA_SYSTEM_ERRORS_OFS, stat_errors);
-    display_errors(stat_errors);
-
-    // Respond to retry with complete correct ciphertext
-    for (int pkt = 0; pkt < NB_PACKETS_FULL+1; pkt++) begin
-      send_ciphertext_emission_packet(qsfp_rx_vif[0], dst_mac_addr, src_mac_addr, dst_hpu_id, iop_id, iop_src_addr, iop_dst_addr, pkt[7:0], unused_payload);
-      repeat(10) @(posedge clk_mhdma);
-    end
-
-    repeat(200) @(posedge clk_control);
-
-    if (interrupt_read_request) begin
-      maxil_drv_if.read_trans(MHDMA_REQUEST_READ_REQUEST_REQ_ID_OFS, read_data);
-    end else begin
-      $display("%t > [ERROR]: interrupt_read_request has not been raised after retry", $time);
-      error_interrupt = 1'b1;
-    end
-
-    repeat(100) @(posedge clk_control);
-    check_fsm_initialized();
-
-    if (~interrupt_read_request)
-      $display("%t > [INFO]: interrupt_read_request correctly lowered", $time);
-
-    // Restore timeout for subsequent scenarios
-    maxil_drv_if.write_trans(MHDMA_SYSTEM_TIMEOUT_READ_REQ_OFS, TIMEOUT_DUR_READ_REQ);
-
-    end // if NB_PACKETS_FULL >= 2
-
-    $display("\n ----------------- HPU_A Final Summary -----------------------");
-    maxil_drv_if.read_trans(MHDMA_REQUEST_STAT_NOTIFY_OFS, stat_notify);
-    maxil_drv_if.read_trans(MHDMA_REQUEST_STAT_NOTIFY_ACK_OFS, stat_notify_ack);
-    maxil_drv_if.read_trans(MHDMA_REQUEST_STAT_NOTIFY_TIMEOUT_RETRY_OFS, stat_notify_retry);
-    maxil_drv_if.read_trans(MHDMA_REQUEST_STAT_READ_REQ_TIMEOUT_RETRY_OFS, stat_read_req_retry);
-    maxil_drv_if.read_trans(MHDMA_REQUEST_STAT_NOTIFY_TIMEOUT_OFS, stat_notify_timeout);
-    maxil_drv_if.read_trans(MHDMA_REQUEST_STAT_T_NOTIFY_TO_ACK_OFS, stat_t_notify_to_ack);
-    maxil_drv_if.read_trans(MHDMA_REQUEST_STAT_T_RR_TO_CE_RECEIVED_OFS, stat_t_rr_to_ce_received);
-    maxil_drv_if.read_trans(MHDMA_REQUEST_STAT_T_CE_FIRST_TO_LAST_PKT_OFS, stat_t_ce_first_to_last_pkt);
-    maxil_drv_if.read_trans(MHDMA_REQUEST_STAT_NB_NACK_RECEIVED_OFS, stat_cnt_nack_received);
-    $display(" stat_notify                 : %0d", stat_notify);
-    $display(" stat_notify_ack             : %0d", stat_notify_ack);
-    $display(" stat_nack_received          : %0d", stat_cnt_nack_received);
-    $display(" stat_notify_retry           : %0d", stat_notify_retry);
-    $display(" stat_read_req_retry         : %0d", stat_read_req_retry);
-    $display(" stat_notify_timeout         : %0d", stat_notify_timeout);
-    $display(" stat_t_notify_to_ack        : %0d", stat_t_notify_to_ack);
-    $display(" stat_t_rr_to_ce_received    : %0d", stat_t_rr_to_ce_received);
-    $display(" stat_t_ce_first_to_last_pkt : %0d", stat_t_ce_first_to_last_pkt);
-    $display(" ------------------------------------------------------------- \n");
+    run_scenario_notify_nominal();
+    run_scenario_notify_ack_timeout();
+    run_scenario_notify_wrong_ack();
+    run_scenario_notify_ack_delayed();
+    run_scenario_read_nominal();
+    run_scenario_read_timeout();
+    run_scenario_recovery_wrong_seq_num();
+    run_scenario_recovery_dropped_packet();
+    run_scenario_recovery_slave_read();
+    run_scenario_recovery_slave_notify();
+
+    print_final_summary();
 
     $display("%t > INFO: End simulation",$time);
     repeat(20) @(posedge clk_control);
@@ -991,7 +611,663 @@ logic [DST_ADDR_W-1:0] dst_addr;
 // ============================================================================================== --
 // Tasks
 // ============================================================================================== --
-  logic [REG_DATA_W-1:00] rdata;
+  logic [REG_DATA_W-1:0] rdata;
+
+  // ============================================================================================ --
+  // Scenarios
+  // Each scenario is a self-contained task: scenario_start() prints the banner, scenario_end()
+  // prints PASSED and increments scenario_id.
+  // They run sequentially from the main initial block.
+  // ============================================================================================ --
+
+  // --------------------------------------------------------------------------------------------- --
+  // Notify - default behavior: send a notify, peer acks it, check the ack was counted.
+  // --------------------------------------------------------------------------------------------- --
+  task automatic run_scenario_notify_nominal();
+    begin
+      scenario_start(scenario_id, "Notify: nominal request and ack");
+      iop_id       = scenario_id;
+      iop_src_addr = $urandom_range(0, (1<<SRC_ADDR_W)-1);
+
+      notify_request(src_hpu_id, dst_hpu_id, iop_id, iop_src_addr);
+
+      repeat(2) @(posedge clk_mhdma);
+
+      send_notify_ack_packet(qsfp_rx_vif[0], dst_mac_addr, src_mac_addr, dst_hpu_id, iop_id, iop_src_addr, 16'h0);
+
+      repeat (50) @(posedge clk_control);
+
+      maxil_drv_if.read_trans(MHDMA_REQUEST_STAT_NB_NACK_RECEIVED_OFS, stat_cnt_nack_received);
+      maxil_drv_if.read_trans(MHDMA_REQUEST_STAT_NOTIFY_OFS, stat_notify);
+
+      assert (stat_cnt_nack_received == 1) begin
+        $display("%t > [INFO]: Received %0d ack after Notify", $time, stat_cnt_nack_received);
+      end else begin
+        $display("%t > [ERROR]: HPU didn't receive the ack from testbench", $time);
+        error_ack = 1'b1;
+      end
+
+      check_fsm_initialized();
+      scenario_end(scenario_id, clk_control, error);
+    end
+  endtask
+
+  // --------------------------------------------------------------------------------------------- --
+  // Notify - no ack: peer stays silent past the timeout, DUT must retry the notify.
+  // --------------------------------------------------------------------------------------------- --
+  task automatic run_scenario_notify_ack_timeout();
+    begin
+      scenario_start(scenario_id, "Notify: ack never returns -> timeout retry");
+      iop_id       = scenario_id;
+      iop_src_addr = $urandom_range(0, (1<<SRC_ADDR_W)-1);
+      notify_request(src_hpu_id, dst_hpu_id, iop_id, iop_src_addr);
+
+      repeat(2*TIMEOUT_DUR_NOTIFY+5) @(posedge clk_mhdma);
+
+      send_notify_ack_packet(qsfp_rx_vif[0], dst_mac_addr, src_mac_addr, dst_hpu_id, iop_id, iop_src_addr, 16'h0);
+
+      repeat (50) @(posedge clk_control);
+
+      maxil_drv_if.read_trans(MHDMA_REQUEST_STAT_NB_NACK_RECEIVED_OFS, stat_cnt_nack_received);
+      maxil_drv_if.read_trans(MHDMA_REQUEST_STAT_NOTIFY_TIMEOUT_RETRY_OFS, stat_notify_retry);
+
+      assert (stat_notify_retry != 0) begin
+        $display("%t > [INFO]: Did %0d retries", $time, stat_notify_retry);
+        $display("%t > [INFO]: Received %0d ack after Notify", $time, stat_cnt_nack_received);
+      end else begin
+        $display("%t > [ERROR]: HPU didn't retry sending other Notifies", $time);
+        error_retry = 1'b1;
+      end
+
+      check_fsm_initialized();
+      scenario_end(scenario_id, clk_control, error);
+    end
+  endtask
+
+  // --------------------------------------------------------------------------------------------- --
+  // Notify - wrong ack: an ack with a bad MAC is ignored, DUT retries until a valid ack arrives.
+  // --------------------------------------------------------------------------------------------- --
+  task automatic run_scenario_notify_wrong_ack();
+    begin
+      scenario_start(scenario_id, "Notify: wrong ack -> ignored, retry");
+      iop_id       = scenario_id;
+      iop_src_addr = $urandom_range(0, (1<<SRC_ADDR_W)-1);
+      notify_request(src_hpu_id, dst_hpu_id, iop_id, iop_src_addr);
+
+      repeat(2*TIMEOUT_DUR_NOTIFY + 5) @(posedge clk_mhdma);
+      send_notify_ack_packet(qsfp_rx_vif[0], 24'b0, src_mac_addr, dst_hpu_id, iop_id, iop_src_addr, 16'h0);
+
+      repeat(2*TIMEOUT_DUR_NOTIFY + 5 ) @(posedge clk_mhdma);
+      send_notify_ack_packet(qsfp_rx_vif[0], dst_mac_addr, src_mac_addr, dst_hpu_id, iop_id, iop_src_addr, 16'h0);
+
+      repeat (50) @(posedge clk_control);
+      maxil_drv_if.read_trans(MHDMA_REQUEST_STAT_NB_NACK_RECEIVED_OFS, stat_cnt_nack_received);
+      maxil_drv_if.read_trans(MHDMA_REQUEST_STAT_NOTIFY_TIMEOUT_RETRY_OFS, stat_notify_retry);
+
+      assert (stat_notify_retry != 0) begin
+        $display("%t > [INFO]: Did %0d retries", $time, stat_notify_retry);
+        $display("%t > [INFO]: Received %0d ack after Notify", $time, stat_cnt_nack_received);
+      end else begin
+        $display("%t > [ERROR]: HPU didn't retry sending other Notifies", $time);
+        error_retry = 1'b1;
+      end
+
+      check_fsm_initialized();
+      scenario_end(scenario_id, clk_control, error);
+    end
+  endtask
+
+  // --------------------------------------------------------------------------------------------- --
+  // Notify - pending: two notifies in flight, each acked in order by the peer.
+  // --------------------------------------------------------------------------------------------- --
+  task automatic run_scenario_notify_ack_delayed();
+    logic [IOP_ID_W-1:0] id_a, id_b;
+    begin
+      scenario_start(scenario_id, "Notify: ack delayed with a second notify pending");
+      // Two distinct random iop_ids (instead of fixed 58/98): confirms two-outstanding tracking
+      // and in-order ack matching are not value-specific.
+      id_a = $urandom_range(1, (1<<IOP_ID_W)-1);
+      id_b = $urandom_range(1, (1<<IOP_ID_W)-1);
+      if (id_b == id_a) id_b = (id_a == (1<<IOP_ID_W)-1) ? id_a - 1 : id_a + 1;
+      iop_src_addr = $urandom_range(0, (1<<SRC_ADDR_W)-1);
+
+      iop_id = id_a;
+      notify_request(src_hpu_id, dst_hpu_id, iop_id, iop_src_addr);
+
+      iop_id = id_b;
+      notify_request(src_hpu_id, dst_hpu_id, iop_id, iop_src_addr);
+
+      // Wait for decoder to receive first notify (with possible retries)
+      wait(rx_header_vld && rx_header.req_id == REQ_ID_NOTIFY && rx_header.iop_id == id_a);
+      $display("%t > [TB] Decoder saw notify iop_id=%0d", $time, id_a);
+      send_notify_ack_packet(qsfp_rx_vif[0], dst_mac_addr, src_mac_addr, dst_hpu_id, id_a, iop_src_addr, 16'h0);
+
+      // Wait for decoder to receive second notify
+      wait(rx_header_vld && rx_header.req_id == REQ_ID_NOTIFY && rx_header.iop_id == id_b);
+      $display("%t > [TB] Decoder saw notify iop_id=%0d", $time, id_b);
+      send_notify_ack_packet(qsfp_rx_vif[0], dst_mac_addr, src_mac_addr, dst_hpu_id, id_b, iop_src_addr, 16'h0);
+
+      // Verify we received the expected notifies
+      repeat(50) @(posedge clk_control);
+
+      check_fsm_initialized();
+      scenario_end(scenario_id, clk_control, error);
+    end
+  endtask
+
+  // --------------------------------------------------------------------------------------------- --
+  // Ciphertext emission - default: DUT issues a read request, peer answers with the full burst.
+  // --------------------------------------------------------------------------------------------- --
+  task automatic run_scenario_read_nominal();
+    begin
+      scenario_start(scenario_id, "Read: nominal request and ciphertext reception");
+      iop_id       = scenario_id;
+      iop_src_addr = $urandom_range(0, (1 << MEM_SIM_SIZE) / CT_MEM_BYTES - 1);
+      iop_dst_addr = $urandom_range(0, (1 << MEM_SIM_SIZE) / CT_MEM_BYTES - 1);
+
+      fork
+        begin
+          read_request(dst_hpu_id, iop_id, iop_src_addr, iop_dst_addr);
+        end
+        begin
+          wait(rx_header_vld & (rx_header.req_id == REQ_ID_READ));
+        end
+      join
+
+      // Send ciphertext emission packets as if we're the remote HPU responding
+      for (int pkt = 0; pkt < NB_PACKETS_FULL+1; pkt++) begin
+        send_ciphertext_emission_packet(qsfp_rx_vif[0], dst_mac_addr, src_mac_addr, dst_hpu_id, iop_id, iop_src_addr, iop_dst_addr, pkt[7:0], unused_payload);
+        repeat(10) @(posedge clk_mhdma);
+      end
+
+      repeat(50) @(posedge clk_control);
+
+      maxil_drv_if.read_trans(MHDMA_REQUEST_STAT_NB_READ_REQ_RECEIVED_OFS, stat_cnt_read_req_received);
+      maxil_drv_if.read_trans(MHDMA_REQUEST_STAT_NB_CE_RECEIVED_OFS, stat_cnt_ce_received);
+      maxil_drv_if.read_trans(MHDMA_REQUEST_STAT_READ_REQ_TIMEOUT_RETRY_OFS, stat_read_req_timeout_retry);
+
+      assert (stat_cnt_ce_received == NB_PACKETS_FULL+1) begin
+        $display("%t > [INFO]: stat_cnt_ce_received : %0d", $time, stat_cnt_ce_received);
+      end else begin
+        $display("%t > [ERROR]: HPU didn't receive correct amount of CE packets (%0d) expected %0d", $time, stat_cnt_ce_received, NB_PACKETS_FULL+1);
+        error_retry = 1'b1;
+      end
+
+      assert (stat_read_req_timeout_retry == 0) begin
+        $display("%t > [INFO]: HPU didn't retry sending other Read requests", $time);
+      end else begin
+        $display("%t > [ERROR]: Did %0d retries", $time, stat_read_req_timeout_retry);
+        error_retry = 1'b1;
+      end
+
+      wait(interrupt_read_request);
+      maxil_drv_if.read_trans(MHDMA_REQUEST_READ_REQUEST_REQ_ID_OFS, read_data); // don't care about answer just need to lower itr
+
+      repeat(100) @(posedge clk_control);
+
+      check_fsm_initialized();
+
+      if (~interrupt_read_request)
+        $display("%t > [INFO]: interrupt_read_request correctly lowered", $time);
+
+      scenario_end(scenario_id, clk_control, error);
+    end
+  endtask
+
+  // --------------------------------------------------------------------------------------------- --
+  // Read request not answered in time: peer answers only after the timeout, DUT must retry.
+  // --------------------------------------------------------------------------------------------- --
+  task automatic run_scenario_read_timeout();
+    begin
+      scenario_start(scenario_id, "Read: request unanswered -> timeout retry");
+      iop_id       = scenario_id;
+      iop_src_addr = $urandom_range(0, (1 << MEM_SIM_SIZE) / CT_MEM_BYTES - 1);
+      iop_dst_addr = $urandom_range(0, (1 << MEM_SIM_SIZE) / CT_MEM_BYTES - 1);
+      read_request(dst_hpu_id, iop_id, iop_src_addr, iop_dst_addr);
+
+      repeat(2*TIMEOUT_DUR_READ_REQ + 10 ) @(posedge clk_mhdma);
+
+      $display("%t > [INFO]: answering only after %0d clock cycles", $time, 2*TIMEOUT_DUR_READ_REQ + 10);
+
+      // Send ciphertext emission packets as if we're the remote HPU responding
+      for (int pkt = 0; pkt < NB_PACKETS_FULL+1; pkt++) begin
+        send_ciphertext_emission_packet(qsfp_rx_vif[0], dst_mac_addr, src_mac_addr, dst_hpu_id, iop_id, iop_src_addr, iop_dst_addr, pkt[7:0], unused_payload);
+        repeat(10) @(posedge clk_mhdma);
+      end
+
+      maxil_drv_if.read_trans(MHDMA_REQUEST_STAT_READ_REQ_TIMEOUT_RETRY_OFS, stat_read_req_timeout_retry);
+
+      assert (stat_read_req_timeout_retry != 0) begin
+        $display("%t > [INFO]: Did %0d retries", $time, stat_read_req_timeout_retry);
+      end else begin
+        $display("%t > [ERROR]: HPU didn't retry sending other Notifies", $time);
+        error_retry = 1'b1;
+      end
+
+      repeat(100) @(posedge clk_control);
+
+      wait(interrupt_read_request);
+      maxil_drv_if.read_trans(MHDMA_REQUEST_READ_REQUEST_REQ_ID_OFS, read_data); // don't care about answer just need to lower itr
+
+      repeat(100) @(posedge clk_control);
+
+      check_fsm_initialized();
+
+      if (~interrupt_read_request)
+        $display("%t > [INFO]: interrupt_read_request correctly lowered", $time);
+
+      scenario_end(scenario_id, clk_control, error);
+    end
+  endtask
+
+  // --------------------------------------------------------------------------------------------- --
+  // Wrong seq num: peer sends a bad seq_num mid-burst, DUT aborts (seq_num_error) and retries.
+  // Timeout is maxed out so the retry is provably mismatch-driven, not timeout-driven.
+  // --------------------------------------------------------------------------------------------- --
+  task automatic run_scenario_recovery_wrong_seq_num();
+    int                   corrupt_pos;
+    logic [SEQ_NUM_W-1:0] corrupt_val;
+    begin
+      scenario_start(scenario_id, "Recovery: wrong seq_num -> immediate abort and retry");
+      // Clear stale stat counter
+      maxil_drv_if.read_trans(MHDMA_REQUEST_STAT_READ_REQ_TIMEOUT_RETRY_OFS, stat_read_req_timeout_retry);
+      // Set timeout to max to prove retry happens via mismatch, NOT timeout
+      maxil_drv_if.write_trans(MHDMA_SYSTEM_TIMEOUT_READ_REQ_OFS, 32'hFFFFFFFF);
+
+      iop_id       = scenario_id;
+      iop_src_addr = $urandom_range(0, (1 << MEM_SIM_SIZE) / CT_MEM_BYTES - 1);
+      iop_dst_addr = $urandom_range(0, (1 << MEM_SIM_SIZE) / CT_MEM_BYTES - 1);
+
+      fork
+        read_request(dst_hpu_id, iop_id, iop_src_addr, iop_dst_addr);
+        wait(rx_header_vld & (rx_header.req_id == REQ_ID_READ));
+      join
+
+      // Wait for initial request to be consumed by decoder (avoid race on retry wait)
+      wait(!rx_header_vld);
+
+      // Pick a random packet (>=1, after the seq0 that sets up the address) and a wrong seq_num
+      // for it, so the mismatch position/value varies run-to-run (exercises different partial-write
+      // states on the abort path).
+      corrupt_pos = $urandom_range(1, NB_PACKETS_FULL);
+      corrupt_val = $urandom_range(0, NB_PACKETS_FULL);
+      if (corrupt_val == corrupt_pos) corrupt_val = SEQ_NUM_W'(corrupt_pos + 1); // force a real mismatch
+      $display("%t > [INFO]: injecting wrong seq_num=%0d at packet %0d", $time, corrupt_val, corrupt_pos);
+
+      // Send CE packets while monitoring for the retry read request in parallel.
+      // The abort + retry can complete while stale packets are still being sent,
+      // so the retry monitor must run concurrently to avoid missing it.
+      fork
+        begin
+          for (int pkt = 0; pkt < NB_PACKETS_FULL+1; pkt++) begin
+            if (pkt == corrupt_pos) begin
+              send_ciphertext_emission_packet(qsfp_rx_vif[0], dst_mac_addr, src_mac_addr, dst_hpu_id, iop_id, iop_src_addr, iop_dst_addr, corrupt_val, unused_payload);
+            end else begin
+              send_ciphertext_emission_packet(qsfp_rx_vif[0], dst_mac_addr, src_mac_addr, dst_hpu_id, iop_id, iop_src_addr, iop_dst_addr, pkt[7:0], unused_payload);
+            end
+            repeat(10) @(posedge clk_mhdma);
+          end
+        end
+        begin
+          // Wait for retry read request on QSFP TX (DUT completes abort then re-sends)
+          wait(rx_header_vld & (rx_header.req_id == REQ_ID_READ));
+          $display("%t > [INFO]: Retry read request detected on QSFP TX", $time);
+        end
+      join
+
+      // Wait for retry read request to be fully consumed on QSFP TX
+      wait(!rx_header_vld);
+
+      if (interrupt_read_request) begin
+        $display("%t > [ERROR]: interrupt_read_request should not have been raised during abort", $time);
+        error_interrupt = 1'b1;
+      end
+
+      // Allow CDC propagation of stat counters (mhdma -> cfg clock domain)
+      repeat(10) @(posedge clk_control);
+
+      // Verify retry stat was incremented (mismatch-triggered, not timeout)
+      maxil_drv_if.read_trans(MHDMA_REQUEST_STAT_READ_REQ_TIMEOUT_RETRY_OFS, stat_read_req_timeout_retry);
+      assert (stat_read_req_timeout_retry != 0) begin
+        $display("%t > [INFO]: Did %0d retries after wrong seq num", $time, stat_read_req_timeout_retry);
+      end else begin
+        $display("%t > [ERROR]: HPU didn't retry after seq_num mismatch", $time);
+        error_retry = 1'b1;
+      end
+
+      // Only seq_num_error is expected; dumps the Errors block only if any other bit is set.
+      // Single read of the read-to-clear errors register.
+      maxil_drv_if.read_trans(MHDMA_SYSTEM_ERRORS_OFS, stat_errors);
+      check_only_seq_num_error(stat_errors);
+
+      // Respond to retry with correct ciphertext (all packets from seq_num 0)
+      for (int pkt = 0; pkt < NB_PACKETS_FULL+1; pkt++) begin
+        send_ciphertext_emission_packet(qsfp_rx_vif[0], dst_mac_addr, src_mac_addr, dst_hpu_id, iop_id, iop_src_addr, iop_dst_addr, pkt[7:0], unused_payload);
+        repeat(10) @(posedge clk_mhdma);
+      end
+
+      repeat(200) @(posedge clk_control);
+
+      if (interrupt_read_request) begin
+        maxil_drv_if.read_trans(MHDMA_REQUEST_READ_REQUEST_REQ_ID_OFS, read_data);
+      end else begin
+        $display("%t > [ERROR]: interrupt_read_request has not been raised after retry", $time);
+        error_interrupt = 1'b1;
+      end
+
+      repeat(100) @(posedge clk_control);
+      check_fsm_initialized();
+
+      if (~interrupt_read_request)
+        $display("%t > [INFO]: interrupt_read_request correctly lowered", $time);
+
+      // Restore timeout for next scenario
+      maxil_drv_if.write_trans(MHDMA_SYSTEM_TIMEOUT_READ_REQ_OFS, TIMEOUT_DUR_READ_REQ);
+
+      scenario_end(scenario_id, clk_control, error);
+    end
+  endtask
+
+  // --------------------------------------------------------------------------------------------- --
+  // Real packet drop: a middle packet never arrives, causing a forward-skip seq_num mismatch.
+  // Forward-skip mismatch requires at least 3 packets (drop one in the middle).
+  // NB_PACKETS_FULL < 2 means only 2 packets exist (seq_num 0..1), not enough -> SKIPPED.
+  // --------------------------------------------------------------------------------------------- --
+  task automatic run_scenario_recovery_dropped_packet();
+    begin
+      if (NB_PACKETS_FULL < 2) begin
+        scenario_start(scenario_id, $sformatf("Recovery: dropped packet -> abort and retry [SKIPPED NB_PACKETS_FULL=%0d < 2]", NB_PACKETS_FULL));
+      end else begin
+        scenario_start(scenario_id, "Recovery: dropped packet -> abort and retry");
+        // Clear stale stat counter
+        maxil_drv_if.read_trans(MHDMA_REQUEST_STAT_READ_REQ_TIMEOUT_RETRY_OFS, stat_read_req_timeout_retry);
+        // Set timeout to max: we expect mismatch-triggered retry, not timeout
+        maxil_drv_if.write_trans(MHDMA_SYSTEM_TIMEOUT_READ_REQ_OFS, 32'hFFFFFFFF);
+
+        iop_id       = scenario_id;
+        iop_src_addr = $urandom_range(0, (1 << MEM_SIM_SIZE) / CT_MEM_BYTES - 1);
+        iop_dst_addr = $urandom_range(0, (1 << MEM_SIM_SIZE) / CT_MEM_BYTES - 1);
+
+        // Drop a random middle packet: >= 1 (pkt 0 sets up the address) and <= NB_PACKETS_FULL-1
+        // (a later packet must still arrive to trigger the forward-skip mismatch).
+        drop_idx = $urandom_range(1, NB_PACKETS_FULL-1);
+
+        fork
+          read_request(dst_hpu_id, iop_id, iop_src_addr, iop_dst_addr);
+          wait(rx_header_vld & (rx_header.req_id == REQ_ID_READ));
+        join
+
+        // Wait for initial request to be consumed by decoder (avoid race on retry wait)
+        wait(!rx_header_vld);
+
+        // Send CE packets while monitoring for the retry read request in parallel.
+        // The abort + retry can complete while stale packets are still being sent,
+        // so the retry monitor must run concurrently to avoid missing it.
+        fork
+          begin
+            // Send CE packets: drop one packet entirely (forward skip: DUT expects drop_idx, gets drop_idx+1)
+            for (int pkt = 0; pkt < NB_PACKETS_FULL+1; pkt++) begin
+              if (pkt == drop_idx) begin
+                $display("%t > [INFO]: Dropping packet %0d (simulating network loss)", $time, drop_idx);
+              end else begin
+                send_ciphertext_emission_packet(qsfp_rx_vif[0], dst_mac_addr, src_mac_addr, dst_hpu_id, iop_id, iop_src_addr, iop_dst_addr, pkt[7:0], unused_payload);
+              end
+              repeat(10) @(posedge clk_mhdma);
+            end
+          end
+          begin
+            // Wait for retry read request on QSFP TX
+            wait(rx_header_vld & (rx_header.req_id == REQ_ID_READ));
+            $display("%t > [INFO]: Retry read request detected on QSFP TX (mismatch on dropped pkt)", $time);
+          end
+        join
+
+        // Wait for retry read request to be fully consumed on QSFP TX
+        wait(!rx_header_vld);
+
+        if (interrupt_read_request) begin
+          $display("%t > [ERROR]: interrupt_read_request should not have been raised during abort", $time);
+          error_interrupt = 1'b1;
+        end
+
+        // Allow CDC propagation of stat counters (mhdma -> cfg clock domain)
+        repeat(10) @(posedge clk_control);
+
+        // Verify retry stat was incremented
+        maxil_drv_if.read_trans(MHDMA_REQUEST_STAT_READ_REQ_TIMEOUT_RETRY_OFS, stat_read_req_timeout_retry);
+        assert (stat_read_req_timeout_retry != 0) begin
+          $display("%t > [INFO]: Did %0d retries after packet loss", $time, stat_read_req_timeout_retry);
+        end else begin
+          $display("%t > [ERROR]: HPU didn't retry after packet loss", $time);
+          error_retry = 1'b1;
+        end
+
+        // Only seq_num_error is expected; dumps the Errors block only if any other bit is set.
+        // Single read of the read-to-clear errors register.
+        maxil_drv_if.read_trans(MHDMA_SYSTEM_ERRORS_OFS, stat_errors);
+        check_only_seq_num_error(stat_errors);
+
+        // Respond to retry with complete correct ciphertext
+        for (int pkt = 0; pkt < NB_PACKETS_FULL+1; pkt++) begin
+          send_ciphertext_emission_packet(qsfp_rx_vif[0], dst_mac_addr, src_mac_addr, dst_hpu_id, iop_id, iop_src_addr, iop_dst_addr, pkt[7:0], unused_payload);
+          repeat(10) @(posedge clk_mhdma);
+        end
+
+        repeat(200) @(posedge clk_control);
+
+        if (interrupt_read_request) begin
+          maxil_drv_if.read_trans(MHDMA_REQUEST_READ_REQUEST_REQ_ID_OFS, read_data);
+        end else begin
+          $display("%t > [ERROR]: interrupt_read_request has not been raised after retry", $time);
+          error_interrupt = 1'b1;
+        end
+
+        repeat(100) @(posedge clk_control);
+        check_fsm_initialized();
+
+        if (~interrupt_read_request)
+          $display("%t > [INFO]: interrupt_read_request correctly lowered", $time);
+
+        // Restore timeout for subsequent scenarios
+        maxil_drv_if.write_trans(MHDMA_SYSTEM_TIMEOUT_READ_REQ_OFS, TIMEOUT_DUR_READ_REQ);
+      end // if NB_PACKETS_FULL >= 2
+
+      scenario_end(scenario_id, clk_control, error);
+    end
+  endtask
+
+  // Force a mismatch-driven (not timeout-driven) retry on a fresh master read, leaving the DUT
+  // master FSM parked in wait_for_seq0. On return the retry read request has drained off the TX.
+  task automatic arm_wait_for_seq0();
+    logic [REG_DATA_W-1:0] retry_base, retry_now;
+    begin
+      // Baseline the retry counter so we can positively confirm the corrupted burst actually drove
+      // a mismatch retry (otherwise the scenario could silently pass without exercising recovery).
+      maxil_drv_if.read_trans(MHDMA_REQUEST_STAT_READ_REQ_TIMEOUT_RETRY_OFS, retry_base);
+      maxil_drv_if.write_trans(MHDMA_SYSTEM_TIMEOUT_READ_REQ_OFS, 32'hFFFFFFFF); // disable timeout retry
+
+      iop_id       = scenario_id;
+      iop_src_addr = $urandom_range(0, (1 << MEM_SIM_SIZE) / CT_MEM_BYTES - 1);
+      iop_dst_addr = $urandom_range(0, (1 << MEM_SIM_SIZE) / CT_MEM_BYTES - 1);
+
+      // DUT (master) issues a read request; wait until it appears on the QSFP TX.
+      fork
+        read_request(dst_hpu_id, iop_id, iop_src_addr, iop_dst_addr);
+        wait(rx_header_vld & (rx_header.req_id == REQ_ID_READ));
+      join
+      wait(!rx_header_vld);
+
+      // Answer with a corrupted burst (forward-skip mismatch) and wait for the DUT to abort and
+      // re-send its read request (the retry) - that re-send marks entry into wait_for_seq0.
+      fork
+        send_ce_emission(.corrupt_seq1(1'b1));
+        begin
+          wait(rx_header_vld & (rx_header.req_id == REQ_ID_READ));
+          $display("%t > [INFO]: Retry read request detected on QSFP TX (DUT now in wait_for_seq0)", $time);
+        end
+      join
+      wait(!rx_header_vld);
+
+      // Confirm the mismatch actually triggered a retry (CDC settle first for the cfg-domain stat).
+      repeat(10) @(posedge clk_control);
+      maxil_drv_if.read_trans(MHDMA_REQUEST_STAT_READ_REQ_TIMEOUT_RETRY_OFS, retry_now);
+      assert (retry_now != retry_base) begin
+        $display("%t > [INFO]: mismatch-driven retry confirmed (arm_wait_for_seq0)", $time);
+      end else begin
+        $display("%t > [ERROR]: arm_wait_for_seq0: no mismatch-driven retry observed", $time);
+        error_retry = 1'b1;
+      end
+    end
+  endtask
+
+  // Send a full seq0..N ciphertext emission for the current iop. If corrupt_seq1, packet index 1
+  // carries seq_num=3 (instead of 1) to trigger a forward-skip mismatch.
+  task automatic send_ce_emission(input bit corrupt_seq1);
+    begin
+      send_full_ciphertext_burst(qsfp_rx_vif[0], dst_mac_addr, src_mac_addr, dst_hpu_id,
+                                 iop_id, iop_src_addr, iop_dst_addr, unused_payload,
+                                 .corrupt_idx(corrupt_seq1 ? 1 : -1));
+    end
+  endtask
+
+  // Block until the master read completes. A true head-of-line wedge never completes and is caught
+  // by the global watchdog (-> error_timeout_watchdog). No fixed wait: slave CE responses scale
+  // with ciphertext size (GLWE_K / -g), so a fixed timeout would false-"wedge" larger configs.
+  task automatic wait_master_read_done();
+    begin
+      $display("%t > [INFO]: waiting for master read to complete (global watchdog arbitrates a true wedge)", $time);
+      wait(interrupt_read_request);
+      $display("%t > [INFO]: master read completed during concurrent slave activity", $time);
+      maxil_drv_if.read_trans(MHDMA_REQUEST_READ_REQUEST_REQ_ID_OFS, read_data);
+    end
+  endtask
+
+  // Confirm both injected slave-role commands were received (not silently dropped behind recovery).
+  // errors_val is the (already-read) error register, passed through to the on-error dump so we do
+  // not re-read (and thus clear) the read-to-clear errors register.
+  task automatic check_two_slave_cmds_received(input string kind, input logic [REG_DATA_W-1:0] delta,
+                                               input logic [REG_DATA_W-1:0] errors_val);
+    begin
+      assert (delta == 2) begin
+        $display("%t > [INFO]: both slave-role %s received during recovery", $time, kind);
+      end else begin
+        $display("%t > [ERROR]: slave-role %s not all received (delta=%0d, expected 2) - dropped while master recovering", $time, kind, delta);
+        dump_mhdma_state($sformatf("slave-role %s dropped during recovery", kind), errors_val);
+        error_register_read = 1'b1;
+      end
+    end
+  endtask
+
+  // READ variant: slave-role READs sit at the stream head ahead of the recovery emission.
+  task automatic run_scenario_recovery_slave_read();
+    begin
+      if (NB_PACKETS_FULL < 2) begin
+        scenario_start(scenario_id, $sformatf("Recovery: concurrent slave READ (head-of-line) [SKIPPED NB_PACKETS_FULL=%0d < 2]", NB_PACKETS_FULL));
+      end else begin
+        scenario_start(scenario_id, "Recovery: concurrent slave READ (head-of-line)");
+
+        arm_wait_for_seq0();
+
+        // Inject slave-role READs at the head of the shared stream, ahead of the recovery emission.
+        $display("%t > [INFO]: Injecting slave-role read requests during recovery window", $time);
+        maxil_drv_if.read_trans(MHDMA_REQUEST_STAT_NB_READ_REQ_RECEIVED_OFS, rr_recv_base);
+        for (int sl = 0; sl < 2; sl++) begin
+          send_read_request_packet(qsfp_rx_vif[0], dst_mac_addr, src_mac_addr, dst_hpu_id, 8'hC0 + sl[7:0],
+                                   $urandom_range(0, (1 << MEM_SIM_SIZE) / CT_MEM_BYTES - 1),
+                                   $urandom_range(0, (1 << MEM_SIM_SIZE) / CT_MEM_BYTES - 1));
+          repeat(5) @(posedge clk_mhdma);
+        end
+
+        // Recovery emission sits BEHIND the slave reads - the master read must still complete.
+        send_ce_emission(.corrupt_seq1(1'b0));
+        wait_master_read_done();
+
+        maxil_drv_if.read_trans(MHDMA_REQUEST_STAT_NB_READ_REQ_RECEIVED_OFS, stat_cnt_read_req_received);
+        // Single read of the read-to-clear errors register, shared by both checks below.
+        maxil_drv_if.read_trans(MHDMA_SYSTEM_ERRORS_OFS, stat_errors);
+        check_two_slave_cmds_received("read requests", stat_cnt_read_req_received - rr_recv_base, stat_errors);
+        check_only_seq_num_error(stat_errors);
+
+        // Slave CE/notify-ack responses to the injected commands may still be draining; wait for
+        // the FSMs to settle (watchdog backstops a true wedge) instead of a fixed, too-short delay.
+        wait_fsm_idle();
+        check_fsm_initialized();
+        maxil_drv_if.write_trans(MHDMA_SYSTEM_TIMEOUT_READ_REQ_OFS, TIMEOUT_DUR_READ_REQ);
+      end
+      scenario_end(scenario_id, clk_control, error);
+    end
+  endtask
+
+  // NOTIFY variant: slave-role NOTIFYs sit at the stream head ahead of the recovery emission.
+  task automatic run_scenario_recovery_slave_notify();
+    begin
+      if (NB_PACKETS_FULL < 2) begin
+        scenario_start(scenario_id, $sformatf("Recovery: concurrent slave NOTIFY (head-of-line) [SKIPPED NB_PACKETS_FULL=%0d < 2]", NB_PACKETS_FULL));
+      end else begin
+        scenario_start(scenario_id, "Recovery: concurrent slave NOTIFY (head-of-line)");
+
+        arm_wait_for_seq0();
+
+        // Inject slave-role NOTIFYs at the head of the shared stream, ahead of the recovery emission.
+        $display("%t > [INFO]: Injecting slave-role notify requests during recovery window", $time);
+        maxil_drv_if.read_trans(MHDMA_REQUEST_STAT_NB_NOTIFY_RECEIVED_OFS, nr_recv_base);
+        for (int sl = 0; sl < 2; sl++) begin
+          send_notify_packet(qsfp_rx_vif[0], dst_mac_addr, src_mac_addr, dst_hpu_id, 8'hD0 + sl[7:0],
+                             $urandom_range(0, (1<<SRC_ADDR_W)-1));
+          repeat(5) @(posedge clk_mhdma);
+        end
+
+        // Recovery emission sits BEHIND the slave notifies - the master read must still complete.
+        send_ce_emission(.corrupt_seq1(1'b0));
+        wait_master_read_done();
+
+        // Service the two notify interrupts so the nrx regf path drains and its FSM returns to idle.
+        for (int n = 0; n < 2; n++) begin
+          wait(interrupt_notify);
+          maxil_drv_if.read_trans(MHDMA_REQUEST_NOTIFY_REQ_ID_OFS, read_data);
+          repeat(5) @(posedge clk_control);
+        end
+
+        maxil_drv_if.read_trans(MHDMA_REQUEST_STAT_NB_NOTIFY_RECEIVED_OFS, stat_cnt_notify_received);
+        // Single read of the read-to-clear errors register, shared by both checks below.
+        maxil_drv_if.read_trans(MHDMA_SYSTEM_ERRORS_OFS, stat_errors);
+        check_two_slave_cmds_received("notifies", stat_cnt_notify_received - nr_recv_base, stat_errors);
+        check_only_seq_num_error(stat_errors);
+
+        // Slave CE/notify-ack responses to the injected commands may still be draining; wait for
+        // the FSMs to settle (watchdog backstops a true wedge) instead of a fixed, too-short delay.
+        wait_fsm_idle();
+        check_fsm_initialized();
+        maxil_drv_if.write_trans(MHDMA_SYSTEM_TIMEOUT_READ_REQ_OFS, TIMEOUT_DUR_READ_REQ);
+      end
+      scenario_end(scenario_id, clk_control, error);
+    end
+  endtask
+
+  task automatic print_final_summary();
+    begin
+      $display("\n========================================= HPU_A Final Summary  ======================================");
+      maxil_drv_if.read_trans(MHDMA_REQUEST_STAT_NOTIFY_OFS, stat_notify);
+      maxil_drv_if.read_trans(MHDMA_REQUEST_STAT_NOTIFY_ACK_OFS, stat_notify_ack);
+      maxil_drv_if.read_trans(MHDMA_REQUEST_STAT_NOTIFY_TIMEOUT_RETRY_OFS, stat_notify_retry);
+      maxil_drv_if.read_trans(MHDMA_REQUEST_STAT_READ_REQ_TIMEOUT_RETRY_OFS, stat_read_req_retry);
+      maxil_drv_if.read_trans(MHDMA_REQUEST_STAT_NOTIFY_TIMEOUT_OFS, stat_notify_timeout);
+      maxil_drv_if.read_trans(MHDMA_REQUEST_STAT_T_NOTIFY_TO_ACK_OFS, stat_t_notify_to_ack);
+      maxil_drv_if.read_trans(MHDMA_REQUEST_STAT_T_RR_TO_CE_RECEIVED_OFS, stat_t_rr_to_ce_received);
+      maxil_drv_if.read_trans(MHDMA_REQUEST_STAT_T_CE_FIRST_TO_LAST_PKT_OFS, stat_t_ce_first_to_last_pkt);
+      maxil_drv_if.read_trans(MHDMA_REQUEST_STAT_NB_NACK_RECEIVED_OFS, stat_cnt_nack_received);
+      $display(" stat_notify                 : %0d", stat_notify);
+      $display(" stat_notify_ack             : %0d", stat_notify_ack);
+      $display(" stat_nack_received          : %0d", stat_cnt_nack_received);
+      $display(" stat_notify_retry           : %0d", stat_notify_retry);
+      $display(" stat_read_req_retry         : %0d", stat_read_req_retry);
+      $display(" stat_notify_timeout         : %0d", stat_notify_timeout);
+      $display(" stat_t_notify_to_ack        : %0d", stat_t_notify_to_ack);
+      $display(" stat_t_rr_to_ce_received    : %0d", stat_t_rr_to_ce_received);
+      $display(" stat_t_ce_first_to_last_pkt : %0d", stat_t_ce_first_to_last_pkt);
+      $display("==================================================================================================\n");
+    end
+  endtask
 
   task automatic init_config;
     begin
@@ -1097,32 +1373,95 @@ logic [DST_ADDR_W-1:0] dst_addr;
     end
   endtask
 
-  task automatic check_fsm_initialized();
+  // Wait for the DUT FSMs to drain before check_fsm_initialized(). The DUT's slave-role CE /
+  // notify-ack responses scale with ciphertext size, so a fixed settle is unsafe; poll the FSMs.
+  // Require all FSMs to stay idle for FSM_IDLE_STABLE consecutive cycles before returning, so we do
+  // not stop in the brief CEM_WAIT gap *between* two back-to-back slave responses (which would make
+  // check_fsm_initialized pass while a second response is still pending). A true wedge never reaches
+  // the stable window and is caught by the global watchdog.
+  localparam int FSM_IDLE_STABLE = 16;
+  task automatic wait_fsm_idle();
+    int idle_cnt;
     begin
+      idle_cnt = 0;
+      while (idle_cnt < FSM_IDLE_STABLE) begin
+        if (hpu_a.mhdma_bridge.mhdma_master.rreq_state  != 0
+         || hpu_a.mhdma_bridge.mhdma_master.ntx_retry   != 0
+         || hpu_a.mhdma_bridge.mhdma_slave.cem_state    != 0
+         || hpu_a.mhdma_bridge.mhdma_slave.nrx_state    != 0
+         || hpu_a.mhdma_bridge.mhdma_formatter.tx_state != 0)
+          idle_cnt = 0;
+        else
+          idle_cnt = idle_cnt + 1;
+        @(posedge clk_mhdma);
+      end
+    end
+  endtask
+
+  task automatic check_fsm_initialized();
+    bit fsm_err;
+    begin
+      fsm_err = 1'b0;
       if (hpu_a.mhdma_bridge.mhdma_master.ntx_retry != 0) begin
         $display("%t > [ERROR] : FSM mhdma_master.ntx_retry has not been back to IDLE", $time);
-        error_fsm = 1 ;
+        fsm_err = 1'b1;
       end
       if (hpu_a.mhdma_bridge.mhdma_master.rreq_state != 0) begin
         $display("%t > [ERROR] : FSM mhdma_master.rreq_state has not been back to IDLE", $time);
-        error_fsm = 1 ;
+        fsm_err = 1'b1;
       end
       if (hpu_a.mhdma_bridge.mhdma_slave.nrx_state != 0) begin
         $display("%t > [ERROR] : FSM mhdma_slave.nrx_state has not been back to IDLE", $time);
-        error_fsm = 1 ;
+        fsm_err = 1'b1;
       end
       if (hpu_a.mhdma_bridge.mhdma_slave.cem_state != 0) begin
         $display("%t > [ERROR] : FSM mhdma_slave.cem_state has not been back to IDLE", $time);
-        error_fsm = 1 ;
+        fsm_err = 1'b1;
       end
       if (hpu_a.mhdma_bridge.mhdma_formatter.tx_state != 0) begin
         $display("%t > [ERROR] : FSM mhdma_slave.tx_state has not been back to IDLE", $time);
-        error_fsm = 1 ;
+        fsm_err = 1'b1;
       end
 
-      repeat(50) @(posedge clk_mhdma);
-      $display("%t > [INFO]: all FSMs are back to IDLE", $time);
+      if (fsm_err) begin
+        // Single read of the read-to-clear errors register, handed to the dump.
+        maxil_drv_if.read_trans(MHDMA_SYSTEM_ERRORS_OFS, stat_errors);
+        dump_mhdma_state("FSM not back to IDLE", stat_errors);
+        error_fsm = 1'b1;
+      end else begin
+        repeat(50) @(posedge clk_mhdma);
+        $display("%t > [INFO]: all FSMs are back to IDLE", $time);
+      end
+    end
+  endtask
 
+
+  task automatic check_only_seq_num_error(input logic [REG_DATA_W-1:0] errors_val);
+    begin
+      assert ((errors_val & ~(REG_DATA_W'('h8))) == '0) begin
+        $display("%t > [INFO]: only seq_num_error set, as expected (0x%08h)", $time, errors_val);
+      end else begin
+        $display("%t > [ERROR]: unexpected error bits during concurrent slave activity: 0x%08h", $time, errors_val);
+        dump_mhdma_state("unexpected error bits", errors_val);
+        error_register_read = 1'b1;
+      end
+    end
+  endtask
+
+  task automatic dump_mhdma_state(input string ctx, input logic [REG_DATA_W-1:0] errors_val);
+    logic [REG_DATA_W-1:0] dbg_fsm_value;
+    begin
+      $display("\n%t > [DEBUG] ===== MHDMA state dump (%s) =====", $time, ctx);
+      display_errors(errors_val);
+      maxil_drv_if.read_trans(MHDMA_SYSTEM_FSM_VALUE_OFS, dbg_fsm_value);
+      $display(" fsm_value register            : 0x%08h", dbg_fsm_value);
+      $display("   master.notify   (ntx_state) : 0x%0h", hpu_a.mhdma_bridge.mhdma_master.ntx_state);
+      $display("   master.read_req (rreq_state): 0x%0h  (0 = RR_WAIT_REQUEST / idle)", hpu_a.mhdma_bridge.mhdma_master.rreq_state);
+      $display("   master.ntx_retry            : %0b", hpu_a.mhdma_bridge.mhdma_master.ntx_retry);
+      $display("   slave.notify_rx (nrx_state) : 0x%0h", hpu_a.mhdma_bridge.mhdma_slave.nrx_state);
+      $display("   slave.cem       (cem_state) : 0x%0h", hpu_a.mhdma_bridge.mhdma_slave.cem_state);
+      $display("   formatter.tx    (tx_state)  : 0x%0h", hpu_a.mhdma_bridge.mhdma_formatter.tx_state);
+      $display(" %t > [DEBUG] ===== end MHDMA state dump =====\n", $time);
     end
   endtask
 

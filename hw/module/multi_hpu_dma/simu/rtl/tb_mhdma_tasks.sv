@@ -133,11 +133,15 @@ endtask
 // ---------------------------------------------------------------------------
 // Print scenario result and increment ID
 // ---------------------------------------------------------------------------
+// err defaults to 0 so existing callers keep their behaviour; pass the TB error flag to report
+// PASSED/FAILED truthfully (the always_ff on `error` may $finish before this even prints).
 task automatic scenario_end(
   ref int scenario_id,
-  ref bit clk
+  ref bit clk,
+  input bit err = 1'b0
 );
-  $display("%t > SCENARIO %0d: PASSED", $time, scenario_id);
+  if (err) $display("%t > SCENARIO %0d: FAILED", $time, scenario_id);
+  else     $display("%t > SCENARIO %0d: PASSED", $time, scenario_id);
   scenario_id++;
   repeat (20) @(posedge clk);
 endtask
@@ -370,5 +374,36 @@ task automatic send_ciphertext_emission_packet(
     vif.tvalid     = 1'b0;
     vif.tlast      = 1'b0;
     vif.tkeep_user = 'h0;
+  end
+endtask
+
+// Send a full seq0..NB_PACKETS_FULL ciphertext burst for one read.
+// corrupt_idx >= 0 overrides that packet index's seq_num with corrupt_seq (to inject a
+// seq mismatch); corrupt_idx < 0 sends a clean burst. All payload words are accumulated
+// into payload_data_out (enables a data scoreboard). gap_cycles = idle beats between packets.
+task automatic send_full_ciphertext_burst(
+  virtual qsfp_if.master          vif,
+  input  logic [MAC_ADDR_W-1:0]   dst_mac_addr,
+  input  logic [MAC_ADDR_W-1:0]   src_mac_addr,
+  input  logic [HPU_ID_W-1:0]     dst_hpu_id,
+  input  logic [IOP_ID_W-1:0]     iop_id,
+  input  logic [SRC_ADDR_W-1:0]   src_addr,
+  input  logic [DST_ADDR_W-1:0]   dst_addr,
+  output logic [MRMAC_AXIS_W-1:0] payload_data_out [$],
+  input  int                      corrupt_idx = -1,
+  input  logic [SEQ_NUM_W-1:0]    corrupt_seq = 8'd3,
+  input  int                      gap_cycles  = 10
+);
+  logic [MRMAC_AXIS_W-1:0] pkt_payload [$];
+  logic [SEQ_NUM_W-1:0]    seq;
+  begin
+    payload_data_out = {};
+    for (int pkt = 0; pkt < NB_PACKETS_FULL+1; pkt++) begin
+      seq = (corrupt_idx >= 0 && pkt == corrupt_idx) ? corrupt_seq : SEQ_NUM_W'(pkt);
+      send_ciphertext_emission_packet(vif, dst_mac_addr, src_mac_addr, dst_hpu_id,
+                                      iop_id, src_addr, dst_addr, seq, pkt_payload);
+      foreach (pkt_payload[i]) payload_data_out.push_back(pkt_payload[i]);
+      repeat(gap_cycles) @(posedge vif.clk);
+    end
   end
 endtask

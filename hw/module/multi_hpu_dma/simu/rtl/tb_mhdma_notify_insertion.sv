@@ -492,38 +492,56 @@ logic [DST_ADDR_W-1:0] dst_addr;
   end
 
   // Decoder --------------------------------------------------------------------------------------
+  // Decoder now exposes two role-split command streams; merge them back into a single rx_header
+  // view and drain both queues (slave-role shown first; READ/NOTIFY live there).
+  command_t rx_header_master;
+  logic     rx_header_master_vld;
+  logic     rx_header_master_rdy;
+
+  command_t rx_header_slave;
+  logic     rx_header_slave_vld;
+  logic     rx_header_slave_rdy;
+
   command_t rx_header;
-  logic rx_header_vld;
-  logic rx_header_rdy;
+  logic     rx_header_vld;
+  logic     rx_header_rdy;
   logic notify_ack_received;
+
+  assign rx_header            = rx_header_slave_vld ? rx_header_slave : rx_header_master;
+  assign rx_header_vld        = rx_header_slave_vld | rx_header_master_vld;
+  assign rx_header_slave_rdy  = rx_header_rdy &  rx_header_slave_vld;
+  assign rx_header_master_rdy = rx_header_rdy & ~rx_header_slave_vld;
 
   // this is supposed to be HPU_B decoder
   mhdma_decoder mhdma_decoder (
-    .clk_mhdma           (clk_mhdma               ),
-    .resetn_mhdma        (s_rstn_mhdma            ),
+    .clk_mhdma                  (clk_mhdma               ),
+    .resetn_mhdma               (s_rstn_mhdma            ),
 
-    .notify_ack_received (notify_ack_received     ),
-    .current_hpu_mac     (src_mac_addr            ),
+    .notify_ack_received        (notify_ack_received     ),
+    .current_hpu_mac            (src_mac_addr            ),
 
-    .decoded_command     (rx_header               ),
-    .decoded_command_vld (rx_header_vld           ),
-    .decoded_command_rdy (rx_header_rdy           ),
+    .decoded_command_master     (rx_header_master        ),
+    .decoded_command_master_vld (rx_header_master_vld    ),
+    .decoded_command_master_rdy (rx_header_master_rdy    ),
+    .decoded_command_slave      (rx_header_slave         ),
+    .decoded_command_slave_vld  (rx_header_slave_vld     ),
+    .decoded_command_slave_rdy  (rx_header_slave_rdy     ),
 
-    .rx_tdata_out        (/*    unused          */),
-    .rx_tvalid_out       (/*    unused          */),
+    .rx_tdata_out               (/*    unused          */),
+    .rx_tvalid_out              (/*    unused          */),
 
     // stats are completely ignored here
-    .stat                (/*    unused          */),
-    .stat_rst            (/*    unused          */),
+    .stat                       (/*    unused          */),
+    .stat_rst                   (/*    unused          */),
 
-    .decoder_error       (/*    unused          */),
-    .rst_errors          (/*    unused          */),
+    .decoder_error              (/*    unused          */),
+    .rst_errors                 (/*    unused          */),
 
     // only one lane is used in this tb
-    .qsfp_rx_tdata       (qsfp_tx_tdata[lane]     ),
-    .qsfp_rx_tkeep_user  (qsfp_tx_tkeep_user[lane]),
-    .qsfp_rx_tlast       (qsfp_tx_tlast[lane]     ),
-    .qsfp_rx_tvalid      (qsfp_tx_tvalid[lane]    )
+    .qsfp_rx_tdata              (qsfp_tx_tdata[lane]     ),
+    .qsfp_rx_tkeep_user         (qsfp_tx_tkeep_user[lane]),
+    .qsfp_rx_tlast              (qsfp_tx_tlast[lane]     ),
+    .qsfp_rx_tvalid             (qsfp_tx_tvalid[lane]    )
   );
 
   always_ff @(posedge clk_mhdma)
