@@ -558,9 +558,11 @@ void vMhdmaWorkerTask(void *pvParameters) {
           uint8_t iid = (rxCmd.payload >> 24) & 0xFF;
           uint8_t mode = (rxCmd.payload >> 8) & 0xFF;
           uint8_t flag = rxCmd.payload & 0xFF;
+          uint8_t nb_hpu = flag & 0xF;
+
 
           vOSAL_EnterCritical();
-          iop_state_node_ack(iid, flag);
+          iop_state_node_ack(iid, nb_hpu);
           if (debug_intr_global_cnt%2 == 1) {
             print_ddr_debug(0xBEE30000 | ((uint32_t)iid << 8) | iop_state[iid].nb_hpu << 4 | iop_state[iid].state);
           }

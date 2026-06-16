@@ -69,11 +69,14 @@ volatile iop_state_t iop_state[IOP_ID_MAX_COUNT];
 void iop_state_init(void) {
   for (int i = 0; i < IOP_ID_MAX_COUNT; i++) {
     iop_state[i].state  = IOP_STATE_UNKNOWN;
-    iop_state[i].nb_hpu = 0xFF;
+    iop_state[i].nb_hpu = 0xF;
   }
 }
 
 void iop_state_node_ack(uint8_t iid, uint8_t nb_hpu) {
+  if (nb_hpu > 7) {
+    PLL_ERR("ucore", "iop_state_node_ack called on iid %d with nb_hpu %d > 7", iid, nb_hpu);
+  }
   if ((iop_state[iid].state == IOP_STATE_UNKNOWN)
    || (iop_state[iid].state == IOP_STATE_RUNNING)
    || (iop_state[iid].state == IOP_STATE_DONE)) {
@@ -133,6 +136,7 @@ uint16_t b2b_pool_pop(uint8_t iid) {
 
 uint16_t b2b_pool_free(uint8_t iid) {
   vOSAL_EnterCritical();
+  print_ddr_debug(0xB2B00000 | (b2b_pool[b2b_pool_tail] << 8) | iid);
   if (b2b_pool_free_cnt == B2B_POOL_SIZE) {
     // we should not be doing a free
     // maybe this iop did not use any slot
@@ -140,10 +144,17 @@ uint16_t b2b_pool_free(uint8_t iid) {
   }
   if (b2b_pool[b2b_pool_tail] != iid) {
     // at tail, we should find iid we are trying to free
+    // unless IOp iid=N has finished before a smaller iid M=b2b_pool[b2b_pool_tail] (with N>M)
+    // in this case we will not free the slot allocated to iid N but wait for iid M to do so
     return 0;
   }
   uint16_t free_cnt = 0;
-  while (b2b_pool[b2b_pool_tail] == iid && b2b_pool_free_cnt < B2B_POOL_SIZE) {
+  // here we free slot starting from the tail and free all the slot allocated to iid
+  // but if after these slots some slot are allocated to a done IOp then we also free
+  // these slots
+  while ((b2b_pool[b2b_pool_tail] == iid ||
+          iop_state[b2b_pool[b2b_pool_tail]].state == IOP_STATE_DONE)
+          && b2b_pool_free_cnt < B2B_POOL_SIZE) {
     b2b_pool[b2b_pool_tail] = 0x0;
     b2b_pool_tail = (b2b_pool_tail + 1) % B2B_POOL_SIZE;
     b2b_pool_free_cnt++;
@@ -467,6 +478,9 @@ void iop_teardown(uint8_t iid) {
     if ((i != phys_hpu_id) // Not local
         && ( ((node_mask >> i) & 0x1) == 0x1)) // active in cluster
     {
+      if (iop_state[iid].nb_hpu > 7) {
+        PLL_ERR("ucore", "iop_teardown EOIOp notify loop on iid %d with nb_hpu %d > 7 (phys-hpu-id %d node_mask %x)", iid, iop_state[iid].nb_hpu, i, node_mask);
+      }
       vOSAL_EnterCritical();
       generate_iop_notify(iid, iop_state[iid].nb_hpu, i);
       vOSAL_ExitCritical();

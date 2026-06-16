@@ -94,9 +94,9 @@
 #define OPERAND_STATE_DMA_PENDING  7 // read request sent, waiting for data
 #define OPERAND_STATE_RESOLVED     8 // source/dst is ready locally
 
-#define IOP_STATE_UNKNOWN  0xFF // iop unknown
-#define IOP_STATE_RUNNING  0xFE // iop running
-#define IOP_STATE_DONE     0    // iop finished
+#define IOP_STATE_UNKNOWN  0xF // iop unknown
+#define IOP_STATE_RUNNING  0xE // iop running
+#define IOP_STATE_DONE     0   // iop finished
 
 #define DEBUG_PTR  0x7F00000
 #define DEBUG_ADDR 0x7F00004
