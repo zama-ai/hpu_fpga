@@ -263,6 +263,7 @@ module mhdma_master
   logic seq_num_mismatch;
   logic wait_for_seq0;
   logic timeout_retry_pending;
+  logic retry_restart;
 
   assign valid_ciphertext_received = ciphertext_received & ~mismatch_retry_pending & ~timeout_retry_pending;
 
@@ -282,7 +283,7 @@ module mhdma_master
   always_ff @(posedge clk_mhdma) begin
     if (~resetn_mhdma) begin
       mismatch_retry_pending <= 1'b0;
-    end else if (ciphertext_received) begin
+    end else if (ciphertext_received | retry_restart) begin
       mismatch_retry_pending <= 1'b0;
     end else if (seq_num_mismatch) begin
       mismatch_retry_pending <= 1'b1;
@@ -329,7 +330,7 @@ module mhdma_master
     if (~resetn_mhdma) begin
       expected_seq_num <= 'h0;
     end else begin
-      if (start_read_request)
+      if (start_read_request | retry_restart)
         expected_seq_num <= 'h0;
       else if (seq_num_valid) begin
         expected_seq_num <= expected_seq_num + 1;
@@ -342,7 +343,7 @@ module mhdma_master
     if (~resetn_mhdma) begin
       wait_for_seq0 <= 1'b0;
     end else begin
-      if (retry_seq_num) begin
+      if (retry_seq_num | retry_restart) begin
         wait_for_seq0 <= 1'b1;
       end else if (seq0_detected) begin
         wait_for_seq0 <= 1'b0;
@@ -639,7 +640,7 @@ module mhdma_master
       abort_transfer <= 1'b0;
     end else if (seq_num_mismatch | (timeout_reached_read_request & |axi4_write_pc)) begin
       abort_transfer <= 1'b1;
-    end else if (ciphertext_received) begin
+    end else if (ciphertext_received | retry_restart) begin
       abort_transfer <= 1'b0;
     end
   end
@@ -648,12 +649,17 @@ module mhdma_master
   always_ff @(posedge clk_mhdma) begin
     if (~resetn_mhdma) begin
       timeout_retry_pending <= 1'b0;
-    end else if (ciphertext_received) begin
+    end else if (ciphertext_received | retry_restart) begin
       timeout_retry_pending <= 1'b0;
     end else if (timeout_reached_read_request & |axi4_write_pc) begin
       timeout_retry_pending <= 1'b1;
     end
   end
+
+  // A retry (mismatch or timeout-driven) re-issues the read request and the peer re-sends the whole ciphertext from seq0.
+  // We treat that re-send as a fresh transfer start: reset the per-transfer tracking (seq/credit/burst counters)
+  // and clear the abort/retry-pending latches.
+  assign retry_restart = read_request_sent & (mismatch_retry_pending | timeout_retry_pending | abort_transfer);
 
   // =========================================================================================== //
   // Ciphertext reception
@@ -686,7 +692,7 @@ module mhdma_master
     if (~resetn_mhdma) begin
       ce_valid_cnt <= 'h0;
     end else begin
-      if (start_read_request | ciphertext_received) begin
+      if (start_read_request | ciphertext_received | retry_restart) begin
         ce_valid_cnt <= 'h0;
       end else if (st_wait_packets & fifo_cerx_in_vld & fifo_cerx_in_rdy) begin
         ce_valid_cnt <= ce_valid_cnt + 1;
@@ -957,7 +963,7 @@ module mhdma_master
     if (~resetn_mhdma) begin
       authorized_axi4_words <= '0;
     end else begin
-      if (start_read_request) begin
+      if (start_read_request | retry_restart) begin
         authorized_axi4_words <= '0;
       end else if (seq_num_valid & ~seq_num_mismatch) begin
         if (expected_seq_num < NB_PACKETS_FULL) begin
@@ -1165,7 +1171,7 @@ module mhdma_master
   always_ff @(posedge clk_mhdma) begin
     if (~resetn_mhdma) begin
       saved_bursts_issued <= '0;
-    end else if (start_read_request) begin
+    end else if (start_read_request | retry_restart) begin
       saved_bursts_issued <= '0;
     end else if (pc_w_complete) begin
       saved_bursts_issued[active_pc_idx] <= bursts_issued;
@@ -1297,7 +1303,7 @@ module mhdma_master
   // Single global B-response counter
   always_ff @(posedge clk_mhdma) begin
     if (~resetn_mhdma)           brsp_cnt <= '0;
-    else if (start_read_request) brsp_cnt <= '0;
+    else if (start_read_request | retry_restart) brsp_cnt <= '0;
     else if (m_axi4_bvalid)     brsp_cnt <= brsp_cnt + 1;
   end
 
@@ -1307,7 +1313,7 @@ module mhdma_master
       always_ff @(posedge clk_mhdma) begin
         if (~resetn_mhdma) begin
           pc_w_done[gen_i] <= 1'b0;
-        end else if (start_read_request) begin
+        end else if (start_read_request | retry_restart) begin
           pc_w_done[gen_i] <= 1'b0;
         end else if (pc_w_complete & axi4_write_pc[gen_i]) begin
           pc_w_done[gen_i] <= 1'b1;

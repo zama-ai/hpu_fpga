@@ -600,6 +600,8 @@ logic [DST_ADDR_W-1:0] dst_addr;
     run_scenario_recovery_dropped_packet();
     run_scenario_recovery_slave_read();
     run_scenario_recovery_slave_notify();
+    run_scenario_recovery_repeated_mismatch();
+    run_scenario_recovery_finite_timeout();
 
     print_final_summary();
 
@@ -975,7 +977,7 @@ logic [DST_ADDR_W-1:0] dst_addr;
   // --------------------------------------------------------------------------------------------- --
   task automatic run_scenario_recovery_dropped_packet();
     begin
-      if (NB_PACKETS_FULL < 2) begin
+      if (NB_PACKETS_FULL < 2) begin // for parameter sweep of GLWE_K
         scenario_start(scenario_id, $sformatf("Recovery: dropped packet -> abort and retry [SKIPPED NB_PACKETS_FULL=%0d < 2]", NB_PACKETS_FULL));
       end else begin
         scenario_start(scenario_id, "Recovery: dropped packet -> abort and retry");
@@ -1161,7 +1163,7 @@ logic [DST_ADDR_W-1:0] dst_addr;
   // READ variant: slave-role READs sit at the stream head ahead of the recovery emission.
   task automatic run_scenario_recovery_slave_read();
     begin
-      if (NB_PACKETS_FULL < 2) begin
+      if (NB_PACKETS_FULL < 2) begin // for parameter sweep of GLWE_K
         scenario_start(scenario_id, $sformatf("Recovery: concurrent slave READ (head-of-line) [SKIPPED NB_PACKETS_FULL=%0d < 2]", NB_PACKETS_FULL));
       end else begin
         scenario_start(scenario_id, "Recovery: concurrent slave READ (head-of-line)");
@@ -1201,7 +1203,7 @@ logic [DST_ADDR_W-1:0] dst_addr;
   // NOTIFY variant: slave-role NOTIFYs sit at the stream head ahead of the recovery emission.
   task automatic run_scenario_recovery_slave_notify();
     begin
-      if (NB_PACKETS_FULL < 2) begin
+      if (NB_PACKETS_FULL < 2) begin // for parameter sweep of GLWE_K
         scenario_start(scenario_id, $sformatf("Recovery: concurrent slave NOTIFY (head-of-line) [SKIPPED NB_PACKETS_FULL=%0d < 2]", NB_PACKETS_FULL));
       end else begin
         scenario_start(scenario_id, "Recovery: concurrent slave NOTIFY (head-of-line)");
@@ -1236,6 +1238,121 @@ logic [DST_ADDR_W-1:0] dst_addr;
 
         // Slave CE/notify-ack responses to the injected commands may still be draining; wait for
         // the FSMs to settle (watchdog backstops a true wedge) instead of a fixed, too-short delay.
+        wait_fsm_idle();
+        check_fsm_initialized();
+        maxil_drv_if.write_trans(MHDMA_SYSTEM_TIMEOUT_READ_REQ_OFS, TIMEOUT_DUR_READ_REQ);
+      end
+      scenario_end(scenario_id, clk_control, error);
+    end
+  endtask
+
+  // Recovery with a finite read-request timeout.
+  // The other recovery scenarios disable the timeout (0xFFFFFFFF) to force a pure mismatch retry;
+  task automatic run_scenario_recovery_finite_timeout();
+    logic [REG_DATA_W-1:0] retry_base, retry_now;
+    begin
+      if (NB_PACKETS_FULL < 2) begin // for parameter sweep of GLWE_K
+        scenario_start(scenario_id, $sformatf("Recovery: seq mismatch with finite timeout [SKIPPED NB_PACKETS_FULL=%0d < 2]", NB_PACKETS_FULL));
+      end else begin
+        scenario_start(scenario_id, "Recovery: seq mismatch with finite timeout (responsive peer)");
+        maxil_drv_if.read_trans(MHDMA_REQUEST_STAT_READ_REQ_TIMEOUT_RETRY_OFS, retry_base);
+        maxil_drv_if.write_trans(MHDMA_SYSTEM_TIMEOUT_READ_REQ_OFS, 32'h3FFF_FFFF);
+
+        iop_id       = scenario_id;
+        iop_src_addr = $urandom_range(0, (1 << MEM_SIM_SIZE) / CT_MEM_BYTES - 1);
+        iop_dst_addr = $urandom_range(0, (1 << MEM_SIM_SIZE) / CT_MEM_BYTES - 1);
+
+        // Master issues a read request; wait until it appears on the QSFP TX.
+        fork
+          read_request(dst_hpu_id, iop_id, iop_src_addr, iop_dst_addr);
+          wait(rx_header_vld & (rx_header.req_id == REQ_ID_READ));
+        join
+        wait(!rx_header_vld);
+
+        // Answer with a corrupted burst -> seq mismatch; concurrently wait for the retry re-send.
+        fork
+          send_ce_emission(.corrupt_seq1(1'b1));
+          begin
+            wait(rx_header_vld & (rx_header.req_id == REQ_ID_READ));
+            $display("%t > [INFO]: retry read request seen (finite timeout active)", $time);
+          end
+        join
+        wait(!rx_header_vld);
+
+        // Peer answers the retry as soon as it sees it: a clean burst that must now complete.
+        send_ce_emission(.corrupt_seq1(1'b0));
+
+        // The read MUST complete. With the bug the master returns to idle (fsm_value=0) WITHOUT
+        // delivering the interrupt -> this wait never returns and the global watchdog fails the test.
+        $display("%t > [INFO]: waiting for read completion (watchdog catches a lost/idle completion)", $time);
+        wait(interrupt_read_request);
+        maxil_drv_if.read_trans(MHDMA_REQUEST_READ_REQUEST_REQ_ID_OFS, read_data);
+
+        // Confirm a retry actually happened, and only seq_num_error is latched.
+        repeat(10) @(posedge clk_control);
+        maxil_drv_if.read_trans(MHDMA_REQUEST_STAT_READ_REQ_TIMEOUT_RETRY_OFS, retry_now);
+        assert (retry_now != retry_base) begin
+          $display("%t > [INFO]: retry confirmed (delta=%0d)", $time, retry_now - retry_base);
+        end else begin
+          $display("%t > [ERROR]: no retry observed in finite-timeout recovery", $time);
+          error_retry = 1'b1;
+        end
+        maxil_drv_if.read_trans(MHDMA_SYSTEM_ERRORS_OFS, stat_errors);
+        check_only_seq_num_error(stat_errors);
+
+        wait_fsm_idle();
+        check_fsm_initialized();
+        maxil_drv_if.write_trans(MHDMA_SYSTEM_TIMEOUT_READ_REQ_OFS, TIMEOUT_DUR_READ_REQ);
+      end
+      scenario_end(scenario_id, clk_control, error);
+    end
+  endtask
+
+  // Repeated seq mismatch: drive mismatch -> retry -> mismatch -> retry across N rounds before a clean recovery.
+  task automatic run_scenario_recovery_repeated_mismatch();
+    int rounds;
+    begin
+      if (NB_PACKETS_FULL < 2) begin // for parameter sweep of GLWE_K
+        scenario_start(scenario_id, $sformatf("Recovery: repeated seq mismatch (stale-counter stress) [SKIPPED NB_PACKETS_FULL=%0d < 2]", NB_PACKETS_FULL));
+      end else begin
+        scenario_start(scenario_id, "Recovery: repeated seq mismatch (stale-counter stress)");
+        maxil_drv_if.write_trans(MHDMA_SYSTEM_TIMEOUT_READ_REQ_OFS, 32'hFFFFFFFF); // pure mismatch retries
+
+        iop_id       = scenario_id;
+        iop_src_addr = $urandom_range(0, (1 << MEM_SIM_SIZE) / CT_MEM_BYTES - 1);
+        iop_dst_addr = $urandom_range(0, (1 << MEM_SIM_SIZE) / CT_MEM_BYTES - 1);
+
+        // Master issues a read request; wait until it appears on the QSFP TX.
+        fork
+          read_request(dst_hpu_id, iop_id, iop_src_addr, iop_dst_addr);
+          wait(rx_header_vld & (rx_header.req_id == REQ_ID_READ));
+        join
+        wait(!rx_header_vld);
+
+        rounds = $urandom_range(2, 3);
+        $display("%t > [INFO]: driving %0d consecutive seq mismatches before recovery", $time, rounds);
+        for (int r = 0; r < rounds; r++) begin
+          // Each corrupted burst starts at seq0 (re-syncs wait_for_seq0) then mismatches at idx1,
+          // forcing another abort + retry; concurrently wait for the retry re-send.
+          fork
+            send_ce_emission(.corrupt_seq1(1'b1));
+            begin
+              wait(rx_header_vld & (rx_header.req_id == REQ_ID_READ));
+              $display("%t > [INFO]: mismatch round %0d -> retry re-sent", $time, r);
+            end
+          join
+          wait(!rx_header_vld);
+        end
+
+        // Final clean recovery burst -> must complete.
+        send_ce_emission(.corrupt_seq1(1'b0));
+        $display("%t > [INFO]: waiting for read completion after %0d mismatches", $time, rounds);
+        wait(interrupt_read_request);
+        maxil_drv_if.read_trans(MHDMA_REQUEST_READ_REQUEST_REQ_ID_OFS, read_data);
+
+        maxil_drv_if.read_trans(MHDMA_SYSTEM_ERRORS_OFS, stat_errors);
+        check_only_seq_num_error(stat_errors);
+
         wait_fsm_idle();
         check_fsm_initialized();
         maxil_drv_if.write_trans(MHDMA_SYSTEM_TIMEOUT_READ_REQ_OFS, TIMEOUT_DUR_READ_REQ);
@@ -1461,6 +1578,16 @@ logic [DST_ADDR_W-1:0] dst_addr;
       $display("   slave.notify_rx (nrx_state) : 0x%0h", hpu_a.mhdma_bridge.mhdma_slave.nrx_state);
       $display("   slave.cem       (cem_state) : 0x%0h", hpu_a.mhdma_bridge.mhdma_slave.cem_state);
       $display("   formatter.tx    (tx_state)  : 0x%0h", hpu_a.mhdma_bridge.mhdma_formatter.tx_state);
+      // Master internal recovery state - pinpoints why rreq_state can hang in RR_WAIT_PACKETS:
+      //   stale completion counters (all_pc_done stuck high -> no new ciphertext_received edge), or
+      //   a latched timeout_retry_pending that gates valid_ciphertext_received.
+      $display("   master.wait_for_seq0        : %0b", hpu_a.mhdma_bridge.mhdma_master.wait_for_seq0);
+      $display("   master.mismatch_retry_pend  : %0b", hpu_a.mhdma_bridge.mhdma_master.mismatch_retry_pending);
+      $display("   master.timeout_retry_pend   : %0b", hpu_a.mhdma_bridge.mhdma_master.timeout_retry_pending);
+      $display("   master.all_pc_done / _r     : %0b / %0b", hpu_a.mhdma_bridge.mhdma_master.all_pc_done, hpu_a.mhdma_bridge.mhdma_master.all_pc_done_r);
+      $display("   master.brsp_cnt             : %0d", hpu_a.mhdma_bridge.mhdma_master.brsp_cnt);
+      $display("   master.pc_w_done            : 0x%0h", hpu_a.mhdma_bridge.mhdma_master.pc_w_done);
+      $display("   master.expected_seq_num     : %0d", hpu_a.mhdma_bridge.mhdma_master.expected_seq_num);
       $display(" %t > [DEBUG] ===== end MHDMA state dump =====\n", $time);
     end
   endtask
