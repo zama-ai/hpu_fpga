@@ -10,10 +10,12 @@
 #   - GLWE_K     : 1, 2 (drives BLWE_K = GLWE_K * N)
 #   - PEM_PC     : 1, 2 for unit tests ; 2 only for top-level & scenario tests
 #
-# Top module of MHDMA supports only PEM_PC=1 & 2
+# Top module of MHDMA supports only PEM_PC= 1 & 2
 #   - Main reason is that regfile must be re generated for the address
 #   - For PEM_PC >= 4: CDC FIFO are overflowing and we will need to split them
-#   - Efforts has been put to try top testbench with PEM_PC = 1 not with other top-scenarios
+#   - Top-level & scenario testbenches are LOCKED to PEM_PC=2 (PEM_PC_TOP): the regfile
+#     address map is only regenerated for PEM_PC=2 here, so PEM_PC=1 will not run at top level.
+#     Unit tests are not regfile-constrained and do sweep PEM_PC = 1 and 2.
 #
 # -> AXI data size could be 128; 256 or 512 (even though in FPGA it's fixed to 256)
 #
@@ -112,15 +114,24 @@ function run_test () {
 AXI_DATA_W_LIST=("128" "256" "512")
 GLWE_K_LIST=("1" "2")
 
-# PEM_PC values for unit tests (top-level & scenarios are locked to PEM_PC=2)
+# PEM_PC values for unit tests only (not regfile-constrained: can sweep 1 & 2)
 PEM_PC_LIST_UNIT=("1" "2")
 
+# PEM_PC locked value for top-level & scenario tests (regfile only generated for this value)
+PEM_PC_TOP=2
+
+# Random pick for the non-sweep "spot check" run. PEM_PC_UNIT only drives the unit tests;
+# top-level & scenario tests always use PEM_PC_TOP regardless of this pick.
 index=$(($RANDOM % 3))
 AXI_DATA_W=${AXI_DATA_W_LIST[$index]}
 index=$(($RANDOM % 2))
 GLWE_K=${GLWE_K_LIST[$index]}
 index=$(($RANDOM % 2))
-PEM_PC=${PEM_PC_LIST_UNIT[$index]}
+PEM_PC_UNIT=${PEM_PC_LIST_UNIT[$index]}
+
+if [ $FULL_SWEEP -eq 0 ]; then
+  echo "INFO> Non-sweep selection : AXI_DATA_W=${AXI_DATA_W} GLWE_K=${GLWE_K} PEM_PC(unit)=${PEM_PC_UNIT} PEM_PC(top/scenario)=${PEM_PC_TOP}"
+fi
 
 ###################################################################################################
 # 1) Unit tests: sweep PEM_PC x GLWE_K x AXI_DATA_W
@@ -130,13 +141,13 @@ echo "INFO> Running unit tests with selected parameters"
 echo "================================================================"
 
 if [ $FULL_SWEEP -eq 1 ]; then
-  for PEM_PC in "${PEM_PC_LIST_UNIT[@]}"; do
+  for PEM_PC_UNIT in "${PEM_PC_LIST_UNIT[@]}"; do
     for GLWE_K in "${GLWE_K_LIST[@]}"; do
       for AXI_DATA_W in "${AXI_DATA_W_LIST[@]}"; do
         for TB in "${UNIT_TESTS[@]}"; do
           run_test "${SCRIPT_DIR}/run.sh \
             -g $GLWE_K \
-            -E $PEM_PC \
+            -E $PEM_PC_UNIT \
             -- $args \
             -m $TB \
             -F AXI_DATA_W AXI_DATA_W_${AXI_DATA_W}"
@@ -148,42 +159,40 @@ else
   for TB in "${UNIT_TESTS[@]}"; do
     run_test "${SCRIPT_DIR}/run.sh \
       -g $GLWE_K \
-      -E $PEM_PC \
+      -E $PEM_PC_UNIT \
       -- $args \
       -m $TB \
       -F AXI_DATA_W AXI_DATA_W_${AXI_DATA_W}"
   done
 fi
 
-# ###################################################################################################
-# # 2) Top-level test: sweep PEM_PC x GLWE_K x AXI_DATA_W
-# ###################################################################################################
-# echo "================================================================"
-# echo "INFO> Running top-level ${module} with selected parameters"
-# echo "================================================================"
+###################################################################################################
+# 2) Top-level test: PEM_PC=PEM_PC_TOP (locked), sweep GLWE_K x AXI_DATA_W
+###################################################################################################
+echo "================================================================"
+echo "INFO> Running top-level ${module} with selected parameters"
+echo "================================================================"
 
 if [ $FULL_SWEEP -eq 1 ]; then
-  for PEM_PC in "${PEM_PC_LIST_UNIT[@]}"; do
-    for GLWE_K in "${GLWE_K_LIST[@]}"; do
-      for AXI_DATA_W in "${AXI_DATA_W_LIST[@]}"; do
-        run_test "${SCRIPT_DIR}/run.sh \
-          -g $GLWE_K \
-          -E $PEM_PC \
-          -- $args \
-          -F AXI_DATA_W AXI_DATA_W_${AXI_DATA_W}"
-      done
+  for GLWE_K in "${GLWE_K_LIST[@]}"; do
+    for AXI_DATA_W in "${AXI_DATA_W_LIST[@]}"; do
+      run_test "${SCRIPT_DIR}/run.sh \
+        -g $GLWE_K \
+        -E $PEM_PC_TOP \
+        -- $args \
+        -F AXI_DATA_W AXI_DATA_W_${AXI_DATA_W}"
     done
   done
 else
   run_test "${SCRIPT_DIR}/run.sh \
     -g $GLWE_K \
-    -E $PEM_PC \
+    -E $PEM_PC_TOP \
     -- $args \
     -F AXI_DATA_W AXI_DATA_W_${AXI_DATA_W}"
 fi
 
 ###################################################################################################
-# 3) Scenario tests: PEM_PC=2, sweep GLWE_K x AXI_DATA_W
+# 3) Scenario tests: PEM_PC=PEM_PC_TOP (locked), sweep GLWE_K x AXI_DATA_W
 ###################################################################################################
 echo "================================================================"
 echo "INFO> Running scenario tests with selected parameters"
@@ -195,7 +204,7 @@ if [ $FULL_SWEEP -eq 1 ]; then
       for TB in "${SCENARIO_TESTS[@]}"; do
         run_test "${SCRIPT_DIR}/run.sh \
           -g $GLWE_K \
-          -E 2 \
+          -E $PEM_PC_TOP \
           -- $args \
           -m $TB \
           -F AXI_DATA_W AXI_DATA_W_${AXI_DATA_W}"
@@ -206,7 +215,7 @@ else
   for TB in "${SCENARIO_TESTS[@]}"; do
     run_test "${SCRIPT_DIR}/run.sh \
       -g $GLWE_K \
-      -E 2 \
+      -E $PEM_PC_TOP \
       -- $args \
       -m $TB \
       -F AXI_DATA_W AXI_DATA_W_${AXI_DATA_W}"
