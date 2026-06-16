@@ -63,7 +63,6 @@ module tb_mhdma_decoder;
   // FIFO total capacity = DEPTH + RAM_LATENCY + 1.
   localparam int TOTAL_RX_FIFO_DEPTH = RX_FIFO_DEPTH + 1 + 1;
 
-
 // ============================================================================================== --
 // clock, reset
 // ============================================================================================== --
@@ -148,11 +147,6 @@ module tb_mhdma_decoder;
   logic [MAC_ADDR_W-1:0]    current_hpu_mac;
 
   // Command output
-  // Decoder now exposes two role-split command streams (master-role: NOTIFY_ACK/EMISSION ;
-  // slave-role: NOTIFY/READ). Merge them back into a single decoded_command view so the existing
-  // single-stream consume task/checks work. NOTE: cross-role ordering is no longer guaranteed by a
-  // single FIFO; scenarios that assert ordering BETWEEN a master-role and a slave-role command
-  // must be reviewed. Ordering WITHIN a role is preserved.
   logic     notify_ack_received;
   command_t decoded_command_master;
   logic     decoded_command_master_vld;
@@ -859,11 +853,23 @@ module tb_mhdma_decoder;
     logic [REG_DATA_W-1:0] saved_cnt_read_req;
     logic [REG_DATA_W-1:0] saved_cnt_nack;
 
+    // Cross-role order is set by the slave-priority merge mux,
+    // so check each role's stream against its own expected queue (slave: NOTIFY then READ ; master: NOTIFY_ACK), not raw send order.
+    logic [REQ_ID_W-1:0] exp_slave_req  [$];
+    logic [HPU_ID_W-1:0] exp_slave_hpu  [$];
+    logic [REQ_ID_W-1:0] exp_master_req [$];
+    logic [HPU_ID_W-1:0] exp_master_hpu [$];
+
     scenario_start(scenario_id, "Back-to-back packets of different types");
 
     saved_cnt_notify   = stat.cnt_notify_received;
     saved_cnt_read_req = stat.cnt_read_req_received;
     saved_cnt_nack     = stat.cnt_nack_received;
+
+    exp_slave_req  = '{REQ_ID_NOTIFY, REQ_ID_READ};
+    exp_slave_hpu  = '{4'h1, 4'h2};
+    exp_master_req = '{REQ_ID_NOTIFY_ACK};
+    exp_master_hpu = '{4'h3};
 
     send_notify_packet(
       .vif(qsfp_rx_vif),
@@ -894,18 +900,22 @@ module tb_mhdma_decoder;
       .dst_addr(16'h3001)
     );
 
-    // Consume and verify each command in order
-    consume_decoded_command(captured_command);
-    assert (captured_command.req_id == REQ_ID_NOTIFY) else begin $display("[ERROR:%0d]: first cmd not NOTIFY", scenario_id);   error_decoded_cmd = 1'b1; end
-    assert (captured_command.hpu_id == 4'h1) else begin          $display("[ERROR:%0d]: NOTIFY hpu_id mismatch", scenario_id); error_decoded_cmd = 1'b1; end
-
-    consume_decoded_command(captured_command);
-    assert (captured_command.req_id == REQ_ID_READ) else begin $display("[ERROR:%0d]: second cmd not READ", scenario_id);  error_decoded_cmd = 1'b1; end
-    assert (captured_command.hpu_id == 4'h2) else begin        $display("[ERROR:%0d]: READ hpu_id mismatch", scenario_id); error_decoded_cmd = 1'b1; end
-
-    consume_decoded_command(captured_command);
-    assert (captured_command.req_id == REQ_ID_NOTIFY_ACK) else begin $display("[ERROR:%0d]: third cmd not NACK", scenario_id);   error_decoded_cmd = 1'b1; end
-    assert (captured_command.hpu_id == 4'h3) else begin              $display("[ERROR:%0d]: NACK hpu_id mismatch", scenario_id); error_decoded_cmd = 1'b1; end
+    // Consume and verify by role, draining both expected queues (intra-role order preserved;
+    // cross-role order is set by the slave-priority merge mux and is not asserted).
+    while (exp_slave_req.size() + exp_master_req.size() > 0) begin
+      bit                  is_slave;
+      logic [REQ_ID_W-1:0] exp_req;
+      logic [HPU_ID_W-1:0] exp_hpu;
+      consume_decoded_command(captured_command);
+      is_slave = (captured_command.req_id == REQ_ID_NOTIFY) || (captured_command.req_id == REQ_ID_READ);
+      exp_req  = is_slave ? exp_slave_req.pop_front() : exp_master_req.pop_front();
+      exp_hpu  = is_slave ? exp_slave_hpu.pop_front() : exp_master_hpu.pop_front();
+      assert (captured_command.req_id == exp_req && captured_command.hpu_id == exp_hpu) else begin
+        $display("[ERROR:%0d]: %s cmd mismatch: got req=%0h hpu=%0h, expected req=%0h hpu=%0h", scenario_id,
+                 is_slave ? "slave" : "master", captured_command.req_id, captured_command.hpu_id, exp_req, exp_hpu);
+        error_decoded_cmd = 1'b1;
+      end
+    end
 
     assert (stat.cnt_notify_received   == saved_cnt_notify + 1)   else begin $display("[ERROR:%0d]: cnt_notify mismatch", scenario_id);   error_stat = 1'b1; end
     assert (stat.cnt_read_req_received == saved_cnt_read_req + 1) else begin $display("[ERROR:%0d]: cnt_read_req mismatch", scenario_id); error_stat = 1'b1; end
@@ -1126,8 +1136,12 @@ module tb_mhdma_decoder;
     int expected_read_req_count;
     int expected_ce_count;
 
-    logic [REQ_ID_W-1:0] expected_req_ids [$];
-    logic [HPU_ID_W-1:0] expected_hpu_ids [$];
+    // Per-role expected queues.
+    // Ordering is only guaranteed WITHIN a role, so each role's stream is checked independently against its own queue.
+    logic [REQ_ID_W-1:0] exp_master_req [$];
+    logic [HPU_ID_W-1:0] exp_master_hpu [$];
+    logic [REQ_ID_W-1:0] exp_slave_req  [$];
+    logic [HPU_ID_W-1:0] exp_slave_hpu  [$];
 
     scenario_start(scenario_id, "Mixed packet types (interleaved, randomized)");
 
@@ -1159,11 +1173,10 @@ module tb_mhdma_decoder;
       random_src_addr = $urandom();
       packet_type     = $urandom_range(0, 3);
 
-      expected_hpu_ids.push_back(random_hpu_id);
-
       case (packet_type)
-        0: begin // NOTIFY
-          expected_req_ids.push_back(REQ_ID_NOTIFY);
+        0: begin // NOTIFY (slave-role)
+          exp_slave_req.push_back(REQ_ID_NOTIFY);
+          exp_slave_hpu.push_back(random_hpu_id);
           expected_notify_count++;
           send_notify_packet(
             .vif(qsfp_rx_vif),
@@ -1172,8 +1185,9 @@ module tb_mhdma_decoder;
             .src_addr(random_src_addr)
           );
         end
-        1: begin // NOTIFY ACK
-          expected_req_ids.push_back(REQ_ID_NOTIFY_ACK);
+        1: begin // NOTIFY ACK (master-role)
+          exp_master_req.push_back(REQ_ID_NOTIFY_ACK);
+          exp_master_hpu.push_back(random_hpu_id);
           expected_nack_count++;
           send_notify_ack_packet(
             .vif(qsfp_rx_vif),
@@ -1182,8 +1196,9 @@ module tb_mhdma_decoder;
             .src_addr(random_src_addr), .dst_addr(16'h0)
           );
         end
-        2: begin // READ
-          expected_req_ids.push_back(REQ_ID_READ);
+        2: begin // READ (slave-role)
+          exp_slave_req.push_back(REQ_ID_READ);
+          exp_slave_hpu.push_back(random_hpu_id);
           expected_read_req_count++;
           send_read_request_packet(
             .vif(qsfp_rx_vif),
@@ -1192,8 +1207,9 @@ module tb_mhdma_decoder;
             .src_addr(random_src_addr), .dst_addr(16'h0)
           );
         end
-        3: begin // EMISSION
-          expected_req_ids.push_back(REQ_ID_EMISSION);
+        3: begin // EMISSION (master-role)
+          exp_master_req.push_back(REQ_ID_EMISSION);
+          exp_master_hpu.push_back(random_hpu_id);
           expected_ce_count++;
           send_ciphertext_emission_packet(
             .vif(qsfp_rx_vif),
@@ -1207,21 +1223,26 @@ module tb_mhdma_decoder;
       endcase
     end
 
-    // Consume and verify all commands
+    // Two FIFOs + slave-priority merge mux => cross-role order is not send order; check each role's
+    // stream against its own queue (intra-role order is preserved), then confirm none are left over.
     for (int cmd_index = 0; cmd_index < num_mixed_packets; cmd_index++) begin
-      command_t captured_command;
+      command_t            captured_command;
+      bit                  is_slave;
+      logic [REQ_ID_W-1:0] exp_req;
+      logic [HPU_ID_W-1:0] exp_hpu;
       consume_decoded_command(captured_command);
-
-      assert (captured_command.req_id == expected_req_ids[cmd_index]) else begin
-        $display("[ERROR:%0d]: packet %0d req_id mismatch: got %0h, expected %0h", scenario_id,
-               cmd_index, captured_command.req_id, expected_req_ids[cmd_index]);
+      is_slave = (captured_command.req_id == REQ_ID_NOTIFY) || (captured_command.req_id == REQ_ID_READ);
+      exp_req  = is_slave ? exp_slave_req.pop_front() : exp_master_req.pop_front();
+      exp_hpu  = is_slave ? exp_slave_hpu.pop_front() : exp_master_hpu.pop_front();
+      assert (captured_command.req_id == exp_req && captured_command.hpu_id == exp_hpu) else begin
+        $display("[ERROR:%0d]: %s cmd mismatch: got req=%0h hpu=%0h, expected req=%0h hpu=%0h", scenario_id,
+                 is_slave ? "slave" : "master", captured_command.req_id, captured_command.hpu_id, exp_req, exp_hpu);
         error_decoded_cmd = 1'b1;
       end
-
-      assert (captured_command.hpu_id == expected_hpu_ids[cmd_index]) else begin
-        $display("[ERROR:%0d]: packet %0d hpu_id mismatch", scenario_id, cmd_index);
-        error_decoded_cmd = 1'b1;
-      end
+    end
+    assert (exp_slave_req.size() == 0 && exp_master_req.size() == 0) else begin
+      $display("[ERROR:%0d]: commands never produced (slave=%0d master=%0d)", scenario_id, exp_slave_req.size(), exp_master_req.size());
+      error_decoded_cmd = 1'b1;
     end
 
     repeat (10) @(posedge clk);
@@ -1297,7 +1318,9 @@ module tb_mhdma_decoder;
   // FIFO overflow should only be flagged when valid is asserted and ready is deasserted
   property fifo_ovf_requires_backpressure;
     @(posedge clk) disable iff (~s_rstn)
-    ($rose(decoder.error_fifo_rx_ovf)) |-> ($past(decoder.fifo_rx_cmd_in_vld) && $past(~decoder.fifo_rx_cmd_in_rdy));
+    ($rose(decoder.error_fifo_rx_ovf)) |->
+       (($past(decoder.fifo_rx_cmd_master_in_vld) && $past(~decoder.fifo_rx_cmd_master_in_rdy))
+     || ($past(decoder.fifo_rx_cmd_slave_in_vld)  && $past(~decoder.fifo_rx_cmd_slave_in_rdy)));
   endproperty
 
   assert_fifo_ovf_requires_backpressure: assert property(fifo_ovf_requires_backpressure)
