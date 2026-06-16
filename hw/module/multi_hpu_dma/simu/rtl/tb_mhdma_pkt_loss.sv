@@ -73,6 +73,20 @@ module tb_mhdma_pkt_loss;
 
   localparam int TOTAL_NB_PACKETS = $ceil(CT_NB_COEF / NB_WORDS_PAYLOAD) + 1;
 
+  // Per-PC memory map for the data scoreboard ---------------------------------------------------
+  // A single axi4_mem model is shared, so we slice it into ETH_PC equal regions and program a distinct HBM base per PC (see init_config).
+  // Parametric in ETH_PC so it follows PEM_PC if it changes.
+  localparam int MEM_BYTES_PER_PC = (1 << MEM_SIM_SIZE) / ETH_PC;          // sim-memory slice per PC
+  localparam int DST_ADDR_MAX     = (MEM_BYTES_PER_PC / CT_MEM_BYTES) - 1; // CT slots that fit in one slice
+  localparam int CT_AXI_BYTES     = AXI4_DATA_W / 8;                       // AXI beat size in bytes
+  localparam int MRMAC_PER_AXI    = AXI4_DATA_W / MRMAC_AXIS_W;            // 64b payload words per AXI beat
+
+  // Guard: a single ciphertext must fit inside one PC slice, else the per-PC regions overlap and
+  // $urandom_range(0, DST_ADDR_MAX) gets a negative bound. Catches CT_MEM_BYTES/ETH_PC/MEM_SIM_SIZE drift.
+  initial
+    if (DST_ADDR_MAX < 0)
+      $fatal(1, "MHDMA tb: CT slice too small for one ciphertext (CT_MEM_BYTES=%0d > MEM_BYTES_PER_PC=%0d); raise MEM_SIM_SIZE",CT_MEM_BYTES, MEM_BYTES_PER_PC);
+
 // ============================================================================================== --
 // clock, reset
 // ============================================================================================== --
@@ -129,8 +143,9 @@ module tb_mhdma_pkt_loss;
   bit error_fsm;
   bit error_interrupt;
   bit error_timeout_watchdog;
+  bit error_data;
 
-  assign error = error_ack | error_retry | error_tb_notify | error_register_read | error_fsm | error_interrupt | error_timeout_watchdog;
+  assign error = error_ack | error_retry | error_tb_notify | error_register_read | error_fsm | error_interrupt | error_timeout_watchdog | error_data;
 
   always_ff @(posedge clk_control)
     if (error) begin
@@ -152,6 +167,8 @@ module tb_mhdma_pkt_loss;
 // input / output signals
 // ============================================================================================== --
   logic [MRMAC_AXIS_W-1:0]    unused_payload [$];
+  logic [MRMAC_AXIS_W-1:0]    expected_payload [$];
+  logic [MRMAC_AXIS_W-1:0]    pkt_payload [$];
 
   logic [AXIL_ADD_W-1:0]      s_axil_mhdma_awaddr;
   logic                       s_axil_mhdma_awvalid;
@@ -174,8 +191,6 @@ module tb_mhdma_pkt_loss;
   // Interrupt interface
   logic                       interrupt_notify;
   logic                       interrupt_read_request;
-  // HPUs
-  logic [NB_HPU-1:0][MAC_ADDR_W-1:0] mac_addr_l;
 
   // AXI4 to HBM: HPUA (single NMU) ----------------------------------------------------------------
   logic [AXI4_ID_W-1:0]       axi4_ct_awid;
@@ -386,8 +401,6 @@ module tb_mhdma_pkt_loss;
 // ============================================================================================== --
 // Signals --------------------------------------------------------------------------------------
 logic [REG_DATA_W-1:0] read_data;
-logic [REG_DATA_W-1:0] timeout_size;
-
 logic [REG_DATA_W-1:0] regf_start_addr_ofs;
 
 logic [REG_DATA_W-1:0] stat_notify;
@@ -415,8 +428,6 @@ logic [MAC_ADDR_W-1:0] src_mac_addr;
 logic [HPU_ID_W-1:0]   dst_hpu_id;
 logic [HPU_ID_W-1:0]   src_hpu_id;
 logic [IOP_ID_W-1:0]   iop_id;
-logic [SRC_ADDR_W-1:0] src_addr;
-logic [DST_ADDR_W-1:0] dst_addr;
 
   // AXI4-LITE drivers ----------------------------------------------------------------------------
   maxil_if #(
@@ -765,7 +776,7 @@ logic [DST_ADDR_W-1:0] dst_addr;
       scenario_start(scenario_id, "Read: nominal request and ciphertext reception");
       iop_id       = scenario_id;
       iop_src_addr = $urandom_range(0, (1 << MEM_SIM_SIZE) / CT_MEM_BYTES - 1);
-      iop_dst_addr = $urandom_range(0, (1 << MEM_SIM_SIZE) / CT_MEM_BYTES - 1);
+      iop_dst_addr = $urandom_range(0, DST_ADDR_MAX); // bounded so the CT fits in this PC's slice
 
       fork
         begin
@@ -776,9 +787,11 @@ logic [DST_ADDR_W-1:0] dst_addr;
         end
       join
 
-      // Send ciphertext emission packets as if we're the remote HPU responding
+      // Send ciphertext emission packets as if we're the remote HPU responding (capture for scoreboard)
+      expected_payload = {};
       for (int pkt = 0; pkt < NB_PACKETS_FULL+1; pkt++) begin
-        send_ciphertext_emission_packet(qsfp_rx_vif[0], dst_mac_addr, src_mac_addr, dst_hpu_id, iop_id, iop_src_addr, iop_dst_addr, pkt[7:0], unused_payload);
+        send_ciphertext_emission_packet(qsfp_rx_vif[0], dst_mac_addr, src_mac_addr, dst_hpu_id, iop_id, iop_src_addr, iop_dst_addr, pkt[7:0], pkt_payload);
+        foreach (pkt_payload[i]) expected_payload.push_back(pkt_payload[i]);
         repeat(10) @(posedge clk_mhdma);
       end
 
@@ -808,6 +821,7 @@ logic [DST_ADDR_W-1:0] dst_addr;
       repeat(100) @(posedge clk_control);
 
       check_fsm_initialized();
+      check_ct_in_memory(iop_dst_addr);
 
       if (~interrupt_read_request)
         $display("%t > [INFO]: interrupt_read_request correctly lowered", $time);
@@ -824,16 +838,18 @@ logic [DST_ADDR_W-1:0] dst_addr;
       scenario_start(scenario_id, "Read: request unanswered -> timeout retry");
       iop_id       = scenario_id;
       iop_src_addr = $urandom_range(0, (1 << MEM_SIM_SIZE) / CT_MEM_BYTES - 1);
-      iop_dst_addr = $urandom_range(0, (1 << MEM_SIM_SIZE) / CT_MEM_BYTES - 1);
+      iop_dst_addr = $urandom_range(0, DST_ADDR_MAX); // bounded so the CT fits in this PC's slice
       read_request(dst_hpu_id, iop_id, iop_src_addr, iop_dst_addr);
 
       repeat(2*TIMEOUT_DUR_READ_REQ + 10 ) @(posedge clk_mhdma);
 
       $display("%t > [INFO]: answering only after %0d clock cycles", $time, 2*TIMEOUT_DUR_READ_REQ + 10);
 
-      // Send ciphertext emission packets as if we're the remote HPU responding
+      // Send ciphertext emission packets as if we're the remote HPU responding (capture for scoreboard)
+      expected_payload = {};
       for (int pkt = 0; pkt < NB_PACKETS_FULL+1; pkt++) begin
-        send_ciphertext_emission_packet(qsfp_rx_vif[0], dst_mac_addr, src_mac_addr, dst_hpu_id, iop_id, iop_src_addr, iop_dst_addr, pkt[7:0], unused_payload);
+        send_ciphertext_emission_packet(qsfp_rx_vif[0], dst_mac_addr, src_mac_addr, dst_hpu_id, iop_id, iop_src_addr, iop_dst_addr, pkt[7:0], pkt_payload);
+        foreach (pkt_payload[i]) expected_payload.push_back(pkt_payload[i]);
         repeat(10) @(posedge clk_mhdma);
       end
 
@@ -854,6 +870,7 @@ logic [DST_ADDR_W-1:0] dst_addr;
       repeat(100) @(posedge clk_control);
 
       check_fsm_initialized();
+      check_ct_in_memory(iop_dst_addr);
 
       if (~interrupt_read_request)
         $display("%t > [INFO]: interrupt_read_request correctly lowered", $time);
@@ -878,7 +895,7 @@ logic [DST_ADDR_W-1:0] dst_addr;
 
       iop_id       = scenario_id;
       iop_src_addr = $urandom_range(0, (1 << MEM_SIM_SIZE) / CT_MEM_BYTES - 1);
-      iop_dst_addr = $urandom_range(0, (1 << MEM_SIM_SIZE) / CT_MEM_BYTES - 1);
+      iop_dst_addr = $urandom_range(0, DST_ADDR_MAX); // bounded so the CT fits in this PC's slice
 
       fork
         read_request(dst_hpu_id, iop_id, iop_src_addr, iop_dst_addr);
@@ -942,9 +959,11 @@ logic [DST_ADDR_W-1:0] dst_addr;
       maxil_drv_if.read_trans(MHDMA_SYSTEM_ERRORS_OFS, stat_errors);
       check_only_seq_num_error(stat_errors);
 
-      // Respond to retry with correct ciphertext (all packets from seq_num 0)
+      // Respond to retry with correct ciphertext (all packets from seq_num 0); capture for scoreboard
+      expected_payload = {};
       for (int pkt = 0; pkt < NB_PACKETS_FULL+1; pkt++) begin
-        send_ciphertext_emission_packet(qsfp_rx_vif[0], dst_mac_addr, src_mac_addr, dst_hpu_id, iop_id, iop_src_addr, iop_dst_addr, pkt[7:0], unused_payload);
+        send_ciphertext_emission_packet(qsfp_rx_vif[0], dst_mac_addr, src_mac_addr, dst_hpu_id, iop_id, iop_src_addr, iop_dst_addr, pkt[7:0], pkt_payload);
+        foreach (pkt_payload[i]) expected_payload.push_back(pkt_payload[i]);
         repeat(10) @(posedge clk_mhdma);
       end
 
@@ -959,6 +978,7 @@ logic [DST_ADDR_W-1:0] dst_addr;
 
       repeat(100) @(posedge clk_control);
       check_fsm_initialized();
+      check_ct_in_memory(iop_dst_addr);
 
       if (~interrupt_read_request)
         $display("%t > [INFO]: interrupt_read_request correctly lowered", $time);
@@ -988,7 +1008,7 @@ logic [DST_ADDR_W-1:0] dst_addr;
 
         iop_id       = scenario_id;
         iop_src_addr = $urandom_range(0, (1 << MEM_SIM_SIZE) / CT_MEM_BYTES - 1);
-        iop_dst_addr = $urandom_range(0, (1 << MEM_SIM_SIZE) / CT_MEM_BYTES - 1);
+        iop_dst_addr = $urandom_range(0, DST_ADDR_MAX); // bounded so the CT fits in this PC's slice
 
         // Drop a random middle packet: >= 1 (pkt 0 sets up the address) and <= NB_PACKETS_FULL-1
         // (a later packet must still arrive to trigger the forward-skip mismatch).
@@ -1049,9 +1069,11 @@ logic [DST_ADDR_W-1:0] dst_addr;
         maxil_drv_if.read_trans(MHDMA_SYSTEM_ERRORS_OFS, stat_errors);
         check_only_seq_num_error(stat_errors);
 
-        // Respond to retry with complete correct ciphertext
+        // Respond to retry with complete correct ciphertext; capture for scoreboard
+        expected_payload = {};
         for (int pkt = 0; pkt < NB_PACKETS_FULL+1; pkt++) begin
-          send_ciphertext_emission_packet(qsfp_rx_vif[0], dst_mac_addr, src_mac_addr, dst_hpu_id, iop_id, iop_src_addr, iop_dst_addr, pkt[7:0], unused_payload);
+          send_ciphertext_emission_packet(qsfp_rx_vif[0], dst_mac_addr, src_mac_addr, dst_hpu_id, iop_id, iop_src_addr, iop_dst_addr, pkt[7:0], pkt_payload);
+          foreach (pkt_payload[i]) expected_payload.push_back(pkt_payload[i]);
           repeat(10) @(posedge clk_mhdma);
         end
 
@@ -1066,6 +1088,7 @@ logic [DST_ADDR_W-1:0] dst_addr;
 
         repeat(100) @(posedge clk_control);
         check_fsm_initialized();
+        check_ct_in_memory(iop_dst_addr);
 
         if (~interrupt_read_request)
           $display("%t > [INFO]: interrupt_read_request correctly lowered", $time);
@@ -1090,7 +1113,7 @@ logic [DST_ADDR_W-1:0] dst_addr;
 
       iop_id       = scenario_id;
       iop_src_addr = $urandom_range(0, (1 << MEM_SIM_SIZE) / CT_MEM_BYTES - 1);
-      iop_dst_addr = $urandom_range(0, (1 << MEM_SIM_SIZE) / CT_MEM_BYTES - 1);
+      iop_dst_addr = $urandom_range(0, DST_ADDR_MAX); // bounded so the CT fits in this PC's slice
 
       // DUT (master) issues a read request; wait until it appears on the QSFP TX.
       fork
@@ -1102,7 +1125,7 @@ logic [DST_ADDR_W-1:0] dst_addr;
       // Answer with a corrupted burst (forward-skip mismatch) and wait for the DUT to abort and
       // re-send its read request (the retry) - that re-send marks entry into wait_for_seq0.
       fork
-        send_ce_emission(.corrupt_seq1(1'b1));
+        send_ce_emission(.corrupt_seq1(1'b1), .payload_out(unused_payload));
         begin
           wait(rx_header_vld & (rx_header.req_id == REQ_ID_READ));
           $display("%t > [INFO]: Retry read request detected on QSFP TX (DUT now in wait_for_seq0)", $time);
@@ -1124,10 +1147,10 @@ logic [DST_ADDR_W-1:0] dst_addr;
 
   // Send a full seq0..N ciphertext emission for the current iop. If corrupt_seq1, packet index 1
   // carries seq_num=3 (instead of 1) to trigger a forward-skip mismatch.
-  task automatic send_ce_emission(input bit corrupt_seq1);
+  task automatic send_ce_emission(input bit corrupt_seq1, output logic [MRMAC_AXIS_W-1:0] payload_out [$]);
     begin
       send_full_ciphertext_burst(qsfp_rx_vif[0], dst_mac_addr, src_mac_addr, dst_hpu_id,
-                                 iop_id, iop_src_addr, iop_dst_addr, unused_payload,
+                                 iop_id, iop_src_addr, iop_dst_addr, payload_out,
                                  .corrupt_idx(corrupt_seq1 ? 1 : -1));
     end
   endtask
@@ -1181,7 +1204,7 @@ logic [DST_ADDR_W-1:0] dst_addr;
         end
 
         // Recovery emission sits BEHIND the slave reads - the master read must still complete.
-        send_ce_emission(.corrupt_seq1(1'b0));
+        send_ce_emission(.corrupt_seq1(1'b0), .payload_out(expected_payload));
         wait_master_read_done();
 
         maxil_drv_if.read_trans(MHDMA_REQUEST_STAT_NB_READ_REQ_RECEIVED_OFS, stat_cnt_read_req_received);
@@ -1194,6 +1217,7 @@ logic [DST_ADDR_W-1:0] dst_addr;
         // the FSMs to settle (watchdog backstops a true wedge) instead of a fixed, too-short delay.
         wait_fsm_idle();
         check_fsm_initialized();
+        check_ct_in_memory(iop_dst_addr);
         maxil_drv_if.write_trans(MHDMA_SYSTEM_TIMEOUT_READ_REQ_OFS, TIMEOUT_DUR_READ_REQ);
       end
       scenario_end(scenario_id, clk_control, error);
@@ -1220,7 +1244,7 @@ logic [DST_ADDR_W-1:0] dst_addr;
         end
 
         // Recovery emission sits BEHIND the slave notifies - the master read must still complete.
-        send_ce_emission(.corrupt_seq1(1'b0));
+        send_ce_emission(.corrupt_seq1(1'b0), .payload_out(expected_payload));
         wait_master_read_done();
 
         // Service the two notify interrupts so the nrx regf path drains and its FSM returns to idle.
@@ -1240,6 +1264,7 @@ logic [DST_ADDR_W-1:0] dst_addr;
         // the FSMs to settle (watchdog backstops a true wedge) instead of a fixed, too-short delay.
         wait_fsm_idle();
         check_fsm_initialized();
+        check_ct_in_memory(iop_dst_addr);
         maxil_drv_if.write_trans(MHDMA_SYSTEM_TIMEOUT_READ_REQ_OFS, TIMEOUT_DUR_READ_REQ);
       end
       scenario_end(scenario_id, clk_control, error);
@@ -1260,7 +1285,7 @@ logic [DST_ADDR_W-1:0] dst_addr;
 
         iop_id       = scenario_id;
         iop_src_addr = $urandom_range(0, (1 << MEM_SIM_SIZE) / CT_MEM_BYTES - 1);
-        iop_dst_addr = $urandom_range(0, (1 << MEM_SIM_SIZE) / CT_MEM_BYTES - 1);
+        iop_dst_addr = $urandom_range(0, DST_ADDR_MAX); // bounded so the CT fits in this PC's slice
 
         // Master issues a read request; wait until it appears on the QSFP TX.
         fork
@@ -1271,7 +1296,7 @@ logic [DST_ADDR_W-1:0] dst_addr;
 
         // Answer with a corrupted burst -> seq mismatch; concurrently wait for the retry re-send.
         fork
-          send_ce_emission(.corrupt_seq1(1'b1));
+          send_ce_emission(.corrupt_seq1(1'b1), .payload_out(unused_payload));
           begin
             wait(rx_header_vld & (rx_header.req_id == REQ_ID_READ));
             $display("%t > [INFO]: retry read request seen (finite timeout active)", $time);
@@ -1280,7 +1305,7 @@ logic [DST_ADDR_W-1:0] dst_addr;
         wait(!rx_header_vld);
 
         // Peer answers the retry as soon as it sees it: a clean burst that must now complete.
-        send_ce_emission(.corrupt_seq1(1'b0));
+        send_ce_emission(.corrupt_seq1(1'b0), .payload_out(expected_payload));
 
         // The read MUST complete. With the bug the master returns to idle (fsm_value=0) WITHOUT
         // delivering the interrupt -> this wait never returns and the global watchdog fails the test.
@@ -1302,6 +1327,7 @@ logic [DST_ADDR_W-1:0] dst_addr;
 
         wait_fsm_idle();
         check_fsm_initialized();
+        check_ct_in_memory(iop_dst_addr);
         maxil_drv_if.write_trans(MHDMA_SYSTEM_TIMEOUT_READ_REQ_OFS, TIMEOUT_DUR_READ_REQ);
       end
       scenario_end(scenario_id, clk_control, error);
@@ -1320,7 +1346,7 @@ logic [DST_ADDR_W-1:0] dst_addr;
 
         iop_id       = scenario_id;
         iop_src_addr = $urandom_range(0, (1 << MEM_SIM_SIZE) / CT_MEM_BYTES - 1);
-        iop_dst_addr = $urandom_range(0, (1 << MEM_SIM_SIZE) / CT_MEM_BYTES - 1);
+        iop_dst_addr = $urandom_range(0, DST_ADDR_MAX); // bounded so the CT fits in this PC's slice
 
         // Master issues a read request; wait until it appears on the QSFP TX.
         fork
@@ -1335,7 +1361,7 @@ logic [DST_ADDR_W-1:0] dst_addr;
           // Each corrupted burst starts at seq0 (re-syncs wait_for_seq0) then mismatches at idx1,
           // forcing another abort + retry; concurrently wait for the retry re-send.
           fork
-            send_ce_emission(.corrupt_seq1(1'b1));
+            send_ce_emission(.corrupt_seq1(1'b1), .payload_out(unused_payload));
             begin
               wait(rx_header_vld & (rx_header.req_id == REQ_ID_READ));
               $display("%t > [INFO]: mismatch round %0d -> retry re-sent", $time, r);
@@ -1345,7 +1371,7 @@ logic [DST_ADDR_W-1:0] dst_addr;
         end
 
         // Final clean recovery burst -> must complete.
-        send_ce_emission(.corrupt_seq1(1'b0));
+        send_ce_emission(.corrupt_seq1(1'b0), .payload_out(expected_payload));
         $display("%t > [INFO]: waiting for read completion after %0d mismatches", $time, rounds);
         wait(interrupt_read_request);
         maxil_drv_if.read_trans(MHDMA_REQUEST_READ_REQUEST_REQ_ID_OFS, read_data);
@@ -1355,6 +1381,7 @@ logic [DST_ADDR_W-1:0] dst_addr;
 
         wait_fsm_idle();
         check_fsm_initialized();
+        check_ct_in_memory(iop_dst_addr);
         maxil_drv_if.write_trans(MHDMA_SYSTEM_TIMEOUT_READ_REQ_OFS, TIMEOUT_DUR_READ_REQ);
       end
       scenario_end(scenario_id, clk_control, error);
@@ -1403,6 +1430,16 @@ logic [DST_ADDR_W-1:0] dst_addr;
       // Setting timeout size ---------------------------------------------------------------------
       maxil_drv_if.write_trans(MHDMA_SYSTEM_TIMEOUT_NOTIFY_OFS, TIMEOUT_DUR_NOTIFY);
       maxil_drv_if.write_trans(MHDMA_SYSTEM_TIMEOUT_READ_REQ_OFS, TIMEOUT_DUR_READ_REQ);
+
+      // CT HBM base per PC -----------------------------------------------------------------------
+      // Give each of the ETH_PC stripes a distinct, non-overlapping region of the shared sim memory
+      //  The per-PC CT-address registers are laid out contiguously with an 8-byte stride (LSB then MSB), so index them as BASE_OFS + pc*8.
+      for (int pc = 0; pc < ETH_PC; pc++) begin
+        logic [2*REG_DATA_W-1:0] pc_base;
+        pc_base = pc * MEM_BYTES_PER_PC;
+        maxil_drv_if.write_trans(MHDMA_HBM_AXI4_ADDR_2IN3_CT_PC0_LSB_OFS + pc*8, pc_base[0         +: REG_DATA_W]);
+        maxil_drv_if.write_trans(MHDMA_HBM_AXI4_ADDR_2IN3_CT_PC0_MSB_OFS + pc*8, pc_base[REG_DATA_W +: REG_DATA_W]);
+      end
 
       // Setting up credible values -------------------------------------------------------------
       // no loopback, no reset, not in debug lane0 selected
@@ -1552,6 +1589,61 @@ logic [DST_ADDR_W-1:0] dst_addr;
     end
   endtask
 
+
+  // Data scoreboard: verify the ciphertext the DUT wrote to HBM matches the payload the peer sent on
+  // the burst (expected_payload, captured in send order).
+  // This is what proves the data survived abort/retry:
+  //  the clean burst's writes overwrite any partial garbage from the aborted attempt, so the final memory image must equal expected_payload.
+  task automatic check_ct_in_memory(input logic [DST_ADDR_W-1:0] dst_addr);
+    int                      mismatches;
+    int                      exp_idx;
+    int                      n_axi;
+    int                      k0;
+    logic [AXI4_DATA_W-1:0]  got_axi;
+    logic [MRMAC_AXIS_W-1:0] got_w;
+    logic [2*REG_DATA_W-1:0] base;
+    begin
+      mismatches = 0;
+      exp_idx    = 0;
+      for (int pc = 0; pc < ETH_PC; pc++) begin
+        base  = pc * MEM_BYTES_PER_PC + dst_addr * CT_MEM_BYTES;
+        k0    = int'(base[MEM_SIM_SIZE-1:0]) / CT_AXI_BYTES;
+        n_axi = (pc == 0) ? AXI4_WORD_PER_PC0 : AXI4_WORD_PER_PC;
+        for (int a = 0; a < n_axi; a++) begin
+          got_axi = axi4_mem_ct.axi4_ram_ct_wr.mem[k0 + a];
+          for (int w = 0; w < MRMAC_PER_AXI; w++) begin
+            if (exp_idx >= expected_payload.size()) break;
+            got_w = got_axi[w*MRMAC_AXIS_W +: MRMAC_AXIS_W];
+            if (got_w !== expected_payload[exp_idx]) begin
+              if (mismatches < 8)
+                $display("%t > [ERROR]: CT data mismatch pc=%0d beat=%0d lane=%0d (mem[%0d]): got %h exp %h",
+                         $time, pc, a, w, k0 + a, got_w, expected_payload[exp_idx]);
+              mismatches++;
+            end
+            exp_idx++;
+          end
+        end
+      end
+
+      // Every captured payload word must have been compared.
+      // Today the striped memory region and expected_payload are exactly equal-sized for all swept configs, so this always holds;
+      // it fires only if a future param change makes the region smaller than the payload (which would otherwise let trailing words go unchecked and false tb PASS).
+      if (exp_idx != expected_payload.size()) begin
+        $display("%t > [ERROR]: CT scoreboard coverage gap: compared %0d of %0d expected words (dst=%0d)", $time, exp_idx, expected_payload.size(), dst_addr);
+        error_data = 1'b1;
+      end
+
+      if (exp_idx == 0) begin
+        $display("%t > [ERROR]: CT data check ran with no expected payload captured", $time);
+        error_data = 1'b1;
+      end else if (mismatches == 0) begin
+        $display("%t > [INFO]: CT data verified in HBM (%0d words across %0d PC(s), dst=%0d)", $time, exp_idx, ETH_PC, dst_addr);
+      end else begin
+        $display("%t > [ERROR]: CT data check FAILED: %0d/%0d word mismatches (dst=%0d)", $time, mismatches, exp_idx, dst_addr);
+        error_data = 1'b1;
+      end
+    end
+  endtask
 
   task automatic check_only_seq_num_error(input logic [REG_DATA_W-1:0] errors_val);
     begin
