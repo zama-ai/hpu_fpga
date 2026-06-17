@@ -186,7 +186,8 @@ mhdma_stats() {
   echo "  Notify ACK (nack) recv:   $(mhdma_reg_read $board mhdma_request::stat_nb_nack_received)"
   echo ""
   echo "--- Read Request Statistics ---"
-  echo "  Read req retries:         $(mhdma_reg_read $board mhdma_request::stat_read_req_retry)"
+  echo "  Read req timeout retries: $(mhdma_reg_read $board mhdma_request::stat_read_req_timeout_retry)"
+  echo "  Read req seq-num retries: $(mhdma_reg_read $board mhdma_request::stat_read_req_seq_num_retry)"
   echo "  Read req received:        $(mhdma_reg_read $board mhdma_request::stat_nb_read_req_received)"
   echo ""
   echo "--- Ciphertext Statistics ---"
@@ -238,7 +239,8 @@ mhdma_reset_stats() {
   mhdma_reg_read $board mhdma_request::stat_notify > /dev/null
   mhdma_reg_read $board mhdma_request::stat_notify_ack > /dev/null
   mhdma_reg_read $board mhdma_request::stat_notify_timeout_retry > /dev/null
-  mhdma_reg_read $board mhdma_request::stat_read_req_retry > /dev/null
+  mhdma_reg_read $board mhdma_request::stat_read_req_timeout_retry > /dev/null
+  mhdma_reg_read $board mhdma_request::stat_read_req_seq_num_retry > /dev/null
   mhdma_reg_read $board mhdma_request::stat_nb_nack_received > /dev/null
   mhdma_reg_read $board mhdma_request::stat_nb_notify_received > /dev/null
   mhdma_reg_read $board mhdma_request::stat_nb_read_req_received > /dev/null
