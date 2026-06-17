@@ -856,8 +856,8 @@ logic [IOP_ID_W-1:0]   iop_id;
 
   // --------------------------------------------------------------------------------------------- --
   // Read request retry budget exhausted: peer never answers, DUT must give up after
-  // retry_max_read_request retries, raise the max-retry-read-request error (bit [11]) and return to
-  // idle (a broken give-up would retry forever and trip the global watchdog).
+  // retry_max_read_request retries, raise max_retry_rr_error and return to idle (a broken give-up
+  // would retry forever and trip the global watchdog).
   // --------------------------------------------------------------------------------------------- --
   task automatic run_scenario_read_req_max_retry();
     logic [REG_DATA_W-1:0] to_retry, sn_retry;
@@ -925,7 +925,7 @@ logic [IOP_ID_W-1:0]   iop_id;
 
   // --------------------------------------------------------------------------------------------- --
   // Notify retry budget exhausted: ACK never returns, DUT must give up after retry_max_notify
-  // retries, raise the max-retry-notify error (bit [10]) and return to idle.
+  // retries, raise max_retry_notify_error and return to idle.
   // --------------------------------------------------------------------------------------------- --
   task automatic run_scenario_notify_max_retry();
     logic [REG_DATA_W-1:0] n_retry;
