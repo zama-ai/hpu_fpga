@@ -147,6 +147,7 @@ module multi_hpu_dma
   logic                 [REG_DATA_W-1:0]   r_request_req_addr;
   logic                 [REG_DATA_W-1:0]   r_system_timeout_notify;
   logic                 [REG_DATA_W-1:0]   r_system_timeout_read_req;
+  mhdma_system_retry_max_t                 r_system_retry_max;
   logic [    ETH_PC-1:0][2*REG_DATA_W-1:0] r_ct_mem_addr;
   logic [    ETH_PC-1:0][2*REG_DATA_W-1:0] r_ct_mem_addr_regf;
   // lane control
@@ -300,6 +301,7 @@ module multi_hpu_dma
     .r_mhdma_lane_debug                                   (/* UNUSED */                                          ),
     .r_mhdma_system_timeout_notify                        (r_system_timeout_notify                               ),
     .r_mhdma_system_timeout_read_req                      (r_system_timeout_read_req                             ),
+    .r_mhdma_system_retry_max                             (r_system_retry_max                                    ),
     // stats -----------------------------------------------------------------------------------------------------
     .r_mhdma_request_stat_notify                          (/* UNUSED - register output, only _upd/_rd_en used */ ),
     .r_mhdma_request_stat_notify_upd                      (stat_cfg.master.cnt_notify                            ),
@@ -307,15 +309,18 @@ module multi_hpu_dma
     .r_mhdma_request_stat_notify_ack                      (/* UNUSED - register output, only _upd/_rd_en used */ ),
     .r_mhdma_request_stat_notify_ack_upd                  (stat_cfg.master.cnt_notify_ack                        ),
     .r_mhdma_request_stat_notify_ack_rd_en                (stat_rst_cfg.master.cnt_notify_ack                    ),
-    .r_mhdma_request_stat_notify_timeout                  (/* UNUSED - register output, only _upd/_rd_en used */ ),
-    .r_mhdma_request_stat_notify_timeout_upd              (stat_cfg.master.cnt_notify_timeout                    ),
-    .r_mhdma_request_stat_notify_timeout_rd_en            (stat_rst_cfg.master.cnt_timeout                       ),
+    .r_mhdma_request_stat_cur_notify_to_ack               (/* UNUSED - register output, only _upd/_rd_en used */ ),
+    .r_mhdma_request_stat_cur_notify_to_ack_upd           (stat_cfg.master.t_cur_notify_to_ack                    ),
+    .r_mhdma_request_stat_cur_notify_to_ack_rd_en         (stat_rst_cfg.master.cnt_timeout                       ),
     .r_mhdma_request_stat_notify_timeout_retry            (/* UNUSED - register output, only _upd/_rd_en used */ ),
     .r_mhdma_request_stat_notify_timeout_retry_upd        (stat_cfg.master.cnt_notify_retries                    ),
     .r_mhdma_request_stat_notify_timeout_retry_rd_en      (stat_rst_cfg.master.cnt_notify_retry                  ),
     .r_mhdma_request_stat_read_req_timeout_retry          (/* UNUSED - register output, only _upd/_rd_en used */ ),
-    .r_mhdma_request_stat_read_req_timeout_retry_upd      (stat_cfg.master.cnt_read_req_retries                  ),
-    .r_mhdma_request_stat_read_req_timeout_retry_rd_en    (stat_rst_cfg.master.cnt_read_req_retry                ),
+    .r_mhdma_request_stat_read_req_timeout_retry_upd      (stat_cfg.master.cnt_read_req_timeout_retries          ),
+    .r_mhdma_request_stat_read_req_timeout_retry_rd_en    (stat_rst_cfg.master.cnt_read_req_timeout_retry        ),
+    .r_mhdma_request_stat_read_req_seq_num_retry          (/* UNUSED - register output, only _upd/_rd_en used */ ),
+    .r_mhdma_request_stat_read_req_seq_num_retry_upd      (stat_cfg.master.cnt_read_req_seq_num_retries          ),
+    .r_mhdma_request_stat_read_req_seq_num_retry_rd_en    (stat_rst_cfg.master.cnt_read_req_seq_num_retry        ),
     .r_mhdma_request_stat_nb_nack_received                (/* UNUSED - register output, only _upd/_rd_en used */ ),
     .r_mhdma_request_stat_nb_nack_received_upd            (stat_cfg.decoder.cnt_nack_received                    ),
     .r_mhdma_request_stat_nb_nack_received_rd_en          (stat_rst_cfg.decoder.cnt_nack_received                ),
@@ -445,6 +450,32 @@ module multi_hpu_dma
     );
   end
 
+  // CDC: retry_max config bus (CFG -> ETH).
+  // The regif drives it on clk_mhdma_cfg; the master uses it on clk_mhdma (independent clocks).
+  // It is quasi-static (written once via AXI-Lite and stable during operation), so a per-bit 2-FF array synchronizer is sufficient.
+  localparam int RETRY_MAX_CDC_W = 2*RETRY_CNT_W;
+  logic [RETRY_MAX_CDC_W-1:0] retry_max_cfg_flat;
+  logic [RETRY_MAX_CDC_W-1:0] retry_max_mhdma_flat;
+  logic [   RETRY_CNT_W-1:0]  retry_max_notify_mhdma;
+  logic [   RETRY_CNT_W-1:0]  retry_max_read_req_mhdma;
+
+  assign retry_max_cfg_flat = {r_system_retry_max.retry_max_read_request, r_system_retry_max.retry_max_notify};
+
+  for (genvar i = 0; i < RETRY_MAX_CDC_W; i++) begin : gen_cdc_retry_max
+    xpm_cdc_single_wrapper #(
+      .CDC_SYNC_STAGES (CDC_SYNC_STAGES),
+      .SRC_INPUT_REG   (1              )
+    ) cdc_retry_max (
+      .src_clk  (clk_mhdma_cfg          ),
+      .dest_clk (clk_mhdma              ),
+      .src_in   (retry_max_cfg_flat[i]  ),
+      .dest_out (retry_max_mhdma_flat[i])
+    );
+  end
+
+  assign retry_max_notify_mhdma   = retry_max_mhdma_flat[RETRY_CNT_W-1:0];
+  assign retry_max_read_req_mhdma = retry_max_mhdma_flat[2*RETRY_CNT_W-1:RETRY_CNT_W];
+
   // CDC: Counter values (ETH -> CFG)
   // Split into two xpm_cdc_handshake instances because of the XPM limit: 1024 bits width max
   localparam int STAT_DATA_W    = $bits(mhdma_stat_to_cfg_t);
@@ -479,7 +510,8 @@ module multi_hpu_dma
     .dest_out  (stat_cfg_flat[STAT_REST_W-1:0]  )
   );
 
-  // Merge cfg-domain master errors with mhdma-domain errors (all on cfg clock)
+  // Assemble the mhdma_system_errors word (all on cfg clock): cfg-domain master cmd-queue overflow
+  // bits on top, then the CDC'd mhdma-domain errors. Layout = packing of mhdma_error_all_t (see pkg).
   assign mhdma_error_all.master_error_cfg = master_error_cfg;
   assign mhdma_error_all.mhdma_error      = mhdma_error_t'(stat_cfg.mhdma_errors[$bits(mhdma_error_t)-1:0]);
   assign mhdma_errors_cfg_merged          = {{(REG_DATA_W-$bits(mhdma_error_all_t)){1'b0}}, mhdma_error_all};
@@ -574,6 +606,8 @@ module multi_hpu_dma
     .regf_read_addr                 (r_request_read_addr                                          ),
     .regf_timeout_duration_notify   (r_system_timeout_notify                                      ),
     .regf_timeout_duration_read_req (r_system_timeout_read_req                                    ),
+    .regf_retry_max_notify          (retry_max_notify_mhdma                                       ),
+    .regf_retry_max_read_req        (retry_max_read_req_mhdma                                     ),
     // interruptions and control ------------------------------------------------------------------
     .received_req                   (&received_req                                                ),
     .request_consumed               (request_consumed                                             ),

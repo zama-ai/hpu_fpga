@@ -5,8 +5,8 @@
   "offset": 0,
   "range": 393216,
   "ext_pkg": [
-    "axi_if_shell_axil_pkg",
-    "axi_if_common_param_pkg"
+    "axi_if_common_param_pkg",
+    "axi_if_shell_axil_pkg"
   ],
   "section": [
     {
@@ -4138,7 +4138,7 @@
       "description": "system configuration",
       "offset": 327680,
       "bytes_align": 4,
-      "range": 52,
+      "range": 56,
       "register": [
         {
           "name": "lane",
@@ -4270,12 +4270,55 @@
           ]
         },
         {
+          "name": "retry_max",
+          "description": "Timeout: maximum number of times we should do retries for both Notify & Retry ",
+          "owner": "User",
+          "read_access": "Read",
+          "write_access": "Write",
+          "offset": 327692,
+          "default": {
+            "ParamsField": {
+              "params": [],
+              "name_val": [
+                [
+                  "retry_max_notify",
+                  "'ha"
+                ],
+                [
+                  "retry_max_read_request",
+                  "'ha"
+                ]
+              ]
+            }
+          },
+          "field": [
+            {
+              "name": "retry_max_notify",
+              "description": "Maximum number of retries to do before stopping and triggering error",
+              "size_b": 8,
+              "offset_b": 0,
+              "default": {
+                "Cst": 10
+              }
+            },
+            {
+              "name": "retry_max_read_request",
+              "description": "Maximum number of retries to do before stopping and triggering error",
+              "size_b": 8,
+              "offset_b": 8,
+              "default": {
+                "Cst": 10
+              }
+            }
+          ]
+        },
+        {
           "name": "fsm_value",
           "description": "Packed read-only snapshot of all internal FSM states: [26:24] formatter, [20:18] slave notify-rx, [17:15] slave ciphertext-emission, [11:9] master read-request, [5:3] master notify",
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "None",
-          "offset": 327692,
+          "offset": 327696,
           "default": {
             "Cst": 0
           },
@@ -4283,11 +4326,11 @@
         },
         {
           "name": "errors",
-          "description": "Sticky error flags (cleared by reset_registers): [9] master read-request cmd queue overflow, [8] master notify cmd queue overflow, [7] formatter payload gap, [6] decoder rx FIFO overflow, [5] slave read-request cmd queue overflow, [4] AXI4 HBM read response error, [3] ciphertext sequence number mismatch, [2:1] per-PC AXI4 HBM write error, [0] multi-HPU one-hot ID violation",
+          "description": "Sticky error flags (cleared by reset_registers): [11] master max retry RR hit, [10] master max retry RR hit, [9] master read-request cmd queue overflow, [8] master notify cmd queue overflow, [7] formatter payload gap, [6] decoder rx FIFO overflow, [5] slave read-request cmd queue overflow, [4] AXI4 HBM read response error, [3] ciphertext sequence number mismatch, [2:1] per-PC AXI4 HBM write error, [0] multi-HPU one-hot ID violation",
           "owner": "Kernel",
           "read_access": "ReadNotify",
           "write_access": "None",
-          "offset": 327696,
+          "offset": 327700,
           "default": {
             "Cst": 0
           },
@@ -4299,7 +4342,7 @@
           "owner": "User",
           "read_access": "Read",
           "write_access": "Write",
-          "offset": 327700,
+          "offset": 327704,
           "default": {
             "Cst": 0
           },
@@ -4311,7 +4354,7 @@
           "owner": "User",
           "read_access": "Read",
           "write_access": "Write",
-          "offset": 327704,
+          "offset": 327708,
           "default": {
             "Cst": 0
           },
@@ -4323,7 +4366,7 @@
           "owner": "User",
           "read_access": "Read",
           "write_access": "Write",
-          "offset": 327708,
+          "offset": 327712,
           "default": {
             "Cst": 0
           },
@@ -4335,7 +4378,7 @@
           "owner": "User",
           "read_access": "Read",
           "write_access": "Write",
-          "offset": 327712,
+          "offset": 327716,
           "default": {
             "Cst": 0
           },
@@ -4347,7 +4390,7 @@
           "owner": "User",
           "read_access": "Read",
           "write_access": "Write",
-          "offset": 327716,
+          "offset": 327720,
           "default": {
             "Cst": 0
           },
@@ -4359,7 +4402,7 @@
           "owner": "User",
           "read_access": "Read",
           "write_access": "Write",
-          "offset": 327720,
+          "offset": 327724,
           "default": {
             "Cst": 0
           },
@@ -4371,7 +4414,7 @@
           "owner": "User",
           "read_access": "Read",
           "write_access": "Write",
-          "offset": 327724,
+          "offset": 327728,
           "default": {
             "Cst": 0
           },
@@ -4383,7 +4426,7 @@
           "owner": "User",
           "read_access": "Read",
           "write_access": "Write",
-          "offset": 327728,
+          "offset": 327732,
           "default": {
             "Cst": 0
           },
@@ -4491,7 +4534,7 @@
       "description": "Request registers interface",
       "offset": 327936,
       "bytes_align": 4,
-      "range": 164,
+      "range": 168,
       "register": [
         {
           "name": "req_id",
@@ -4945,11 +4988,23 @@
         },
         {
           "name": "stat_read_req_timeout_retry",
-          "description": "Number of read-request retries triggered by timeout or sequence number mismatch",
+          "description": "Number of read-request retries triggered by timeout number mismatch",
           "owner": "Kernel",
           "read_access": "ReadNotify",
           "write_access": "None",
           "offset": 327972,
+          "default": {
+            "Cst": 0
+          },
+          "field": null
+        },
+        {
+          "name": "stat_read_req_seq_num_retry",
+          "description": "Number of read-request retries triggered by sequence number mismatch",
+          "owner": "Kernel",
+          "read_access": "ReadNotify",
+          "write_access": "None",
+          "offset": 327976,
           "default": {
             "Cst": 0
           },
@@ -4961,7 +5016,7 @@
           "owner": "Kernel",
           "read_access": "ReadNotify",
           "write_access": "None",
-          "offset": 327976,
+          "offset": 327980,
           "default": {
             "Cst": 0
           },
@@ -4973,7 +5028,7 @@
           "owner": "Kernel",
           "read_access": "ReadNotify",
           "write_access": "None",
-          "offset": 327980,
+          "offset": 327984,
           "default": {
             "Cst": 0
           },
@@ -4985,7 +5040,7 @@
           "owner": "Kernel",
           "read_access": "ReadNotify",
           "write_access": "None",
-          "offset": 327984,
+          "offset": 327988,
           "default": {
             "Cst": 0
           },
@@ -4997,7 +5052,7 @@
           "owner": "Kernel",
           "read_access": "ReadNotify",
           "write_access": "None",
-          "offset": 327988,
+          "offset": 327992,
           "default": {
             "Cst": 0
           },
@@ -5009,7 +5064,7 @@
           "owner": "Kernel",
           "read_access": "ReadNotify",
           "write_access": "None",
-          "offset": 327992,
+          "offset": 327996,
           "default": {
             "Cst": 0
           },
@@ -5021,7 +5076,7 @@
           "owner": "Kernel",
           "read_access": "ReadNotify",
           "write_access": "None",
-          "offset": 327996,
+          "offset": 328000,
           "default": {
             "Cst": 0
           },
@@ -5033,7 +5088,7 @@
           "owner": "Kernel",
           "read_access": "ReadNotify",
           "write_access": "None",
-          "offset": 328000,
+          "offset": 328004,
           "default": {
             "Cst": 0
           },
@@ -5045,7 +5100,7 @@
           "owner": "Kernel",
           "read_access": "ReadNotify",
           "write_access": "None",
-          "offset": 328004,
+          "offset": 328008,
           "default": {
             "Cst": 0
           },
@@ -5057,7 +5112,7 @@
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "None",
-          "offset": 328008,
+          "offset": 328012,
           "default": {
             "Cst": 0
           },
@@ -5069,7 +5124,7 @@
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "None",
-          "offset": 328012,
+          "offset": 328016,
           "default": {
             "Cst": 0
           },
@@ -5081,7 +5136,7 @@
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "None",
-          "offset": 328016,
+          "offset": 328020,
           "default": {
             "Cst": 0
           },
@@ -5093,7 +5148,7 @@
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "None",
-          "offset": 328020,
+          "offset": 328024,
           "default": {
             "Cst": 0
           },
@@ -5105,7 +5160,7 @@
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "None",
-          "offset": 328024,
+          "offset": 328028,
           "default": {
             "Cst": 0
           },
@@ -5117,7 +5172,7 @@
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "None",
-          "offset": 328028,
+          "offset": 328032,
           "default": {
             "Cst": 0
           },
@@ -5129,19 +5184,19 @@
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "None",
-          "offset": 328032,
+          "offset": 328036,
           "default": {
             "Cst": 0
           },
           "field": null
         },
         {
-          "name": "stat_notify_timeout",
+          "name": "stat_cur_notify_to_ack",
           "description": "Live value of the notify timeout counter (resets on each new notify send)",
           "owner": "Kernel",
           "read_access": "ReadNotify",
           "write_access": "None",
-          "offset": 328036,
+          "offset": 328040,
           "default": {
             "Cst": 0
           },
@@ -5153,7 +5208,7 @@
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "None",
-          "offset": 328040,
+          "offset": 328044,
           "default": {
             "Cst": 0
           },
@@ -5165,7 +5220,7 @@
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "None",
-          "offset": 328044,
+          "offset": 328048,
           "default": {
             "Cst": 0
           },
@@ -5177,7 +5232,7 @@
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "None",
-          "offset": 328048,
+          "offset": 328052,
           "default": {
             "Cst": 0
           },
@@ -5189,7 +5244,7 @@
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "None",
-          "offset": 328052,
+          "offset": 328056,
           "default": {
             "Cst": 0
           },
@@ -5201,7 +5256,7 @@
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "None",
-          "offset": 328056,
+          "offset": 328060,
           "default": {
             "Cst": 0
           },
@@ -5213,7 +5268,7 @@
           "owner": "Kernel",
           "read_access": "ReadNotify",
           "write_access": "None",
-          "offset": 328060,
+          "offset": 328064,
           "default": {
             "Cst": 0
           },
@@ -5225,7 +5280,7 @@
           "owner": "Kernel",
           "read_access": "ReadNotify",
           "write_access": "None",
-          "offset": 328064,
+          "offset": 328068,
           "default": {
             "Cst": 0
           },
@@ -5237,7 +5292,7 @@
           "owner": "Kernel",
           "read_access": "ReadNotify",
           "write_access": "None",
-          "offset": 328068,
+          "offset": 328072,
           "default": {
             "Cst": 0
           },
@@ -5249,7 +5304,7 @@
           "owner": "Kernel",
           "read_access": "ReadNotify",
           "write_access": "None",
-          "offset": 328072,
+          "offset": 328076,
           "default": {
             "Cst": 0
           },
@@ -5261,7 +5316,7 @@
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "None",
-          "offset": 328076,
+          "offset": 328080,
           "default": {
             "Cst": 0
           },
@@ -5273,7 +5328,7 @@
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "None",
-          "offset": 328080,
+          "offset": 328084,
           "default": {
             "Cst": 0
           },
@@ -5285,7 +5340,7 @@
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "None",
-          "offset": 328084,
+          "offset": 328088,
           "default": {
             "Cst": 0
           },
@@ -5297,7 +5352,7 @@
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "None",
-          "offset": 328088,
+          "offset": 328092,
           "default": {
             "Cst": 0
           },
@@ -5309,7 +5364,7 @@
           "owner": "Kernel",
           "read_access": "Read",
           "write_access": "None",
-          "offset": 328092,
+          "offset": 328096,
           "default": {
             "Cst": 0
           },
@@ -5321,7 +5376,7 @@
           "owner": "Kernel",
           "read_access": "ReadNotify",
           "write_access": "None",
-          "offset": 328096,
+          "offset": 328100,
           "default": {
             "Cst": 0
           },

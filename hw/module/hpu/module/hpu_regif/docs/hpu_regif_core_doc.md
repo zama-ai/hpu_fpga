@@ -1,5 +1,5 @@
 # HPU_REGIF_CORE documentation
-**Date**: 2026-04-02
+**Date**: 2026-06-16
 **Tool Version**: 27d9e880d531030160fd8749c606142942d5558d
 
 ## RegisterMap Overview
@@ -17,7 +17,7 @@ MHDMA register interface. Accessed by RPU for DMA command submission, completion
 **Offset**: 0x0
 **Range**: 0x60000
 **Word Size (b)**: 32
-**External Packages**: "axi_if_shell_axil_pkg.sv","axi_if_common_param_pkg.sv"
+**External Packages**: "axi_if_common_param_pkg.sv","axi_if_shell_axil_pkg.sv"
 
 
 ---
@@ -44,9 +44,9 @@ Below is a summary of all the registers in the current register map:
 | [status_3in3](#section-status-3in3) | 0x30010 | 0x4 | HPU status of parts 2in3 and 3in3 |
 | [bsk_avail](#section-bsk-avail) | 0x31000 | 0x8 | BSK availability configuration |
 | [runtime_3in3](#section-runtime-3in3) | 0x32000 | 0x48 | Runtime information |
-| [mhdma_system](#section-mhdma-system) | 0x50000 | 0x34 | system configuration |
+| [mhdma_system](#section-mhdma-system) | 0x50000 | 0x38 | system configuration |
 | [mhdma_reset](#section-mhdma-reset) | 0x50090 | 0x8 | Controllable resets for transceivers |
-| [mhdma_request](#section-mhdma-request) | 0x50100 | 0xa4 | Request registers interface |
+| [mhdma_request](#section-mhdma-request) | 0x50100 | 0xa8 | Request registers interface |
 | [mhdma_lane](#section-mhdma-lane) | 0x50200 | 0x4 | Line parameter sections |
 | [mhdma_hbm_axi4_addr_2in3](#section-mhdma-hbm-axi4-addr-2in3) | 0x51000 | 0x10 | HBM AXI4 connection address offset |
 
@@ -4039,16 +4039,17 @@ Below is a summary of all the registers in the current section mhdma_system:
 | [lane](#register-mhdma-systemlane) | 0x50000 | RW |  QSFP transceiver lane configuration |
 | [timeout_notify](#register-mhdma-systemtimeout-notify) | 0x50004 | RW |  Timeout: time before re-launching a request, in clock cycles |
 | [timeout_read_req](#register-mhdma-systemtimeout-read-req) | 0x50008 | RW |  Timeout: time before re-launching a request, in clock cycles |
-| [fsm_value](#register-mhdma-systemfsm-value) | 0x5000c | R. |  Packed read-only snapshot of all internal FSM states: [26:24] formatter, [20:18] slave notify-rx, [17:15] slave ciphertext-emission, [11:9] master read-request, [5:3] master notify |
-| [errors](#register-mhdma-systemerrors) | 0x50010 | R. |  Sticky error flags (cleared by reset_registers): [9] master read-request cmd queue overflow, [8] master notify cmd queue overflow, [7] formatter payload gap, [6] decoder rx FIFO overflow, [5] slave read-request cmd queue overflow, [4] AXI4 HBM read response error, [3] ciphertext sequence number mismatch, [2:1] per-PC AXI4 HBM write error, [0] multi-HPU one-hot ID violation |
-| [hpu_id_0](#register-mhdma-systemhpu-id-0) | 0x50014 | RW |  HPU table entry: [31] one-hot flag marking this entry as the local HPU, [23:0] 24-bit MAC address for Ethernet frame filtering and header generation |
-| [hpu_id_1](#register-mhdma-systemhpu-id-1) | 0x50018 | RW |  HPU table entry: [31] one-hot flag marking this entry as the local HPU, [23:0] 24-bit MAC address for Ethernet frame filtering and header generation |
-| [hpu_id_2](#register-mhdma-systemhpu-id-2) | 0x5001c | RW |  HPU table entry: [31] one-hot flag marking this entry as the local HPU, [23:0] 24-bit MAC address for Ethernet frame filtering and header generation |
-| [hpu_id_3](#register-mhdma-systemhpu-id-3) | 0x50020 | RW |  HPU table entry: [31] one-hot flag marking this entry as the local HPU, [23:0] 24-bit MAC address for Ethernet frame filtering and header generation |
-| [hpu_id_4](#register-mhdma-systemhpu-id-4) | 0x50024 | RW |  HPU table entry: [31] one-hot flag marking this entry as the local HPU, [23:0] 24-bit MAC address for Ethernet frame filtering and header generation |
-| [hpu_id_5](#register-mhdma-systemhpu-id-5) | 0x50028 | RW |  HPU table entry: [31] one-hot flag marking this entry as the local HPU, [23:0] 24-bit MAC address for Ethernet frame filtering and header generation |
-| [hpu_id_6](#register-mhdma-systemhpu-id-6) | 0x5002c | RW |  HPU table entry: [31] one-hot flag marking this entry as the local HPU, [23:0] 24-bit MAC address for Ethernet frame filtering and header generation |
-| [hpu_id_7](#register-mhdma-systemhpu-id-7) | 0x50030 | RW |  HPU table entry: [31] one-hot flag marking this entry as the local HPU, [23:0] 24-bit MAC address for Ethernet frame filtering and header generation |
+| [retry_max](#register-mhdma-systemretry-max) | 0x5000c | RW |  Timeout: maximum number of times we should do retries for both Notify & Retry  |
+| [fsm_value](#register-mhdma-systemfsm-value) | 0x50010 | R. |  Packed read-only snapshot of all internal FSM states: [26:24] formatter, [20:18] slave notify-rx, [17:15] slave ciphertext-emission, [11:9] master read-request, [5:3] master notify |
+| [errors](#register-mhdma-systemerrors) | 0x50014 | R. |  Sticky error flags (cleared by reset_registers): [11] master max retry RR hit, [10] master max retry RR hit, [9] master read-request cmd queue overflow, [8] master notify cmd queue overflow, [7] formatter payload gap, [6] decoder rx FIFO overflow, [5] slave read-request cmd queue overflow, [4] AXI4 HBM read response error, [3] ciphertext sequence number mismatch, [2:1] per-PC AXI4 HBM write error, [0] multi-HPU one-hot ID violation |
+| [hpu_id_0](#register-mhdma-systemhpu-id-0) | 0x50018 | RW |  HPU table entry: [31] one-hot flag marking this entry as the local HPU, [23:0] 24-bit MAC address for Ethernet frame filtering and header generation |
+| [hpu_id_1](#register-mhdma-systemhpu-id-1) | 0x5001c | RW |  HPU table entry: [31] one-hot flag marking this entry as the local HPU, [23:0] 24-bit MAC address for Ethernet frame filtering and header generation |
+| [hpu_id_2](#register-mhdma-systemhpu-id-2) | 0x50020 | RW |  HPU table entry: [31] one-hot flag marking this entry as the local HPU, [23:0] 24-bit MAC address for Ethernet frame filtering and header generation |
+| [hpu_id_3](#register-mhdma-systemhpu-id-3) | 0x50024 | RW |  HPU table entry: [31] one-hot flag marking this entry as the local HPU, [23:0] 24-bit MAC address for Ethernet frame filtering and header generation |
+| [hpu_id_4](#register-mhdma-systemhpu-id-4) | 0x50028 | RW |  HPU table entry: [31] one-hot flag marking this entry as the local HPU, [23:0] 24-bit MAC address for Ethernet frame filtering and header generation |
+| [hpu_id_5](#register-mhdma-systemhpu-id-5) | 0x5002c | RW |  HPU table entry: [31] one-hot flag marking this entry as the local HPU, [23:0] 24-bit MAC address for Ethernet frame filtering and header generation |
+| [hpu_id_6](#register-mhdma-systemhpu-id-6) | 0x50030 | RW |  HPU table entry: [31] one-hot flag marking this entry as the local HPU, [23:0] 24-bit MAC address for Ethernet frame filtering and header generation |
+| [hpu_id_7](#register-mhdma-systemhpu-id-7) | 0x50034 | RW |  HPU table entry: [31] one-hot flag marking this entry as the local HPU, [23:0] 24-bit MAC address for Ethernet frame filtering and header generation |
 
 
 ---
@@ -4126,13 +4127,37 @@ Register timeout_read_req contains following Sub-fields:
 ---
 
 
+### Register mhdma-system.retry-max
+
+- **Description**: Timeout: maximum number of times we should do retries for both Notify & Retry 
+- **Owner**: User
+- **Read Access**: Read
+- **Write Access**: Write
+- **Offset**: 0x5000c
+- **Default**: C.f. fields
+
+
+#### Field Details
+
+Register retry_max contains following Sub-fields:
+
+| Field Name | Offset_b | Size_b | Default      | Description   |
+|-----------:|:--------:|:------:|:------------:|:--------------|
+| retry_max_notify      | 0 | 8 |10| Maximum number of retries to do before stopping and triggering error |
+| retry_max_read_request      | 8 | 8 |10| Maximum number of retries to do before stopping and triggering error |
+
+
+
+---
+
+
 ### Register mhdma-system.fsm-value
 
 - **Description**: Packed read-only snapshot of all internal FSM states: [26:24] formatter, [20:18] slave notify-rx, [17:15] slave ciphertext-emission, [11:9] master read-request, [5:3] master notify
 - **Owner**: Kernel
 - **Read Access**: Read
 - **Write Access**: None
-- **Offset**: 0x5000c
+- **Offset**: 0x50010
 - **Default**: 0
 
 
@@ -4143,11 +4168,11 @@ Register timeout_read_req contains following Sub-fields:
 
 ### Register mhdma-system.errors
 
-- **Description**: Sticky error flags (cleared by reset_registers): [9] master read-request cmd queue overflow, [8] master notify cmd queue overflow, [7] formatter payload gap, [6] decoder rx FIFO overflow, [5] slave read-request cmd queue overflow, [4] AXI4 HBM read response error, [3] ciphertext sequence number mismatch, [2:1] per-PC AXI4 HBM write error, [0] multi-HPU one-hot ID violation
+- **Description**: Sticky error flags (cleared by reset_registers): [11] master max retry RR hit, [10] master max retry RR hit, [9] master read-request cmd queue overflow, [8] master notify cmd queue overflow, [7] formatter payload gap, [6] decoder rx FIFO overflow, [5] slave read-request cmd queue overflow, [4] AXI4 HBM read response error, [3] ciphertext sequence number mismatch, [2:1] per-PC AXI4 HBM write error, [0] multi-HPU one-hot ID violation
 - **Owner**: Kernel
 - **Read Access**: ReadNotify
 - **Write Access**: None
-- **Offset**: 0x50010
+- **Offset**: 0x50014
 - **Default**: 0
 
 
@@ -4162,7 +4187,7 @@ Register timeout_read_req contains following Sub-fields:
 - **Owner**: User
 - **Read Access**: Read
 - **Write Access**: Write
-- **Offset**: 0x50014
+- **Offset**: 0x50018
 - **Default**: 0
 
 
@@ -4177,7 +4202,7 @@ Register timeout_read_req contains following Sub-fields:
 - **Owner**: User
 - **Read Access**: Read
 - **Write Access**: Write
-- **Offset**: 0x50018
+- **Offset**: 0x5001c
 - **Default**: 0
 
 
@@ -4192,7 +4217,7 @@ Register timeout_read_req contains following Sub-fields:
 - **Owner**: User
 - **Read Access**: Read
 - **Write Access**: Write
-- **Offset**: 0x5001c
+- **Offset**: 0x50020
 - **Default**: 0
 
 
@@ -4207,7 +4232,7 @@ Register timeout_read_req contains following Sub-fields:
 - **Owner**: User
 - **Read Access**: Read
 - **Write Access**: Write
-- **Offset**: 0x50020
+- **Offset**: 0x50024
 - **Default**: 0
 
 
@@ -4222,7 +4247,7 @@ Register timeout_read_req contains following Sub-fields:
 - **Owner**: User
 - **Read Access**: Read
 - **Write Access**: Write
-- **Offset**: 0x50024
+- **Offset**: 0x50028
 - **Default**: 0
 
 
@@ -4237,7 +4262,7 @@ Register timeout_read_req contains following Sub-fields:
 - **Owner**: User
 - **Read Access**: Read
 - **Write Access**: Write
-- **Offset**: 0x50028
+- **Offset**: 0x5002c
 - **Default**: 0
 
 
@@ -4252,7 +4277,7 @@ Register timeout_read_req contains following Sub-fields:
 - **Owner**: User
 - **Read Access**: Read
 - **Write Access**: Write
-- **Offset**: 0x5002c
+- **Offset**: 0x50030
 - **Default**: 0
 
 
@@ -4267,7 +4292,7 @@ Register timeout_read_req contains following Sub-fields:
 - **Owner**: User
 - **Read Access**: Read
 - **Write Access**: Write
-- **Offset**: 0x50030
+- **Offset**: 0x50034
 - **Default**: 0
 
 
@@ -4360,38 +4385,39 @@ Below is a summary of all the registers in the current section mhdma_request:
 | [stat_notify](#register-mhdma-requeststat-notify) | 0x50118 | R. |  Number of notify packets sent |
 | [stat_notify_ack](#register-mhdma-requeststat-notify-ack) | 0x5011c | R. |  Number of notify-ACK packets received |
 | [stat_notify_timeout_retry](#register-mhdma-requeststat-notify-timeout-retry) | 0x50120 | R. |  Number of notify retries triggered by timeout expiration |
-| [stat_read_req_timeout_retry](#register-mhdma-requeststat-read-req-timeout-retry) | 0x50124 | R. |  Number of read-request retries triggered by timeout or sequence number mismatch |
-| [stat_nb_nack_received](#register-mhdma-requeststat-nb-nack-received) | 0x50128 | R. |  Number of notify-ACK packets received by the decoder from the network |
-| [stat_nb_notify_received](#register-mhdma-requeststat-nb-notify-received) | 0x5012c | R. |  Number of notify packets received by the decoder from the network |
-| [stat_nb_read_req_received](#register-mhdma-requeststat-nb-read-req-received) | 0x50130 | R. |  Number of read-request packets received by the decoder from the network |
-| [stat_nb_ce_received](#register-mhdma-requeststat-nb-ce-received) | 0x50134 | R. |  Number of ciphertext-emission packets received by the decoder from the network |
-| [stat_nb_read_to_hbm](#register-mhdma-requeststat-nb-read-to-hbm) | 0x50138 | R. |  Number of AXI4 read transactions issued to HBM by the slave |
-| [stat_nb_words_received_pc_pc0](#register-mhdma-requeststat-nb-words-received-pc-pc0) | 0x5013c | R. |  Per-PC count of AXI4 read data words received from HBM |
-| [stat_nb_words_received_pc_pc1](#register-mhdma-requeststat-nb-words-received-pc-pc1) | 0x50140 | R. |  Per-PC count of AXI4 read data words received from HBM |
-| [stat_nb_ce_words_received](#register-mhdma-requeststat-nb-ce-words-received) | 0x50144 | R. |  Number of ciphertext words received by the master after the last completed read request |
-| [stat_t_notify_to_ack](#register-mhdma-requeststat-t-notify-to-ack) | 0x50148 | R. |  Latency in clock cycles from notify packet sent (tlast) to ACK received |
-| [stat_t_notify_to_ack_max](#register-mhdma-requeststat-t-notify-to-ack-max) | 0x5014c | R. |  Maximum notify-to-ACK latency observed since last reset |
-| [stat_t_rr_to_ce_received](#register-mhdma-requeststat-t-rr-to-ce-received) | 0x50150 | R. |  Latency in clock cycles from read-request sent to all ciphertext packets received |
-| [stat_t_rr_to_ce_received_max](#register-mhdma-requeststat-t-rr-to-ce-received-max) | 0x50154 | R. |  Maximum read-request-to-ciphertext-received latency observed since last reset |
-| [stat_t_ce_first_to_last_pkt](#register-mhdma-requeststat-t-ce-first-to-last-pkt) | 0x50158 | R. |  Latency in clock cycles from first to last packet of a ciphertext emission sequence (decoder side) |
-| [stat_t_rr_wait_words_pc_pc0](#register-mhdma-requeststat-t-rr-wait-words-pc-pc0) | 0x5015c | R. |  Per-PC latency in clock cycles from AXI4 read issued to first read data received from HBM |
-| [stat_t_rr_wait_words_pc_pc1](#register-mhdma-requeststat-t-rr-wait-words-pc-pc1) | 0x50160 | R. |  Per-PC latency in clock cycles from AXI4 read issued to first read data received from HBM |
-| [stat_notify_timeout](#register-mhdma-requeststat-notify-timeout) | 0x50164 | R. |  Live value of the notify timeout counter (resets on each new notify send) |
-| [stat_physical_addr_pc0_lsb](#register-mhdma-requeststat-physical-addr-pc0-lsb) | 0x50168 | R. |  Per-PC physical HBM address of the last AXI4 transaction (debug, LSB/MSB pairs) |
-| [stat_physical_addr_pc0_msb](#register-mhdma-requeststat-physical-addr-pc0-msb) | 0x5016c | R. |  Per-PC physical HBM address of the last AXI4 transaction (debug, LSB/MSB pairs) |
-| [stat_physical_addr_pc1_lsb](#register-mhdma-requeststat-physical-addr-pc1-lsb) | 0x50170 | R. |  Per-PC physical HBM address of the last AXI4 transaction (debug, LSB/MSB pairs) |
-| [stat_physical_addr_pc1_msb](#register-mhdma-requeststat-physical-addr-pc1-msb) | 0x50174 | R. |  Per-PC physical HBM address of the last AXI4 transaction (debug, LSB/MSB pairs) |
-| [stat_cnt_nb_write_complete](#register-mhdma-requeststat-cnt-nb-write-complete) | 0x50178 | R. |  Number of completed AXI4 write transactions to HBM (per-PC rising-edge count) |
-| [stat_nb_notify_sent](#register-mhdma-requeststat-nb-notify-sent) | 0x5017c | R. |  Number of notify packets sent by the formatter (TX-side counterpart of stat_notify) |
-| [stat_nb_ce_sent](#register-mhdma-requeststat-nb-ce-sent) | 0x50180 | R. |  Number of ciphertext-emission sequences sent by the formatter |
-| [stat_nb_notify_ack_sent](#register-mhdma-requeststat-nb-notify-ack-sent) | 0x50184 | R. |  Number of notify-ACK packets sent by the formatter |
-| [stat_nb_read_req_sent](#register-mhdma-requeststat-nb-read-req-sent) | 0x50188 | R. |  Number of read-request packets sent by the master |
-| [stat_t_hbm_write_latency](#register-mhdma-requeststat-t-hbm-write-latency) | 0x5018c | R. |  Latency in clock cycles from first AXI4 write address accepted to all write responses received |
-| [stat_t_hbm_write_latency_max](#register-mhdma-requeststat-t-hbm-write-latency-max) | 0x50190 | R. |  Maximum HBM write latency observed since last reset |
-| [stat_t_hbm_write_latency_min](#register-mhdma-requeststat-t-hbm-write-latency-min) | 0x50194 | R. |  Minimum HBM write latency observed since last reset (initialized to 0xFFFFFFFF) |
-| [stat_t_notify_to_ack_min](#register-mhdma-requeststat-t-notify-to-ack-min) | 0x50198 | R. |  Minimum notify-to-ACK latency observed since last reset (initialized to 0xFFFFFFFF) |
-| [stat_t_rr_to_ce_received_min](#register-mhdma-requeststat-t-rr-to-ce-received-min) | 0x5019c | R. |  Minimum read-request-to-ciphertext-received latency observed since last reset (initialized to 0xFFFFFFFF) |
-| [stat_nb_decoder_dropped](#register-mhdma-requeststat-nb-decoder-dropped) | 0x501a0 | R. |  Number of received packets dropped by the decoder (wrong MAC address or unrecognized opcode) |
+| [stat_read_req_timeout_retry](#register-mhdma-requeststat-read-req-timeout-retry) | 0x50124 | R. |  Number of read-request retries triggered by timeout number mismatch |
+| [stat_read_req_seq_num_retry](#register-mhdma-requeststat-read-req-seq-num-retry) | 0x50128 | R. |  Number of read-request retries triggered by sequence number mismatch |
+| [stat_nb_nack_received](#register-mhdma-requeststat-nb-nack-received) | 0x5012c | R. |  Number of notify-ACK packets received by the decoder from the network |
+| [stat_nb_notify_received](#register-mhdma-requeststat-nb-notify-received) | 0x50130 | R. |  Number of notify packets received by the decoder from the network |
+| [stat_nb_read_req_received](#register-mhdma-requeststat-nb-read-req-received) | 0x50134 | R. |  Number of read-request packets received by the decoder from the network |
+| [stat_nb_ce_received](#register-mhdma-requeststat-nb-ce-received) | 0x50138 | R. |  Number of ciphertext-emission packets received by the decoder from the network |
+| [stat_nb_read_to_hbm](#register-mhdma-requeststat-nb-read-to-hbm) | 0x5013c | R. |  Number of AXI4 read transactions issued to HBM by the slave |
+| [stat_nb_words_received_pc_pc0](#register-mhdma-requeststat-nb-words-received-pc-pc0) | 0x50140 | R. |  Per-PC count of AXI4 read data words received from HBM |
+| [stat_nb_words_received_pc_pc1](#register-mhdma-requeststat-nb-words-received-pc-pc1) | 0x50144 | R. |  Per-PC count of AXI4 read data words received from HBM |
+| [stat_nb_ce_words_received](#register-mhdma-requeststat-nb-ce-words-received) | 0x50148 | R. |  Number of ciphertext words received by the master after the last completed read request |
+| [stat_t_notify_to_ack](#register-mhdma-requeststat-t-notify-to-ack) | 0x5014c | R. |  Latency in clock cycles from notify packet sent (tlast) to ACK received |
+| [stat_t_notify_to_ack_max](#register-mhdma-requeststat-t-notify-to-ack-max) | 0x50150 | R. |  Maximum notify-to-ACK latency observed since last reset |
+| [stat_t_rr_to_ce_received](#register-mhdma-requeststat-t-rr-to-ce-received) | 0x50154 | R. |  Latency in clock cycles from read-request sent to all ciphertext packets received |
+| [stat_t_rr_to_ce_received_max](#register-mhdma-requeststat-t-rr-to-ce-received-max) | 0x50158 | R. |  Maximum read-request-to-ciphertext-received latency observed since last reset |
+| [stat_t_ce_first_to_last_pkt](#register-mhdma-requeststat-t-ce-first-to-last-pkt) | 0x5015c | R. |  Latency in clock cycles from first to last packet of a ciphertext emission sequence (decoder side) |
+| [stat_t_rr_wait_words_pc_pc0](#register-mhdma-requeststat-t-rr-wait-words-pc-pc0) | 0x50160 | R. |  Per-PC latency in clock cycles from AXI4 read issued to first read data received from HBM |
+| [stat_t_rr_wait_words_pc_pc1](#register-mhdma-requeststat-t-rr-wait-words-pc-pc1) | 0x50164 | R. |  Per-PC latency in clock cycles from AXI4 read issued to first read data received from HBM |
+| [stat_cur_notify_to_ack](#register-mhdma-requeststat-cur-notify-to-ack) | 0x50168 | R. |  Live value of the notify timeout counter (resets on each new notify send) |
+| [stat_physical_addr_pc0_lsb](#register-mhdma-requeststat-physical-addr-pc0-lsb) | 0x5016c | R. |  Per-PC physical HBM address of the last AXI4 transaction (debug, LSB/MSB pairs) |
+| [stat_physical_addr_pc0_msb](#register-mhdma-requeststat-physical-addr-pc0-msb) | 0x50170 | R. |  Per-PC physical HBM address of the last AXI4 transaction (debug, LSB/MSB pairs) |
+| [stat_physical_addr_pc1_lsb](#register-mhdma-requeststat-physical-addr-pc1-lsb) | 0x50174 | R. |  Per-PC physical HBM address of the last AXI4 transaction (debug, LSB/MSB pairs) |
+| [stat_physical_addr_pc1_msb](#register-mhdma-requeststat-physical-addr-pc1-msb) | 0x50178 | R. |  Per-PC physical HBM address of the last AXI4 transaction (debug, LSB/MSB pairs) |
+| [stat_cnt_nb_write_complete](#register-mhdma-requeststat-cnt-nb-write-complete) | 0x5017c | R. |  Number of completed AXI4 write transactions to HBM (per-PC rising-edge count) |
+| [stat_nb_notify_sent](#register-mhdma-requeststat-nb-notify-sent) | 0x50180 | R. |  Number of notify packets sent by the formatter (TX-side counterpart of stat_notify) |
+| [stat_nb_ce_sent](#register-mhdma-requeststat-nb-ce-sent) | 0x50184 | R. |  Number of ciphertext-emission sequences sent by the formatter |
+| [stat_nb_notify_ack_sent](#register-mhdma-requeststat-nb-notify-ack-sent) | 0x50188 | R. |  Number of notify-ACK packets sent by the formatter |
+| [stat_nb_read_req_sent](#register-mhdma-requeststat-nb-read-req-sent) | 0x5018c | R. |  Number of read-request packets sent by the master |
+| [stat_t_hbm_write_latency](#register-mhdma-requeststat-t-hbm-write-latency) | 0x50190 | R. |  Latency in clock cycles from first AXI4 write address accepted to all write responses received |
+| [stat_t_hbm_write_latency_max](#register-mhdma-requeststat-t-hbm-write-latency-max) | 0x50194 | R. |  Maximum HBM write latency observed since last reset |
+| [stat_t_hbm_write_latency_min](#register-mhdma-requeststat-t-hbm-write-latency-min) | 0x50198 | R. |  Minimum HBM write latency observed since last reset (initialized to 0xFFFFFFFF) |
+| [stat_t_notify_to_ack_min](#register-mhdma-requeststat-t-notify-to-ack-min) | 0x5019c | R. |  Minimum notify-to-ACK latency observed since last reset (initialized to 0xFFFFFFFF) |
+| [stat_t_rr_to_ce_received_min](#register-mhdma-requeststat-t-rr-to-ce-received-min) | 0x501a0 | R. |  Minimum read-request-to-ciphertext-received latency observed since last reset (initialized to 0xFFFFFFFF) |
+| [stat_nb_decoder_dropped](#register-mhdma-requeststat-nb-decoder-dropped) | 0x501a4 | R. |  Number of received packets dropped by the decoder (wrong MAC address or unrecognized opcode) |
 
 
 ---
@@ -4600,11 +4626,26 @@ Register read_request contains following Sub-fields:
 
 ### Register mhdma-request.stat-read-req-timeout-retry
 
-- **Description**: Number of read-request retries triggered by timeout or sequence number mismatch
+- **Description**: Number of read-request retries triggered by timeout number mismatch
 - **Owner**: Kernel
 - **Read Access**: ReadNotify
 - **Write Access**: None
 - **Offset**: 0x50124
+- **Default**: 0
+
+
+
+
+---
+
+
+### Register mhdma-request.stat-read-req-seq-num-retry
+
+- **Description**: Number of read-request retries triggered by sequence number mismatch
+- **Owner**: Kernel
+- **Read Access**: ReadNotify
+- **Write Access**: None
+- **Offset**: 0x50128
 - **Default**: 0
 
 
@@ -4619,7 +4660,7 @@ Register read_request contains following Sub-fields:
 - **Owner**: Kernel
 - **Read Access**: ReadNotify
 - **Write Access**: None
-- **Offset**: 0x50128
+- **Offset**: 0x5012c
 - **Default**: 0
 
 
@@ -4634,7 +4675,7 @@ Register read_request contains following Sub-fields:
 - **Owner**: Kernel
 - **Read Access**: ReadNotify
 - **Write Access**: None
-- **Offset**: 0x5012c
+- **Offset**: 0x50130
 - **Default**: 0
 
 
@@ -4649,7 +4690,7 @@ Register read_request contains following Sub-fields:
 - **Owner**: Kernel
 - **Read Access**: ReadNotify
 - **Write Access**: None
-- **Offset**: 0x50130
+- **Offset**: 0x50134
 - **Default**: 0
 
 
@@ -4664,7 +4705,7 @@ Register read_request contains following Sub-fields:
 - **Owner**: Kernel
 - **Read Access**: ReadNotify
 - **Write Access**: None
-- **Offset**: 0x50134
+- **Offset**: 0x50138
 - **Default**: 0
 
 
@@ -4679,7 +4720,7 @@ Register read_request contains following Sub-fields:
 - **Owner**: Kernel
 - **Read Access**: ReadNotify
 - **Write Access**: None
-- **Offset**: 0x50138
+- **Offset**: 0x5013c
 - **Default**: 0
 
 
@@ -4694,7 +4735,7 @@ Register read_request contains following Sub-fields:
 - **Owner**: Kernel
 - **Read Access**: ReadNotify
 - **Write Access**: None
-- **Offset**: 0x5013c
+- **Offset**: 0x50140
 - **Default**: 0
 
 
@@ -4709,7 +4750,7 @@ Register read_request contains following Sub-fields:
 - **Owner**: Kernel
 - **Read Access**: ReadNotify
 - **Write Access**: None
-- **Offset**: 0x50140
+- **Offset**: 0x50144
 - **Default**: 0
 
 
@@ -4724,7 +4765,7 @@ Register read_request contains following Sub-fields:
 - **Owner**: Kernel
 - **Read Access**: ReadNotify
 - **Write Access**: None
-- **Offset**: 0x50144
+- **Offset**: 0x50148
 - **Default**: 0
 
 
@@ -4739,7 +4780,7 @@ Register read_request contains following Sub-fields:
 - **Owner**: Kernel
 - **Read Access**: Read
 - **Write Access**: None
-- **Offset**: 0x50148
+- **Offset**: 0x5014c
 - **Default**: 0
 
 
@@ -4754,7 +4795,7 @@ Register read_request contains following Sub-fields:
 - **Owner**: Kernel
 - **Read Access**: Read
 - **Write Access**: None
-- **Offset**: 0x5014c
+- **Offset**: 0x50150
 - **Default**: 0
 
 
@@ -4769,7 +4810,7 @@ Register read_request contains following Sub-fields:
 - **Owner**: Kernel
 - **Read Access**: Read
 - **Write Access**: None
-- **Offset**: 0x50150
+- **Offset**: 0x50154
 - **Default**: 0
 
 
@@ -4784,7 +4825,7 @@ Register read_request contains following Sub-fields:
 - **Owner**: Kernel
 - **Read Access**: Read
 - **Write Access**: None
-- **Offset**: 0x50154
+- **Offset**: 0x50158
 - **Default**: 0
 
 
@@ -4799,7 +4840,7 @@ Register read_request contains following Sub-fields:
 - **Owner**: Kernel
 - **Read Access**: Read
 - **Write Access**: None
-- **Offset**: 0x50158
+- **Offset**: 0x5015c
 - **Default**: 0
 
 
@@ -4814,7 +4855,7 @@ Register read_request contains following Sub-fields:
 - **Owner**: Kernel
 - **Read Access**: Read
 - **Write Access**: None
-- **Offset**: 0x5015c
+- **Offset**: 0x50160
 - **Default**: 0
 
 
@@ -4829,7 +4870,7 @@ Register read_request contains following Sub-fields:
 - **Owner**: Kernel
 - **Read Access**: Read
 - **Write Access**: None
-- **Offset**: 0x50160
+- **Offset**: 0x50164
 - **Default**: 0
 
 
@@ -4838,13 +4879,13 @@ Register read_request contains following Sub-fields:
 ---
 
 
-### Register mhdma-request.stat-notify-timeout
+### Register mhdma-request.stat-cur-notify-to-ack
 
 - **Description**: Live value of the notify timeout counter (resets on each new notify send)
 - **Owner**: Kernel
 - **Read Access**: ReadNotify
 - **Write Access**: None
-- **Offset**: 0x50164
+- **Offset**: 0x50168
 - **Default**: 0
 
 
@@ -4859,7 +4900,7 @@ Register read_request contains following Sub-fields:
 - **Owner**: Kernel
 - **Read Access**: Read
 - **Write Access**: None
-- **Offset**: 0x50168
+- **Offset**: 0x5016c
 - **Default**: 0
 
 
@@ -4874,7 +4915,7 @@ Register read_request contains following Sub-fields:
 - **Owner**: Kernel
 - **Read Access**: Read
 - **Write Access**: None
-- **Offset**: 0x5016c
+- **Offset**: 0x50170
 - **Default**: 0
 
 
@@ -4889,7 +4930,7 @@ Register read_request contains following Sub-fields:
 - **Owner**: Kernel
 - **Read Access**: Read
 - **Write Access**: None
-- **Offset**: 0x50170
+- **Offset**: 0x50174
 - **Default**: 0
 
 
@@ -4904,7 +4945,7 @@ Register read_request contains following Sub-fields:
 - **Owner**: Kernel
 - **Read Access**: Read
 - **Write Access**: None
-- **Offset**: 0x50174
+- **Offset**: 0x50178
 - **Default**: 0
 
 
@@ -4919,7 +4960,7 @@ Register read_request contains following Sub-fields:
 - **Owner**: Kernel
 - **Read Access**: Read
 - **Write Access**: None
-- **Offset**: 0x50178
+- **Offset**: 0x5017c
 - **Default**: 0
 
 
@@ -4934,7 +4975,7 @@ Register read_request contains following Sub-fields:
 - **Owner**: Kernel
 - **Read Access**: ReadNotify
 - **Write Access**: None
-- **Offset**: 0x5017c
+- **Offset**: 0x50180
 - **Default**: 0
 
 
@@ -4949,7 +4990,7 @@ Register read_request contains following Sub-fields:
 - **Owner**: Kernel
 - **Read Access**: ReadNotify
 - **Write Access**: None
-- **Offset**: 0x50180
+- **Offset**: 0x50184
 - **Default**: 0
 
 
@@ -4964,7 +5005,7 @@ Register read_request contains following Sub-fields:
 - **Owner**: Kernel
 - **Read Access**: ReadNotify
 - **Write Access**: None
-- **Offset**: 0x50184
+- **Offset**: 0x50188
 - **Default**: 0
 
 
@@ -4979,7 +5020,7 @@ Register read_request contains following Sub-fields:
 - **Owner**: Kernel
 - **Read Access**: ReadNotify
 - **Write Access**: None
-- **Offset**: 0x50188
+- **Offset**: 0x5018c
 - **Default**: 0
 
 
@@ -4994,7 +5035,7 @@ Register read_request contains following Sub-fields:
 - **Owner**: Kernel
 - **Read Access**: Read
 - **Write Access**: None
-- **Offset**: 0x5018c
+- **Offset**: 0x50190
 - **Default**: 0
 
 
@@ -5009,7 +5050,7 @@ Register read_request contains following Sub-fields:
 - **Owner**: Kernel
 - **Read Access**: Read
 - **Write Access**: None
-- **Offset**: 0x50190
+- **Offset**: 0x50194
 - **Default**: 0
 
 
@@ -5024,7 +5065,7 @@ Register read_request contains following Sub-fields:
 - **Owner**: Kernel
 - **Read Access**: Read
 - **Write Access**: None
-- **Offset**: 0x50194
+- **Offset**: 0x50198
 - **Default**: 0
 
 
@@ -5039,7 +5080,7 @@ Register read_request contains following Sub-fields:
 - **Owner**: Kernel
 - **Read Access**: Read
 - **Write Access**: None
-- **Offset**: 0x50198
+- **Offset**: 0x5019c
 - **Default**: 0
 
 
@@ -5054,7 +5095,7 @@ Register read_request contains following Sub-fields:
 - **Owner**: Kernel
 - **Read Access**: Read
 - **Write Access**: None
-- **Offset**: 0x5019c
+- **Offset**: 0x501a0
 - **Default**: 0
 
 
@@ -5069,7 +5110,7 @@ Register read_request contains following Sub-fields:
 - **Owner**: Kernel
 - **Read Access**: ReadNotify
 - **Write Access**: None
-- **Offset**: 0x501a0
+- **Offset**: 0x501a4
 - **Default**: 0
 
 

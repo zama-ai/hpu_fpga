@@ -177,6 +177,8 @@ module tb_mhdma_master;
   logic               [REG_DATA_W-1:0] regf_read_addr;
   logic               [REG_DATA_W-1:0] regf_timeout_duration_notify;
   logic               [REG_DATA_W-1:0] regf_timeout_duration_read_req;
+  logic                          [7:0] regf_retry_max_notify;
+  logic                          [7:0] regf_retry_max_read_req;
 
   // register control
   logic                                received_req;
@@ -244,6 +246,8 @@ module tb_mhdma_master;
     .regf_read_addr                (regf_read_addr                ),
     .regf_timeout_duration_notify  (regf_timeout_duration_notify  ),
     .regf_timeout_duration_read_req(regf_timeout_duration_read_req),
+    .regf_retry_max_notify         (regf_retry_max_notify         ),
+    .regf_retry_max_read_req       (regf_retry_max_read_req       ),
     // register control
     .received_req                  (received_req                  ),
     .request_consumed              (request_consumed              ),
@@ -454,6 +458,8 @@ module tb_mhdma_master;
       regf_req_addr                 = '0;
       regf_timeout_duration_notify  = TIMEOUT_NOTIFY;
       regf_timeout_duration_read_req= TIMEOUT_READ_REQ;
+      regf_retry_max_notify         = 8'hFF; // large: existing scenarios must not hit the retry cap
+      regf_retry_max_read_req       = 8'hFF;
       received_req                  = 1'b0;
       clear_interrupt_rr            = 1'b0;
 
@@ -823,7 +829,7 @@ module tb_mhdma_master;
         error_scenario = 1'b1;
       end
 
-      assert (stat.cnt_read_req_retries >= saved_read_retries + 1) else begin
+      assert ((stat.cnt_read_req_timeout_retries + stat.cnt_read_req_seq_num_retries) >= saved_read_retries + 1) else begin
         $display("[ERROR:%0d] cnt_read_req_retries not incremented", scenario_id);
         error_scenario = 1'b1;
       end
@@ -1200,7 +1206,7 @@ module tb_mhdma_master;
     logic irq_timed_out;
     begin
       scenario_start(scenario_id, "Read Request timeout and retry");
-      saved_read_retries = stat.cnt_read_req_retries;
+      saved_read_retries = (stat.cnt_read_req_timeout_retries + stat.cnt_read_req_seq_num_retries);
       randomize_fields();
 
       inject_regf_request(
@@ -1228,7 +1234,7 @@ module tb_mhdma_master;
       // Do NOT send CE data
 
       repeat (TIMEOUT_READ_REQ + 20) @(posedge clk_mhdma);
-      assert (stat.cnt_read_req_retries >= saved_read_retries + 1) else begin
+      assert ((stat.cnt_read_req_timeout_retries + stat.cnt_read_req_seq_num_retries) >= saved_read_retries + 1) else begin
         $display("[ERROR:%0d] cnt_read_req_retries not incremented after timeout", scenario_id);
         error_scenario = 1'b1;
       end
@@ -1284,7 +1290,7 @@ module tb_mhdma_master;
     int   num_aw_before_mismatch;
     begin
       scenario_start(scenario_id, "Seq num mismatch: abort and retry");
-      saved_read_retries = stat.cnt_read_req_retries;
+      saved_read_retries = (stat.cnt_read_req_timeout_retries + stat.cnt_read_req_seq_num_retries);
       randomize_fields();
       clear_axi4_captures();
 
@@ -1341,7 +1347,7 @@ module tb_mhdma_master;
     logic cmd_timed_out;
     begin
       scenario_start(scenario_id, "Seq num mismatch mid-burst abort");
-      saved_read_retries = stat.cnt_read_req_retries;
+      saved_read_retries = (stat.cnt_read_req_timeout_retries + stat.cnt_read_req_seq_num_retries);
       randomize_fields();
       clear_axi4_captures();
 
@@ -1402,7 +1408,7 @@ module tb_mhdma_master;
     logic cmd_timed_out;
     begin
       scenario_start(scenario_id, "Abort drain strobe verification");
-      saved_read_retries = stat.cnt_read_req_retries;
+      saved_read_retries = (stat.cnt_read_req_timeout_retries + stat.cnt_read_req_seq_num_retries);
       randomize_fields();
       clear_axi4_captures();
 

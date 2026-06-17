@@ -373,7 +373,7 @@ logic [REG_DATA_W-1:0] stat_notify;
 logic [REG_DATA_W-1:0] stat_notify_ack;
 logic [REG_DATA_W-1:0] stat_notify_retry;
 logic [REG_DATA_W-1:0] stat_read_req_retry;
-logic [REG_DATA_W-1:0] stat_notify_timeout;
+logic [REG_DATA_W-1:0] stat_cur_notify_to_ack;
 logic [REG_DATA_W-1:0] stat_t_notify_to_ack;
 logic [REG_DATA_W-1:0] stat_t_rr_to_ce_received;
 logic [REG_DATA_W-1:0] stat_t_ce_first_to_last_pkt;
@@ -381,7 +381,6 @@ logic [REG_DATA_W-1:0] stat_cnt_nack_received;
 logic [REG_DATA_W-1:0] stat_cnt_notify_received;
 logic [REG_DATA_W-1:0] stat_cnt_read_req_received;
 logic [REG_DATA_W-1:0] stat_cnt_ce_received;
-logic [REG_DATA_W-1:0] stat_read_req_timeout_retry;
 logic [REG_DATA_W-1:0] stat_errors;
 
 logic [SRC_ADDR_W-1:0] iop_src_addr;

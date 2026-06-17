@@ -1,7 +1,7 @@
 // ============================================================================================== //
 // Description  : register  map address definition package
 // This file was generated with rust regmap generator:
-//  * Date:  2026-04-02
+//  * Date:  2026-06-16
 //  * Tool_version: 27d9e880d531030160fd8749c606142942d5558d
 // ---------------------------------------------------------------------------------------------- //
 //
@@ -24,16 +24,22 @@ package hpu_regif_core_mhdma_2in3_pkg;
     logic [(32-1):0] read_req_timeout_dur;
    } mhdma_system_timeout_read_req_t;
   localparam int MHDMA_SYSTEM_TIMEOUT_READ_REQ_OFS = 'h50008;
-  localparam int MHDMA_SYSTEM_FSM_VALUE_OFS = 'h5000c;
-  localparam int MHDMA_SYSTEM_ERRORS_OFS = 'h50010;
-  localparam int MHDMA_SYSTEM_HPU_ID_0_OFS = 'h50014;
-  localparam int MHDMA_SYSTEM_HPU_ID_1_OFS = 'h50018;
-  localparam int MHDMA_SYSTEM_HPU_ID_2_OFS = 'h5001c;
-  localparam int MHDMA_SYSTEM_HPU_ID_3_OFS = 'h50020;
-  localparam int MHDMA_SYSTEM_HPU_ID_4_OFS = 'h50024;
-  localparam int MHDMA_SYSTEM_HPU_ID_5_OFS = 'h50028;
-  localparam int MHDMA_SYSTEM_HPU_ID_6_OFS = 'h5002c;
-  localparam int MHDMA_SYSTEM_HPU_ID_7_OFS = 'h50030;
+  typedef struct packed {
+    logic [(16-1):0] padding_16;
+    logic [(8-1):0] retry_max_read_request;
+    logic [(8-1):0] retry_max_notify;
+   } mhdma_system_retry_max_t;
+  localparam int MHDMA_SYSTEM_RETRY_MAX_OFS = 'h5000c;
+  localparam int MHDMA_SYSTEM_FSM_VALUE_OFS = 'h50010;
+  localparam int MHDMA_SYSTEM_ERRORS_OFS = 'h50014;
+  localparam int MHDMA_SYSTEM_HPU_ID_0_OFS = 'h50018;
+  localparam int MHDMA_SYSTEM_HPU_ID_1_OFS = 'h5001c;
+  localparam int MHDMA_SYSTEM_HPU_ID_2_OFS = 'h50020;
+  localparam int MHDMA_SYSTEM_HPU_ID_3_OFS = 'h50024;
+  localparam int MHDMA_SYSTEM_HPU_ID_4_OFS = 'h50028;
+  localparam int MHDMA_SYSTEM_HPU_ID_5_OFS = 'h5002c;
+  localparam int MHDMA_SYSTEM_HPU_ID_6_OFS = 'h50030;
+  localparam int MHDMA_SYSTEM_HPU_ID_7_OFS = 'h50034;
   typedef struct packed {
     logic [(20-1):0] padding_12;
     logic [(4-1):0] rx_rst;
@@ -92,37 +98,38 @@ package hpu_regif_core_mhdma_2in3_pkg;
   localparam int MHDMA_REQUEST_STAT_NOTIFY_ACK_OFS = 'h5011c;
   localparam int MHDMA_REQUEST_STAT_NOTIFY_TIMEOUT_RETRY_OFS = 'h50120;
   localparam int MHDMA_REQUEST_STAT_READ_REQ_TIMEOUT_RETRY_OFS = 'h50124;
-  localparam int MHDMA_REQUEST_STAT_NB_NACK_RECEIVED_OFS = 'h50128;
-  localparam int MHDMA_REQUEST_STAT_NB_NOTIFY_RECEIVED_OFS = 'h5012c;
-  localparam int MHDMA_REQUEST_STAT_NB_READ_REQ_RECEIVED_OFS = 'h50130;
-  localparam int MHDMA_REQUEST_STAT_NB_CE_RECEIVED_OFS = 'h50134;
-  localparam int MHDMA_REQUEST_STAT_NB_READ_TO_HBM_OFS = 'h50138;
-  localparam int MHDMA_REQUEST_STAT_NB_WORDS_RECEIVED_PC_PC0_OFS = 'h5013c;
-  localparam int MHDMA_REQUEST_STAT_NB_WORDS_RECEIVED_PC_PC1_OFS = 'h50140;
-  localparam int MHDMA_REQUEST_STAT_NB_CE_WORDS_RECEIVED_OFS = 'h50144;
-  localparam int MHDMA_REQUEST_STAT_T_NOTIFY_TO_ACK_OFS = 'h50148;
-  localparam int MHDMA_REQUEST_STAT_T_NOTIFY_TO_ACK_MAX_OFS = 'h5014c;
-  localparam int MHDMA_REQUEST_STAT_T_RR_TO_CE_RECEIVED_OFS = 'h50150;
-  localparam int MHDMA_REQUEST_STAT_T_RR_TO_CE_RECEIVED_MAX_OFS = 'h50154;
-  localparam int MHDMA_REQUEST_STAT_T_CE_FIRST_TO_LAST_PKT_OFS = 'h50158;
-  localparam int MHDMA_REQUEST_STAT_T_RR_WAIT_WORDS_PC_PC0_OFS = 'h5015c;
-  localparam int MHDMA_REQUEST_STAT_T_RR_WAIT_WORDS_PC_PC1_OFS = 'h50160;
-  localparam int MHDMA_REQUEST_STAT_NOTIFY_TIMEOUT_OFS = 'h50164;
-  localparam int MHDMA_REQUEST_STAT_PHYSICAL_ADDR_PC0_LSB_OFS = 'h50168;
-  localparam int MHDMA_REQUEST_STAT_PHYSICAL_ADDR_PC0_MSB_OFS = 'h5016c;
-  localparam int MHDMA_REQUEST_STAT_PHYSICAL_ADDR_PC1_LSB_OFS = 'h50170;
-  localparam int MHDMA_REQUEST_STAT_PHYSICAL_ADDR_PC1_MSB_OFS = 'h50174;
-  localparam int MHDMA_REQUEST_STAT_CNT_NB_WRITE_COMPLETE_OFS = 'h50178;
-  localparam int MHDMA_REQUEST_STAT_NB_NOTIFY_SENT_OFS = 'h5017c;
-  localparam int MHDMA_REQUEST_STAT_NB_CE_SENT_OFS = 'h50180;
-  localparam int MHDMA_REQUEST_STAT_NB_NOTIFY_ACK_SENT_OFS = 'h50184;
-  localparam int MHDMA_REQUEST_STAT_NB_READ_REQ_SENT_OFS = 'h50188;
-  localparam int MHDMA_REQUEST_STAT_T_HBM_WRITE_LATENCY_OFS = 'h5018c;
-  localparam int MHDMA_REQUEST_STAT_T_HBM_WRITE_LATENCY_MAX_OFS = 'h50190;
-  localparam int MHDMA_REQUEST_STAT_T_HBM_WRITE_LATENCY_MIN_OFS = 'h50194;
-  localparam int MHDMA_REQUEST_STAT_T_NOTIFY_TO_ACK_MIN_OFS = 'h50198;
-  localparam int MHDMA_REQUEST_STAT_T_RR_TO_CE_RECEIVED_MIN_OFS = 'h5019c;
-  localparam int MHDMA_REQUEST_STAT_NB_DECODER_DROPPED_OFS = 'h501a0;
+  localparam int MHDMA_REQUEST_STAT_READ_REQ_SEQ_NUM_RETRY_OFS = 'h50128;
+  localparam int MHDMA_REQUEST_STAT_NB_NACK_RECEIVED_OFS = 'h5012c;
+  localparam int MHDMA_REQUEST_STAT_NB_NOTIFY_RECEIVED_OFS = 'h50130;
+  localparam int MHDMA_REQUEST_STAT_NB_READ_REQ_RECEIVED_OFS = 'h50134;
+  localparam int MHDMA_REQUEST_STAT_NB_CE_RECEIVED_OFS = 'h50138;
+  localparam int MHDMA_REQUEST_STAT_NB_READ_TO_HBM_OFS = 'h5013c;
+  localparam int MHDMA_REQUEST_STAT_NB_WORDS_RECEIVED_PC_PC0_OFS = 'h50140;
+  localparam int MHDMA_REQUEST_STAT_NB_WORDS_RECEIVED_PC_PC1_OFS = 'h50144;
+  localparam int MHDMA_REQUEST_STAT_NB_CE_WORDS_RECEIVED_OFS = 'h50148;
+  localparam int MHDMA_REQUEST_STAT_T_NOTIFY_TO_ACK_OFS = 'h5014c;
+  localparam int MHDMA_REQUEST_STAT_T_NOTIFY_TO_ACK_MAX_OFS = 'h50150;
+  localparam int MHDMA_REQUEST_STAT_T_RR_TO_CE_RECEIVED_OFS = 'h50154;
+  localparam int MHDMA_REQUEST_STAT_T_RR_TO_CE_RECEIVED_MAX_OFS = 'h50158;
+  localparam int MHDMA_REQUEST_STAT_T_CE_FIRST_TO_LAST_PKT_OFS = 'h5015c;
+  localparam int MHDMA_REQUEST_STAT_T_RR_WAIT_WORDS_PC_PC0_OFS = 'h50160;
+  localparam int MHDMA_REQUEST_STAT_T_RR_WAIT_WORDS_PC_PC1_OFS = 'h50164;
+  localparam int MHDMA_REQUEST_STAT_CUR_NOTIFY_TO_ACK_OFS = 'h50168;
+  localparam int MHDMA_REQUEST_STAT_PHYSICAL_ADDR_PC0_LSB_OFS = 'h5016c;
+  localparam int MHDMA_REQUEST_STAT_PHYSICAL_ADDR_PC0_MSB_OFS = 'h50170;
+  localparam int MHDMA_REQUEST_STAT_PHYSICAL_ADDR_PC1_LSB_OFS = 'h50174;
+  localparam int MHDMA_REQUEST_STAT_PHYSICAL_ADDR_PC1_MSB_OFS = 'h50178;
+  localparam int MHDMA_REQUEST_STAT_CNT_NB_WRITE_COMPLETE_OFS = 'h5017c;
+  localparam int MHDMA_REQUEST_STAT_NB_NOTIFY_SENT_OFS = 'h50180;
+  localparam int MHDMA_REQUEST_STAT_NB_CE_SENT_OFS = 'h50184;
+  localparam int MHDMA_REQUEST_STAT_NB_NOTIFY_ACK_SENT_OFS = 'h50188;
+  localparam int MHDMA_REQUEST_STAT_NB_READ_REQ_SENT_OFS = 'h5018c;
+  localparam int MHDMA_REQUEST_STAT_T_HBM_WRITE_LATENCY_OFS = 'h50190;
+  localparam int MHDMA_REQUEST_STAT_T_HBM_WRITE_LATENCY_MAX_OFS = 'h50194;
+  localparam int MHDMA_REQUEST_STAT_T_HBM_WRITE_LATENCY_MIN_OFS = 'h50198;
+  localparam int MHDMA_REQUEST_STAT_T_NOTIFY_TO_ACK_MIN_OFS = 'h5019c;
+  localparam int MHDMA_REQUEST_STAT_T_RR_TO_CE_RECEIVED_MIN_OFS = 'h501a0;
+  localparam int MHDMA_REQUEST_STAT_NB_DECODER_DROPPED_OFS = 'h501a4;
   typedef struct packed {
     logic [(1-1):0] reset_registers;
     logic [(1-1):0] tx_loop;

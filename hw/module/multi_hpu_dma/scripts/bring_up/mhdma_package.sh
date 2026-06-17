@@ -181,12 +181,12 @@ mhdma_stats() {
   echo "  Notify sent:              $(mhdma_reg_read $board mhdma_request::stat_notify)"
   echo "  Notify ACK received:      $(mhdma_reg_read $board mhdma_request::stat_notify_ack)"
   echo "  Notify timeout retries:   $(mhdma_reg_read $board mhdma_request::stat_notify_timeout_retry)"
-  echo "  Notify timeouts:          $(mhdma_reg_read $board mhdma_request::stat_notify_timeout)"
+  echo "  Notify ACK wait (cur):    $(mhdma_reg_read $board mhdma_request::stat_cur_notify_to_ack)"
   echo "  Notify received:          $(mhdma_reg_read $board mhdma_request::stat_nb_notify_received)"
   echo "  Notify ACK (nack) recv:   $(mhdma_reg_read $board mhdma_request::stat_nb_nack_received)"
   echo ""
   echo "--- Read Request Statistics ---"
-  echo "  Read req timeout retries: $(mhdma_reg_read $board mhdma_request::stat_read_req_timeout_retry)"
+  echo "  Read req retries:         $(mhdma_reg_read $board mhdma_request::stat_read_req_retry)"
   echo "  Read req received:        $(mhdma_reg_read $board mhdma_request::stat_nb_read_req_received)"
   echo ""
   echo "--- Ciphertext Statistics ---"
@@ -238,7 +238,7 @@ mhdma_reset_stats() {
   mhdma_reg_read $board mhdma_request::stat_notify > /dev/null
   mhdma_reg_read $board mhdma_request::stat_notify_ack > /dev/null
   mhdma_reg_read $board mhdma_request::stat_notify_timeout_retry > /dev/null
-  mhdma_reg_read $board mhdma_request::stat_read_req_timeout_retry > /dev/null
+  mhdma_reg_read $board mhdma_request::stat_read_req_retry > /dev/null
   mhdma_reg_read $board mhdma_request::stat_nb_nack_received > /dev/null
   mhdma_reg_read $board mhdma_request::stat_nb_notify_received > /dev/null
   mhdma_reg_read $board mhdma_request::stat_nb_read_req_received > /dev/null
@@ -247,7 +247,7 @@ mhdma_reset_stats() {
   mhdma_reg_read $board mhdma_request::stat_nb_words_received_pc_pc0 > /dev/null
   mhdma_reg_read $board mhdma_request::stat_nb_words_received_pc_pc1 > /dev/null
   mhdma_reg_read $board mhdma_request::stat_nb_ce_words_received > /dev/null
-  mhdma_reg_read $board mhdma_request::stat_notify_timeout > /dev/null
+  mhdma_reg_read $board mhdma_request::stat_cur_notify_to_ack > /dev/null
   echo "Statistics reset complete"
 }
 

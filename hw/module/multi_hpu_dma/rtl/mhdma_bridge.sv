@@ -83,6 +83,8 @@ module mhdma_bridge
   output logic                 [  REG_DATA_W-1:0] regf_read_addr,
   input  logic                 [  REG_DATA_W-1:0] regf_timeout_duration_notify,
   input  logic                 [  REG_DATA_W-1:0] regf_timeout_duration_read_req,
+  input  logic                 [ RETRY_CNT_W-1:0] regf_retry_max_notify,
+  input  logic                 [ RETRY_CNT_W-1:0] regf_retry_max_read_req,
   // control ------------------------------------------------------------------
   input  logic                                    received_req,
   output logic                                    request_consumed,
@@ -277,6 +279,8 @@ module mhdma_bridge
     .regf_read_addr                  (regf_read_addr                          ),
     .regf_timeout_duration_notify    (regf_timeout_duration_notify            ),
     .regf_timeout_duration_read_req  (regf_timeout_duration_read_req          ),
+    .regf_retry_max_notify           (regf_retry_max_notify                   ),
+    .regf_retry_max_read_req         (regf_retry_max_read_req                 ),
     // register control
     .received_req                    (received_req                            ),
     .request_consumed                (request_consumed                        ),

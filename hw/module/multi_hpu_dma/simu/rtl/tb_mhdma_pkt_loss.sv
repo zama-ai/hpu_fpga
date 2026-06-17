@@ -53,6 +53,11 @@ module tb_mhdma_pkt_loss;
   localparam int NB_HPU = 8;
   localparam [31:0] TIMEOUT_DUR_NOTIFY = 'd180;
   localparam [31:0] TIMEOUT_DUR_READ_REQ = 'd4000;
+  // Max-retry (give-up) scenario knobs: small budgets + short timeouts so the budget is consumed fast.
+  localparam int    RR_MAX_RETRY_TEST     = 2;
+  localparam int    NTX_MAX_RETRY_TEST    = 2;
+  localparam [31:0] SHORT_TIMEOUT_RR      = 'd300;
+  localparam [31:0] SHORT_TIMEOUT_NOTIFY  = 'd200;
 
   // ciphertext memories -------------------------------------------------------------------------
   localparam int MEM_WR_CMD_BUF_DEPTH = 4;  // Should be >= 1
@@ -407,7 +412,7 @@ logic [REG_DATA_W-1:0] stat_notify;
 logic [REG_DATA_W-1:0] stat_notify_ack;
 logic [REG_DATA_W-1:0] stat_notify_retry;
 logic [REG_DATA_W-1:0] stat_read_req_retry;
-logic [REG_DATA_W-1:0] stat_notify_timeout;
+logic [REG_DATA_W-1:0] stat_cur_notify_to_ack;
 logic [REG_DATA_W-1:0] stat_t_notify_to_ack;
 logic [REG_DATA_W-1:0] stat_t_rr_to_ce_received;
 logic [REG_DATA_W-1:0] stat_t_ce_first_to_last_pkt;
@@ -415,7 +420,6 @@ logic [REG_DATA_W-1:0] stat_cnt_nack_received;
 logic [REG_DATA_W-1:0] stat_cnt_notify_received;
 logic [REG_DATA_W-1:0] stat_cnt_read_req_received;
 logic [REG_DATA_W-1:0] stat_cnt_ce_received;
-logic [REG_DATA_W-1:0] stat_read_req_timeout_retry;
 logic [REG_DATA_W-1:0] stat_errors;
 logic [REG_DATA_W-1:0] rr_recv_base;
 logic [REG_DATA_W-1:0] nr_recv_base;
@@ -613,6 +617,8 @@ logic [IOP_ID_W-1:0]   iop_id;
     run_scenario_recovery_slave_notify();
     run_scenario_recovery_repeated_mismatch();
     run_scenario_recovery_finite_timeout();
+    run_scenario_read_req_max_retry();
+    run_scenario_notify_max_retry();
 
     print_final_summary();
 
@@ -799,7 +805,7 @@ logic [IOP_ID_W-1:0]   iop_id;
 
       maxil_drv_if.read_trans(MHDMA_REQUEST_STAT_NB_READ_REQ_RECEIVED_OFS, stat_cnt_read_req_received);
       maxil_drv_if.read_trans(MHDMA_REQUEST_STAT_NB_CE_RECEIVED_OFS, stat_cnt_ce_received);
-      maxil_drv_if.read_trans(MHDMA_REQUEST_STAT_READ_REQ_TIMEOUT_RETRY_OFS, stat_read_req_timeout_retry);
+      read_total_rr_retries(stat_read_req_retry);
 
       assert (stat_cnt_ce_received == NB_PACKETS_FULL+1) begin
         $display("%t > [INFO]: stat_cnt_ce_received : %0d", $time, stat_cnt_ce_received);
@@ -808,10 +814,10 @@ logic [IOP_ID_W-1:0]   iop_id;
         error_retry = 1'b1;
       end
 
-      assert (stat_read_req_timeout_retry == 0) begin
+      assert (stat_read_req_retry == 0) begin
         $display("%t > [INFO]: HPU didn't retry sending other Read requests", $time);
       end else begin
-        $display("%t > [ERROR]: Did %0d retries", $time, stat_read_req_timeout_retry);
+        $display("%t > [ERROR]: Did %0d retries", $time, stat_read_req_retry);
         error_retry = 1'b1;
       end
 
@@ -825,6 +831,150 @@ logic [IOP_ID_W-1:0]   iop_id;
 
       if (~interrupt_read_request)
         $display("%t > [INFO]: interrupt_read_request correctly lowered", $time);
+
+      scenario_end(scenario_id, clk_control, error);
+    end
+  endtask
+
+  // Total read-request retries = timeout-driven + seq-num-mismatch-driven (the two split stat
+  // registers). Both are read-to-clear, so this drains both counters. Lets the generic "did a retry
+  // happen?" checks stay cause-agnostic while the dedicated split/max-retry scenarios assert per-cause.
+  task automatic read_total_rr_retries(output logic [REG_DATA_W-1:0] total);
+    logic [REG_DATA_W-1:0] to_retry, sn_retry;
+    begin
+      maxil_drv_if.read_trans(MHDMA_REQUEST_STAT_READ_REQ_TIMEOUT_RETRY_OFS, to_retry);
+      maxil_drv_if.read_trans(MHDMA_REQUEST_STAT_READ_REQ_SEQ_NUM_RETRY_OFS, sn_retry);
+      total = to_retry + sn_retry;
+    end
+  endtask
+
+  // --------------------------------------------------------------------------------------------- --
+  // Read request retry budget exhausted: peer never answers, DUT must give up after
+  // retry_max_read_request retries, raise the max-retry-read-request error (bit [11]) and return to
+  // idle (a broken give-up would retry forever and trip the global watchdog).
+  // --------------------------------------------------------------------------------------------- --
+  task automatic run_scenario_read_req_max_retry();
+    logic [REG_DATA_W-1:0] to_retry, sn_retry;
+    mhdma_error_all_t      e;
+    begin
+      scenario_start(scenario_id, "Read: retry budget exhausted -> give up + max_retry_rr error");
+
+      // Program a small read-request retry budget (keep notify budget at default 0x0A) and a short
+      // read-request timeout. retry_max layout: [15:8] read_request, [7:0] notify.
+      maxil_drv_if.write_trans(MHDMA_SYSTEM_RETRY_MAX_OFS,        (RR_MAX_RETRY_TEST << 8) | 8'h0A);
+      maxil_drv_if.write_trans(MHDMA_SYSTEM_TIMEOUT_READ_REQ_OFS, SHORT_TIMEOUT_RR);
+
+      // Drain stale retry counters and latched errors (all read-to-clear).
+      read_total_rr_retries(stat_read_req_retry);
+      maxil_drv_if.read_trans(MHDMA_SYSTEM_ERRORS_OFS, stat_errors);
+
+      iop_id       = scenario_id;
+      iop_src_addr = $urandom_range(0, (1 << MEM_SIM_SIZE) / CT_MEM_BYTES - 1);
+      iop_dst_addr = $urandom_range(0, DST_ADDR_MAX);
+
+      // Issue the read request and NEVER answer it.
+      read_request(dst_hpu_id, iop_id, iop_src_addr, iop_dst_addr);
+
+      // Wait until the read-request budget is exhausted (give-up sets the sticky error), then confirm
+      // the master returns to idle. A broken give-up never sets the error / never idles -> watchdog.
+      wait (hpu_a.mhdma_bridge.mhdma_master.max_retry_rr_error);
+      wait_fsm_idle();
+      repeat(20) @(posedge clk_control);
+
+      // Only the max-retry-read-request error bit must be latched.
+      maxil_drv_if.read_trans(MHDMA_SYSTEM_ERRORS_OFS, stat_errors);
+      e = mhdma_error_all_t'(stat_errors);
+      assert (e.mhdma_error.master_error.max_retry_rr_error) begin
+        $display("%t > [INFO]: max_retry_rr_error raised after exhausting the read-request budget", $time);
+      end else begin
+        $display("%t > [ERROR]: max_retry_rr_error not raised (errors=0x%08x)", $time, stat_errors);
+        error_retry = 1'b1;
+      end
+      if (stat_errors != (32'h1 << 5)) begin
+        $display("%t > [ERROR]: unexpected extra error bits set: 0x%08x", $time, stat_errors);
+        display_errors(stat_errors);
+        error_retry = 1'b1;
+      end
+
+      // The retries must be attributed to the timeout cause, not seq-num.
+      maxil_drv_if.read_trans(MHDMA_REQUEST_STAT_READ_REQ_TIMEOUT_RETRY_OFS, to_retry);
+      maxil_drv_if.read_trans(MHDMA_REQUEST_STAT_READ_REQ_SEQ_NUM_RETRY_OFS, sn_retry);
+      assert ((to_retry >= RR_MAX_RETRY_TEST) && (sn_retry == 0)) begin
+        $display("%t > [INFO]: timeout retries=%0d seq_num retries=%0d", $time, to_retry, sn_retry);
+      end else begin
+        $display("%t > [ERROR]: bad retry split (timeout=%0d seq_num=%0d, want timeout>=%0d seq_num=0)",
+                 $time, to_retry, sn_retry, RR_MAX_RETRY_TEST);
+        error_retry = 1'b1;
+      end
+
+      check_fsm_initialized();
+
+      // Restore defaults for subsequent scenarios.
+      maxil_drv_if.write_trans(MHDMA_SYSTEM_RETRY_MAX_OFS,        (8'h0A << 8) | 8'h0A);
+      maxil_drv_if.write_trans(MHDMA_SYSTEM_TIMEOUT_READ_REQ_OFS, TIMEOUT_DUR_READ_REQ);
+
+      scenario_end(scenario_id, clk_control, error);
+    end
+  endtask
+
+  // --------------------------------------------------------------------------------------------- --
+  // Notify retry budget exhausted: ACK never returns, DUT must give up after retry_max_notify
+  // retries, raise the max-retry-notify error (bit [10]) and return to idle.
+  // --------------------------------------------------------------------------------------------- --
+  task automatic run_scenario_notify_max_retry();
+    logic [REG_DATA_W-1:0] n_retry;
+    mhdma_error_all_t      e;
+    begin
+      scenario_start(scenario_id, "Notify: retry budget exhausted -> give up + max_retry_notify error");
+
+      // Small notify retry budget (keep read-request budget at default 0x0A) + short notify timeout.
+      maxil_drv_if.write_trans(MHDMA_SYSTEM_RETRY_MAX_OFS,      (8'h0A << 8) | NTX_MAX_RETRY_TEST);
+      maxil_drv_if.write_trans(MHDMA_SYSTEM_TIMEOUT_NOTIFY_OFS, SHORT_TIMEOUT_NOTIFY);
+
+      // Drain stale counters / errors.
+      maxil_drv_if.read_trans(MHDMA_REQUEST_STAT_NOTIFY_TIMEOUT_RETRY_OFS, stat_notify_retry);
+      maxil_drv_if.read_trans(MHDMA_SYSTEM_ERRORS_OFS, stat_errors);
+
+      iop_id       = scenario_id;
+      iop_src_addr = $urandom_range(0, (1<<SRC_ADDR_W)-1);
+
+      // Issue a notify and NEVER ack it.
+      notify_request(src_hpu_id, dst_hpu_id, iop_id, iop_src_addr);
+
+      // Wait until the notify budget is exhausted (give-up sets the sticky error), then confirm idle.
+      // wait_fsm_idle alone is insufficient here: it does not monitor ntx_state, so the notify
+      // ack-wait window looks idle and it would return before any retry happens.
+      wait (hpu_a.mhdma_bridge.mhdma_master.max_retry_notify_error);
+      wait_fsm_idle();
+      repeat(20) @(posedge clk_control);
+
+      maxil_drv_if.read_trans(MHDMA_SYSTEM_ERRORS_OFS, stat_errors);
+      e = mhdma_error_all_t'(stat_errors);
+      assert (e.mhdma_error.master_error.max_retry_notify_error) begin
+        $display("%t > [INFO]: max_retry_notify_error raised after exhausting the notify budget", $time);
+      end else begin
+        $display("%t > [ERROR]: max_retry_notify_error not raised (errors=0x%08x)", $time, stat_errors);
+        error_retry = 1'b1;
+      end
+      if (stat_errors != (32'h1 << 4)) begin
+        $display("%t > [ERROR]: unexpected extra error bits set: 0x%08x", $time, stat_errors);
+        display_errors(stat_errors);
+        error_retry = 1'b1;
+      end
+
+      maxil_drv_if.read_trans(MHDMA_REQUEST_STAT_NOTIFY_TIMEOUT_RETRY_OFS, n_retry);
+      assert (n_retry >= NTX_MAX_RETRY_TEST) begin
+        $display("%t > [INFO]: notify timeout retries=%0d", $time, n_retry);
+      end else begin
+        $display("%t > [ERROR]: notify retries=%0d, expected >=%0d", $time, n_retry, NTX_MAX_RETRY_TEST);
+        error_retry = 1'b1;
+      end
+
+      check_fsm_initialized();
+
+      // Restore defaults.
+      maxil_drv_if.write_trans(MHDMA_SYSTEM_RETRY_MAX_OFS, (8'h0A << 8) | 8'h0A);
+      maxil_drv_if.write_trans(MHDMA_SYSTEM_TIMEOUT_NOTIFY_OFS, TIMEOUT_DUR_NOTIFY);
 
       scenario_end(scenario_id, clk_control, error);
     end
@@ -853,10 +1003,10 @@ logic [IOP_ID_W-1:0]   iop_id;
         repeat(10) @(posedge clk_mhdma);
       end
 
-      maxil_drv_if.read_trans(MHDMA_REQUEST_STAT_READ_REQ_TIMEOUT_RETRY_OFS, stat_read_req_timeout_retry);
+      read_total_rr_retries(stat_read_req_retry);
 
-      assert (stat_read_req_timeout_retry != 0) begin
-        $display("%t > [INFO]: Did %0d retries", $time, stat_read_req_timeout_retry);
+      assert (stat_read_req_retry != 0) begin
+        $display("%t > [INFO]: Did %0d retries", $time, stat_read_req_retry);
       end else begin
         $display("%t > [ERROR]: HPU didn't retry sending other Notifies", $time);
         error_retry = 1'b1;
@@ -889,7 +1039,7 @@ logic [IOP_ID_W-1:0]   iop_id;
     begin
       scenario_start(scenario_id, "Recovery: wrong seq_num -> immediate abort and retry");
       // Clear stale stat counter
-      maxil_drv_if.read_trans(MHDMA_REQUEST_STAT_READ_REQ_TIMEOUT_RETRY_OFS, stat_read_req_timeout_retry);
+      read_total_rr_retries(stat_read_req_retry);
       // Set timeout to max to prove retry happens via mismatch, NOT timeout
       maxil_drv_if.write_trans(MHDMA_SYSTEM_TIMEOUT_READ_REQ_OFS, 32'hFFFFFFFF);
 
@@ -946,9 +1096,9 @@ logic [IOP_ID_W-1:0]   iop_id;
       repeat(10) @(posedge clk_control);
 
       // Verify retry stat was incremented (mismatch-triggered, not timeout)
-      maxil_drv_if.read_trans(MHDMA_REQUEST_STAT_READ_REQ_TIMEOUT_RETRY_OFS, stat_read_req_timeout_retry);
-      assert (stat_read_req_timeout_retry != 0) begin
-        $display("%t > [INFO]: Did %0d retries after wrong seq num", $time, stat_read_req_timeout_retry);
+      read_total_rr_retries(stat_read_req_retry);
+      assert (stat_read_req_retry != 0) begin
+        $display("%t > [INFO]: Did %0d retries after wrong seq num", $time, stat_read_req_retry);
       end else begin
         $display("%t > [ERROR]: HPU didn't retry after seq_num mismatch", $time);
         error_retry = 1'b1;
@@ -1002,7 +1152,7 @@ logic [IOP_ID_W-1:0]   iop_id;
       end else begin
         scenario_start(scenario_id, "Recovery: dropped packet -> abort and retry");
         // Clear stale stat counter
-        maxil_drv_if.read_trans(MHDMA_REQUEST_STAT_READ_REQ_TIMEOUT_RETRY_OFS, stat_read_req_timeout_retry);
+        read_total_rr_retries(stat_read_req_retry);
         // Set timeout to max: we expect mismatch-triggered retry, not timeout
         maxil_drv_if.write_trans(MHDMA_SYSTEM_TIMEOUT_READ_REQ_OFS, 32'hFFFFFFFF);
 
@@ -1056,9 +1206,9 @@ logic [IOP_ID_W-1:0]   iop_id;
         repeat(10) @(posedge clk_control);
 
         // Verify retry stat was incremented
-        maxil_drv_if.read_trans(MHDMA_REQUEST_STAT_READ_REQ_TIMEOUT_RETRY_OFS, stat_read_req_timeout_retry);
-        assert (stat_read_req_timeout_retry != 0) begin
-          $display("%t > [INFO]: Did %0d retries after packet loss", $time, stat_read_req_timeout_retry);
+        read_total_rr_retries(stat_read_req_retry);
+        assert (stat_read_req_retry != 0) begin
+          $display("%t > [INFO]: Did %0d retries after packet loss", $time, stat_read_req_retry);
         end else begin
           $display("%t > [ERROR]: HPU didn't retry after packet loss", $time);
           error_retry = 1'b1;
@@ -1108,7 +1258,7 @@ logic [IOP_ID_W-1:0]   iop_id;
     begin
       // Baseline the retry counter so we can positively confirm the corrupted burst actually drove
       // a mismatch retry (otherwise the scenario could silently pass without exercising recovery).
-      maxil_drv_if.read_trans(MHDMA_REQUEST_STAT_READ_REQ_TIMEOUT_RETRY_OFS, retry_base);
+      read_total_rr_retries(retry_base);
       maxil_drv_if.write_trans(MHDMA_SYSTEM_TIMEOUT_READ_REQ_OFS, 32'hFFFFFFFF); // disable timeout retry
 
       iop_id       = scenario_id;
@@ -1135,7 +1285,7 @@ logic [IOP_ID_W-1:0]   iop_id;
 
       // Confirm the mismatch actually triggered a retry (CDC settle first for the cfg-domain stat).
       repeat(10) @(posedge clk_control);
-      maxil_drv_if.read_trans(MHDMA_REQUEST_STAT_READ_REQ_TIMEOUT_RETRY_OFS, retry_now);
+      read_total_rr_retries(retry_now);
       assert (retry_now != retry_base) begin
         $display("%t > [INFO]: mismatch-driven retry confirmed (arm_wait_for_seq0)", $time);
       end else begin
@@ -1280,7 +1430,7 @@ logic [IOP_ID_W-1:0]   iop_id;
         scenario_start(scenario_id, $sformatf("Recovery: seq mismatch with finite timeout [SKIPPED NB_PACKETS_FULL=%0d < 2]", NB_PACKETS_FULL));
       end else begin
         scenario_start(scenario_id, "Recovery: seq mismatch with finite timeout (responsive peer)");
-        maxil_drv_if.read_trans(MHDMA_REQUEST_STAT_READ_REQ_TIMEOUT_RETRY_OFS, retry_base);
+        read_total_rr_retries(retry_base);
         maxil_drv_if.write_trans(MHDMA_SYSTEM_TIMEOUT_READ_REQ_OFS, 32'h3FFF_FFFF);
 
         iop_id       = scenario_id;
@@ -1315,7 +1465,7 @@ logic [IOP_ID_W-1:0]   iop_id;
 
         // Confirm a retry actually happened, and only seq_num_error is latched.
         repeat(10) @(posedge clk_control);
-        maxil_drv_if.read_trans(MHDMA_REQUEST_STAT_READ_REQ_TIMEOUT_RETRY_OFS, retry_now);
+        read_total_rr_retries(retry_now);
         assert (retry_now != retry_base) begin
           $display("%t > [INFO]: retry confirmed (delta=%0d)", $time, retry_now - retry_base);
         end else begin
@@ -1394,8 +1544,8 @@ logic [IOP_ID_W-1:0]   iop_id;
       maxil_drv_if.read_trans(MHDMA_REQUEST_STAT_NOTIFY_OFS, stat_notify);
       maxil_drv_if.read_trans(MHDMA_REQUEST_STAT_NOTIFY_ACK_OFS, stat_notify_ack);
       maxil_drv_if.read_trans(MHDMA_REQUEST_STAT_NOTIFY_TIMEOUT_RETRY_OFS, stat_notify_retry);
-      maxil_drv_if.read_trans(MHDMA_REQUEST_STAT_READ_REQ_TIMEOUT_RETRY_OFS, stat_read_req_retry);
-      maxil_drv_if.read_trans(MHDMA_REQUEST_STAT_NOTIFY_TIMEOUT_OFS, stat_notify_timeout);
+      read_total_rr_retries(stat_read_req_retry);
+      maxil_drv_if.read_trans(MHDMA_REQUEST_STAT_CUR_NOTIFY_TO_ACK_OFS, stat_cur_notify_to_ack);
       maxil_drv_if.read_trans(MHDMA_REQUEST_STAT_T_NOTIFY_TO_ACK_OFS, stat_t_notify_to_ack);
       maxil_drv_if.read_trans(MHDMA_REQUEST_STAT_T_RR_TO_CE_RECEIVED_OFS, stat_t_rr_to_ce_received);
       maxil_drv_if.read_trans(MHDMA_REQUEST_STAT_T_CE_FIRST_TO_LAST_PKT_OFS, stat_t_ce_first_to_last_pkt);
@@ -1405,7 +1555,7 @@ logic [IOP_ID_W-1:0]   iop_id;
       $display(" stat_nack_received          : %0d", stat_cnt_nack_received);
       $display(" stat_notify_retry           : %0d", stat_notify_retry);
       $display(" stat_read_req_retry         : %0d", stat_read_req_retry);
-      $display(" stat_notify_timeout         : %0d", stat_notify_timeout);
+      $display(" stat_cur_notify_to_ack         : %0d", stat_cur_notify_to_ack);
       $display(" stat_t_notify_to_ack        : %0d", stat_t_notify_to_ack);
       $display(" stat_t_rr_to_ce_received    : %0d", stat_t_rr_to_ce_received);
       $display(" stat_t_ce_first_to_last_pkt : %0d", stat_t_ce_first_to_last_pkt);

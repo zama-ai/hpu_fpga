@@ -73,6 +73,8 @@ module mhdma_master
   output logic               [REG_DATA_W-1:0] regf_read_addr,
   input  logic               [REG_DATA_W-1:0] regf_timeout_duration_notify,
   input  logic               [REG_DATA_W-1:0] regf_timeout_duration_read_req,
+  input  logic              [RETRY_CNT_W-1:0] regf_retry_max_notify,
+  input  logic              [RETRY_CNT_W-1:0] regf_retry_max_read_req,
   // register control
   input  logic                                received_req,
   output logic                                request_consumed,
@@ -122,7 +124,7 @@ module mhdma_master
   localparam int AXI_BURST_NB_MAX_TOTAL    = ETH_PC * AXI_BURST_NB_MAX;
   localparam int AXI_BURST_NB_MAX_TOTAL_WW = $clog2(AXI_BURST_NB_MAX_TOTAL+1) == 0 ? 1 : $clog2(AXI_BURST_NB_MAX_TOTAL+1);
 
-  localparam int NUM_STAT_CNTS = 4;
+  localparam int NUM_STAT_CNTS = 5;
 
   // ==============================================================================================
   // FSM
@@ -150,6 +152,9 @@ module mhdma_master
   logic st_ntx_wait_request;
   logic st_ntx_wait_ack;
   logic ntx_retry;
+  // Notify retry budgeting (see regf_retry_max_notify)
+  logic ntx_do_retry;  // retry event (only by timeout) still within the retry budget
+  logic ntx_giveup;    // retry event exceeds the budget (single-cycle pulse)
 
   always_ff @(posedge clk_mhdma) begin
     if (~resetn_mhdma) begin
@@ -168,7 +173,10 @@ module mhdma_master
         ntx_next_state = notify_sent ? NTX_WAIT_ACK : NTX_SEND_NOTIFY;
       NTX_WAIT_ACK:
         // Transmission is not instantaneous, notify_ack_received cannot arrive before axis tlast
-        ntx_next_state = notify_ack_received ? NTX_WAIT_REQUEST : timeout_reached_notify ? NTX_SEND_NOTIFY : NTX_WAIT_ACK;
+        ntx_next_state = notify_ack_received    ? NTX_WAIT_REQUEST
+                       : ntx_giveup             ? NTX_WAIT_REQUEST
+                       : timeout_reached_notify ? NTX_SEND_NOTIFY
+                       : NTX_WAIT_ACK;
       default: ntx_next_state = NTX_WAIT_REQUEST;
     endcase
   end
@@ -181,6 +189,11 @@ module mhdma_master
   logic ciphertext_received;
   logic valid_ciphertext_received;
   logic rr_retry;
+  // Read-request retry budgeting (see regf_retry_max_read_req)
+  logic rr_do_retry;   // retry event (timeout/seq-mismatch) still within the retry budget
+  logic rr_giveup;     // retry event exceeds the budget (single-cycle pulse)
+  logic rr_giving_up;  // latched from rr_giveup until the (aborted) transfer drains and we go idle
+  logic rr_abandon;    // give-up cleanup complete -> leave RR_WAIT_PACKETS back to idle
   logic rr_regf_in_rdy; // fifo that creates interrupts (@mhdma_clk)
 
   typedef enum logic [1:0] {
@@ -212,7 +225,10 @@ module mhdma_master
       RR_SEND_REQUEST:
         rreq_next_state =  read_request_sent ? RR_WAIT_PACKETS : RR_SEND_REQUEST;
       RR_WAIT_PACKETS:
-        rreq_next_state = rr_retry ? RR_SEND_REQUEST : valid_ciphertext_received ? RR_WAIT_REQUEST : RR_WAIT_PACKETS;
+        // rr_abandon: read-request retry budget (regf_retry_max_read_req) exhausted -> give up.
+        rreq_next_state = rr_retry                                 ? RR_SEND_REQUEST
+                        : (valid_ciphertext_received | rr_abandon) ? RR_WAIT_REQUEST
+                        : RR_WAIT_PACKETS;
       default: rreq_next_state = RR_WAIT_REQUEST;
     endcase
   end
@@ -244,11 +260,30 @@ module mhdma_master
   // =========================================================================================== //
 
   // notify ---------------------------------------------------------------------------------------
+  logic [RETRY_CNT_W-1:0] ntx_retry_count;
+  logic [RETRY_CNT_W-1:0] retry_max_notify_r;
+
+  always_ff @(posedge clk_mhdma)
+    retry_max_notify_r <= regf_retry_max_notify;
+
+  assign ntx_do_retry = timeout_reached_notify & (ntx_retry_count <  retry_max_notify_r);
+  assign ntx_giveup   = timeout_reached_notify & (ntx_retry_count >= retry_max_notify_r);
+
+  always_ff @(posedge clk_mhdma) begin
+    if (~resetn_mhdma) begin
+      ntx_retry_count <= '0;
+    end else if (st_ntx_wait_request) begin
+      ntx_retry_count <= '0;
+    end else if (ntx_do_retry) begin
+      ntx_retry_count <= ntx_retry_count + 1;
+    end
+  end
+
   always_ff @(posedge clk_mhdma) begin
     if (~resetn_mhdma) begin
       ntx_retry <= 1'b0;
     end else begin
-      if (timeout_reached_notify) begin
+      if (ntx_do_retry) begin
         ntx_retry <= 1'b1;
       end else if (arbiter_handshake & arbiter_notify) begin
         ntx_retry <= 1'b0;
@@ -267,12 +302,34 @@ module mhdma_master
 
   assign valid_ciphertext_received = ciphertext_received & ~mismatch_retry_pending & ~timeout_retry_pending;
 
+  // Read-request retry budgeting -----------------------------------------------------------------
+  logic [RETRY_CNT_W-1:0] rr_retry_count;
+  logic [RETRY_CNT_W-1:0] retry_max_rr_r;
+  logic                   rr_retry_event; // timeout or seq-num mismatch wanting a retry
+
+  always_ff @(posedge clk_mhdma)
+    retry_max_rr_r <= regf_retry_max_read_req;
+
+  assign rr_retry_event = timeout_reached_read_request | retry_seq_num;
+  assign rr_do_retry    = rr_retry_event & (rr_retry_count <  retry_max_rr_r);
+  assign rr_giveup      = rr_retry_event & (rr_retry_count >= retry_max_rr_r);
+
+  always_ff @(posedge clk_mhdma) begin
+    if (~resetn_mhdma) begin
+      rr_retry_count <= '0;
+    end else if (st_rr_wait_request) begin
+      rr_retry_count <= '0;
+    end else if (rr_do_retry) begin
+      rr_retry_count <= rr_retry_count + 1;
+    end
+  end
+
   // building read request retry signal
   always_ff @(posedge clk_mhdma) begin
     if (~resetn_mhdma) begin
       rr_retry <= 1'b0;
     end else begin
-      if (timeout_reached_read_request | retry_seq_num) begin
+      if (rr_do_retry) begin
         rr_retry <= 1'b1;
       end else if (arbiter_handshake & arbiter_read) begin
         rr_retry <= 1'b0;
@@ -392,7 +449,7 @@ module mhdma_master
       to_read_request_cnt <= 'h0;
     end else begin
       if (rreq_state == RR_WAIT_PACKETS) begin
-        if (mismatch_retry_pending) begin
+        if (mismatch_retry_pending | rr_giving_up) begin
           to_read_request_cnt <= 'h0;
         end else begin
           to_read_request_cnt <= to_read_request_cnt + 1;
@@ -555,7 +612,8 @@ module mhdma_master
     .almost_full (/* UNUSED */)
   );
 
-  assign nrqq_retry_rdy = notify_ack_received & (ntx_state == NTX_WAIT_ACK);
+  // Pop the held notify on success (ack) or on give-up (retry budget exhausted -> discard it).
+  assign nrqq_retry_rdy = (notify_ack_received | ntx_giveup) & (ntx_state == NTX_WAIT_ACK);
 
   // ----------------------------------------------------------------------------------------------
   // when we have the data of both request identifier and addresses, we consume the information
@@ -764,6 +822,19 @@ module mhdma_master
   // if fifo is empty and in_rdy and no in-flight AXI then we can accept new ciphertext
   // We are not consuming master_command from master as long as ~ce_reception_ready
   assign ce_reception_ready = (fifo_cerx_cnt == 0) & fifo_cerx_in_rdy & ~|axi4_write_pc;
+
+  // Read-request give-up (placed here so abort_transfer / axi4_write_pc / fifo_cerx_cnt are declared).
+  always_ff @(posedge clk_mhdma) begin
+    if (~resetn_mhdma) begin
+      rr_giving_up <= 1'b0;
+    end else if (rr_abandon | start_read_request) begin
+      rr_giving_up <= 1'b0;
+    end else if (rr_giveup) begin
+      rr_giving_up <= 1'b1;
+    end
+  end
+
+  assign rr_abandon = rr_giving_up & (ciphertext_received | (~abort_transfer & ~|axi4_write_pc & (fifo_cerx_cnt == 0)));
 
   assign cerx_handshake = fifo_cerx_out_vld & fifo_cerx_out_rdy & ~abort_transfer;
 
@@ -1436,6 +1507,35 @@ module mhdma_master
     end
   end
 
+  // Max-retry-exhausted errors: sticky, raised when a read-request / notify operation gives up after
+  // exceeding its retry budget (regf_retry_max_read_req / regf_retry_max_notify). Cleared by rst_errors.
+  logic max_retry_rr_error;
+  logic max_retry_notify_error;
+
+  always_ff @(posedge clk_mhdma) begin
+    if (~resetn_mhdma) begin
+      max_retry_rr_error <= 1'b0;
+    end else begin
+      if (rst_errors) begin
+        max_retry_rr_error <= 1'b0;
+      end else if (rr_giveup) begin
+        max_retry_rr_error <= 1'b1;
+      end
+    end
+  end
+
+  always_ff @(posedge clk_mhdma) begin
+    if (~resetn_mhdma) begin
+      max_retry_notify_error <= 1'b0;
+    end else begin
+      if (rst_errors) begin
+        max_retry_notify_error <= 1'b0;
+      end else if (ntx_giveup) begin
+        max_retry_notify_error <= 1'b1;
+      end
+    end
+  end
+
   // rrqq/nrqq command FIFO overflow: sticky, set when FIFO is full and a push is attempted
   // These signals live in the cfg clock domain (where in_rdy/data_vld are generated)
   logic rrqq_cmd_ovf_error;
@@ -1465,7 +1565,7 @@ module mhdma_master
     end
   end
 
-  assign master_error     = {seq_num_error, write_error};
+  assign master_error     = {max_retry_rr_error, max_retry_notify_error, seq_num_error, write_error};
   assign master_error_cfg = {rrqq_cmd_ovf_error, nrqq_cmd_ovf_error};
 
   // =========================================================================================== //
@@ -1482,17 +1582,19 @@ module mhdma_master
   logic [REG_DATA_W-1:0] nb_write_complete_cnt;
 
   assign stat_cnt_inc = {
-    timeout_reached_read_request | retry_seq_num,
-    timeout_reached_notify,
-    notify_ack_received,
-    notify_sent
+    retry_seq_num,                  // [4] cnt_read_req_seq_num_retries
+    timeout_reached_read_request,   // [3] cnt_read_req_timeout_retries
+    timeout_reached_notify,         // [2] cnt_notify_retries
+    notify_ack_received,            // [1] cnt_notify_ack
+    notify_sent                     // [0] cnt_notify
   };
 
   assign stat_cnt_rst = {
-    stat_rst.cnt_read_req_retry,
-    stat_rst.cnt_notify_retry,
-    stat_rst.cnt_notify_ack,
-    stat_rst.cnt_notify
+    stat_rst.cnt_read_req_seq_num_retry,  // [4]
+    stat_rst.cnt_read_req_timeout_retry,  // [3]
+    stat_rst.cnt_notify_retry,            // [2]
+    stat_rst.cnt_notify_ack,              // [1]
+    stat_rst.cnt_notify                   // [0]
   };
 
   generate
@@ -1752,24 +1854,25 @@ module mhdma_master
     end
   end
 
-  assign stat.fsm_notify                = ntx_state;
-  assign stat.fsm_read_req              = rreq_state;
-  assign stat.fsm_burst                 = burst_state;
-  assign stat.cnt_notify                = stat_cnt[0];
-  assign stat.cnt_notify_ack            = stat_cnt[1];
-  assign stat.cnt_notify_retries        = stat_cnt[2];
-  assign stat.cnt_read_req_retries      = stat_cnt[3];
-  assign stat.cnt_notify_timeout        = to_notify_cnt;
-  assign stat.nb_write_complete_cnt     = nb_write_complete_cnt;
-  assign stat.t_notify_to_ack           = stat_t_notify_to_ack_r;
-  assign stat.t_notify_to_ack_max       = t_notify_to_ack_max;
-  assign stat.t_notify_to_ack_min       = t_notify_to_ack_min;
-  assign stat.t_rr_to_ce_received       = stat_t_rr_to_ce_received_r;
-  assign stat.t_rr_to_ce_received_max   = t_rr_to_ce_received_max;
-  assign stat.t_rr_to_ce_received_min   = t_rr_to_ce_received_min;
-  assign stat.t_hbm_write_latency       = stat_t_hbm_write_r;
-  assign stat.t_hbm_write_latency_max   = t_hbm_write_max;
-  assign stat.t_hbm_write_latency_min   = t_hbm_write_min;
-  assign stat.nb_ce_words_received      = stat_nb_ce_words_received_r;
+  assign stat.fsm_notify                   = ntx_state;
+  assign stat.fsm_read_req                 = rreq_state;
+  assign stat.fsm_burst                    = burst_state;
+  assign stat.cnt_notify                   = stat_cnt[0];
+  assign stat.cnt_notify_ack               = stat_cnt[1];
+  assign stat.cnt_notify_retries           = stat_cnt[2];
+  assign stat.cnt_read_req_timeout_retries = stat_cnt[3];
+  assign stat.cnt_read_req_seq_num_retries = stat_cnt[4];
+  assign stat.t_cur_notify_to_ack          = to_notify_cnt;
+  assign stat.nb_write_complete_cnt        = nb_write_complete_cnt;
+  assign stat.t_notify_to_ack              = stat_t_notify_to_ack_r;
+  assign stat.t_notify_to_ack_max          = t_notify_to_ack_max;
+  assign stat.t_notify_to_ack_min          = t_notify_to_ack_min;
+  assign stat.t_rr_to_ce_received          = stat_t_rr_to_ce_received_r;
+  assign stat.t_rr_to_ce_received_max      = t_rr_to_ce_received_max;
+  assign stat.t_rr_to_ce_received_min      = t_rr_to_ce_received_min;
+  assign stat.t_hbm_write_latency          = stat_t_hbm_write_r;
+  assign stat.t_hbm_write_latency_max      = t_hbm_write_max;
+  assign stat.t_hbm_write_latency_min      = t_hbm_write_min;
+  assign stat.nb_ce_words_received         = stat_nb_ce_words_received_r;
 
 endmodule

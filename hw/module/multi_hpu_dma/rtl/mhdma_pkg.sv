@@ -196,6 +196,9 @@ package mhdma_pkg;
     logic      [47:0]  h3_pad;
   } h3_frame_t;
 
+  // Retry budgeting parameter --------------------------------------------------------------------
+  localparam int RETRY_CNT_W = 8; // width of per-operation retry counters and regf_retry_max_* fields
+
   // Errors ---------------------------------------------------------------------------------------
   typedef struct packed {
     logic master_discard_error; // master_command received with unrecognized req_id (discarded)
@@ -213,6 +216,8 @@ package mhdma_pkg;
   } slave_error_t;
 
   typedef struct packed {
+    logic              max_retry_rr_error;     // read-request retries exhausted (retry_max_read_request hit)
+    logic              max_retry_notify_error; // notify retries exhausted (retry_max_notify hit)
     logic              seq_num_error;
     logic [ETH_PC-1:0] write_error;
   } master_error_t;
@@ -231,24 +236,29 @@ package mhdma_pkg;
     logic               error_id;
   } mhdma_error_t;
 
-  // both cdc and cfg errors
+  // both cdc and cfg errors. The packing order (master_error_cfg as MSB, then the CDC'd mhdma_error)
+  // defines the mhdma_system_errors register bit layout documented below.
   typedef struct packed {
     master_error_cfg_t  master_error_cfg;
     mhdma_error_t       mhdma_error;
   } mhdma_error_all_t;
 
-  // [31:12] : zeros (padding)
-  // [11]    : master_error_cfg.rrqq_cmd_ovf_error
-  // [10]    : master_error_cfg.nrqq_cmd_ovf_error
-  // [9]     : format_error.master_discard_error
-  // [8]     : format_error.slave_discard_error
-  // [7]     : format_error.ce_underrun_error
-  // [6]     : decoder_error.error_fifo_rx_ovf
-  // [5]     : slave_error.rreq_cmd_ovf_error
-  // [4]     : slave_error.read_rresp_error
-  // [3]     : master_error.seq_num_error
-  // [2:1]   : master_error.write_error[1:0]
-  // [0]     : error_id
+  // Error register layout (mhdma_system_errors) - see hpu_regif_core_mhdma_2in3.toml errors register.
+  // Determined by packing mhdma_error_all_t = {master_error_cfg, mhdma_error}:
+  // [31:14] : zeros (padding)
+  // [13]    : master_error_cfg.rrqq_cmd_ovf_error    (master read-request cmd queue overflow)
+  // [12]    : master_error_cfg.nrqq_cmd_ovf_error    (master notify cmd queue overflow)
+  // [11]    : format_error.master_discard_error      (formatter master cmd discard)
+  // [10]    : format_error.slave_discard_error       (formatter slave cmd discard)
+  // [9]     : format_error.ce_underrun_error         (formatter payload gap)
+  // [8]     : decoder_error.error_fifo_rx_ovf        (decoder rx FIFO overflow)
+  // [7]     : slave_error.rreq_cmd_ovf_error         (slave read-request cmd queue overflow)
+  // [6]     : slave_error.read_rresp_error           (AXI4 HBM read response error)
+  // [5]     : master_error.max_retry_rr_error        (read-request retries exhausted)
+  // [4]     : master_error.max_retry_notify_error    (notify retries exhausted)
+  // [3]     : master_error.seq_num_error             (ciphertext sequence number mismatch)
+  // [2:1]   : master_error.write_error[1:0]          (per-PC AXI4 HBM write error)
+  // [0]     : error_id                               (multi-HPU one-hot ID violation)
 
   // =========================================================================================== //
   // Per-submodule stat/rst structs
@@ -259,8 +269,9 @@ package mhdma_pkg;
     logic [REG_DATA_W-1:0] cnt_notify;
     logic [REG_DATA_W-1:0] cnt_notify_ack;
     logic [REG_DATA_W-1:0] cnt_notify_retries;
-    logic [REG_DATA_W-1:0] cnt_read_req_retries;
-    logic [REG_DATA_W-1:0] cnt_notify_timeout;
+    logic [REG_DATA_W-1:0] cnt_read_req_timeout_retries;
+    logic [REG_DATA_W-1:0] cnt_read_req_seq_num_retries;
+    logic [REG_DATA_W-1:0] t_cur_notify_to_ack;
     logic [REG_DATA_W-1:0] nb_ce_words_received;
     logic [REG_DATA_W-1:0] nb_write_complete_cnt;
     logic [REG_DATA_W-1:0] t_notify_to_ack;
@@ -282,7 +293,8 @@ package mhdma_pkg;
     logic cnt_notify_ack;
     logic cnt_timeout;
     logic cnt_notify_retry;
-    logic cnt_read_req_retry;
+    logic cnt_read_req_timeout_retry;
+    logic cnt_read_req_seq_num_retry;
     logic nb_ce_words_received;
   } master_stat_rst_t;
 
