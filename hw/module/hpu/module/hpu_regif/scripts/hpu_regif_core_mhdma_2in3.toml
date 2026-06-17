@@ -266,7 +266,7 @@ offset= 0x100
 [section.mhdma_request.register.stat_cur_notify_to_ack]
   description="Live value of the notify timeout counter (resets on each new notify send)"
   owner="Kernel"
-  read_access="ReadNotify"
+  read_access="Read"
   write_access="None"
   default={Cst=0x0}
 

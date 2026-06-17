@@ -226,8 +226,9 @@ module mhdma_master
         rreq_next_state =  read_request_sent ? RR_WAIT_PACKETS : RR_SEND_REQUEST;
       RR_WAIT_PACKETS:
         // rr_abandon: read-request retry budget (regf_retry_max_read_req) exhausted -> give up.
-        rreq_next_state = rr_retry                                 ? RR_SEND_REQUEST
-                        : (valid_ciphertext_received | rr_abandon) ? RR_WAIT_REQUEST
+        rreq_next_state = rr_abandon                ? RR_WAIT_REQUEST
+                        : rr_retry                  ? RR_SEND_REQUEST
+                        : valid_ciphertext_received ? RR_WAIT_REQUEST
                         : RR_WAIT_PACKETS;
       default: rreq_next_state = RR_WAIT_REQUEST;
     endcase
@@ -243,6 +244,7 @@ module mhdma_master
   logic rr_packets_rdy;
 
   // NOTE: The decoder holds decoded_command_vld and decoded_command stable until decoded_command_rdy is 1
+  // NACK payload is intentionally unused (throwaway pop to drain the FIFO slot); the master acts on the notify_ack_received pulse and assumes single-outstanding-notify.
   always_ff @(posedge clk_mhdma) begin
     if (~resetn_mhdma) begin
       nack_rdy       <= 1'b0;

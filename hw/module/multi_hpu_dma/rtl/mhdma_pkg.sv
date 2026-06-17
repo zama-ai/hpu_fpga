@@ -291,7 +291,6 @@ package mhdma_pkg;
   typedef struct packed {
     logic cnt_notify;
     logic cnt_notify_ack;
-    logic cnt_timeout;
     logic cnt_notify_retry;
     logic cnt_read_req_timeout_retry;
     logic cnt_read_req_seq_num_retry;

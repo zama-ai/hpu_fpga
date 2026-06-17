@@ -1,7 +1,7 @@
 // ============================================================================================== //
 // Description  : Axi4-lite register bank
 // This file was generated with rust regmap generator:
-//  * Date:  2026-06-16
+//  * Date:  2026-06-17
 //  * Tool_version: 27d9e880d531030160fd8749c606142942d5558d
 // ---------------------------------------------------------------------------------------------- //
 // xR[n]W[na]
@@ -189,7 +189,6 @@ import hpu_regif_core_mhdma_2in3_pkg::*;
   // Register IO: mhdma_request_stat_cur_notify_to_ack
     , output logic [REG_DATA_W-1: 0] r_mhdma_request_stat_cur_notify_to_ack
     , input  logic [REG_DATA_W-1: 0] r_mhdma_request_stat_cur_notify_to_ack_upd
-    , output logic r_mhdma_request_stat_cur_notify_to_ack_rd_en
   // Register IO: mhdma_request_stat_physical_addr_pc0_lsb
     , output logic [REG_DATA_W-1: 0] r_mhdma_request_stat_physical_addr_pc0_lsb
     , input  logic [REG_DATA_W-1: 0] r_mhdma_request_stat_physical_addr_pc0_lsb_upd
@@ -1015,8 +1014,14 @@ import hpu_regif_core_mhdma_2in3_pkg::*;
 // Register FF: mhdma_request_stat_cur_notify_to_ack
   logic [REG_DATA_W-1:0] r_mhdma_request_stat_cur_notify_to_ackD;
   assign r_mhdma_request_stat_cur_notify_to_ackD       = r_mhdma_request_stat_cur_notify_to_ack_upd;
-  assign r_mhdma_request_stat_cur_notify_to_ack_rd_en = rd_en_ok && (rd_add[AXIL_ADD_RANGE_W-1:0] == MHDMA_REQUEST_STAT_CUR_NOTIFY_TO_ACK_OFS[AXIL_ADD_RANGE_W-1:0]);
-  assign r_mhdma_request_stat_cur_notify_to_ack = r_mhdma_request_stat_cur_notify_to_ack_upd;
+  always_ff @(posedge clk) begin
+    if (!s_rst_n) begin
+      r_mhdma_request_stat_cur_notify_to_ack       <= mhdma_request_stat_cur_notify_to_ack_default;
+    end
+    else begin
+      r_mhdma_request_stat_cur_notify_to_ack       <= r_mhdma_request_stat_cur_notify_to_ackD;
+    end
+  end
 // Register FF: mhdma_request_stat_physical_addr_pc0_lsb
   logic [REG_DATA_W-1:0] r_mhdma_request_stat_physical_addr_pc0_lsbD;
   assign r_mhdma_request_stat_physical_addr_pc0_lsbD       = r_mhdma_request_stat_physical_addr_pc0_lsb_upd;

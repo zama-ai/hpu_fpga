@@ -1,5 +1,5 @@
 # HPU_REGIF_CORE documentation
-**Date**: 2026-06-16
+**Date**: 2026-06-17
 **Tool Version**: 27d9e880d531030160fd8749c606142942d5558d
 
 ## RegisterMap Overview
@@ -4041,7 +4041,7 @@ Below is a summary of all the registers in the current section mhdma_system:
 | [timeout_read_req](#register-mhdma-systemtimeout-read-req) | 0x50008 | RW |  Timeout: time before re-launching a request, in clock cycles |
 | [retry_max](#register-mhdma-systemretry-max) | 0x5000c | RW |  Timeout: maximum number of times we should do retries for both Notify & Retry  |
 | [fsm_value](#register-mhdma-systemfsm-value) | 0x50010 | R. |  Packed read-only snapshot of all internal FSM states: [26:24] formatter, [20:18] slave notify-rx, [17:15] slave ciphertext-emission, [11:9] master read-request, [5:3] master notify |
-| [errors](#register-mhdma-systemerrors) | 0x50014 | R. |  Sticky error flags (cleared by reset_registers): [11] master max retry RR hit, [10] master max retry RR hit, [9] master read-request cmd queue overflow, [8] master notify cmd queue overflow, [7] formatter payload gap, [6] decoder rx FIFO overflow, [5] slave read-request cmd queue overflow, [4] AXI4 HBM read response error, [3] ciphertext sequence number mismatch, [2:1] per-PC AXI4 HBM write error, [0] multi-HPU one-hot ID violation |
+| [errors](#register-mhdma-systemerrors) | 0x50014 | R. |  Sticky error flags (cleared by reset_registers): [13] master read-request cmd queue overflow, [12] master notify cmd queue overflow, [11] formatter master cmd discard, [10] formatter slave cmd discard, [9] formatter payload gap, [8] decoder rx FIFO overflow, [7] slave read-request cmd queue overflow, [6] AXI4 HBM read response error, [5] master max retry read-request hit, [4] master max retry notify hit, [3] ciphertext sequence number mismatch, [2:1] per-PC AXI4 HBM write error, [0] multi-HPU one-hot ID violation |
 | [hpu_id_0](#register-mhdma-systemhpu-id-0) | 0x50018 | RW |  HPU table entry: [31] one-hot flag marking this entry as the local HPU, [23:0] 24-bit MAC address for Ethernet frame filtering and header generation |
 | [hpu_id_1](#register-mhdma-systemhpu-id-1) | 0x5001c | RW |  HPU table entry: [31] one-hot flag marking this entry as the local HPU, [23:0] 24-bit MAC address for Ethernet frame filtering and header generation |
 | [hpu_id_2](#register-mhdma-systemhpu-id-2) | 0x50020 | RW |  HPU table entry: [31] one-hot flag marking this entry as the local HPU, [23:0] 24-bit MAC address for Ethernet frame filtering and header generation |
@@ -4168,7 +4168,7 @@ Register retry_max contains following Sub-fields:
 
 ### Register mhdma-system.errors
 
-- **Description**: Sticky error flags (cleared by reset_registers): [11] master max retry RR hit, [10] master max retry RR hit, [9] master read-request cmd queue overflow, [8] master notify cmd queue overflow, [7] formatter payload gap, [6] decoder rx FIFO overflow, [5] slave read-request cmd queue overflow, [4] AXI4 HBM read response error, [3] ciphertext sequence number mismatch, [2:1] per-PC AXI4 HBM write error, [0] multi-HPU one-hot ID violation
+- **Description**: Sticky error flags (cleared by reset_registers): [13] master read-request cmd queue overflow, [12] master notify cmd queue overflow, [11] formatter master cmd discard, [10] formatter slave cmd discard, [9] formatter payload gap, [8] decoder rx FIFO overflow, [7] slave read-request cmd queue overflow, [6] AXI4 HBM read response error, [5] master max retry read-request hit, [4] master max retry notify hit, [3] ciphertext sequence number mismatch, [2:1] per-PC AXI4 HBM write error, [0] multi-HPU one-hot ID violation
 - **Owner**: Kernel
 - **Read Access**: ReadNotify
 - **Write Access**: None
@@ -4385,7 +4385,7 @@ Below is a summary of all the registers in the current section mhdma_request:
 | [stat_notify](#register-mhdma-requeststat-notify) | 0x50118 | R. |  Number of notify packets sent |
 | [stat_notify_ack](#register-mhdma-requeststat-notify-ack) | 0x5011c | R. |  Number of notify-ACK packets received |
 | [stat_notify_timeout_retry](#register-mhdma-requeststat-notify-timeout-retry) | 0x50120 | R. |  Number of notify retries triggered by timeout expiration |
-| [stat_read_req_timeout_retry](#register-mhdma-requeststat-read-req-timeout-retry) | 0x50124 | R. |  Number of read-request retries triggered by timeout number mismatch |
+| [stat_read_req_timeout_retry](#register-mhdma-requeststat-read-req-timeout-retry) | 0x50124 | R. |  Number of read-request retries triggered by timeout expiration |
 | [stat_read_req_seq_num_retry](#register-mhdma-requeststat-read-req-seq-num-retry) | 0x50128 | R. |  Number of read-request retries triggered by sequence number mismatch |
 | [stat_nb_nack_received](#register-mhdma-requeststat-nb-nack-received) | 0x5012c | R. |  Number of notify-ACK packets received by the decoder from the network |
 | [stat_nb_notify_received](#register-mhdma-requeststat-nb-notify-received) | 0x50130 | R. |  Number of notify packets received by the decoder from the network |
@@ -4626,7 +4626,7 @@ Register read_request contains following Sub-fields:
 
 ### Register mhdma-request.stat-read-req-timeout-retry
 
-- **Description**: Number of read-request retries triggered by timeout number mismatch
+- **Description**: Number of read-request retries triggered by timeout expiration
 - **Owner**: Kernel
 - **Read Access**: ReadNotify
 - **Write Access**: None
@@ -4883,7 +4883,7 @@ Register read_request contains following Sub-fields:
 
 - **Description**: Live value of the notify timeout counter (resets on each new notify send)
 - **Owner**: Kernel
-- **Read Access**: ReadNotify
+- **Read Access**: Read
 - **Write Access**: None
 - **Offset**: 0x50168
 - **Default**: 0
