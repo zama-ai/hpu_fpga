@@ -169,7 +169,7 @@ offset= 0x100
   write_access="None"
   default={Cst=0x0}
 [section.mhdma_request.register.stat_read_req_timeout_retry]
-  description="Number of read-request retries triggered by timeout number mismatch"
+  description="Number of read-request retries triggered by timeout expiration"
   owner="Kernel"
   read_access="ReadNotify"
   write_access="None"

@@ -340,7 +340,7 @@ module mhdma_master
   always_ff @(posedge clk_mhdma) begin
     if (~resetn_mhdma) begin
       mismatch_retry_pending <= 1'b0;
-    end else if (ciphertext_received | retry_restart) begin
+    end else if (ciphertext_received | retry_restart | rr_abandon) begin
       mismatch_retry_pending <= 1'b0;
     end else if (seq_num_mismatch) begin
       mismatch_retry_pending <= 1'b1;
@@ -402,7 +402,7 @@ module mhdma_master
     end else begin
       if (retry_seq_num | retry_restart) begin
         wait_for_seq0 <= 1'b1;
-      end else if (seq0_detected) begin
+      end else if (seq0_detected | rr_abandon) begin
         wait_for_seq0 <= 1'b0;
       end
     end
@@ -693,13 +693,15 @@ module mhdma_master
   logic abort_transfer;
   logic [ETH_PC-1:0]        axi4_write_pc;
 
+  // Clear has priority over set so that rr_abandon (give-up cleanup) always wins, even if a
+  // late seq_num_mismatch or timeout fires on the same cycle as the drain completes.
   always_ff @(posedge clk_mhdma) begin
     if (~resetn_mhdma) begin
       abort_transfer <= 1'b0;
+    end else if (ciphertext_received | retry_restart | rr_abandon) begin
+      abort_transfer <= 1'b0;
     end else if (seq_num_mismatch | (timeout_reached_read_request & |axi4_write_pc)) begin
       abort_transfer <= 1'b1;
-    end else if (ciphertext_received | retry_restart) begin
-      abort_transfer <= 1'b0;
     end
   end
 
@@ -707,7 +709,7 @@ module mhdma_master
   always_ff @(posedge clk_mhdma) begin
     if (~resetn_mhdma) begin
       timeout_retry_pending <= 1'b0;
-    end else if (ciphertext_received | retry_restart) begin
+    end else if (ciphertext_received | retry_restart | rr_abandon) begin
       timeout_retry_pending <= 1'b0;
     end else if (timeout_reached_read_request & |axi4_write_pc) begin
       timeout_retry_pending <= 1'b1;
@@ -834,7 +836,13 @@ module mhdma_master
     end
   end
 
-  assign rr_abandon = rr_giving_up & (ciphertext_received | (~abort_transfer & ~|axi4_write_pc & (fifo_cerx_cnt == 0)));
+  // Drain branch does NOT gate on ~abort_transfer: abort_transfer's only clear paths are
+  // ciphertext_received | retry_restart | rr_abandon. After give-up the peer may never send more
+  // CT and there is no retry, so the drain branch must be allowed to fire while abort_transfer is
+  // still high. The abort flush mechanism (fifo_cerx_out_rdy_flush) empties the FIFO and pending
+  // AXI writes complete on their own; ~|axi4_write_pc & fifo_cerx_cnt==0 is the real quiescent
+  // condition. rr_abandon itself then clears abort_transfer / *_retry_pending / wait_for_seq0.
+  assign rr_abandon = rr_giving_up & (ciphertext_received | (~|axi4_write_pc & (fifo_cerx_cnt == 0)));
 
   assign cerx_handshake = fifo_cerx_out_vld & fifo_cerx_out_rdy & ~abort_transfer;
 
