@@ -6,18 +6,24 @@
 //
 // Scenarios (run sequentially; see the run list in the main initial block):
 //   Notify (master notify path):
-//     - notify_nominal       : nominal request and ack
-//     - notify_ack_timeout    : ack never returns -> timeout retry, late ack accepted
-//     - notify_wrong_ack      : ack with wrong MAC ignored -> retry -> good ack
-//     - notify_ack_delayed    : ack delayed with a second notify pending (in-order ack)
+//     - notify_nominal             : nominal request and ack
+//     - notify_ack_timeout         : ack never returns -> timeout retry, late ack accepted
+//     - notify_wrong_ack           : ack with wrong MAC ignored -> retry -> good ack
+//     - notify_ack_delayed         : ack delayed with a second notify pending (in-order ack)
+//     - notify_max_retry           : ntx_giveup after retry budget exhausted, sticky error raised
 //   Read (master read / ciphertext path):
-//     - read_nominal          : request -> full ciphertext burst -> completion IRQ
-//     - read_timeout          : request unanswered -> timeout retry -> answer -> IRQ
-//   Recovery (seq_num mismatch):
-//     - recovery_wrong_seq_num   : wrong seq_num mid-burst -> abort -> retry -> recover
-//     - recovery_dropped_packet  : dropped packet (fwd skip) -> mismatch -> retry -> recover
-//     - recovery_slave_read      : mismatch recovery while a slave READ is head-of-line
-//     - recovery_slave_notify    : mismatch recovery while a slave NOTIFY is head-of-line
+//     - read_nominal               : request -> full ciphertext burst -> completion IRQ
+//     - read_timeout               : request unanswered -> timeout retry -> answer -> IRQ
+//     - read_req_max_retry         : rr_giveup after retry budget exhausted, sticky error raised
+//   Recovery (seq_num mismatch / packet loss):
+//     - recovery_wrong_seq_num     : wrong seq_num mid-burst -> abort -> retry -> recover
+//     - recovery_dropped_packet    : dropped packet (fwd skip) -> mismatch -> retry -> recover
+//     - recovery_slave_read        : mismatch recovery while a slave READ is HoL (exercises per-role FIFO)
+//     - recovery_slave_notify      : mismatch recovery while a slave NOTIFY is HoL (exercises per-role FIFO)
+//     - recovery_finite_timeout    : timeout-driven retry (within budget) cleanly recovers
+//     - recovery_repeated_mismatch : repeated seq-num mismatch within budget recovers
+//
+// Each scenario calls check_ct_in_memory() to verify received ciphertext bytes against expected payload.
 //
 // HPU_A is the DUT, HPU_B is emulated by this testbench.
 //
