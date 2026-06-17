@@ -192,7 +192,7 @@ module mhdma_master
   // Read-request retry budgeting (see regf_retry_max_read_req)
   logic rr_do_retry;   // retry event (timeout/seq-mismatch) still within the retry budget
   logic rr_giveup;     // retry event exceeds the budget (single-cycle pulse)
-  logic rr_giving_up;  // latched from rr_giveup until the (aborted) transfer drains and we go idle
+  logic rr_giving_up;  // registered from rr_giveup until the (aborted) transfer drains and we go idle
   logic rr_abandon;    // give-up cleanup complete -> leave RR_WAIT_PACKETS back to idle
   logic rr_regf_in_rdy; // fifo that creates interrupts (@mhdma_clk)
 
@@ -836,12 +836,9 @@ module mhdma_master
     end
   end
 
-  // Drain branch does NOT gate on ~abort_transfer: abort_transfer's only clear paths are
-  // ciphertext_received | retry_restart | rr_abandon. After give-up the peer may never send more
-  // CT and there is no retry, so the drain branch must be allowed to fire while abort_transfer is
-  // still high. The abort flush mechanism (fifo_cerx_out_rdy_flush) empties the FIFO and pending
-  // AXI writes complete on their own; ~|axi4_write_pc & fifo_cerx_cnt==0 is the real quiescent
-  // condition. rr_abandon itself then clears abort_transfer / *_retry_pending / wait_for_seq0.
+  // Drain branch must fire while abort_transfer is still high: after give-up there may be no more
+  // CT and no retry, so rr_abandon is the only path that clears abort_transfer. Quiescence is
+  // (no pending AXI writes) & (FIFO empty via flush).
   assign rr_abandon = rr_giving_up & (ciphertext_received | (~|axi4_write_pc & (fifo_cerx_cnt == 0)));
 
   assign cerx_handshake = fifo_cerx_out_vld & fifo_cerx_out_rdy & ~abort_transfer;
