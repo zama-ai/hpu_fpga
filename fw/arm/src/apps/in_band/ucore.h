@@ -95,7 +95,6 @@
 #define OPERAND_STATE_RESOLVED     8 // source/dst is ready locally
 
 #define IOP_STATE_UNKNOWN  0xF // iop unknown
-#define IOP_STATE_RUNNING  0xE // iop running
 #define IOP_STATE_DONE     0   // iop finished
 
 #define DEBUG_PTR  0x7F00000
@@ -106,6 +105,7 @@
 typedef struct {
   uint8_t state;
   uint8_t nb_hpu;
+  uint8_t iop_locally_seen;
 } iop_state_t;
 
 typedef struct {

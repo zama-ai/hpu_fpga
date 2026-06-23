@@ -564,7 +564,7 @@ void vMhdmaWorkerTask(void *pvParameters) {
           vOSAL_EnterCritical();
           iop_state_node_ack(iid, nb_hpu);
           if (debug_intr_global_cnt%2 == 1) {
-            print_ddr_debug(0xBEE30000 | ((uint32_t)iid << 8) | iop_state[iid].nb_hpu << 4 | iop_state[iid].state);
+            print_ddr_debug(0xBEE30000 | ((uint32_t)iid << 8) | iop_state[iid].iop_locally_seen << 7 | iop_state[iid].nb_hpu << 4 | iop_state[iid].state);
           }
           vOSAL_ExitCritical();
 
@@ -838,6 +838,7 @@ static void vTaskFuncMain( void )
                 PLL_DBG("parse_iop", "timestamp %d changed => reset inter-HPU struct", new_timestamp);
                 timestamp = new_timestamp;
                 vOSAL_EnterCritical();
+                iop_state_init();
                 mhdma_table_reset();
                 b2b_pool_init();
                 dst_notifyq_init();
@@ -916,78 +917,80 @@ static void vTaskFuncMain( void )
                 HAL_FLUSH_CACHE_DATA((uintptr_t)fromAmiIopqTail, sizeof(uint32_t));
                 PLL_INF("AMC", "One IOp parsed [head 0x%x, tail 0x%x]", iopq_head, iopq_tail);
 
-
-                // Retrieved DOp stream, patch it and send it to Isc
-                if (get_lookup(header, mapping, ucore_cfg.node_id, &dop_entry)) {
-                    PLL_ERR("IOpQ", "Incorrect IOp processed [head 0x%x, last-tail 0x%x, current-tail 0x%x]", iopq_head, iopq_tail, (iopq_tail - iop_complete_len));
-                    PLL_ERR("IOpQ", "chunk_idx %x chunk_size %d iop_complete_len %d", chunk_idx, chunk_size, iop_complete_len);
-                    iOSAL_Task_SleepTicks(2000);
-                    for (int i =0; i < 7; i++) {
-                        PLL_ERR("IOpQ", "@%d -> 0x%x", i, Xil_EndianSwap32(iop_buffer[i]));
+                // process IOp only if enabled in mapping
+                if (get_used_of(phys_hpu_id, mapping)) {
+                    // Retrieved DOp stream, patch it and send it to Isc
+                    if (get_lookup(header, mapping, ucore_cfg.node_id, &dop_entry)) {
+                        PLL_ERR("IOpQ", "Incorrect IOp processed [head 0x%x, last-tail 0x%x, current-tail 0x%x]", iopq_head, iopq_tail, (iopq_tail - iop_complete_len));
+                        PLL_ERR("IOpQ", "chunk_idx %x chunk_size %d iop_complete_len %d", chunk_idx, chunk_size, iop_complete_len);
+                        iOSAL_Task_SleepTicks(2000);
+                        for (int i =0; i < 7; i++) {
+                            PLL_ERR("IOpQ", "@%d -> 0x%x", i, Xil_EndianSwap32(iop_buffer[i]));
+                            iOSAL_Task_SleepTicks(2000);
+                        }
+                        stop_consuming_iop = true;
                         iOSAL_Task_SleepTicks(2000);
                     }
-                    stop_consuming_iop = true;
-                    iOSAL_Task_SleepTicks(2000);
-                }
 
-                PLL_DBG("UCORE", "[HPU%d] translation will patch and push %d dops @0x%x", phys_hpu_id, dop_entry.len, dop_entry.ptr);
-                int skip = 0;
-                int dop_buffer_pos = 0;
-                // Patch and stream DOps to HW
-                for (int i=0; i< dop_entry.len; i++) {
-                  dop.raw = *(dop_entry.ptr + i);
-                  uint32_t patch_rc = patch_dop(&dop, &dst_bundle, &src_bundle, &imm_bundle, dop_buffer, dop_buffer_pos);
-                  // patch_rc: bit 16: need to insert SYNC (to notify DST available)
-                  //           bit 15: need to skip this DOp (LD_B2B or WAIT...)
-                  //           bit 14..0: number of DOp sent to ISC before waiting
+                    PLL_DBG("UCORE", "[HPU%d] translation will patch and push %d dops @0x%x", phys_hpu_id, dop_entry.len, dop_entry.ptr);
+                    int skip = 0;
+                    int dop_buffer_pos = 0;
+                    // Patch and stream DOps to HW
+                    for (int i=0; i< dop_entry.len; i++) {
+                      dop.raw = *(dop_entry.ptr + i);
+                      uint32_t patch_rc = patch_dop(&dop, &dst_bundle, &src_bundle, &imm_bundle, dop_buffer, dop_buffer_pos);
+                      // patch_rc: bit 16: need to insert SYNC (to notify DST available)
+                      //           bit 15: need to skip this DOp (LD_B2B or WAIT...)
+                      //           bit 14..0: number of DOp sent to ISC before waiting
 
-                  if ((patch_rc & 0x7FFF) > 0) { // DOp has been processed and pre-translated DOp have been flushed to ISC (before wait)
-                    //PLL_DBG("UCORE", "[HPU%d] translation of Dop %d (%08x) done (skip %d), %05x flushed so reset dop_buffer", phys_hpu_id, i, dop.raw, skip, patch_rc);
-                    dop_buffer_pos=0;
-                  }
+                      if ((patch_rc & 0x7FFF) > 0) { // DOp has been processed and pre-translated DOp have been flushed to ISC (before wait)
+                        //PLL_DBG("UCORE", "[HPU%d] translation of Dop %d (%08x) done (skip %d), %05x flushed so reset dop_buffer", phys_hpu_id, i, dop.raw, skip, patch_rc);
+                        dop_buffer_pos=0;
+                      }
 
-                  if ((patch_rc & 0x8000) == 0) { // classic case the DOp translated needs to go to the dop_buffer
-                    dop_buffer[(dop_buffer_pos)%DOP_BUFFER_SIZE] = dop.raw;
-                    dop_buffer_pos += 1;
-                    // Flush buffer if full
-                    if ((dop_buffer_pos % DOP_BUFFER_SIZE) == 0) {
-                      flush_dop_buffer_to_isc(dop_buffer, DOP_BUFFER_SIZE);
+                      if ((patch_rc & 0x8000) == 0) { // classic case the DOp translated needs to go to the dop_buffer
+                        dop_buffer[(dop_buffer_pos)%DOP_BUFFER_SIZE] = dop.raw;
+                        dop_buffer_pos += 1;
+                        // Flush buffer if full
+                        if ((dop_buffer_pos % DOP_BUFFER_SIZE) == 0) {
+                          flush_dop_buffer_to_isc(dop_buffer, DOP_BUFFER_SIZE);
+                        }
+                      } else { // processed DOp needs to be dropped
+                        skip += 1;
+                      }
+
+                      if ((patch_rc & 0x10000) != 0) { // insert inner SYNC
+                        DOpu_t new_dop;
+                        // insert SYNC on flag 0 (dst) by sync DOp
+                        new_dop.sync.flag = 0;
+                        new_dop.sync.opcode = SYNC_OPCODE;
+                        new_dop.sync.is_inner = 1;
+                        new_dop.sync.iid = cur_iid;
+                        new_dop.sync._pad = 0;
+
+                        dop_buffer[(dop_buffer_pos)%DOP_BUFFER_SIZE] = new_dop.raw;
+                        dop_buffer_pos += 1;
+                        // Flush buffer if full
+                        if ((dop_buffer_pos % DOP_BUFFER_SIZE) == 0) {
+                          flush_dop_buffer_to_isc(dop_buffer, DOP_BUFFER_SIZE);
+                        }
+                      }
                     }
-                  } else { // processed DOp needs to be dropped
-                    skip += 1;
-                  }
 
-                  if ((patch_rc & 0x10000) != 0) { // insert inner SYNC
-                    DOpu_t new_dop;
-                    // insert SYNC on flag 0 (dst) by sync DOp
-                    new_dop.sync.flag = 0;
-                    new_dop.sync.opcode = SYNC_OPCODE;
-                    new_dop.sync.is_inner = 1;
-                    new_dop.sync.iid = cur_iid;
-                    new_dop.sync._pad = 0;
-
-                    dop_buffer[(dop_buffer_pos)%DOP_BUFFER_SIZE] = new_dop.raw;
-                    dop_buffer_pos += 1;
-                    // Flush buffer if full
-                    if ((dop_buffer_pos % DOP_BUFFER_SIZE) == 0) {
-                      flush_dop_buffer_to_isc(dop_buffer, DOP_BUFFER_SIZE);
-                    }
-                  }
+                    // Add DOp sync
+                    DOpu_t dop_sync;
+                    dop_sync.sync.opcode = SYNC_OPCODE;
+                    dop_sync.sync.iid = cur_iid;
+                    dop_sync.sync.is_inner = 0;
+                    dop_sync.sync.flag = 0;
+                    dop_sync.sync._pad = 0;
+                    dop_buffer[(dop_buffer_pos) % DOP_BUFFER_SIZE] = dop_sync.raw;
+                    // Correctly handle full buffer flush
+                    uint32_t remaining_dop = (((dop_buffer_pos+1)%DOP_BUFFER_SIZE) == 0) ? DOP_BUFFER_SIZE : (dop_buffer_pos+1)%DOP_BUFFER_SIZE;
+                    PLL_DBG("UCORE", "flush %d remaining value to isc (len %d skip %d)", remaining_dop, dop_entry.len, skip);
+                    //PLL_DBG("UCORE", "dop_buffer %08x %08x %08x ... %08x %08x %08x",dop_buffer[0], dop_buffer[1], dop_buffer[2], dop_buffer[remaining_dop-2], dop_buffer[remaining_dop-1], dop_buffer[remaining_dop]);
+                    flush_dop_buffer_to_isc(dop_buffer, remaining_dop);
                 }
-
-                // Add DOp sync
-                DOpu_t dop_sync;
-                dop_sync.sync.opcode = SYNC_OPCODE;
-                dop_sync.sync.iid = cur_iid;
-                dop_sync.sync.is_inner = 0;
-                dop_sync.sync.flag = 0;
-                dop_sync.sync._pad = 0;
-                dop_buffer[(dop_buffer_pos) % DOP_BUFFER_SIZE] = dop_sync.raw;
-                // Correctly handle full buffer flush
-                uint32_t remaining_dop = (((dop_buffer_pos+1)%DOP_BUFFER_SIZE) == 0) ? DOP_BUFFER_SIZE : (dop_buffer_pos+1)%DOP_BUFFER_SIZE;
-                PLL_DBG("UCORE", "flush %d remaining value to isc (len %d skip %d)", remaining_dop, dop_entry.len, skip);
-                //PLL_DBG("UCORE", "dop_buffer %08x %08x %08x ... %08x %08x %08x",dop_buffer[0], dop_buffer[1], dop_buffer[2], dop_buffer[remaining_dop-2], dop_buffer[remaining_dop-1], dop_buffer[remaining_dop]);
-                flush_dop_buffer_to_isc(dop_buffer, remaining_dop);
             } else {
                 PLL_ERR("IOpQ", "Invalid IOp at %x stream ABORT dequeue (%d, %d, tail %x, head %x))", chunk_idx, chunk_size, wrap_chunk_size, iopq_tail, iopq_head);
                 for (int i =0; i < 7; i++) {

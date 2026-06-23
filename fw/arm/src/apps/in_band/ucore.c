@@ -70,6 +70,7 @@ void iop_state_init(void) {
   for (int i = 0; i < IOP_ID_MAX_COUNT; i++) {
     iop_state[i].state  = IOP_STATE_UNKNOWN;
     iop_state[i].nb_hpu = 0xF;
+    iop_state[i].iop_locally_seen = 0;
   }
 }
 
@@ -78,8 +79,15 @@ void iop_state_node_ack(uint8_t iid, uint8_t nb_hpu) {
     PLL_ERR("ucore", "iop_state_node_ack called on iid %d with nb_hpu %d > 7", iid, nb_hpu);
   }
   if ((iop_state[iid].state == IOP_STATE_UNKNOWN)
-   || (iop_state[iid].state == IOP_STATE_RUNNING)
    || (iop_state[iid].state == IOP_STATE_DONE)) {
+    // if we are here it means we have received a EOIop notify from another HPU
+    // before starting processing of this iid locally
+    // if a EOIop notify from another HPU finds iop_state of this iid
+    // as DONE & locally_seen = 1 it means this is an old state from iid
+    // of last round and it needs to be reset => nb_hpu-1 & locally_seen = 0
+    if ((iop_state[iid].state == IOP_STATE_DONE) && (iop_state[iid].iop_locally_seen == 1)) {
+      iop_state[iid].iop_locally_seen = 0;
+    }
     iop_state[iid].state = nb_hpu - 1;
   } else {
     iop_state[iid].state -= 1;
@@ -339,26 +347,39 @@ void src_store_print(uint8_t iid) {
 volatile dst_store_t dst_store;
 
 void dst_store_init(void) {
-  // not sure we need to reset owner
   memset((void*)dst_store.owner, 0xFF, sizeof(dst_store.owner));
   memset((void*)dst_store.state, DST_STATE_WAIT_NOTIFY, sizeof(dst_store.state));
 }
 
 void dst_store_reset_iop(uint8_t iid) {
-  // not sure we need to reset owner
   memset((void*)dst_store.owner[iid], 0xFF, sizeof(dst_store.owner[iid]));
   memset((void*)dst_store.state[iid], DST_STATE_WAIT_NOTIFY, sizeof(dst_store.state[iid]));
 }
 
 void dst_store_initd(uint8_t iid, OperandBundle_t *iop_dst) {
   for (int i = 0; i < MAX_DST_VARS; i++) {
-    uint8_t blk_start = 0;
     if (i < iop_dst->len) { // used dst
       dst_store.owner[iid][i] = iop_dst->operand[i].pos;
-      blk_start = iop_dst->operand[i].block;
-    }
-    for (int j = blk_start; j < MAX_VAR_BLKS; j++) {
-      dst_store.state[iid][i][j] = DST_STATE_NONE;
+      if (dst_store.owner[iid][i] == phys_hpu_id) {
+        // for safety be sure there is not NONE between 0..block
+        for (int k = 0; k < iop_dst->operand[i].block; k++) {
+            if (dst_store.state[iid][i][k] == DST_STATE_NONE) {
+                dst_store.state[iid][i][k] = DST_STATE_WAIT_NOTIFY;
+            }
+        }
+        // set all block..max to NONE
+        for (int j = iop_dst->operand[i].block; j < MAX_VAR_BLKS; j++) {
+          dst_store.state[iid][i][j] = DST_STATE_NONE;
+        }
+      } else {
+        // if destination is not for local HPU reset all blocks
+        // (dst_store[iid][i] will be unused)
+        // this is also because dst_store_reset_iop is only called when
+        // local HPU is involved in current iid
+        for (int j = 0; j < MAX_VAR_BLKS; j++) {
+          dst_store.state[iid][i][j] = DST_STATE_WAIT_NOTIFY;
+        }
+      }
     }
   }
 }
@@ -377,9 +398,10 @@ uint16_t dst_store_get_owned(uint8_t iid, uint8_t hid) {
   return 0xFFFF;
 }
 
-uint16_t dst_store_get_owned_cnt(uint8_t iid, uint8_t hid) {
+uint32_t dst_store_get_owned_cnt(uint8_t iid, uint8_t hid) {
   uint8_t cnt_owned = 0;
   uint8_t cnt_waiting = 0;
+  uint8_t cnt_resolved = 0;
   for (int i = 0; i < MAX_DST_VARS; i++) {
     if (dst_store.owner[iid][i] == hid) {
       cnt_owned+=1;
@@ -387,21 +409,23 @@ uint16_t dst_store_get_owned_cnt(uint8_t iid, uint8_t hid) {
         if (dst_store.state[iid][i][j] == DST_STATE_WAIT_NOTIFY
           || dst_store.state[iid][i][j] == DST_STATE_READING) {
           cnt_waiting+=1;
+        } else if (dst_store.state[iid][i][j] == DST_STATE_RESOLVED) {
+          cnt_resolved+=1;
         }
       }
     }
   }
-  return (cnt_owned << 8 | cnt_waiting);
+  return (cnt_owned << 16 | cnt_waiting << 8 | cnt_resolved);
 }
 
 void dst_store_print(uint8_t iid) {
   for (int i = 0; i < 2; i++) {
-    if (phys_hpu_id == 1) {
-      char msg[10];
-      for (int j = 0; j < 4; j++) {
+    if (phys_hpu_id == dst_store.owner[iid][i]) {
+      char msg[9];
+      for (int j = 0; j < 8; j++) {
         msg[j] = dst_store.state[iid][i][j] + '0';
       }
-      msg[4] = '\0';
+      msg[8] = '\0';
       PLL_ERR("dst_store_print", "[HPU%d] iop %d dst %d owner %d: %s", phys_hpu_id, iid, i, dst_store.owner[iid][i], msg);
       iOSAL_Task_SleepTicks(10);
     }
@@ -439,9 +463,12 @@ void iop_teardown(uint8_t iid) {
   //reset mhdma_table for this IOp (all local notify & ld_b2b & wait)
   mhdma_table_reset_iop(iid);
   //cnt remote dst to be sent
-  uint16_t dst_cnts = dst_store_get_owned_cnt(iid, phys_hpu_id);
-  uint8_t dst_cnt_owned = (dst_cnts >> 8) & 0XFF;
-  uint8_t dst_cnt_waiting = (dst_cnts & 0XFF);
+  uint32_t dst_cnts = dst_store_get_owned_cnt(iid, phys_hpu_id);
+  uint8_t dst_cnt_owned = (dst_cnts >> 16) & 0xFF;
+  uint8_t dst_cnt_waiting = (dst_cnts >> 8) & 0xFF;
+  if (debug_intr_global_cnt%2 == 1) {
+    print_ddr_debug((uint32_t)(iid << 24) | dst_cnts);
+  }
   PLL_DBG("ucore", "[HPU%d] iop_teardown iid %d dst waiting: %d/%d iop_state %d/%d", phys_hpu_id, iid, dst_cnt_owned, dst_cnt_waiting, iop_state[iid].state, iop_state[iid].nb_hpu);
 
   //wait dst owned by local hpu but produced somewhere else
@@ -470,6 +497,12 @@ void iop_teardown(uint8_t iid) {
 #endif
       }
     }
+    dst_cnts = dst_store_get_owned_cnt(iid, phys_hpu_id);
+    dst_cnt_owned = (dst_cnts >> 16) & 0xFF;
+    dst_cnt_waiting = (dst_cnts >> 8) & 0xFF;
+    if (debug_intr_global_cnt%2 == 1) {
+      print_ddr_debug((uint32_t)(iid << 24) | dst_cnts);
+    }
     non_resolved_owned_dst = dst_store_get_owned(iid, phys_hpu_id);
   }
 
@@ -493,7 +526,7 @@ void iop_teardown(uint8_t iid) {
   // update iop_state
   iop_state_node_ack(iid, iop_state[iid].nb_hpu);
   if (debug_intr_global_cnt%2 == 1) {
-    print_ddr_debug(0xBEE20000 | ((uint32_t)iid << 8) | iop_state[iid].nb_hpu << 4 | iop_state[iid].state);
+    print_ddr_debug(0xBEE20000 | ((uint32_t)iid << 8) | iop_state[iid].iop_locally_seen << 7 | iop_state[iid].nb_hpu << 4 | iop_state[iid].state);
   }
   vOSAL_ExitCritical();
 
@@ -536,7 +569,9 @@ void iop_teardown(uint8_t iid) {
   }
 
   // reset all dst of iop for next execution of this iid
+  vOSAL_EnterCritical();
   dst_store_reset_iop(iid);
+  vOSAL_ExitCritical();
   // debug
   //dst_store_print(iid);
   //src_notifyq_print(iid);
@@ -617,12 +652,20 @@ uint32_t parse_iop(
   cur_mapping.raw = mapping->raw;
   uint8_t nb_hpu = number_of_hpu(*mapping);
   vOSAL_EnterCritical();
-  if (iop_state[cur_iid].state >= nb_hpu || iop_state[cur_iid].state == IOP_STATE_DONE) {
-    iop_state[cur_iid].state  = IOP_STATE_RUNNING;
-  }
   iop_state[cur_iid].nb_hpu = nb_hpu;
+  // we reset iop_state to nb_hpu at start up when state is unknown
+  // and if we are DONE & locally_seen = 1 which means this state is related to an old iop
+  // from last round.
+  // if not DONE then IOp is already running and iop_state should not be reset
+  // if DONE & locally_seen = 0 it means iop is already done but was not processed locally
+  // so it must stay DONE
+  if ( iop_state[cur_iid].state == IOP_STATE_UNKNOWN ||
+      ((iop_state[cur_iid].state == IOP_STATE_DONE) && (iop_state[cur_iid].iop_locally_seen == 1))) {
+    iop_state[cur_iid].state = nb_hpu;
+  }
+  iop_state[cur_iid].iop_locally_seen = 1;
   if (debug_intr_global_cnt%2 == 1) {
-    print_ddr_debug(0xBEE10000 | ((uint32_t)cur_iid << 8) | iop_state[cur_iid].nb_hpu << 4 | iop_state[cur_iid].state);
+    print_ddr_debug(0xBEE10000 | ((uint32_t)cur_iid << 8) | iop_state[cur_iid].iop_locally_seen << 7 | iop_state[cur_iid].nb_hpu << 4 | iop_state[cur_iid].state);
   }
   vOSAL_ExitCritical();
   PLL_INF("parse_iop", "[HPU%d] parse_iop starting iop %d (virt hid %d) state %d nb_hpu %d",
@@ -633,16 +676,23 @@ uint32_t parse_iop(
       iop_state[cur_iid].nb_hpu);
 
   // Fill bundle length
+  vOSAL_EnterCritical();
   dst->len = dst_pos;
   dst_store_initd(cur_iid, dst);
-  uint16_t dst_cnts = dst_store_get_owned_cnt(cur_iid, phys_hpu_id);
-  uint8_t dst_cnt_owned = (dst_cnts >> 8) & 0XFF;
-  uint8_t dst_cnt_waiting = (dst_cnts & 0XFF);
-  PLL_DBG("parse_iop", "[HPU%d] parse_iop iop %d dst ct owned %d/%d",
+  vOSAL_ExitCritical();
+  uint32_t dst_cnts = dst_store_get_owned_cnt(cur_iid, phys_hpu_id);
+  if (debug_intr_global_cnt%2 == 1) {
+    print_ddr_debug((uint32_t)(cur_iid << 24) | dst_cnts);
+  }
+  uint8_t dst_cnt_owned = (dst_cnts >> 16) & 0xFF;
+  uint8_t dst_cnt_waiting = (dst_cnts >> 8) & 0xFF;
+  uint8_t dst_cnt_resolved = (dst_cnts) & 0xFF;
+  PLL_DBG("parse_iop", "[HPU%d] parse_iop iop %d dst ct owned %d/%d/%d",
           phys_hpu_id,
           cur_iid,
           dst_cnt_owned,
-          dst_cnt_waiting);
+          dst_cnt_waiting,
+          dst_cnt_resolved);
   //dst_store_print(cur_iid);
 
   //4. Get list of source operands
@@ -811,7 +861,8 @@ int read_remote_src(int blocking, OperandBundle_t *iop_src, uint8_t tid, uint8_t
     //iOSAL_Task_SleepTicks(1);
   }
   // issue read immediately if src comes from a done iop or if iid = 0 which means src is coming from Host
-  if ((iop_state[src_iid].state == IOP_STATE_DONE || src_iid == 0) && src_store.state[cur_iid][tid][bid] == OPERAND_STATE_READ_PENDING) {
+  if ( (((iop_state[src_iid].state == IOP_STATE_DONE) && (iop_state[src_iid].iop_locally_seen == 1))
+              || src_iid == 0) && src_store.state[cur_iid][tid][bid] == OPERAND_STATE_READ_PENDING) {
     vOSAL_EnterCritical();
     generate_operand_read_req(
             cur_iid,
