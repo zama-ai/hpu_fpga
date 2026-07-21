@@ -20,12 +20,14 @@
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-BSD--3--Clause--Clear-%23ffb243?style=flat-square"></a>
 </p>
 
-
+<a id="about"></a>
 ## About
 
+<a id="what-is-zamas-hpu-on-fpga"></a>
 ### What is Zama's HPU on FPGA
 
 Zama's Homomorphic Processing Unit (HPU) is a SystemVerilog-based hardware implementation targeting [AMD Alveo V80](https://www.amd.com/en/products/accelerators/alveo/v80.html) FPGA board. It is the first open-source processor capable of executing homomorphic operations directly on encrypted data, designed specifically to accelerate [TFHE-rs](https://github.com/zama-ai/tfhe-rs) workloads.
+Starting from RTL version 2.3, HPU can now be part of a cluster. Each of the HPU of a cluster from 2 to 8 FPGA is connected by a 25GbE link to synchronize its processing with the other HPU.
 
 This repository provides everything needed to deploy and experiment with the HPU, including:
 * SystemVerilog RTL source code
@@ -44,6 +46,7 @@ This repository provides everything needed to deploy and experiment with the HPU
 
 </br>
 
+<a id="directory-structure"></a>
 ### Directory structure
 The directories of this repository are organized in the following way:
 #### Root
@@ -97,6 +100,7 @@ The directories of this repository are organized in the following way:
         * Scripts necessary to generate the module.
 </br>
 
+<a id="table-of-contents"></a>
 ## Table of Contents
 - [About](#about)
   - [What is Zama's HPU on FPGA](#what-is-zamas-hpu-on-fpga)
@@ -107,8 +111,11 @@ The directories of this repository are organized in the following way:
   - [Build bitstream](#build-bitstream)
   - [Simulation](#simulation)
 - [Bring-up](#bring-up)
+  - [User permissions](#user-permissions)
   - [AMI driver](#ami-driver)
   - [QDMA](#qdma)
+  - [HPU cluster definition](#hpu-cluster-def)
+  - [HPU cluster setup](#hpu-cluster-setup)
   - [FPGA loading](#fpga-loading)
 - [Resources](#resources)
   - [High-level API](#high-level-api)
@@ -121,8 +128,10 @@ The directories of this repository are organized in the following way:
 - [Support](#support)
 </br>
 
+<a id="getting-started"></a>
 ## Getting started
 
+<a id="installation"></a>
 ### Installation
 
 To use the HPU FPGA project, ensure the following tools and dependencies are installed:
@@ -171,6 +180,7 @@ deactivate
 source my_venv/bin/activate
 ```
 
+<a id="setup"></a>
 ### Setup
 To prepare your environment, set the bash variables **XILINX_PATH** with your xilinx installation path.
 
@@ -193,6 +203,7 @@ source setup.sh
 > A useful variable `$PROJECT_DIR` will be set to direct to the root of the current project.
 
 
+<a id="build-bitstream"></a>
 ### Build bitstream
 Once your environment is [set-up](#setup), run the following commands to get an FPGA bitstream.
 
@@ -219,6 +230,7 @@ The documentation about [HPU parameters](./docs/hpu_parameters.md) and [parsing 
 
 A tested bitstream of the HPU compiled using run_syn_hpu_3parts_psi64.sh is available in tfhe-rs repo.
 
+<a id="simulation"></a>
 ### Simulation
 
 The flow supports 2 simulation tools :
@@ -285,6 +297,7 @@ ${PROJECT_DIR}/fw/ublaze/script/generate_core.sh
   <a href="#table-of-contents" > ↑ Back to top </a>
 </p>
 
+<a id="bring-up"></a>
 ## Bring-up
 
 > [!WARNING]
@@ -303,14 +316,32 @@ ${PROJECT_DIR}/fw/ublaze/script/generate_core.sh
 > In the case you corrupt the flash inadvertently, plug USB/JTAG and reprogram it.<br>
 > Use script ```cd versal && just rewrite_flash ``` or follow [AMD tutorial](https://xilinx.github.io/AVED/latest/AVED%2BUpdating%2BFPT%2BImage%2Bin%2BFlash.html).
 
+> [!IMPORTANT]
+> HPU bring-up has become more complex with the introduction of HPU cluster so please be sure to follow the whole procedure from top to bottom: [permissions](#user-permissions) → [AMI](#ami-driver) → [QDMA](#qdma) → [cluster definition](#hpu-cluster-def) → [cluster setup](#hpu-cluster-setup) → [FPGA loading](#fpga-loading)
+
 To control the board and use ```TFHE-rs' tfhe-hpu-backend```, install both AMI (AVED Management Interface - driver and tool) and QDMA driver.
 
+<a id="user-permissions"></a>
+### User permissions
 
+The server hosting the V80 board should have a group `hw` and the user you are using should be part of this group:
+``` bash
+sudo groupadd hw
+sudo usermod -aG hw <username>
+```
+The user should log out/in to be sure that his new group has been taken into account.<br>
+The sudo rules that you can find in HPU backend file `tfhe-rs/backends/tfhe-hpu-backend/scripts/v80_sudo_rules` need to be enabled:
+``` bash
+sudo cp <path>/tfhe-rs/backends/tfhe-hpu-backend/scripts/v80_sudo_rules /etc/sudoers.d/
+```
+Please verify that /etc/sudoers.d directory is included correctly in /etc/sudoers.
+
+<a id="ami-driver"></a>
 ### AMI driver
 The AMI software, adapted for HPU, is available in a [git fork](https://github.com/zama-ai/AVED) from XILINX AVED example design.
 
 > [!WARNING]
-> If you insert ami module of the original AVED branche with one of our bitstream loaded and your machine doesn't support hot plug, you will crash.\
+> If you insert ami module of the original AVED branch with one of our bitstream loaded and your machine doesn't support hot plug, you will crash.\
 > We tweaked the design and removed a block that is mandatory for original AVED driver.\
 > Without this module, AVED is issuing a PCIE read to a missing module. This is not the case in our fork.
 
@@ -318,31 +349,37 @@ AMI driver compilation requires usage of a specific Linux kernel version (ubuntu
 
 
 #### Driver installation
-```
+``` bash
 git clone git@github.com:zama-ai/AVED.git zama_aved
-
-./zama_aved/sw/AMI/scripts/gen_package.py
-cd zama_aved/sw/AMI/scripts/output/<timestamp>/
-sudo apt install ./ami_xxx.deb
+cd zama_aved/sw/AMI/driver
+make
+sudo mkdir -p /opt/v80/ami/bd569ee/
+sudo chown -R root:hw /opt/v80
+sudo chmod -R 775 /opt/v80
+cp ami.ko /opt/v80/ami/bd569ee/
+cd ..
+make -C api all
+make -C app all
+sudo insmod /opt/v80/ami/bd569ee/ami.ko
 ```
-Now ```ami_tool``` is available.
-
-
+Now ```ami_tool``` is available in `zama_aved/sw/AMI/app/build/` directory. You can copy it in your ~/.local/bin or modify your PATH.
 
 #### How to use ami_tool
 
 Through a few examples:
 ```
-# Get pcie device number
+# Get one V80 pcie device number
 PCIE_CARD=$(lspci -d 10ee:50b4)
 DEVICE="${PCIE_CARD%% *}"
-
 
 # Check that the device is visible with a "READY" state
 sudo ami_tool overview
 
-# Read 8 first registers from HPU at address 0
-ami_tool peek -d $DEVICE -a 0x0 -l 8
+# Read first registers from HPU at address 0 (should get 0x01010101)
+sudo ami_tool bar_rd -d $DEVICE -b 0 -a 0x100000
+
+# Read version registers from HPU at address 0 (should get HPU RTL version >= 2.3 = 0x00000032)
+sudo ami_tool bar_rd -d $DEVICE -b 0 -a 0x100010
 
 # Reset the board and reload fpga (triggers a hot plug)
 sudo ami_tool reload -d $DEVICE -t sbr
@@ -352,6 +389,7 @@ It is recommended to use app and API from the Zama modified AVED repository.
 
 With this version, on reset, the rescan on the two PCIe physical functions is launched. You will also have access to new commands and guardrails to avoid accidental mistakes.
 
+<a id="qdma"></a>
 ### QDMA
 We are using AMD [QDMA](https://github.com/Xilinx/dma_ip_drivers) linux driver for host-to-board communication using DMA in physical function 1 (PF1).
 
@@ -367,10 +405,71 @@ cd zama_qdma/QDMA/linux-kernel/
 TANDEM_BOOT_SUPPORTED=1 make
 
 # install kernel module in your machine
-sudo make install-mods
+sudo make install
 ```
 
+<a id="hpu-cluster-def"></a>
+### HPU Cluster definition
+Now that AMI driver is available, you must configure the cluster definition using a template you can find in `tfhe-rs/backends/tfhe-hpu-backend/scripts/v80_pcie_dev.sh`.
+
+First, you need to list the available V80 PCIe devices and then use AMI driver information to fill the table called in V80_BOARDS_MAP in v80_pcie_dev.sh.
+You also need to update V80_BOARDS_NB to match the number of boards available.
+You can use the following script for that:
+``` bash
+AMI_BASE="/sys/module/ami/drivers/pci:ami"
+i=0
+while read -r pcie_id _; do
+    sysfs="${AMI_BASE}/${pcie_id}";
+    serial="$(cat "${sysfs}/board_serial" 2>/dev/null || echo "N/A")";
+    mac_raw="$(cat "${sysfs}/mac_addr" 2>/dev/null || echo "")";
+    echo [\"$i,pcie_id\"]=\"$(echo $pcie_id | cut -d: -f2)\";
+    echo [\"$i,serial_number\"]=\"$serial\";
+    echo [\"$i,mac_address\"]=\"0x$(echo "$mac_raw" | cut -d: -f4-6 | tr -d ':')\";
+    ((i++));
+done < <(lspci -D -d 10ee:50b4)
+```
+Once done, you should copy this file in `/etc/profile.d/` so that it is loaded at each user profile load and source it yourself:
+``` bash
+sudo cp tfhe-rs/backends/tfhe-hpu-backend/scripts/v80_pcie_dev.sh /etc/profile.d/
+source /etc/profile.d/v80_pcie_dev.sh
+display_v80_board_map
+```
+
+<a id="hpu-cluster-setup"></a>
+### HPU Cluster setup
+
+As quickly described in the introduction of this README, HPU can now be part of a cluster to lower operation latency by using more than one HPU on some operations or increase throughput by parallelizing operations on several HPU.
+At this point each HPU of a HPU cluster is loaded with the same bitstream and using first lane (lane 0) of QSFP module 3 (QSFP56 port 4 in [V80 datasheet](https://docs.amd.com/r/en-US/ds1013-v80/Card-Interfaces)) in 25GbE to synchronize with the other HPU.
+For a 2 HPU cluster, a direct connection via a 25GbE or 100G copper or optic cable is possible. For a cluster of more than 2 HPU, you need to use a 25GbE or 100GbE switch.
+We tested our setup with a 100GbE Arista 7050CX3-32S with very basic configuration connected to each V80 board through a 100G QSFP copper cable:
+```
+!
+no lldp run
+!
+spanning-tree mode none
+!
+interface Ethernet1/1
+   speed forced 25gfull
+   no error-correction encoding
+!
+interface Ethernet1/2
+   shutdown
+...
+!
+interface Ethernet2/1
+   speed forced 25gfull
+   no error-correction encoding
+!
+interface Ethernet2/2
+   shutdown
+...
+```
+In theory, it should also work fine with a 25GbE switch using 25G SFP cables and QSFP to SFP adapters on the V80 side.
+
+<a id="fpga-loading"></a>
 ### FPGA loading
+
+These FPGA loading procedures are described here for FPGA developers wanting to work independently of TFHE-rs but you need to know that FPGA loading is automated in TFHE-rs HPU backend.
 
 #### Loading through OSPI flash
 
@@ -439,13 +538,17 @@ just program top_hpu XFL1MND5BQYG
   <a href="#table-of-contents" > ↑ Back to top </a>
 </p>
 
+<a id="resources"></a>
 ## Resources
 
+<a id="high-level-api"></a>
 ### High-level API
 Use the HPU with the TFHE-rs high-level API:
 - [HPU configuration documentation](https://docs.zama.ai/tfhe-rs/hardware-acceleration/run-on-hpu)
-- [Video tutorial] Introducing HPU HFPA](Coming soon)
+- [Video tutorial](https://www.youtube.com/watch?v=1RFR86DQKxc)
 - [HPU benchmarks](https://docs.zama.ai/tfhe-rs/get-started/benchmarks/hpu)
+
+<a id="low-level-implementations"></a>
 ### Low-level implementations
 Understand the HPU architecture in depth and make your own implementation:
 - [HPU components](docs/hpu.md)
@@ -458,8 +561,10 @@ Understand the HPU architecture in depth and make your own implementation:
 
 </br>
 
+<a id="working-with-hpu-fpga"></a>
 ## Working with HPU FPGA
 
+<a id="citations"></a>
 ### Citations
 To cite HPU FPGA in academic papers, please use the following entry:
 
@@ -472,6 +577,7 @@ To cite HPU FPGA in academic papers, please use the following entry:
 }
 ```
 
+<a id="contributing"></a>
 ### Contributing
 
 There are two ways to contribute to HPU FPGA:
@@ -482,9 +588,11 @@ There are two ways to contribute to HPU FPGA:
 Becoming an approved contributor involves signing our Contributor License Agreement (CLA). Only approved contributors can send pull requests, so please make sure to get in touch before you do!
 <br></br>
 
+<a id="license"></a>
 ### License
 This software is distributed under the **BSD-3-Clause-Clear** license. Read [this](LICENSE) for more details.
 
+<a id="faq"></a>
 #### FAQ
 **Is Zama’s technology free to use?**
 >Zama’s libraries are free to use under the BSD 3-Clause Clear license only for development, research, prototyping, and experimentation purposes. However, for any commercial use of Zama's open source code, companies must purchase Zama’s commercial patent license.
@@ -504,6 +612,7 @@ This software is distributed under the **BSD-3-Clause-Clear** license. Read [thi
   <a href="#table-of-contents" > ↑ Back to top </a>
 </p>
 
+<a id="support"></a>
 ## Support
 
 <a target="_blank" href="https://community.zama.ai">

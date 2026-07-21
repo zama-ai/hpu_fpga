@@ -1,5 +1,6 @@
 # FAQ
 
+<a id="table-of-contents"></a>
 ## Table of Contents
 
 - [HPU usage with TFHE-rs](#hpu-usage)
@@ -35,7 +36,7 @@ One example is located  in ```tfhe/examples/hpu/matmul.rs```.
 ```
 git clone https://github.com/zama-ai/tfhe-rs.git
 cd  tfhe-rs
-source setup_hpu.sh --config v80 --init-qdma
+source setup_hpu.sh --config v80
 cargo run --profile devo --features=hpu-v80 --example hpu_matmul
 ```
 
@@ -116,6 +117,7 @@ xbtest -d $DEVICE -c memory
   <a href="#table-of-contents" > ↑ Back to top </a>
 </p>
 
+<a id="debug"></a>
 ## Debug
 
 The variable ```$DEVICE``` corresponds to your board *Bus Device Function*. You can easily find yours with ```lspci -d 10ee:50b4```.
@@ -129,17 +131,21 @@ In order to build it you can launch: ```cargo build --profile devo --features=hp
 Then you can read registers with this tool.
 
 ```
-source setup_hpu.sh --config v80 --init-qdma
-./target/devo/hputil read --name info::version
+source setup_hpu.sh --config v80
+# by default hputil reads registers from HPU 0 of a cluster
+./target/devo/hputil register read info::version
+# if you have more than 1 HPU and want to read the RTL version of HPU 7
+./target/devo/hputil -f 7 register read info::version
 ```
 
-You can as well dump sets of parameters read in the HPU:
+You can also dump register sets from any HPU:<br>
+(-f N selects HPU N in the cluster; defaults to 0)
 ```
-./target/devo/hputil dump arch    // dumps crypto parameter set and HPU parameters
-./target/devo/hputil dump isc     // dumps Instruction Scheduler registers
-./target/devo/hputil dump pe-mem  // dumps Load/Store processing element registers
-./target/devo/hputil dump pe-pbs  // dumps PBS processing element registers
-./target/devo/hputil dump pe-alu  // dumps ALU processing element registers
+./target/devo/hputil -f 0 register dump arch    // dumps crypto parameter set and HPU parameters
+./target/devo/hputil -f 1 register dump isc     // dumps Instruction Scheduler registers
+./target/devo/hputil -f 2 register dump pe-mem  // dumps Load/Store processing element registers
+./target/devo/hputil -f 3 register dump pe-pbs  // dumps PBS processing element registers
+./target/devo/hputil -f 4 register dump pe-alu  // dumps ALU processing element registers
 ```
 
 <a id="debug-level"></a>

@@ -27,6 +27,11 @@ all three options in the subsequent sections.
 
 ## The _HPU_ mockup
 
+> [!WARNING]
+> Since TFHE-rs v1.7 the HPU mock-up has been replaced by [HPU Simulator](https://github.com/zama-ai/hpu_sim)
+> and the steps described in the chapter are no longer possible.
+> We will be updating as soon as possible with instructions of how to use HPU Simulator.
+
 The _HPU_ mockup is included in the _TFHE-rs_ _HPU_ backend. It is basically a standalone rust
 program that connects to the _HPU_ backend via Unix sockets and responds to register reads, IOp
 requests, etc. instead of the real _HPU_ in the most faithful way we could find, effectively
@@ -210,7 +215,17 @@ rust program - the _hputil_:
 
 ```bash
 cargo build --release --features hpu,utils,hw-v80 --bin hputil
-./target/release/hputil trace-dump -f trace.json
+./target/release/hputil -f 0 trace-dump trace_HPU0.json
+./target/release/hputil -f 1 trace-dump trace_HPU1.json
+```
+
+Before running your operation on HPU, to get a trace as easy to interpret as possible, it may be a good idea to reset your cluster of HPU:
+```bash
+for i in `seq 0 7`; do ./target/release/hputil -f $i register write hpu_reset::trigger --value 1; done
+# after reset, you should read 0x80000001 in all HPU confirming reset procedure was done
+for i in `seq 0 7`; do ./target/release/hputil -f $i register read hpu_reset::trigger; done
+# after that, hpu_reset::trigger registers should be all at 0x0
+for i in `seq 0 7`; do ./target/release/hputil -f $i register read hpu_reset::trigger; done
 ```
 
 This will save all events to a **json** file. The HBM trace buffer is small, roughly 32MBs at
@@ -276,6 +291,16 @@ Still, you can catch some bugs or improve your IOp, if that is not the case.
 
 Obviously, if this information isn't enough to figure out what is going on, you could do anything
 you would like with the information recorded in the _Trace_ class.
+
+To run the [demo.py](https://github.com/zama-ai/tfhe-rs/tree/main/backends/tfhe-hpu-backend/python/bin/demo.py) delivered in TFHE-rs you can do:
+``` bash
+cd <path>/tfhe-rs/backends/tfhe-hpu-backend/python
+export PYTHONPATH=$(readlink -m ./lib)
+python -m venv new_env
+source new_env/bin/activate
+pip3 install -r requirements.txt
+./bin/demo.py <path>/tfhe-rs/trace_HPU0.json
+```
 
 We've now gone through all the tools and tricks we actually use ourselves to debug and improve our
 own IOps. Still, most of the magic here is to know how to write properly for the _HPU_, so we'll

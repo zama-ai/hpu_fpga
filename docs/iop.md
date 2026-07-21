@@ -1,6 +1,6 @@
 # Integer Operation (IOp)
 
-Current version is **HIS v2.0** (HPU Instruction Syntax).
+Current version is **HIS v3.0** (HPU Instruction Syntax).
 
 The Homomorphic processing unit (HPU) processes any operation on integers, using their radix representation. For this, the user only needs to provide a program to the HPU.
 
@@ -10,6 +10,8 @@ There are 2 levels of HPU programming.
 * The second one is low level. This code is the equivalent of assembly code for traditional CPU, but processing on elementary ciphertexts encoding *digits*.
 
 This document describes the high level code syntax. The targeted elements are integers. The operations are named **Integer Operation** (IOp).
+
+HIS moved from 2.0 to 3.0 when it was updated to support IOp executed on a cluster of HPU nodes and especially IOp targeting multiple HPU nodes.
 
 ## Integer / Digit
 An integer is any type that can be represented with bits. Let's name *n* the number of bits.
@@ -31,7 +33,9 @@ The IOp code defines the integer **operation signature**. This makes it an ident
 An IOp code is defined by **positional** sections:
 
 * A name
+* An IOp identifier
 * A list of features
+* A mapping or list of HPU nodes
 * A list of destination integers
 * A list of source integers
 * A list of immediates (optional)
@@ -71,6 +75,19 @@ IOP[val]
 
 where *val* is a free 8-bit value, respecting the encoding described above.
 
+### IOp identifier
+To identify IOp executed on a cluster of HPU, an 8b integer between 1 and 255 is associated with each IOp. It also means that any source or destination of any IOp is now associated with an IOp identifier.
+IOp identifier 0 is not used for IOps actually executed on the HPU. This IOp identifier 0 is associated with specific sources that are prepared by the Host SW and uploaded to HPU memory via PCIe DMA.
+IOp identifiers are used sequentially starting at 1 and rolling back to 1 after 255 is used. No IOp identifier can be re-used if still in execution somewhere on the cluster.
+In the IOp syntax, this identifier can be found on any destination: in destination `I32@0x20{Hpu5@27}` the IOp identifier is the `@27`.
+
+Example:
+``` C
+IOP[0x21] <I64 I64> <1, 2> <I64@0x40{Hpu1@1}> <I64@0x00{Hpu1@0}>
+IOP[0x21] <I64 I64> <2, 1> <I64@0x00{Hpu2@2}> <I64@0x20{Hpu1@0}>
+IOP[0x28] <I32 I64> <1, 2> <I32@0x60{Hpu1@3} I32@0x70{Hpu1@3}> <I64@0x40{Hpu1@1} I64@0x00{Hpu2@2}>
+```
+In this example you can see 3 dual-HPU IOp using IOp identifier 1 to 3: identifiers 1 and 2 are custom IOp 0x21 (33), and identifier 3 uses a custom IOp 0x28 (40).
 
 ### Feature
 The HPU is able to process any size of integer. It is even able to mix different sizes for the sources and the destinations.
@@ -82,7 +99,7 @@ In the following example:
 
 * The destinations are aligned on 8-bit integer ciphertexts
 * The sources are aligned on 16-bit integer ciphertexts.
-```
+``` C
 <I8 I16>
 ```
 
@@ -93,11 +110,22 @@ In the following example:
 HIS v2.0 syntax defines the possibility to have *dynamic* run-time generated code. If the IOp is qualified as dynamic, it means that the HPU micro-processor could, if instructed, use current execution environment information to modify the DOp code.
 
 Example:
-```
+``` C
 <dyn I8 I16>
 ```
 > [!NOTE]
 > The feature is not fully supported yet.
+
+### Mapping
+Each IOp is executed on 1 to 8 virtual HPU and allocated at runtime on 1 to 8 physical HPU. The mapping is an array of physical HPU corresponding to each of the necessary virtual HPU.
+
+Example:
+``` C
+IOP[0x21] <I64 I64> <1, 2> <I64@0x40{Hpu1@1}> <I64@0x00{Hpu1@0}>
+IOP[0x21] <I64 I64> <2, 1> <I64@0x00{Hpu2@2}> <I64@0x20{Hpu1@0}>
+```
+In this example, IOp 1 has a mapping of `<1, 2>` which means this is a dual-HPU IOp and that code of virtual HPU0 will be executed by physical HPU1 and code of virtual HPU1 will be executed by physical HPU2.
+IOp 2 has a mapping of `<2, 1>` which means this is also a dual-HPU IOp and that code of virtual HPU0 will be executed by physical HPU2 and code of virtual HPU1 will be executed by physical HPU1.
 
 ### Destination / Source
 The destination and source sections follow the same syntax.
@@ -108,16 +136,35 @@ An integer is characterized by:
 
 * its size in bit-unit
 * its offset in memory (offset in elementary ciphertext unit). This offset should be aligned as described in the feature section.
+* its physical location on the HPU cluster
+* its associated IOp identifier
 
-Example:
+This associated IOp identifier can be:
+- for destination: an IOp identifier between 1 and 255 specifying which IOp produced this destination variable
+- for sources:
+    - an IOp identifier between 1 and 255 specifying which IOp has produced or will produce this variable, meaning it cannot be read until this designated IOp is fully done
+    - the IOp identifier 0 which means this variable was produced by Host SW and written in HPU memory and is immediately available
+
+1st Example:
 
 * If the elementary ciphertexts encode 2 bits
 * If the destination alignment is I8 (so 4 blocks per destination)
 * 2 destinations
-    * the first one with 2 bits at offset 4
-    * the second with 8 bits at offset 16
+    * the first one with 2 bits at offset 4 in the memory of physical HPU0 (1st HPU of the cluster) associated with IOp id 1
+    * the second with 8 bits at offset 16 in the memory of physical HPU1 (2nd HPU of the cluster) associated with IOp id 1
+``` C
+<I2@0x4{Hpu0@1} I8@0x10{Hpu1@1}>
 ```
-<I2@0x4 I8@0x10>
+
+2nd Example:
+
+* If the elementary ciphertexts encode 2 bits
+* If the source alignment is I64 (so 32 blocks per destination)
+* 2 sources
+    * the first one with 64 bits at offset 0x40 in the memory of physical HPU1 and coming from IOp id 1
+    * the second with 64 bits at offset 0x0 in the memory of physical HPU2 and coming from IOp id 2
+``` C
+<I64@0x40{Hpu1@1} I64@0x00{Hpu2@2}>
 ```
 
 > [!NOTE]
@@ -138,7 +185,7 @@ Example:
 * if the alignment is I16 (so 8 blocks per operands)
 * if the vector ciphertexts encode 8 bits operands
 * If the vector is composed of 4 contiguous operands
-```
+``` C
 <I8[4]@0x0>
 ```
 > [!NOTE]
@@ -177,29 +224,58 @@ To ease their usage, aliases are used for their naming.
 |SUBS|0xA1|SUBS <D*n* S*n*\> <D*n*\> <S*n*\> <Imm\>|Subtract a constant to the n-bit source.<br>The result is reduced modulo 2^n.<br>Only n bits of the immediate are taken into account.|
 |SSUB|0xA2|SSUB <D*n* S*n*\> <D*n*\> <S*n*\> <Imm\>|Subtract the n-bit source to a constant.<br>The result is reduced modulo 2^n.<br>Only n bits of the immediate are taken into account.|
 |MULS|0xA3|MULS <D*n* S*n*\> <D*n*\> <S*n*\> <Imm\>|Multiply the n-bit source with a constant.The result is reduced modulo 2^n.|
+|DIVS|0xA4|DIVS <D*n* S*n*\> <D*n* D*n*\> <S*n*\> <Imm\>|Divide the n-bit source by a constant. Destinations are the quotient and the remainder.|
+|MODS|0xA5|MODS <D*n* S*n*\> <D*n*\> <S*n*\> <Imm\>|Calculate the modulus the n-bit source by a constant.|
+|OVF_ADDS|0xA8|OVF_ADDS <D*n* S*n*\> <D*n* D*b*\> <S*n*\> <Imm\>|Same as ADDS with one more destination being a boolean to say if result overflowed the 2^n bits available.|
+|OVF_SUBS|0xA9|OVF_SUBS <D*n* S*n*\> <D*n* D*b*\> <S*n*\> <Imm\>|Same as SUBS with one more destination being a boolean to say if result overflowed the 2^n bits available.|
+|OVF_SSUB|0xAA|OVF_SSUB <D*n* S*n*\> <D*n* D*b*\> <S*n*\> <Imm\>|Same as SSUB with one more destination being a boolean to say if result overflowed the 2^n bits available.|
+|OVF_MULS|0xAB|OVF_MULS <D*n* S*n*\> <D*n* D*b*\> <S*n*\> <Imm\>|Same as MULS with one more destination being a boolean to say if result overflowed the 2^n bits available.|
+|SHIFTS_R|0xAC|SHIFTS_R <D*n* S*n*\> <D*n*\> <S*n*\> <Imm\>|Shift right the n-bit source with a constant.|
+|SHIFTS_L|0xAD|SHIFTS_L <D*n* S*n*\> <D*n*\> <S*n*\> <Imm\>|Shift left the n-bit source with a constant.|
+|ROTS_R|0xAE|ROTS_R <D*n* S*n*\> <D*n*\> <S*n*\> <Imm\>|Rotate right the n-bit source with a constant.|
+|ROTS_L|0xAF|ROTS_L <D*n* S*n*\> <D*n*\> <S*n*\> <Imm\>|Rotate left the n-bit source with a constant.|
 |ADD|0xE0|ADD <D*n* S*n*\> <D*n*\> <S*n* S*n*\>|Add the 2 n-bit sources.<br>The result is reduced modulo 2^n.|
 |SUB|0xE2|SUB <D*n* S*n*\> <D*n*\> <S*n* S*n*\>|Subtract the 2 n-bit sources.<br>The result is reduced modulo 2^n.|
 |MUL|0xE4|MUL <D*n* S*n*\> <D*n*\> <S*n*\>|Multiply the 2 n-bit sources.<br>The result is reduced modulo 2^n.|
+|DIV|0xE5|DIV <D*n* S*n*\> <D*n* D*n*\> <S*n* S*n*\>|Divide the 1st n-bit source by the 2nd. Destinations are the quotient and the remainder.|
+|MOD|0xE6|MOD <D*n* S*n*\> <D*n*\> <S*n* S*n*\>|Calculate the modulus the 1st n-bit source by the 2nd.|
+|OVF_ADD|0xE8|OVF_ADD <D*n* S*n*\> <D*n* D*b*\> <S*n* S*n*\>|Same as ADD with one more destination being a boolean to say if result overflowed the 2^n bits available.|
+|OVF_SUB|0xEA|OVF_SUB <D*n* S*n*\> <D*n* D*b*\> <S*n* S*n*\>|Same as SUB with one more destination being a boolean to say if result overflowed the 2^n bits available.|
+|OVF_MUL|0xEC|OVF_MUL <D*n* S*n*\> <D*n* D*b*\> <S*n* S*n*\>|Same as MUL with one more destination being a boolean to say if result overflowed the 2^n bits available.|
 |BW_AND|0xD0|BW_AND <D*n* S*n*\> <D*n*\> <S*n* S*n*\>|Bit-wise AND on the 2 n-bit sources.|
 |BW_OR|0xD1|BW_OR <D*n* S*n*\> <D*n*\> <S*n* S*n*\>|Bit-wise OR on the 2 n-bit sources.|
 |BW_XOR|0xD2|BW_XOR <D*n* S*n*\> <D*n*\> <S*n* S*n*\>|Bit-wise XOR on the 2 n-bit sources.|
-|CMP_GT|0xC0|CMP_GT <D*b* S*n*\> <D*b*\> <S*n* S*n*\>|Compare the 2 n-bit sources.<br>Output a boolean encoded in b-bits, with value (1) if source1 is greater than source2, and (0) elsewise|
-|CMP_GTE|0xC1|CMP_GTE <D*b* S*n*\> <D*b*\> <S*n* S*n*\>|Compare the 2 n-bit sources.<br>Output a boolean encoded in b-bits, with value (1) if source1 is greater or equal than source2, and (0) elsewise|
-|CMP_LT|0xC2|CMP_LT <D*b* S*n*\> <D*b*\> <S*n* S*n*\>|Compare the 2 n-bit sources.<br>Output a boolean encoded in b-bits, with value (1) if source1 is less than source2, and (0) elsewise|
-|CMP_LTE|0xC3|CMP_LTE <D*b* S*n*\> <D*b*\> <S*n* S*n*\>|Compare the 2 n-bit sources.<br>Output a boolean encoded in b-bits, with value (1) if source1 is less or equal than source2, and (0) elsewise|
-|CMP_EQ|0xC4|CMP_EQ <D*b* S*n*\> <D*b*\> <S*n* S*n*\>|Compare the 2 n-bit sources.<br>Output a boolean encoded in b-bits, with value (1) if source1 is equal to source2, and (0) elsewise|
-|CMP_NEQ|0xC5|CMP_NEQ <D*b* S*n*\> <D*b*\> <S*n* S*n*\>|Compare the 2 n-bit sources.<br>Output a boolean encoded in b-bits, with value (1) if source1 is not equal to source2, and (0) elsewise|
+|BW_NOT|0xD3|BW_NOT <D*n* S*n*\> <D*n*\> <S*n*\>|Bit-wise NOT on the n-bit source.|
+|SHIFT_R|0xDC|SHIFT_R <D*n* S*n*\> <D*n*\> <S*n* S*n*\>|Shift right the 1st n-bit source by the amount of bits from the 2nd.|
+|SHIFT_L|0xDD|SHIFT_L <D*n* S*n*\> <D*n*\> <S*n* S*n*\>|Shift left the 1st n-bit source by the amount of bits from the 2nd.|
+|ROT_R|0xDE|ROT_R <D*n* S*n*\> <D*n*\> <S*n* S*n*\>|Rotate right the 1st n-bit source by the amount of bits from the 2nd.|
+|ROT_L|0xDF|ROT_L <D*n* S*n*\> <D*n*\> <S*n* S*n*\>|Rotate left the 1st n-bit source by the amount of bits from the 2nd.|
+|CMP_GT|0xC0|CMP_GT <D*b* S*n*\> <D*b*\> <S*n* S*n*\>|Compare the 2 n-bit sources.<br>Output a boolean encoded in b-bits, with value (1) if source1 is greater than source2, and (0) elsewise.|
+|CMP_GTE|0xC1|CMP_GTE <D*b* S*n*\> <D*b*\> <S*n* S*n*\>|Compare the 2 n-bit sources.<br>Output a boolean encoded in b-bits, with value (1) if source1 is greater or equal than source2, and (0) elsewise.|
+|CMP_LT|0xC2|CMP_LT <D*b* S*n*\> <D*b*\> <S*n* S*n*\>|Compare the 2 n-bit sources.<br>Output a boolean encoded in b-bits, with value (1) if source1 is less than source2, and (0) elsewise.|
+|CMP_LTE|0xC3|CMP_LTE <D*b* S*n*\> <D*b*\> <S*n* S*n*\>|Compare the 2 n-bit sources.<br>Output a boolean encoded in b-bits, with value (1) if source1 is less or equal than source2, and (0) elsewise.|
+|CMP_EQ|0xC4|CMP_EQ <D*b* S*n*\> <D*b*\> <S*n* S*n*\>|Compare the 2 n-bit sources.<br>Output a boolean encoded in b-bits, with value (1) if source1 is equal to source2, and (0) elsewise.|
+|CMP_NEQ|0xC5|CMP_NEQ <D*b* S*n*\> <D*b*\> <S*n* S*n*\>|Compare the 2 n-bit sources.<br>Output a boolean encoded in b-bits, with value (1) if source1 is not equal to source2, and (0) elsewise.|
 |IF_THEN_ZERO|0xCA|IF_THEN_ZERO <D*n* S*n*\> <D*n*\> <S*b* S*n*\>|According to boolean source1 value, if (1) source2 is selected, else the value 0 is selected.|
 |IF_THEN_ELSE|0xCB|IF_THEN_ELSE <D*n* S*n*\> <D*n*\> <S*b* S*n* S*n*\>|According to boolean source1 value, if (1) source2 is selected, else the source3 is selected.|
-|ERC_20|0x80|ERC_20 <D*n* S*n*\> <D*n*\> <S*n* S*n*\> <Imm\>|ERC20 transaction.|
+|ERC_7984|0x80|ERC_7984 <D*n* S*n*\> <D*n* D*n*\> <S*n* S*n* S*n*\>|ERC7984 transaction.|
+|COUNT0|0x81|COUNT0 <D*n* S*n*\> <D*n*\> <S*n*\>|Count the number of bit at 0 in the n-bit source.|
+|COUNT1|0x82|COUNT1 <D*n* S*n*\> <D*n*\> <S*n*\>|Count the number of bit at 1 in the n-bit source.|
+|ILOG2|0x83|ILOG2 <D*n* S*n*\> <D*n*\> <S*n*\>|Calculate integer base-2 logarithm of the n-bit source.|
+|LEAD0|0x84|LEAD0 <D*n* S*n*\> <D*n*\> <S*n*\>|Count the number of bit at 0 from MSB before 1st 1 in the n-bit source.|
+|LEAD1|0x85|LEAD1 <D*n* S*n*\> <D*n*\> <S*n*\>|Count the number of bit at 1 from MSB before 1st 0 in the n-bit source.|
+|TRAIL0|0x86|TRAIL0 <D*n* S*n*\> <D*n*\> <S*n*\>|Count the number of bit at 0 from LSB before 1st 1 in the n-bit source.|
+|TRAIL1|0x87|TRAIL1 <D*n* S*n*\> <D*n*\> <S*n*\>|Count the number of bit at 1 from LSB before 1st 0 in the n-bit source.|
+|ADD_SIMD|0xF0|ADD_SIMD <D*n* S*n*\> <D*n* x12\> <(S*n* S*n*)x12\>|SIMD version of ADD doing 12 ADD in a single IOp.|
+|ERC_7984_SIMD|0xF1|ERC_7984_SIMD <D*n* S*n*\> <(D*n* D*n*)x12\> <(S*n* S*n* S*n*)x12\>|SIMD version of ERC_7984 doing 12 ERC_7984 in a single IOp.|
 |Reserved|0xFE||Reserved|
 |MEMCPY|0xFF|MEMCPY <D*n* S*n*\> <D*n*\> <S*n*\>|Copy ciphertext from one slot to another of the HPU memory|
 
 
 ## Examples
 ### Predefined
-Here is an example of IOp code, using predefined IOps. The computation is the following:
-```
+Here is an example of IOp code, using predefined single-HPU IOps. The computation is the following:
+``` C
 A and B two 16-bit integers
 if (A > B) D = A-B
 else       D = B-A
@@ -209,38 +285,44 @@ return D
 * B is stored in @0x10
 * Result is stored in 0x00
 
-```
+``` C
 # Use @0x00 to store intermediate result: the select
-CMP_GT <I16 I16> <I2@0x00> <I16@0x8 I16@0x10>
+CMP_GT <I16 I16> <0> <I2@0x00{Hpu0@1}> <I16@0x8{Hpu0@0} I16@0x10{Hpu0@0}>
 # Need @0x18 and @0x20 for intermediate results
-SUB <I16 I16> <I2@0x18> <I16@0x8 I16@0x10>
-SUB <I16 I16> <I2@0x20> <I16@0x10 I16@0x8>
-IF_THEN_ELSE <I16 I16> <I16@0x00> <I2@0x00 I16@0x18 I16@0x20>
+SUB <I16 I16> <0> <I16@0x18{Hpu0@2}> <I16@0x8{Hpu0@0} I16@0x10{Hpu0@0}>
+SUB <I16 I16> <0> <I16@0x20{Hpu0@3}> <I16@0x10{Hpu0@0} I16@0x8{Hpu0@0}>
+IF_THEN_ELSE <I16 I16> <0> <I16@0x00{Hpu0@4}> <I2@0x00{Hpu0@1} I16@0x18{Hpu0@2} I16@0x20{Hpu0@3}>
 ```
+In this example, A `I16@0x8{Hpu0@0}` & B `I16@0x10{Hpu0@0}` are associated with IOp identifier 0 to let HPU0 know that these 2 variables are prepared by the Host and already available in memory so in theory the 3 first IOp (with id 1 to 3) can start as soon as HPU0 can.
+The 4th IOp with id 4 cannot start before IOp 1, 2 & 3 are done because it uses the destinations of these 3 IOp as sources.
 
 ### Custom
 
 32-bit Addition with overflow. This operation needs:
 
-* 2 sources
+* 1 HPU: here HPU4 is virtual HPU 0
+* 2 sources written by Host on HPU4 (IOp identifier 0)
 * 2 destinations: the first contains the addition result, the second is a boolean containing the overflow information.
-```
-IOP[0x00] <I32 I32> <I32@0x10 I2@0x0> <I32@0x20 I32@0x30>
+NB: IOp identifier (234 here) is encoded in the destination variable
+``` C
+IOP[0x00] <I32 I32> <4> <I32@0x10{Hpu4@234} I2@0x0{Hpu4@234}> <I32@0x20{Hpu4@0} I32@0x30{Hpu4@0}>
 ```
 
 Multiplication between a 4-bit integer and a 32-bit integer. The result is reduced modulo 2^34, with an overflow boolean.
 
-* 2 sources : 4-bit and 32-bit
-* 2 destinations: the first contains the addition result, the second is a boolean containing the overflow information.
+* a 4 HPU IOp executed with identifier 17 on physical HPU 7 (virtual 0), 6 (virtual 1), 2 (virtual 2) and 0 (virtual 3)
+* 2 sources : 4-bit and 32-bit, produced by HOST and written in memory of HPU7
+* 2 destinations: the first contains the addition result on HPU6, the second is a boolean containing the overflow information on HPU2.
 * The result partially overwrites source1 location.
-```
-IOP[0x01] <I34 I32> <I34@0x11 I2@0x0> <I32@0x20 I32@0x30>
+``` C
+IOP[0x01] <I34 I32> <7,6,2,0> <I34@0x11{Hpu6@17} I2@0x0{Hpu2@17}> <I32@0x20{Hpu7@0} I32@0x30{Hpu7@0}>
 ```
 
 Select among a list of 4 elements.
 
-* 1 + 4 sources: 2-bit source, and 4 32-bit sources
-* 1 destination: 32-bit destination.
-```
-IOP[0x02] <I32 I32> <I32@0x0> <I2@0x10 I32@0x20 I32@0x30 I32@0x40 I32@0x50>
+* a single HPU IOp executed on physical HPU0 with identifier 1
+* 1 + 4 sources: 2-bit source, and 4 32-bit sources, produced by HOST and written in memory of HPU0
+* 1 destination: 32-bit destination in memory of HPU0 associated with IOp id 1
+``` C
+IOP[0x02] <I32 I32> <0> <I32@0x0{Hpu0@1}> <I2@0x10{Hpu0@0} I32@0x20{Hpu0@0} I32@0x30{Hpu0@0} I32@0x40{Hpu0@0} I32@0x50{Hpu0@0}>
 ```

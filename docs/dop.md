@@ -1,6 +1,6 @@
 # Digit Operation (DOp)
 
-Current version is **HIS v2.0** (HPU Instruction Syntax).
+Current version is **HIS v3.0** (HPU Instruction Syntax).
 
 The Homomorphic processing unit (HPU) processes any operation on integers, using their radix representation. For this, the user only needs to provide a program to the HPU.
 
@@ -10,6 +10,10 @@ There are 2 levels of HPU programming.
 * The second one is low level. This code is the equivalent of assembly code for traditional CPU, but processing on elementary ciphertexts encoding *digits*.
 
 This document describes the low level code syntax. The targeted elements are digits. The instructions are named **Digit Operation** (DOp).
+
+HIS moved from 2.0 to 3.0 when it was updated to include DOp to synchronize execution of operations on a cluster of HPU.
+The DOp assembly code of an IOp operation is interpreted by a core embedded inside HPU that we call ucore for micro-core.
+Most of the DOp are basically copied to the HPU internal instruction scheduler (ISC). Some are templated (like memory accesses) and are slightly modified by ucore before being sent to HPU instruction scheduler. Some are executed inside the ucore and not copied as is to the HPU ISC.
 
 ## Integer / Digit
 See [IOp documentation](iop.md) for more details.
@@ -39,16 +43,35 @@ HPU has a **register file** (regfile), where each register contains one elementa
 The HPU has also access to a memory, where input and output ciphertexts are stored. This memory is also used for the heap.
 
 General syntax
-```
-<DOp> <Dst> <Src> [<Src>] [<Cst>]
+``` C
+<DOp> [<Node>] [<Flag>] [<Dst>] [<Src>] [<Src>] [<Cst>]
 ```
 
 A DOp command contains:
 
 * 1 name
-* 1 destination ciphertext
-* 1 or 2 source ciphertexts, depending on the DOp
+* 0 or 1 node, identifying a virtual HPU node, depending on the DOp
+* 0 or 1 flag, used to synchronize nodes, depending on the DOp
+* 0 or 1 destination ciphertext
+* 0, 1 or 2 source ciphertexts, depending on the DOp
 * 0 or 1 constant, depending on the DOp
+
+### Node
+When writing DOp assembly for a set of HPU, each HPU of the cluster can be identified by a virtual identifier from 0 to 7 called node.
+
+|Type|Syntax|Description|
+|----|------|-----------|
+|Node|N*i*|Node or virtual HPU #*i* in [0..7] in the cluster.|
+
+At execution of a multi-HPU IOp, the software is allocating a physical HPU to each virtual node needed.
+
+### Flag
+When a node of an HPU cluster needs to send a ciphertext to another node it uses a flag to identify it. This flag is an integer from 1 to 63 and should be unique in a DOp stream.
+The flag F0 should not be used as it is associated in the ucore with remote source synchronization.
+
+|Type|Syntax|Description|
+|----|------|-----------|
+|Flag|F*i*|Synchronization flag #*i*.|
 
 ### Dst / Src
 Depending on the DOp, the associated source (or destination) can be one of the following:
@@ -71,13 +94,14 @@ The presence of the constant depends on the DOp.
 |Immediate|TI[*i*].*x*|Digit #*x* of IOp immediate #*i*.<br>The prefix 'T' stands for templated. This means that the value is retrieved by the HPU micro-processor from the IOp immediate #*i* value.|
 |LUT|*alias*|Alias corresponding to a value used to identify the LUT used in PBS.|
 
-### DOp
-There are 4 categories of DOp:
+## DOp
+There are 5 categories of DOp:
 
 * ALU: Process linear operation on ciphertexts stored in regfile's registers.
 * MEM: Read or write ciphertexts from/into HPU memory.
 * PBS: Process programmable bootstrap on ciphertexts stored in regfile's register.
 * Control: DOp used to control the HPU.
+* UCORE: DOp executed by the micro-controller and linked with execution flow and synchronization with other HPU of the cluster.
 
 #### ALU
 |DOp|Syntax|Description|
@@ -162,7 +186,17 @@ These names come from the words message (vm) and carry (vc).
 #### Control
 |Dop|Syntax|Description|
 |---|------|-----------|
-|SYNC|SYNC|This DOp is executed when all DOp preceding it are over. A synchronization signal is sent to the CPU host.|
+|SYNC|SYNC|This DOp is executed when all DOp preceding it are over. A synchronization signal or acknowledge is sent to the ucore when executed.|
+
+This DOp is not used directly by user writing HPU assembly code. It is appended by ucore at the end of a DOp stream corresponding to a locally-executed IOp. In this case this SYNC is an end-of-IOp SYNC.
+It is also used as internal synchronization point for ucore to know when ISC reaches a given point in the DOp stream. In this case it is called an inner SYNC.
+
+#### UCORE
+|DOp|Syntax|Description|
+|---|------|-----------|
+|LD_B2B|LD_B2B <Flag\> <Dst\>|This instruction means local node will at some point in the DOp stream expect to receive a ciphertext from another HPU associated with given Flag value. This ciphertext will be stored in given destination.<br>Flag is usually F[1..63].<br>Dst is either a heap or an offset.|
+|WAIT|WAIT <Flag\> <Dst\>|This instruction tells ucore of local node that DOp stream execution should stop at this point until ciphertext associated with given Flag value has been properly stored at given destination.<br>Flag is F[1..63].<br>Dst is either a heap or an offset.|
+|NOTIFY|NOTIFY <Node\> <Flag\> <Src\>|This instruction is translated by ucore as an internal SYNC. When ucore receives confirmation from ISC that DOp stream execution has reached this instruction, ucore sends a notification to Node containing Flag & Src information associated with a ciphertext.<br>Node is N[0..7].<br>Flag is F[1..63].<br>Src is either a heap or an offset.|
 
 ## Examples
 ### Load from memory
@@ -202,4 +236,52 @@ SUBS R2 R1 TI[4].0 # Used digit 0 of fourth IOp immediate
 PBS     R2 R1 PbsNone
 PBS_F   R2 R1 PbsCarryInMsg
 PBS_ML2 R4 R6 ManyCarryMsg    # Results in R4 and R5
+```
+
+### Dummy dual-HPU DOp
+This is a test dual-HPU IOp which needs 2 nodes on the HPU cluster.
+Node 0 loads a 8b input, writes it on the heap and notifies Node 1 that the 4 ciphertexts are available.
+
+On N0:
+```
+# Read input value in R0 to R3
+LD R0 TS[0].0
+LD R1 TS[0].1
+LD R2 TS[0].2
+LD R3 TS[0].3
+# Store locally R0 to R3 in TH.0 to TH.3
+ST TH.0 R0
+ST TH.1 R1
+ST TH.2 R2
+ST TH.3 R3
+# Notify Node1 that F4, F1, F2 & F3 are available
+NOTIFY N1 F4 TH.3
+NOTIFY N1 F1 TH.0
+NOTIFY N1 F2 TH.1
+NOTIFY N1 F3 TH.2
+```
+
+Node 1 prepares loading of the 4 ciphertexts, then waits for each ciphertext to be transferred (F1 to F4). Then it loads the 4 ciphertexts in registers (R0 to R3) and writes the 8b destination.
+
+On N1:
+```
+# Prepare or issue (if already notified) read value from Node0
+LD_B2B F1 TH.10
+LD_B2B F2 TH.11
+LD_B2B F3 TH.12
+LD_B2B F4 TH.13
+# Wait for B2b load end and load in reg R0 to R3
+WAIT F1 TH.10
+LD R0 TH.10
+WAIT F2 TH.11
+LD R1 TH.11
+WAIT F3 TH.12
+LD R2 TH.12
+WAIT F4 TH.13
+LD R3 TH.13
+# Store R0 to R3 in Dst variable
+ST TD[0].0 R0
+ST TD[0].1 R1
+ST TD[0].2 R2
+ST TD[0].3 R3
 ```
